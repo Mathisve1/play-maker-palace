@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ClipboardList, Users, Zap, Heart } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Logo from '@/components/Logo';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -29,6 +30,9 @@ const ClubsLanding = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-accent/5" />
         <div className="container mx-auto relative">
           <motion.div className="max-w-2xl mx-auto text-center" initial="hidden" animate="visible">
+            <motion.div variants={fadeUp} custom={0} className="flex justify-center mb-6">
+              <Logo size="lg" showText={false} linkTo="" />
+            </motion.div>
             <motion.h1 variants={fadeUp} custom={0} className="text-4xl md:text-6xl font-heading font-bold text-foreground leading-tight">
               {t.clubs.heroTitle.split(' ').map((word, i, arr) => 
                 i >= arr.length - 2 ? <span key={i} className="text-gradient-secondary"> {word}</span> : ` ${word}`
