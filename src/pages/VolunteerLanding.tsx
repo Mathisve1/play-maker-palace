@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Handshake, Smile, Trophy, Users, UserPlus, Search, CheckCircle, Heart } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 
 const fadeUp = {
@@ -40,6 +41,9 @@ const VolunteerLanding = () => {
             initial="hidden"
             animate="visible"
           >
+            <motion.div variants={fadeUp} custom={0} className="flex justify-center mb-6">
+              <Logo size="lg" showText={false} linkTo="" />
+            </motion.div>
             <motion.h1 
               variants={fadeUp} custom={0}
               className="text-4xl md:text-6xl font-heading font-bold text-foreground leading-tight"
