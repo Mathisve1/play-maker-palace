@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Building2, ClipboardList, BarChart3 } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const AdminDashboard = () => {
   const { t } = useLanguage();
@@ -46,12 +47,8 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-hero-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-heading font-bold text-sm">12</span>
-            </div>
+            <Logo size="sm" showText={false} linkTo="/admin" />
             <span className="font-heading font-bold text-lg text-foreground">{t.admin.title}</span>
-          </div>
           <button 
             onClick={async () => { await supabase.auth.signOut(); navigate('/login'); }}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
