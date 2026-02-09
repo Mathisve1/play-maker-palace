@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const Login = () => {
   const { t } = useLanguage();
@@ -23,7 +24,7 @@ const Login = () => {
       toast.error(error.message);
     } else {
       toast.success('Logged in!');
-      navigate('/');
+      navigate('/dashboard');
     }
   };
 
@@ -34,12 +35,9 @@ const Login = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <Link to="/" className="flex items-center gap-2 justify-center mb-8">
-          <div className="w-8 h-8 rounded-lg bg-hero-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-heading font-bold text-sm">12</span>
-          </div>
-          <span className="font-heading font-bold text-lg text-foreground">De12eMan</span>
-        </Link>
+        <div className="flex justify-center mb-8">
+          <Logo size="md" linkTo="/" />
+        </div>
 
         <div className="bg-card rounded-2xl shadow-elevated p-8">
           <h1 className="text-2xl font-heading font-bold text-foreground text-center">{t.auth.loginTitle}</h1>

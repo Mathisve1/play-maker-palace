@@ -4,6 +4,7 @@ import { Language } from '@/i18n/translations';
 import { Menu, X, Globe } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Logo from '@/components/Logo';
 
 const langLabels: Record<Language, string> = { nl: 'NL', fr: 'FR', en: 'EN' };
 
@@ -20,12 +21,7 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 glass">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-hero-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-heading font-bold text-sm">12</span>
-          </div>
-          <span className="font-heading font-bold text-lg text-foreground">De12eMan</span>
-        </Link>
+        <Logo size="sm" linkTo="/" />
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
