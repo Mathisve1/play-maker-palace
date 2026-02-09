@@ -1,7 +1,7 @@
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Calendar, Award, MessageCircle, UserPlus, Search, CheckCircle, Heart } from 'lucide-react';
+import { Handshake, Smile, Trophy, Users, UserPlus, Search, CheckCircle, Heart } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -13,11 +13,11 @@ const fadeUp = {
 const VolunteerLanding = () => {
   const { t } = useLanguage();
 
-  const features = [
-    { icon: Users, title: t.volunteer.feature1Title, desc: t.volunteer.feature1Desc },
-    { icon: Calendar, title: t.volunteer.feature2Title, desc: t.volunteer.feature2Desc },
-    { icon: Award, title: t.volunteer.feature3Title, desc: t.volunteer.feature3Desc },
-    { icon: MessageCircle, title: t.volunteer.feature4Title, desc: t.volunteer.feature4Desc },
+  const benefits = [
+    { icon: Handshake, title: t.volunteer.benefit1Title, desc: t.volunteer.benefit1Desc },
+    { icon: Users, title: t.volunteer.benefit2Title, desc: t.volunteer.benefit2Desc },
+    { icon: Smile, title: t.volunteer.benefit3Title, desc: t.volunteer.benefit3Desc },
+    { icon: Trophy, title: t.volunteer.benefit4Title, desc: t.volunteer.benefit4Desc },
   ];
 
   const steps = [
@@ -25,13 +25,6 @@ const VolunteerLanding = () => {
     { icon: Search, title: t.volunteer.step2Title, desc: t.volunteer.step2Desc },
     { icon: CheckCircle, title: t.volunteer.step3Title, desc: t.volunteer.step3Desc },
     { icon: Heart, title: t.volunteer.step4Title, desc: t.volunteer.step4Desc },
-  ];
-
-  const stats = [
-    { value: '2.500+', label: t.volunteer.statsVolunteers },
-    { value: '180+', label: t.volunteer.statsClubs },
-    { value: '12.000+', label: t.volunteer.statsTasks },
-    { value: '98%', label: t.volunteer.statsRating },
   ];
 
   return (
@@ -62,49 +55,38 @@ const VolunteerLanding = () => {
               <Link to="/signup" className="px-6 py-3 rounded-xl bg-hero-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity shadow-warm">
                 {t.volunteer.heroCta}
               </Link>
-              <a href="#how" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors">
+              <a href="#why" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors">
                 {t.volunteer.heroCtaSecondary}
               </a>
             </motion.div>
           </motion.div>
-
-          {/* Stats */}
-          <motion.div 
-            initial="hidden" animate="visible"
-            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto"
-          >
-            {stats.map((stat, i) => (
-              <motion.div key={i} variants={fadeUp} custom={i + 3} className="text-center p-4 rounded-xl bg-card shadow-card">
-                <div className="text-2xl font-heading font-bold text-primary">{stat.value}</div>
-                <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-20 px-4 bg-muted/50">
+      {/* Why volunteer at a sports club */}
+      <section id="why" className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{t.volunteer.featuresTitle}</h2>
-            <p className="mt-3 text-muted-foreground">{t.volunteer.featuresSubtitle}</p>
+            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{t.volunteer.benefitsTitle}</h2>
+            <p className="mt-3 text-muted-foreground max-w-xl mx-auto">{t.volunteer.benefitsSubtitle}</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            {features.map((f, i) => (
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {benefits.map((b, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-card rounded-2xl p-6 shadow-card hover:shadow-elevated transition-shadow"
+                className="bg-card rounded-2xl p-6 shadow-card hover:shadow-elevated transition-shadow flex gap-5"
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                  <f.icon className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <b.icon className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="font-heading font-semibold text-foreground mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground">{f.desc}</p>
+                <div>
+                  <h3 className="font-heading font-semibold text-foreground mb-1">{b.title}</h3>
+                  <p className="text-sm text-muted-foreground">{b.desc}</p>
+                </div>
               </motion.div>
             ))}
           </div>
