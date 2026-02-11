@@ -50,6 +50,7 @@ const VolunteerDashboard = () => {
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'mine'>('all');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
   const [signingContract, setSigningContract] = useState<string | null>(null);
@@ -67,10 +68,16 @@ const VolunteerDashboard = () => {
       // Fetch profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_url')
+        .select('full_name, email, avatar_url, phone, bio')
         .eq('id', session.user.id)
         .maybeSingle();
       setProfile(profileData);
+
+      // Check if this is a new profile (no name, no phone, no bio = first login)
+      if (profileData && !profileData.full_name && !profileData.phone && !profileData.bio) {
+        setIsFirstLogin(true);
+        setShowProfileDialog(true);
+      }
 
       // Fetch tasks with club info
       const { data: tasksData, error: tasksError } = await supabase
@@ -512,15 +519,20 @@ const VolunteerDashboard = () => {
       {currentUserId && (
         <EditProfileDialog
           open={showProfileDialog}
-          onOpenChange={setShowProfileDialog}
+          onOpenChange={(open) => {
+            setShowProfileDialog(open);
+            if (!open) setIsFirstLogin(false);
+          }}
           userId={currentUserId}
           language={language}
+          isFirstLogin={isFirstLogin}
           onProfileUpdated={(updated) => {
             setProfile(prev => prev ? {
               ...prev,
               full_name: updated.full_name || prev.full_name,
               avatar_url: updated.avatar_url,
             } : prev);
+            setIsFirstLogin(false);
           }}
         />
       )}
