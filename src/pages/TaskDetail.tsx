@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,12 +6,13 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Calendar, Users, Clock, Euro, FileText,
-  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle
+  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
 import LikeButton from '@/components/LikeButton';
 import SignatureStatus from '@/components/SignatureStatus';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Language } from '@/i18n/translations';
 
 interface Task {
@@ -191,6 +192,10 @@ const TaskDetail = () => {
   const [signingUp, setSigningUp] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [profile, setProfile] = useState<{ full_name: string | null; email: string | null; avatar_url: string | null } | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState('');
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const l = labels[language];
 
@@ -198,6 +203,15 @@ const TaskDetail = () => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/login'); return; }
+      setCurrentUserId(session.user.id);
+
+      // Fetch profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, email, avatar_url')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      setProfile(profileData);
 
       const { data: taskData } = await supabase
         .from('tasks')
@@ -281,6 +295,53 @@ const TaskDetail = () => {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUserId) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecteer een afbeelding');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Afbeelding mag maximaal 5MB zijn');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const ext = file.name.split('.').pop() || 'jpg';
+    const filePath = `${currentUserId}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error(uploadError.message);
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const { data: publicUrl } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    const avatarUrl = `${publicUrl.publicUrl}?t=${Date.now()}`;
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: avatarUrl })
+      .eq('id', currentUserId);
+
+    if (updateError) {
+      toast.error(updateError.message);
+    } else {
+      setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : prev);
+      toast.success('Profielfoto bijgewerkt!');
+    }
+    setUploadingAvatar(false);
+  };
+
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({ title: task?.title, url: window.location.href });
@@ -342,6 +403,36 @@ const TaskDetail = () => {
                 {langLabels[lang]}
               </button>
             ))}
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="relative group ml-1"
+              title="Profielfoto wijzigen"
+            >
+              <Avatar className="w-8 h-8">
+                {profile?.avatar_url && (
+                  <AvatarImage src={profile.avatar_url} alt={profile.full_name || ''} />
+                )}
+                <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
+                  {(profile?.full_name || profile?.email || '?')[0].toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="w-3.5 h-3.5 text-white" />
+              </div>
+              {uploadingAvatar && (
+                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
           </div>
         </div>
       </header>
