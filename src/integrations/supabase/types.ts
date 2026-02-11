@@ -224,18 +224,21 @@ export type Database = {
         Row: {
           id: string
           signed_up_at: string
+          status: string
           task_id: string
           volunteer_id: string
         }
         Insert: {
           id?: string
           signed_up_at?: string
+          status?: string
           task_id: string
           volunteer_id: string
         }
         Update: {
           id?: string
           signed_up_at?: string
+          status?: string
           task_id?: string
           volunteer_id?: string
         }
