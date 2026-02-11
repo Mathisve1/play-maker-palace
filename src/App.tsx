@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import TaskDetail from "./pages/TaskDetail";
 import Chat from "./pages/Chat";
 import ClubOwnerDashboard from "./pages/ClubOwnerDashboard";
+import ClubInviteAccept from "./pages/ClubInviteAccept";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/task/:id" element={<TaskDetail />} />
             <Route path="/club-dashboard" element={<ClubOwnerDashboard />} />
+            <Route path="/club-invite/:token" element={<ClubInviteAccept />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/chat/:conversationId" element={<Chat />} />
             <Route path="*" element={<NotFound />} />
