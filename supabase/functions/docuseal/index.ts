@@ -209,12 +209,37 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Convert to DocuSeal fields format
-      const fields = Object.entries(prefilledFields).map(([name, default_value]) => ({
-        name,
-        default_value,
-        readonly: false,
-      }));
+      // Fetch template fields from DocuSeal to only send matching ones
+      const templateResp = await fetch(`${DOCUSEAL_API_URL}/templates/${Number(template_id)}`, {
+        headers: { "X-Auth-Token": DOCUSEAL_API_KEY },
+      });
+      const templateData = await templateResp.json();
+      if (!templateResp.ok) {
+        throw new Error(`DocuSeal API error [${templateResp.status}]: ${JSON.stringify(templateData)}`);
+      }
+
+      // Get field names that actually exist in the template
+      const templateFieldNames = new Set<string>();
+      if (templateData.fields && Array.isArray(templateData.fields)) {
+        templateData.fields.forEach((f: any) => {
+          if (f.name) templateFieldNames.add(f.name);
+        });
+      }
+
+      // Only include prefilled fields that match template fields
+      const fields = Object.entries(prefilledFields)
+        .filter(([name]) => templateFieldNames.has(name))
+        .map(([name, default_value]) => ({
+          name,
+          default_value,
+          readonly: false,
+        }));
+
+      console.log("Template fields:", [...templateFieldNames]);
+      console.log("Sending fields:", fields.map(f => f.name));
+
+      // Determine the submitter role from the template
+      const submitterRole = templateData.submitters?.[0]?.name || "First Party";
 
       // Create DocuSeal submission
       const resp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
@@ -230,7 +255,7 @@ Deno.serve(async (req) => {
             {
               email: volunteer_email,
               name: volunteer_name || volunteerProfile?.full_name || undefined,
-              role: "Volunteer",
+              role: submitterRole,
               fields,
             },
           ],
