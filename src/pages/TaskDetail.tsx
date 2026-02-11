@@ -9,6 +9,7 @@ import {
   AlertCircle, Share2, CheckCircle, Info, Navigation
 } from 'lucide-react';
 import Logo from '@/components/Logo';
+import TaskMap from '@/components/TaskMap';
 import { Language } from '@/i18n/translations';
 
 interface Task {
@@ -418,27 +419,11 @@ const TaskDetail = () => {
               </div>
             </div>
             {taskLocation && (
-              <>
-                <div className="rounded-xl overflow-hidden border border-border aspect-[16/9] relative">
-                  <iframe
-                    title="Map"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    src={`https://maps.google.com/maps?q=${encodeURIComponent(meetingPoint + ', ' + taskLocation)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
-                  />
-                </div>
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(meetingPoint + ', ' + taskLocation)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity shadow-warm"
-                >
-                  <Navigation className="w-4 h-4" />
-                  {l.directions}
-                </a>
-              </>
+              <TaskMap
+                location={taskLocation}
+                meetingPoint={meetingPoint}
+                directionsLabel={l.directions}
+              />
             )}
           </motion.section>
 
