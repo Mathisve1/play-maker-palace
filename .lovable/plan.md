@@ -1,51 +1,64 @@
 
 
-## Handtekeningveld correct positioneren vanuit de Edge Function
+## Plan: DocuSeal handtekeningveld definitief laten werken
 
-### Probleem
-Het handtekeningveld wordt aan DocuSeal toegevoegd zonder positie-coordinaten (`areas`), waardoor er geen interactief handtekeningvak verschijnt en de vrijwilliger het contract alleen kan downloaden of weigeren.
+### Kernprobleem
 
-### Oplossing
-Op drie plaatsen in de Edge Function (`supabase/functions/docuseal/index.ts`) wordt het handtekeningveld aangemaakt. Overal moeten `areas` met coordinaten worden toegevoegd, zodat DocuSeal weet waar het ondertekenvak moet verschijnen.
+Na 12+ pogingen werkt ondertekening niet omdat:
 
-Het veld wordt geplaatst op de laatste pagina, rechtsonder (positie: x=55%, y=85%, breedte=35%, hoogte=6%).
+1. **PUT template velden mislukken stilletjes**: De DocuSeal API vereist `uuid` en `submitter_uuid` in elk veld-object. Die ontbreken, waardoor de PUT 200 retourneert maar geen velden toevoegt (`fields: undefined` in de logs).
+2. **Embedded text tags werken niet**: `html2canvas` maakt een rasterafbeelding (PNG) van de HTML. DocuSeal kan tekst-tags (`{{...}}`) in een afbeelding niet detecteren.
+
+### Oplossing: correcte PUT-payload met alle verplichte velden
+
+We passen de edge function aan zodat de PUT-aanroep naar `/templates/{id}` de juiste schema-structuur volgt:
+
+```text
+Stap 1: POST /templates/pdf        -> maakt template, geeft submitters[].uuid terug
+Stap 2: PUT /templates/{id}        -> voegt veld toe MET uuid + submitter_uuid + areas
+Stap 3: POST /submissions          -> verstuurt naar vrijwilliger
+```
 
 ### Wijzigingen
 
-**Bestand: `supabase/functions/docuseal/index.ts`**
+**Bestand: `supabase/functions/docuseal/index.ts`** (actie `send-personalized-contract`)
 
-1. **`send-personalized-contract` actie (rond regel 720-732):**
-   - Na het aanmaken van het template, de template-data ophalen om het aantal pagina's te bepalen
-   - Het `PUT`-verzoek aanpassen zodat het handtekeningveld `areas` bevat met de laatste pagina en coordinaten
-
-2. **`create-submission` fallback (waar standaardvelden worden toegevoegd):**
-   - Hetzelfde: het handtekeningveld voorzien van `areas`
-
-3. **`create-template-from-pdf` fallback:**
-   - Idem
-
-### Technisch detail
-
-Van:
+Na Stap 1 (template aanmaken) halen we de `submitter_uuid` op uit de response:
 ```javascript
-{ name: "Handtekening", type: "signature", role: "First Party" }
+const submitterUuid = templateData.submitters?.[0]?.uuid;
 ```
 
-Naar:
+Vervolgens sturen we in Stap 2 het veld met alle verplichte attributen:
 ```javascript
-{
+const fields = [{
+  uuid: crypto.randomUUID(),          // nieuw uniek ID voor het veld
+  submitter_uuid: submitterUuid,      // koppeling aan de ondertekenaar
   name: "Handtekening",
   type: "signature",
-  role: "First Party",
+  required: true,
   areas: [{
-    page: lastPage,  // 0-indexed, bepaald uit templateData
+    attachment_uuid: documentUuid,
+    page: lastPage,
     x: 0.55,
     y: 0.85,
     w: 0.35,
-    h: 0.06
-  }]
-}
+    h: 0.06,
+  }],
+}];
 ```
 
-Het aantal pagina's wordt bepaald via `templateData.documents?.[0]?.pages?.length` (uit de DocuSeal template response). Fallback is pagina 0.
+We voegen ook extra logging toe zodat duidelijk zichtbaar is of de velden correct worden opgeslagen.
+
+**Bestand: `src/components/ContractPreview.tsx`**
+
+De embedded text tag (`{{Handtekening;type=signature;...}}`) kan worden verwijderd of behouden. Deze heeft geen effect omdat html2canvas de tekst rasteriseert, maar doet ook geen kwaad.
+
+### Waarom dit werkt
+
+De DocuSeal OpenAPI-spec toont dat velden in een template de volgende verplichte properties hebben:
+- `uuid` (string) - uniek veld-ID
+- `submitter_uuid` (string) - koppeling aan welke ondertekenaar dit veld invult
+- `name`, `type`, `required`, `areas`
+
+Door deze allemaal mee te sturen, wordt het handtekeningveld daadwerkelijk aan de template gekoppeld, waardoor de vrijwilliger het interactieve handtekeningvak ziet bij het openen.
 
