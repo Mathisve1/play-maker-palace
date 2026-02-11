@@ -93,11 +93,32 @@ Deno.serve(async (req) => {
     // POST create submission (send for signing)
     if (req.method === "POST" && action === "create-submission") {
       const body = await req.json();
-      const { template_id, task_id, volunteer_email, volunteer_name } = body;
+      const { template_id, task_id, volunteer_id, volunteer_name } = body;
+      let { volunteer_email } = body;
 
-      console.log("create-submission body:", JSON.stringify({ template_id, task_id, volunteer_email, volunteer_name }));
-      if (!template_id || !task_id || !volunteer_email) {
-        return new Response(JSON.stringify({ error: `Missing required fields: template_id=${template_id}, task_id=${task_id}, volunteer_email=${volunteer_email}` }), {
+      console.log("create-submission body:", JSON.stringify({ template_id, task_id, volunteer_id, volunteer_email, volunteer_name }));
+
+      if (!template_id || !task_id) {
+        return new Response(JSON.stringify({ error: `Missing required fields: template_id=${template_id}, task_id=${task_id}` }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // If volunteer_email is missing, look it up from profiles using volunteer_id
+      if (!volunteer_email && volunteer_id) {
+        const { data: volProfile } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", volunteer_id)
+          .maybeSingle();
+        if (volProfile?.email) {
+          volunteer_email = volProfile.email;
+        }
+      }
+
+      if (!volunteer_email) {
+        return new Response(JSON.stringify({ error: "Volunteer email is missing. Please update the volunteer's profile with an email address." }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

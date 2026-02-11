@@ -148,6 +148,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubNa
           body: JSON.stringify({
             template_id: tmpl.docuseal_template_id,
             task_id: task.id,
+            volunteer_id: volunteer.id,
             volunteer_email: volunteer.email,
             volunteer_name: volunteer.full_name,
           }),
