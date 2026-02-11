@@ -4,8 +4,9 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart } from 'lucide-react';
 import Logo from '@/components/Logo';
+import LikeButton from '@/components/LikeButton';
 import { Language } from '@/i18n/translations';
 
 
@@ -44,8 +45,11 @@ const VolunteerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [signingUp, setSigningUp] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'mine'>('all');
   
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [myLikes, setMyLikes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const init = async () => {
@@ -82,6 +86,26 @@ const VolunteerDashboard = () => {
             const counts: Record<string, number> = {};
             countData.forEach(s => { counts[s.task_id] = (counts[s.task_id] || 0) + 1; });
             setSignupCounts(counts);
+          }
+
+          // Fetch like counts
+          const { data: likeData } = await supabase
+            .from('task_likes')
+            .select('task_id')
+            .in('task_id', taskIds);
+          if (likeData) {
+            const lCounts: Record<string, number> = {};
+            likeData.forEach(l => { lCounts[l.task_id] = (lCounts[l.task_id] || 0) + 1; });
+            setLikeCounts(lCounts);
+          }
+
+          // Fetch user's likes
+          const { data: myLikeData } = await supabase
+            .from('task_likes')
+            .select('task_id')
+            .eq('user_id', session.user.id);
+          if (myLikeData) {
+            setMyLikes(new Set(myLikeData.map(l => l.task_id)));
           }
         }
       }
@@ -141,21 +165,36 @@ const VolunteerDashboard = () => {
     }
   };
 
+  const handleLikeToggle = (taskId: string, liked: boolean) => {
+    if (liked) {
+      setMyLikes(prev => new Set(prev).add(taskId));
+      setLikeCounts(prev => ({ ...prev, [taskId]: (prev[taskId] || 0) + 1 }));
+    } else {
+      setMyLikes(prev => { const s = new Set(prev); s.delete(taskId); return s; });
+      setLikeCounts(prev => ({ ...prev, [taskId]: Math.max((prev[taskId] || 1) - 1, 0) }));
+    }
+  };
+
   const isSignedUp = (taskId: string) => signups.some(s => s.task_id === taskId);
 
   const filteredTasks = tasks.filter(task => {
     const q = searchQuery.toLowerCase();
-    return !q || task.title.toLowerCase().includes(q) || 
+    const matchesSearch = !q || task.title.toLowerCase().includes(q) || 
       task.description?.toLowerCase().includes(q) ||
       task.clubs?.name.toLowerCase().includes(q) ||
       task.clubs?.sport?.toLowerCase().includes(q) ||
       task.location?.toLowerCase().includes(q);
+    
+    if (activeTab === 'mine') {
+      return matchesSearch && isSignedUp(task.id);
+    }
+    return matchesSearch;
   });
 
   const dashboardT = {
-    nl: { welcome: 'Welkom', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', cancel: 'Annuleren', spots: 'plaatsen', logout: 'Uitloggen', mySignups: 'Mijn inschrijvingen' },
-    fr: { welcome: 'Bienvenue', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, clubs ou lieux...', noTasks: 'Il n\'y a actuellement aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', cancel: 'Annuler', spots: 'places', logout: 'Déconnexion', mySignups: 'Mes inscriptions' },
-    en: { welcome: 'Welcome', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, clubs or locations...', noTasks: 'There are currently no open tasks.', signUp: 'Sign up', signedUp: 'Signed up', cancel: 'Cancel', spots: 'spots', logout: 'Log out', mySignups: 'My signups' },
+    nl: { welcome: 'Welkom', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', cancel: 'Annuleren', spots: 'plaatsen', logout: 'Uitloggen', mySignups: 'Mijn inschrijvingen', allTasks: 'Alle taken', myTasks: 'Mijn taken', noMyTasks: 'Je bent nog niet ingeschreven voor taken.' },
+    fr: { welcome: 'Bienvenue', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, clubs ou lieux...', noTasks: 'Il n\'y a actuellement aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', cancel: 'Annuler', spots: 'places', logout: 'Déconnexion', mySignups: 'Mes inscriptions', allTasks: 'Toutes les tâches', myTasks: 'Mes tâches', noMyTasks: 'Vous n\'êtes pas encore inscrit à des tâches.' },
+    en: { welcome: 'Welcome', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, clubs or locations...', noTasks: 'There are currently no open tasks.', signUp: 'Sign up', signedUp: 'Signed up', cancel: 'Cancel', spots: 'spots', logout: 'Log out', mySignups: 'My signups', allTasks: 'All tasks', myTasks: 'My tasks', noMyTasks: 'You haven\'t signed up for any tasks yet.' },
   };
   const dt = dashboardT[language];
 
@@ -207,11 +246,40 @@ const VolunteerDashboard = () => {
           <h1 className="text-2xl font-heading font-bold text-foreground">
             {dt.welcome}, {profile?.full_name || profile?.email || ''}! 👋
           </h1>
-          <p className="text-muted-foreground mt-1">{dt.availableTasks}: {filteredTasks.length}</p>
+          <p className="text-muted-foreground mt-1">{dt.availableTasks}: {tasks.length}</p>
         </motion.div>
 
+        {/* Tabs */}
+        <div className="mt-6 flex gap-1 bg-muted/50 rounded-xl p-1">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === 'all'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {dt.allTasks}
+          </button>
+          <button
+            onClick={() => setActiveTab('mine')}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+              activeTab === 'mine'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {dt.myTasks}
+            {signups.length > 0 && (
+              <span className="px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
+                {signups.length}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Search */}
-        <div className="mt-6 relative">
+        <div className="mt-4 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
@@ -222,22 +290,12 @@ const VolunteerDashboard = () => {
           />
         </div>
 
-        {/* My signups summary */}
-        {signups.length > 0 && (
-          <div className="mt-6 bg-primary/5 rounded-xl p-4 border border-primary/10">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium text-foreground">{dt.mySignups}: {signups.length}</span>
-            </div>
-          </div>
-        )}
-
         {/* Tasks list */}
         <div className="mt-6 space-y-4">
           {filteredTasks.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>{dt.noTasks}</p>
+              <p>{activeTab === 'mine' ? dt.noMyTasks : dt.noTasks}</p>
             </div>
           ) : (
             filteredTasks.map((task, i) => {
@@ -288,7 +346,13 @@ const VolunteerDashboard = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex items-center gap-2">
+                      <LikeButton
+                        taskId={task.id}
+                        liked={myLikes.has(task.id)}
+                        count={likeCounts[task.id] || 0}
+                        onToggle={handleLikeToggle}
+                      />
                       {signed ? (
                         <span className="px-3 py-1.5 rounded-xl text-xs font-medium border border-primary/30 text-primary bg-primary/5">
                           ✓ {dt.signedUp}
