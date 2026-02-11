@@ -286,7 +286,16 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to download PDF: ${pdfResp.status}`);
       }
       const pdfBuffer = await pdfResp.arrayBuffer();
-      const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+      const bytes = new Uint8Array(pdfBuffer);
+      const chunkSize = 8192;
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+        for (let j = 0; j < chunk.length; j++) {
+          binary += String.fromCharCode(chunk[j]);
+        }
+      }
+      const pdfBase64 = btoa(binary);
 
       // Standard fields that will be auto-filled from volunteer profiles and task data
       const standardFields = [
