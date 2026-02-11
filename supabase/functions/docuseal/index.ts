@@ -261,29 +261,7 @@ Deno.serve(async (req) => {
 
       console.log("Template fields:", [...templateFieldNames]);
 
-      // If the template has NO fields at all, add a signature field so DocuSeal accepts the submission
-      if (templateFieldNames.size === 0) {
-        console.log("Template has no fields — adding signature field via update");
-        const updateResp = await fetch(`${DOCUSEAL_API_URL}/templates/${Number(template_id)}`, {
-          method: "PUT",
-          headers: {
-            "X-Auth-Token": DOCUSEAL_API_KEY,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            fields: [
-              { name: "Handtekening", type: "signature", role: templateData.submitters?.[0]?.name || "First Party" },
-            ],
-          }),
-        });
-        const updateData = await updateResp.json();
-        console.log("Template update response:", JSON.stringify(updateData));
-        if (!updateResp.ok) {
-          console.error("Failed to add fields to template:", JSON.stringify(updateData));
-        }
-      }
-
-      // Only include prefilled fields that match template fields
+      // Build fields list — match prefilled data to template fields
       const fields = Object.entries(prefilledFields)
         .filter(([name]) => templateFieldNames.has(name))
         .map(([name, default_value]) => ({
@@ -292,7 +270,7 @@ Deno.serve(async (req) => {
           readonly: false,
         }));
 
-      console.log("Sending fields:", fields.map(f => f.name));
+      console.log("Sending prefilled fields:", fields.map(f => `${f.name}=${f.default_value}`));
 
       // Determine the submitter role from the template
       const submitterRole = templateData.submitters?.[0]?.name || "First Party";
@@ -304,7 +282,7 @@ Deno.serve(async (req) => {
         role: submitterRole,
       };
 
-      // Only include fields if we have matching ones
+      // Include prefilled fields
       if (fields.length > 0) {
         submitter.fields = fields;
       }
@@ -366,28 +344,10 @@ Deno.serve(async (req) => {
       }
 
       // Standard fields that will be auto-filled from volunteer profiles and task data
-      const standardFields = [
-        { name: "Naam", type: "text", role: "Volunteer" },
-        { name: "E-mail", type: "text", role: "Volunteer" },
-        { name: "Telefoon", type: "text", role: "Volunteer" },
-        { name: "IBAN", type: "text", role: "Volunteer" },
-        { name: "Rekeninghouder", type: "text", role: "Volunteer" },
-        { name: "Clubnaam", type: "text", role: "Volunteer" },
-        { name: "Taak", type: "text", role: "Volunteer" },
-        { name: "Beschrijving", type: "text", role: "Volunteer" },
-        { name: "Datum", type: "text", role: "Volunteer" },
-        { name: "Starttijd", type: "text", role: "Volunteer" },
-        { name: "Eindtijd", type: "text", role: "Volunteer" },
-        { name: "Uren", type: "text", role: "Volunteer" },
-        { name: "Locatie", type: "text", role: "Volunteer" },
-        { name: "Briefing tijd", type: "text", role: "Volunteer" },
-        { name: "Verzamelplaats", type: "text", role: "Volunteer" },
-        { name: "Onkostenvergoeding", type: "text", role: "Volunteer" },
-        { name: "Handtekening", type: "signature", role: "Volunteer" },
-      ];
+      // Note: These are no longer needed as fields are defined via text tags in the PDF
+      // DocuSeal auto-detects {{FieldName;role=...;type=...}} text tags
 
       // Send the URL directly to DocuSeal instead of downloading + base64 encoding
-      // This avoids memory limit issues in the edge function
       const resp = await fetch(`${DOCUSEAL_API_URL}/templates/pdf`, {
         method: "POST",
         headers: {
@@ -400,7 +360,6 @@ Deno.serve(async (req) => {
             name: "contract.pdf",
             file: file_url,
           }],
-          fields: standardFields,
         }),
       });
 
@@ -410,6 +369,7 @@ Deno.serve(async (req) => {
       }
 
       const docusealTemplateId = data.id;
+      console.log("Created DocuSeal template:", docusealTemplateId, "Fields:", JSON.stringify(data.fields?.map((f: any) => f.name)));
 
       let templateRecord;
 
@@ -601,6 +561,67 @@ Deno.serve(async (req) => {
         document_url: documentUrl,
         submission: data,
       }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // POST webhook: DocuSeal calls this when a form is completed
+    if (req.method === "POST" && action === "webhook") {
+      const body = await req.json();
+      console.log("DocuSeal webhook received:", JSON.stringify(body));
+
+      const { event_type, data: webhookData } = body;
+
+      if (event_type === "form.completed" && webhookData) {
+        const submissionId = webhookData.submission_id || webhookData.id;
+        const documents = webhookData.documents || [];
+        const documentUrl = documents.length > 0 ? documents[0].url : null;
+
+        if (submissionId) {
+          // Use service role to bypass RLS
+          const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+          if (serviceRoleKey) {
+            const adminClient = createClient(supabaseUrl, serviceRoleKey);
+            
+            // Find signature request by docuseal_submission_id
+            const { data: sigReq } = await adminClient
+              .from("signature_requests")
+              .select("id, volunteer_id, club_owner_id, task_id")
+              .eq("docuseal_submission_id", submissionId)
+              .maybeSingle();
+
+            if (sigReq) {
+              const updatePayload: Record<string, unknown> = {
+                status: "completed",
+                updated_at: new Date().toISOString(),
+              };
+              if (documentUrl) {
+                updatePayload.document_url = documentUrl;
+              }
+
+              await adminClient
+                .from("signature_requests")
+                .update(updatePayload)
+                .eq("id", sigReq.id);
+
+              // Notify the club owner
+              await adminClient.from("notifications").insert({
+                user_id: sigReq.club_owner_id,
+                title: "Contract ondertekend",
+                message: "Een vrijwilliger heeft het contract ondertekend.",
+                type: "contract_signed",
+                metadata: { task_id: sigReq.task_id, signature_request_id: sigReq.id },
+              });
+
+              console.log("Webhook: Updated signature request", sigReq.id, "to completed");
+            } else {
+              console.log("Webhook: No matching signature request for submission", submissionId);
+            }
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
