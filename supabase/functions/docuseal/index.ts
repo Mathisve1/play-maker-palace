@@ -261,6 +261,32 @@ Deno.serve(async (req) => {
 
       console.log("Template fields:", [...templateFieldNames]);
 
+      // If template has NO fields, add default fields via PUT before creating submission
+      if (templateFieldNames.size === 0) {
+        console.log("Template has no fields, adding default fields via PUT...");
+        const defaultFields = [
+          { name: "Naam", type: "text", role: "First Party" },
+          { name: "Email", type: "text", role: "First Party" },
+          { name: "Datum", type: "text", role: "First Party" },
+          { name: "Handtekening", type: "signature", role: "First Party" },
+        ];
+        const putResp = await fetch(`${DOCUSEAL_API_URL}/templates/${Number(template_id)}`, {
+          method: "PUT",
+          headers: {
+            "X-Auth-Token": DOCUSEAL_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ fields: defaultFields }),
+        });
+        const putData = await putResp.json();
+        console.log("PUT template fields result:", putResp.status, JSON.stringify(putData?.fields?.map((f: any) => f.name)));
+        if (putResp.ok && putData.fields) {
+          putData.fields.forEach((f: any) => {
+            if (f.name) templateFieldNames.add(f.name);
+          });
+        }
+      }
+
       // Build fields list — match prefilled data to template fields
       const fields = Object.entries(prefilledFields)
         .filter(([name]) => templateFieldNames.has(name))
@@ -369,7 +395,30 @@ Deno.serve(async (req) => {
       }
 
       const docusealTemplateId = data.id;
-      console.log("Created DocuSeal template:", docusealTemplateId, "Fields:", JSON.stringify(data.fields?.map((f: any) => f.name)));
+      const detectedFields = data.fields?.map((f: any) => f.name) || [];
+      console.log("Created DocuSeal template:", docusealTemplateId, "Fields:", JSON.stringify(detectedFields));
+
+      // If no fields were detected, add default fields via PUT
+      if (detectedFields.length === 0) {
+        console.log("No fields detected, adding defaults via PUT...");
+        const putResp = await fetch(`${DOCUSEAL_API_URL}/templates/${docusealTemplateId}`, {
+          method: "PUT",
+          headers: { "X-Auth-Token": DOCUSEAL_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fields: [
+              { name: "Naam", type: "text", role: "First Party" },
+              { name: "Email", type: "text", role: "First Party" },
+              { name: "Datum", type: "text", role: "First Party" },
+              { name: "Locatie", type: "text", role: "First Party" },
+              { name: "Taak", type: "text", role: "First Party" },
+              { name: "Uren", type: "text", role: "First Party" },
+              { name: "Onkostenvergoeding", type: "text", role: "First Party" },
+              { name: "Handtekening", type: "signature", role: "First Party" },
+            ],
+          }),
+        });
+        console.log("PUT fields status:", putResp.status);
+      }
 
       let templateRecord;
 
