@@ -78,7 +78,7 @@ const VolunteerDashboard = () => {
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts'>('all');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
-  const [signingContract, setSigningContract] = useState<string | null>(null);
+  const [_signingContract, _setSigningContract] = useState<string | null>(null); // kept for type compat
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
   const [myContracts, setMyContracts] = useState<SignatureContract[]>([]);
   const [checkingContract, setCheckingContract] = useState<string | null>(null);
@@ -266,57 +266,23 @@ const VolunteerDashboard = () => {
   const pendingSignups = signups.filter(s => s.status === 'pending');
   const assignedSignups = signups.filter(s => s.status === 'assigned');
 
-  const handleSignContract = async (taskId: string) => {
-    setSigningContract(taskId);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    try {
-      // Fetch templates
-      const templatesUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=templates`;
-      const templatesResp = await fetch(templatesUrl, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-      });
-      const templatesData = await templatesResp.json();
-      const templates = Array.isArray(templatesData) ? templatesData : templatesData?.data || [];
-      
-      if (templates.length === 0) {
-        toast.error('Geen templates beschikbaar in DocuSeal');
-        setSigningContract(null);
-        return;
-      }
-
-      // Use the first template for the dummy test
-      const templateId = templates[0].id;
-      const submitUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=create-submission`;
-      const resp = await fetch(submitUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          template_id: templateId,
-          task_id: taskId,
-          volunteer_email: profile?.email,
-          volunteer_name: profile?.full_name,
-        }),
-      });
-
-      const data = await resp.json();
-      if (resp.ok && data.success) {
-        toast.success('Contract verstuurd! Check je e-mail om te ondertekenen.');
+  const handleSignContract = (taskId: string) => {
+    // Check if there's already a contract for this task
+    const contract = myContracts.find(c => c.task_id === taskId);
+    if (contract) {
+      if (contract.status === 'pending' && contract.signing_url) {
+        window.open(contract.signing_url, '_blank');
+      } else if (contract.status === 'completed' && contract.document_url) {
+        window.open(contract.document_url, '_blank');
       } else {
-        toast.error(data.error || 'Er ging iets mis');
+        // Switch to contracts tab
+        setActiveTab('contracts');
       }
-    } catch (err) {
-      toast.error('Er ging iets mis bij het versturen');
+    } else {
+      toast.info(language === 'nl' ? 'Het contract is nog niet verstuurd door de club. Neem contact op met je club.' 
+        : language === 'fr' ? 'Le contrat n\'a pas encore été envoyé par le club. Contactez votre club.'
+        : 'The contract has not been sent by the club yet. Contact your club.');
     }
-    setSigningContract(null);
   };
 
   const handleCheckContractStatus = async (contractId: string) => {
@@ -811,11 +777,12 @@ const VolunteerDashboard = () => {
                       {isAssigned && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleSignContract(task.id); }}
-                          disabled={signingContract === task.id}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                         >
                           <FileSignature className="w-3.5 h-3.5" />
-                          {signingContract === task.id ? dt.signing : dt.signContract}
+                          {myContracts.some(c => c.task_id === task.id && c.status === 'pending') ? dt.signContract
+                            : myContracts.some(c => c.task_id === task.id && c.status === 'completed') ? dt.downloadContract
+                            : dt.signContract}
                         </button>
                       )}
                     </div>
