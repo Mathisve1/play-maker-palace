@@ -241,6 +241,18 @@ Deno.serve(async (req) => {
       // Determine the submitter role from the template
       const submitterRole = templateData.submitters?.[0]?.name || "First Party";
 
+      // Build submitter object
+      const submitter: Record<string, unknown> = {
+        email: volunteer_email,
+        name: volunteer_name || volunteerProfile?.full_name || undefined,
+        role: submitterRole,
+      };
+
+      // Only include fields if the template actually has fields
+      if (fields.length > 0) {
+        submitter.fields = fields;
+      }
+
       // Create DocuSeal submission
       const resp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
         method: "POST",
@@ -251,14 +263,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           template_id: Number(template_id),
           send_email: true,
-          submitters: [
-            {
-              email: volunteer_email,
-              name: volunteer_name || volunteerProfile?.full_name || undefined,
-              role: submitterRole,
-              fields,
-            },
-          ],
+          submitters: [submitter],
         }),
       });
 
