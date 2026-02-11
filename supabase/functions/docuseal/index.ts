@@ -724,15 +724,26 @@ Deno.serve(async (req) => {
       const lastPage = Math.max(0, (templateData.documents?.[0]?.pages?.length || 1) - 1);
       const documentUuid = templateData.documents?.[0]?.uuid;
 
-      // Determine the submitter role name from the template (default "First Party")
+      // Determine the submitter role and submitter_uuid from the template
+      const submitterUuid = templateData.submitters?.[0]?.uuid;
       const templateRole = templateData.submitters?.[0]?.name || "First Party";
-      console.log("Step 2 - Using role:", templateRole, "lastPage:", lastPage, "documentUuid:", documentUuid);
+      console.log("Step 2 - Using role:", templateRole, "lastPage:", lastPage, "documentUuid:", documentUuid, "submitterUuid:", submitterUuid);
 
+      if (!submitterUuid) {
+        console.error("Step 2 - CRITICAL: No submitter_uuid found in template response. Template submitters:", JSON.stringify(templateData.submitters));
+      }
+      if (!documentUuid) {
+        console.error("Step 2 - CRITICAL: No document uuid found. Template documents:", JSON.stringify(templateData.documents));
+      }
+
+      const fieldUuid = crypto.randomUUID();
       const fieldsToSet = [
         {
+          uuid: fieldUuid,
+          submitter_uuid: submitterUuid,
           name: "Handtekening",
           type: "signature",
-          role: templateRole,
+          required: true,
           areas: [{
             attachment_uuid: documentUuid,
             page: lastPage,
@@ -744,6 +755,8 @@ Deno.serve(async (req) => {
         },
       ];
 
+      console.log("Step 2 - PUT payload:", JSON.stringify({ fields: fieldsToSet }));
+
       const putResp = await fetch(`${DOCUSEAL_API_URL}/templates/${docusealTemplateId}`, {
         method: "PUT",
         headers: {
@@ -754,7 +767,11 @@ Deno.serve(async (req) => {
       });
 
       const putData = await putResp.json();
-      console.log("Step 2 - PUT fields result:", putResp.status, "fields:", JSON.stringify(putData?.fields?.map((f: any) => ({ name: f.name, type: f.type, areas: f.areas?.length }))));
+      console.log("Step 2 - PUT response status:", putResp.status);
+      console.log("Step 2 - PUT response fields:", JSON.stringify(putData?.fields?.map((f: any) => ({ name: f.name, type: f.type, uuid: f.uuid, submitter_uuid: f.submitter_uuid, areas: f.areas?.length }))));
+      if (putData?.fields === undefined || (Array.isArray(putData?.fields) && putData.fields.length === 0)) {
+        console.error("Step 2 - WARNING: PUT returned no fields! Full response:", JSON.stringify(putData).slice(0, 1000));
+      }
 
       if (!putResp.ok) {
         console.error("PUT fields failed:", JSON.stringify(putData));
