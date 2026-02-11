@@ -105,34 +105,55 @@ export type Database = {
       }
       tasks: {
         Row: {
+          briefing_location: string | null
+          briefing_time: string | null
           club_id: string
           created_at: string
           description: string | null
+          end_time: string | null
+          expense_amount: number | null
+          expense_reimbursement: boolean
           id: string
           location: string | null
+          notes: string | null
           spots_available: number | null
+          start_time: string | null
           status: string
           task_date: string | null
           title: string
         }
         Insert: {
+          briefing_location?: string | null
+          briefing_time?: string | null
           club_id: string
           created_at?: string
           description?: string | null
+          end_time?: string | null
+          expense_amount?: number | null
+          expense_reimbursement?: boolean
           id?: string
           location?: string | null
+          notes?: string | null
           spots_available?: number | null
+          start_time?: string | null
           status?: string
           task_date?: string | null
           title: string
         }
         Update: {
+          briefing_location?: string | null
+          briefing_time?: string | null
           club_id?: string
           created_at?: string
           description?: string | null
+          end_time?: string | null
+          expense_amount?: number | null
+          expense_reimbursement?: boolean
           id?: string
           location?: string | null
+          notes?: string | null
           spots_available?: number | null
+          start_time?: string | null
           status?: string
           task_date?: string | null
           title?: string
