@@ -454,6 +454,91 @@ Deno.serve(async (req) => {
       });
     }
 
+    // POST check-status: poll DocuSeal for submission status and update document_url
+    if (req.method === "POST" && action === "check-status") {
+      const body = await req.json();
+      const { signature_request_id } = body;
+
+      if (!signature_request_id) {
+        return new Response(JSON.stringify({ error: "Missing signature_request_id" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get the signature request
+      const { data: sigReq, error: sigError } = await supabase
+        .from("signature_requests")
+        .select("*")
+        .eq("id", signature_request_id)
+        .single();
+
+      if (sigError || !sigReq) {
+        return new Response(JSON.stringify({ error: "Signature request not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!sigReq.docuseal_submission_id) {
+        return new Response(JSON.stringify({ error: "No DocuSeal submission ID" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fetch submission from DocuSeal
+      const resp = await fetch(`${DOCUSEAL_API_URL}/submissions/${sigReq.docuseal_submission_id}`, {
+        headers: { "X-Auth-Token": DOCUSEAL_API_KEY },
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(`DocuSeal API error [${resp.status}]: ${JSON.stringify(data)}`);
+      }
+
+      // Check if all submitters have completed
+      const submitters = data.submitters || [];
+      const allCompleted = submitters.length > 0 && submitters.every((s: any) => s.status === "completed");
+
+      // Get document URLs from completed submitters
+      let documentUrl: string | null = null;
+      if (allCompleted) {
+        // Find the document from the last completed submitter
+        for (const submitter of submitters) {
+          if (submitter.documents && submitter.documents.length > 0) {
+            documentUrl = submitter.documents[0].url;
+          }
+        }
+      }
+
+      // Determine new status
+      const newStatus = allCompleted ? "completed" : "pending";
+
+      // Update our DB
+      const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() };
+      if (documentUrl) {
+        updateData.document_url = documentUrl;
+      }
+
+      const { error: updateError } = await supabase
+        .from("signature_requests")
+        .update(updateData)
+        .eq("id", signature_request_id);
+
+      if (updateError) {
+        console.error("Update error:", updateError);
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        status: newStatus,
+        document_url: documentUrl,
+        submission: data,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
