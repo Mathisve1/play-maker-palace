@@ -299,31 +299,26 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Build fields list — match prefilled data to template fields
-      const fields = Object.entries(prefilledFields)
-        .filter(([name]) => templateFieldNames.has(name))
-        .map(([name, default_value]) => ({
-          name,
-          default_value,
-          readonly: false,
-        }));
+      // Build values object — only include fields that exist in the template
+      const values: Record<string, string> = {};
+      for (const [name, val] of Object.entries(prefilledFields)) {
+        if (templateFieldNames.has(name)) {
+          values[name] = val;
+        }
+      }
 
-      console.log("Sending prefilled fields:", fields.map(f => `${f.name}=${f.default_value}`));
+      console.log("Sending prefilled values:", JSON.stringify(values));
 
       // Determine the submitter role from the template
       const submitterRole = templateData.submitters?.[0]?.name || "First Party";
 
-      // Build submitter object
+      // Build submitter object using 'values' (simpler key-value format)
       const submitter: Record<string, unknown> = {
         email: volunteer_email,
         name: volunteer_name || volunteerProfile?.full_name || undefined,
         role: submitterRole,
+        values,
       };
-
-      // Include prefilled fields
-      if (fields.length > 0) {
-        submitter.fields = fields;
-      }
 
       // Create DocuSeal submission
       const resp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
