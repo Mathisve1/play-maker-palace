@@ -280,7 +280,8 @@ Deno.serve(async (req) => {
           { name: "Onkostenvergoeding", type: "text", role: "First Party" },
           { name: "IBAN", type: "text", role: "First Party" },
           { name: "Rekeninghouder", type: "text", role: "First Party" },
-          { name: "Handtekening", type: "signature", role: "First Party" },
+          { name: "Handtekening", type: "signature", role: "First Party",
+            areas: [{ page: Math.max(0, (templateData.documents?.[0]?.pages?.length || 1) - 1), x: 0.55, y: 0.85, w: 0.35, h: 0.06 }] },
         ];
         const putResp = await fetch(`${DOCUSEAL_API_URL}/templates/${Number(template_id)}`, {
           method: "PUT",
@@ -420,12 +421,13 @@ Deno.serve(async (req) => {
               { name: "Taak", type: "text", role: "First Party" },
               { name: "Uren", type: "text", role: "First Party" },
               { name: "Onkostenvergoeding", type: "text", role: "First Party" },
-              { name: "Handtekening", type: "signature", role: "First Party" },
-            ],
-          }),
-        });
-        console.log("PUT fields status:", putResp.status);
-      }
+          { name: "Handtekening", type: "signature", role: "First Party",
+            areas: [{ page: Math.max(0, (data.documents?.[0]?.pages?.length || 1) - 1), x: 0.55, y: 0.85, w: 0.35, h: 0.06 }] },
+        ],
+      }),
+    });
+    console.log("PUT fields status:", putResp.status);
+  }
 
       let templateRecord;
 
@@ -726,7 +728,8 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           fields: [
-            { name: "Handtekening", type: "signature", role: "First Party" },
+            { name: "Handtekening", type: "signature", role: "First Party",
+              areas: [{ page: Math.max(0, (templateData.documents?.[0]?.pages?.length || 1) - 1), x: 0.55, y: 0.85, w: 0.35, h: 0.06 }] },
           ],
         }),
       });
