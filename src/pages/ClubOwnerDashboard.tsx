@@ -30,6 +30,8 @@ interface Task {
   spots_available: number;
   status: string;
   club_id?: string;
+  contract_template_id?: string | null;
+  contract_templates?: { name: string } | null;
 }
 
 const dashboardT = {
@@ -243,7 +245,7 @@ const ClubOwnerDashboard = () => {
 
       const { data: tasksData } = await supabase
         .from('tasks')
-        .select('id, title, description, task_date, location, spots_available, status, club_id')
+        .select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)')
         .in('club_id', clubIds)
         .order('task_date', { ascending: true });
 
@@ -698,6 +700,12 @@ const ClubOwnerDashboard = () => {
                           <Users className="w-3.5 h-3.5" />
                           {taskSignups.length}/{task.spots_available} {dt.volunteers}
                         </span>
+                        {task.contract_templates?.name && (
+                          <span className="flex items-center gap-1">
+                            <FileText className="w-3.5 h-3.5" />
+                            {task.contract_templates.name}
+                          </span>
+                        )}
                       </div>
                     </div>
 

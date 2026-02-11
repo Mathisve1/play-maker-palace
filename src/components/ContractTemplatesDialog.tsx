@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, Upload, Trash2, FileText, Loader2 } from 'lucide-react';
+import { X, Upload, Trash2, FileText, Loader2, Eye } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 
 interface ContractTemplate {
@@ -9,6 +9,7 @@ interface ContractTemplate {
   name: string;
   docuseal_template_id: number;
   created_at: string;
+  file_path: string | null;
 }
 
 interface Props {
@@ -36,6 +37,7 @@ const t = {
     errorFile: 'Selecteer een PDF-bestand.',
     close: 'Sluiten',
     created: 'Aangemaakt op',
+    preview: 'Bekijken',
   },
   fr: {
     title: 'Modèles de contrat',
@@ -55,6 +57,7 @@ const t = {
     errorFile: 'Veuillez sélectionner un fichier PDF.',
     close: 'Fermer',
     created: 'Créé le',
+    preview: 'Aperçu',
   },
   en: {
     title: 'Contract Templates',
@@ -74,6 +77,7 @@ const t = {
     errorFile: 'Please select a PDF file.',
     close: 'Close',
     created: 'Created on',
+    preview: 'Preview',
   },
 };
 
@@ -89,7 +93,7 @@ const ContractTemplatesDialog = ({ clubId, language, onClose }: Props) => {
   const fetchTemplates = async () => {
     const { data, error } = await supabase
       .from('contract_templates')
-      .select('id, name, docuseal_template_id, created_at')
+      .select('id, name, docuseal_template_id, created_at, file_path')
       .eq('club_id', clubId)
       .order('created_at', { ascending: false });
 
@@ -212,6 +216,7 @@ const ContractTemplatesDialog = ({ clubId, language, onClose }: Props) => {
         name: name.trim(),
         file_url: urlData.signedUrl,
         club_id: clubId,
+        file_path: filePath,
       });
 
       toast.success(l.uploadSuccess);
@@ -315,18 +320,34 @@ const ContractTemplatesDialog = ({ clubId, language, onClose }: Props) => {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDeleteWithAction(tmpl.id)}
-                    disabled={deletingId === tmpl.id}
-                    className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-                    title={l.delete}
-                  >
-                    {deletingId === tmpl.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
+                  <div className="flex items-center gap-1 shrink-0">
+                    {tmpl.file_path && (
+                      <button
+                        onClick={async () => {
+                          const { data } = await supabase.storage
+                            .from('contract-templates')
+                            .createSignedUrl(tmpl.file_path!, 600);
+                          if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                        }}
+                        className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        title={l.preview}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                     )}
-                  </button>
+                    <button
+                      onClick={() => handleDeleteWithAction(tmpl.id)}
+                      disabled={deletingId === tmpl.id}
+                      className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                      title={l.delete}
+                    >
+                      {deletingId === tmpl.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
