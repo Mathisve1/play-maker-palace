@@ -46,32 +46,44 @@ const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
     if (!coords || !mapRef.current) return;
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
     }
 
-    const map = L.map(mapRef.current).setView(coords, 15);
-    mapInstanceRef.current = map;
+    // Small delay to ensure DOM is ready and container has dimensions
+    const timer = setTimeout(() => {
+      if (!mapRef.current) return;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
+      const map = L.map(mapRef.current, { scrollWheelZoom: false }).setView(coords, 15);
+      mapInstanceRef.current = map;
 
-    const redIcon = L.icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41],
-    });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
 
-    L.marker(coords, { icon: redIcon })
-      .addTo(map)
-      .bindPopup(meetingPoint)
-      .openPopup();
+      const redIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+      });
+
+      L.marker(coords, { icon: redIcon })
+        .addTo(map)
+        .bindPopup(meetingPoint)
+        .openPopup();
+
+      // Force tiles to load correctly
+      setTimeout(() => map.invalidateSize(), 100);
+    }, 50);
 
     return () => {
-      map.remove();
-      mapInstanceRef.current = null;
+      clearTimeout(timer);
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
     };
   }, [coords, meetingPoint]);
 
@@ -80,8 +92,7 @@ const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
       {/* OpenStreetMap */}
       <div
         ref={mapRef}
-        className="w-full h-56 rounded-xl overflow-hidden border border-border z-0"
-        style={{ minHeight: '220px' }}
+        className="w-full h-48 md:h-80 rounded-xl overflow-hidden border border-border z-0"
       />
 
       {/* Location info */}
