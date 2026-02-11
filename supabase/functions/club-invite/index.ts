@@ -54,7 +54,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "PlayMaker <onboarding@resend.dev>",
+          from: Deno.env.get("RESEND_FROM_EMAIL") || "PlayMaker <onboarding@resend.dev>",
           to: [email],
           subject: `Je bent uitgenodigd voor ${club_name || 'een club'} op PlayMaker`,
           html: `
