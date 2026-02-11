@@ -947,8 +947,8 @@ const ContractBuilder = () => {
                             {block.fieldName === 'Clubnaam' && clubData?.name
                               ? clubData.name
                               : block.fieldName === 'Datum'
-                              ? <span className="text-muted-foreground italic text-xs">Automatisch: datum van verzending</span>
-                              : `{{${block.fieldName};role=First Party;type=text}}`}
+                              ? <span className="text-muted-foreground italic text-xs">Wordt automatisch ingevuld</span>
+                              : <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: 12 }}>Wordt automatisch ingevuld</span>}
                           </div>
                         </div>
                       )}
@@ -1016,9 +1016,9 @@ const ContractBuilder = () => {
                               )}
                             </div>
                             <div className="flex-1">
-                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>{`{{Naam;role=First Party;type=text}}`}:</p>
+                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>De vrijwilliger:</p>
                               <div style={{ borderBottom: `2px solid ${contractColors.primary}`, width: '80%' }} />
-                              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>{`{{Handtekening;role=First Party;type=signature}}`}</p>
+                              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>Naam + handtekening</p>
                             </div>
                           </div>
                         </div>

@@ -242,6 +242,12 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Always ensure Datum is set (fallback to today)
+      if (!prefilledFields["Datum"]) {
+        prefilledFields["Datum"] = new Date().toLocaleDateString("nl-BE", { day: "numeric", month: "long", year: "numeric" });
+        prefilledFields["Date"] = prefilledFields["Datum"];
+      }
+
       // Fetch template fields from DocuSeal to only send matching ones
       const templateResp = await fetch(`${DOCUSEAL_API_URL}/templates/${Number(template_id)}`, {
         headers: { "X-Auth-Token": DOCUSEAL_API_KEY },
@@ -268,6 +274,12 @@ Deno.serve(async (req) => {
           { name: "Naam", type: "text", role: "First Party" },
           { name: "Email", type: "text", role: "First Party" },
           { name: "Datum", type: "text", role: "First Party" },
+          { name: "Locatie", type: "text", role: "First Party" },
+          { name: "Taak", type: "text", role: "First Party" },
+          { name: "Uren", type: "text", role: "First Party" },
+          { name: "Onkostenvergoeding", type: "text", role: "First Party" },
+          { name: "IBAN", type: "text", role: "First Party" },
+          { name: "Rekeninghouder", type: "text", role: "First Party" },
           { name: "Handtekening", type: "signature", role: "First Party" },
         ];
         const putResp = await fetch(`${DOCUSEAL_API_URL}/templates/${Number(template_id)}`, {
