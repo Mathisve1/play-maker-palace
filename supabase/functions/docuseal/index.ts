@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
     // POST create template from PDF
     if (req.method === "POST" && action === "create-template-from-pdf") {
       const body = await req.json();
-      const { name, file_url, club_id, file_path: storagePath } = body;
+      const { name, file_url, club_id, file_path: storagePath, template_data, template_id: existingTemplateId } = body;
 
       if (!name || !file_url || !club_id) {
         return new Response(JSON.stringify({ error: "Missing required fields: name, file_url, club_id" }), {
@@ -370,22 +370,47 @@ Deno.serve(async (req) => {
 
       const docusealTemplateId = data.id;
 
-      // Save to our contract_templates table
-      const { data: templateRecord, error: dbError } = await supabase
-        .from("contract_templates")
-        .insert({
-          club_id,
-          name,
-          docuseal_template_id: docusealTemplateId,
-          created_by: userId,
-          file_path: storagePath || null,
-        })
-        .select()
-        .single();
+      let templateRecord;
 
-      if (dbError) {
-        console.error("DB insert error:", dbError);
-        throw new Error(`Database error: ${dbError.message}`);
+      if (existingTemplateId) {
+        // Update existing template
+        const { data: updated, error: dbError } = await supabase
+          .from("contract_templates")
+          .update({
+            name,
+            docuseal_template_id: docusealTemplateId,
+            file_path: storagePath || null,
+            template_data: template_data || null,
+          })
+          .eq("id", existingTemplateId)
+          .select()
+          .single();
+
+        if (dbError) {
+          console.error("DB update error:", dbError);
+          throw new Error(`Database error: ${dbError.message}`);
+        }
+        templateRecord = updated;
+      } else {
+        // Insert new template
+        const { data: inserted, error: dbError } = await supabase
+          .from("contract_templates")
+          .insert({
+            club_id,
+            name,
+            docuseal_template_id: docusealTemplateId,
+            created_by: userId,
+            file_path: storagePath || null,
+            template_data: template_data || null,
+          })
+          .select()
+          .single();
+
+        if (dbError) {
+          console.error("DB insert error:", dbError);
+          throw new Error(`Database error: ${dbError.message}`);
+        }
+        templateRecord = inserted;
       }
 
       return new Response(JSON.stringify({ success: true, template: templateRecord }), {

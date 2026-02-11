@@ -219,6 +219,7 @@ const ContractBuilder = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const clubId = searchParams.get('club_id') || '';
+  const editTemplateId = searchParams.get('template_id') || '';
   const canvasRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -237,6 +238,9 @@ const ContractBuilder = () => {
   const [clubData, setClubData] = useState<{ name: string; logo_url: string | null } | null>(null);
   const [clubSignatureUrl, setClubSignatureUrl] = useState<string | null>(null);
   const [uploadingSignature, setUploadingSignature] = useState(false);
+  const [existingTemplates, setExistingTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(editTemplateId || null);
 
   // Auth check + fetch club data + signature
   useEffect(() => {
@@ -251,6 +255,21 @@ const ContractBuilder = () => {
       if (data) setClubData(data);
     });
 
+    // Fetch existing templates for this club
+    supabase.from('contract_templates').select('id, name, template_data').eq('club_id', clubId).order('created_at', { ascending: false }).then(({ data }) => {
+      if (data) {
+        setExistingTemplates(data.map(t => ({ id: t.id, name: t.name })));
+        // If editing an existing template, load its data
+        if (editTemplateId) {
+          const tmpl = data.find(t => t.id === editTemplateId);
+          if (tmpl && (tmpl as any).template_data) {
+            setBlocks((tmpl as any).template_data as ContractBlock[]);
+            setTemplateName(tmpl.name);
+          }
+        }
+      }
+    });
+
     // Check for existing club signature
     const sigPath = `${clubId}/signature.png`;
     const { data: sigData } = supabase.storage.from('club-signatures').getPublicUrl(sigPath);
@@ -259,7 +278,7 @@ const ContractBuilder = () => {
         if (res.ok) setClubSignatureUrl(sigData.publicUrl);
       }).catch(() => {});
     }
-  }, [navigate, clubId]);
+  }, [navigate, clubId, editTemplateId]);
 
   // Upload club signature (reusable for all contracts)
   const handleSignatureUpload = async (file: File) => {
@@ -337,6 +356,26 @@ const ContractBuilder = () => {
     setBlocks(getSmartDefaultBlocks());
     setTemplateName(prev => prev || 'Standaard Vrijwilligerscontract');
     toast.success('Standaard vrijwilligerscontract gegenereerd met alle essentiële clausules.');
+  };
+
+  const handleLoadTemplate = async (templateId: string) => {
+    if (blocks.length > 3) {
+      if (!confirm('Dit vervangt alle huidige blokken. Doorgaan?')) return;
+    }
+    const { data } = await supabase
+      .from('contract_templates')
+      .select('id, name, template_data')
+      .eq('id', templateId)
+      .single();
+    if (data && (data as any).template_data) {
+      setBlocks((data as any).template_data as ContractBlock[]);
+      setTemplateName(data.name);
+      setEditingTemplateId(data.id);
+      setShowTemplateSelector(false);
+      toast.success(`Sjabloon "${data.name}" geladen.`);
+    } else {
+      toast.error('Dit sjabloon heeft geen opgeslagen blokstructuur.');
+    }
   };
 
   // ─── Drag & Drop ───────────────────────────────────────
@@ -475,11 +514,18 @@ const ContractBuilder = () => {
           file_url: urlData.signedUrl,
           club_id: clubId,
           file_path: filePath,
+          template_data: blocks,
+          ...(editingTemplateId ? { template_id: editingTemplateId } : {}),
         }),
       });
 
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Template aanmaken mislukt');
+
+      // If we were editing, also update template_data directly
+      if (editingTemplateId) {
+        await supabase.from('contract_templates').update({ template_data: blocks as any, name: templateName.trim() }).eq('id', editingTemplateId);
+      }
 
       toast.success('Contractsjabloon succesvol opgeslagen!');
       navigate('/club-dashboard');
@@ -537,6 +583,39 @@ const ContractBuilder = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Load existing template */}
+            <div className="relative">
+              <button
+                onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-input bg-background text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                {editingTemplateId ? 'Sjabloon laden' : 'Bestaand sjabloon'}
+              </button>
+              {showTemplateSelector && existingTemplates.length > 0 && (
+                <div className="absolute right-0 top-full mt-1 w-64 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+                  <div className="p-2 border-b border-border">
+                    <p className="text-xs font-semibold text-muted-foreground px-2">Opgeslagen sjablonen</p>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto p-1">
+                    {existingTemplates.map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => handleLoadTemplate(t.id)}
+                        className={`w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors ${editingTemplateId === t.id ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {showTemplateSelector && existingTemplates.length === 0 && (
+                <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-xl shadow-lg z-50 p-4">
+                  <p className="text-xs text-muted-foreground text-center">Geen opgeslagen sjablonen.</p>
+                </div>
+              )}
+            </div>
             <button
               onClick={handleGenerateSmartDefault}
               className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
@@ -557,7 +636,7 @@ const ContractBuilder = () => {
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {saving ? 'Opslaan...' : 'Opslaan'}
+              {saving ? 'Opslaan...' : editingTemplateId ? 'Bijwerken' : 'Opslaan'}
             </button>
           </div>
         </div>

@@ -138,6 +138,7 @@ export type Database = {
           file_path: string | null
           id: string
           name: string
+          template_data: Json | null
         }
         Insert: {
           club_id: string
@@ -147,6 +148,7 @@ export type Database = {
           file_path?: string | null
           id?: string
           name: string
+          template_data?: Json | null
         }
         Update: {
           club_id?: string
@@ -156,6 +158,7 @@ export type Database = {
           file_path?: string | null
           id?: string
           name?: string
+          template_data?: Json | null
         }
         Relationships: [
           {
