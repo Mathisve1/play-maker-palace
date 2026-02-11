@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, Upload, Trash2, FileText, Loader2, Eye } from 'lucide-react';
+import { X, Trash2, FileText, Loader2, Eye, Plus } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 
 interface ContractTemplate {
@@ -83,12 +84,10 @@ const t = {
 
 const ContractTemplatesDialog = ({ clubId, language, onClose }: Props) => {
   const l = t[language];
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [file, setFile] = useState<File | null>(null);
 
   const fetchTemplates = async () => {
     const { data, error } = await supabase
@@ -105,74 +104,6 @@ const ContractTemplatesDialog = ({ clubId, language, onClose }: Props) => {
     fetchTemplates();
   }, [clubId]);
 
-  const handleUpload = async () => {
-    if (!name.trim()) { toast.error(l.errorName); return; }
-    if (!file) { toast.error(l.errorFile); return; }
-
-    setUploading(true);
-    try {
-      // Upload PDF to storage
-      const filePath = `${clubId}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('contract-templates')
-        .upload(filePath, file, { contentType: 'application/pdf' });
-
-      if (uploadError) throw uploadError;
-
-      // Get download URL
-      const { data: urlData } = await supabase.storage
-        .from('contract-templates')
-        .createSignedUrl(filePath, 300); // 5 min expiry
-
-      if (!urlData?.signedUrl) throw new Error('Failed to get download URL');
-
-      // Call edge function to create DocuSeal template
-      const { data: session } = await supabase.auth.getSession();
-      const resp = await supabase.functions.invoke('docuseal', {
-        body: { name: name.trim(), file_url: urlData.signedUrl, club_id: clubId },
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-      });
-
-      if (resp.error) throw new Error(resp.error.message);
-
-      // Check if the response data contains an error
-      const respData = resp.data;
-      if (respData?.error) throw new Error(respData.error);
-
-      toast.success(l.uploadSuccess);
-      setName('');
-      setFile(null);
-      fetchTemplates();
-    } catch (err: any) {
-      toast.error(err.message || 'Upload failed');
-    }
-    setUploading(false);
-  };
-
-  const handleDelete = async (templateId: string) => {
-    setDeletingId(templateId);
-    try {
-      const resp = await supabase.functions.invoke('docuseal', {
-        body: { template_id: templateId },
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-      });
-
-      if (resp.error) throw new Error(resp.error.message);
-      const respData = resp.data;
-      if (respData?.error) throw new Error(respData.error);
-
-      toast.success(l.deleteSuccess);
-      setTemplates(prev => prev.filter(t => t.id !== templateId));
-    } catch (err: any) {
-      toast.error(err.message || 'Delete failed');
-    }
-    setDeletingId(null);
-  };
-
-  // We need to pass the action via query params. supabase.functions.invoke doesn't support query params directly,
-  // so we'll use fetch directly for the edge function calls.
   const invokeDocuseal = async (action: string, body: Record<string, unknown>) => {
     const { data: session } = await supabase.auth.getSession();
     const token = session?.session?.access_token;
@@ -193,45 +124,6 @@ const ContractTemplatesDialog = ({ clubId, language, onClose }: Props) => {
     return data;
   };
 
-  const handleUploadWithAction = async () => {
-    if (!name.trim()) { toast.error(l.errorName); return; }
-    if (!file) { toast.error(l.errorFile); return; }
-
-    setUploading(true);
-    try {
-      const filePath = `${clubId}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('contract-templates')
-        .upload(filePath, file, { contentType: 'application/pdf' });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = await supabase.storage
-        .from('contract-templates')
-        .createSignedUrl(filePath, 300);
-
-      if (!urlData?.signedUrl) throw new Error('Failed to get download URL');
-
-      await invokeDocuseal('create-template-from-pdf', {
-        name: name.trim(),
-        file_url: urlData.signedUrl,
-        club_id: clubId,
-        file_path: filePath,
-      });
-
-      toast.success(l.uploadSuccess);
-      setName('');
-      setFile(null);
-      // Reset file input
-      const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-      fetchTemplates();
-    } catch (err: any) {
-      toast.error(err.message || 'Upload failed');
-    }
-    setUploading(false);
-  };
-
   const handleDeleteWithAction = async (templateId: string) => {
     setDeletingId(templateId);
     try {
@@ -243,8 +135,6 @@ const ContractTemplatesDialog = ({ clubId, language, onClose }: Props) => {
     }
     setDeletingId(null);
   };
-
-  const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -261,39 +151,17 @@ const ContractTemplatesDialog = ({ clubId, language, onClose }: Props) => {
         </div>
 
         <div className="overflow-y-auto flex-1 p-5 space-y-5">
-          {/* Upload form */}
-          <div className="bg-muted/30 rounded-xl p-4 space-y-3">
-            <h3 className="text-sm font-medium text-foreground">{l.uploadTitle}</h3>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">{l.name}</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder={l.namePlaceholder}
-                className={inputClass}
-                maxLength={200}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">{l.selectFile}</label>
-              <input
-                id="pdf-upload"
-                type="file"
-                accept=".pdf"
-                onChange={e => setFile(e.target.files?.[0] || null)}
-                className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary file:text-primary-foreground file:cursor-pointer hover:file:opacity-90"
-              />
-            </div>
-            <button
-              onClick={handleUploadWithAction}
-              disabled={uploading || !name.trim() || !file}
-              className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {uploading ? l.uploading : l.upload}
-            </button>
-          </div>
+          {/* New template button → opens Contract Builder */}
+          <button
+            onClick={() => {
+              onClose();
+              navigate(`/contract-builder?club_id=${clubId}`);
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />
+            {l.uploadTitle}
+          </button>
 
           {/* Templates list */}
           {loading ? (
