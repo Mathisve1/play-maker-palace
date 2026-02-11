@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password, full_name, club_name } = await req.json();
+    const { email, password, full_name, club_name, sport, location, logo_url } = await req.json();
 
     if (!email || !password || !club_name) {
       return new Response(JSON.stringify({ error: "Email, password en clubnaam zijn verplicht." }), {
@@ -53,16 +53,22 @@ serve(async (req) => {
       console.error("Role update error:", roleError);
     }
 
-    // Create the club
+    // Create the club with extra fields
     const { error: clubError } = await supabaseAdmin
       .from("clubs")
-      .insert({ name: club_name, owner_id: userId });
+      .insert({
+        name: club_name,
+        owner_id: userId,
+        sport: sport || null,
+        location: location || null,
+        logo_url: logo_url || null,
+      });
 
     if (clubError) {
       console.error("Club creation error:", clubError);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, user_id: userId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
