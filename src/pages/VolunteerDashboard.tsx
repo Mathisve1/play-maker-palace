@@ -318,82 +318,72 @@ const VolunteerDashboard = () => {
           <p className="text-muted-foreground mt-1">{dt.availableTasks}: {tasks.length}</p>
         </motion.div>
 
-        {/* Tabs */}
-        <div className="mt-6 flex gap-1 bg-muted/50 rounded-xl p-1">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === 'all'
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {dt.allTasks}
-          </button>
-          <button
-            onClick={() => setActiveTab('mine')}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
-              activeTab === 'mine'
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {dt.myTasks}
-            {signups.length > 0 && (
-              <span className="px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
-                {signups.length}
-              </span>
-            )}
-          </button>
-        </div>
+        {/* Filter bar */}
+        <div className="mt-6 bg-card rounded-2xl shadow-card border border-transparent p-4 space-y-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder={dt.searchPlaceholder}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-muted/50 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring border-0"
+            />
+          </div>
 
-        {/* Mine subtabs */}
-        {activeTab === 'mine' && (
-          <div className="mt-3 flex gap-2">
+          {/* Tab chips */}
+          <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setMineSubTab('pending')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                mineSubTab === 'pending'
-                  ? 'bg-primary/10 text-primary border border-primary/20'
-                  : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+              onClick={() => setActiveTab('all')}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all ${
+                activeTab === 'all'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              {dt.allTasks}
+            </button>
+            <button
+              onClick={() => { setActiveTab('mine'); setMineSubTab('pending'); }}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${
+                activeTab === 'mine' && mineSubTab === 'pending'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               {dt.ingeschreven}
               {pendingSignups.length > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-primary/20 text-primary">
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${
+                  activeTab === 'mine' && mineSubTab === 'pending'
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'bg-primary/10 text-primary'
+                }`}>
                   {pendingSignups.length}
                 </span>
               )}
             </button>
             <button
-              onClick={() => setMineSubTab('assigned')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
-                mineSubTab === 'assigned'
-                  ? 'bg-accent/10 text-accent border border-accent/20'
-                  : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+              onClick={() => { setActiveTab('mine'); setMineSubTab('assigned'); }}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${
+                activeTab === 'mine' && mineSubTab === 'assigned'
+                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               <CheckCircle className="w-3 h-3" />
               {dt.toegekend}
               {assignedSignups.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-accent/20 text-accent">
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${
+                  activeTab === 'mine' && mineSubTab === 'assigned'
+                    ? 'bg-accent-foreground/20 text-accent-foreground'
+                    : 'bg-accent/10 text-accent'
+                }`}>
                   {assignedSignups.length}
                 </span>
               )}
             </button>
           </div>
-        )}
-
-        {/* Search */}
-        <div className="mt-4 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder={dt.searchPlaceholder}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
         </div>
 
         {/* Tasks list */}
