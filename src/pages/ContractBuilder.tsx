@@ -7,9 +7,13 @@ import {
   ArrowLeft, Save, Type, AlignLeft, Image, Minus, Space, PenTool,
   Bold, Italic, Underline, AlignCenter, AlignRight, AlignJustify,
   Palette, GripVertical, Trash2, Plus, Scale, FileText, Loader2,
-  ChevronDown, ChevronRight, BookOpen, Hash, Edit3
+  ChevronDown, ChevronRight, BookOpen, Hash, Edit3, Sparkles,
+  ShieldCheck, AlertTriangle, CheckCircle2, Gavel
 } from 'lucide-react';
-import { belgianVolunteerArticles, LawArticle } from '@/data/belgianVolunteerLaw';
+import { belgianVolunteerArticles, essentialArticleIds, defaultTemplateArticleIds, LawArticle } from '@/data/belgianVolunteerLaw';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Logo from '@/components/Logo';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -39,20 +43,13 @@ interface ContractBlock {
 
 // ─── Palette Items ───────────────────────────────────────
 
-interface PaletteItem {
-  type: BlockType;
-  label: string;
-  icon: React.ReactNode;
-  description: string;
-}
-
-const paletteBlocks: PaletteItem[] = [
-  { type: 'heading', label: 'Koptekst', icon: <Type className="w-4 h-4" />, description: 'Titel of sectiekop' },
-  { type: 'text', label: 'Vrije tekst', icon: <AlignLeft className="w-4 h-4" />, description: 'Bewerkbaar tekstblok' },
-  { type: 'logo', label: 'Logo', icon: <Image className="w-4 h-4" />, description: 'Upload een clublogo' },
-  { type: 'divider', label: 'Scheidingslijn', icon: <Minus className="w-4 h-4" />, description: 'Horizontale lijn' },
-  { type: 'spacer', label: 'Witruimte', icon: <Space className="w-4 h-4" />, description: 'Extra verticale ruimte' },
-  { type: 'signature', label: 'Handtekening', icon: <PenTool className="w-4 h-4" />, description: 'Handtekeningveld' },
+const paletteBlocks = [
+  { type: 'heading' as BlockType, label: 'Koptekst', icon: <Type className="w-4 h-4" />, description: 'Titel of sectiekop' },
+  { type: 'text' as BlockType, label: 'Vrije tekst', icon: <AlignLeft className="w-4 h-4" />, description: 'Bewerkbaar tekstblok' },
+  { type: 'logo' as BlockType, label: 'Logo', icon: <Image className="w-4 h-4" />, description: 'Upload een clublogo' },
+  { type: 'divider' as BlockType, label: 'Scheidingslijn', icon: <Minus className="w-4 h-4" />, description: 'Horizontale lijn' },
+  { type: 'spacer' as BlockType, label: 'Witruimte', icon: <Space className="w-4 h-4" />, description: 'Extra verticale ruimte' },
+  { type: 'signature' as BlockType, label: 'Handtekening', icon: <PenTool className="w-4 h-4" />, description: 'Handtekeningveld' },
 ];
 
 const mergeFields = [
@@ -97,14 +94,7 @@ const createArticleBlock = (article: LawArticle): ContractBlock => ({
   articleId: article.id,
   articleTitle: `${article.articleNumber} – ${article.title}`,
   note: '',
-  style: {
-    fontSize: 12,
-    color: '#1a1a1a',
-    textAlign: 'left',
-    bold: false,
-    italic: false,
-    underline: false,
-  },
+  style: { fontSize: 12, color: '#1a1a1a', textAlign: 'left', bold: false, italic: false, underline: false },
 });
 
 const createFieldBlock = (fieldName: string): ContractBlock => ({
@@ -112,17 +102,50 @@ const createFieldBlock = (fieldName: string): ContractBlock => ({
   type: 'field',
   content: '',
   fieldName,
-  style: {
-    fontSize: 14,
-    color: '#1a1a1a',
-    textAlign: 'left',
-    bold: false,
-    italic: false,
-    underline: false,
-  },
+  style: { fontSize: 14, color: '#1a1a1a', textAlign: 'left', bold: false, italic: false, underline: false },
 });
 
-// ─── Default Contract ────────────────────────────────────
+// ─── Smart Default Template ──────────────────────────────
+
+const getSmartDefaultBlocks = (): ContractBlock[] => {
+  const essentialArticles = defaultTemplateArticleIds
+    .map(id => belgianVolunteerArticles.find(a => a.id === id))
+    .filter(Boolean) as LawArticle[];
+
+  return [
+    createBlock('heading', { content: 'Vrijwilligersovereenkomst' }),
+    createBlock('text', { content: 'Conform de Wet van 3 juli 2005 betreffende de rechten van vrijwilligers', style: { fontSize: 11, color: '#6b7280', textAlign: 'center', bold: false, italic: true, underline: false } }),
+    createBlock('divider'),
+    createBlock('spacer'),
+    createBlock('heading', { content: '1. Partijen', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    createBlock('text', { content: 'Tussen de ondergetekenden:' }),
+    createFieldBlock('Clubnaam'),
+    createBlock('text', { content: 'hierna genoemd "de organisatie", enerzijds,' }),
+    createBlock('text', { content: 'en' }),
+    createFieldBlock('Naam'),
+    createFieldBlock('E-mail'),
+    createBlock('text', { content: 'hierna genoemd "de vrijwilliger", anderzijds,' }),
+    createBlock('divider'),
+    createBlock('heading', { content: '2. Voorwerp', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    createFieldBlock('Taak'),
+    createFieldBlock('Datum'),
+    createFieldBlock('Locatie'),
+    createFieldBlock('Uren'),
+    createBlock('spacer'),
+    createBlock('heading', { content: '3. Wettelijk kader', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...essentialArticles.map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+    createBlock('heading', { content: '4. Onkostenvergoeding', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    createFieldBlock('Onkostenvergoeding'),
+    createFieldBlock('IBAN'),
+    createFieldBlock('Rekeninghouder'),
+    createBlock('spacer'),
+    createBlock('heading', { content: '5. Handtekeningen', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    createBlock('divider'),
+    createBlock('signature'),
+    createFieldBlock('Datum'),
+  ];
+};
 
 const getDefaultBlocks = (): ContractBlock[] => [
   createBlock('heading', { content: 'Vrijwilligersovereenkomst' }),
@@ -148,6 +171,48 @@ const getDefaultBlocks = (): ContractBlock[] => [
   createFieldBlock('Datum'),
 ];
 
+// ─── Compliance Check ────────────────────────────────────
+
+interface ComplianceResult {
+  passed: boolean;
+  warnings: string[];
+}
+
+const runComplianceCheck = (blocks: ContractBlock[]): ComplianceResult => {
+  const warnings: string[] = [];
+  const allContent = blocks.map(b => b.content + (b.note || '')).join(' ').toLowerCase();
+  const articleIds = blocks.filter(b => b.type === 'article').map(b => b.articleId);
+
+  // Check if Art. 4 info is present
+  const hasArt4 = articleIds.includes('art4');
+  const hasOndernemingsnummer = allContent.includes('ondernemingsnummer') || allContent.includes('{{ondernemingsnummer}}');
+  const hasVerzekering = allContent.includes('verzekering') || allContent.includes('{{verzekering_polis}}');
+
+  if (!hasArt4 && !hasOndernemingsnummer) {
+    warnings.push('Wettelijke check: Vergeet niet de verplichte informatie uit Art. 4 toe te voegen om aan de informatieplicht te voldoen. Het ondernemingsnummer van de club ontbreekt.');
+  }
+  if (!hasArt4 && !hasVerzekering) {
+    warnings.push('Wettelijke check: De verzekeringsgegevens (Art. 6) ontbreken. Een BA-verzekering is wettelijk verplicht.');
+  }
+
+  // Check for essential articles
+  const missingEssentials = essentialArticleIds.filter(id => !articleIds.includes(id));
+  if (missingEssentials.length > 0) {
+    const missingNames = missingEssentials.map(id => {
+      const a = belgianVolunteerArticles.find(art => art.id === id);
+      return a ? `${a.articleNumber} (${a.title})` : id;
+    });
+    warnings.push(`Aanbevolen artikelen ontbreken: ${missingNames.join(', ')}. Deze worden sterk aanbevolen voor een volledig contract.`);
+  }
+
+  // Check for signature block
+  if (!blocks.some(b => b.type === 'signature')) {
+    warnings.push('Er is geen handtekeningblok toegevoegd.');
+  }
+
+  return { passed: warnings.length === 0, warnings };
+};
+
 // ─── Component ───────────────────────────────────────────
 
 const ContractBuilder = () => {
@@ -162,12 +227,14 @@ const ContractBuilder = () => {
   const [templateName, setTemplateName] = useState('');
   const [saving, setSaving] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [articlesOpen, setArticlesOpen] = useState(true);
+  const [sidebarTab, setSidebarTab] = useState<'blokken' | 'artikelen'>('blokken');
   const [fieldsOpen, setFieldsOpen] = useState(true);
   const [blocksOpen, setBlocksOpen] = useState(true);
+  const [lawArticlesOpen, setLawArticlesOpen] = useState(true);
+  const [clausulesOpen, setClausulesOpen] = useState(true);
   const [contractColors, setContractColors] = useState({ primary: '#1a5632', accent: '#e8742e', bg: '#ffffff' });
+  const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null);
 
-  // Auth check
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) navigate('/club-login');
@@ -175,6 +242,9 @@ const ContractBuilder = () => {
   }, [navigate]);
 
   const selectedBlock = blocks.find(b => b.id === selectedBlockId) || null;
+
+  const lawArticles = belgianVolunteerArticles.filter(a => a.category === 'wet');
+  const clausules = belgianVolunteerArticles.filter(a => a.category === 'clausule');
 
   // ─── Block Operations ──────────────────────────────────
 
@@ -209,6 +279,15 @@ const ContractBuilder = () => {
     setBlocks(prev => prev.map(b =>
       b.id === id ? { ...b, style: { ...b.style, ...styleUpdates } } : b
     ));
+  };
+
+  const handleGenerateSmartDefault = () => {
+    if (blocks.length > 3) {
+      if (!confirm('Dit vervangt alle huidige blokken. Doorgaan?')) return;
+    }
+    setBlocks(getSmartDefaultBlocks());
+    setTemplateName(prev => prev || 'Standaard Vrijwilligerscontract');
+    toast.success('Standaard vrijwilligerscontract gegenereerd met alle essentiële clausules.');
   };
 
   // ─── Drag & Drop ───────────────────────────────────────
@@ -250,8 +329,6 @@ const ContractBuilder = () => {
     } catch {}
   };
 
-  // ─── Logo Upload ───────────────────────────────────────
-
   const handleLogoUpload = async (blockId: string, file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -260,7 +337,7 @@ const ContractBuilder = () => {
     reader.readAsDataURL(file);
   };
 
-  // ─── Save as PDF + DocuSeal Template ───────────────────
+  // ─── Save with Compliance Check ───────────────────────
 
   const handleSave = async () => {
     if (!templateName.trim()) {
@@ -272,27 +349,37 @@ const ContractBuilder = () => {
       return;
     }
 
+    // Run compliance check
+    const result = runComplianceCheck(blocks);
+    setComplianceResult(result);
+
+    if (!result.passed) {
+      const proceed = confirm(
+        'Er zijn wettelijke waarschuwingen gevonden:\n\n' +
+        result.warnings.join('\n\n') +
+        '\n\nWil je toch doorgaan met opslaan?'
+      );
+      if (!proceed) return;
+    }
+
     setSaving(true);
     try {
       const printEl = printRef.current;
       if (!printEl) throw new Error('Canvas niet gevonden');
 
-      // Render to canvas
       const canvas = await html2canvas(printEl, {
         scale: 2,
         useCORS: true,
         backgroundColor: contractColors.bg,
-        width: 794, // A4 at 96 DPI
+        width: 794,
         windowWidth: 794,
       });
 
-      // Create PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgData = canvas.toDataURL('image/png');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      // Handle multi-page
       let heightLeft = pdfHeight;
       let position = 0;
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -307,11 +394,9 @@ const ContractBuilder = () => {
         heightLeft -= pageHeight;
       }
 
-      // Convert to blob
       const pdfBlob = pdf.output('blob');
       const pdfFile = new File([pdfBlob], `${templateName.trim()}.pdf`, { type: 'application/pdf' });
 
-      // Upload to storage
       const filePath = `${clubId}/${Date.now()}_${pdfFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from('contract-templates')
@@ -325,7 +410,6 @@ const ContractBuilder = () => {
 
       if (!urlData?.signedUrl) throw new Error('Kan download-URL niet ophalen');
 
-      // Call DocuSeal edge function
       const { data: session } = await supabase.auth.getSession();
       const token = session?.session?.access_token;
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=create-template-from-pdf`;
@@ -356,6 +440,36 @@ const ContractBuilder = () => {
     setSaving(false);
   };
 
+  // ─── Sidebar: Article Item ─────────────────────────────
+
+  const ArticleItem = ({ article }: { article: LawArticle }) => {
+    const isEssential = essentialArticleIds.includes(article.id);
+    return (
+      <div
+        draggable
+        onDragStart={e => handleDragStart(e, { type: 'article', payload: article.id })}
+        onClick={() => addArticleBlock(article)}
+        className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing hover:bg-muted/60 transition-colors border border-transparent hover:border-border group"
+      >
+        <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 transition-colors ${isEssential ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-primary/10 text-primary'}`}>
+          {article.category === 'wet' ? <Scale className="w-3.5 h-3.5" /> : <Gavel className="w-3.5 h-3.5" />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-semibold text-foreground">{article.articleNumber}</p>
+            {isEssential && (
+              <Badge className="text-[9px] px-1.5 py-0 h-4 bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 hover:bg-green-100">
+                Aanbevolen
+              </Badge>
+            )}
+          </div>
+          <p className="text-[11px] font-medium text-foreground leading-tight">{article.title}</p>
+          <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{article.summary}</p>
+        </div>
+      </div>
+    );
+  };
+
   // ─── Render ────────────────────────────────────────────
 
   return (
@@ -364,10 +478,7 @@ const ContractBuilder = () => {
       <header className="border-b border-border bg-card sticky top-0 z-40">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/club-dashboard')}
-              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            >
+            <button onClick={() => navigate('/club-dashboard')} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <Logo size="sm" showText={false} />
@@ -377,6 +488,13 @@ const ContractBuilder = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleGenerateSmartDefault}
+              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Standaard Contract
+            </button>
             <input
               type="text"
               value={templateName}
@@ -396,100 +514,151 @@ const ContractBuilder = () => {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* ─── Left Sidebar: Block Palette ─── */}
-        <aside className="w-72 border-r border-border bg-card overflow-y-auto shrink-0 hidden md:block">
-          <div className="p-3 space-y-1">
-
-            {/* Content Blocks */}
-            <button onClick={() => setBlocksOpen(!blocksOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
-              {blocksOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              Inhoudblokken
-            </button>
-            <AnimatePresence>
-              {blocksOpen && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-1 overflow-hidden">
-                  {paletteBlocks.map(item => (
-                    <div
-                      key={item.type}
-                      draggable
-                      onDragStart={e => handleDragStart(e, { type: item.type })}
-                      onClick={() => addBlock(item.type)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing hover:bg-muted/60 transition-colors border border-transparent hover:border-border group"
-                    >
-                      <div className="p-1.5 rounded-lg bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors">
-                        {item.icon}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">{item.label}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{item.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Merge Fields */}
-            <button onClick={() => setFieldsOpen(!fieldsOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors mt-3">
-              {fieldsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              Invulvelden
-            </button>
-            <AnimatePresence>
-              {fieldsOpen && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-1 overflow-hidden">
-                  {mergeFields.map(field => (
-                    <div
-                      key={field.name}
-                      draggable
-                      onDragStart={e => handleDragStart(e, { type: 'field', payload: field.name })}
-                      onClick={() => addFieldBlock(field.name)}
-                      className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-grab active:cursor-grabbing hover:bg-muted/60 transition-colors border border-transparent hover:border-border group"
-                    >
-                      <div className="p-1.5 rounded-lg bg-accent/10 text-accent-foreground group-hover:text-primary transition-colors">
-                        <Hash className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">{field.label}</p>
-                        <p className="text-[11px] text-muted-foreground font-mono">{`{{${field.name}}}`}</p>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Belgian Law Articles */}
-            <button onClick={() => setArticlesOpen(!articlesOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors mt-3">
-              {articlesOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              <BookOpen className="w-3 h-3" />
-              Vrijwilligerswet
-            </button>
-            <AnimatePresence>
-              {articlesOpen && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-1 overflow-hidden">
-                  {belgianVolunteerArticles.map(article => (
-                    <div
-                      key={article.id}
-                      draggable
-                      onDragStart={e => handleDragStart(e, { type: 'article', payload: article.id })}
-                      onClick={() => addArticleBlock(article)}
-                      className="flex items-start gap-3 px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing hover:bg-muted/60 transition-colors border border-transparent hover:border-border group"
-                    >
-                      <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
-                        <Scale className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-foreground">{article.articleNumber}</p>
-                        <p className="text-[11px] font-medium text-foreground">{article.title}</p>
-                        <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{article.summary}</p>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+      {/* Compliance warnings banner */}
+      {complianceResult && !complianceResult.passed && (
+        <div className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              {complianceResult.warnings.map((w, i) => (
+                <p key={i} className="text-xs text-yellow-800 dark:text-yellow-300">{w}</p>
+              ))}
+            </div>
           </div>
+        </div>
+      )}
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* ─── Left Sidebar ─── */}
+        <aside className="w-80 border-r border-border bg-card overflow-hidden shrink-0 hidden md:flex md:flex-col">
+          {/* Smart default button (mobile too) */}
+          <div className="p-3 border-b border-border">
+            <button
+              onClick={handleGenerateSmartDefault}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors sm:hidden"
+            >
+              <Sparkles className="w-4 h-4" />
+              Standaard Contract
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <Tabs defaultValue="blokken" className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="mx-3 mt-3 mb-0 grid grid-cols-2">
+              <TabsTrigger value="blokken" className="text-xs">
+                <FileText className="w-3.5 h-3.5 mr-1" />
+                Bouwblokken
+              </TabsTrigger>
+              <TabsTrigger value="artikelen" className="text-xs">
+                <BookOpen className="w-3.5 h-3.5 mr-1" />
+                Wettelijke Artikelen
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Tab: Bouwblokken */}
+            <TabsContent value="blokken" className="flex-1 overflow-y-auto p-3 space-y-1 mt-0">
+              {/* Content Blocks */}
+              <button onClick={() => setBlocksOpen(!blocksOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
+                {blocksOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                Inhoudblokken
+              </button>
+              <AnimatePresence>
+                {blocksOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-1 overflow-hidden">
+                    {paletteBlocks.map(item => (
+                      <div
+                        key={item.type}
+                        draggable
+                        onDragStart={e => handleDragStart(e, { type: item.type })}
+                        onClick={() => addBlock(item.type)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing hover:bg-muted/60 transition-colors border border-transparent hover:border-border group"
+                      >
+                        <div className="p-1.5 rounded-lg bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors">
+                          {item.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{item.label}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{item.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Merge Fields */}
+              <button onClick={() => setFieldsOpen(!fieldsOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors mt-3">
+                {fieldsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                Invulvelden
+              </button>
+              <AnimatePresence>
+                {fieldsOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-1 overflow-hidden">
+                    {mergeFields.map(field => (
+                      <div
+                        key={field.name}
+                        draggable
+                        onDragStart={e => handleDragStart(e, { type: 'field', payload: field.name })}
+                        onClick={() => addFieldBlock(field.name)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-grab active:cursor-grabbing hover:bg-muted/60 transition-colors border border-transparent hover:border-border group"
+                      >
+                        <div className="p-1.5 rounded-lg bg-accent/10 text-accent-foreground group-hover:text-primary transition-colors">
+                          <Hash className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{field.label}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono">{`{{${field.name}}}`}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </TabsContent>
+
+            {/* Tab: Wettelijke Artikelen */}
+            <TabsContent value="artikelen" className="flex-1 overflow-y-auto p-3 space-y-1 mt-0">
+              {/* Info banner */}
+              <div className="px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 mb-2">
+                <p className="text-[10px] text-green-700 dark:text-green-400 leading-relaxed">
+                  <ShieldCheck className="w-3 h-3 inline mr-1 -mt-0.5" />
+                  Artikelen met een <strong>groen label</strong> zijn essentieel volgens de Vrijwilligerswet en worden aanbevolen in elk contract.
+                </p>
+              </div>
+
+              {/* Wetsartikelen */}
+              <button onClick={() => setLawArticlesOpen(!lawArticlesOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
+                {lawArticlesOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                <Scale className="w-3 h-3" />
+                Wetsartikelen (Wet 3 juli 2005)
+              </button>
+              <AnimatePresence>
+                {lawArticlesOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-1 overflow-hidden">
+                    {lawArticles.map(article => (
+                      <ArticleItem key={article.id} article={article} />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Contractclausules */}
+              <button onClick={() => setClausulesOpen(!clausulesOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors mt-3">
+                {clausulesOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                <Gavel className="w-3 h-3" />
+                Contractclausules
+              </button>
+              <AnimatePresence>
+                {clausulesOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-1 overflow-hidden">
+                    {clausules.map(article => (
+                      <ArticleItem key={article.id} article={article} />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </TabsContent>
+          </Tabs>
         </aside>
 
         {/* ─── Center: Canvas ─── */}
@@ -501,31 +670,18 @@ const ContractBuilder = () => {
               animate={{ opacity: 1, y: 0 }}
               className="mb-4 flex items-center gap-1 flex-wrap bg-card rounded-xl border border-border p-2 shadow-sm"
             >
-              <button
-                onClick={() => updateBlockStyle(selectedBlock.id, { bold: !selectedBlock.style.bold })}
-                className={`p-2 rounded-lg transition-colors ${selectedBlock.style.bold ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-              >
+              <button onClick={() => updateBlockStyle(selectedBlock.id, { bold: !selectedBlock.style.bold })} className={`p-2 rounded-lg transition-colors ${selectedBlock.style.bold ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
                 <Bold className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => updateBlockStyle(selectedBlock.id, { italic: !selectedBlock.style.italic })}
-                className={`p-2 rounded-lg transition-colors ${selectedBlock.style.italic ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-              >
+              <button onClick={() => updateBlockStyle(selectedBlock.id, { italic: !selectedBlock.style.italic })} className={`p-2 rounded-lg transition-colors ${selectedBlock.style.italic ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
                 <Italic className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => updateBlockStyle(selectedBlock.id, { underline: !selectedBlock.style.underline })}
-                className={`p-2 rounded-lg transition-colors ${selectedBlock.style.underline ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-              >
+              <button onClick={() => updateBlockStyle(selectedBlock.id, { underline: !selectedBlock.style.underline })} className={`p-2 rounded-lg transition-colors ${selectedBlock.style.underline ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
                 <Underline className="w-4 h-4" />
               </button>
               <div className="w-px h-6 bg-border mx-1" />
               {(['left', 'center', 'right', 'justify'] as const).map(align => (
-                <button
-                  key={align}
-                  onClick={() => updateBlockStyle(selectedBlock.id, { textAlign: align })}
-                  className={`p-2 rounded-lg transition-colors ${selectedBlock.style.textAlign === align ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-                >
+                <button key={align} onClick={() => updateBlockStyle(selectedBlock.id, { textAlign: align })} className={`p-2 rounded-lg transition-colors ${selectedBlock.style.textAlign === align ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
                   {align === 'left' && <AlignLeft className="w-4 h-4" />}
                   {align === 'center' && <AlignCenter className="w-4 h-4" />}
                   {align === 'right' && <AlignRight className="w-4 h-4" />}
@@ -535,24 +691,12 @@ const ContractBuilder = () => {
               <div className="w-px h-6 bg-border mx-1" />
               <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span>Grootte:</span>
-                <input
-                  type="number"
-                  value={selectedBlock.style.fontSize}
-                  onChange={e => updateBlockStyle(selectedBlock.id, { fontSize: parseInt(e.target.value) || 14 })}
-                  className="w-14 px-2 py-1 rounded-lg border border-input bg-background text-foreground text-xs"
-                  min={8}
-                  max={72}
-                />
+                <input type="number" value={selectedBlock.style.fontSize} onChange={e => updateBlockStyle(selectedBlock.id, { fontSize: parseInt(e.target.value) || 14 })} className="w-14 px-2 py-1 rounded-lg border border-input bg-background text-foreground text-xs" min={8} max={72} />
               </label>
               <div className="w-px h-6 bg-border mx-1" />
               <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Palette className="w-3.5 h-3.5" />
-                <input
-                  type="color"
-                  value={selectedBlock.style.color}
-                  onChange={e => updateBlockStyle(selectedBlock.id, { color: e.target.value })}
-                  className="w-6 h-6 rounded border border-input cursor-pointer"
-                />
+                <input type="color" value={selectedBlock.style.color} onChange={e => updateBlockStyle(selectedBlock.id, { color: e.target.value })} className="w-6 h-6 rounded border border-input cursor-pointer" />
               </label>
             </motion.div>
           )}
@@ -574,18 +718,9 @@ const ContractBuilder = () => {
           </div>
 
           {/* A4 Canvas */}
-          <div
-            ref={canvasRef}
-            className="mx-auto shadow-xl rounded-lg overflow-hidden"
-            style={{ maxWidth: 794, backgroundColor: contractColors.bg }}
-          >
+          <div ref={canvasRef} className="mx-auto shadow-xl rounded-lg overflow-hidden" style={{ maxWidth: 794, backgroundColor: contractColors.bg }}>
             <div ref={printRef} style={{ padding: '48px 56px', minHeight: 1123, backgroundColor: contractColors.bg }}>
-              <Reorder.Group
-                axis="y"
-                values={blocks}
-                onReorder={setBlocks}
-                className="space-y-1"
-              >
+              <Reorder.Group axis="y" values={blocks} onReorder={setBlocks} className="space-y-1">
                 {blocks.map((block, index) => (
                   <Reorder.Item
                     key={block.id}
@@ -594,49 +729,37 @@ const ContractBuilder = () => {
                     onDragOver={e => handleCanvasDragOver(e, index)}
                     onDrop={e => handleCanvasDrop(e, index)}
                   >
-                    {/* Drop indicator */}
                     {dragOverIndex === index && (
                       <div className="absolute -top-1 left-0 right-0 h-0.5 bg-primary rounded-full z-10" />
                     )}
 
                     <div
                       className={`group relative rounded-lg transition-all ${
-                        selectedBlockId === block.id
-                          ? 'ring-2 ring-primary/40 bg-primary/5'
-                          : 'hover:ring-1 hover:ring-border'
+                        selectedBlockId === block.id ? 'ring-2 ring-primary/40 bg-primary/5' : 'hover:ring-1 hover:ring-border'
                       }`}
                       onClick={() => setSelectedBlockId(block.id)}
                     >
-                      {/* Block controls */}
                       <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-0.5">
                         <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
                       </div>
                       <div className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={e => { e.stopPropagation(); removeBlock(block.id); }}
-                          className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        >
+                        <button onClick={e => { e.stopPropagation(); removeBlock(block.id); }} className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
-                      {/* ─── Block Content Rendering ─── */}
+                      {/* Block Content */}
                       {block.type === 'heading' && (
                         <div
                           contentEditable
                           suppressContentEditableWarning
                           onBlur={e => updateBlock(block.id, { content: e.currentTarget.textContent || '' })}
                           style={{
-                            fontSize: block.style.fontSize,
-                            color: block.style.color || contractColors.primary,
-                            textAlign: block.style.textAlign,
-                            fontWeight: block.style.bold ? 'bold' : 'normal',
+                            fontSize: block.style.fontSize, color: block.style.color || contractColors.primary,
+                            textAlign: block.style.textAlign, fontWeight: block.style.bold ? 'bold' : 'normal',
                             fontStyle: block.style.italic ? 'italic' : 'normal',
                             textDecoration: block.style.underline ? 'underline' : 'none',
-                            padding: '8px 4px',
-                            outline: 'none',
-                            lineHeight: 1.3,
-                            fontFamily: '"Space Grotesk", sans-serif',
+                            padding: '8px 4px', outline: 'none', lineHeight: 1.3, fontFamily: '"Space Grotesk", sans-serif',
                           }}
                         >
                           {block.content}
@@ -650,16 +773,11 @@ const ContractBuilder = () => {
                           onBlur={e => updateBlock(block.id, { content: e.currentTarget.innerHTML })}
                           dangerouslySetInnerHTML={{ __html: block.content }}
                           style={{
-                            fontSize: block.style.fontSize,
-                            color: block.style.color,
-                            textAlign: block.style.textAlign,
-                            fontWeight: block.style.bold ? 'bold' : 'normal',
+                            fontSize: block.style.fontSize, color: block.style.color,
+                            textAlign: block.style.textAlign, fontWeight: block.style.bold ? 'bold' : 'normal',
                             fontStyle: block.style.italic ? 'italic' : 'normal',
                             textDecoration: block.style.underline ? 'underline' : 'none',
-                            padding: '6px 4px',
-                            outline: 'none',
-                            lineHeight: 1.6,
-                            fontFamily: '"Plus Jakarta Sans", sans-serif',
+                            padding: '6px 4px', outline: 'none', lineHeight: 1.6, fontFamily: '"Plus Jakarta Sans", sans-serif',
                           }}
                         />
                       )}
@@ -672,7 +790,6 @@ const ContractBuilder = () => {
                           <p style={{ fontSize: block.style.fontSize, color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-line', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
                             {block.content}
                           </p>
-                          {/* Editable note */}
                           <div
                             contentEditable
                             suppressContentEditableWarning
@@ -680,11 +797,8 @@ const ContractBuilder = () => {
                             data-placeholder="Voeg hier een eigen toelichting toe..."
                             className="mt-2 text-xs outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:italic"
                             style={{
-                              color: contractColors.accent,
-                              fontStyle: 'italic',
-                              borderTop: `1px dashed ${contractColors.primary}40`,
-                              paddingTop: 8,
-                              minHeight: 20,
+                              color: contractColors.accent, fontStyle: 'italic',
+                              borderTop: `1px dashed ${contractColors.primary}40`, paddingTop: 8, minHeight: 20,
                               fontFamily: '"Plus Jakarta Sans", sans-serif',
                             }}
                           >
@@ -698,10 +812,7 @@ const ContractBuilder = () => {
                           <span style={{ fontSize: 13, color: '#6b7280', minWidth: 140 }}>
                             {mergeFields.find(f => f.name === block.fieldName)?.label || block.fieldName}:
                           </span>
-                          <div
-                            className="flex-1 border-b-2 px-2 py-1"
-                            style={{ borderColor: `${contractColors.primary}40`, fontSize: 14, color: contractColors.primary, fontWeight: 500 }}
-                          >
+                          <div className="flex-1 border-b-2 px-2 py-1" style={{ borderColor: `${contractColors.primary}40`, fontSize: 14, color: contractColors.primary, fontWeight: 500 }}>
                             {`{{${block.fieldName}}}`}
                           </div>
                         </div>
@@ -715,14 +826,7 @@ const ContractBuilder = () => {
                             <label className="inline-flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-border cursor-pointer hover:border-primary/40 transition-colors">
                               <Image className="w-5 h-5 text-muted-foreground" />
                               <span className="text-sm text-muted-foreground">Logo uploaden</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={e => {
-                                  if (e.target.files?.[0]) handleLogoUpload(block.id, e.target.files[0]);
-                                }}
-                              />
+                              <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleLogoUpload(block.id, e.target.files[0]); }} />
                             </label>
                           )}
                         </div>
@@ -734,30 +838,20 @@ const ContractBuilder = () => {
                         </div>
                       )}
 
-                      {block.type === 'spacer' && (
-                        <div className="h-8" />
-                      )}
+                      {block.type === 'spacer' && <div className="h-8" />}
 
                       {block.type === 'signature' && (
                         <div className="py-4 px-1">
                           <div className="flex gap-12">
                             <div className="flex-1">
-                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                                De organisatie:
-                              </p>
+                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>De organisatie:</p>
                               <div style={{ borderBottom: `2px solid ${contractColors.primary}`, width: '80%' }} />
-                              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                                Naam + datum
-                              </p>
+                              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>Naam + datum</p>
                             </div>
                             <div className="flex-1">
-                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                                De vrijwilliger:
-                              </p>
+                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>De vrijwilliger:</p>
                               <div style={{ borderBottom: `2px solid ${contractColors.primary}`, width: '80%' }} />
-                              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                                {`{{Handtekening}}`}
-                              </p>
+                              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>{`{{Handtekening}}`}</p>
                             </div>
                           </div>
                         </div>
