@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download } from 'lucide-react';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -180,6 +180,11 @@ const ClubOwnerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState('');
   const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [volunteerPayments, setVolunteerPayments] = useState<Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }>>({});
+  const [signatureStatuses, setSignatureStatuses] = useState<Record<string, string>>({});
+  const [volunteerStripeIds, setVolunteerStripeIds] = useState<Record<string, string | null>>({});
+  const [clubStripeId, setClubStripeId] = useState<string | null>(null);
+  const [sendingPayment, setSendingPayment] = useState<string | null>(null);
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -215,7 +220,7 @@ const ClubOwnerDashboard = () => {
       // Check if user is owner of any club
       const { data: ownedClubs } = await supabase
         .from('clubs')
-        .select('id, name, sport, location, logo_url')
+        .select('id, name, sport, location, logo_url, stripe_account_id')
         .eq('owner_id', session.user.id);
 
       let activeClub = ownedClubs?.[0] || null;
@@ -231,7 +236,7 @@ const ClubOwnerDashboard = () => {
         if (memberships && memberships.length > 0) {
           const { data: club } = await supabase
             .from('clubs')
-            .select('id, name, sport, location, logo_url')
+            .select('id, name, sport, location, logo_url, stripe_account_id')
             .eq('id', memberships[0].club_id)
             .maybeSingle();
           activeClub = club;
@@ -250,6 +255,7 @@ const ClubOwnerDashboard = () => {
 
       setClubId(activeClub.id);
       setClubInfo({ name: activeClub.name, sport: activeClub.sport, location: activeClub.location, logo_url: activeClub.logo_url });
+      setClubStripeId(activeClub.stripe_account_id || null);
       const clubIds = [activeClub.id];
 
       // Fetch contract templates for this club
@@ -279,10 +285,15 @@ const ClubOwnerDashboard = () => {
           const volunteerIds = [...new Set(signupsData.map(s => s.volunteer_id))];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date')
+            .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, stripe_account_id')
             .in('id', volunteerIds);
 
           const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+          // Store volunteer stripe IDs
+          const stripeIds: Record<string, string | null> = {};
+          profiles?.forEach(p => { stripeIds[p.id] = p.stripe_account_id; });
+          setVolunteerStripeIds(stripeIds);
 
           const grouped: Record<string, Signup[]> = {};
           signupsData.forEach(s => {
@@ -295,6 +306,28 @@ const ClubOwnerDashboard = () => {
             grouped[s.task_id].push(signup);
           });
           setSignups(grouped);
+        }
+
+        // Fetch payments for this club
+        const { data: paymentsData } = await supabase
+          .from('volunteer_payments')
+          .select('task_id, volunteer_id, status, stripe_receipt_url, paid_at')
+          .eq('club_id', activeClub.id);
+        if (paymentsData) {
+          const payMap: Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }> = {};
+          paymentsData.forEach(p => { payMap[`${p.task_id}-${p.volunteer_id}`] = { status: p.status, receipt_url: p.stripe_receipt_url, paid_at: p.paid_at }; });
+          setVolunteerPayments(payMap);
+        }
+
+        // Fetch signature statuses
+        const { data: sigsData } = await supabase
+          .from('signature_requests')
+          .select('task_id, volunteer_id, status')
+          .in('task_id', taskIds);
+        if (sigsData) {
+          const sigMap: Record<string, string> = {};
+          sigsData.forEach(s => { sigMap[`${s.task_id}-${s.volunteer_id}`] = s.status; });
+          setSignatureStatuses(sigMap);
         }
       }
 
@@ -377,6 +410,23 @@ const ClubOwnerDashboard = () => {
       });
     }
     setCreatingTask(false);
+  };
+
+  const handleSendPayment = async (taskId: string, volunteerId: string) => {
+    const key = `${taskId}-${volunteerId}`;
+    setSendingPayment(key);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-create-transfer', {
+        body: { task_id: taskId, volunteer_id: volunteerId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('Betaling aangemaakt!');
+      setVolunteerPayments(prev => ({ ...prev, [key]: { status: 'processing' } }));
+    } catch (err: any) {
+      toast.error(err.message || 'Er ging iets mis');
+    }
+    setSendingPayment(null);
   };
 
   const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -806,6 +856,54 @@ const ClubOwnerDashboard = () => {
                                       <CheckCircle className="w-3.5 h-3.5" />
                                       {dt.assigned}
                                     </span>
+                                    {(() => {
+                                      const payKey = `${signup.task_id}-${signup.volunteer_id}`;
+                                      const payment = volunteerPayments[payKey];
+                                      const sigStatus = signatureStatuses[payKey];
+                                      const contractSigned = sigStatus === 'completed';
+                                      const volHasStripe = !!volunteerStripeIds[signup.volunteer_id];
+                                      const canPay = clubStripeId && volHasStripe && contractSigned && (!payment || payment.status === 'failed');
+
+                                      if (payment && payment.status === 'succeeded') {
+                                        return (
+                                          <span className="flex items-center gap-1 text-xs font-medium text-green-600">
+                                            <CheckCircle className="w-3.5 h-3.5" /> Betaald
+                                            {payment.receipt_url && (
+                                              <a href={payment.receipt_url} target="_blank" rel="noopener noreferrer" className="ml-1">
+                                                <Download className="w-3 h-3" />
+                                              </a>
+                                            )}
+                                          </span>
+                                        );
+                                      }
+                                      if (payment && payment.status === 'processing') {
+                                        return (
+                                          <span className="flex items-center gap-1 text-xs text-yellow-600">
+                                            <Clock className="w-3.5 h-3.5" /> Verwerken
+                                          </span>
+                                        );
+                                      }
+                                      if (!contractSigned) {
+                                        return (
+                                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground" title="Contract moet eerst getekend worden">
+                                            <AlertTriangle className="w-3 h-3" />
+                                          </span>
+                                        );
+                                      }
+                                      if (canPay) {
+                                        return (
+                                          <button
+                                            onClick={() => handleSendPayment(signup.task_id, signup.volunteer_id)}
+                                            disabled={sendingPayment === payKey}
+                                            className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
+                                          >
+                                            {sendingPayment === payKey ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                                            Betaal
+                                          </button>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                     <button
                                       onClick={() => handleUpdateStatus(signup.id, signup.task_id, 'pending')}
                                       disabled={updatingSignup === signup.id}
