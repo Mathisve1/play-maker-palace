@@ -234,12 +234,55 @@ const ContractBuilder = () => {
   const [clausulesOpen, setClausulesOpen] = useState(true);
   const [contractColors, setContractColors] = useState({ primary: '#1a5632', accent: '#e8742e', bg: '#ffffff' });
   const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null);
+  const [clubData, setClubData] = useState<{ name: string; logo_url: string | null } | null>(null);
+  const [clubSignatureUrl, setClubSignatureUrl] = useState<string | null>(null);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
 
+  // Auth check + fetch club data + signature
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) navigate('/club-login');
     });
-  }, [navigate]);
+
+    if (!clubId) return;
+
+    // Fetch club info
+    supabase.from('clubs').select('name, logo_url').eq('id', clubId).single().then(({ data }) => {
+      if (data) setClubData(data);
+    });
+
+    // Check for existing club signature
+    const sigPath = `${clubId}/signature.png`;
+    const { data: sigData } = supabase.storage.from('club-signatures').getPublicUrl(sigPath);
+    if (sigData?.publicUrl) {
+      fetch(sigData.publicUrl, { method: 'HEAD' }).then(res => {
+        if (res.ok) setClubSignatureUrl(sigData.publicUrl);
+      }).catch(() => {});
+    }
+  }, [navigate, clubId]);
+
+  // Upload club signature (reusable for all contracts)
+  const handleSignatureUpload = async (file: File) => {
+    if (!clubId) return;
+    setUploadingSignature(true);
+    try {
+      const sigPath = `${clubId}/signature.png`;
+      // Upsert: remove old one first
+      await supabase.storage.from('club-signatures').remove([sigPath]);
+      const { error } = await supabase.storage.from('club-signatures').upload(sigPath, file, {
+        contentType: file.type,
+        upsert: true,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from('club-signatures').getPublicUrl(sigPath);
+      // Add cache-buster
+      setClubSignatureUrl(`${data.publicUrl}?t=${Date.now()}`);
+      toast.success('Handtekening opgeslagen! Deze wordt hergebruikt voor alle contracten.');
+    } catch (err: any) {
+      toast.error(err.message || 'Handtekening uploaden mislukt');
+    }
+    setUploadingSignature(false);
+  };
 
   const selectedBlock = blocks.find(b => b.id === selectedBlockId) || null;
 
@@ -813,7 +856,11 @@ const ContractBuilder = () => {
                             {mergeFields.find(f => f.name === block.fieldName)?.label || block.fieldName}:
                           </span>
                           <div className="flex-1 border-b-2 px-2 py-1" style={{ borderColor: `${contractColors.primary}40`, fontSize: 14, color: contractColors.primary, fontWeight: 500 }}>
-                            {`{{${block.fieldName}}}`}
+                            {block.fieldName === 'Clubnaam' && clubData?.name
+                              ? clubData.name
+                              : block.fieldName === 'Datum'
+                              ? <span className="text-muted-foreground italic text-xs">Automatisch: datum van verzending</span>
+                              : `{{${block.fieldName}}}`}
                           </div>
                         </div>
                       )}
@@ -822,6 +869,8 @@ const ContractBuilder = () => {
                         <div className="py-3 text-center">
                           {block.logoUrl ? (
                             <img src={block.logoUrl} alt="Logo" className="max-h-24 mx-auto object-contain" />
+                          ) : clubData?.logo_url ? (
+                            <img src={clubData.logo_url} alt="Club Logo" className="max-h-24 mx-auto object-contain" />
                           ) : (
                             <label className="inline-flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-border cursor-pointer hover:border-primary/40 transition-colors">
                               <Image className="w-5 h-5 text-muted-foreground" />
@@ -844,9 +893,25 @@ const ContractBuilder = () => {
                         <div className="py-4 px-1">
                           <div className="flex gap-12">
                             <div className="flex-1">
-                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>De organisatie:</p>
+                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>De organisatie:</p>
+                              {clubSignatureUrl ? (
+                                <div className="mb-2">
+                                  <img src={clubSignatureUrl} alt="Handtekening organisatie" className="max-h-16 object-contain" />
+                                </div>
+                              ) : (
+                                <div style={{ marginBottom: 40 }} />
+                              )}
                               <div style={{ borderBottom: `2px solid ${contractColors.primary}`, width: '80%' }} />
-                              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>Naam + datum</p>
+                              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+                                {clubData?.name || 'Naam'} + datum
+                              </p>
+                              {!clubSignatureUrl && (
+                                <label className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-border cursor-pointer hover:border-primary/40 transition-colors text-[10px] text-muted-foreground">
+                                  <PenTool className="w-3 h-3" />
+                                  {uploadingSignature ? 'Uploaden...' : 'Handtekening uploaden (herbruikbaar)'}
+                                  <input type="file" accept="image/*" className="hidden" disabled={uploadingSignature} onChange={e => { if (e.target.files?.[0]) handleSignatureUpload(e.target.files[0]); }} />
+                                </label>
+                              )}
                             </div>
                             <div className="flex-1">
                               <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>De vrijwilliger:</p>
