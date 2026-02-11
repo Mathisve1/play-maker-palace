@@ -18,28 +18,8 @@ import Logo from '@/components/Logo';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-// ─── Block Types ─────────────────────────────────────────
-
-type BlockType = 'heading' | 'text' | 'article' | 'field' | 'logo' | 'divider' | 'spacer' | 'signature';
-
-interface ContractBlock {
-  id: string;
-  type: BlockType;
-  content: string;
-  articleId?: string;
-  articleTitle?: string;
-  note?: string;
-  fieldName?: string;
-  logoUrl?: string;
-  style: {
-    fontSize: number;
-    color: string;
-    textAlign: 'left' | 'center' | 'right' | 'justify';
-    bold: boolean;
-    italic: boolean;
-    underline: boolean;
-  };
-}
+// ─── Block Types (shared) ────────────────────────────────
+import { ContractBlock, BlockType } from '@/types/contract';
 
 // ─── Palette Items ───────────────────────────────────────
 

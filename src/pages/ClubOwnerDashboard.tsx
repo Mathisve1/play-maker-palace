@@ -1248,6 +1248,7 @@ const ClubOwnerDashboard = () => {
             location: contractConfirm.task.location,
             contract_template_id: contractConfirm.task.contract_template_id,
           }}
+          clubId={clubId || undefined}
           clubName={clubInfo?.name}
           language={language}
           onSent={() => {

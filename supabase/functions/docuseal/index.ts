@@ -682,6 +682,109 @@ Deno.serve(async (req) => {
       });
     }
 
+    // POST send-personalized-contract: Create DocuSeal template from personalized PDF + submission
+    if (req.method === "POST" && action === "send-personalized-contract") {
+      const body = await req.json();
+      const { pdf_url, task_id, volunteer_id, volunteer_email, volunteer_name } = body;
+
+      console.log("send-personalized-contract:", JSON.stringify({ task_id, volunteer_id, volunteer_email }));
+
+      if (!pdf_url || !task_id || !volunteer_email) {
+        return new Response(JSON.stringify({ error: "Missing required fields: pdf_url, task_id, volunteer_email" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 1. Create DocuSeal template from personalized PDF
+      const templateResp = await fetch(`${DOCUSEAL_API_URL}/templates/pdf`, {
+        method: "POST",
+        headers: {
+          "X-Auth-Token": DOCUSEAL_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: `Contract ${volunteer_name || volunteer_email} - ${new Date().toISOString().slice(0, 10)}`,
+          documents: [{ name: "contract.pdf", file: pdf_url }],
+        }),
+      });
+
+      const templateData = await templateResp.json();
+      if (!templateResp.ok) {
+        throw new Error(`DocuSeal API error [${templateResp.status}]: ${JSON.stringify(templateData)}`);
+      }
+
+      const docusealTemplateId = templateData.id;
+      console.log("Created personalized DocuSeal template:", docusealTemplateId);
+
+      // 2. Add ONLY a signature field (all other data is already in the PDF)
+      const putResp = await fetch(`${DOCUSEAL_API_URL}/templates/${docusealTemplateId}`, {
+        method: "PUT",
+        headers: {
+          "X-Auth-Token": DOCUSEAL_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fields: [
+            { name: "Handtekening", type: "signature", role: "First Party" },
+          ],
+        }),
+      });
+      console.log("PUT signature field status:", putResp.status);
+
+      // 3. Determine submitter role
+      const submitterRole = templateData.submitters?.[0]?.name || "First Party";
+
+      // 4. Create submission (send for signing)
+      const submissionResp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
+        method: "POST",
+        headers: {
+          "X-Auth-Token": DOCUSEAL_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          template_id: docusealTemplateId,
+          send_email: true,
+          submitters: [{
+            email: volunteer_email,
+            name: volunteer_name || undefined,
+            role: submitterRole,
+          }],
+        }),
+      });
+
+      const submissionData = await submissionResp.json();
+      if (!submissionResp.ok) {
+        throw new Error(`DocuSeal API error [${submissionResp.status}]: ${JSON.stringify(submissionData)}`);
+      }
+
+      const submission = Array.isArray(submissionData) ? submissionData[0] : submissionData;
+      const submissionId = submission.submission_id || submission.id;
+      const signingUrl = submission.embed_src
+        || (submission.slug ? `https://docuseal.com/s/${submission.slug}` : null);
+
+      console.log("Created submission:", submissionId, "signing_url:", signingUrl);
+
+      // 5. Save to signature_requests
+      const resolvedVolunteerId = volunteer_id || userId;
+      const { error: dbError } = await supabase.from("signature_requests").insert({
+        task_id,
+        volunteer_id: resolvedVolunteerId,
+        club_owner_id: userId,
+        docuseal_submission_id: submissionId,
+        status: "pending",
+        signing_url: signingUrl,
+      });
+
+      if (dbError) {
+        console.error("DB insert error:", dbError);
+      }
+
+      return new Response(JSON.stringify({ success: true, submission, submission_id: submissionId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
