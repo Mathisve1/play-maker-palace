@@ -270,26 +270,44 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bank_consent_date: string | null
+          bank_consent_given: boolean
+          bank_consent_text: string | null
+          bank_holder_name: string | null
+          bank_iban: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          phone: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          bank_consent_date?: string | null
+          bank_consent_given?: boolean
+          bank_consent_text?: string | null
+          bank_holder_name?: string | null
+          bank_iban?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
+          phone?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          bank_consent_date?: string | null
+          bank_consent_given?: boolean
+          bank_consent_text?: string | null
+          bank_holder_name?: string | null
+          bank_iban?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
           updated_at?: string
         }
         Relationships: []
