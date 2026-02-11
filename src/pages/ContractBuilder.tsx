@@ -8,7 +8,7 @@ import {
   Bold, Italic, Underline, AlignCenter, AlignRight, AlignJustify,
   Palette, GripVertical, Trash2, Plus, Scale, FileText, Loader2,
   ChevronDown, ChevronRight, BookOpen, Hash, Edit3, Sparkles,
-  ShieldCheck, AlertTriangle, CheckCircle2, Gavel
+  ShieldCheck, AlertTriangle, CheckCircle2, Gavel, X
 } from 'lucide-react';
 import { belgianVolunteerArticles, essentialArticleIds, defaultTemplateArticleIds, LawArticle } from '@/data/belgianVolunteerLaw';
 import { Badge } from '@/components/ui/badge';
@@ -267,7 +267,6 @@ const ContractBuilder = () => {
     setUploadingSignature(true);
     try {
       const sigPath = `${clubId}/signature.png`;
-      // Upsert: remove old one first
       await supabase.storage.from('club-signatures').remove([sigPath]);
       const { error } = await supabase.storage.from('club-signatures').upload(sigPath, file, {
         contentType: file.type,
@@ -275,13 +274,20 @@ const ContractBuilder = () => {
       });
       if (error) throw error;
       const { data } = supabase.storage.from('club-signatures').getPublicUrl(sigPath);
-      // Add cache-buster
       setClubSignatureUrl(`${data.publicUrl}?t=${Date.now()}`);
       toast.success('Handtekening opgeslagen! Deze wordt hergebruikt voor alle contracten.');
     } catch (err: any) {
       toast.error(err.message || 'Handtekening uploaden mislukt');
     }
     setUploadingSignature(false);
+  };
+
+  const handleSignatureDelete = async () => {
+    if (!clubId) return;
+    const sigPath = `${clubId}/signature.png`;
+    await supabase.storage.from('club-signatures').remove([sigPath]);
+    setClubSignatureUrl(null);
+    toast.success('Handtekening verwijderd.');
   };
 
   const selectedBlock = blocks.find(b => b.id === selectedBlockId) || null;
@@ -897,20 +903,34 @@ const ContractBuilder = () => {
                               {clubSignatureUrl ? (
                                 <div className="mb-2">
                                   <img src={clubSignatureUrl} alt="Handtekening organisatie" className="max-h-16 object-contain" />
+                                  <div className="flex items-center gap-2 mt-1.5">
+                                    <label className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-border cursor-pointer hover:border-primary/40 transition-colors text-[10px] text-muted-foreground">
+                                      <PenTool className="w-3 h-3" />
+                                      Wijzigen
+                                      <input type="file" accept="image/*" className="hidden" disabled={uploadingSignature} onChange={e => { if (e.target.files?.[0]) handleSignatureUpload(e.target.files[0]); }} />
+                                    </label>
+                                    <button
+                                      onClick={handleSignatureDelete}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors text-[10px]"
+                                    >
+                                      <X className="w-3 h-3" />
+                                      Verwijderen
+                                    </button>
+                                  </div>
                                 </div>
                               ) : (
-                                <div style={{ marginBottom: 40 }} />
-                              )}
-                              <div style={{ borderBottom: `2px solid ${contractColors.primary}`, width: '80%' }} />
-                              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                                {clubData?.name || 'Naam'} + datum
-                              </p>
-                              {!clubSignatureUrl && (
-                                <label className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-border cursor-pointer hover:border-primary/40 transition-colors text-[10px] text-muted-foreground">
-                                  <PenTool className="w-3 h-3" />
-                                  {uploadingSignature ? 'Uploaden...' : 'Handtekening uploaden (herbruikbaar)'}
-                                  <input type="file" accept="image/*" className="hidden" disabled={uploadingSignature} onChange={e => { if (e.target.files?.[0]) handleSignatureUpload(e.target.files[0]); }} />
-                                </label>
+                                <>
+                                  <div style={{ marginBottom: 40 }} />
+                                  <div style={{ borderBottom: `2px solid ${contractColors.primary}`, width: '80%' }} />
+                                  <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+                                    {clubData?.name || 'Naam'} + datum
+                                  </p>
+                                  <label className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-border cursor-pointer hover:border-primary/40 transition-colors text-[10px] text-muted-foreground">
+                                    <PenTool className="w-3 h-3" />
+                                    {uploadingSignature ? 'Uploaden...' : 'Handtekening uploaden (herbruikbaar)'}
+                                    <input type="file" accept="image/*" className="hidden" disabled={uploadingSignature} onChange={e => { if (e.target.files?.[0]) handleSignatureUpload(e.target.files[0]); }} />
+                                  </label>
+                                </>
                               )}
                             </div>
                             <div className="flex-1">
