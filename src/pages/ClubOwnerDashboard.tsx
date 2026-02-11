@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature } from 'lucide-react';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -185,6 +185,7 @@ const ClubOwnerDashboard = () => {
   const [volunteerStripeIds, setVolunteerStripeIds] = useState<Record<string, string | null>>({});
   const [clubStripeId, setClubStripeId] = useState<string | null>(null);
   const [sendingPayment, setSendingPayment] = useState<string | null>(null);
+  const [sendingContract, setSendingContract] = useState<string | null>(null);
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -927,11 +928,71 @@ const ClubOwnerDashboard = () => {
                                         );
                                       }
                                       if (!contractSigned) {
+                                        const contractKey = `${signup.task_id}-${signup.volunteer_id}`;
+                                        const isSending = sendingContract === contractKey;
                                         return (
-                                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground" title="Contract moet eerst getekend worden">
-                                            <AlertTriangle className="w-3 h-3" />
-                                          </span>
-                                        );
+                                          <button
+                                            onClick={async () => {
+                                              setSendingContract(contractKey);
+                                              try {
+                                                // Look up the docuseal_template_id from the task's contract_template_id
+                                                const tmplId = task.contract_template_id;
+                                                if (!tmplId) {
+                                                  toast.error('Geen contractsjabloon gekoppeld aan deze taak.');
+                                                  setSendingContract(null);
+                                                  return;
+                                                }
+                                                const { data: tmpl } = await supabase
+                                                  .from('contract_templates')
+                                                  .select('docuseal_template_id')
+                                                  .eq('id', tmplId)
+                                                  .maybeSingle();
+                                                if (!tmpl) {
+                                                  toast.error('Contractsjabloon niet gevonden.');
+                                                  setSendingContract(null);
+                                                  return;
+                                                }
+                                                const { data: { session: sess } } = await supabase.auth.getSession();
+                                                if (!sess) { setSendingContract(null); return; }
+                                                const resp = await fetch(
+                                                  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=create-submission`,
+                                                  {
+                                                    method: 'POST',
+                                                    headers: {
+                                                      'Authorization': `Bearer ${sess.access_token}`,
+                                                      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                                                      'Content-Type': 'application/json',
+                                                    },
+                                                    body: JSON.stringify({
+                                                      template_id: tmpl.docuseal_template_id,
+                                                      task_id: signup.task_id,
+                                                      volunteer_email: signup.volunteer?.email,
+                                                      volunteer_name: signup.volunteer?.full_name,
+                                                    }),
+                                                  }
+                                                );
+                                                const result = await resp.json();
+                                                if (resp.ok && result.success) {
+                                                  toast.success('Contract verstuurd naar vrijwilliger!');
+                                                  setSignatureStatuses(prev => ({
+                                                    ...prev,
+                                                    [contractKey]: { status: 'pending' },
+                                                  }));
+                                                } else {
+                                                  toast.error(result.error || 'Er ging iets mis bij het versturen.');
+                                                }
+                                              } catch (err: any) {
+                                                toast.error(err.message || 'Er ging iets mis.');
+                                              }
+                                              setSendingContract(null);
+                                            }}
+                                            disabled={isSending}
+                                            className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
+                                          >
+                                            {isSending ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
+                                            Contract
+                                          </button>
+                                         );
                                       }
                                       if (canPay) {
                                         return (
