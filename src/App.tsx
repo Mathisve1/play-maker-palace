@@ -8,6 +8,7 @@ import VolunteerLanding from "./pages/VolunteerLanding";
 import ClubsLanding from "./pages/ClubsLanding";
 import Login from "./pages/Login";
 import ClubLogin from "./pages/ClubLogin";
+import ClubSignup from "./pages/ClubSignup";
 import Signup from "./pages/Signup";
 import VolunteerDashboard from "./pages/VolunteerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/clubs" element={<ClubsLanding />} />
             <Route path="/login" element={<Login />} />
             <Route path="/club-login" element={<ClubLogin />} />
+            <Route path="/club-signup" element={<ClubSignup />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<VolunteerDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />

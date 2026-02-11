@@ -92,6 +92,10 @@ const ClubLogin = () => {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
+            Nog geen account?{' '}
+            <Link to="/club-signup" className="text-secondary font-medium hover:underline">Registreer je club</Link>
+          </p>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             Vrijwilliger?{' '}
             <Link to="/login" className="text-primary font-medium hover:underline">Log hier in</Link>
           </p>
