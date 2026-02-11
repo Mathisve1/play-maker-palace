@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Calendar, Users, LogOut, Search, CheckCircle } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
-import { Globe } from 'lucide-react';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
 
 interface Task {
   id: string;
@@ -19,6 +19,13 @@ interface Task {
   status: string;
   club_id: string;
   created_at: string;
+  expense_reimbursement?: boolean;
+  expense_amount?: number | null;
+  briefing_time?: string | null;
+  briefing_location?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  notes?: string | null;
   clubs?: { name: string; sport: string | null; location: string | null };
 }
 
@@ -37,6 +44,8 @@ const VolunteerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [signingUp, setSigningUp] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const init = async () => {
@@ -62,6 +71,19 @@ const VolunteerDashboard = () => {
         console.error('Tasks error:', tasksError);
       } else {
         setTasks(tasksData || []);
+        // Fetch signup counts for all tasks
+        if (tasksData && tasksData.length > 0) {
+          const taskIds = tasksData.map(t => t.id);
+          const { data: countData } = await supabase
+            .from('task_signups')
+            .select('task_id')
+            .in('task_id', taskIds);
+          if (countData) {
+            const counts: Record<string, number> = {};
+            countData.forEach(s => { counts[s.task_id] = (counts[s.task_id] || 0) + 1; });
+            setSignupCounts(counts);
+          }
+        }
       }
 
       // Fetch user signups
@@ -97,6 +119,7 @@ const VolunteerDashboard = () => {
     } else {
       toast.success(t.volunteer.step3Title + '!');
       setSignups(prev => [...prev, { task_id: taskId }]);
+      setSignupCounts(prev => ({ ...prev, [taskId]: (prev[taskId] || 0) + 1 }));
     }
     setSigningUp(null);
   };
@@ -114,6 +137,7 @@ const VolunteerDashboard = () => {
       toast.error(error.message);
     } else {
       setSignups(prev => prev.filter(s => s.task_id !== taskId));
+      setSignupCounts(prev => ({ ...prev, [taskId]: Math.max((prev[taskId] || 1) - 1, 0) }));
     }
   };
 
@@ -224,7 +248,8 @@ const VolunteerDashboard = () => {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className={`bg-card rounded-2xl p-5 shadow-card border transition-all ${
+                  onClick={() => setSelectedTask(task)}
+                  className={`bg-card rounded-2xl p-5 shadow-card border transition-all cursor-pointer ${
                     signed ? 'border-primary/30 bg-primary/5' : 'border-transparent hover:shadow-elevated'
                   }`}
                 >
@@ -240,7 +265,7 @@ const VolunteerDashboard = () => {
                       </div>
                       <h3 className="font-heading font-semibold text-foreground">{task.title}</h3>
                       {task.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{task.description}</p>
                       )}
                       <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
                         {task.task_date && (
@@ -259,26 +284,19 @@ const VolunteerDashboard = () => {
                         )}
                         <span className="flex items-center gap-1">
                           <Users className="w-3.5 h-3.5" />
-                          {task.spots_available} {dt.spots}
+                          {signupCounts[task.id] || 0}/{task.spots_available} {dt.spots}
                         </span>
                       </div>
                     </div>
                     <div className="shrink-0">
                       {signed ? (
-                        <button
-                          onClick={() => handleCancelSignup(task.id)}
-                          className="px-4 py-2 rounded-xl text-sm font-medium border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
-                        >
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-medium border border-primary/30 text-primary bg-primary/5">
                           ✓ {dt.signedUp}
-                        </button>
+                        </span>
                       ) : (
-                        <button
-                          onClick={() => handleSignup(task.id)}
-                          disabled={signingUp === task.id}
-                          className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
-                        >
-                          {signingUp === task.id ? '...' : dt.signUp}
-                        </button>
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-medium bg-muted text-muted-foreground">
+                          {dt.signUp} →
+                        </span>
                       )}
                     </div>
                   </div>
@@ -287,6 +305,18 @@ const VolunteerDashboard = () => {
             })
           )}
         </div>
+
+        <TaskDetailDialog
+          task={selectedTask}
+          open={!!selectedTask}
+          onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
+          language={language}
+          signupCount={selectedTask ? (signupCounts[selectedTask.id] || 0) : 0}
+          isSignedUp={selectedTask ? isSignedUp(selectedTask.id) : false}
+          onSignup={() => { if (selectedTask) handleSignup(selectedTask.id); }}
+          onCancel={() => { if (selectedTask) handleCancelSignup(selectedTask.id); }}
+          signingUp={signingUp === selectedTask?.id}
+        />
       </main>
     </div>
   );
