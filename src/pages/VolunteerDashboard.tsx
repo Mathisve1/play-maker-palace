@@ -1,13 +1,14 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, Camera } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User } from 'lucide-react';
 import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
 
 
@@ -48,8 +49,7 @@ const VolunteerDashboard = () => {
   const [signingUp, setSigningUp] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'mine'>('all');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
   const [signingContract, setSigningContract] = useState<string | null>(null);
@@ -242,52 +242,6 @@ const VolunteerDashboard = () => {
     setSigningContract(null);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !currentUserId) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Selecteer een afbeelding');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Afbeelding mag maximaal 5MB zijn');
-      return;
-    }
-
-    setUploadingAvatar(true);
-    const ext = file.name.split('.').pop() || 'jpg';
-    const filePath = `${currentUserId}/avatar.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      toast.error(uploadError.message);
-      setUploadingAvatar(false);
-      return;
-    }
-
-    const { data: publicUrl } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    const avatarUrl = `${publicUrl.publicUrl}?t=${Date.now()}`;
-
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: avatarUrl })
-      .eq('id', currentUserId);
-
-    if (updateError) {
-      toast.error(updateError.message);
-    } else {
-      setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : prev);
-      toast.success('Profielfoto bijgewerkt!');
-    }
-    setUploadingAvatar(false);
-  };
 
   const filteredTasks = tasks.filter(task => {
     const q = searchQuery.toLowerCase();
@@ -348,10 +302,9 @@ const VolunteerDashboard = () => {
               <MessageCircle className="w-4 h-4" />
             </button>
             <button
-              onClick={() => avatarInputRef.current?.click()}
-              disabled={uploadingAvatar}
+              onClick={() => setShowProfileDialog(true)}
               className="relative group"
-              title="Profielfoto wijzigen"
+              title="Mijn profiel"
             >
               <Avatar className="w-8 h-8">
                 {profile?.avatar_url && (
@@ -362,21 +315,9 @@ const VolunteerDashboard = () => {
                 </AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Camera className="w-3.5 h-3.5 text-white" />
+                <User className="w-3.5 h-3.5 text-white" />
               </div>
-              {uploadingAvatar && (
-                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
             </button>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarUpload}
-            />
             <span className="text-sm text-muted-foreground hidden md:block">
               {profile?.full_name || profile?.email}
             </span>
@@ -567,6 +508,22 @@ const VolunteerDashboard = () => {
         </div>
 
       </main>
+
+      {currentUserId && (
+        <EditProfileDialog
+          open={showProfileDialog}
+          onOpenChange={setShowProfileDialog}
+          userId={currentUserId}
+          language={language}
+          onProfileUpdated={(updated) => {
+            setProfile(prev => prev ? {
+              ...prev,
+              full_name: updated.full_name || prev.full_name,
+              avatar_url: updated.avatar_url,
+            } : prev);
+          }}
+        />
+      )}
     </div>
   );
 };
