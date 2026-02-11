@@ -1,95 +1,51 @@
 
 
-## Contractsjablonen beheren en verplicht koppelen aan taken
+## Handtekeningveld correct positioneren vanuit de Edge Function
 
-### Wat gaan we bouwen
-Een compleet sjablonenbeheer-systeem waarbij clubeigenaren PDF-contracten uploaden als sjablonen, en bij het aanmaken van een taak verplicht een sjabloon moeten selecteren.
+### Probleem
+Het handtekeningveld wordt aan DocuSeal toegevoegd zonder positie-coordinaten (`areas`), waardoor er geen interactief handtekeningvak verschijnt en de vrijwilliger het contract alleen kan downloaden of weigeren.
 
-### Overzicht
+### Oplossing
+Op drie plaatsen in de Edge Function (`supabase/functions/docuseal/index.ts`) wordt het handtekeningveld aangemaakt. Overal moeten `areas` met coordinaten worden toegevoegd, zodat DocuSeal weet waar het ondertekenvak moet verschijnen.
 
-Het systeem bestaat uit drie onderdelen:
-1. **Sjablonenbeheer-pagina** -- PDF's uploaden en bestaande sjablonen bekijken/verwijderen
-2. **Taak aanmaken met verplicht sjabloon** -- dropdown in het formulier om een sjabloon te selecteren
-3. **Database en backend** -- opslag van sjablonen en koppeling aan taken
+Het veld wordt geplaatst op de laatste pagina, rechtsonder (positie: x=55%, y=85%, breedte=35%, hoogte=6%).
 
----
+### Wijzigingen
 
-### Stap 1: Database uitbreiden
+**Bestand: `supabase/functions/docuseal/index.ts`**
 
-**Nieuwe tabel `contract_templates`:**
-- `id` (uuid, PK)
-- `club_id` (uuid, verwijst naar clubs)
-- `name` (text, naam van het sjabloon)
-- `docuseal_template_id` (integer, ID van het aangemaakte DocuSeal template)
-- `created_by` (uuid, gebruiker die het heeft geupload)
-- `created_at` (timestamptz)
+1. **`send-personalized-contract` actie (rond regel 720-732):**
+   - Na het aanmaken van het template, de template-data ophalen om het aantal pagina's te bepalen
+   - Het `PUT`-verzoek aanpassen zodat het handtekeningveld `areas` bevat met de laatste pagina en coordinaten
 
-**Kolom toevoegen aan `tasks`:**
-- `contract_template_id` (uuid, verwijst naar contract_templates, NOT NULL voor nieuwe taken)
+2. **`create-submission` fallback (waar standaardvelden worden toegevoegd):**
+   - Hetzelfde: het handtekeningveld voorzien van `areas`
 
-**Storage bucket:**
-- Nieuwe bucket `contract-templates` voor de PDF-uploads
+3. **`create-template-from-pdf` fallback:**
+   - Idem
 
-**RLS-policies:**
-- Clubleden (bestuurder/beheerder) kunnen sjablonen lezen, aanmaken en verwijderen voor hun eigen club
-- Admins hebben volledige toegang
+### Technisch detail
 
----
-
-### Stap 2: Edge Function uitbreiden (`docuseal`)
-
-Nieuwe action `create-template-from-pdf`:
-- Ontvangt de PDF (als base64 of download-URL uit storage) + naam
-- Roept de DocuSeal API `POST /templates/pdf` aan
-- Slaat het resulterende `template_id` op in de `contract_templates` tabel
-- Retourneert het aangemaakte sjabloon
-
-Nieuwe action `delete-template`:
-- Verwijdert het template uit DocuSeal via `DELETE /templates/{id}`
-- Verwijdert het record uit de database
-
----
-
-### Stap 3: Sjablonenbeheer in de UI
-
-**Nieuw component `ContractTemplatesDialog`:**
-- Modal toegankelijk vanuit het club-dashboard (nieuw icoon in de header)
-- Toont lijst van bestaande sjablonen voor de club
-- Upload-functionaliteit: bestand kiezen (PDF) + naam invoeren
-- Verwijder-optie per sjabloon
-- Meertalig (NL/FR/EN)
-
----
-
-### Stap 4: Taak-aanmaakformulier aanpassen
-
-In `ClubOwnerDashboard.tsx`:
-- Nieuwe verplichte dropdown "Contractsjabloon" boven aan het formulier
-- Haalt sjablonen op uit `contract_templates` voor de huidige club
-- De taak kan niet worden aangemaakt zonder selectie
-- Het geselecteerde `contract_template_id` wordt mee opgeslagen bij de taak
-- Link naar sjablonenbeheer als er nog geen sjablonen bestaan
-
----
-
-### Technische details
-
-**DocuSeal API -- Template aanmaken vanuit PDF:**
+Van:
+```javascript
+{ name: "Handtekening", type: "signature", role: "First Party" }
 ```
-POST https://api.docuseal.com/templates/pdf
-Headers: X-Auth-Token: API_KEY, Content-Type: application/json
-Body: {
-  "name": "Vrijwilligerscontract Event X",
-  "documents": [{
-    "name": "contract.pdf",
-    "file": "<base64-encoded PDF of download URL>"
+
+Naar:
+```javascript
+{
+  name: "Handtekening",
+  type: "signature",
+  role: "First Party",
+  areas: [{
+    page: lastPage,  // 0-indexed, bepaald uit templateData
+    x: 0.55,
+    y: 0.85,
+    w: 0.35,
+    h: 0.06
   }]
 }
 ```
 
-**Bestanden die worden aangemaakt/gewijzigd:**
-- `supabase/migrations/...` -- nieuwe tabel + kolom + RLS
-- `supabase/functions/docuseal/index.ts` -- nieuwe actions
-- `src/components/ContractTemplatesDialog.tsx` -- nieuw component
-- `src/pages/ClubOwnerDashboard.tsx` -- sjabloon-dropdown in formulier + knop naar beheer
+Het aantal pagina's wordt bepaald via `templateData.documents?.[0]?.pages?.length` (uit de DocuSeal template response). Fallback is pagina 0.
 
