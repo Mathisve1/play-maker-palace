@@ -6,10 +6,11 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Calendar, Users, Clock, Euro, FileText,
-  AlertCircle, Share2, CheckCircle, Info, Navigation
+  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
+import LikeButton from '@/components/LikeButton';
 import { Language } from '@/i18n/translations';
 
 interface Task {
@@ -184,6 +185,8 @@ const TaskDetail = () => {
   const [signupCount, setSignupCount] = useState(0);
   const [isSignedUp, setIsSignedUp] = useState(false);
   const [signingUp, setSigningUp] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
 
   const l = labels[language];
 
@@ -216,6 +219,21 @@ const TaskDetail = () => {
         .eq('volunteer_id', session.user.id)
         .maybeSingle();
       setIsSignedUp(!!mySignup);
+
+      // Fetch likes
+      const { count: lCount } = await supabase
+        .from('task_likes')
+        .select('id', { count: 'exact', head: true })
+        .eq('task_id', id!);
+      setLikeCount(lCount || 0);
+
+      const { data: myLike } = await supabase
+        .from('task_likes')
+        .select('id')
+        .eq('task_id', id!)
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      setIsLiked(!!myLike);
 
       setLoading(false);
     };
@@ -344,6 +362,16 @@ const TaskDetail = () => {
 
           {/* Quick action bar */}
           <div className="flex flex-wrap gap-3 mt-5">
+            <LikeButton
+              taskId={id!}
+              liked={isLiked}
+              count={likeCount}
+              size="md"
+              onToggle={(_, liked) => {
+                setIsLiked(liked);
+                setLikeCount(prev => liked ? prev + 1 : Math.max(prev - 1, 0));
+              }}
+            />
             <button
               onClick={handleShare}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
