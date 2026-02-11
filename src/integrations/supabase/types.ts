@@ -132,6 +132,7 @@ export type Database = {
           created_at: string
           created_by: string
           docuseal_template_id: number
+          file_path: string | null
           id: string
           name: string
         }
@@ -140,6 +141,7 @@ export type Database = {
           created_at?: string
           created_by: string
           docuseal_template_id: number
+          file_path?: string | null
           id?: string
           name: string
         }
@@ -148,6 +150,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           docuseal_template_id?: number
+          file_path?: string | null
           id?: string
           name?: string
         }

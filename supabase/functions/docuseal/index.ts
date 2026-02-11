@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
     // POST create template from PDF
     if (req.method === "POST" && action === "create-template-from-pdf") {
       const body = await req.json();
-      const { name, file_url, club_id } = body;
+      const { name, file_url, club_id, file_path: storagePath } = body;
 
       if (!name || !file_url || !club_id) {
         return new Response(JSON.stringify({ error: "Missing required fields: name, file_url, club_id" }), {
@@ -211,6 +211,7 @@ Deno.serve(async (req) => {
           name,
           docuseal_template_id: docusealTemplateId,
           created_by: userId,
+          file_path: storagePath || null,
         })
         .select()
         .single();
