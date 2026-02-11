@@ -11,6 +11,7 @@ import {
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
 import LikeButton from '@/components/LikeButton';
+import SignatureStatus from '@/components/SignatureStatus';
 import { Language } from '@/i18n/translations';
 
 interface Task {
@@ -610,6 +611,11 @@ const TaskDetail = () => {
               </div>
             </motion.section>
           )}
+
+          {/* E-signature status */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <SignatureStatus taskId={id!} language={language} />
+          </motion.div>
         </div>
 
         {/* Sticky signup bar */}

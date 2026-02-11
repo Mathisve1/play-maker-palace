@@ -144,6 +144,53 @@ export type Database = {
         }
         Relationships: []
       }
+      signature_requests: {
+        Row: {
+          club_owner_id: string
+          created_at: string
+          document_url: string | null
+          docuseal_submission_id: number | null
+          id: string
+          signing_url: string | null
+          status: string
+          task_id: string
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          club_owner_id: string
+          created_at?: string
+          document_url?: string | null
+          docuseal_submission_id?: number | null
+          id?: string
+          signing_url?: string | null
+          status?: string
+          task_id: string
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          club_owner_id?: string
+          created_at?: string
+          document_url?: string | null
+          docuseal_submission_id?: number | null
+          id?: string
+          signing_url?: string | null
+          status?: string
+          task_id?: string
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_requests_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_likes: {
         Row: {
           created_at: string
