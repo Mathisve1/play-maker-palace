@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import VolunteerDashboard from "./pages/VolunteerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import TaskDetail from "./pages/TaskDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<VolunteerDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/task/:id" element={<TaskDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Calendar, Users, LogOut, Search, CheckCircle } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
+
 
 interface Task {
   id: string;
@@ -44,7 +44,7 @@ const VolunteerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [signingUp, setSigningUp] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -248,7 +248,7 @@ const VolunteerDashboard = () => {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  onClick={() => setSelectedTask(task)}
+                  onClick={() => navigate(`/task/${task.id}`)}
                   className={`bg-card rounded-2xl p-5 shadow-card border transition-all cursor-pointer ${
                     signed ? 'border-primary/30 bg-primary/5' : 'border-transparent hover:shadow-elevated'
                   }`}
@@ -306,17 +306,6 @@ const VolunteerDashboard = () => {
           )}
         </div>
 
-        <TaskDetailDialog
-          task={selectedTask}
-          open={!!selectedTask}
-          onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
-          language={language}
-          signupCount={selectedTask ? (signupCounts[selectedTask.id] || 0) : 0}
-          isSignedUp={selectedTask ? isSignedUp(selectedTask.id) : false}
-          onSignup={() => { if (selectedTask) handleSignup(selectedTask.id); }}
-          onCancel={() => { if (selectedTask) handleCancelSignup(selectedTask.id); }}
-          signingUp={signingUp === selectedTask?.id}
-        />
       </main>
     </div>
   );
