@@ -1,6 +1,46 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+async function sendAcceptNotification(supabaseAdmin: any, invite: any, acceptorName: string) {
+  try {
+    const { data: club } = await supabaseAdmin
+      .from("clubs").select("name").eq("id", invite.club_id).maybeSingle();
+    const clubName = club?.name || "je club";
+    const roleLabel = invite.role === 'bestuurder' ? 'Bestuurder' : invite.role === 'beheerder' ? 'Beheerder' : 'Medewerker';
+    const title = "Uitnodiging geaccepteerd";
+    const message = `${acceptorName} heeft de uitnodiging voor ${clubName} geaccepteerd als ${roleLabel}.`;
+
+    await supabaseAdmin.from("notifications").insert({
+      user_id: invite.invited_by, type: "invite_accepted", title, message,
+      metadata: { club_id: invite.club_id, role: invite.role, acceptor_name: acceptorName },
+    });
+
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendKey) return;
+    const { data: inviterProfile } = await supabaseAdmin
+      .from("profiles").select("email").eq("id", invite.invited_by).maybeSingle();
+    if (!inviterProfile?.email) return;
+
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: Deno.env.get("RESEND_FROM_EMAIL") || "PlayMaker <onboarding@resend.dev>",
+        to: [inviterProfile.email],
+        subject: `${acceptorName} heeft je uitnodiging geaccepteerd`,
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+          <h2>Uitnodiging geaccepteerd! 🎉</h2>
+          <p><strong>${acceptorName}</strong> heeft de uitnodiging voor <strong>${clubName}</strong> geaccepteerd als <strong>${roleLabel}</strong>.</p>
+          <p>Je kunt het nieuwe lid nu terugvinden in je club dashboard.</p>
+          <p style="color:#666;font-size:14px;margin-top:24px;">— PlayMaker</p>
+        </div>`,
+      }),
+    });
+  } catch (err) {
+    console.error("Failed to send accept notification:", err);
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -198,6 +238,9 @@ serve(async (req) => {
         .update({ status: "accepted" })
         .eq("id", invite.id);
 
+      // Send notification to inviter
+      await sendAcceptNotification(supabaseAdmin, invite, full_name || email);
+
       return new Response(JSON.stringify({ success: true, club_id: invite.club_id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -257,6 +300,16 @@ serve(async (req) => {
         .from("club_invitations")
         .update({ status: "accepted" })
         .eq("id", invite.id);
+
+      // Get user name for notification
+      const { data: acceptorProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user_id)
+        .maybeSingle();
+      
+      const acceptorName = acceptorProfile?.full_name || acceptorProfile?.email || "Een gebruiker";
+      await sendAcceptNotification(supabaseAdmin, invite, acceptorName);
 
       return new Response(JSON.stringify({ success: true, club_id: invite.club_id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

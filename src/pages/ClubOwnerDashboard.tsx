@@ -8,6 +8,7 @@ import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, Chevr
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
+import NotificationBell from '@/components/NotificationBell';
 import { Language } from '@/i18n/translations';
 
 interface Signup {
@@ -369,7 +370,8 @@ const ClubOwnerDashboard = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {currentUserId && <NotificationBell userId={currentUserId} />}
             {(isOwner || myClubRole === 'bestuurder') && clubId && (
               <button
                 onClick={() => setShowSettings(true)}
