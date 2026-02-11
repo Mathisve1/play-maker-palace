@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 import VolunteerLanding from "./pages/VolunteerLanding";
 import ClubsLanding from "./pages/ClubsLanding";
 import Login from "./pages/Login";
+import ClubLogin from "./pages/ClubLogin";
 import Signup from "./pages/Signup";
 import VolunteerDashboard from "./pages/VolunteerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/" element={<VolunteerLanding />} />
             <Route path="/clubs" element={<ClubsLanding />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/club-login" element={<ClubLogin />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<VolunteerDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />

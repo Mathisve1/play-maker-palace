@@ -42,7 +42,7 @@ const ClubsLanding = () => {
               {t.clubs.heroSubtitle}
             </motion.p>
             <motion.div variants={fadeUp} custom={2} className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <Link to="/signup" className="px-6 py-3 rounded-xl bg-hero-secondary text-secondary-foreground font-medium hover:opacity-90 transition-opacity">
+              <Link to="/club-login" className="px-6 py-3 rounded-xl bg-hero-secondary text-secondary-foreground font-medium hover:opacity-90 transition-opacity">
                 {t.clubs.heroCta}
               </Link>
               <a href="#features" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors">
@@ -87,7 +87,7 @@ const ClubsLanding = () => {
           <div className="max-w-2xl mx-auto text-center bg-hero-secondary rounded-3xl p-12">
             <h2 className="text-3xl font-heading font-bold text-secondary-foreground">{t.clubs.ctaTitle}</h2>
             <p className="mt-3 text-secondary-foreground/80">{t.clubs.ctaSubtitle}</p>
-            <Link to="/signup" className="mt-6 inline-block px-8 py-3 rounded-xl bg-background text-foreground font-medium hover:opacity-90 transition-opacity">
+            <Link to="/club-login" className="mt-6 inline-block px-8 py-3 rounded-xl bg-background text-foreground font-medium hover:opacity-90 transition-opacity">
               {t.clubs.ctaButton}
             </Link>
           </div>
