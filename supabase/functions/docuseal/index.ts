@@ -698,8 +698,9 @@ Deno.serve(async (req) => {
         });
       }
 
-      // 1. Create DocuSeal template from personalized PDF
-      const templateResp = await fetch(`${DOCUSEAL_API_URL}/templates/pdf`, {
+      // Use POST /submissions/pdf to create a one-off submission directly from the PDF
+      // This combines template creation + submission in one step and properly supports fields
+      const submissionResp = await fetch(`${DOCUSEAL_API_URL}/submissions/pdf`, {
         method: "POST",
         headers: {
           "X-Auth-Token": DOCUSEAL_API_KEY,
@@ -708,60 +709,21 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           name: `Contract ${volunteer_name || volunteer_email} - ${new Date().toISOString().slice(0, 10)}`,
           documents: [{ name: "contract.pdf", file: pdf_url }],
-        }),
-      });
-
-      const templateData = await templateResp.json();
-      if (!templateResp.ok) {
-        throw new Error(`DocuSeal API error [${templateResp.status}]: ${JSON.stringify(templateData)}`);
-      }
-
-      const docusealTemplateId = templateData.id;
-      const attachmentUuid = templateData.documents?.[0]?.uuid || null;
-      const lastPage = Math.max(0, (templateData.documents?.[0]?.pages?.length || 1) - 1);
-      console.log("Created personalized DocuSeal template:", docusealTemplateId, "attachmentUuid:", attachmentUuid, "lastPage:", lastPage);
-
-      // 2. Add ONLY a signature field (all other data is already in the PDF)
-      const sigArea: Record<string, unknown> = { page: lastPage, x: 0.55, y: 0.85, w: 0.35, h: 0.06 };
-      if (attachmentUuid) sigArea.attachment_uuid = attachmentUuid;
-
-      const putResp = await fetch(`${DOCUSEAL_API_URL}/templates/${docusealTemplateId}`, {
-        method: "PUT",
-        headers: {
-          "X-Auth-Token": DOCUSEAL_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fields: [
-            { name: "Handtekening", type: "signature", role: "First Party", areas: [sigArea] },
-          ],
-        }),
-      });
-      const putData = await putResp.json();
-      console.log("PUT signature field status:", putResp.status, "response:", JSON.stringify(putData?.fields?.map((f: any) => ({ name: f.name, areas: f.areas }))));
-
-      // 3. Determine submitter role
-      const submitterRole = templateData.submitters?.[0]?.name || "First Party";
-
-      // 4. Create submission (send for signing)
-      const submissionResp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
-        method: "POST",
-        headers: {
-          "X-Auth-Token": DOCUSEAL_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          template_id: docusealTemplateId,
           send_email: true,
+          fields: [
+            { name: "Handtekening", type: "signature", role: "First Party" },
+          ],
           submitters: [{
             email: volunteer_email,
             name: volunteer_name || undefined,
-            role: submitterRole,
+            role: "First Party",
           }],
         }),
       });
 
       const submissionData = await submissionResp.json();
+      console.log("submissions/pdf response status:", submissionResp.status, "data:", JSON.stringify(submissionData).slice(0, 500));
+
       if (!submissionResp.ok) {
         throw new Error(`DocuSeal API error [${submissionResp.status}]: ${JSON.stringify(submissionData)}`);
       }
@@ -773,7 +735,7 @@ Deno.serve(async (req) => {
 
       console.log("Created submission:", submissionId, "signing_url:", signingUrl);
 
-      // 5. Save to signature_requests
+      // Save to signature_requests
       const resolvedVolunteerId = volunteer_id || userId;
       const { error: dbError } = await supabase.from("signature_requests").insert({
         task_id,
