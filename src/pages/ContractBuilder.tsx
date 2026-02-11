@@ -235,7 +235,7 @@ const ContractBuilder = () => {
   const [clausulesOpen, setClausulesOpen] = useState(true);
   const [contractColors, setContractColors] = useState({ primary: '#1a5632', accent: '#e8742e', bg: '#ffffff' });
   const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null);
-  const [clubData, setClubData] = useState<{ name: string; logo_url: string | null } | null>(null);
+  const [clubData, setClubData] = useState<{ name: string; logo_url: string | null; owner_name: string | null } | null>(null);
   const [clubSignatureUrl, setClubSignatureUrl] = useState<string | null>(null);
   const [uploadingSignature, setUploadingSignature] = useState(false);
   const [existingTemplates, setExistingTemplates] = useState<{ id: string; name: string }[]>([]);
@@ -250,9 +250,12 @@ const ContractBuilder = () => {
 
     if (!clubId) return;
 
-    // Fetch club info
-    supabase.from('clubs').select('name, logo_url').eq('id', clubId).single().then(({ data }) => {
-      if (data) setClubData(data);
+    // Fetch club info + owner name
+    supabase.from('clubs').select('name, logo_url, owner_id').eq('id', clubId).single().then(async ({ data }) => {
+      if (data) {
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', data.owner_id).single();
+        setClubData({ name: data.name, logo_url: data.logo_url, owner_name: profile?.full_name || null });
+      }
     });
 
     // Fetch existing templates for this club
@@ -978,7 +981,7 @@ const ContractBuilder = () => {
                         <div className="py-4 px-1">
                           <div className="flex gap-12">
                             <div className="flex-1">
-                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>{clubData?.name || '{{Clubnaam}}'}:</p>
+                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>{clubData?.name || '{{Clubnaam}}'} — {clubData?.owner_name || 'Verantwoordelijke'}:</p>
                               {clubSignatureUrl ? (
                                 <div className="mb-2">
                                   <img src={clubSignatureUrl} alt="Handtekening organisatie" className="max-h-16 object-contain" />
