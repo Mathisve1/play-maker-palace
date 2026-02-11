@@ -21,7 +21,80 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Auth check
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY") || "";
+
+  // Check if this is a webhook call (no auth required - comes from DocuSeal)
+  const url = new URL(req.url);
+  const action = url.searchParams.get("action");
+
+  if (action === "webhook") {
+    // Webhook doesn't require auth - handle it directly with service role
+    try {
+      const body = await req.json();
+      console.log("DocuSeal webhook received:", JSON.stringify(body));
+
+      const { event_type, data: webhookData } = body;
+
+      if (event_type === "form.completed" && webhookData) {
+        const submissionId = webhookData.submission_id || webhookData.id;
+        const documents = webhookData.documents || [];
+        const documentUrl = documents.length > 0 ? documents[0].url : null;
+
+        if (submissionId) {
+          const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+          if (serviceRoleKey) {
+            const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+            const { data: sigReq } = await adminClient
+              .from("signature_requests")
+              .select("id, volunteer_id, club_owner_id, task_id")
+              .eq("docuseal_submission_id", submissionId)
+              .maybeSingle();
+
+            if (sigReq) {
+              const updatePayload: Record<string, unknown> = {
+                status: "completed",
+                updated_at: new Date().toISOString(),
+              };
+              if (documentUrl) {
+                updatePayload.document_url = documentUrl;
+              }
+
+              await adminClient
+                .from("signature_requests")
+                .update(updatePayload)
+                .eq("id", sigReq.id);
+
+              // Notify the club owner
+              await adminClient.from("notifications").insert({
+                user_id: sigReq.club_owner_id,
+                title: "Contract ondertekend",
+                message: "Een vrijwilliger heeft het contract ondertekend.",
+                type: "contract_signed",
+                metadata: { task_id: sigReq.task_id, signature_request_id: sigReq.id },
+              });
+
+              console.log("Webhook: Updated signature request", sigReq.id, "to completed, document_url:", documentUrl);
+            } else {
+              console.log("Webhook: No matching signature request for submission", submissionId);
+            }
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (error: unknown) {
+      console.error("Webhook error:", error);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // Auth check for all non-webhook actions
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -30,8 +103,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseAnonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY") || "";
   if (!supabaseAnonKey) {
     return new Response(JSON.stringify({ error: "Supabase key not configured" }), {
       status: 500,
@@ -321,6 +392,9 @@ Deno.serve(async (req) => {
         values,
       };
 
+      // Build webhook URL so DocuSeal notifies us when signing completes
+      const webhookUrl = `${supabaseUrl}/functions/v1/docuseal?action=webhook`;
+
       // Create DocuSeal submission
       const resp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
         method: "POST",
@@ -332,6 +406,7 @@ Deno.serve(async (req) => {
           template_id: Number(template_id),
           send_email: true,
           submitters: [submitter],
+          webhook_url: webhookUrl,
         }),
       });
 
@@ -623,66 +698,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // POST webhook: DocuSeal calls this when a form is completed
-    if (req.method === "POST" && action === "webhook") {
-      const body = await req.json();
-      console.log("DocuSeal webhook received:", JSON.stringify(body));
-
-      const { event_type, data: webhookData } = body;
-
-      if (event_type === "form.completed" && webhookData) {
-        const submissionId = webhookData.submission_id || webhookData.id;
-        const documents = webhookData.documents || [];
-        const documentUrl = documents.length > 0 ? documents[0].url : null;
-
-        if (submissionId) {
-          // Use service role to bypass RLS
-          const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-          if (serviceRoleKey) {
-            const adminClient = createClient(supabaseUrl, serviceRoleKey);
-            
-            // Find signature request by docuseal_submission_id
-            const { data: sigReq } = await adminClient
-              .from("signature_requests")
-              .select("id, volunteer_id, club_owner_id, task_id")
-              .eq("docuseal_submission_id", submissionId)
-              .maybeSingle();
-
-            if (sigReq) {
-              const updatePayload: Record<string, unknown> = {
-                status: "completed",
-                updated_at: new Date().toISOString(),
-              };
-              if (documentUrl) {
-                updatePayload.document_url = documentUrl;
-              }
-
-              await adminClient
-                .from("signature_requests")
-                .update(updatePayload)
-                .eq("id", sigReq.id);
-
-              // Notify the club owner
-              await adminClient.from("notifications").insert({
-                user_id: sigReq.club_owner_id,
-                title: "Contract ondertekend",
-                message: "Een vrijwilliger heeft het contract ondertekend.",
-                type: "contract_signed",
-                metadata: { task_id: sigReq.task_id, signature_request_id: sigReq.id },
-              });
-
-              console.log("Webhook: Updated signature request", sigReq.id, "to completed");
-            } else {
-              console.log("Webhook: No matching signature request for submission", submissionId);
-            }
-          }
-        }
-      }
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     // POST send-personalized-contract: Create DocuSeal template from personalized PDF + submission
     if (req.method === "POST" && action === "send-personalized-contract") {
@@ -747,10 +762,10 @@ Deno.serve(async (req) => {
           areas: [{
             attachment_uuid: documentUuid,
             page: lastPage,
-            x: 0.55,
-            y: 0.85,
-            w: 0.35,
-            h: 0.06,
+            x: 0.56,
+            y: 0.78,
+            w: 0.30,
+            h: 0.05,
           }],
         },
       ];
@@ -778,6 +793,9 @@ Deno.serve(async (req) => {
         // Continue anyway - submission might still work
       }
 
+      // Build webhook URL so DocuSeal notifies us when signing completes
+      const webhookUrl = `${supabaseUrl}/functions/v1/docuseal?action=webhook`;
+
       // STEP 3: Create submission using the template
       const submissionResp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
         method: "POST",
@@ -793,6 +811,7 @@ Deno.serve(async (req) => {
             name: volunteer_name || undefined,
             role: templateRole,
           }],
+          webhook_url: webhookUrl,
         }),
       });
 
