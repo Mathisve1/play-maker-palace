@@ -14,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      club_invitations: {
+        Row: {
+          club_id: string
+          created_at: string
+          email: string | null
+          expires_at: string
+          id: string
+          invite_token: string
+          invited_by: string
+          role: Database["public"]["Enums"]["club_role"]
+          status: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["club_role"]
+          status?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["club_role"]
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_invitations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_members: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["club_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["club_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["club_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clubs: {
         Row: {
           created_at: string
@@ -340,6 +419,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_club_role: {
+        Args: {
+          _club_id: string
+          _roles: Database["public"]["Enums"]["club_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -350,6 +437,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "club_owner" | "volunteer"
+      club_role: "bestuurder" | "beheerder" | "medewerker"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -478,6 +566,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "club_owner", "volunteer"],
+      club_role: ["bestuurder", "beheerder", "medewerker"],
     },
   },
 } as const

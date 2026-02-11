@@ -4,8 +4,10 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield } from 'lucide-react';
 import Logo from '@/components/Logo';
+import ClubSettingsDialog from '@/components/ClubSettingsDialog';
+import ClubMembersDialog from '@/components/ClubMembersDialog';
 import { Language } from '@/i18n/translations';
 
 interface Signup {
@@ -137,6 +139,11 @@ const ClubOwnerDashboard = () => {
   const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
   const [clubId, setClubId] = useState<string | null>(null);
   const [clubInfo, setClubInfo] = useState<{ name: string; sport: string | null; location: string | null; logo_url: string | null } | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [myClubRole, setMyClubRole] = useState<'bestuurder' | 'beheerder' | 'medewerker'>('medewerker');
+  const [showSettings, setShowSettings] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState('');
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -160,6 +167,7 @@ const ClubOwnerDashboard = () => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/login'); return; }
+      setCurrentUserId(session.user.id);
 
       const { data: profileData } = await supabase
         .from('profiles')
@@ -168,19 +176,45 @@ const ClubOwnerDashboard = () => {
         .maybeSingle();
       setProfile(profileData);
 
-      const { data: clubs } = await supabase
+      // Check if user is owner of any club
+      const { data: ownedClubs } = await supabase
         .from('clubs')
         .select('id, name, sport, location, logo_url')
         .eq('owner_id', session.user.id);
 
-      if (!clubs || clubs.length === 0) {
+      let activeClub = ownedClubs?.[0] || null;
+      let ownerFlag = !!activeClub;
+
+      // If not owner, check club_members
+      if (!activeClub) {
+        const { data: memberships } = await supabase
+          .from('club_members')
+          .select('club_id, role')
+          .eq('user_id', session.user.id);
+
+        if (memberships && memberships.length > 0) {
+          const { data: club } = await supabase
+            .from('clubs')
+            .select('id, name, sport, location, logo_url')
+            .eq('id', memberships[0].club_id)
+            .maybeSingle();
+          activeClub = club;
+          setMyClubRole(memberships[0].role as 'bestuurder' | 'beheerder' | 'medewerker');
+        }
+      } else {
+        setMyClubRole('bestuurder');
+      }
+
+      setIsOwner(ownerFlag);
+
+      if (!activeClub) {
         setLoading(false);
         return;
       }
 
-      setClubId(clubs[0].id);
-      setClubInfo({ name: clubs[0].name, sport: clubs[0].sport, location: clubs[0].location, logo_url: clubs[0].logo_url });
-      const clubIds = clubs.map(c => c.id);
+      setClubId(activeClub.id);
+      setClubInfo({ name: activeClub.name, sport: activeClub.sport, location: activeClub.location, logo_url: activeClub.logo_url });
+      const clubIds = [activeClub.id];
 
       const { data: tasksData } = await supabase
         .from('tasks')
@@ -335,7 +369,25 @@ const ClubOwnerDashboard = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {(isOwner || myClubRole === 'bestuurder') && clubId && (
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                title="Club instellingen"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
+            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && clubId && (
+              <button
+                onClick={() => setShowMembers(true)}
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                title="Leden beheren"
+              >
+                <Shield className="w-4 h-4" />
+              </button>
+            )}
             <span className="text-sm text-muted-foreground hidden md:block">
               {profile?.full_name || profile?.email}
             </span>
@@ -677,6 +729,26 @@ const ClubOwnerDashboard = () => {
           )}
         </div>
       </main>
+
+      {/* Dialogs */}
+      {showSettings && clubId && clubInfo && (
+        <ClubSettingsDialog
+          clubId={clubId}
+          clubInfo={clubInfo}
+          onClose={() => setShowSettings(false)}
+          onUpdated={(info) => setClubInfo(info)}
+        />
+      )}
+
+      {showMembers && clubId && (
+        <ClubMembersDialog
+          clubId={clubId}
+          currentUserId={currentUserId}
+          isOwner={isOwner}
+          currentUserRole={myClubRole}
+          onClose={() => setShowMembers(false)}
+        />
+      )}
     </div>
   );
 };
