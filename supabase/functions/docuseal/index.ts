@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
           { name: "IBAN", type: "text", role: "First Party" },
           { name: "Rekeninghouder", type: "text", role: "First Party" },
           { name: "Handtekening", type: "signature", role: "First Party",
-            areas: [{ page: Math.max(0, (templateData.documents?.[0]?.pages?.length || 1) - 1), x: 0.55, y: 0.85, w: 0.35, h: 0.06 }] },
+            areas: [{ attachment_uuid: templateData.documents?.[0]?.uuid, page: Math.max(0, (templateData.documents?.[0]?.pages?.length || 1) - 1), x: 0.55, y: 0.85, w: 0.35, h: 0.06 }] },
         ];
         const putResp = await fetch(`${DOCUSEAL_API_URL}/templates/${Number(template_id)}`, {
           method: "PUT",
@@ -422,7 +422,7 @@ Deno.serve(async (req) => {
               { name: "Uren", type: "text", role: "First Party" },
               { name: "Onkostenvergoeding", type: "text", role: "First Party" },
           { name: "Handtekening", type: "signature", role: "First Party",
-            areas: [{ page: Math.max(0, (data.documents?.[0]?.pages?.length || 1) - 1), x: 0.55, y: 0.85, w: 0.35, h: 0.06 }] },
+            areas: [{ attachment_uuid: data.documents?.[0]?.uuid, page: Math.max(0, (data.documents?.[0]?.pages?.length || 1) - 1), x: 0.55, y: 0.85, w: 0.35, h: 0.06 }] },
         ],
       }),
     });
@@ -717,9 +717,14 @@ Deno.serve(async (req) => {
       }
 
       const docusealTemplateId = templateData.id;
-      console.log("Created personalized DocuSeal template:", docusealTemplateId);
+      const attachmentUuid = templateData.documents?.[0]?.uuid || null;
+      const lastPage = Math.max(0, (templateData.documents?.[0]?.pages?.length || 1) - 1);
+      console.log("Created personalized DocuSeal template:", docusealTemplateId, "attachmentUuid:", attachmentUuid, "lastPage:", lastPage);
 
       // 2. Add ONLY a signature field (all other data is already in the PDF)
+      const sigArea: Record<string, unknown> = { page: lastPage, x: 0.55, y: 0.85, w: 0.35, h: 0.06 };
+      if (attachmentUuid) sigArea.attachment_uuid = attachmentUuid;
+
       const putResp = await fetch(`${DOCUSEAL_API_URL}/templates/${docusealTemplateId}`, {
         method: "PUT",
         headers: {
@@ -728,12 +733,12 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           fields: [
-            { name: "Handtekening", type: "signature", role: "First Party",
-              areas: [{ page: Math.max(0, (templateData.documents?.[0]?.pages?.length || 1) - 1), x: 0.55, y: 0.85, w: 0.35, h: 0.06 }] },
+            { name: "Handtekening", type: "signature", role: "First Party", areas: [sigArea] },
           ],
         }),
       });
-      console.log("PUT signature field status:", putResp.status);
+      const putData = await putResp.json();
+      console.log("PUT signature field status:", putResp.status, "response:", JSON.stringify(putData?.fields?.map((f: any) => ({ name: f.name, areas: f.areas }))));
 
       // 3. Determine submitter role
       const submitterRole = templateData.submitters?.[0]?.name || "First Party";
