@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Navigation, MapPin } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { MapPin } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface TaskMapProps {
   location: string;
@@ -8,6 +10,10 @@ interface TaskMapProps {
 }
 
 const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const [coords, setCoords] = useState<[number, number] | null>(null);
+
   const searchQuery = meetingPoint !== location
     ? `${meetingPoint}, ${location}`
     : location;
@@ -17,8 +23,67 @@ const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
   const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
   const wazeUrl = `https://waze.com/ul?q=${encodedAddress}&navigate=yes`;
 
+  // Geocode the address
+  useEffect(() => {
+    const geocode = async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`
+        );
+        const data = await res.json();
+        if (data?.[0]) {
+          setCoords([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+        }
+      } catch (e) {
+        console.error('Geocoding failed:', e);
+      }
+    };
+    geocode();
+  }, [encodedAddress]);
+
+  // Initialize map
+  useEffect(() => {
+    if (!coords || !mapRef.current) return;
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+    }
+
+    const map = L.map(mapRef.current).setView(coords, 15);
+    mapInstanceRef.current = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    const redIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+    });
+
+    L.marker(coords, { icon: redIcon })
+      .addTo(map)
+      .bindPopup(meetingPoint)
+      .openPopup();
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, [coords, meetingPoint]);
+
   return (
     <div className="space-y-4">
+      {/* OpenStreetMap */}
+      <div
+        ref={mapRef}
+        className="w-full h-56 rounded-xl overflow-hidden border border-border z-0"
+        style={{ minHeight: '220px' }}
+      />
+
       {/* Location info */}
       <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/40 border border-border">
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -37,7 +102,6 @@ const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
 
       {/* Navigation buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Google Maps button */}
         <a
           href={googleMapsUrl}
           target="_blank"
@@ -51,7 +115,6 @@ const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
           Open in Google Maps
         </a>
 
-        {/* Waze button */}
         <a
           href={wazeUrl}
           target="_blank"
