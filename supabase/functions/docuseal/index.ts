@@ -95,8 +95,9 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { template_id, task_id, volunteer_email, volunteer_name } = body;
 
+      console.log("create-submission body:", JSON.stringify({ template_id, task_id, volunteer_email, volunteer_name }));
       if (!template_id || !task_id || !volunteer_email) {
-        return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        return new Response(JSON.stringify({ error: `Missing required fields: template_id=${template_id}, task_id=${task_id}, volunteer_email=${volunteer_email}` }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
