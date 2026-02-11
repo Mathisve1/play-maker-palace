@@ -10,6 +10,7 @@ interface VolunteerProfile {
   avatar_url: string | null;
   created_at?: string;
   phone?: string | null;
+  bio?: string | null;
   bank_iban?: string | null;
   bank_holder_name?: string | null;
   bank_consent_given?: boolean;
@@ -145,6 +146,9 @@ const VolunteerProfileDialog = ({
           </h3>
           {volunteer.email && (
             <p className="text-sm text-muted-foreground">{volunteer.email}</p>
+          )}
+          {volunteer.bio && (
+            <p className="text-sm text-muted-foreground text-center mt-1 italic">"{volunteer.bio}"</p>
           )}
         </div>
 

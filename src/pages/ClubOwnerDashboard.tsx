@@ -21,6 +21,7 @@ interface VolunteerProfile {
   avatar_url: string | null;
   created_at?: string;
   phone?: string | null;
+  bio?: string | null;
   bank_iban?: string | null;
   bank_holder_name?: string | null;
   bank_consent_given?: boolean;
@@ -278,7 +279,7 @@ const ClubOwnerDashboard = () => {
           const volunteerIds = [...new Set(signupsData.map(s => s.volunteer_id))];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, email, avatar_url, created_at, phone, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date')
+            .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date')
             .in('id', volunteerIds);
 
           const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -288,7 +289,7 @@ const ClubOwnerDashboard = () => {
             const vol = profileMap.get(s.volunteer_id);
             const signup: Signup = {
               ...s,
-              volunteer: vol ? { id: vol.id, full_name: vol.full_name, email: vol.email, avatar_url: vol.avatar_url, created_at: vol.created_at, phone: vol.phone, bank_iban: vol.bank_iban, bank_holder_name: vol.bank_holder_name, bank_consent_given: vol.bank_consent_given, bank_consent_date: vol.bank_consent_date } : null,
+              volunteer: vol ? { id: vol.id, full_name: vol.full_name, email: vol.email, avatar_url: vol.avatar_url, created_at: vol.created_at, phone: vol.phone, bio: vol.bio, bank_iban: vol.bank_iban, bank_holder_name: vol.bank_holder_name, bank_consent_given: vol.bank_consent_given, bank_consent_date: vol.bank_consent_date } : null,
             };
             if (!grouped[s.task_id]) grouped[s.task_id] = [];
             grouped[s.task_id].push(signup);
