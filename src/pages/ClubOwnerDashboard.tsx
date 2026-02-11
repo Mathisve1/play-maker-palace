@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
@@ -25,6 +25,7 @@ interface Task {
   location: string | null;
   spots_available: number;
   status: string;
+  club_id?: string;
 }
 
 const dashboardT = {
@@ -41,6 +42,23 @@ const dashboardT = {
     logout: 'Uitloggen',
     spots: 'plaatsen',
     volunteers: 'vrijwilligers',
+    newTask: 'Nieuwe taak',
+    taskTitle: 'Titel',
+    taskDescription: 'Beschrijving',
+    taskDate: 'Datum',
+    taskLocation: 'Locatie',
+    taskSpots: 'Aantal plaatsen',
+    taskBriefingTime: 'Briefing tijd',
+    taskBriefingLocation: 'Briefing locatie',
+    taskStartTime: 'Starttijd',
+    taskEndTime: 'Eindtijd',
+    taskNotes: 'Notities',
+    taskExpenseReimbursement: 'Onkostenvergoeding',
+    taskExpenseAmount: 'Bedrag (€)',
+    create: 'Aanmaken',
+    creating: 'Bezig...',
+    cancel: 'Annuleren',
+    taskCreated: 'Taak succesvol aangemaakt!',
   },
   fr: {
     title: 'Tableau de bord Club',
@@ -55,6 +73,23 @@ const dashboardT = {
     logout: 'Déconnexion',
     spots: 'places',
     volunteers: 'bénévoles',
+    newTask: 'Nouvelle tâche',
+    taskTitle: 'Titre',
+    taskDescription: 'Description',
+    taskDate: 'Date',
+    taskLocation: 'Lieu',
+    taskSpots: 'Nombre de places',
+    taskBriefingTime: 'Heure de briefing',
+    taskBriefingLocation: 'Lieu de briefing',
+    taskStartTime: 'Heure de début',
+    taskEndTime: 'Heure de fin',
+    taskNotes: 'Notes',
+    taskExpenseReimbursement: 'Remboursement des frais',
+    taskExpenseAmount: 'Montant (€)',
+    create: 'Créer',
+    creating: 'En cours...',
+    cancel: 'Annuler',
+    taskCreated: 'Tâche créée avec succès!',
   },
   en: {
     title: 'Club Dashboard',
@@ -69,6 +104,23 @@ const dashboardT = {
     logout: 'Log out',
     spots: 'spots',
     volunteers: 'volunteers',
+    newTask: 'New task',
+    taskTitle: 'Title',
+    taskDescription: 'Description',
+    taskDate: 'Date',
+    taskLocation: 'Location',
+    taskSpots: 'Available spots',
+    taskBriefingTime: 'Briefing time',
+    taskBriefingLocation: 'Briefing location',
+    taskStartTime: 'Start time',
+    taskEndTime: 'End time',
+    taskNotes: 'Notes',
+    taskExpenseReimbursement: 'Expense reimbursement',
+    taskExpenseAmount: 'Amount (€)',
+    create: 'Create',
+    creating: 'Creating...',
+    cancel: 'Cancel',
+    taskCreated: 'Task created successfully!',
   },
 };
 
@@ -83,13 +135,31 @@ const ClubOwnerDashboard = () => {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [updatingSignup, setUpdatingSignup] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
+  const [clubId, setClubId] = useState<string | null>(null);
+
+  // Create task form
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creatingTask, setCreatingTask] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    task_date: '',
+    location: '',
+    spots_available: 1,
+    briefing_time: '',
+    briefing_location: '',
+    start_time: '',
+    end_time: '',
+    notes: '',
+    expense_reimbursement: false,
+    expense_amount: '',
+  });
 
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/login'); return; }
 
-      // Profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('full_name, email')
@@ -97,7 +167,6 @@ const ClubOwnerDashboard = () => {
         .maybeSingle();
       setProfile(profileData);
 
-      // Get club(s) for this owner
       const { data: clubs } = await supabase
         .from('clubs')
         .select('id')
@@ -108,18 +177,17 @@ const ClubOwnerDashboard = () => {
         return;
       }
 
+      setClubId(clubs[0].id);
       const clubIds = clubs.map(c => c.id);
 
-      // Get tasks for these clubs
       const { data: tasksData } = await supabase
         .from('tasks')
-        .select('id, title, description, task_date, location, spots_available, status')
+        .select('id, title, description, task_date, location, spots_available, status, club_id')
         .in('club_id', clubIds)
         .order('task_date', { ascending: true });
 
       setTasks(tasksData || []);
 
-      // Get all signups for these tasks
       if (tasksData && tasksData.length > 0) {
         const taskIds = tasksData.map(t => t.id);
         const { data: signupsData } = await supabase
@@ -128,7 +196,6 @@ const ClubOwnerDashboard = () => {
           .in('task_id', taskIds);
 
         if (signupsData && signupsData.length > 0) {
-          // Fetch volunteer profiles
           const volunteerIds = [...new Set(signupsData.map(s => s.volunteer_id))];
           const { data: profiles } = await supabase
             .from('profiles')
@@ -186,7 +253,52 @@ const ClubOwnerDashboard = () => {
     setUpdatingSignup(null);
   };
 
-  const langLabels: Record<Language, string> = { nl: 'NL', fr: 'FR', en: 'EN' };
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clubId || !newTask.title.trim()) return;
+
+    setCreatingTask(true);
+    const insertData = {
+      club_id: clubId,
+      title: newTask.title.trim(),
+      description: newTask.description.trim() || null,
+      task_date: newTask.task_date || null,
+      location: newTask.location.trim() || null,
+      spots_available: newTask.spots_available,
+      briefing_time: newTask.briefing_time || null,
+      briefing_location: newTask.briefing_location.trim() || null,
+      start_time: newTask.start_time || null,
+      end_time: newTask.end_time || null,
+      notes: newTask.notes.trim() || null,
+      expense_reimbursement: newTask.expense_reimbursement,
+      expense_amount: newTask.expense_reimbursement && newTask.expense_amount
+        ? parseFloat(newTask.expense_amount)
+        : null,
+    };
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert(insertData)
+      .select('id, title, description, task_date, location, spots_available, status, club_id')
+      .maybeSingle();
+
+    if (error) {
+      toast.error(error.message);
+    } else if (data) {
+      toast.success(dt.taskCreated);
+      setTasks(prev => [...prev, data]);
+      setShowCreateForm(false);
+      setNewTask({
+        title: '', description: '', task_date: '', location: '', spots_available: 1,
+        briefing_time: '', briefing_location: '', start_time: '', end_time: '',
+        notes: '', expense_reimbursement: false, expense_amount: '',
+      });
+    }
+    setCreatingTask(false);
+  };
+
+  const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
+  const labelClass = "block text-xs font-medium text-muted-foreground mb-1";
 
   if (loading) {
     return (
@@ -218,13 +330,193 @@ const ClubOwnerDashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-heading font-bold text-foreground">{dt.title}</h1>
-          <p className="text-muted-foreground mt-1">{dt.myTasks}: {tasks.length}</p>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-heading font-bold text-foreground">{dt.title}</h1>
+            <p className="text-muted-foreground mt-1">{dt.myTasks}: {tasks.length}</p>
+          </div>
+          {clubId && (
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              {showCreateForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {showCreateForm ? dt.cancel : dt.newTask}
+            </button>
+          )}
         </motion.div>
 
+        {/* Create task form */}
+        <AnimatePresence>
+          {showCreateForm && (
+            <motion.form
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              onSubmit={handleCreateTask}
+              className="mt-4 bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden"
+            >
+              <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{dt.newTask}</h2>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Title - full width */}
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>{dt.taskTitle} *</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={200}
+                    value={newTask.title}
+                    onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+
+                {/* Description - full width */}
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>{dt.taskDescription}</label>
+                  <textarea
+                    rows={3}
+                    maxLength={2000}
+                    value={newTask.description}
+                    onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))}
+                    className={inputClass + ' resize-none'}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>{dt.taskDate}</label>
+                  <input
+                    type="datetime-local"
+                    value={newTask.task_date}
+                    onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>{dt.taskLocation}</label>
+                  <input
+                    type="text"
+                    maxLength={300}
+                    value={newTask.location}
+                    onChange={e => setNewTask(p => ({ ...p, location: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>{dt.taskSpots}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={999}
+                    value={newTask.spots_available}
+                    onChange={e => setNewTask(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>{dt.taskBriefingLocation}</label>
+                  <input
+                    type="text"
+                    maxLength={300}
+                    value={newTask.briefing_location}
+                    onChange={e => setNewTask(p => ({ ...p, briefing_location: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>{dt.taskBriefingTime}</label>
+                  <input
+                    type="datetime-local"
+                    value={newTask.briefing_time}
+                    onChange={e => setNewTask(p => ({ ...p, briefing_time: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>{dt.taskStartTime}</label>
+                  <input
+                    type="datetime-local"
+                    value={newTask.start_time}
+                    onChange={e => setNewTask(p => ({ ...p, start_time: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>{dt.taskEndTime}</label>
+                  <input
+                    type="datetime-local"
+                    value={newTask.end_time}
+                    onChange={e => setNewTask(p => ({ ...p, end_time: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>{dt.taskNotes}</label>
+                  <input
+                    type="text"
+                    maxLength={500}
+                    value={newTask.notes}
+                    onChange={e => setNewTask(p => ({ ...p, notes: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+
+                {/* Expense reimbursement */}
+                <div className="sm:col-span-2 flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newTask.expense_reimbursement}
+                      onChange={e => setNewTask(p => ({ ...p, expense_reimbursement: e.target.checked }))}
+                      className="w-4 h-4 rounded border-input accent-primary"
+                    />
+                    <span className="text-sm text-foreground">{dt.taskExpenseReimbursement}</span>
+                  </label>
+                  {newTask.expense_reimbursement && (
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      placeholder={dt.taskExpenseAmount}
+                      value={newTask.expense_amount}
+                      onChange={e => setNewTask(p => ({ ...p, expense_amount: e.target.value }))}
+                      className={inputClass + ' max-w-[150px]'}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {dt.cancel}
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingTask || !newTask.title.trim()}
+                  className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {creatingTask ? dt.creating : dt.create}
+                </button>
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        {/* Tasks list */}
         <div className="mt-6 space-y-4">
-          {tasks.length === 0 ? (
+          {tasks.length === 0 && !showCreateForm ? (
             <div className="text-center py-16 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>{dt.noTasks}</p>
@@ -244,7 +536,6 @@ const ClubOwnerDashboard = () => {
                   transition={{ delay: i * 0.05 }}
                   className="bg-card rounded-2xl shadow-card border border-transparent overflow-hidden"
                 >
-                  {/* Task header */}
                   <button
                     onClick={() => setExpandedTask(isExpanded ? null : task.id)}
                     className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors"
@@ -286,7 +577,6 @@ const ClubOwnerDashboard = () => {
                     </div>
                   </button>
 
-                  {/* Signups list */}
                   {isExpanded && (
                     <div className="border-t border-border px-5 pb-5">
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mt-4 mb-3">
