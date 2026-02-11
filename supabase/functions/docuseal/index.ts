@@ -160,6 +160,122 @@ Deno.serve(async (req) => {
       });
     }
 
+    // POST create template from PDF
+    if (req.method === "POST" && action === "create-template-from-pdf") {
+      const body = await req.json();
+      const { name, file_url, club_id } = body;
+
+      if (!name || !file_url || !club_id) {
+        return new Response(JSON.stringify({ error: "Missing required fields: name, file_url, club_id" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Download the PDF from storage URL to get base64
+      const pdfResp = await fetch(file_url);
+      if (!pdfResp.ok) {
+        throw new Error(`Failed to download PDF: ${pdfResp.status}`);
+      }
+      const pdfBuffer = await pdfResp.arrayBuffer();
+      const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+
+      // Create template in DocuSeal
+      const resp = await fetch(`${DOCUSEAL_API_URL}/templates/pdf`, {
+        method: "POST",
+        headers: {
+          "X-Auth-Token": DOCUSEAL_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          documents: [{
+            name: "contract.pdf",
+            file: pdfBase64,
+          }],
+        }),
+      });
+
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(`DocuSeal API error [${resp.status}]: ${JSON.stringify(data)}`);
+      }
+
+      const docusealTemplateId = data.id;
+
+      // Save to our contract_templates table
+      const { data: templateRecord, error: dbError } = await supabase
+        .from("contract_templates")
+        .insert({
+          club_id,
+          name,
+          docuseal_template_id: docusealTemplateId,
+          created_by: userId,
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error("DB insert error:", dbError);
+        throw new Error(`Database error: ${dbError.message}`);
+      }
+
+      return new Response(JSON.stringify({ success: true, template: templateRecord }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // DELETE template
+    if (req.method === "POST" && action === "delete-template") {
+      const body = await req.json();
+      const { template_id } = body;
+
+      if (!template_id) {
+        return new Response(JSON.stringify({ error: "Missing template_id" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get the template record first
+      const { data: template, error: fetchError } = await supabase
+        .from("contract_templates")
+        .select("*")
+        .eq("id", template_id)
+        .single();
+
+      if (fetchError || !template) {
+        return new Response(JSON.stringify({ error: "Template not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Delete from DocuSeal
+      try {
+        await fetch(`${DOCUSEAL_API_URL}/templates/${template.docuseal_template_id}`, {
+          method: "DELETE",
+          headers: { "X-Auth-Token": DOCUSEAL_API_KEY },
+        });
+      } catch (e) {
+        console.error("DocuSeal delete error (continuing):", e);
+      }
+
+      // Delete from our DB
+      const { error: dbError } = await supabase
+        .from("contract_templates")
+        .delete()
+        .eq("id", template_id);
+
+      if (dbError) {
+        throw new Error(`Database error: ${dbError.message}`);
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

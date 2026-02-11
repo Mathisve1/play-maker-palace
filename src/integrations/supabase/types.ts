@@ -126,6 +126,41 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_templates: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string
+          docuseal_template_id: number
+          id: string
+          name: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by: string
+          docuseal_template_id: number
+          id?: string
+          name: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          docuseal_template_id?: number
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           club_owner_id: string
@@ -369,6 +404,7 @@ export type Database = {
           briefing_location: string | null
           briefing_time: string | null
           club_id: string
+          contract_template_id: string | null
           created_at: string
           description: string | null
           end_time: string | null
@@ -387,6 +423,7 @@ export type Database = {
           briefing_location?: string | null
           briefing_time?: string | null
           club_id: string
+          contract_template_id?: string | null
           created_at?: string
           description?: string | null
           end_time?: string | null
@@ -405,6 +442,7 @@ export type Database = {
           briefing_location?: string | null
           briefing_time?: string | null
           club_id?: string
+          contract_template_id?: string | null
           created_at?: string
           description?: string | null
           end_time?: string | null
@@ -425,6 +463,13 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_contract_template_id_fkey"
+            columns: ["contract_template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
             referencedColumns: ["id"]
           },
         ]
