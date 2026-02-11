@@ -50,6 +50,18 @@ interface VolunteerPayment {
   club_name?: string;
 }
 
+interface SignatureContract {
+  id: string;
+  task_id: string;
+  status: string;
+  signing_url: string | null;
+  document_url: string | null;
+  created_at: string;
+  updated_at: string;
+  task_title?: string;
+  club_name?: string;
+}
+
 const langLabels: Record<Language, string> = { nl: 'NL', fr: 'FR', en: 'EN' };
 
 const VolunteerDashboard = () => {
@@ -64,10 +76,12 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts'>('all');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
   const [signingContract, setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
+  const [myContracts, setMyContracts] = useState<SignatureContract[]>([]);
+  const [checkingContract, setCheckingContract] = useState<string | null>(null);
   
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -164,6 +178,27 @@ const VolunteerDashboard = () => {
         setMyPayments(paymentsData.map(p => {
           const t = taskMap.get(p.task_id);
           return { ...p, task_title: t?.title, club_name: (t as any)?.clubs?.name };
+        }));
+      }
+
+      // Fetch signature requests (contracts)
+      const { data: contractsData } = await supabase
+        .from('signature_requests')
+        .select('id, task_id, status, signing_url, document_url, created_at, updated_at')
+        .eq('volunteer_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (contractsData && contractsData.length > 0) {
+        const contractTaskIds = [...new Set(contractsData.map(c => c.task_id))];
+        const { data: contractTasks } = await supabase
+          .from('tasks')
+          .select('id, title, clubs(name)')
+          .in('id', contractTaskIds);
+        const ctMap = new Map(contractTasks?.map(t => [t.id, t]) || []);
+
+        setMyContracts(contractsData.map(c => {
+          const t = ctMap.get(c.task_id);
+          return { ...c, task_title: t?.title, club_name: (t as any)?.clubs?.name };
         }));
       }
 
@@ -284,6 +319,40 @@ const VolunteerDashboard = () => {
     setSigningContract(null);
   };
 
+  const handleCheckContractStatus = async (contractId: string) => {
+    setCheckingContract(contractId);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=check-status`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ signature_request_id: contractId }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.success) {
+        setMyContracts(prev => prev.map(c =>
+          c.id === contractId
+            ? { ...c, status: data.status, document_url: data.document_url || c.document_url }
+            : c
+        ));
+        if (data.status === 'completed') {
+          toast.success('Contract is ondertekend! Je kunt het nu downloaden.');
+        } else {
+          toast.info('Contract is nog in afwachting van ondertekening.');
+        }
+      }
+    } catch {
+      toast.error('Kon de status niet ophalen.');
+    }
+    setCheckingContract(null);
+  };
 
   const filteredTasks = tasks.filter(task => {
     const q = searchQuery.toLowerCase();
@@ -302,9 +371,9 @@ const VolunteerDashboard = () => {
   });
 
   const dashboardT = {
-    nl: { welcome: 'Welkom', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', assigned: 'Toegekend', cancel: 'Annuleren', spots: 'plaatsen', logout: 'Uitloggen', mySignups: 'Mijn inschrijvingen', allTasks: 'Alle taken', myTasks: 'Mijn taken', noMyTasks: 'Geen taken in deze categorie.', signContract: 'Contract ondertekenen', signing: 'Laden...', ingeschreven: 'Ingeschreven', toegekend: 'Toegekend', payments: 'Vergoedingen', noPayments: 'Je hebt nog geen vergoedingen ontvangen.', paid: 'Betaald', processing: 'Verwerken', pending: 'In afwachting', failed: 'Mislukt', receipt: 'Betaalbewijs', paidOn: 'Betaald op' },
-    fr: { welcome: 'Bienvenue', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, clubs ou lieux...', noTasks: 'Il n\'y a actuellement aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', assigned: 'Attribué', cancel: 'Annuler', spots: 'places', logout: 'Déconnexion', mySignups: 'Mes inscriptions', allTasks: 'Toutes les tâches', myTasks: 'Mes tâches', noMyTasks: 'Aucune tâche dans cette catégorie.', signContract: 'Signer le contrat', signing: 'Chargement...', ingeschreven: 'Inscrits', toegekend: 'Attribués', payments: 'Remboursements', noPayments: 'Aucun remboursement reçu.', paid: 'Payé', processing: 'En cours', pending: 'En attente', failed: 'Échoué', receipt: 'Reçu', paidOn: 'Payé le' },
-    en: { welcome: 'Welcome', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, clubs or locations...', noTasks: 'There are currently no open tasks.', signUp: 'Sign up', signedUp: 'Signed up', assigned: 'Assigned', cancel: 'Cancel', spots: 'spots', logout: 'Log out', mySignups: 'My signups', allTasks: 'All tasks', myTasks: 'My tasks', noMyTasks: 'No tasks in this category.', signContract: 'Sign contract', signing: 'Loading...', ingeschreven: 'Signed up', toegekend: 'Assigned', payments: 'Reimbursements', noPayments: 'No reimbursements received yet.', paid: 'Paid', processing: 'Processing', pending: 'Pending', failed: 'Failed', receipt: 'Receipt', paidOn: 'Paid on' },
+    nl: { welcome: 'Welkom', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', assigned: 'Toegekend', cancel: 'Annuleren', spots: 'plaatsen', logout: 'Uitloggen', mySignups: 'Mijn inschrijvingen', allTasks: 'Alle taken', myTasks: 'Mijn taken', noMyTasks: 'Geen taken in deze categorie.', signContract: 'Contract ondertekenen', signing: 'Laden...', ingeschreven: 'Ingeschreven', toegekend: 'Toegekend', payments: 'Vergoedingen', noPayments: 'Je hebt nog geen vergoedingen ontvangen.', paid: 'Betaald', processing: 'Verwerken', pending: 'In afwachting', failed: 'Mislukt', receipt: 'Betaalbewijs', paidOn: 'Betaald op', contracts: 'Contracten', noContracts: 'Je hebt nog geen contracten.', signed: 'Ondertekend', awaitingSignature: 'Wacht op ondertekening', signNow: 'Nu ondertekenen', downloadContract: 'Download contract', checkStatus: 'Status ophalen', sentOn: 'Verstuurd op' },
+    fr: { welcome: 'Bienvenue', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, clubs ou lieux...', noTasks: 'Il n\'y a actuellement aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', assigned: 'Attribué', cancel: 'Annuler', spots: 'places', logout: 'Déconnexion', mySignups: 'Mes inscriptions', allTasks: 'Toutes les tâches', myTasks: 'Mes tâches', noMyTasks: 'Aucune tâche dans cette catégorie.', signContract: 'Signer le contrat', signing: 'Chargement...', ingeschreven: 'Inscrits', toegekend: 'Attribués', payments: 'Remboursements', noPayments: 'Aucun remboursement reçu.', paid: 'Payé', processing: 'En cours', pending: 'En attente', failed: 'Échoué', receipt: 'Reçu', paidOn: 'Payé le', contracts: 'Contrats', noContracts: 'Aucun contrat.', signed: 'Signé', awaitingSignature: 'En attente de signature', signNow: 'Signer maintenant', downloadContract: 'Télécharger le contrat', checkStatus: 'Vérifier le statut', sentOn: 'Envoyé le' },
+    en: { welcome: 'Welcome', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, clubs or locations...', noTasks: 'There are currently no open tasks.', signUp: 'Sign up', signedUp: 'Signed up', assigned: 'Assigned', cancel: 'Cancel', spots: 'spots', logout: 'Log out', mySignups: 'My signups', allTasks: 'All tasks', myTasks: 'My tasks', noMyTasks: 'No tasks in this category.', signContract: 'Sign contract', signing: 'Loading...', ingeschreven: 'Signed up', toegekend: 'Assigned', payments: 'Reimbursements', noPayments: 'No reimbursements received yet.', paid: 'Paid', processing: 'Processing', pending: 'Pending', failed: 'Failed', receipt: 'Receipt', paidOn: 'Paid on', contracts: 'Contracts', noContracts: 'No contracts yet.', signed: 'Signed', awaitingSignature: 'Awaiting signature', signNow: 'Sign now', downloadContract: 'Download contract', checkStatus: 'Check status', sentOn: 'Sent on' },
   };
   const dt = dashboardT[language];
 
@@ -449,7 +518,7 @@ const VolunteerDashboard = () => {
               )}
             </button>
             <button
-              onClick={() => setActiveTab('payments' as any)}
+              onClick={() => setActiveTab('payments')}
               className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${
                 activeTab === 'payments'
                   ? 'bg-primary text-primary-foreground shadow-sm'
@@ -468,11 +537,115 @@ const VolunteerDashboard = () => {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('contracts')}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${
+                activeTab === 'contracts'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <FileSignature className="w-3 h-3" />
+              {dt.contracts}
+              {myContracts.length > 0 && (
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${
+                  activeTab === 'contracts'
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'bg-primary/10 text-primary'
+                }`}>
+                  {myContracts.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Payments tab */}
-        {activeTab === 'payments' ? (
+        {/* Contracts tab */}
+        {activeTab === 'contracts' ? (
+          <div className="mt-6 space-y-4">
+            {myContracts.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <FileSignature className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>{dt.noContracts}</p>
+              </div>
+            ) : (
+              myContracts.map((contract, i) => (
+                <motion.div
+                  key={contract.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className={`bg-card rounded-2xl p-5 shadow-card border ${
+                    contract.status === 'completed' ? 'border-green-200 dark:border-green-800' : 'border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{contract.task_title || 'Contract'}</p>
+                      {contract.club_name && (
+                        <p className="text-xs text-muted-foreground">{contract.club_name}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        {contract.status === 'completed' ? (
+                          <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            {dt.signed}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                            <Clock className="w-3.5 h-3.5" />
+                            {dt.awaitingSignature}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {contract.status === 'pending' && contract.signing_url && (
+                        <a
+                          href={contract.signing_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                        >
+                          <FileSignature className="w-3.5 h-3.5" />
+                          {dt.signNow}
+                        </a>
+                      )}
+                      {contract.status === 'pending' && (
+                        <button
+                          onClick={() => handleCheckContractStatus(contract.id)}
+                          disabled={checkingContract === contract.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                        >
+                          {checkingContract === contract.id ? (
+                            <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Clock className="w-3 h-3" />
+                          )}
+                          {dt.checkStatus}
+                        </button>
+                      )}
+                      {contract.status === 'completed' && contract.document_url && (
+                        <a
+                          href={contract.document_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          {dt.downloadContract}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {dt.sentOn}: {new Date(contract.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </motion.div>
+              ))
+            )}
+          </div>
+        ) : activeTab === 'payments' ? (
           <div className="mt-6 space-y-4">
             {myPayments.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">

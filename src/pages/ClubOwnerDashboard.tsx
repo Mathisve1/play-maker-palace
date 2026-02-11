@@ -181,7 +181,7 @@ const ClubOwnerDashboard = () => {
   const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [volunteerPayments, setVolunteerPayments] = useState<Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }>>({});
-  const [signatureStatuses, setSignatureStatuses] = useState<Record<string, string>>({});
+  const [signatureStatuses, setSignatureStatuses] = useState<Record<string, { status: string; document_url?: string | null; id?: string }>>({});
   const [volunteerStripeIds, setVolunteerStripeIds] = useState<Record<string, string | null>>({});
   const [clubStripeId, setClubStripeId] = useState<string | null>(null);
   const [sendingPayment, setSendingPayment] = useState<string | null>(null);
@@ -322,11 +322,11 @@ const ClubOwnerDashboard = () => {
         // Fetch signature statuses
         const { data: sigsData } = await supabase
           .from('signature_requests')
-          .select('task_id, volunteer_id, status')
+          .select('id, task_id, volunteer_id, status, document_url')
           .in('task_id', taskIds);
         if (sigsData) {
-          const sigMap: Record<string, string> = {};
-          sigsData.forEach(s => { sigMap[`${s.task_id}-${s.volunteer_id}`] = s.status; });
+          const sigMap: Record<string, { status: string; document_url?: string | null; id?: string }> = {};
+          sigsData.forEach(s => { sigMap[`${s.task_id}-${s.volunteer_id}`] = { status: s.status, document_url: s.document_url, id: s.id }; });
           setSignatureStatuses(sigMap);
         }
       }
@@ -876,8 +876,8 @@ const ClubOwnerDashboard = () => {
                                     {(() => {
                                       const payKey = `${signup.task_id}-${signup.volunteer_id}`;
                                       const payment = volunteerPayments[payKey];
-                                      const sigStatus = signatureStatuses[payKey];
-                                      const contractSigned = sigStatus === 'completed';
+                                      const sigInfo = signatureStatuses[payKey];
+                                      const contractSigned = sigInfo?.status === 'completed';
                                       const volHasStripe = !!volunteerStripeIds[signup.volunteer_id];
                                       const canPay = clubStripeId && volHasStripe && contractSigned && (!payment || payment.status === 'failed');
 
@@ -898,6 +898,32 @@ const ClubOwnerDashboard = () => {
                                           <span className="flex items-center gap-1 text-xs text-yellow-600">
                                             <Clock className="w-3.5 h-3.5" /> Verwerken
                                           </span>
+                                        );
+                                      }
+                                      if (contractSigned && sigInfo?.document_url) {
+                                        return (
+                                          <div className="flex items-center gap-1">
+                                            <a
+                                              href={sigInfo.document_url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                              title="Download ondertekend contract"
+                                            >
+                                              <Download className="w-3 h-3" />
+                                              Contract
+                                            </a>
+                                            {canPay && (
+                                              <button
+                                                onClick={() => handleSendPayment(signup.task_id, signup.volunteer_id)}
+                                                disabled={sendingPayment === payKey}
+                                                className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
+                                              >
+                                                {sendingPayment === payKey ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                                                Betaal
+                                              </button>
+                                            )}
+                                          </div>
                                         );
                                       }
                                       if (!contractSigned) {
