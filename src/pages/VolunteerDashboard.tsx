@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle } from 'lucide-react';
 import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
 import { Language } from '@/i18n/translations';
@@ -226,6 +226,13 @@ const VolunteerDashboard = () => {
                 </button>
               ))}
             </div>
+            <button
+              onClick={() => navigate('/chat')}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              title={dt.allTasks}
+            >
+              <MessageCircle className="w-4 h-4" />
+            </button>
             <span className="text-sm text-muted-foreground hidden md:block">
               {profile?.full_name || profile?.email}
             </span>
