@@ -4,11 +4,12 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText } from 'lucide-react';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
 import NotificationBell from '@/components/NotificationBell';
+import ContractTemplatesDialog from '@/components/ContractTemplatesDialog';
 import { Language } from '@/i18n/translations';
 
 interface Signup {
@@ -62,6 +63,10 @@ const dashboardT = {
     creating: 'Bezig...',
     cancel: 'Annuleren',
     taskCreated: 'Taak succesvol aangemaakt!',
+    contractTemplate: 'Contractsjabloon',
+    selectTemplate: 'Selecteer een sjabloon...',
+    noTemplatesYet: 'Nog geen sjablonen. Maak er eerst een aan.',
+    manageTemplates: 'Sjablonen beheren',
   },
   fr: {
     title: 'Tableau de bord Club',
@@ -93,6 +98,10 @@ const dashboardT = {
     creating: 'En cours...',
     cancel: 'Annuler',
     taskCreated: 'Tâche créée avec succès!',
+    contractTemplate: 'Modèle de contrat',
+    selectTemplate: 'Sélectionnez un modèle...',
+    noTemplatesYet: "Aucun modèle. Créez-en un d'abord.",
+    manageTemplates: 'Gérer les modèles',
   },
   en: {
     title: 'Club Dashboard',
@@ -124,6 +133,10 @@ const dashboardT = {
     creating: 'Creating...',
     cancel: 'Cancel',
     taskCreated: 'Task created successfully!',
+    contractTemplate: 'Contract template',
+    selectTemplate: 'Select a template...',
+    noTemplatesYet: 'No templates yet. Create one first.',
+    manageTemplates: 'Manage templates',
   },
 };
 
@@ -144,7 +157,10 @@ const ClubOwnerDashboard = () => {
   const [myClubRole, setMyClubRole] = useState<'bestuurder' | 'beheerder' | 'medewerker'>('medewerker');
   const [showSettings, setShowSettings] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [currentUserId, setCurrentUserId] = useState('');
+  const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -216,6 +232,14 @@ const ClubOwnerDashboard = () => {
       setClubId(activeClub.id);
       setClubInfo({ name: activeClub.name, sport: activeClub.sport, location: activeClub.location, logo_url: activeClub.logo_url });
       const clubIds = [activeClub.id];
+
+      // Fetch contract templates for this club
+      const { data: templatesData } = await supabase
+        .from('contract_templates')
+        .select('id, name')
+        .eq('club_id', activeClub.id)
+        .order('created_at', { ascending: false });
+      setContractTemplates(templatesData || []);
 
       const { data: tasksData } = await supabase
         .from('tasks')
@@ -292,10 +316,10 @@ const ClubOwnerDashboard = () => {
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clubId || !newTask.title.trim()) return;
+    if (!clubId || !newTask.title.trim() || !selectedTemplateId) return;
 
     setCreatingTask(true);
-    const insertData = {
+    const insertData: Record<string, unknown> = {
       club_id: clubId,
       title: newTask.title.trim(),
       description: newTask.description.trim() || null,
@@ -311,11 +335,12 @@ const ClubOwnerDashboard = () => {
       expense_amount: newTask.expense_reimbursement && newTask.expense_amount
         ? parseFloat(newTask.expense_amount)
         : null,
+      contract_template_id: selectedTemplateId,
     };
 
     const { data, error } = await supabase
       .from('tasks')
-      .insert(insertData)
+      .insert(insertData as any)
       .select('id, title, description, task_date, location, spots_available, status, club_id')
       .maybeSingle();
 
@@ -325,6 +350,7 @@ const ClubOwnerDashboard = () => {
       toast.success(dt.taskCreated);
       setTasks(prev => [...prev, data]);
       setShowCreateForm(false);
+      setSelectedTemplateId('');
       setNewTask({
         title: '', description: '', task_date: '', location: '', spots_available: 1,
         briefing_time: '', briefing_location: '', start_time: '', end_time: '',
@@ -383,6 +409,15 @@ const ClubOwnerDashboard = () => {
             )}
             {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && clubId && (
               <button
+                onClick={() => setShowTemplates(true)}
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                title={dt.manageTemplates}
+              >
+                <FileText className="w-4 h-4" />
+              </button>
+            )}
+            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && clubId && (
+              <button
                 onClick={() => setShowMembers(true)}
                 className="p-2 text-muted-foreground hover:text-foreground transition-colors"
                 title="Leden beheren"
@@ -432,6 +467,35 @@ const ClubOwnerDashboard = () => {
               className="mt-4 bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden"
             >
               <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{dt.newTask}</h2>
+
+              {/* Contract template selection */}
+              <div className="mb-4">
+                <label className={labelClass}>{dt.contractTemplate} *</label>
+                {contractTemplates.length === 0 ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                    <span>{dt.noTemplatesYet}</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTemplates(true)}
+                      className="text-primary underline hover:opacity-80"
+                    >
+                      {dt.manageTemplates}
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={selectedTemplateId}
+                    onChange={e => setSelectedTemplateId(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">{dt.selectTemplate}</option>
+                    {contractTemplates.map(tmpl => (
+                      <option key={tmpl.id} value={tmpl.id}>{tmpl.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Title - full width */}
@@ -579,7 +643,7 @@ const ClubOwnerDashboard = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={creatingTask || !newTask.title.trim()}
+                  disabled={creatingTask || !newTask.title.trim() || !selectedTemplateId}
                   className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
                   {creatingTask ? dt.creating : dt.create}
@@ -749,6 +813,23 @@ const ClubOwnerDashboard = () => {
           isOwner={isOwner}
           currentUserRole={myClubRole}
           onClose={() => setShowMembers(false)}
+        />
+      )}
+
+      {showTemplates && clubId && (
+        <ContractTemplatesDialog
+          clubId={clubId}
+          language={language}
+          onClose={() => {
+            setShowTemplates(false);
+            // Refresh templates list
+            supabase
+              .from('contract_templates')
+              .select('id, name')
+              .eq('club_id', clubId)
+              .order('created_at', { ascending: false })
+              .then(({ data }) => setContractTemplates(data || []));
+          }}
         />
       )}
     </div>
