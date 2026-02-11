@@ -978,7 +978,7 @@ const ContractBuilder = () => {
                         <div className="py-4 px-1">
                           <div className="flex gap-12">
                             <div className="flex-1">
-                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>De organisatie:</p>
+                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>{clubData?.name || '{{Clubnaam}}'}:</p>
                               {clubSignatureUrl ? (
                                 <div className="mb-2">
                                   <img src={clubSignatureUrl} alt="Handtekening organisatie" className="max-h-16 object-contain" />
@@ -1013,7 +1013,7 @@ const ContractBuilder = () => {
                               )}
                             </div>
                             <div className="flex-1">
-                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>De vrijwilliger:</p>
+                              <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 40, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>{`{{Naam}}`}:</p>
                               <div style={{ borderBottom: `2px solid ${contractColors.primary}`, width: '80%' }} />
                               <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>{`{{Handtekening}}`}</p>
                             </div>
