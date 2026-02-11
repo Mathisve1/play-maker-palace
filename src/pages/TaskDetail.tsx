@@ -418,16 +418,27 @@ const TaskDetail = () => {
               </div>
             </div>
             {taskLocation && (
-              <div className="rounded-xl overflow-hidden border border-border aspect-[16/9]">
-                <iframe
-                  title="Map"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(taskLocation)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                />
-              </div>
+              <>
+                <div className="rounded-xl overflow-hidden border border-border aspect-[16/9] relative">
+                  <iframe
+                    title="Map"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(meetingPoint + ', ' + taskLocation)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+                  />
+                </div>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(meetingPoint + ', ' + taskLocation)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity shadow-warm"
+                >
+                  <Navigation className="w-4 h-4" />
+                  {l.directions}
+                </a>
+              </>
             )}
           </motion.section>
 
