@@ -11,6 +11,7 @@ import ClubMembersDialog from '@/components/ClubMembersDialog';
 import NotificationBell from '@/components/NotificationBell';
 import ContractTemplatesDialog from '@/components/ContractTemplatesDialog';
 import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
+import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Language } from '@/i18n/translations';
 
@@ -186,6 +187,7 @@ const ClubOwnerDashboard = () => {
   const [clubStripeId, setClubStripeId] = useState<string | null>(null);
   const [sendingPayment, setSendingPayment] = useState<string | null>(null);
   const [sendingContract, setSendingContract] = useState<string | null>(null);
+  const [contractConfirm, setContractConfirm] = useState<{ volunteer: Signup['volunteer']; task: Task } | null>(null);
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -343,7 +345,7 @@ const ClubOwnerDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleUpdateStatus = async (signupId: string, taskId: string, newStatus: string) => {
+  const handleUpdateStatus = async (signupId: string, taskId: string, newStatus: string, volunteer?: Signup['volunteer']) => {
     setUpdatingSignup(signupId);
     const { error } = await supabase
       .from('task_signups')
@@ -363,6 +365,14 @@ const ClubOwnerDashboard = () => {
         }
         return updated;
       });
+
+      // Show contract send dialog after assigning
+      if (newStatus === 'assigned' && volunteer) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task && task.contract_template_id) {
+          setContractConfirm({ volunteer, task });
+        }
+      }
     }
     setUpdatingSignup(null);
   };
@@ -1023,7 +1033,7 @@ const ClubOwnerDashboard = () => {
                                       {dt.pending}
                                     </span>
                                     <button
-                                      onClick={() => handleUpdateStatus(signup.id, signup.task_id, 'assigned')}
+                                      onClick={() => handleUpdateStatus(signup.id, signup.task_id, 'assigned', signup.volunteer)}
                                       disabled={updatingSignup === signup.id}
                                       className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
                                     >
@@ -1090,6 +1100,35 @@ const ClubOwnerDashboard = () => {
         signupStatus={selectedVolunteer?.signupStatus}
         signedUpAt={selectedVolunteer?.signedUpAt}
       />
+
+      {contractConfirm && contractConfirm.volunteer && (
+        <SendContractConfirmDialog
+          open={!!contractConfirm}
+          onOpenChange={(open) => !open && setContractConfirm(null)}
+          volunteer={{
+            id: contractConfirm.volunteer.id,
+            full_name: contractConfirm.volunteer.full_name,
+            email: contractConfirm.volunteer.email,
+            phone: contractConfirm.volunteer.phone,
+            bank_iban: contractConfirm.volunteer.bank_iban,
+            bank_holder_name: contractConfirm.volunteer.bank_holder_name,
+          }}
+          task={{
+            id: contractConfirm.task.id,
+            title: contractConfirm.task.title,
+            task_date: contractConfirm.task.task_date,
+            location: contractConfirm.task.location,
+            contract_template_id: contractConfirm.task.contract_template_id,
+          }}
+          clubName={clubInfo?.name}
+          language={language}
+          onSent={() => {
+            const key = `${contractConfirm.task.id}-${contractConfirm.volunteer!.id}`;
+            setSignatureStatuses(prev => ({ ...prev, [key]: { status: 'pending' } }));
+            setContractConfirm(null);
+          }}
+        />
+      )}
     </div>
   );
 };
