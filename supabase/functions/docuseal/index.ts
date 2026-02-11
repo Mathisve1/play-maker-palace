@@ -259,6 +259,30 @@ Deno.serve(async (req) => {
         });
       }
 
+      console.log("Template fields:", [...templateFieldNames]);
+
+      // If the template has NO fields at all, add a signature field so DocuSeal accepts the submission
+      if (templateFieldNames.size === 0) {
+        console.log("Template has no fields — adding signature field via update");
+        const updateResp = await fetch(`${DOCUSEAL_API_URL}/templates/${Number(template_id)}`, {
+          method: "PUT",
+          headers: {
+            "X-Auth-Token": DOCUSEAL_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: [
+              { name: "Handtekening", type: "signature", role: templateData.submitters?.[0]?.name || "First Party" },
+            ],
+          }),
+        });
+        const updateData = await updateResp.json();
+        console.log("Template update response:", JSON.stringify(updateData));
+        if (!updateResp.ok) {
+          console.error("Failed to add fields to template:", JSON.stringify(updateData));
+        }
+      }
+
       // Only include prefilled fields that match template fields
       const fields = Object.entries(prefilledFields)
         .filter(([name]) => templateFieldNames.has(name))
@@ -268,7 +292,6 @@ Deno.serve(async (req) => {
           readonly: false,
         }));
 
-      console.log("Template fields:", [...templateFieldNames]);
       console.log("Sending fields:", fields.map(f => f.name));
 
       // Determine the submitter role from the template
@@ -281,7 +304,7 @@ Deno.serve(async (req) => {
         role: submitterRole,
       };
 
-      // Only include fields if the template actually has fields
+      // Only include fields if we have matching ones
       if (fields.length > 0) {
         submitter.fields = fields;
       }
