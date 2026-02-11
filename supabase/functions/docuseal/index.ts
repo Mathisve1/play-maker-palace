@@ -419,6 +419,16 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Unlink tasks that reference this template before deleting
+      const { error: unlinkError } = await supabase
+        .from("tasks")
+        .update({ contract_template_id: null })
+        .eq("contract_template_id", template_id);
+
+      if (unlinkError) {
+        console.error("Unlink tasks error:", unlinkError);
+      }
+
       // Delete from DocuSeal
       try {
         await fetch(`${DOCUSEAL_API_URL}/templates/${template.docuseal_template_id}`, {
