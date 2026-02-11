@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -86,6 +86,14 @@ const dashboardT = {
     selectTemplate: 'Selecteer een sjabloon...',
     noTemplatesYet: 'Nog geen sjablonen. Maak er eerst een aan.',
     manageTemplates: 'Sjablonen beheren',
+    editTask: 'Taak bewerken',
+    save: 'Opslaan',
+    saving: 'Opslaan...',
+    taskUpdated: 'Taak succesvol bijgewerkt!',
+    deleteTask: 'Taak verwijderen',
+    deleteConfirm: 'Weet je zeker dat je deze taak wilt verwijderen?',
+    taskDeleted: 'Taak verwijderd!',
+    delete: 'Verwijderen',
   },
   fr: {
     title: 'Tableau de bord Club',
@@ -121,6 +129,14 @@ const dashboardT = {
     selectTemplate: 'Sélectionnez un modèle...',
     noTemplatesYet: "Aucun modèle. Créez-en un d'abord.",
     manageTemplates: 'Gérer les modèles',
+    editTask: 'Modifier la tâche',
+    save: 'Enregistrer',
+    saving: 'Enregistrement...',
+    taskUpdated: 'Tâche mise à jour avec succès!',
+    deleteTask: 'Supprimer la tâche',
+    deleteConfirm: 'Êtes-vous sûr de vouloir supprimer cette tâche?',
+    taskDeleted: 'Tâche supprimée!',
+    delete: 'Supprimer',
   },
   en: {
     title: 'Club Dashboard',
@@ -156,6 +172,14 @@ const dashboardT = {
     selectTemplate: 'Select a template...',
     noTemplatesYet: 'No templates yet. Create one first.',
     manageTemplates: 'Manage templates',
+    editTask: 'Edit task',
+    save: 'Save',
+    saving: 'Saving...',
+    taskUpdated: 'Task updated successfully!',
+    deleteTask: 'Delete task',
+    deleteConfirm: 'Are you sure you want to delete this task?',
+    taskDeleted: 'Task deleted!',
+    delete: 'Delete',
   },
 };
 
@@ -188,6 +212,15 @@ const ClubOwnerDashboard = () => {
   const [sendingPayment, setSendingPayment] = useState<string | null>(null);
   const [sendingContract, setSendingContract] = useState<string | null>(null);
   const [contractConfirm, setContractConfirm] = useState<{ volunteer: Signup['volunteer']; task: Task } | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: '', description: '', task_date: '', location: '', spots_available: 1,
+    briefing_time: '', briefing_location: '', start_time: '', end_time: '',
+    notes: '', expense_reimbursement: false, expense_amount: '', contract_template_id: '',
+  });
+  const [savingTask, setSavingTask] = useState(false);
+  const [deletingTask, setDeletingTask] = useState<string | null>(null);
+  const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null);
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -438,6 +471,81 @@ const ClubOwnerDashboard = () => {
       toast.error(err.message || 'Er ging iets mis');
     }
     setSendingPayment(null);
+  };
+
+  const handleStartEdit = (task: Task) => {
+    setEditingTask(task);
+    supabase.from('tasks').select('*').eq('id', task.id).maybeSingle().then(({ data }) => {
+      if (data) {
+        setEditForm({
+          title: data.title,
+          description: data.description || '',
+          task_date: data.task_date ? new Date(data.task_date).toISOString().slice(0, 16) : '',
+          location: data.location || '',
+          spots_available: data.spots_available || 1,
+          briefing_time: data.briefing_time ? new Date(data.briefing_time).toISOString().slice(0, 16) : '',
+          briefing_location: data.briefing_location || '',
+          start_time: data.start_time ? new Date(data.start_time).toISOString().slice(0, 16) : '',
+          end_time: data.end_time ? new Date(data.end_time).toISOString().slice(0, 16) : '',
+          notes: data.notes || '',
+          expense_reimbursement: data.expense_reimbursement || false,
+          expense_amount: data.expense_amount ? String(data.expense_amount) : '',
+          contract_template_id: data.contract_template_id || '',
+        });
+      }
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTask) return;
+    setSavingTask(true);
+    const updateData: Record<string, unknown> = {
+      title: editForm.title.trim(),
+      description: editForm.description.trim() || null,
+      task_date: editForm.task_date || null,
+      location: editForm.location.trim() || null,
+      spots_available: editForm.spots_available,
+      briefing_time: editForm.briefing_time || null,
+      briefing_location: editForm.briefing_location.trim() || null,
+      start_time: editForm.start_time || null,
+      end_time: editForm.end_time || null,
+      notes: editForm.notes.trim() || null,
+      expense_reimbursement: editForm.expense_reimbursement,
+      expense_amount: editForm.expense_reimbursement && editForm.expense_amount ? parseFloat(editForm.expense_amount) : null,
+      contract_template_id: editForm.contract_template_id || null,
+    };
+    const { error } = await supabase.from('tasks').update(updateData as any).eq('id', editingTask.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(dt.taskUpdated);
+      setTasks(prev => prev.map(t => t.id === editingTask.id ? {
+        ...t,
+        title: editForm.title.trim(),
+        description: editForm.description.trim() || null,
+        task_date: editForm.task_date || null,
+        location: editForm.location.trim() || null,
+        spots_available: editForm.spots_available,
+        contract_template_id: editForm.contract_template_id || null,
+      } : t));
+      setEditingTask(null);
+    }
+    setSavingTask(false);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    setDeletingTask(taskId);
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(dt.taskDeleted);
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      setConfirmDeleteTask(null);
+      if (expandedTask === taskId) setExpandedTask(null);
+    }
+    setDeletingTask(null);
   };
 
   const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -828,6 +936,26 @@ const ClubOwnerDashboard = () => {
                     </div>
                   </button>
 
+                  {/* Edit/Delete buttons */}
+                  {isExpanded && (
+                    <div className="flex items-center gap-2 px-5 pt-3">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleStartEdit(task); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        {dt.editTask}
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteTask(task.id); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        {dt.deleteTask}
+                      </button>
+                    </div>
+                  )}
+
                   {isExpanded && (
                     <div className="border-t border-border px-5 pb-5">
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mt-4 mb-3">
@@ -1129,6 +1257,137 @@ const ClubOwnerDashboard = () => {
           }}
         />
       )}
+
+      {/* Edit Task Dialog */}
+      <AnimatePresence>
+        {editingTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditingTask(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-heading font-semibold text-foreground">{dt.editTask}</h2>
+                <button onClick={() => setEditingTask(null)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleSaveEdit} className="space-y-4">
+                <div>
+                  <label className={labelClass}>{dt.contractTemplate}</label>
+                  <select
+                    value={editForm.contract_template_id}
+                    onChange={e => setEditForm(p => ({ ...p, contract_template_id: e.target.value }))}
+                    className={inputClass}
+                  >
+                    <option value="">{dt.selectTemplate}</option>
+                    {contractTemplates.map(tmpl => (
+                      <option key={tmpl.id} value={tmpl.id}>{tmpl.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>{dt.taskTitle} *</label>
+                  <input type="text" required maxLength={200} value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>{dt.taskDescription}</label>
+                  <textarea rows={3} maxLength={2000} value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>{dt.taskDate}</label>
+                    <input type="datetime-local" value={editForm.task_date} onChange={e => setEditForm(p => ({ ...p, task_date: e.target.value }))} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{dt.taskLocation}</label>
+                    <input type="text" maxLength={300} value={editForm.location} onChange={e => setEditForm(p => ({ ...p, location: e.target.value }))} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{dt.taskSpots}</label>
+                    <input type="number" min={1} max={999} value={editForm.spots_available} onChange={e => setEditForm(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{dt.taskBriefingLocation}</label>
+                    <input type="text" maxLength={300} value={editForm.briefing_location} onChange={e => setEditForm(p => ({ ...p, briefing_location: e.target.value }))} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{dt.taskBriefingTime}</label>
+                    <input type="datetime-local" value={editForm.briefing_time} onChange={e => setEditForm(p => ({ ...p, briefing_time: e.target.value }))} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{dt.taskStartTime}</label>
+                    <input type="datetime-local" value={editForm.start_time} onChange={e => setEditForm(p => ({ ...p, start_time: e.target.value }))} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{dt.taskEndTime}</label>
+                    <input type="datetime-local" value={editForm.end_time} onChange={e => setEditForm(p => ({ ...p, end_time: e.target.value }))} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{dt.taskNotes}</label>
+                    <input type="text" maxLength={500} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} className={inputClass} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={editForm.expense_reimbursement} onChange={e => setEditForm(p => ({ ...p, expense_reimbursement: e.target.checked }))} className="w-4 h-4 rounded border-input accent-primary" />
+                    <span className="text-sm text-foreground">{dt.taskExpenseReimbursement}</span>
+                  </label>
+                  {editForm.expense_reimbursement && (
+                    <input type="number" min={0} step={0.01} placeholder={dt.taskExpenseAmount} value={editForm.expense_amount} onChange={e => setEditForm(p => ({ ...p, expense_amount: e.target.value }))} className={inputClass + ' max-w-[150px]'} />
+                  )}
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => setEditingTask(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                    {dt.cancel}
+                  </button>
+                  <button type="submit" disabled={savingTask || !editForm.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                    {savingTask ? dt.saving : dt.save}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {confirmDeleteTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setConfirmDeleteTask(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-sm"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                </div>
+                <h2 className="text-lg font-heading font-semibold text-foreground">{dt.deleteTask}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">{dt.deleteConfirm}</p>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => setConfirmDeleteTask(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                  {dt.cancel}
+                </button>
+                <button
+                  onClick={() => handleDeleteTask(confirmDeleteTask)}
+                  disabled={deletingTask === confirmDeleteTask}
+                  className="px-5 py-2 text-sm rounded-xl bg-destructive text-destructive-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {deletingTask === confirmDeleteTask ? <Loader2 className="w-4 h-4 animate-spin" /> : dt.delete}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
