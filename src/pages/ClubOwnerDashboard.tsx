@@ -136,6 +136,7 @@ const ClubOwnerDashboard = () => {
   const [updatingSignup, setUpdatingSignup] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
   const [clubId, setClubId] = useState<string | null>(null);
+  const [clubInfo, setClubInfo] = useState<{ name: string; sport: string | null; location: string | null; logo_url: string | null } | null>(null);
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -169,7 +170,7 @@ const ClubOwnerDashboard = () => {
 
       const { data: clubs } = await supabase
         .from('clubs')
-        .select('id')
+        .select('id, name, sport, location, logo_url')
         .eq('owner_id', session.user.id);
 
       if (!clubs || clubs.length === 0) {
@@ -178,6 +179,7 @@ const ClubOwnerDashboard = () => {
       }
 
       setClubId(clubs[0].id);
+      setClubInfo({ name: clubs[0].name, sport: clubs[0].sport, location: clubs[0].location, logo_url: clubs[0].logo_url });
       const clubIds = clubs.map(c => c.id);
 
       const { data: tasksData } = await supabase
@@ -313,7 +315,26 @@ const ClubOwnerDashboard = () => {
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-40">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Logo size="sm" linkTo="/club-dashboard" />
+          <div className="flex items-center gap-3">
+            {clubInfo?.logo_url ? (
+              <img src={clubInfo.logo_url} alt={clubInfo.name} className="w-9 h-9 rounded-xl object-cover border border-border" />
+            ) : (
+              <Logo size="sm" linkTo="/club-dashboard" showText={false} />
+            )}
+            <div className="hidden sm:block">
+              <p className="text-sm font-heading font-semibold text-foreground leading-tight">{clubInfo?.name || dt.title}</p>
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                {clubInfo?.sport && <span>{clubInfo.sport}</span>}
+                {clubInfo?.sport && clubInfo?.location && <span>·</span>}
+                {clubInfo?.location && (
+                  <span className="flex items-center gap-0.5">
+                    <MapPin className="w-3 h-3" />
+                    {clubInfo.location}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground hidden md:block">
               {profile?.full_name || profile?.email}
