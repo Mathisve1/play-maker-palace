@@ -18,13 +18,19 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
       toast.error(error.message);
     } else {
       toast.success('Logged in!');
-      navigate('/dashboard');
+      // Check if user is a club_owner
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id);
+      const isClubOwner = roles?.some(r => r.role === 'club_owner');
+      navigate(isClubOwner ? '/club-dashboard' : '/dashboard');
     }
   };
 
