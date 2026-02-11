@@ -102,6 +102,59 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Look up volunteer profile to get bank details
+      const { data: volunteerProfile } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, phone, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date")
+        .eq("email", volunteer_email)
+        .maybeSingle();
+
+      // Build pre-filled fields from volunteer data
+      const prefilledFields: Record<string, string> = {};
+      if (volunteerProfile) {
+        if (volunteerProfile.full_name) prefilledFields["Naam"] = volunteerProfile.full_name;
+        if (volunteerProfile.full_name) prefilledFields["Name"] = volunteerProfile.full_name;
+        if (volunteerProfile.email) prefilledFields["Email"] = volunteerProfile.email;
+        if (volunteerProfile.email) prefilledFields["E-mail"] = volunteerProfile.email;
+        if (volunteerProfile.phone) prefilledFields["Telefoon"] = volunteerProfile.phone;
+        if (volunteerProfile.phone) prefilledFields["Phone"] = volunteerProfile.phone;
+        if (volunteerProfile.bank_iban) prefilledFields["IBAN"] = volunteerProfile.bank_iban;
+        if (volunteerProfile.bank_iban) prefilledFields["Rekeningnummer"] = volunteerProfile.bank_iban;
+        if (volunteerProfile.bank_iban) prefilledFields["Bank Account"] = volunteerProfile.bank_iban;
+        if (volunteerProfile.bank_holder_name) prefilledFields["Rekeninghouder"] = volunteerProfile.bank_holder_name;
+        if (volunteerProfile.bank_holder_name) prefilledFields["Account Holder"] = volunteerProfile.bank_holder_name;
+      }
+
+      // Also fetch task details for pre-filling
+      const { data: taskData } = await supabase
+        .from("tasks")
+        .select("title, task_date, location, expense_amount, expense_reimbursement")
+        .eq("id", task_id)
+        .maybeSingle();
+
+      if (taskData) {
+        if (taskData.title) prefilledFields["Taak"] = taskData.title;
+        if (taskData.title) prefilledFields["Task"] = taskData.title;
+        if (taskData.location) prefilledFields["Locatie"] = taskData.location;
+        if (taskData.location) prefilledFields["Location"] = taskData.location;
+        if (taskData.task_date) {
+          const dateStr = new Date(taskData.task_date).toLocaleDateString("nl-BE");
+          prefilledFields["Datum"] = dateStr;
+          prefilledFields["Date"] = dateStr;
+        }
+        if (taskData.expense_reimbursement && taskData.expense_amount) {
+          prefilledFields["Onkostenvergoeding"] = `€${taskData.expense_amount}`;
+          prefilledFields["Expense Amount"] = `€${taskData.expense_amount}`;
+        }
+      }
+
+      // Convert to DocuSeal fields format
+      const fields = Object.entries(prefilledFields).map(([name, default_value]) => ({
+        name,
+        default_value,
+        readonly: false,
+      }));
+
       // Create DocuSeal submission
       const resp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
         method: "POST",
@@ -115,8 +168,9 @@ Deno.serve(async (req) => {
           submitters: [
             {
               email: volunteer_email,
-              name: volunteer_name || undefined,
+              name: volunteer_name || volunteerProfile?.full_name || undefined,
               role: "Volunteer",
+              fields,
             },
           ],
         }),
@@ -133,13 +187,6 @@ Deno.serve(async (req) => {
       const signingUrl = submission.embed_src || submission.slug
         ? `https://docuseal.com/s/${submission.slug}`
         : null;
-
-      // Look up volunteer by email to get their user id
-      const { data: volunteerProfile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", volunteer_email)
-        .maybeSingle();
 
       // Save to our DB
       const { error: dbError } = await supabase.from("signature_requests").insert({
