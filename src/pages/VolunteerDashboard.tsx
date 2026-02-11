@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download } from 'lucide-react';
 import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -37,6 +37,19 @@ interface TaskSignup {
   status: string;
 }
 
+interface VolunteerPayment {
+  id: string;
+  task_id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paid_at: string | null;
+  created_at: string;
+  stripe_receipt_url: string | null;
+  task_title?: string;
+  club_name?: string;
+}
+
 const langLabels: Record<Language, string> = { nl: 'NL', fr: 'FR', en: 'EN' };
 
 const VolunteerDashboard = () => {
@@ -51,9 +64,10 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'mine'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments'>('all');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
   const [signingContract, setSigningContract] = useState<string | null>(null);
+  const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
   
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -131,6 +145,27 @@ const VolunteerDashboard = () => {
         .select('task_id, status')
         .eq('volunteer_id', session.user.id);
       setSignups(signupsData || []);
+
+      // Fetch volunteer payments
+      const { data: paymentsData } = await supabase
+        .from('volunteer_payments')
+        .select('id, task_id, amount, currency, status, paid_at, created_at, stripe_receipt_url')
+        .eq('volunteer_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (paymentsData && paymentsData.length > 0) {
+        const paymentTaskIds = [...new Set(paymentsData.map(p => p.task_id))];
+        const { data: paymentTasks } = await supabase
+          .from('tasks')
+          .select('id, title, club_id, clubs(name)')
+          .in('id', paymentTaskIds);
+        const taskMap = new Map(paymentTasks?.map(t => [t.id, t]) || []);
+        
+        setMyPayments(paymentsData.map(p => {
+          const t = taskMap.get(p.task_id);
+          return { ...p, task_title: t?.title, club_name: (t as any)?.clubs?.name };
+        }));
+      }
 
       setLoading(false);
     };
@@ -267,9 +302,9 @@ const VolunteerDashboard = () => {
   });
 
   const dashboardT = {
-    nl: { welcome: 'Welkom', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', assigned: 'Toegekend', cancel: 'Annuleren', spots: 'plaatsen', logout: 'Uitloggen', mySignups: 'Mijn inschrijvingen', allTasks: 'Alle taken', myTasks: 'Mijn taken', noMyTasks: 'Geen taken in deze categorie.', signContract: 'Contract ondertekenen', signing: 'Laden...', ingeschreven: 'Ingeschreven', toegekend: 'Toegekend' },
-    fr: { welcome: 'Bienvenue', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, clubs ou lieux...', noTasks: 'Il n\'y a actuellement aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', assigned: 'Attribué', cancel: 'Annuler', spots: 'places', logout: 'Déconnexion', mySignups: 'Mes inscriptions', allTasks: 'Toutes les tâches', myTasks: 'Mes tâches', noMyTasks: 'Aucune tâche dans cette catégorie.', signContract: 'Signer le contrat', signing: 'Chargement...', ingeschreven: 'Inscrits', toegekend: 'Attribués' },
-    en: { welcome: 'Welcome', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, clubs or locations...', noTasks: 'There are currently no open tasks.', signUp: 'Sign up', signedUp: 'Signed up', assigned: 'Assigned', cancel: 'Cancel', spots: 'spots', logout: 'Log out', mySignups: 'My signups', allTasks: 'All tasks', myTasks: 'My tasks', noMyTasks: 'No tasks in this category.', signContract: 'Sign contract', signing: 'Loading...', ingeschreven: 'Signed up', toegekend: 'Assigned' },
+    nl: { welcome: 'Welkom', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', assigned: 'Toegekend', cancel: 'Annuleren', spots: 'plaatsen', logout: 'Uitloggen', mySignups: 'Mijn inschrijvingen', allTasks: 'Alle taken', myTasks: 'Mijn taken', noMyTasks: 'Geen taken in deze categorie.', signContract: 'Contract ondertekenen', signing: 'Laden...', ingeschreven: 'Ingeschreven', toegekend: 'Toegekend', payments: 'Vergoedingen', noPayments: 'Je hebt nog geen vergoedingen ontvangen.', paid: 'Betaald', processing: 'Verwerken', pending: 'In afwachting', failed: 'Mislukt', receipt: 'Betaalbewijs', paidOn: 'Betaald op' },
+    fr: { welcome: 'Bienvenue', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, clubs ou lieux...', noTasks: 'Il n\'y a actuellement aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', assigned: 'Attribué', cancel: 'Annuler', spots: 'places', logout: 'Déconnexion', mySignups: 'Mes inscriptions', allTasks: 'Toutes les tâches', myTasks: 'Mes tâches', noMyTasks: 'Aucune tâche dans cette catégorie.', signContract: 'Signer le contrat', signing: 'Chargement...', ingeschreven: 'Inscrits', toegekend: 'Attribués', payments: 'Remboursements', noPayments: 'Aucun remboursement reçu.', paid: 'Payé', processing: 'En cours', pending: 'En attente', failed: 'Échoué', receipt: 'Reçu', paidOn: 'Payé le' },
+    en: { welcome: 'Welcome', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, clubs or locations...', noTasks: 'There are currently no open tasks.', signUp: 'Sign up', signedUp: 'Signed up', assigned: 'Assigned', cancel: 'Cancel', spots: 'spots', logout: 'Log out', mySignups: 'My signups', allTasks: 'All tasks', myTasks: 'My tasks', noMyTasks: 'No tasks in this category.', signContract: 'Sign contract', signing: 'Loading...', ingeschreven: 'Signed up', toegekend: 'Assigned', payments: 'Reimbursements', noPayments: 'No reimbursements received yet.', paid: 'Paid', processing: 'Processing', pending: 'Pending', failed: 'Failed', receipt: 'Receipt', paidOn: 'Paid on' },
   };
   const dt = dashboardT[language];
 
@@ -413,10 +448,114 @@ const VolunteerDashboard = () => {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('payments' as any)}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${
+                activeTab === 'payments'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <CreditCard className="w-3 h-3" />
+              {dt.payments}
+              {myPayments.length > 0 && (
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${
+                  activeTab === 'payments'
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'bg-primary/10 text-primary'
+                }`}>
+                  {myPayments.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Tasks list */}
+        {/* Payments tab */}
+        {activeTab === 'payments' ? (
+          <div className="mt-6 space-y-4">
+            {myPayments.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>{dt.noPayments}</p>
+              </div>
+            ) : (
+              <>
+                {/* Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-card rounded-2xl shadow-card border border-transparent p-5">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.paid}</p>
+                    <p className="text-2xl font-heading font-bold text-green-600 mt-1">
+                      €{myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-card rounded-2xl shadow-card border border-transparent p-5">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.processing}</p>
+                    <p className="text-2xl font-heading font-bold text-primary mt-1">
+                      €{myPayments.filter(p => p.status === 'processing').reduce((s, p) => s + p.amount, 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Payment list */}
+                {myPayments.map((payment, i) => (
+                  <motion.div
+                    key={payment.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className={`bg-card rounded-2xl p-5 shadow-card border ${
+                      payment.status === 'succeeded' ? 'border-green-200' : 'border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{payment.task_title || 'Taak'}</p>
+                        {payment.club_name && (
+                          <p className="text-xs text-muted-foreground">{payment.club_name}</p>
+                        )}
+                        <p className="text-lg font-heading font-bold text-foreground mt-1">€{payment.amount.toFixed(2)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1 text-xs">
+                          {payment.status === 'succeeded' ? (
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          ) : payment.status === 'processing' ? (
+                            <Clock className="w-4 h-4 text-yellow-600" />
+                          ) : payment.status === 'failed' ? (
+                            <AlertTriangle className="w-4 h-4 text-destructive" />
+                          ) : (
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span className="font-medium">
+                            {payment.status === 'succeeded' ? dt.paid : payment.status === 'processing' ? dt.processing : payment.status === 'failed' ? dt.failed : dt.pending}
+                          </span>
+                        </div>
+                        {payment.stripe_receipt_url && (
+                          <a
+                            href={payment.stripe_receipt_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                            title={dt.receipt}
+                          >
+                            <Download className="w-3.5 h-3.5 text-muted-foreground" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    {payment.paid_at && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {dt.paidOn}: {new Date(payment.paid_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    )}
+                  </motion.div>
+                ))}
+              </>
+            )}
+          </div>
+        ) : (
+        /* Tasks list */
         <div className="mt-6 space-y-4">
           {filteredTasks.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
@@ -513,6 +652,7 @@ const VolunteerDashboard = () => {
             })
           )}
         </div>
+        )}
 
       </main>
 
