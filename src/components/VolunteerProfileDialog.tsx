@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Mail, User, Calendar } from 'lucide-react';
+import { Mail, User, Calendar, Landmark, ShieldCheck } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 
 interface VolunteerProfile {
@@ -9,6 +9,11 @@ interface VolunteerProfile {
   email: string | null;
   avatar_url: string | null;
   created_at?: string;
+  phone?: string | null;
+  bank_iban?: string | null;
+  bank_holder_name?: string | null;
+  bank_consent_given?: boolean;
+  bank_consent_date?: string | null;
 }
 
 interface VolunteerProfileDialogProps {
@@ -31,6 +36,14 @@ const labels = {
     assigned: 'Toegekend',
     pending: 'In afwachting',
     unknown: 'Onbekend',
+    phone: 'Telefoon',
+    bankDetails: 'Bankgegevens',
+    iban: 'IBAN',
+    holderName: 'Rekeninghouder',
+    consentGiven: 'Toestemming gegeven',
+    consentNotGiven: 'Geen toestemming',
+    consentDate: 'Toestemming op',
+    noBankDetails: 'Nog geen bankgegevens ingevuld',
   },
   fr: {
     profile: 'Profil bénévole',
@@ -42,6 +55,14 @@ const labels = {
     assigned: 'Attribué',
     pending: 'En attente',
     unknown: 'Inconnu',
+    phone: 'Téléphone',
+    bankDetails: 'Coordonnées bancaires',
+    iban: 'IBAN',
+    holderName: 'Titulaire du compte',
+    consentGiven: 'Consentement donné',
+    consentNotGiven: 'Pas de consentement',
+    consentDate: 'Consentement le',
+    noBankDetails: 'Pas encore de coordonnées bancaires',
   },
   en: {
     profile: 'Volunteer profile',
@@ -53,6 +74,14 @@ const labels = {
     assigned: 'Assigned',
     pending: 'Pending',
     unknown: 'Unknown',
+    phone: 'Phone',
+    bankDetails: 'Bank details',
+    iban: 'IBAN',
+    holderName: 'Account holder',
+    consentGiven: 'Consent given',
+    consentNotGiven: 'No consent',
+    consentDate: 'Consent on',
+    noBankDetails: 'No bank details provided yet',
   },
 };
 
@@ -176,6 +205,59 @@ const VolunteerProfileDialog = ({
                 </p>
               </div>
             </div>
+          )}
+
+          {volunteer.phone && (
+            <div className="flex items-center gap-3">
+              <User className="w-4 h-4 text-primary shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">{l.phone}</p>
+                <p className="text-sm font-medium text-foreground">{volunteer.phone}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bank details section */}
+        <div className="border-t border-border pt-4 mt-2">
+          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <Landmark className="w-3.5 h-3.5" />
+            {l.bankDetails}
+          </h4>
+          {volunteer.bank_iban ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Landmark className="w-4 h-4 text-primary shrink-0" />
+                <div>
+                  <p className="text-xs text-muted-foreground">{l.iban}</p>
+                  <p className="text-sm font-medium text-foreground font-mono">{volunteer.bank_iban}</p>
+                </div>
+              </div>
+              {volunteer.bank_holder_name && (
+                <div className="flex items-center gap-3">
+                  <User className="w-4 h-4 text-primary shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">{l.holderName}</p>
+                    <p className="text-sm font-medium text-foreground">{volunteer.bank_holder_name}</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <ShieldCheck className={`w-4 h-4 shrink-0 ${volunteer.bank_consent_given ? 'text-accent' : 'text-muted-foreground'}`} />
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {volunteer.bank_consent_given ? l.consentGiven : l.consentNotGiven}
+                  </p>
+                  {volunteer.bank_consent_given && volunteer.bank_consent_date && (
+                    <p className="text-xs text-muted-foreground">
+                      {l.consentDate}: {formatDate(volunteer.bank_consent_date, language)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">{l.noBankDetails}</p>
           )}
         </div>
       </DialogContent>
