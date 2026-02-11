@@ -16,6 +16,7 @@ import TaskDetail from "./pages/TaskDetail";
 import Chat from "./pages/Chat";
 import ClubOwnerDashboard from "./pages/ClubOwnerDashboard";
 import ClubInviteAccept from "./pages/ClubInviteAccept";
+import PaymentsOverview from "./pages/PaymentsOverview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/task/:id" element={<TaskDetail />} />
             <Route path="/club-dashboard" element={<ClubOwnerDashboard />} />
             <Route path="/club-invite/:token" element={<ClubInviteAccept />} />
+            <Route path="/payments" element={<PaymentsOverview />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/chat/:conversationId" element={<Chat />} />
             <Route path="*" element={<NotFound />} />

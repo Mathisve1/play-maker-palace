@@ -8,3 +8,15 @@ verify_jwt = false
 
 [functions.club-invite]
 verify_jwt = false
+
+[functions.stripe-connect-onboard]
+verify_jwt = false
+
+[functions.stripe-connect-status]
+verify_jwt = false
+
+[functions.stripe-create-transfer]
+verify_jwt = false
+
+[functions.stripe-payment-status]
+verify_jwt = false
