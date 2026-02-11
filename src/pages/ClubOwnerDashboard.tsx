@@ -10,7 +10,17 @@ import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
 import NotificationBell from '@/components/NotificationBell';
 import ContractTemplatesDialog from '@/components/ContractTemplatesDialog';
+import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Language } from '@/i18n/translations';
+
+interface VolunteerProfile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  created_at?: string;
+}
 
 interface Signup {
   id: string;
@@ -18,7 +28,7 @@ interface Signup {
   volunteer_id: string;
   status: string;
   signed_up_at: string;
-  volunteer?: { full_name: string | null; email: string | null };
+  volunteer?: VolunteerProfile | null;
 }
 
 interface Task {
@@ -158,6 +168,7 @@ const ClubOwnerDashboard = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [myClubRole, setMyClubRole] = useState<'bestuurder' | 'beheerder' | 'medewerker'>('medewerker');
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteer: VolunteerProfile; signupStatus: string; signedUpAt: string } | null>(null);
   const [showMembers, setShowMembers] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [currentUserId, setCurrentUserId] = useState('');
@@ -262,7 +273,7 @@ const ClubOwnerDashboard = () => {
           const volunteerIds = [...new Set(signupsData.map(s => s.volunteer_id))];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, email')
+            .select('id, full_name, email, avatar_url, created_at')
             .in('id', volunteerIds);
 
           const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -272,7 +283,7 @@ const ClubOwnerDashboard = () => {
             const vol = profileMap.get(s.volunteer_id);
             const signup: Signup = {
               ...s,
-              volunteer: vol ? { full_name: vol.full_name, email: vol.email } : null,
+              volunteer: vol ? { id: vol.id, full_name: vol.full_name, email: vol.email, avatar_url: vol.avatar_url, created_at: vol.created_at } : null,
             };
             if (!grouped[s.task_id]) grouped[s.task_id] = [];
             grouped[s.task_id].push(signup);
@@ -742,14 +753,27 @@ const ClubOwnerDashboard = () => {
                                   : 'bg-muted/30 border border-transparent'
                               }`}
                             >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                                  signup.status === 'assigned'
-                                    ? 'bg-accent/20 text-accent-foreground'
-                                    : 'bg-muted text-muted-foreground'
-                                }`}>
-                                  {(signup.volunteer?.full_name || signup.volunteer?.email || '?')[0].toUpperCase()}
-                                </div>
+                              <button
+                                type="button"
+                                onClick={() => signup.volunteer && setSelectedVolunteer({
+                                  volunteer: signup.volunteer,
+                                  signupStatus: signup.status,
+                                  signedUpAt: signup.signed_up_at,
+                                })}
+                                className="flex items-center gap-3 min-w-0 text-left hover:opacity-80 transition-opacity"
+                              >
+                                <Avatar className="w-9 h-9 shrink-0">
+                                  {signup.volunteer?.avatar_url && (
+                                    <AvatarImage src={signup.volunteer.avatar_url} alt={signup.volunteer.full_name || ''} />
+                                  )}
+                                  <AvatarFallback className={`text-xs font-bold ${
+                                    signup.status === 'assigned'
+                                      ? 'bg-accent/20 text-accent-foreground'
+                                      : 'bg-muted text-muted-foreground'
+                                  }`}>
+                                    {(signup.volunteer?.full_name || signup.volunteer?.email || '?')[0].toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
                                 <div className="min-w-0">
                                   <p className="text-sm font-medium text-foreground truncate">
                                     {signup.volunteer?.full_name || 'Onbekend'}
@@ -758,7 +782,7 @@ const ClubOwnerDashboard = () => {
                                     {signup.volunteer?.email || ''}
                                   </p>
                                 </div>
-                              </div>
+                              </button>
 
                               <div className="flex items-center gap-2 shrink-0">
                                 {signup.status === 'assigned' ? (
@@ -840,6 +864,15 @@ const ClubOwnerDashboard = () => {
           }}
         />
       )}
+
+      <VolunteerProfileDialog
+        volunteer={selectedVolunteer?.volunteer || null}
+        open={!!selectedVolunteer}
+        onOpenChange={(open) => !open && setSelectedVolunteer(null)}
+        language={language}
+        signupStatus={selectedVolunteer?.signupStatus}
+        signedUpAt={selectedVolunteer?.signedUpAt}
+      />
     </div>
   );
 };
