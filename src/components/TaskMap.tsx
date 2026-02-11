@@ -1,18 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Navigation } from 'lucide-react';
-
-// Fix default marker icon issue in Leaflet + bundlers
-const redIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+import { useEffect, useState } from 'react';
+import { Navigation, MapPin } from 'lucide-react';
 
 interface TaskMapProps {
   location: string;
@@ -20,124 +7,64 @@ interface TaskMapProps {
   directionsLabel: string;
 }
 
-const RecenterMap = ({ lat, lng }: { lat: number; lng: number }) => {
-  const map = useMap();
-  useEffect(() => {
-    map.setView([lat, lng], 16);
-  }, [lat, lng, map]);
-  return null;
-};
-
 const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [error, setError] = useState(false);
-
   const searchQuery = meetingPoint !== location
     ? `${meetingPoint}, ${location}`
     : location;
 
-  useEffect(() => {
-    const geocode = async () => {
-      try {
-        // Use Nominatim (OpenStreetMap) geocoding - free, no API key needed
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
-          { headers: { 'Accept': 'application/json' } }
-        );
-        const data = await response.json();
-        if (data && data.length > 0) {
-          setCoords({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
-        } else {
-          // Try with just the location (without meeting point)
-          const fallbackResponse = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`,
-            { headers: { 'Accept': 'application/json' } }
-          );
-          const fallbackData = await fallbackResponse.json();
-          if (fallbackData && fallbackData.length > 0) {
-            setCoords({ lat: parseFloat(fallbackData[0].lat), lng: parseFloat(fallbackData[0].lon) });
-          } else {
-            setError(true);
-          }
-        }
-      } catch {
-        setError(true);
-      }
-    };
-    geocode();
-  }, [searchQuery, location]);
+  const encodedAddress = encodeURIComponent(searchQuery);
 
-  const getDirectionsUrl = () => {
-    if (coords) {
-      return `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`;
-    }
-    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(searchQuery)}`;
-  };
-
-  if (error) {
-    return (
-      <div>
-        <div className="rounded-xl border border-border bg-muted/30 aspect-[16/9] flex items-center justify-center">
-          <div className="text-center p-4">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-              <Navigation className="w-6 h-6 text-primary" />
-            </div>
-            <p className="text-sm text-muted-foreground font-medium">{searchQuery}</p>
-          </div>
-        </div>
-        <a
-          href={getDirectionsUrl()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity shadow-warm"
-        >
-          <Navigation className="w-4 h-4" />
-          {directionsLabel}
-        </a>
-      </div>
-    );
-  }
-
-  if (!coords) {
-    return (
-      <div className="rounded-xl border border-border bg-muted/30 aspect-[16/9] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+  const wazeUrl = `https://waze.com/ul?q=${encodedAddress}&navigate=yes`;
 
   return (
-    <div>
-      <div className="rounded-xl overflow-hidden border border-border aspect-[16/9]">
-        <MapContainer
-          center={[coords.lat, coords.lng]}
-          zoom={16}
-          style={{ height: '100%', width: '100%' }}
-          scrollWheelZoom={false}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <RecenterMap lat={coords.lat} lng={coords.lng} />
-          <Marker position={[coords.lat, coords.lng]} icon={redIcon}>
-            <Popup>
-              <strong>{meetingPoint}</strong>
-              <br />
-              {location}
-            </Popup>
-          </Marker>
-        </MapContainer>
+    <div className="space-y-4">
+      {/* Location info */}
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/40 border border-border">
+        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+          <MapPin className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <p className="font-medium text-foreground">{meetingPoint}</p>
+          {meetingPoint !== location && (
+            <p className="text-sm text-muted-foreground">{location}</p>
+          )}
+          <p className="text-sm text-muted-foreground mt-2">
+            Kies je favoriete navigatie-app om direct naar de locatie te rijden.
+          </p>
+        </div>
       </div>
-      <a
-        href={getDirectionsUrl()}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity shadow-warm"
-      >
-        <Navigation className="w-4 h-4" />
-        {directionsLabel}
-      </a>
+
+      {/* Navigation buttons */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Google Maps button */}
+        <a
+          href={googleMapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-3 px-5 py-4 rounded-xl font-medium text-sm transition-all hover:opacity-90 shadow-card"
+          style={{ backgroundColor: '#4285F4', color: '#fff', minHeight: '48px' }}
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
+          </svg>
+          Open in Google Maps
+        </a>
+
+        {/* Waze button */}
+        <a
+          href={wazeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-3 px-5 py-4 rounded-xl font-medium text-sm transition-all hover:opacity-90 shadow-card"
+          style={{ backgroundColor: '#33ccff', color: '#fff', minHeight: '48px' }}
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm4 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2-5.5c-.73 1.15-1.85 1.95-3.15 2.31-.18.05-.35.08-.53.08h-.64c-.18 0-.35-.03-.53-.08C9.85 13.45 8.73 12.65 8 11.5 7.27 10.35 7 9.18 7 8c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.18-.27 2.35-1 3.5z" />
+          </svg>
+          Open in Waze
+        </a>
+      </div>
     </div>
   );
 };
