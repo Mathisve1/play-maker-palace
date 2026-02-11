@@ -34,12 +34,30 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://play-maker-palace.lovable.app";
 
     if (account_type === "club") {
-      // Check if club already has a stripe account
-      const { data: club } = await supabaseClient
+      // Check if user owns a club
+      let { data: club } = await supabaseClient
         .from("clubs")
         .select("id, stripe_account_id, name")
         .eq("owner_id", user.id)
         .maybeSingle();
+
+      // If not owner, check membership
+      if (!club) {
+        const { data: membership } = await supabaseClient
+          .from("club_members")
+          .select("club_id")
+          .eq("user_id", user.id)
+          .limit(1)
+          .maybeSingle();
+        if (membership) {
+          const { data: memberClub } = await supabaseClient
+            .from("clubs")
+            .select("id, stripe_account_id, name")
+            .eq("id", membership.club_id)
+            .maybeSingle();
+          if (memberClub) club = memberClub;
+        }
+      }
 
       if (!club) throw new Error("No club found for this user");
 
