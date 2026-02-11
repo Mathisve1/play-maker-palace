@@ -270,9 +270,8 @@ Deno.serve(async (req) => {
       // data is an array of submitters
       const submission = Array.isArray(data) ? data[0] : data;
       const submissionId = submission.submission_id || submission.id;
-      const signingUrl = submission.embed_src || submission.slug
-        ? `https://docuseal.com/s/${submission.slug}`
-        : null;
+      const signingUrl = submission.embed_src
+        || (submission.slug ? `https://docuseal.com/s/${submission.slug}` : null);
 
       // Save to our DB
       const { error: dbError } = await supabase.from("signature_requests").insert({
