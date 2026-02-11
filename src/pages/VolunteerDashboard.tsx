@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature } from 'lucide-react';
 import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
 import { Language } from '@/i18n/translations';
@@ -32,6 +32,7 @@ interface Task {
 
 interface TaskSignup {
   task_id: string;
+  status: string;
 }
 
 const langLabels: Record<Language, string> = { nl: 'NL', fr: 'FR', en: 'EN' };
@@ -46,6 +47,8 @@ const VolunteerDashboard = () => {
   const [signingUp, setSigningUp] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'mine'>('all');
+  const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
+  const [signingContract, setSigningContract] = useState<string | null>(null);
   
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -113,7 +116,7 @@ const VolunteerDashboard = () => {
       // Fetch user signups
       const { data: signupsData } = await supabase
         .from('task_signups')
-        .select('task_id')
+        .select('task_id, status')
         .eq('volunteer_id', session.user.id);
       setSignups(signupsData || []);
 
@@ -142,7 +145,7 @@ const VolunteerDashboard = () => {
       toast.error(error.message);
     } else {
       toast.success(t.volunteer.step3Title + '!');
-      setSignups(prev => [...prev, { task_id: taskId }]);
+      setSignups(prev => [...prev, { task_id: taskId, status: 'pending' }]);
       setSignupCounts(prev => ({ ...prev, [taskId]: (prev[taskId] || 0) + 1 }));
     }
     setSigningUp(null);
@@ -176,6 +179,63 @@ const VolunteerDashboard = () => {
   };
 
   const isSignedUp = (taskId: string) => signups.some(s => s.task_id === taskId);
+  const getSignupStatus = (taskId: string) => signups.find(s => s.task_id === taskId)?.status || null;
+
+  const pendingSignups = signups.filter(s => s.status === 'pending');
+  const assignedSignups = signups.filter(s => s.status === 'assigned');
+
+  const handleSignContract = async (taskId: string) => {
+    setSigningContract(taskId);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    try {
+      // Fetch templates
+      const templatesUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=templates`;
+      const templatesResp = await fetch(templatesUrl, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      });
+      const templatesData = await templatesResp.json();
+      const templates = Array.isArray(templatesData) ? templatesData : templatesData?.data || [];
+      
+      if (templates.length === 0) {
+        toast.error('Geen templates beschikbaar in DocuSeal');
+        setSigningContract(null);
+        return;
+      }
+
+      // Use the first template for the dummy test
+      const templateId = templates[0].id;
+      const submitUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=create-submission`;
+      const resp = await fetch(submitUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          template_id: templateId,
+          task_id: taskId,
+          volunteer_email: profile?.email,
+          volunteer_name: profile?.full_name,
+        }),
+      });
+
+      const data = await resp.json();
+      if (resp.ok && data.success) {
+        toast.success('Contract verstuurd! Check je e-mail om te ondertekenen.');
+      } else {
+        toast.error(data.error || 'Er ging iets mis');
+      }
+    } catch (err) {
+      toast.error('Er ging iets mis bij het versturen');
+    }
+    setSigningContract(null);
+  };
 
   const filteredTasks = tasks.filter(task => {
     const q = searchQuery.toLowerCase();
@@ -186,15 +246,17 @@ const VolunteerDashboard = () => {
       task.location?.toLowerCase().includes(q);
     
     if (activeTab === 'mine') {
-      return matchesSearch && isSignedUp(task.id);
+      const status = getSignupStatus(task.id);
+      if (!status) return false;
+      return matchesSearch && status === mineSubTab;
     }
     return matchesSearch;
   });
 
   const dashboardT = {
-    nl: { welcome: 'Welkom', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', cancel: 'Annuleren', spots: 'plaatsen', logout: 'Uitloggen', mySignups: 'Mijn inschrijvingen', allTasks: 'Alle taken', myTasks: 'Mijn taken', noMyTasks: 'Je bent nog niet ingeschreven voor taken.' },
-    fr: { welcome: 'Bienvenue', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, clubs ou lieux...', noTasks: 'Il n\'y a actuellement aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', cancel: 'Annuler', spots: 'places', logout: 'Déconnexion', mySignups: 'Mes inscriptions', allTasks: 'Toutes les tâches', myTasks: 'Mes tâches', noMyTasks: 'Vous n\'êtes pas encore inscrit à des tâches.' },
-    en: { welcome: 'Welcome', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, clubs or locations...', noTasks: 'There are currently no open tasks.', signUp: 'Sign up', signedUp: 'Signed up', cancel: 'Cancel', spots: 'spots', logout: 'Log out', mySignups: 'My signups', allTasks: 'All tasks', myTasks: 'My tasks', noMyTasks: 'You haven\'t signed up for any tasks yet.' },
+    nl: { welcome: 'Welkom', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', assigned: 'Toegekend', cancel: 'Annuleren', spots: 'plaatsen', logout: 'Uitloggen', mySignups: 'Mijn inschrijvingen', allTasks: 'Alle taken', myTasks: 'Mijn taken', noMyTasks: 'Geen taken in deze categorie.', signContract: 'Contract ondertekenen', signing: 'Laden...', ingeschreven: 'Ingeschreven', toegekend: 'Toegekend' },
+    fr: { welcome: 'Bienvenue', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, clubs ou lieux...', noTasks: 'Il n\'y a actuellement aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', assigned: 'Attribué', cancel: 'Annuler', spots: 'places', logout: 'Déconnexion', mySignups: 'Mes inscriptions', allTasks: 'Toutes les tâches', myTasks: 'Mes tâches', noMyTasks: 'Aucune tâche dans cette catégorie.', signContract: 'Signer le contrat', signing: 'Chargement...', ingeschreven: 'Inscrits', toegekend: 'Attribués' },
+    en: { welcome: 'Welcome', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, clubs or locations...', noTasks: 'There are currently no open tasks.', signUp: 'Sign up', signedUp: 'Signed up', assigned: 'Assigned', cancel: 'Cancel', spots: 'spots', logout: 'Log out', mySignups: 'My signups', allTasks: 'All tasks', myTasks: 'My tasks', noMyTasks: 'No tasks in this category.', signContract: 'Sign contract', signing: 'Loading...', ingeschreven: 'Signed up', toegekend: 'Assigned' },
   };
   const dt = dashboardT[language];
 
@@ -285,6 +347,43 @@ const VolunteerDashboard = () => {
           </button>
         </div>
 
+        {/* Mine subtabs */}
+        {activeTab === 'mine' && (
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={() => setMineSubTab('pending')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                mineSubTab === 'pending'
+                  ? 'bg-primary/10 text-primary border border-primary/20'
+                  : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {dt.ingeschreven}
+              {pendingSignups.length > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-primary/20 text-primary">
+                  {pendingSignups.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setMineSubTab('assigned')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
+                mineSubTab === 'assigned'
+                  ? 'bg-accent/10 text-accent border border-accent/20'
+                  : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <CheckCircle className="w-3 h-3" />
+              {dt.toegekend}
+              {assignedSignups.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-accent/20 text-accent">
+                  {assignedSignups.length}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
         {/* Search */}
         <div className="mt-4 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -307,6 +406,8 @@ const VolunteerDashboard = () => {
           ) : (
             filteredTasks.map((task, i) => {
               const signed = isSignedUp(task.id);
+              const signupStatus = getSignupStatus(task.id);
+              const isAssigned = signupStatus === 'assigned';
               return (
                 <motion.div
                   key={task.id}
@@ -315,7 +416,7 @@ const VolunteerDashboard = () => {
                   transition={{ delay: i * 0.05 }}
                   onClick={() => navigate(`/task/${task.id}`)}
                   className={`bg-card rounded-2xl p-5 shadow-card border transition-all cursor-pointer ${
-                    signed ? 'border-primary/30 bg-primary/5' : 'border-transparent hover:shadow-elevated'
+                    isAssigned ? 'border-accent/30 bg-accent/5' : signed ? 'border-primary/30 bg-primary/5' : 'border-transparent hover:shadow-elevated'
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -353,21 +454,37 @@ const VolunteerDashboard = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="shrink-0 flex items-center gap-2">
-                      <LikeButton
-                        taskId={task.id}
-                        liked={myLikes.has(task.id)}
-                        count={likeCounts[task.id] || 0}
-                        onToggle={handleLikeToggle}
-                      />
-                      {signed ? (
-                        <span className="px-3 py-1.5 rounded-xl text-xs font-medium border border-primary/30 text-primary bg-primary/5">
-                          ✓ {dt.signedUp}
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1.5 rounded-xl text-xs font-medium bg-muted text-muted-foreground">
-                          {dt.signUp} →
-                        </span>
+                    <div className="shrink-0 flex flex-col items-end gap-2">
+                      <div className="flex items-center gap-2">
+                        <LikeButton
+                          taskId={task.id}
+                          liked={myLikes.has(task.id)}
+                          count={likeCounts[task.id] || 0}
+                          onToggle={handleLikeToggle}
+                        />
+                        {isAssigned ? (
+                          <span className="px-3 py-1.5 rounded-xl text-xs font-medium border border-accent/30 text-accent bg-accent/5 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" /> {dt.assigned}
+                          </span>
+                        ) : signed ? (
+                          <span className="px-3 py-1.5 rounded-xl text-xs font-medium border border-primary/30 text-primary bg-primary/5">
+                            ✓ {dt.signedUp}
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1.5 rounded-xl text-xs font-medium bg-muted text-muted-foreground">
+                            {dt.signUp} →
+                          </span>
+                        )}
+                      </div>
+                      {isAssigned && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleSignContract(task.id); }}
+                          disabled={signingContract === task.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                        >
+                          <FileSignature className="w-3.5 h-3.5" />
+                          {signingContract === task.id ? dt.signing : dt.signContract}
+                        </button>
                       )}
                     </div>
                   </div>
