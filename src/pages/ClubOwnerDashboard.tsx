@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell } from 'lucide-react';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -465,44 +465,7 @@ const ClubOwnerDashboard = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            {currentUserId && <NotificationBell userId={currentUserId} />}
-            {(isOwner || myClubRole === 'bestuurder') && clubId && (
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                title="Club instellingen"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && clubId && (
-              <button
-                onClick={() => setShowTemplates(true)}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                title={dt.manageTemplates}
-              >
-                <FileText className="w-4 h-4" />
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && clubId && (
-              <button
-                onClick={() => navigate('/payments')}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                title="Betalingen"
-              >
-                <CreditCard className="w-4 h-4" />
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && clubId && (
-              <button
-                onClick={() => setShowMembers(true)}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                title="Leden beheren"
-              >
-                <Shield className="w-4 h-4" />
-              </button>
-            )}
+          <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden md:block">
               {profile?.full_name || profile?.email}
             </span>
@@ -533,6 +496,60 @@ const ClubOwnerDashboard = () => {
             </button>
           )}
         </motion.div>
+
+        {/* Quick access cards */}
+        {clubId && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-6"
+          >
+            <button
+              onClick={() => navigate('/chat')}
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group"
+            >
+              <Bell className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="text-xs font-medium text-foreground">Notificaties</span>
+            </button>
+            {(isOwner || myClubRole === 'bestuurder') && (
+              <button
+                onClick={() => setShowSettings(true)}
+                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group"
+              >
+                <Settings className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-xs font-medium text-foreground">Instellingen</span>
+              </button>
+            )}
+            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group"
+              >
+                <FileText className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-xs font-medium text-foreground">Contracten</span>
+              </button>
+            )}
+            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
+              <button
+                onClick={() => navigate('/payments')}
+                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group"
+              >
+                <CreditCard className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-xs font-medium text-foreground">Betalingen</span>
+              </button>
+            )}
+            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
+              <button
+                onClick={() => setShowMembers(true)}
+                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group"
+              >
+                <Shield className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-xs font-medium text-foreground">Leden</span>
+              </button>
+            )}
+          </motion.div>
+        )}
 
         {/* Create task form */}
         <AnimatePresence>
