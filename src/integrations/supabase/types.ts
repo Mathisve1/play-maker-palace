@@ -275,6 +275,7 @@ export type Database = {
           bank_consent_text: string | null
           bank_holder_name: string | null
           bank_iban: string | null
+          bio: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -289,6 +290,7 @@ export type Database = {
           bank_consent_text?: string | null
           bank_holder_name?: string | null
           bank_iban?: string | null
+          bio?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -303,6 +305,7 @@ export type Database = {
           bank_consent_text?: string | null
           bank_holder_name?: string | null
           bank_iban?: string | null
+          bio?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null

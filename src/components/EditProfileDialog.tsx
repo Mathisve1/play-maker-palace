@@ -12,6 +12,7 @@ interface ProfileData {
   email: string | null;
   avatar_url: string | null;
   phone: string | null;
+  bio: string | null;
   bank_iban: string | null;
   bank_holder_name: string | null;
   bank_consent_given: boolean;
@@ -25,6 +26,7 @@ interface EditProfileDialogProps {
   userId: string;
   language: Language;
   onProfileUpdated: (profile: ProfileData) => void;
+  isFirstLogin?: boolean;
 }
 
 const labels = {
@@ -34,6 +36,8 @@ const labels = {
     name: 'Volledige naam',
     email: 'E-mailadres',
     phone: 'Telefoonnummer',
+    bio: 'Over mij',
+    bioPlaceholder: 'Vertel iets over jezelf, je interesses en ervaring als vrijwilliger...',
     changePhoto: 'Foto wijzigen',
     bankDetails: 'Bankgegevens voor onkostenvergoedingen',
     iban: 'IBAN-rekeningnummer',
@@ -50,6 +54,8 @@ const labels = {
     saved: 'Profiel bijgewerkt!',
     legalWarning: 'Deze toestemming is juridisch bindend conform de Europese regelgeving. U kunt deze op elk moment schriftelijk intrekken.',
     requiredForBank: 'Vul eerst uw naam en IBAN in om toestemming te geven.',
+    firstLoginTitle: 'Welkom! Vul je profiel aan',
+    firstLoginDescription: 'Vul je gegevens in zodat clubs je beter leren kennen.',
   },
   fr: {
     title: 'Mon profil',
@@ -57,6 +63,8 @@ const labels = {
     name: 'Nom complet',
     email: 'Adresse e-mail',
     phone: 'Numéro de téléphone',
+    bio: 'À propos de moi',
+    bioPlaceholder: 'Parlez de vous, vos intérêts et votre expérience en tant que bénévole...',
     changePhoto: 'Modifier la photo',
     bankDetails: 'Coordonnées bancaires pour remboursements',
     iban: 'Numéro IBAN',
@@ -73,6 +81,8 @@ const labels = {
     saved: 'Profil mis à jour !',
     legalWarning: 'Ce consentement est juridiquement contraignant conformément à la réglementation européenne. Vous pouvez le révoquer à tout moment par écrit.',
     requiredForBank: 'Veuillez d\'abord remplir votre nom et IBAN pour donner votre consentement.',
+    firstLoginTitle: 'Bienvenue ! Complétez votre profil',
+    firstLoginDescription: 'Remplissez vos informations pour que les clubs vous connaissent mieux.',
   },
   en: {
     title: 'My profile',
@@ -80,6 +90,8 @@ const labels = {
     name: 'Full name',
     email: 'Email address',
     phone: 'Phone number',
+    bio: 'About me',
+    bioPlaceholder: 'Tell us about yourself, your interests and volunteering experience...',
     changePhoto: 'Change photo',
     bankDetails: 'Bank details for expense reimbursements',
     iban: 'IBAN account number',
@@ -96,6 +108,8 @@ const labels = {
     saved: 'Profile updated!',
     legalWarning: 'This consent is legally binding under European regulations. You may revoke it in writing at any time.',
     requiredForBank: 'Please fill in your name and IBAN first to give consent.',
+    firstLoginTitle: 'Welcome! Complete your profile',
+    firstLoginDescription: 'Fill in your details so clubs can get to know you better.',
   },
 };
 
@@ -104,7 +118,7 @@ const formatIban = (value: string) => {
   return cleaned.replace(/(.{4})/g, '$1 ').trim();
 };
 
-const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpdated }: EditProfileDialogProps) => {
+const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpdated, isFirstLogin = false }: EditProfileDialogProps) => {
   const l = labels[language];
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,6 +132,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bankIban, setBankIban] = useState('');
   const [bankHolderName, setBankHolderName] = useState('');
+  const [bio, setBio] = useState('');
   const [bankConsentGiven, setBankConsentGiven] = useState(false);
   const [bankConsentDate, setBankConsentDate] = useState<string | null>(null);
   const [bankConsentText, setBankConsentText] = useState<string | null>(null);
@@ -128,7 +143,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       setLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_url, phone, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text')
+        .select('full_name, email, avatar_url, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text')
         .eq('id', userId)
         .maybeSingle();
 
@@ -138,6 +153,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
         setPhone(data.phone || '');
         setAvatarUrl(data.avatar_url);
         setBankIban(data.bank_iban ? formatIban(data.bank_iban) : '');
+        setBio(data.bio || '');
         setBankHolderName(data.bank_holder_name || '');
         setBankConsentGiven(data.bank_consent_given || false);
         setBankConsentDate(data.bank_consent_date);
@@ -194,6 +210,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
     const updateData: Record<string, unknown> = {
       full_name: fullName.trim() || null,
       phone: phone.trim() || null,
+      bio: bio.trim() || null,
       bank_iban: cleanIban || null,
       bank_holder_name: bankHolderName.trim() || null,
       bank_consent_given: bankConsentGiven,
@@ -219,12 +236,14 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
         email,
         avatar_url: avatarUrl,
         phone: phone.trim() || null,
+        bio: bio.trim() || null,
         bank_iban: cleanIban || null,
         bank_holder_name: bankHolderName.trim() || null,
         bank_consent_given: bankConsentGiven,
         bank_consent_date: bankConsentGiven ? (bankConsentDate || now) : null,
         bank_consent_text: bankConsentGiven ? consentText : null,
       });
+      onOpenChange(false);
     }
     setSaving(false);
   };
@@ -251,7 +270,12 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading text-lg">{l.title}</DialogTitle>
+          <DialogTitle className="font-heading text-lg">
+            {isFirstLogin ? l.firstLoginTitle : l.title}
+          </DialogTitle>
+          {isFirstLogin && (
+            <p className="text-sm text-muted-foreground mt-1">{l.firstLoginDescription}</p>
+          )}
         </DialogHeader>
 
         {/* Avatar section */}
@@ -323,6 +347,17 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
               onChange={e => setPhone(e.target.value)}
               className={inputClass}
               placeholder="+32 470 00 00 00"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>{l.bio}</label>
+            <textarea
+              value={bio}
+              onChange={e => setBio(e.target.value)}
+              className={inputClass + ' resize-none'}
+              placeholder={l.bioPlaceholder}
+              rows={3}
+              maxLength={500}
             />
           </div>
         </div>
