@@ -751,7 +751,7 @@ Deno.serve(async (req) => {
         console.error("DB insert error:", dbError);
       }
 
-      return new Response(JSON.stringify({ success: true, submission, submission_id: submissionId }), {
+      return new Response(JSON.stringify({ success: true, submission: submissionData, submission_id: submissionId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
