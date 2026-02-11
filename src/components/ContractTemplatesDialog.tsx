@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, Trash2, FileText, Loader2, Eye, Plus } from 'lucide-react';
+import { X, Trash2, FileText, Loader2, Eye, Plus, Pencil } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 
 interface ContractTemplate {
@@ -189,6 +189,16 @@ const ContractTemplatesDialog = ({ clubId, language, onClose }: Props) => {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => {
+                        onClose();
+                        navigate(`/contract-builder?club_id=${clubId}&template_id=${tmpl.id}`);
+                      }}
+                      className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                      title="Bewerken"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
                     {tmpl.file_path && (
                       <button
                         onClick={async () => {
