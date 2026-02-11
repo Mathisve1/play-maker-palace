@@ -305,32 +305,13 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Download the PDF from storage URL to get base64
-      const pdfResp = await fetch(file_url);
-      if (!pdfResp.ok) {
-        throw new Error(`Failed to download PDF: ${pdfResp.status}`);
-      }
-      const pdfBuffer = await pdfResp.arrayBuffer();
-      const bytes = new Uint8Array(pdfBuffer);
-      const chunkSize = 8192;
-      let binary = "";
-      for (let i = 0; i < bytes.length; i += chunkSize) {
-        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-        for (let j = 0; j < chunk.length; j++) {
-          binary += String.fromCharCode(chunk[j]);
-        }
-      }
-      const pdfBase64 = btoa(binary);
-
       // Standard fields that will be auto-filled from volunteer profiles and task data
       const standardFields = [
-        // Volunteer fields
         { name: "Naam", type: "text", role: "Volunteer" },
         { name: "E-mail", type: "text", role: "Volunteer" },
         { name: "Telefoon", type: "text", role: "Volunteer" },
         { name: "IBAN", type: "text", role: "Volunteer" },
         { name: "Rekeninghouder", type: "text", role: "Volunteer" },
-        // Club & task fields
         { name: "Clubnaam", type: "text", role: "Volunteer" },
         { name: "Taak", type: "text", role: "Volunteer" },
         { name: "Beschrijving", type: "text", role: "Volunteer" },
@@ -342,11 +323,11 @@ Deno.serve(async (req) => {
         { name: "Briefing tijd", type: "text", role: "Volunteer" },
         { name: "Verzamelplaats", type: "text", role: "Volunteer" },
         { name: "Onkostenvergoeding", type: "text", role: "Volunteer" },
-        // Signature
         { name: "Handtekening", type: "signature", role: "Volunteer" },
       ];
 
-      // Create template in DocuSeal
+      // Send the URL directly to DocuSeal instead of downloading + base64 encoding
+      // This avoids memory limit issues in the edge function
       const resp = await fetch(`${DOCUSEAL_API_URL}/templates/pdf`, {
         method: "POST",
         headers: {
@@ -357,7 +338,7 @@ Deno.serve(async (req) => {
           name,
           documents: [{
             name: "contract.pdf",
-            file: pdfBase64,
+            file: file_url,
           }],
           fields: standardFields,
         }),
