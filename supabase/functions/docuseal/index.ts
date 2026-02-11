@@ -105,15 +105,26 @@ Deno.serve(async (req) => {
         });
       }
 
-      // If volunteer_email is missing, look it up from profiles using volunteer_id
+      // If volunteer_email is missing, look it up using service role to bypass RLS
       if (!volunteer_email && volunteer_id) {
-        const { data: volProfile } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("id", volunteer_id)
-          .maybeSingle();
-        if (volProfile?.email) {
-          volunteer_email = volProfile.email;
+        const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (serviceRoleKey) {
+          const adminClient = createClient(supabaseUrl, serviceRoleKey);
+          const { data: volProfile } = await adminClient
+            .from("profiles")
+            .select("email")
+            .eq("id", volunteer_id)
+            .maybeSingle();
+          if (volProfile?.email) {
+            volunteer_email = volProfile.email;
+          }
+          // If still missing, try auth.users
+          if (!volunteer_email) {
+            const { data: authUser } = await adminClient.auth.admin.getUserById(volunteer_id);
+            if (authUser?.user?.email) {
+              volunteer_email = authUser.user.email;
+            }
+          }
         }
       }
 
