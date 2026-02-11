@@ -101,18 +101,49 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('club_invitations')
       .insert({
         club_id: clubId,
         email: inviteEmail.trim(),
         role: inviteRole,
         invited_by: session.user.id,
-      });
+      })
+      .select('invite_token')
+      .maybeSingle();
 
     if (error) {
       toast.error(error.message);
-    } else {
+    } else if (data) {
+      // Send email via edge function
+      try {
+        // Get club name for the email
+        const { data: club } = await supabase
+          .from('clubs')
+          .select('name')
+          .eq('id', clubId)
+          .maybeSingle();
+
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/club-invite?action=send-email`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              email: inviteEmail.trim(),
+              invite_token: data.invite_token,
+              role: inviteRole,
+              club_name: club?.name || '',
+            }),
+          }
+        );
+      } catch (e) {
+        console.error('Email sending failed:', e);
+      }
       toast.success(`Uitnodiging verstuurd naar ${inviteEmail}`);
       setInviteEmail('');
       fetchData();
