@@ -288,6 +288,30 @@ Deno.serve(async (req) => {
       const pdfBuffer = await pdfResp.arrayBuffer();
       const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
 
+      // Standard fields that will be auto-filled from volunteer profiles and task data
+      const standardFields = [
+        // Volunteer fields
+        { name: "Naam", type: "text", role: "Volunteer" },
+        { name: "E-mail", type: "text", role: "Volunteer" },
+        { name: "Telefoon", type: "text", role: "Volunteer" },
+        { name: "IBAN", type: "text", role: "Volunteer" },
+        { name: "Rekeninghouder", type: "text", role: "Volunteer" },
+        // Club & task fields
+        { name: "Clubnaam", type: "text", role: "Volunteer" },
+        { name: "Taak", type: "text", role: "Volunteer" },
+        { name: "Beschrijving", type: "text", role: "Volunteer" },
+        { name: "Datum", type: "text", role: "Volunteer" },
+        { name: "Starttijd", type: "text", role: "Volunteer" },
+        { name: "Eindtijd", type: "text", role: "Volunteer" },
+        { name: "Uren", type: "text", role: "Volunteer" },
+        { name: "Locatie", type: "text", role: "Volunteer" },
+        { name: "Briefing tijd", type: "text", role: "Volunteer" },
+        { name: "Verzamelplaats", type: "text", role: "Volunteer" },
+        { name: "Onkostenvergoeding", type: "text", role: "Volunteer" },
+        // Signature
+        { name: "Handtekening", type: "signature", role: "Volunteer" },
+      ];
+
       // Create template in DocuSeal
       const resp = await fetch(`${DOCUSEAL_API_URL}/templates/pdf`, {
         method: "POST",
@@ -301,6 +325,7 @@ Deno.serve(async (req) => {
             name: "contract.pdf",
             file: pdfBase64,
           }],
+          fields: standardFields,
         }),
       });
 
