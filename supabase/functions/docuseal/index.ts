@@ -728,10 +728,11 @@ Deno.serve(async (req) => {
         throw new Error(`DocuSeal API error [${submissionResp.status}]: ${JSON.stringify(submissionData)}`);
       }
 
-      const submission = Array.isArray(submissionData) ? submissionData[0] : submissionData;
-      const submissionId = submission.submission_id || submission.id;
-      const signingUrl = submission.embed_src
-        || (submission.slug ? `https://docuseal.com/s/${submission.slug}` : null);
+      // submissions/pdf returns { id, submitters: [{ slug, ... }] } - not an array
+      const submissionId = submissionData.id;
+      const firstSubmitter = submissionData.submitters?.[0];
+      const signingUrl = firstSubmitter?.embed_src
+        || (firstSubmitter?.slug ? `https://docuseal.com/s/${firstSubmitter.slug}` : null);
 
       console.log("Created submission:", submissionId, "signing_url:", signingUrl);
 
