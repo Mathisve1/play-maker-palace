@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -13,6 +14,7 @@ const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [coords, setCoords] = useState<[number, number] | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const searchQuery = meetingPoint !== location
     ? `${meetingPoint}, ${location}`
@@ -25,6 +27,7 @@ const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
 
   // Geocode the address
   useEffect(() => {
+    setLoading(true);
     const geocode = async () => {
       try {
         const res = await fetch(
@@ -36,6 +39,8 @@ const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
         }
       } catch (e) {
         console.error('Geocoding failed:', e);
+      } finally {
+        setLoading(false);
       }
     };
     geocode();
@@ -90,10 +95,19 @@ const TaskMap = ({ location, meetingPoint, directionsLabel }: TaskMapProps) => {
   return (
     <div className="space-y-4">
       {/* OpenStreetMap */}
-      <div
-        ref={mapRef}
-        className="w-full h-48 md:h-80 rounded-xl overflow-hidden border border-border z-0"
-      />
+      {loading ? (
+        <div className="w-full h-48 md:h-80 rounded-xl overflow-hidden border border-border relative">
+          <Skeleton className="w-full h-full" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+          </div>
+        </div>
+      ) : (
+        <div
+          ref={mapRef}
+          className="w-full h-48 md:h-80 rounded-xl overflow-hidden border border-border z-0"
+        />
+      )}
 
       {/* Location info */}
       <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/40 border border-border">
