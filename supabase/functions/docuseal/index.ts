@@ -128,23 +128,84 @@ Deno.serve(async (req) => {
       // Also fetch task details for pre-filling
       const { data: taskData } = await supabase
         .from("tasks")
-        .select("title, task_date, location, expense_amount, expense_reimbursement")
+        .select("title, task_date, location, start_time, end_time, briefing_time, briefing_location, description, notes, expense_amount, expense_reimbursement")
         .eq("id", task_id)
         .maybeSingle();
 
+      // Fetch club info
+      const { data: clubData } = taskData ? await supabase
+        .from("tasks")
+        .select("clubs(name, location, sport)")
+        .eq("id", task_id)
+        .maybeSingle() : { data: null };
+
+      const club = (clubData as any)?.clubs;
+      if (club) {
+        if (club.name) {
+          prefilledFields["Club"] = club.name;
+          prefilledFields["Clubnaam"] = club.name;
+          prefilledFields["Organization"] = club.name;
+        }
+      }
+
+      const formatTime = (dateStr: string) => {
+        const d = new Date(dateStr);
+        return d.toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
+      };
+      const formatDateNL = (dateStr: string) => {
+        return new Date(dateStr).toLocaleDateString("nl-BE", { day: "numeric", month: "long", year: "numeric" });
+      };
+
       if (taskData) {
-        if (taskData.title) prefilledFields["Taak"] = taskData.title;
-        if (taskData.title) prefilledFields["Task"] = taskData.title;
-        if (taskData.location) prefilledFields["Locatie"] = taskData.location;
-        if (taskData.location) prefilledFields["Location"] = taskData.location;
+        if (taskData.title) {
+          prefilledFields["Taak"] = taskData.title;
+          prefilledFields["Task"] = taskData.title;
+          prefilledFields["Opdracht"] = taskData.title;
+        }
+        if (taskData.description) {
+          prefilledFields["Beschrijving"] = taskData.description;
+          prefilledFields["Description"] = taskData.description;
+        }
+        if (taskData.location) {
+          prefilledFields["Locatie"] = taskData.location;
+          prefilledFields["Location"] = taskData.location;
+          prefilledFields["Werklocatie"] = taskData.location;
+        }
         if (taskData.task_date) {
-          const dateStr = new Date(taskData.task_date).toLocaleDateString("nl-BE");
-          prefilledFields["Datum"] = dateStr;
-          prefilledFields["Date"] = dateStr;
+          prefilledFields["Datum"] = formatDateNL(taskData.task_date);
+          prefilledFields["Date"] = formatDateNL(taskData.task_date);
+        }
+        if (taskData.start_time) {
+          prefilledFields["Starttijd"] = formatTime(taskData.start_time);
+          prefilledFields["Start Time"] = formatTime(taskData.start_time);
+          prefilledFields["Aanvang"] = formatTime(taskData.start_time);
+        }
+        if (taskData.end_time) {
+          prefilledFields["Eindtijd"] = formatTime(taskData.end_time);
+          prefilledFields["End Time"] = formatTime(taskData.end_time);
+        }
+        if (taskData.start_time && taskData.end_time) {
+          prefilledFields["Uren"] = `${formatTime(taskData.start_time)} - ${formatTime(taskData.end_time)}`;
+          prefilledFields["Hours"] = `${formatTime(taskData.start_time)} - ${formatTime(taskData.end_time)}`;
+          prefilledFields["Werkuren"] = `${formatTime(taskData.start_time)} - ${formatTime(taskData.end_time)}`;
+        }
+        if (taskData.briefing_time) {
+          prefilledFields["Briefing tijd"] = formatTime(taskData.briefing_time);
+          prefilledFields["Briefing Time"] = formatTime(taskData.briefing_time);
+        }
+        if (taskData.briefing_location) {
+          prefilledFields["Briefing locatie"] = taskData.briefing_location;
+          prefilledFields["Briefing Location"] = taskData.briefing_location;
+          prefilledFields["Verzamelplaats"] = taskData.briefing_location;
+        }
+        if (taskData.notes) {
+          prefilledFields["Notities"] = taskData.notes;
+          prefilledFields["Notes"] = taskData.notes;
         }
         if (taskData.expense_reimbursement && taskData.expense_amount) {
           prefilledFields["Onkostenvergoeding"] = `€${taskData.expense_amount}`;
           prefilledFields["Expense Amount"] = `€${taskData.expense_amount}`;
+          prefilledFields["Vergoeding"] = `€${taskData.expense_amount}`;
         }
       }
 
