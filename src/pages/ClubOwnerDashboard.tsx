@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard } from 'lucide-react';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -433,6 +433,15 @@ const ClubOwnerDashboard = () => {
                 title={dt.manageTemplates}
               >
                 <FileText className="w-4 h-4" />
+              </button>
+            )}
+            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && clubId && (
+              <button
+                onClick={() => navigate('/payments')}
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                title="Betalingen"
+              >
+                <CreditCard className="w-4 h-4" />
               </button>
             )}
             {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && clubId && (

@@ -103,6 +103,7 @@ export type Database = {
           name: string
           owner_id: string
           sport: string | null
+          stripe_account_id: string | null
         }
         Insert: {
           created_at?: string
@@ -113,6 +114,7 @@ export type Database = {
           name: string
           owner_id: string
           sport?: string | null
+          stripe_account_id?: string | null
         }
         Update: {
           created_at?: string
@@ -123,6 +125,7 @@ export type Database = {
           name?: string
           owner_id?: string
           sport?: string | null
+          stripe_account_id?: string | null
         }
         Relationships: []
       }
@@ -281,6 +284,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          stripe_account_id: string | null
           updated_at: string
         }
         Insert: {
@@ -296,6 +300,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          stripe_account_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -311,6 +316,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          stripe_account_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -515,6 +521,75 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      volunteer_payments: {
+        Row: {
+          amount: number
+          club_id: string
+          created_at: string
+          currency: string
+          id: string
+          paid_at: string | null
+          status: string
+          stripe_fee: number | null
+          stripe_payment_intent_id: string | null
+          stripe_receipt_url: string | null
+          stripe_transfer_id: string | null
+          task_id: string
+          total_charged: number | null
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          amount?: number
+          club_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          stripe_fee?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_receipt_url?: string | null
+          stripe_transfer_id?: string | null
+          task_id: string
+          total_charged?: number | null
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          amount?: number
+          club_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          stripe_fee?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_receipt_url?: string | null
+          stripe_transfer_id?: string | null
+          task_id?: string
+          total_charged?: number | null
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_payments_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_payments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

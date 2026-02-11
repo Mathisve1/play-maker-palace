@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Language } from '@/i18n/translations';
@@ -18,6 +18,7 @@ interface ProfileData {
   bank_consent_given: boolean;
   bank_consent_date: string | null;
   bank_consent_text: string | null;
+  stripe_account_id?: string | null;
 }
 
 interface EditProfileDialogProps {
@@ -136,6 +137,8 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [bankConsentGiven, setBankConsentGiven] = useState(false);
   const [bankConsentDate, setBankConsentDate] = useState<string | null>(null);
   const [bankConsentText, setBankConsentText] = useState<string | null>(null);
+  const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
+  const [connectingStripe, setConnectingStripe] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -143,7 +146,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       setLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_url, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text')
+        .select('full_name, email, avatar_url, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, stripe_account_id')
         .eq('id', userId)
         .maybeSingle();
 
@@ -158,6 +161,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
         setBankConsentGiven(data.bank_consent_given || false);
         setBankConsentDate(data.bank_consent_date);
         setBankConsentText(data.bank_consent_text);
+        setStripeAccountId(data.stripe_account_id);
       }
       setLoading(false);
     };
@@ -435,7 +439,52 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
           </div>
         </div>
 
-        {/* Save button */}
+        {/* Stripe Connect for payments */}
+        <div className="space-y-3 mt-6 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" />
+            {language === 'nl' ? 'Betaalgegevens (Stripe)' : language === 'fr' ? 'Données de paiement (Stripe)' : 'Payment details (Stripe)'}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {language === 'nl' ? 'Koppel je Stripe account om onkostenvergoedingen rechtstreeks op je bankrekening te ontvangen.' :
+             language === 'fr' ? 'Connectez votre compte Stripe pour recevoir les remboursements directement sur votre compte bancaire.' :
+             'Connect your Stripe account to receive expense reimbursements directly to your bank account.'}
+          </p>
+          {stripeAccountId ? (
+            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-xl p-3">
+              <ShieldCheck className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-medium text-foreground">
+                {language === 'nl' ? 'Stripe account gekoppeld ✓' : language === 'fr' ? 'Compte Stripe connecté ✓' : 'Stripe account connected ✓'}
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={async () => {
+                setConnectingStripe(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('stripe-connect-onboard', {
+                    body: { account_type: 'volunteer' },
+                  });
+                  if (error) throw error;
+                  if (data?.url) {
+                    window.open(data.url, '_blank');
+                    if (data.account_id) setStripeAccountId(data.account_id);
+                  }
+                } catch (err: any) {
+                  toast.error(err.message || 'Error');
+                }
+                setConnectingStripe(false);
+              }}
+              disabled={connectingStripe}
+              className="w-full px-4 py-2.5 rounded-xl text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {connectingStripe ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+              {language === 'nl' ? 'Koppel Stripe Account' : language === 'fr' ? 'Connecter Stripe' : 'Connect Stripe Account'}
+            </button>
+          )}
+        </div>
+
         <div className="mt-6 pt-4 border-t border-border">
           <button
             onClick={handleSave}
