@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Calendar, Users, Clock, Euro, FileText,
-  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart
+  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
@@ -30,7 +30,7 @@ interface Task {
   start_time: string | null;
   end_time: string | null;
   notes: string | null;
-  clubs: { name: string; sport: string | null; location: string | null } | null;
+  clubs: { name: string; sport: string | null; location: string | null; owner_id?: string } | null;
 }
 
 const labels = {
@@ -69,6 +69,7 @@ const labels = {
     persons: 'personen',
     aboutTask: 'Over deze taak',
     practicalInfo: 'Praktische info',
+    messageClub: 'Bericht club',
   },
   fr: {
     back: 'Retour à l\'aperçu',
@@ -105,6 +106,7 @@ const labels = {
     persons: 'personnes',
     aboutTask: 'À propos de cette tâche',
     practicalInfo: 'Infos pratiques',
+    messageClub: 'Message au club',
   },
   en: {
     back: 'Back to overview',
@@ -141,6 +143,7 @@ const labels = {
     persons: 'persons',
     aboutTask: 'About this task',
     practicalInfo: 'Practical info',
+    messageClub: 'Message club',
   },
 };
 
@@ -197,7 +200,7 @@ const TaskDetail = () => {
 
       const { data: taskData } = await supabase
         .from('tasks')
-        .select('*, clubs(name, sport, location)')
+        .select('*, clubs(name, sport, location, owner_id)')
         .eq('id', id!)
         .maybeSingle();
 
@@ -387,6 +390,14 @@ const TaskDetail = () => {
               >
                 <Navigation className="w-3.5 h-3.5" /> {l.directions}
               </a>
+            )}
+            {task.clubs?.owner_id && (
+              <button
+                onClick={() => navigate(`/chat?taskId=${id}&clubOwnerId=${task.clubs!.owner_id}`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
+              >
+                <MessageCircle className="w-3.5 h-3.5" /> {l.messageClub}
+              </button>
             )}
           </div>
         </motion.div>

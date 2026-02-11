@@ -47,6 +47,76 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          club_owner_id: string
+          created_at: string
+          id: string
+          task_id: string
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          club_owner_id: string
+          created_at?: string
+          id?: string
+          task_id: string
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          club_owner_id?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read: boolean
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
