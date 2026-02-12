@@ -232,7 +232,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
   };
 
   // Generate PDF from the rendered preview with proper page breaks
-  const generatePdf = async (): Promise<Blob> => {
+  const generatePdf = async (): Promise<{ blob: Blob; pages: { start: number; end: number }[]; pxPerMm: number; scale: number }> => {
     const el = previewRef.current;
     if (!el) throw new Error('Preview element not found');
 
@@ -324,7 +324,40 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeightMm);
     }
 
-    return pdf.output('blob');
+    return { blob: pdf.output('blob'), pages, pxPerMm, scale };
+  };
+
+  // Calculate signature field position relative to the PDF page
+  const calcSignaturePosition = (
+    el: HTMLElement,
+    pages: { start: number; end: number }[],
+    pxPerMm: number,
+    scale: number
+  ) => {
+    const sigEl = el.querySelector('[data-signature-field]') as HTMLElement | null;
+    if (!sigEl) return null;
+
+    const sigTop = sigEl.offsetTop * scale;
+    const pdfWidth = 210; // mm
+    const pdfPageHeight = 297; // mm
+
+    // Find which page the signature lands on
+    let sigPage = 0;
+    let sigYOnPage = 0;
+    for (let i = 0; i < pages.length; i++) {
+      if (sigTop >= pages[i].start && sigTop < pages[i].end) {
+        sigPage = i;
+        sigYOnPage = (sigTop - pages[i].start) / pxPerMm; // mm from top of this page
+        break;
+      }
+    }
+
+    // Convert to relative coordinates (0-1 range)
+    const relY = sigYOnPage / pdfPageHeight;
+    // The signature is in the right column (~56% from left)
+    const relX = 0.56;
+
+    return { page: sigPage, x: relX, y: relY };
   };
 
   const handleSend = async () => {
@@ -340,8 +373,13 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
     setSending(true);
     try {
       // 1. Generate personalized PDF
-      const pdfBlob = await generatePdf();
-      const pdfFile = new File([pdfBlob], `contract_${volunteer.id}_${task.id}.pdf`, { type: 'application/pdf' });
+      const pdfResult = await generatePdf();
+      const pdfFile = new File([pdfResult.blob], `contract_${volunteer.id}_${task.id}.pdf`, { type: 'application/pdf' });
+
+      // Calculate dynamic signature position
+      const sigPos = previewRef.current
+        ? calcSignaturePosition(previewRef.current, pdfResult.pages, pdfResult.pxPerMm, pdfResult.scale)
+        : null;
 
       // 2. Upload to storage
       const resolvedClubId = clubId || fullTask?.club_id || 'unknown';
@@ -378,6 +416,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
             volunteer_id: volunteer.id,
             volunteer_email: volunteer.email,
             volunteer_name: volunteer.full_name,
+            signature_position: sigPos,
           }),
         }
       );

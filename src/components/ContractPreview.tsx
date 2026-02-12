@@ -154,7 +154,7 @@ const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
                       De vrijwilliger:
                     </p>
                     {/* DocuSeal embedded text tag - detected as interactive signature field */}
-                    <p style={{ fontSize: 8, color: '#d1d5db', marginBottom: 4, fontFamily: 'monospace' }}>
+                    <p data-signature-field="true" style={{ fontSize: 8, color: '#d1d5db', marginBottom: 4, fontFamily: 'monospace' }}>
                       {'{{Handtekening;type=signature;role=First Party}}'}
                     </p>
                     <div style={{ marginBottom: 32 }} />
