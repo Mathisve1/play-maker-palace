@@ -114,7 +114,7 @@ serve(async (req) => {
       amount: volunteerAmount,
       currency: "eur",
       // Charge the club's connected account
-      payment_method_types: ["card", "bancontact", "ideal"],
+      payment_method_types: ["card", "bancontact"],
       transfer_data: {
         destination: volunteer.stripe_account_id,
       },
