@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
-import { Clock, MapPin, FileText, Coffee, Phone, CheckSquare, ChevronDown, ChevronUp, Route } from 'lucide-react';
+import { Clock, MapPin, FileText, Coffee, Phone, CheckSquare, ChevronLeft, ChevronRight, Route, PenLine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
 import RouteMapEditor, { type Waypoint } from '@/components/RouteMapEditor';
+import { Button } from '@/components/ui/button';
 
-type BlockType = 'time_slot' | 'instruction' | 'pause' | 'checklist' | 'emergency_contact' | 'route';
+type BlockType = 'time_slot' | 'instruction' | 'pause' | 'checklist' | 'emergency_contact' | 'route' | 'custom';
 
 interface ChecklistItemData {
   id: string;
@@ -52,6 +53,10 @@ const labels = {
     noBriefings: 'Je hebt nog geen briefings.',
     checkedItems: 'afgevinkt',
     emergency: 'Noodcontact',
+    page: 'Pagina',
+    of: 'van',
+    next: 'Volgende',
+    previous: 'Vorige',
   },
   fr: {
     briefing: 'Briefing',
@@ -59,6 +64,10 @@ const labels = {
     noBriefings: 'Aucun briefing disponible.',
     checkedItems: 'complétés',
     emergency: 'Contact d\'urgence',
+    page: 'Page',
+    of: 'de',
+    next: 'Suivant',
+    previous: 'Précédent',
   },
   en: {
     briefing: 'Briefing',
@@ -66,6 +75,10 @@ const labels = {
     noBriefings: 'No briefings available yet.',
     checkedItems: 'checked',
     emergency: 'Emergency contact',
+    page: 'Page',
+    of: 'of',
+    next: 'Next',
+    previous: 'Previous',
   },
 };
 
@@ -76,15 +89,7 @@ const blockIcons: Record<BlockType, typeof Clock> = {
   checklist: CheckSquare,
   emergency_contact: Phone,
   route: Route,
-};
-
-const blockColors: Record<BlockType, string> = {
-  time_slot: 'border-l-blue-500',
-  instruction: 'border-l-amber-500',
-  pause: 'border-l-green-500',
-  checklist: 'border-l-purple-500',
-  emergency_contact: 'border-l-red-500',
-  route: 'border-l-cyan-500',
+  custom: PenLine,
 };
 
 interface VolunteerBriefingViewProps {
@@ -97,7 +102,7 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(0);
   const l = labels[language];
 
   useEffect(() => {
@@ -107,7 +112,6 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
   const loadBriefing = async () => {
     setLoading(true);
 
-    // Get briefing for this task
     const { data: b } = await supabase
       .from('briefings')
       .select('id, title')
@@ -116,7 +120,6 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
 
     if (!b) { setLoading(false); return; }
 
-    // Get groups the volunteer is assigned to
     const { data: allGroups } = await supabase
       .from('briefing_groups')
       .select('*')
@@ -127,7 +130,6 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
 
     const groupIds = allGroups.map(g => g.id);
 
-    // Check which groups the volunteer is assigned to
     const { data: assignments } = await supabase
       .from('briefing_group_volunteers')
       .select('group_id')
@@ -135,8 +137,6 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
       .eq('volunteer_id', userId);
 
     const assignedGroupIds = new Set((assignments || []).map(a => a.group_id));
-    
-    // If no specific assignments, show all groups (fallback)
     const visibleGroups = assignedGroupIds.size > 0
       ? allGroups.filter(g => assignedGroupIds.has(g.id))
       : allGroups;
@@ -145,14 +145,12 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
 
     const visibleGroupIds = visibleGroups.map(g => g.id);
 
-    // Load blocks
     const { data: blocks } = await supabase
       .from('briefing_blocks')
       .select('*')
       .in('group_id', visibleGroupIds)
       .order('sort_order');
 
-    // Load checklist items
     const checklistBlockIds = (blocks || []).filter(bl => bl.type === 'checklist').map(bl => bl.id);
     let checklistItems: any[] = [];
     if (checklistBlockIds.length > 0) {
@@ -164,7 +162,6 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
       checklistItems = items || [];
     }
 
-    // Load route waypoints
     const routeBlockIds = (blocks || []).filter(bl => bl.type === 'route').map(bl => bl.id);
     let routeWaypoints: any[] = [];
     if (routeBlockIds.length > 0) {
@@ -176,7 +173,6 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
       routeWaypoints = wps || [];
     }
 
-    // Load existing progress
     if (checklistItems.length > 0) {
       const itemIds = checklistItems.map(ci => ci.id);
       const { data: progress } = await supabase
@@ -218,21 +214,18 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
     }));
 
     setBriefing({ id: b.id, title: b.title, groups });
-    setExpandedGroups(new Set(groups.map(g => g.id)));
+    setCurrentPage(0);
     setLoading(false);
   };
 
   const toggleCheck = async (itemId: string) => {
     const newChecked = !checkedItems.has(itemId);
-
-    // Optimistic update
     setCheckedItems(prev => {
       const next = new Set(prev);
       if (newChecked) next.add(itemId); else next.delete(itemId);
       return next;
     });
 
-    // Upsert progress
     if (newChecked) {
       await supabase.from('briefing_checklist_progress').upsert({
         checklist_item_id: itemId,
@@ -241,20 +234,11 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
         checked_at: new Date().toISOString(),
       }, { onConflict: 'checklist_item_id,volunteer_id' });
     } else {
-      // Delete instead of setting to false for cleaner data
       await supabase.from('briefing_checklist_progress')
         .delete()
         .eq('checklist_item_id', itemId)
         .eq('volunteer_id', userId);
     }
-  };
-
-  const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(groupId)) next.delete(groupId); else next.add(groupId);
-      return next;
-    });
   };
 
   if (loading) {
@@ -274,73 +258,100 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
     );
   }
 
+  const totalPages = briefing.groups.length;
+  const currentGroup = briefing.groups[currentPage];
+
+  if (!currentGroup) return null;
+
+  const totalChecklist = currentGroup.blocks
+    .filter(b => b.type === 'checklist')
+    .flatMap(b => b.checklist_items);
+  const checkedCount = totalChecklist.filter(ci => checkedItems.has(ci.id)).length;
+
   return (
     <div className="space-y-4">
+      {/* Briefing title */}
       <h3 className="text-lg font-heading font-semibold text-foreground">{briefing.title}</h3>
 
-      {briefing.groups.map((group, gi) => {
-        const totalChecklist = group.blocks
-          .filter(b => b.type === 'checklist')
-          .flatMap(b => b.checklist_items);
-        const checkedCount = totalChecklist.filter(ci => checkedItems.has(ci.id)).length;
-        const isExpanded = expandedGroups.has(group.id);
-
-        return (
-          <motion.div
-            key={group.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: gi * 0.05 }}
-            className="rounded-2xl border border-border bg-card overflow-hidden"
+      {/* Page navigation */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-muted/40 rounded-xl px-4 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            className="gap-1"
           >
-            {/* Group header */}
-            <button
-              onClick={() => toggleGroup(group.id)}
-              className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
-                <span className="font-medium text-foreground text-sm">{group.name}</span>
-                {totalChecklist.length > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {checkedCount}/{totalChecklist.length} {l.checkedItems}
-                  </span>
-                )}
-              </div>
-              {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-            </button>
+            <ChevronLeft className="w-4 h-4" />
+            {l.previous}
+          </Button>
+          <div className="flex items-center gap-2">
+            {briefing.groups.map((g, i) => (
+              <button
+                key={g.id}
+                onClick={() => setCurrentPage(i)}
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                  i === currentPage
+                    ? 'bg-primary scale-125'
+                    : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                }`}
+              />
+            ))}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage === totalPages - 1}
+            className="gap-1"
+          >
+            {l.next}
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
 
-            {/* Blocks */}
-            <AnimatePresence initial={false}>
-              {isExpanded && (
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: 'auto' }}
-                  exit={{ height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-4 pb-4 space-y-3">
-                    {group.blocks.map(block => (
-                      <BlockCard
-                        key={block.id}
-                        block={block}
-                        checkedItems={checkedItems}
-                        onToggleCheck={toggleCheck}
-                        language={language}
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        );
-      })}
+      {/* Current page/group */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentGroup.id}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
+          className="space-y-4"
+        >
+          {/* Section header */}
+          <div className="border-b border-border pb-3">
+            <h4 className="text-base font-semibold text-foreground">{currentGroup.name}</h4>
+            {totalPages > 1 && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {l.page} {currentPage + 1} {l.of} {totalPages}
+                {totalChecklist.length > 0 && ` · ${checkedCount}/${totalChecklist.length} ${l.checkedItems}`}
+              </p>
+            )}
+          </div>
+
+          {/* Blocks — clean, no colors */}
+          <div className="space-y-4">
+            {currentGroup.blocks.map(block => (
+              <BlockCard
+                key={block.id}
+                block={block}
+                checkedItems={checkedItems}
+                onToggleCheck={toggleCheck}
+                language={language}
+              />
+            ))}
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };
 
-// ─── Block Card ───
+// ─── Block Card — clean, professional, no colors ───
 const BlockCard = ({
   block,
   checkedItems,
@@ -353,28 +364,29 @@ const BlockCard = ({
   language: Language;
 }) => {
   const Icon = blockIcons[block.type];
-  const borderColor = blockColors[block.type];
 
   return (
-    <div className={`border-l-4 ${borderColor} bg-muted/20 rounded-lg p-3 space-y-2`}>
+    <div className="bg-card rounded-xl border border-border p-4 space-y-3">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 shrink-0 text-muted-foreground" />
-        {block.title && <span className="text-sm font-medium text-foreground">{block.title}</span>}
-      </div>
+      {block.title && (
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">{block.title}</span>
+        </div>
+      )}
 
       {/* Time slot */}
       {block.type === 'time_slot' && (
-        <div className="space-y-1 text-sm text-muted-foreground">
+        <div className="space-y-1.5">
           {(block.start_time || block.end_time) && (
-            <div className="flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{block.start_time}{block.end_time && ` — ${block.end_time}`}</span>
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium">{block.start_time}{block.end_time && ` — ${block.end_time}`}</span>
             </div>
           )}
           {block.location && (
-            <div className="flex items-center gap-2">
-              <MapPin className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="w-4 h-4" />
               <span>{block.location}</span>
             </div>
           )}
@@ -383,20 +395,21 @@ const BlockCard = ({
 
       {/* Description */}
       {block.description && (
-        <p className="text-sm text-muted-foreground">{block.description}</p>
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{block.description}</p>
       )}
 
       {/* Pause */}
       {block.type === 'pause' && block.duration_minutes && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Coffee className="w-3.5 h-3.5" />
-          <span>{block.duration_minutes} min</span>
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <Coffee className="w-4 h-4" />
+            <span>{block.duration_minutes} min</span>
+          </div>
           {block.location && (
-            <>
-              <span>—</span>
-              <MapPin className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4" />
               <span>{block.location}</span>
-            </>
+            </div>
           )}
         </div>
       )}
@@ -412,7 +425,7 @@ const BlockCard = ({
           )}
           {block.contact_phone && (
             <a href={`tel:${block.contact_phone}`} className="text-primary hover:underline flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5" />
+              <Phone className="w-4 h-4" />
               {block.contact_phone}
             </a>
           )}
@@ -421,7 +434,7 @@ const BlockCard = ({
 
       {/* Checklist */}
       {block.type === 'checklist' && block.checklist_items.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {block.checklist_items.map(item => (
             <label
               key={item.id}
@@ -432,8 +445,8 @@ const BlockCard = ({
                 onCheckedChange={() => onToggleCheck(item.id)}
               />
               <span className={`text-sm transition-all ${
-                checkedItems.has(item.id) 
-                  ? 'text-muted-foreground line-through' 
+                checkedItems.has(item.id)
+                  ? 'text-muted-foreground line-through'
                   : 'text-foreground'
               }`}>
                 {item.label}
@@ -452,6 +465,8 @@ const BlockCard = ({
           readOnly
         />
       )}
+
+      {/* Custom — just show description (already handled above) */}
     </div>
   );
 };
@@ -476,7 +491,6 @@ export const VolunteerBriefingsList = ({ language, userId }: { language: Languag
   }, [userId]);
 
   const loadBriefings = async () => {
-    // Get tasks the volunteer is signed up for
     const { data: signups } = await supabase
       .from('task_signups')
       .select('task_id')
@@ -486,7 +500,6 @@ export const VolunteerBriefingsList = ({ language, userId }: { language: Languag
 
     const taskIds = signups.map(s => s.task_id);
 
-    // Get briefings for those tasks
     const { data: briefingsData } = await supabase
       .from('briefings')
       .select('id, title, task_id')
@@ -494,7 +507,6 @@ export const VolunteerBriefingsList = ({ language, userId }: { language: Languag
 
     if (!briefingsData || briefingsData.length === 0) { setLoading(false); return; }
 
-    // Get task + club info
     const briefingTaskIds = briefingsData.map(b => b.task_id);
     const { data: tasks } = await supabase
       .from('tasks')
