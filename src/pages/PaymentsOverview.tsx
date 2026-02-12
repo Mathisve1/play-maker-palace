@@ -4,10 +4,22 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CreditCard, CheckCircle, Clock, AlertTriangle, Download, Send, ExternalLink, Loader2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle, Clock, AlertTriangle, Download, Send, ExternalLink, Loader2, RefreshCw, Unlink, Settings, ShieldCheck, ShieldAlert, Info } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Language } from '@/i18n/translations';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Payment {
   id: string;
@@ -67,8 +79,21 @@ const translations = {
     noStripeVolunteer: 'Vrijwilliger heeft geen Stripe account',
     noStripeClub: 'Koppel eerst je Stripe account',
     connectStripe: 'Koppel Stripe Account',
-    stripeConnected: 'Stripe gekoppeld ✓',
+    stripeConnected: 'Stripe gekoppeld',
     stripeNotReady: 'Stripe account niet volledig',
+    stripeStatus: 'Stripe Account Status',
+    chargesEnabled: 'Betalingen ontvangen',
+    payoutsEnabled: 'Uitbetalingen',
+    detailsSubmitted: 'Gegevens ingediend',
+    verificationPending: 'Verificatie loopt (kan tot 7 dagen duren)',
+    accountReady: 'Account volledig actief',
+    updateAccount: 'Account bijwerken',
+    disconnectAccount: 'Ontkoppelen',
+    disconnectConfirm: 'Weet je zeker dat je je Stripe account wilt ontkoppelen? Je kunt daarna geen betalingen meer verwerken.',
+    disconnectTitle: 'Stripe ontkoppelen',
+    cancel: 'Annuleren',
+    yes: 'Ja, ontkoppelen',
+    refreshStatus: 'Status verversen',
     assignedVolunteers: 'Toegekende vrijwilligers',
     allPayments: 'Alle betalingen',
   },
@@ -92,8 +117,21 @@ const translations = {
     noStripeVolunteer: 'Le bénévole n\'a pas de compte Stripe',
     noStripeClub: 'Connectez d\'abord votre compte Stripe',
     connectStripe: 'Connecter Stripe',
-    stripeConnected: 'Stripe connecté ✓',
+    stripeConnected: 'Stripe connecté',
     stripeNotReady: 'Compte Stripe incomplet',
+    stripeStatus: 'Statut du compte Stripe',
+    chargesEnabled: 'Paiements activés',
+    payoutsEnabled: 'Versements activés',
+    detailsSubmitted: 'Détails soumis',
+    verificationPending: 'Vérification en cours (jusqu\'à 7 jours)',
+    accountReady: 'Compte entièrement actif',
+    updateAccount: 'Mettre à jour le compte',
+    disconnectAccount: 'Déconnecter',
+    disconnectConfirm: 'Êtes-vous sûr de vouloir déconnecter votre compte Stripe ? Vous ne pourrez plus traiter les paiements.',
+    disconnectTitle: 'Déconnecter Stripe',
+    cancel: 'Annuler',
+    yes: 'Oui, déconnecter',
+    refreshStatus: 'Actualiser le statut',
     assignedVolunteers: 'Bénévoles assignés',
     allPayments: 'Tous les paiements',
   },
@@ -117,8 +155,21 @@ const translations = {
     noStripeVolunteer: 'Volunteer has no Stripe account',
     noStripeClub: 'Connect your Stripe account first',
     connectStripe: 'Connect Stripe Account',
-    stripeConnected: 'Stripe connected ✓',
+    stripeConnected: 'Stripe connected',
     stripeNotReady: 'Stripe account incomplete',
+    stripeStatus: 'Stripe Account Status',
+    chargesEnabled: 'Charges enabled',
+    payoutsEnabled: 'Payouts enabled',
+    detailsSubmitted: 'Details submitted',
+    verificationPending: 'Verification pending (up to 7 days)',
+    accountReady: 'Account fully active',
+    updateAccount: 'Update account',
+    disconnectAccount: 'Disconnect',
+    disconnectConfirm: 'Are you sure you want to disconnect your Stripe account? You won\'t be able to process payments.',
+    disconnectTitle: 'Disconnect Stripe',
+    cancel: 'Cancel',
+    yes: 'Yes, disconnect',
+    refreshStatus: 'Refresh status',
     assignedVolunteers: 'Assigned volunteers',
     allPayments: 'All payments',
   },
@@ -139,6 +190,14 @@ const PaymentsOverview = () => {
   const [clubId, setClubId] = useState<string | null>(null);
   const [sendingPayment, setSendingPayment] = useState<string | null>(null);
   const [connectingStripe, setConnectingStripe] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<{
+    charges_enabled: boolean;
+    payouts_enabled: boolean;
+    details_submitted: boolean;
+    requirements?: { currently_due?: string[]; eventually_due?: string[]; pending_verification?: string[] };
+  } | null>(null);
+  const [loadingStripeStatus, setLoadingStripeStatus] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -247,6 +306,44 @@ const PaymentsOverview = () => {
       toast.error(err.message || 'Error connecting Stripe');
     }
     setConnectingStripe(false);
+  };
+
+  const fetchStripeStatus = async (accountId: string) => {
+    setLoadingStripeStatus(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-connect-status', {
+        body: { account_id: accountId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setStripeStatus(data);
+    } catch (err: any) {
+      console.error('Failed to fetch Stripe status:', err);
+    }
+    setLoadingStripeStatus(false);
+  };
+
+  useEffect(() => {
+    if (clubStripeId) {
+      fetchStripeStatus(clubStripeId);
+    }
+  }, [clubStripeId]);
+
+  const handleDisconnectStripe = async () => {
+    if (!clubId) return;
+    setDisconnecting(true);
+    try {
+      await supabase
+        .from('clubs')
+        .update({ stripe_account_id: null })
+        .eq('id', clubId);
+      setClubStripeId(null);
+      setStripeStatus(null);
+      toast.success('Stripe account ontkoppeld');
+    } catch (err: any) {
+      toast.error(err.message || 'Fout bij ontkoppelen');
+    }
+    setDisconnecting(false);
   };
 
   const handleSendPayment = async (taskId: string, volunteerId: string) => {
@@ -363,9 +460,123 @@ const PaymentsOverview = () => {
               </button>
             </div>
           ) : (
-            <div className="bg-card rounded-2xl shadow-card border border-accent/20 p-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="text-sm font-medium text-foreground">{t.stripeConnected}</span>
+            <div className="bg-card rounded-2xl shadow-card border border-border p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-primary" />
+                  {t.stripeStatus}
+                </h3>
+                <button
+                  onClick={() => fetchStripeStatus(clubStripeId!)}
+                  disabled={loadingStripeStatus}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  title={t.refreshStatus}
+                >
+                  <RefreshCw className={`w-4 h-4 text-muted-foreground ${loadingStripeStatus ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {loadingStripeStatus && !stripeStatus ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Laden...
+                </div>
+              ) : stripeStatus ? (
+                <>
+                  {/* Overall status */}
+                  {stripeStatus.charges_enabled && stripeStatus.payouts_enabled ? (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
+                      <ShieldCheck className="w-5 h-5 text-green-600" />
+                      <span className="text-sm font-medium text-green-700 dark:text-green-400">{t.accountReady}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900">
+                      <ShieldAlert className="w-5 h-5 text-yellow-600" />
+                      <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">{t.verificationPending}</span>
+                    </div>
+                  )}
+
+                  {/* Detail badges */}
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={stripeStatus.details_submitted ? 'default' : 'secondary'} className="gap-1">
+                      {stripeStatus.details_submitted ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                      {t.detailsSubmitted}
+                    </Badge>
+                    <Badge variant={stripeStatus.charges_enabled ? 'default' : 'secondary'} className="gap-1">
+                      {stripeStatus.charges_enabled ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                      {t.chargesEnabled}
+                    </Badge>
+                    <Badge variant={stripeStatus.payouts_enabled ? 'default' : 'secondary'} className="gap-1">
+                      {stripeStatus.payouts_enabled ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                      {t.payoutsEnabled}
+                    </Badge>
+                  </div>
+
+                  {/* Requirements info */}
+                  {stripeStatus.requirements?.currently_due && stripeStatus.requirements.currently_due.length > 0 && (
+                    <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                      <p className="text-xs font-medium text-foreground flex items-center gap-1.5 mb-1.5">
+                        <Info className="w-3.5 h-3.5 text-primary" />
+                        Actie vereist
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Stripe vereist nog aanvullende informatie. Klik op "{t.updateAccount}" om dit af te ronden.
+                      </p>
+                    </div>
+                  )}
+
+                  {stripeStatus.requirements?.pending_verification && stripeStatus.requirements.pending_verification.length > 0 && (
+                    <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                      <p className="text-xs font-medium text-foreground flex items-center gap-1.5 mb-1.5">
+                        <Clock className="w-3.5 h-3.5 text-yellow-600" />
+                        Verificatie in behandeling
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Stripe controleert je gegevens. Dit kan tot 7 dagen duren.
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : null}
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-2 border-t border-border">
+                <button
+                  onClick={handleConnectStripe}
+                  disabled={connectingStripe}
+                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {connectingStripe ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                  {t.updateAccount}
+                </button>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      className="px-4 py-2 rounded-xl border border-destructive/30 text-destructive text-xs font-medium hover:bg-destructive/10 transition-colors flex items-center gap-1.5"
+                    >
+                      <Unlink className="w-3.5 h-3.5" />
+                      {t.disconnectAccount}
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t.disconnectTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>{t.disconnectConfirm}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDisconnectStripe}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {disconnecting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                        {t.yes}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           )}
         </div>
