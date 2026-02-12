@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2 } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User } from 'lucide-react';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -13,6 +13,7 @@ import ContractTemplatesDialog from '@/components/ContractTemplatesDialog';
 import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
 import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
 
 interface VolunteerProfile {
@@ -221,6 +222,7 @@ const ClubOwnerDashboard = () => {
   const [savingTask, setSavingTask] = useState(false);
   const [deletingTask, setDeletingTask] = useState<string | null>(null);
   const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -585,9 +587,14 @@ const ClubOwnerDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden md:block">
-              {profile?.full_name || profile?.email}
-            </span>
+            <button
+              onClick={() => setShowProfileDialog(true)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              title="Mijn profiel"
+            >
+              <User className="w-4 h-4" />
+              <span className="hidden md:block">{profile?.full_name || profile?.email}</span>
+            </button>
             <button
               onClick={async () => { await supabase.auth.signOut(); navigate('/login'); }}
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -1389,6 +1396,15 @@ const ClubOwnerDashboard = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Profile edit dialog */}
+      <EditProfileDialog
+        open={showProfileDialog}
+        onOpenChange={setShowProfileDialog}
+        userId={currentUserId}
+        language={language}
+        onProfileUpdated={(p) => setProfile({ full_name: p.full_name || '', email: p.email || '' })}
+      />
     </div>
   );
 };
