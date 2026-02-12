@@ -836,7 +836,7 @@ const ClubOwnerDashboard = () => {
                   {newTask.expense_reimbursement && (
                     <input
                       type="number"
-                      min={0}
+                      min={1}
                       step={0.01}
                       placeholder={dt.taskExpenseAmount}
                       value={newTask.expense_amount}

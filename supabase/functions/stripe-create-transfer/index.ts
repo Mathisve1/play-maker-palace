@@ -102,8 +102,8 @@ serve(async (req) => {
       ? Math.round(task.expense_amount * 100)
       : paymentAmount;
 
-    if (volunteerAmount < 50) {
-      throw new Error("Het bedrag moet minstens €0,50 zijn");
+    if (volunteerAmount < 100) {
+      throw new Error("Het bedrag moet minstens €1,00 zijn");
     }
 
     // Create a PaymentIntent charging the club, transferring to volunteer
