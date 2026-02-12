@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Plus, Trash2, GripVertical, Clock, Navigation } from 'lucide-react';
+import { MapPin, Plus, Trash2, Clock, Navigation, Search, ExternalLink, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/i18n/translations';
@@ -19,33 +19,51 @@ export interface Waypoint {
 const labels = {
   nl: {
     addWaypoint: 'Punt toevoegen',
-    clickMap: 'Klik op de kaart om een punt toe te voegen',
+    clickMap: 'Klik op de kaart of zoek een adres om een punt toe te voegen',
     waypointLabel: 'Naam punt',
     arrivalTime: 'Aankomsttijd',
     description: 'Beschrijving',
     removeWaypoint: 'Verwijderen',
     routeTitle: 'Route titel',
-    noWaypoints: 'Nog geen waypoints. Klik op de kaart om punten toe te voegen.',
+    noWaypoints: 'Nog geen waypoints. Zoek een adres of klik op de kaart.',
+    searchPlaceholder: 'Zoek een adres...',
+    searching: 'Zoeken...',
+    addAddress: 'Voeg toe',
+    openInGoogleMaps: 'Google Maps',
+    openInWaze: 'Waze',
+    navigateRoute: 'Navigeer volledige route',
   },
   fr: {
     addWaypoint: 'Ajouter un point',
-    clickMap: 'Cliquez sur la carte pour ajouter un point',
+    clickMap: 'Cliquez sur la carte ou recherchez une adresse',
     waypointLabel: 'Nom du point',
     arrivalTime: "Heure d'arrivée",
     description: 'Description',
     removeWaypoint: 'Supprimer',
     routeTitle: 'Titre de la route',
-    noWaypoints: 'Pas encore de waypoints. Cliquez sur la carte pour ajouter des points.',
+    noWaypoints: 'Pas encore de waypoints. Recherchez une adresse ou cliquez sur la carte.',
+    searchPlaceholder: 'Rechercher une adresse...',
+    searching: 'Recherche...',
+    addAddress: 'Ajouter',
+    openInGoogleMaps: 'Google Maps',
+    openInWaze: 'Waze',
+    navigateRoute: 'Naviguer la route complète',
   },
   en: {
     addWaypoint: 'Add waypoint',
-    clickMap: 'Click the map to add a waypoint',
+    clickMap: 'Click the map or search an address to add a waypoint',
     waypointLabel: 'Waypoint name',
     arrivalTime: 'Arrival time',
     description: 'Description',
     removeWaypoint: 'Remove',
     routeTitle: 'Route title',
-    noWaypoints: 'No waypoints yet. Click the map to add points.',
+    noWaypoints: 'No waypoints yet. Search an address or click the map.',
+    searchPlaceholder: 'Search an address...',
+    searching: 'Searching...',
+    addAddress: 'Add',
+    openInGoogleMaps: 'Google Maps',
+    openInWaze: 'Waze',
+    navigateRoute: 'Navigate full route',
   },
 };
 
@@ -78,6 +96,28 @@ const markerIcon = (index: number, color: string = '#3b82f6') => {
   });
 };
 
+// Build Google Maps directions URL from waypoints
+const buildGoogleMapsUrl = (waypoints: Waypoint[]) => {
+  if (waypoints.length === 0) return '';
+  if (waypoints.length === 1) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${waypoints[0].lat},${waypoints[0].lng}`;
+  }
+  const origin = waypoints[0];
+  const destination = waypoints[waypoints.length - 1];
+  const midpoints = waypoints.slice(1, -1);
+  let url = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}`;
+  if (midpoints.length > 0) {
+    url += `&waypoints=${midpoints.map(w => `${w.lat},${w.lng}`).join('|')}`;
+  }
+  return url;
+};
+
+const buildWazeUrl = (waypoints: Waypoint[]) => {
+  if (waypoints.length === 0) return '';
+  const last = waypoints[waypoints.length - 1];
+  return `https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes`;
+};
+
 const RouteMapEditor = ({ waypoints, onChange, language, readOnly = false }: RouteMapEditorProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -85,17 +125,45 @@ const RouteMapEditor = ({ waypoints, onChange, language, readOnly = false }: Rou
   const polylineRef = useRef<L.Polyline | null>(null);
   const l = labels[language];
 
+  const [addressQuery, setAddressQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+
+  const geocodeAddress = async (query: string) => {
+    if (!query.trim()) return;
+    setSearching(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=be,nl,fr,de,lu`
+      );
+      const data = await res.json();
+      if (data?.[0]) {
+        const newWp: Waypoint = {
+          id: crypto.randomUUID(),
+          label: query,
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+          sort_order: waypoints.length,
+        };
+        onChange([...waypoints, newWp]);
+        setAddressQuery('');
+        const map = mapInstanceRef.current;
+        if (map) map.setView([newWp.lat, newWp.lng], 14);
+      }
+    } catch (e) {
+      console.error('Geocoding failed:', e);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   // Initialize map
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
-
     const map = L.map(mapRef.current, { scrollWheelZoom: true }).setView([50.85, 4.35], 10);
     mapInstanceRef.current = map;
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
     }).addTo(map);
-
     if (!readOnly) {
       map.on('click', (e: L.LeafletMouseEvent) => {
         const newWp: Waypoint = {
@@ -108,21 +176,14 @@ const RouteMapEditor = ({ waypoints, onChange, language, readOnly = false }: Rou
         onChange([...waypoints, newWp]);
       });
     }
-
     setTimeout(() => map.invalidateSize(), 100);
-
-    return () => {
-      map.remove();
-      mapInstanceRef.current = null;
-    };
+    return () => { map.remove(); mapInstanceRef.current = null; };
   }, []);
 
-  // Update click handler when waypoints change (for readOnly=false)
+  // Update click handler
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || readOnly) return;
-
-    // Re-register click handler with latest waypoints
     map.off('click');
     map.on('click', (e: L.LeafletMouseEvent) => {
       const newWp: Waypoint = {
@@ -140,43 +201,25 @@ const RouteMapEditor = ({ waypoints, onChange, language, readOnly = false }: Rou
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
-
-    // Clear existing
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
     if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
-
     if (waypoints.length === 0) return;
-
-    // Add markers
     waypoints.forEach((wp, i) => {
       const marker = L.marker([wp.lat, wp.lng], { icon: markerIcon(i), draggable: !readOnly })
         .addTo(map)
         .bindPopup(`<b>${wp.label || `#${i + 1}`}</b>${wp.arrival_time ? `<br/>⏰ ${wp.arrival_time}` : ''}${wp.description ? `<br/>${wp.description}` : ''}`);
-
       if (!readOnly) {
         marker.on('dragend', () => {
           const pos = marker.getLatLng();
-          const updated = waypoints.map((w, idx) =>
-            idx === i ? { ...w, lat: pos.lat, lng: pos.lng } : w
-          );
+          const updated = waypoints.map((w, idx) => idx === i ? { ...w, lat: pos.lat, lng: pos.lng } : w);
           onChange(updated);
         });
       }
-
       markersRef.current.push(marker);
     });
-
-    // Draw polyline
     const latlngs = waypoints.map(wp => [wp.lat, wp.lng] as [number, number]);
-    polylineRef.current = L.polyline(latlngs, {
-      color: '#3b82f6',
-      weight: 3,
-      opacity: 0.8,
-      dashArray: '8, 8',
-    }).addTo(map);
-
-    // Fit bounds
+    polylineRef.current = L.polyline(latlngs, { color: '#3b82f6', weight: 3, opacity: 0.8, dashArray: '8, 8' }).addTo(map);
     if (waypoints.length > 1) {
       map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40] });
     } else {
@@ -192,8 +235,36 @@ const RouteMapEditor = ({ waypoints, onChange, language, readOnly = false }: Rou
     onChange(waypoints.map(w => w.id === id ? { ...w, ...updates } : w));
   };
 
+  const googleMapsUrl = buildGoogleMapsUrl(waypoints);
+  const wazeUrl = buildWazeUrl(waypoints);
+
   return (
     <div className="space-y-3">
+      {/* Address search bar (editor mode) */}
+      {!readOnly && (
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={addressQuery}
+              onChange={e => setAddressQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && geocodeAddress(addressQuery)}
+              placeholder={l.searchPlaceholder}
+              className="pl-9 text-sm h-9"
+            />
+          </div>
+          <Button
+            size="sm"
+            onClick={() => geocodeAddress(addressQuery)}
+            disabled={!addressQuery.trim() || searching}
+            className="h-9 px-3"
+          >
+            {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {l.addAddress}
+          </Button>
+        </div>
+      )}
+
       {/* Map */}
       <div className="relative">
         <div
@@ -209,6 +280,36 @@ const RouteMapEditor = ({ waypoints, onChange, language, readOnly = false }: Rou
           </div>
         )}
       </div>
+
+      {/* Navigation buttons */}
+      {waypoints.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all hover:opacity-90"
+            style={{ backgroundColor: '#4285F4', color: '#fff' }}
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="currentColor">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
+            </svg>
+            {l.openInGoogleMaps}
+          </a>
+          <a
+            href={wazeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all hover:opacity-90"
+            style={{ backgroundColor: '#33ccff', color: '#fff' }}
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm4 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2-5.5c-.73 1.15-1.85 1.95-3.15 2.31-.18.05-.35.08-.53.08h-.64c-.18 0-.35-.03-.53-.08C9.85 13.45 8.73 12.65 8 11.5 7.27 10.35 7 9.18 7 8c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.18-.27 2.35-1 3.5z" />
+            </svg>
+            {l.openInWaze}
+          </a>
+        </div>
+      )}
 
       {/* Waypoints list */}
       {!readOnly && waypoints.length === 0 && (
