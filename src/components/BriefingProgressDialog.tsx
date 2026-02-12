@@ -239,13 +239,31 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
     setLoading(false);
   };
 
-  // Find selected volunteer's data
-  const selectedVolData = selectedVolunteer
-    ? briefingsProgress
-        .find(bp => bp.briefingId === selectedVolunteer.briefingId)
-        ?.groups.find(g => g.groupId === selectedVolunteer.groupId)
-        ?.volunteers.find(v => v.volunteerId === selectedVolunteer.volunteerId)
-    : null;
+  // Find selected volunteer's data — merge blocks from ALL groups
+  const selectedVolData = (() => {
+    if (!selectedVolunteer) return null;
+    const bp = briefingsProgress.find(b => b.briefingId === selectedVolunteer.briefingId);
+    if (!bp) return null;
+    const allBlocks: BlockProgress[] = [];
+    let totalBlocks = 0;
+    let completedBlocks = 0;
+    bp.groups.forEach(g => {
+      const vol = g.volunteers.find(v => v.volunteerId === selectedVolunteer.volunteerId);
+      if (vol) {
+        allBlocks.push(...vol.blocks);
+        totalBlocks += vol.totalBlocks;
+        completedBlocks += vol.completedBlocks;
+      }
+    });
+    if (allBlocks.length === 0) return null;
+    return {
+      volunteerId: selectedVolunteer.volunteerId,
+      volunteerName: selectedVolunteer.volunteerName,
+      blocks: allBlocks,
+      totalBlocks,
+      completedBlocks,
+    };
+  })();
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) setSelectedVolunteer(null); onOpenChange(o); }}>
