@@ -99,7 +99,8 @@ interface VolunteerBriefingViewProps {
 }
 
 const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingViewProps) => {
-  const [briefing, setBriefing] = useState<BriefingData | null>(null);
+  const [briefings, setBriefingsForTask] = useState<BriefingData[]>([]);
+  const [activeBriefingIdx, setActiveBriefingIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(0);
@@ -112,108 +113,114 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
   const loadBriefing = async () => {
     setLoading(true);
 
-    const { data: b } = await supabase
+    // Load ALL briefings for this task
+    const { data: allBriefingsData } = await supabase
       .from('briefings')
       .select('id, title')
       .eq('task_id', taskId)
-      .maybeSingle();
+      .order('created_at');
 
-    if (!b) { setLoading(false); return; }
+    if (!allBriefingsData || allBriefingsData.length === 0) { setLoading(false); return; }
 
-    const { data: allGroups } = await supabase
-      .from('briefing_groups')
-      .select('*')
-      .eq('briefing_id', b.id)
-      .order('sort_order');
+    const loadedBriefings: BriefingData[] = [];
 
-    if (!allGroups || allGroups.length === 0) { setLoading(false); return; }
-
-    const groupIds = allGroups.map(g => g.id);
-
-    const { data: assignments } = await supabase
-      .from('briefing_group_volunteers')
-      .select('group_id')
-      .in('group_id', groupIds)
-      .eq('volunteer_id', userId);
-
-    const assignedGroupIds = new Set((assignments || []).map(a => a.group_id));
-    const visibleGroups = assignedGroupIds.size > 0
-      ? allGroups.filter(g => assignedGroupIds.has(g.id))
-      : allGroups;
-
-    if (visibleGroups.length === 0) { setLoading(false); return; }
-
-    const visibleGroupIds = visibleGroups.map(g => g.id);
-
-    const { data: blocks } = await supabase
-      .from('briefing_blocks')
-      .select('*')
-      .in('group_id', visibleGroupIds)
-      .order('sort_order');
-
-    const checklistBlockIds = (blocks || []).filter(bl => bl.type === 'checklist').map(bl => bl.id);
-    let checklistItems: any[] = [];
-    if (checklistBlockIds.length > 0) {
-      const { data: items } = await supabase
-        .from('briefing_checklist_items')
+    for (const b of allBriefingsData) {
+      const { data: allGroups } = await supabase
+        .from('briefing_groups')
         .select('*')
-        .in('block_id', checklistBlockIds)
+        .eq('briefing_id', b.id)
         .order('sort_order');
-      checklistItems = items || [];
-    }
 
-    const routeBlockIds = (blocks || []).filter(bl => bl.type === 'route').map(bl => bl.id);
-    let routeWaypoints: any[] = [];
-    if (routeBlockIds.length > 0) {
-      const { data: wps } = await supabase
-        .from('briefing_route_waypoints')
-        .select('*')
-        .in('block_id', routeBlockIds)
-        .order('sort_order');
-      routeWaypoints = wps || [];
-    }
+      if (!allGroups || allGroups.length === 0) continue;
 
-    if (checklistItems.length > 0) {
-      const itemIds = checklistItems.map(ci => ci.id);
-      const { data: progress } = await supabase
-        .from('briefing_checklist_progress')
-        .select('checklist_item_id, checked')
-        .in('checklist_item_id', itemIds)
+      const groupIds = allGroups.map(g => g.id);
+
+      const { data: assignments } = await supabase
+        .from('briefing_group_volunteers')
+        .select('group_id')
+        .in('group_id', groupIds)
         .eq('volunteer_id', userId);
 
-      const checked = new Set<string>();
-      (progress || []).forEach(p => { if (p.checked) checked.add(p.checklist_item_id); });
-      setCheckedItems(checked);
+      const assignedGroupIds = new Set((assignments || []).map(a => a.group_id));
+      const visibleGroups = assignedGroupIds.size > 0
+        ? allGroups.filter(g => assignedGroupIds.has(g.id))
+        : allGroups;
+
+      if (visibleGroups.length === 0) continue;
+
+      const visibleGroupIds = visibleGroups.map(g => g.id);
+
+      const { data: blocks } = await supabase
+        .from('briefing_blocks')
+        .select('*')
+        .in('group_id', visibleGroupIds)
+        .order('sort_order');
+
+      const checklistBlockIds = (blocks || []).filter(bl => bl.type === 'checklist').map(bl => bl.id);
+      let checklistItems: any[] = [];
+      if (checklistBlockIds.length > 0) {
+        const { data: items } = await supabase
+          .from('briefing_checklist_items')
+          .select('*')
+          .in('block_id', checklistBlockIds)
+          .order('sort_order');
+        checklistItems = items || [];
+      }
+
+      const routeBlockIds = (blocks || []).filter(bl => bl.type === 'route').map(bl => bl.id);
+      let routeWaypoints: any[] = [];
+      if (routeBlockIds.length > 0) {
+        const { data: wps } = await supabase
+          .from('briefing_route_waypoints')
+          .select('*')
+          .in('block_id', routeBlockIds)
+          .order('sort_order');
+        routeWaypoints = wps || [];
+      }
+
+      if (checklistItems.length > 0) {
+        const itemIds = checklistItems.map(ci => ci.id);
+        const { data: progress } = await supabase
+          .from('briefing_checklist_progress')
+          .select('checklist_item_id, checked')
+          .in('checklist_item_id', itemIds)
+          .eq('volunteer_id', userId);
+
+        (progress || []).forEach(p => { if (p.checked) setCheckedItems(prev => new Set(prev).add(p.checklist_item_id)); });
+      }
+
+      const groups: GroupData[] = visibleGroups.map(g => ({
+        id: g.id,
+        name: g.name,
+        color: g.color,
+        sort_order: g.sort_order,
+        blocks: (blocks || [])
+          .filter(bl => bl.group_id === g.id)
+          .map(bl => ({
+            id: bl.id,
+            type: bl.type as BlockType,
+            sort_order: bl.sort_order,
+            start_time: bl.start_time,
+            end_time: bl.end_time,
+            duration_minutes: bl.duration_minutes,
+            location: bl.location,
+            title: bl.title,
+            description: bl.description,
+            contact_name: bl.contact_name,
+            contact_phone: bl.contact_phone,
+            contact_role: bl.contact_role,
+            checklist_items: checklistItems.filter(ci => ci.block_id === bl.id),
+            waypoints: routeWaypoints
+              .filter(wp => wp.block_id === bl.id)
+              .map(wp => ({ id: wp.id, label: wp.label, description: wp.description, lat: wp.lat, lng: wp.lng, arrival_time: wp.arrival_time, sort_order: wp.sort_order })),
+          })),
+      }));
+
+      loadedBriefings.push({ id: b.id, title: b.title, groups });
     }
 
-    const groups: GroupData[] = visibleGroups.map(g => ({
-      id: g.id,
-      name: g.name,
-      color: g.color,
-      sort_order: g.sort_order,
-      blocks: (blocks || [])
-        .filter(bl => bl.group_id === g.id)
-        .map(bl => ({
-          id: bl.id,
-          type: bl.type as BlockType,
-          sort_order: bl.sort_order,
-          start_time: bl.start_time,
-          end_time: bl.end_time,
-          duration_minutes: bl.duration_minutes,
-          location: bl.location,
-          title: bl.title,
-          description: bl.description,
-          contact_name: bl.contact_name,
-          contact_phone: bl.contact_phone,
-          contact_role: bl.contact_role,
-          checklist_items: checklistItems.filter(ci => ci.block_id === bl.id),
-          waypoints: routeWaypoints
-            .filter(wp => wp.block_id === bl.id)
-            .map(wp => ({ id: wp.id, label: wp.label, description: wp.description, lat: wp.lat, lng: wp.lng, arrival_time: wp.arrival_time, sort_order: wp.sort_order })),
-        })),
-    }));
-
-    setBriefing({ id: b.id, title: b.title, groups });
+    setBriefingsForTask(loadedBriefings);
+    setActiveBriefingIdx(0);
     setCurrentPage(0);
     setLoading(false);
   };
@@ -249,7 +256,7 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
     );
   }
 
-  if (!briefing) {
+  if (briefings.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <ClipboardIcon className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -257,6 +264,9 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
       </div>
     );
   }
+
+  const briefing = briefings[activeBriefingIdx];
+  if (!briefing) return null;
 
   const totalPages = briefing.groups.length;
   const currentGroup = briefing.groups[currentPage];
@@ -270,6 +280,25 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
 
   return (
     <div className="space-y-4">
+      {/* Briefing selector if multiple */}
+      {briefings.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {briefings.map((b, i) => (
+            <button
+              key={b.id}
+              onClick={() => { setActiveBriefingIdx(i); setCurrentPage(0); }}
+              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                i === activeBriefingIdx
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              {b.title}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Briefing title */}
       <h3 className="text-lg font-heading font-semibold text-foreground">{briefing.title}</h3>
 
