@@ -314,48 +314,42 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
             </div>
           </div>
         ) : (
-          /* ─── Overview: groups with volunteer names ─── */
-          <div className="space-y-6">
-            {briefingsProgress.map(bp => (
-              <div key={bp.briefingId}>
-                {briefingsProgress.length > 1 && (
-                  <h3 className="text-sm font-semibold text-foreground mb-3">{bp.briefingTitle}</h3>
-                )}
-                {bp.groups.map(group => (
-                  <div key={group.groupId} className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.groupColor }} />
-                      <span className="text-sm font-semibold text-foreground">{group.groupName}</span>
-                    </div>
+          /* ─── Overview: flat list of volunteer names only ─── */
+          <div className="space-y-2">
+            {briefingsProgress.map(bp => {
+              // Deduplicate volunteers across groups
+              const seenVols = new Map<string, { vol: VolunteerProgress; briefingId: string; groupId: string }>();
+              bp.groups.forEach(group => {
+                group.volunteers.forEach(vol => {
+                  if (!seenVols.has(vol.volunteerId)) {
+                    seenVols.set(vol.volunteerId, { vol, briefingId: bp.briefingId, groupId: group.groupId });
+                  }
+                });
+              });
 
-                    <div className="space-y-2">
-                      {group.volunteers.map(vol => {
-                        const pct = vol.totalBlocks > 0 ? Math.round((vol.completedBlocks / vol.totalBlocks) * 100) : 0;
-                        return (
-                          <button
-                            key={vol.volunteerId}
-                            onClick={() => setSelectedVolunteer({ volunteerId: vol.volunteerId, volunteerName: vol.volunteerName, briefingId: bp.briefingId, groupId: group.groupId })}
-                            className="w-full text-left bg-muted/30 rounded-xl p-3 space-y-2 hover:bg-muted/50 transition-colors"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                                <span className="text-sm font-medium text-foreground">{vol.volunteerName}</span>
-                              </div>
-                              <span className="text-xs text-muted-foreground">
-                                {vol.completedBlocks}/{vol.totalBlocks} {l.sections}
-                                {pct === 100 && ' ✓'}
-                              </span>
-                            </div>
-                            <Progress value={pct} className="h-2" />
-                          </button>
-                        );
-                      })}
+              return Array.from(seenVols.entries()).map(([volId, { vol, briefingId, groupId }]) => {
+                const pct = vol.totalBlocks > 0 ? Math.round((vol.completedBlocks / vol.totalBlocks) * 100) : 0;
+                return (
+                  <button
+                    key={`${bp.briefingId}-${volId}`}
+                    onClick={() => setSelectedVolunteer({ volunteerId: vol.volunteerId, volunteerName: vol.volunteerName, briefingId, groupId })}
+                    className="w-full text-left bg-muted/30 rounded-xl p-3 space-y-2 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">{vol.volunteerName}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {vol.completedBlocks}/{vol.totalBlocks} {l.sections}
+                        {pct === 100 && ' ✓'}
+                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ))}
+                    <Progress value={pct} className="h-2" />
+                  </button>
+                );
+              });
+            })}
           </div>
         )}
       </DialogContent>
