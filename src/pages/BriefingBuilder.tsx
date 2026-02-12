@@ -660,182 +660,442 @@ const BriefingBuilder = () => {
     setLoading(false);
   };
 
-  // ─── Generate PDF ───
+  // ─── Generate PDF (Premium Design) ───
   const generateBriefingPdf = (): Blob => {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
-    const margin = 15;
+    const margin = 20;
     const contentW = pageW - margin * 2;
     let y = margin;
 
-    const checkPage = (needed: number) => {
-      if (y + needed > pageH - margin) {
-        doc.addPage();
-        y = margin;
+    // ── Color palette ──
+    const primary = { r: 234, g: 120, b: 23 };   // warm orange
+    const dark = { r: 30, g: 30, b: 35 };
+    const muted = { r: 120, g: 120, b: 130 };
+    const light = { r: 245, g: 245, b: 248 };
+    const accent = { r: 13, g: 148, b: 136 };     // teal
+
+    const setColor = (c: { r: number; g: number; b: number }) => doc.setTextColor(c.r, c.g, c.b);
+    const setFillColor = (c: { r: number; g: number; b: number }) => doc.setFillColor(c.r, c.g, c.b);
+    const setDrawCol = (c: { r: number; g: number; b: number }) => doc.setDrawColor(c.r, c.g, c.b);
+
+    // ── Helper: page footer ──
+    const addFooter = (pageNum?: number, totalPages?: number) => {
+      const footerY = pageH - 10;
+      doc.setFontSize(7);
+      setColor(muted);
+      doc.setFont('helvetica', 'normal');
+      if (clubData?.name) {
+        doc.text(clubData.name, margin, footerY);
       }
+      if (pageNum && totalPages) {
+        doc.text(`${pageNum} / ${totalPages}`, pageW - margin, footerY, { align: 'right' });
+      }
+      // Thin top line for footer
+      setDrawCol({ r: 230, g: 230, b: 235 });
+      doc.setLineWidth(0.3);
+      doc.line(margin, footerY - 4, pageW - margin, footerY - 4);
     };
 
-    // ── Cover Page ──
+    // ── Helper: section divider with color bar ──
+    const drawColorBar = (color: string, barY: number) => {
+      try {
+        const hex = color.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        doc.setFillColor(r, g, b);
+      } catch {
+        setFillColor(primary);
+      }
+      doc.roundedRect(margin, barY, contentW, 1.5, 0.75, 0.75, 'F');
+    };
+
+    const checkPage = (needed: number) => {
+      if (y + needed > pageH - 20) {
+        doc.addPage();
+        y = margin;
+        return true;
+      }
+      return false;
+    };
+
+    // ═══════════════════════════════════════════
+    // ── COVER PAGE ──
+    // ═══════════════════════════════════════════
     const centerX = pageW / 2;
 
-    // Club name at top
-    y = 50;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(120, 120, 120);
-    doc.text(clubData?.name || '', centerX, y, { align: 'center' });
-    y += 20;
+    // Top accent bar
+    setFillColor(primary);
+    doc.rect(0, 0, pageW, 3, 'F');
 
-    // Briefing title
-    doc.setFontSize(28);
+    // Club name — small, elegant, uppercase tracking
+    y = 65;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    setColor(muted);
+    doc.text((clubData?.name || '').toUpperCase(), centerX, y, { align: 'center' });
+
+    // Briefing title — large, bold
+    y += 12;
+    doc.setFontSize(32);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    const titleLines = doc.splitTextToSize(briefingTitle || 'Briefing', contentW);
+    setColor(dark);
+    const titleLines = doc.splitTextToSize(briefingTitle || 'Briefing', contentW - 20);
     doc.text(titleLines, centerX, y, { align: 'center' });
-    y += titleLines.length * 12 + 15;
+    y += titleLines.length * 13 + 8;
 
-    // Separator line
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.5);
-    doc.line(margin + 30, y, pageW - margin - 30, y);
-    y += 15;
+    // Accent underline
+    const underlineW = 40;
+    setFillColor(primary);
+    doc.roundedRect(centerX - underlineW / 2, y, underlineW, 1.5, 0.75, 0.75, 'F');
+    y += 18;
 
-    // Task details
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(60, 60, 60);
-
-    const details: string[] = [];
+    // Task details — info cards style
+    const detailItems: { icon: string; label: string; value: string }[] = [];
     if (taskData?.task_date) {
       const d = new Date(taskData.task_date);
-      details.push(`📅  ${d.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`);
+      detailItems.push({
+        icon: 'DATUM',
+        label: language === 'nl' ? 'Datum' : language === 'fr' ? 'Date' : 'Date',
+        value: d.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+      });
     }
     if (taskData?.start_time || taskData?.end_time) {
       const st = taskData?.start_time ? new Date(taskData.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
       const et = taskData?.end_time ? new Date(taskData.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-      details.push(`⏰  ${st}${et ? ` — ${et}` : ''}`);
+      detailItems.push({
+        icon: 'TIJD',
+        label: language === 'nl' ? 'Tijdstip' : language === 'fr' ? 'Horaire' : 'Time',
+        value: `${st}${et ? ` — ${et}` : ''}`,
+      });
     }
-    if (taskData?.location) details.push(`📍  ${taskData.location}`);
-    if (taskData?.briefing_location) details.push(`🏁  ${language === 'nl' ? 'Verzamelplaats' : language === 'fr' ? 'Point de rassemblement' : 'Meeting point'}: ${taskData.briefing_location}`);
+    if (taskData?.location) {
+      detailItems.push({
+        icon: 'LOC',
+        label: language === 'nl' ? 'Locatie' : language === 'fr' ? 'Lieu' : 'Location',
+        value: taskData.location,
+      });
+    }
+    if (taskData?.briefing_location) {
+      detailItems.push({
+        icon: 'VP',
+        label: language === 'nl' ? 'Verzamelplaats' : language === 'fr' ? 'Rassemblement' : 'Meeting point',
+        value: taskData.briefing_location,
+      });
+    }
     if (taskData?.briefing_time) {
       const bt = new Date(taskData.briefing_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      details.push(`🕐  ${language === 'nl' ? 'Briefing om' : language === 'fr' ? 'Briefing à' : 'Briefing at'} ${bt}`);
+      detailItems.push({
+        icon: 'BRF',
+        label: language === 'nl' ? 'Briefing' : 'Briefing',
+        value: bt,
+      });
     }
 
-    details.forEach(d => {
-      doc.text(d, centerX, y, { align: 'center' });
-      y += 7;
-    });
+    // Render detail cards in a clean grid
+    if (detailItems.length > 0) {
+      const cardW = contentW;
+      const cardX = margin;
 
-    // ── Content Pages ──
+      // Background card
+      setFillColor(light);
+      const cardH = detailItems.length * 12 + 12;
+      doc.roundedRect(cardX, y - 4, cardW, cardH, 3, 3, 'F');
+
+      y += 4;
+      detailItems.forEach((item) => {
+        // Label
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        setColor(primary);
+        doc.text(item.label.toUpperCase(), cardX + 10, y);
+        // Value
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        setColor(dark);
+        doc.text(item.value, cardX + 10, y + 5);
+        y += 12;
+      });
+    }
+
+    // Cover footer
+    doc.setFontSize(7);
+    setColor(muted);
+    doc.setFont('helvetica', 'normal');
+    const now = new Date();
+    doc.text(
+      `${language === 'nl' ? 'Gegenereerd op' : language === 'fr' ? 'Généré le' : 'Generated on'} ${now.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+      centerX, pageH - 15, { align: 'center' }
+    );
+
+    // Bottom accent bar
+    setFillColor(primary);
+    doc.rect(0, pageH - 3, pageW, 3, 'F');
+
+    // ═══════════════════════════════════════════
+    // ── CONTENT PAGES ──
+    // ═══════════════════════════════════════════
+    const totalContentPages = groups.length;
     groups.forEach((group, gi) => {
       doc.addPage();
       y = margin;
 
-      // Section title
-      doc.setFontSize(16);
+      // Top accent bar
+      setFillColor(primary);
+      doc.rect(0, 0, pageW, 2, 'F');
+
+      // Section color bar
+      drawColorBar(group.color, y);
+      y += 6;
+
+      // Section number + title
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text(group.name || `Sectie ${gi + 1}`, margin, y);
+      setColor(primary);
+      doc.text(`${language === 'nl' ? 'SECTIE' : language === 'fr' ? 'SECTION' : 'SECTION'} ${gi + 1}/${totalContentPages}`, margin, y);
+      y += 6;
+
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      setColor(dark);
+      const sectionTitle = group.name || `${language === 'nl' ? 'Sectie' : 'Section'} ${gi + 1}`;
+      doc.text(sectionTitle, margin, y);
       y += 10;
 
+      // Thin separator
+      setDrawCol({ r: 230, g: 230, b: 235 });
+      doc.setLineWidth(0.3);
+      doc.line(margin, y, pageW - margin, y);
+      y += 8;
+
       group.blocks.forEach(block => {
-        checkPage(20);
+        checkPage(25);
 
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(80, 80, 80);
+        // Block type badge
         const typeLabel = blockLabel(block.type).toUpperCase();
-        doc.text(typeLabel, margin, y);
-        y += 5;
-        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
 
+        // Badge background
+        const badgeW = doc.getTextWidth(typeLabel) + 6;
+        const badgeColors: Record<BlockType, { r: number; g: number; b: number }> = {
+          time_slot: { r: 59, g: 130, b: 246 },
+          instruction: { r: 245, g: 158, b: 11 },
+          pause: { r: 16, g: 185, b: 129 },
+          checklist: { r: 139, g: 92, b: 246 },
+          emergency_contact: { r: 239, g: 68, b: 68 },
+          route: { r: 6, g: 182, b: 212 },
+          custom: { r: 100, g: 116, b: 139 },
+        };
+        const bColor = badgeColors[block.type] || muted;
+        doc.setFillColor(bColor.r, bColor.g, bColor.b);
+        doc.roundedRect(margin, y - 3.5, badgeW, 5, 1.5, 1.5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text(typeLabel, margin + 3, y);
+        y += 5;
+
+        // Reset text style
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
+        setColor(dark);
 
         if (block.type === 'time_slot') {
           if (block.start_time || block.end_time) {
-            doc.text(`${block.start_time || ''} - ${block.end_time || ''}`, margin + 2, y);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            setColor(dark);
+            doc.text(`${block.start_time || ''} — ${block.end_time || ''}`, margin + 1, y + 1);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            y += 7;
+          }
+          if (block.location) {
+            setColor(accent);
+            doc.setFontSize(9);
+            doc.text(block.location, margin + 1, y);
+            setColor(dark);
+            doc.setFontSize(10);
             y += 5;
           }
-          if (block.location) { doc.text(`@ ${block.location}`, margin + 2, y); y += 5; }
           if (block.description) {
+            setColor(muted);
+            doc.setFontSize(9);
             const lines = doc.splitTextToSize(block.description, contentW - 4);
             checkPage(lines.length * 4 + 2);
-            doc.text(lines, margin + 2, y);
+            doc.text(lines, margin + 1, y);
+            setColor(dark);
+            doc.setFontSize(10);
             y += lines.length * 4 + 2;
           }
         } else if (block.type === 'instruction' || block.type === 'custom') {
           if (block.title) {
             doc.setFont('helvetica', 'bold');
-            doc.text(block.title, margin + 2, y);
+            doc.setFontSize(11);
+            doc.text(block.title, margin + 1, y + 1);
             doc.setFont('helvetica', 'normal');
-            y += 5;
+            doc.setFontSize(10);
+            y += 6;
           }
           if (block.description) {
+            setColor({ r: 60, g: 60, b: 65 });
+            doc.setFontSize(9);
             const lines = doc.splitTextToSize(block.description, contentW - 4);
             checkPage(lines.length * 4 + 2);
-            doc.text(lines, margin + 2, y);
+            doc.text(lines, margin + 1, y);
+            setColor(dark);
+            doc.setFontSize(10);
             y += lines.length * 4 + 2;
           }
         } else if (block.type === 'pause') {
+          // Pause card with background
           const parts = [];
           if (block.duration_minutes) parts.push(`${block.duration_minutes} min`);
-          if (block.start_time) parts.push(`om ${block.start_time}`);
-          if (block.location) parts.push(`@ ${block.location}`);
-          if (parts.length) { doc.text(parts.join(' • '), margin + 2, y); y += 5; }
+          if (block.start_time) parts.push(`${language === 'nl' ? 'om' : language === 'fr' ? 'à' : 'at'} ${block.start_time}`);
+          if (block.location) parts.push(block.location);
+          if (parts.length) {
+            setFillColor({ r: 240, g: 253, b: 244 });
+            doc.roundedRect(margin, y - 2, contentW, 8, 2, 2, 'F');
+            doc.setFontSize(9);
+            setColor({ r: 22, g: 163, b: 74 });
+            doc.setFont('helvetica', 'bold');
+            doc.text(parts.join('  ·  '), margin + 4, y + 2.5);
+            doc.setFont('helvetica', 'normal');
+            setColor(dark);
+            doc.setFontSize(10);
+            y += 10;
+          }
         } else if (block.type === 'checklist') {
           if (block.title) {
             doc.setFont('helvetica', 'bold');
-            doc.text(block.title, margin + 2, y);
+            doc.setFontSize(11);
+            doc.text(block.title, margin + 1, y + 1);
             doc.setFont('helvetica', 'normal');
-            y += 5;
+            doc.setFontSize(10);
+            y += 6;
           }
           (block.checklist_items || []).forEach(item => {
             if (item.label.trim()) {
-              checkPage(5);
-              doc.rect(margin + 4, y - 3, 3, 3);
-              doc.text(item.label, margin + 10, y);
-              y += 5;
+              checkPage(7);
+              // Checkbox square
+              setDrawCol({ r: 180, g: 180, b: 190 });
+              doc.setLineWidth(0.4);
+              doc.roundedRect(margin + 2, y - 3, 3.5, 3.5, 0.5, 0.5, 'S');
+              // Label
+              doc.setFontSize(9);
+              setColor(dark);
+              doc.text(item.label, margin + 8, y);
+              doc.setFontSize(10);
+              y += 6;
             }
           });
         } else if (block.type === 'emergency_contact') {
-          const parts = [block.contact_name, block.contact_phone, block.contact_role].filter(Boolean);
-          if (parts.length) { doc.text(parts.join(' • '), margin + 2, y); y += 5; }
+          // Emergency contact card
+          setFillColor({ r: 254, g: 242, b: 242 });
+          const ecParts = [block.contact_name, block.contact_role, block.contact_phone].filter(Boolean);
+          const ecH = 12;
+          doc.roundedRect(margin, y - 2, contentW, ecH, 2, 2, 'F');
+          // Red left bar
+          doc.setFillColor(239, 68, 68);
+          doc.roundedRect(margin, y - 2, 2, ecH, 1, 1, 'F');
+
+          if (block.contact_name) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            setColor({ r: 185, g: 28, b: 28 });
+            doc.text(block.contact_name, margin + 6, y + 2);
+          }
+          const subParts = [block.contact_role, block.contact_phone].filter(Boolean);
+          if (subParts.length) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            setColor({ r: 153, g: 27, b: 27 });
+            doc.text(subParts.join('  ·  '), margin + 6, y + 6.5);
+          }
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          setColor(dark);
+          y += ecH + 2;
         } else if (block.type === 'route') {
           if (block.title) {
             doc.setFont('helvetica', 'bold');
-            doc.text(block.title, margin + 2, y);
+            doc.setFontSize(11);
+            doc.text(block.title, margin + 1, y + 1);
             doc.setFont('helvetica', 'normal');
-            y += 5;
+            doc.setFontSize(10);
+            y += 6;
           }
           if (block.description) {
+            setColor(muted);
+            doc.setFontSize(9);
             const lines = doc.splitTextToSize(block.description, contentW - 4);
             checkPage(lines.length * 4 + 2);
-            doc.text(lines, margin + 2, y);
+            doc.text(lines, margin + 1, y);
+            setColor(dark);
+            doc.setFontSize(10);
             y += lines.length * 4 + 2;
           }
           (block.waypoints || []).forEach((wp, wi) => {
-            checkPage(8);
-            const wpParts = [`${wi + 1}. ${wp.label || `Punt ${wi + 1}`}`];
-            if (wp.arrival_time) wpParts.push(wp.arrival_time);
-            doc.text(wpParts.join('  —  '), margin + 4, y);
+            checkPage(12);
+            // Numbered circle
+            const circleX = margin + 4;
+            const circleY = y - 1;
+            doc.setFillColor(accent.r, accent.g, accent.b);
+            doc.circle(circleX, circleY, 3, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${wi + 1}`, circleX, circleY + 1, { align: 'center' });
+
+            // Waypoint label
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            setColor(dark);
+            const wpLabel = wp.label || `${language === 'nl' ? 'Punt' : 'Point'} ${wi + 1}`;
+            doc.text(wpLabel, margin + 10, y);
+            if (wp.arrival_time) {
+              doc.setFont('helvetica', 'normal');
+              setColor(accent);
+              doc.text(wp.arrival_time, margin + 10 + doc.getTextWidth(wpLabel + '  '), y);
+              setColor(dark);
+            }
             y += 4;
             if (wp.description) {
-              doc.setFontSize(9);
-              doc.setTextColor(100, 100, 100);
-              doc.text(`   ${wp.description}`, margin + 4, y);
-              doc.setTextColor(0, 0, 0);
+              doc.setFontSize(8);
+              doc.setFont('helvetica', 'normal');
+              setColor(muted);
+              doc.text(wp.description, margin + 10, y);
+              setColor(dark);
               doc.setFontSize(10);
               y += 4;
+            }
+            // Connecting line to next
+            if (wi < (block.waypoints || []).length - 1) {
+              setDrawCol({ r: 200, g: 220, b: 220 });
+              doc.setLineWidth(0.3);
+              doc.setLineDashPattern([1, 1], 0);
+              doc.line(circleX, circleY + 3, circleX, y + 1);
+              doc.setLineDashPattern([], 0);
+              y += 2;
             }
           });
         }
 
-        y += 4;
+        y += 6; // spacing between blocks
       });
+
+      // Page footer
+      addFooter(gi + 2, totalContentPages + 1);
+
+      // Bottom accent bar
+      setFillColor(primary);
+      doc.rect(0, pageH - 2, pageW, 2, 'F');
     });
+
+    // Add footer to cover page
+    doc.setPage(1);
+    addFooter(1, totalContentPages + 1);
 
     return doc.output('blob');
   };
