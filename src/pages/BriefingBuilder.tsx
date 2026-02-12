@@ -6,13 +6,14 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
   ArrowLeft, Plus, GripVertical, Clock, MapPin, FileText, Coffee, Phone, CheckSquare,
-  Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X, Route, PenLine, Send
+  Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X, Route, PenLine, Send, Copy
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import SendBriefingDialog from '@/components/SendBriefingDialog';
 import RouteMapEditor, { type Waypoint } from '@/components/RouteMapEditor';
 
 // ─── Types ───
@@ -95,6 +96,12 @@ const labels = {
     briefingTitle: 'Briefing titel',
     deleteGroup: 'Groep verwijderen',
     deleteBlock: 'Blok verwijderen',
+    duplicate: 'Dupliceren',
+    newBriefing: 'Nieuwe briefing',
+    selectBriefing: 'Briefing kiezen',
+    meetingPoint: 'Verzamelplaats',
+    date: 'Datum',
+    time: 'Tijd',
   },
   fr: {
     back: 'Retour',
@@ -133,6 +140,12 @@ const labels = {
     briefingTitle: 'Titre du briefing',
     deleteGroup: 'Supprimer le groupe',
     deleteBlock: 'Supprimer le bloc',
+    duplicate: 'Dupliquer',
+    newBriefing: 'Nouveau briefing',
+    selectBriefing: 'Choisir un briefing',
+    meetingPoint: 'Point de rassemblement',
+    date: 'Date',
+    time: 'Heure',
   },
   en: {
     back: 'Back',
@@ -171,6 +184,12 @@ const labels = {
     briefingTitle: 'Briefing title',
     deleteGroup: 'Delete group',
     deleteBlock: 'Delete block',
+    duplicate: 'Duplicate',
+    newBriefing: 'New briefing',
+    selectBriefing: 'Select briefing',
+    meetingPoint: 'Meeting point',
+    date: 'Date',
+    time: 'Time',
   },
 };
 
@@ -199,6 +218,7 @@ const BriefingBuilder = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingBriefing, setSendingBriefing] = useState(false);
+  const [showSendDialog, setShowSendDialog] = useState(false);
   const [briefingId, setBriefingId] = useState<string | null>(null);
   const [briefingTitle, setBriefingTitle] = useState('');
   const [groups, setGroups] = useState<Group[]>([]);
@@ -206,6 +226,16 @@ const BriefingBuilder = () => {
   const [groupVolunteers, setGroupVolunteers] = useState<Record<string, string[]>>({});
   const [userId, setUserId] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
+  const [taskData, setTaskData] = useState<{
+    task_date: string | null;
+    start_time: string | null;
+    end_time: string | null;
+    location: string | null;
+    briefing_location: string | null;
+    briefing_time: string | null;
+  } | null>(null);
+  const [clubData, setClubData] = useState<{ name: string; logo_url: string | null } | null>(null);
+  const [allBriefings, setAllBriefings] = useState<{ id: string; title: string }[]>([]);
 
   // Load existing briefing or initialize
   useEffect(() => {
@@ -216,9 +246,23 @@ const BriefingBuilder = () => {
       if (!session) { navigate('/login'); return; }
       setUserId(session.user.id);
 
-      // Get task info
-      const { data: task } = await supabase.from('tasks').select('title').eq('id', taskId).maybeSingle();
-      if (task) setTaskTitle(task.title);
+      // Get task info with full details
+      const { data: task } = await supabase.from('tasks').select('title, task_date, start_time, end_time, location, briefing_location, briefing_time, club_id').eq('id', taskId).maybeSingle();
+      if (task) {
+        setTaskTitle(task.title);
+        setTaskData({
+          task_date: task.task_date,
+          start_time: task.start_time,
+          end_time: task.end_time,
+          location: task.location,
+          briefing_location: task.briefing_location,
+          briefing_time: task.briefing_time,
+        });
+      }
+
+      // Get club info
+      const { data: club } = await supabase.from('clubs').select('name, logo_url').eq('id', clubId).maybeSingle();
+      if (club) setClubData(club);
 
       // Get volunteers signed up for this task
       const { data: signups } = await supabase
@@ -235,103 +279,23 @@ const BriefingBuilder = () => {
         setVolunteers(profiles || []);
       }
 
-      // Check for existing briefing
-      const { data: existing } = await supabase
+      // Load all briefings for this task
+      const { data: briefingsForTask } = await supabase
         .from('briefings')
         .select('id, title')
         .eq('task_id', taskId)
-        .maybeSingle();
+        .order('created_at');
 
-      if (existing) {
-        setBriefingId(existing.id);
-        setBriefingTitle(existing.title);
+      setAllBriefings(briefingsForTask || []);
 
-        // Load groups
-        const { data: grps } = await supabase
-          .from('briefing_groups')
-          .select('*')
-          .eq('briefing_id', existing.id)
-          .order('sort_order');
+      // Load briefing from URL param or first available
+      const briefingIdParam = searchParams.get('briefingId');
+      const targetBriefing = briefingIdParam
+        ? (briefingsForTask || []).find(b => b.id === briefingIdParam)
+        : (briefingsForTask || [])[0];
 
-        if (grps && grps.length > 0) {
-          const groupIds = grps.map(g => g.id);
-
-          // Load blocks
-          const { data: blocks } = await supabase
-            .from('briefing_blocks')
-            .select('*')
-            .in('group_id', groupIds)
-            .order('sort_order');
-
-          // Load checklist items
-          const blockIds = (blocks || []).filter(b => b.type === 'checklist').map(b => b.id);
-          let checklistItems: any[] = [];
-          if (blockIds.length > 0) {
-            const { data: items } = await supabase
-              .from('briefing_checklist_items')
-              .select('*')
-              .in('block_id', blockIds)
-              .order('sort_order');
-            checklistItems = items || [];
-          }
-
-          // Load route waypoints
-          const routeBlockIds = (blocks || []).filter(b => b.type === 'route').map(b => b.id);
-          let routeWaypoints: any[] = [];
-          if (routeBlockIds.length > 0) {
-            const { data: wps } = await supabase
-              .from('briefing_route_waypoints')
-              .select('*')
-              .in('block_id', routeBlockIds)
-              .order('sort_order');
-            routeWaypoints = wps || [];
-          }
-
-          // Load group volunteers
-          const { data: gvs } = await supabase
-            .from('briefing_group_volunteers')
-            .select('group_id, volunteer_id')
-            .in('group_id', groupIds);
-
-          const gvMap: Record<string, string[]> = {};
-          (gvs || []).forEach(gv => {
-            if (!gvMap[gv.group_id]) gvMap[gv.group_id] = [];
-            gvMap[gv.group_id].push(gv.volunteer_id);
-          });
-          setGroupVolunteers(gvMap);
-
-          const loadedGroups: Group[] = grps.map(g => ({
-            id: g.id,
-            name: g.name,
-            color: g.color,
-            sort_order: g.sort_order,
-            expanded: true,
-            blocks: (blocks || [])
-              .filter(b => b.group_id === g.id)
-              .map(b => ({
-                id: b.id,
-                type: b.type as BlockType,
-                sort_order: b.sort_order,
-                start_time: b.start_time || undefined,
-                end_time: b.end_time || undefined,
-                duration_minutes: b.duration_minutes || undefined,
-                location: b.location || undefined,
-                title: b.title || undefined,
-                description: b.description || undefined,
-                contact_name: b.contact_name || undefined,
-                contact_phone: b.contact_phone || undefined,
-                contact_role: b.contact_role || undefined,
-                checklist_items: checklistItems
-                  .filter(ci => ci.block_id === b.id)
-                  .map(ci => ({ id: ci.id, label: ci.label, sort_order: ci.sort_order })),
-                waypoints: routeWaypoints
-                  .filter(wp => wp.block_id === b.id)
-                  .map(wp => ({ id: wp.id, label: wp.label, description: wp.description, lat: wp.lat, lng: wp.lng, arrival_time: wp.arrival_time, sort_order: wp.sort_order })),
-              })),
-          }));
-
-          setGroups(loadedGroups);
-        }
+      if (targetBriefing) {
+        await loadBriefingData(targetBriefing.id, targetBriefing.title);
       } else {
         // Initialize with one default group
         setBriefingTitle(task?.title || '');
@@ -350,6 +314,98 @@ const BriefingBuilder = () => {
 
     init();
   }, [taskId, clubId, navigate]);
+
+  const loadBriefingData = async (bId: string, bTitle: string) => {
+    setBriefingId(bId);
+    setBriefingTitle(bTitle);
+
+    // Load groups
+    const { data: grps } = await supabase
+      .from('briefing_groups')
+      .select('*')
+      .eq('briefing_id', bId)
+      .order('sort_order');
+
+    if (grps && grps.length > 0) {
+      const groupIds = grps.map(g => g.id);
+
+      // Load blocks
+      const { data: blocks } = await supabase
+        .from('briefing_blocks')
+        .select('*')
+        .in('group_id', groupIds)
+        .order('sort_order');
+
+      // Load checklist items
+      const blockIds = (blocks || []).filter(b => b.type === 'checklist').map(b => b.id);
+      let checklistItems: any[] = [];
+      if (blockIds.length > 0) {
+        const { data: items } = await supabase
+          .from('briefing_checklist_items')
+          .select('*')
+          .in('block_id', blockIds)
+          .order('sort_order');
+        checklistItems = items || [];
+      }
+
+      // Load route waypoints
+      const routeBlockIds = (blocks || []).filter(b => b.type === 'route').map(b => b.id);
+      let routeWaypoints: any[] = [];
+      if (routeBlockIds.length > 0) {
+        const { data: wps } = await supabase
+          .from('briefing_route_waypoints')
+          .select('*')
+          .in('block_id', routeBlockIds)
+          .order('sort_order');
+        routeWaypoints = wps || [];
+      }
+
+      // Load group volunteers
+      const { data: gvs } = await supabase
+        .from('briefing_group_volunteers')
+        .select('group_id, volunteer_id')
+        .in('group_id', groupIds);
+
+      const gvMap: Record<string, string[]> = {};
+      (gvs || []).forEach(gv => {
+        if (!gvMap[gv.group_id]) gvMap[gv.group_id] = [];
+        gvMap[gv.group_id].push(gv.volunteer_id);
+      });
+      setGroupVolunteers(gvMap);
+
+      const loadedGroups: Group[] = grps.map(g => ({
+        id: g.id,
+        name: g.name,
+        color: g.color,
+        sort_order: g.sort_order,
+        expanded: true,
+        blocks: (blocks || [])
+          .filter(b => b.group_id === g.id)
+          .map(b => ({
+            id: b.id,
+            type: b.type as BlockType,
+            sort_order: b.sort_order,
+            start_time: b.start_time || undefined,
+            end_time: b.end_time || undefined,
+            duration_minutes: b.duration_minutes || undefined,
+            location: b.location || undefined,
+            title: b.title || undefined,
+            description: b.description || undefined,
+            contact_name: b.contact_name || undefined,
+            contact_phone: b.contact_phone || undefined,
+            contact_role: b.contact_role || undefined,
+            checklist_items: checklistItems
+              .filter(ci => ci.block_id === b.id)
+              .map(ci => ({ id: ci.id, label: ci.label, sort_order: ci.sort_order })),
+            waypoints: routeWaypoints
+              .filter(wp => wp.block_id === b.id)
+              .map(wp => ({ id: wp.id, label: wp.label, description: wp.description, lat: wp.lat, lng: wp.lng, arrival_time: wp.arrival_time, sort_order: wp.sort_order })),
+          })),
+      }));
+
+      setGroups(loadedGroups);
+    }
+  };
 
   // ─── Group helpers ───
   const addGroup = () => {
@@ -545,6 +601,13 @@ const BriefingBuilder = () => {
         }
       }
 
+      // Update allBriefings list
+      setAllBriefings(prev => {
+        const exists = prev.find(b => b.id === bId);
+        if (exists) return prev.map(b => b.id === bId ? { ...b, title: briefingTitle } : b);
+        return [...prev, { id: bId!, title: briefingTitle }];
+      });
+
       toast.success(l.saved);
     } catch (err: any) {
       toast.error(err.message || 'Error saving briefing');
@@ -553,44 +616,127 @@ const BriefingBuilder = () => {
     }
   };
 
+  // ─── New Briefing ───
+  const handleNewBriefing = () => {
+    setBriefingId(null);
+    setBriefingTitle(taskTitle ? `${taskTitle} (${allBriefings.length + 1})` : '');
+    setGroups([{
+      id: uid(),
+      name: 'Algemeen',
+      color: groupColors[0],
+      sort_order: 0,
+      blocks: [],
+      expanded: true,
+    }]);
+    setGroupVolunteers({});
+  };
+
+  // ─── Duplicate Briefing ───
+  const handleDuplicate = () => {
+    setBriefingId(null);
+    setBriefingTitle(`${briefingTitle} (kopie)`);
+    // Deep clone groups with new IDs
+    setGroups(groups.map(g => ({
+      ...g,
+      id: uid(),
+      blocks: g.blocks.map(b => ({
+        ...b,
+        id: uid(),
+        checklist_items: (b.checklist_items || []).map(ci => ({ ...ci, id: uid() })),
+        waypoints: (b.waypoints || []).map(wp => ({ ...wp, id: uid() })),
+      })),
+    })));
+    toast.success(language === 'nl' ? 'Briefing gedupliceerd — sla op om te bewaren' : 'Briefing duplicated — save to keep');
+  };
+
+  // ─── Switch Briefing ───
+  const switchBriefing = async (bId: string) => {
+    const b = allBriefings.find(x => x.id === bId);
+    if (!b) return;
+    setLoading(true);
+    setGroups([]);
+    setGroupVolunteers({});
+    await loadBriefingData(b.id, b.title);
+    setLoading(false);
+  };
+
   // ─── Generate PDF ───
   const generateBriefingPdf = (): Blob => {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
     const margin = 15;
     const contentW = pageW - margin * 2;
     let y = margin;
 
     const checkPage = (needed: number) => {
-      if (y + needed > doc.internal.pageSize.getHeight() - margin) {
+      if (y + needed > pageH - margin) {
         doc.addPage();
         y = margin;
       }
     };
 
-    // Title page
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text(briefingTitle || 'Briefing', margin, y + 10);
-    y += 18;
-    doc.setFontSize(10);
+    // ── Cover Page ──
+    const centerX = pageW / 2;
+
+    // Club name at top
+    y = 50;
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(taskTitle, margin, y);
-    y += 10;
-    doc.setTextColor(0, 0, 0);
+    doc.text(clubData?.name || '', centerX, y, { align: 'center' });
+    y += 20;
 
+    // Briefing title
+    doc.setFontSize(28);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    const titleLines = doc.splitTextToSize(briefingTitle || 'Briefing', contentW);
+    doc.text(titleLines, centerX, y, { align: 'center' });
+    y += titleLines.length * 12 + 15;
+
+    // Separator line
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(margin + 30, y, pageW - margin - 30, y);
+    y += 15;
+
+    // Task details
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+
+    const details: string[] = [];
+    if (taskData?.task_date) {
+      const d = new Date(taskData.task_date);
+      details.push(`📅  ${d.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`);
+    }
+    if (taskData?.start_time || taskData?.end_time) {
+      const st = taskData?.start_time ? new Date(taskData.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const et = taskData?.end_time ? new Date(taskData.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      details.push(`⏰  ${st}${et ? ` — ${et}` : ''}`);
+    }
+    if (taskData?.location) details.push(`📍  ${taskData.location}`);
+    if (taskData?.briefing_location) details.push(`🏁  ${language === 'nl' ? 'Verzamelplaats' : language === 'fr' ? 'Point de rassemblement' : 'Meeting point'}: ${taskData.briefing_location}`);
+    if (taskData?.briefing_time) {
+      const bt = new Date(taskData.briefing_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      details.push(`🕐  ${language === 'nl' ? 'Briefing om' : language === 'fr' ? 'Briefing à' : 'Briefing at'} ${bt}`);
+    }
+
+    details.forEach(d => {
+      doc.text(d, centerX, y, { align: 'center' });
+      y += 7;
+    });
+
+    // ── Content Pages ──
     groups.forEach((group, gi) => {
-      // Each group = new page (except first if title page has room)
-      if (gi > 0) {
-        doc.addPage();
-        y = margin;
-      }
+      doc.addPage();
+      y = margin;
 
       // Section title
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      checkPage(12);
+      doc.setTextColor(0, 0, 0);
       doc.text(group.name || `Sectie ${gi + 1}`, margin, y);
       y += 10;
 
@@ -610,10 +756,10 @@ const BriefingBuilder = () => {
 
         if (block.type === 'time_slot') {
           if (block.start_time || block.end_time) {
-            doc.text(`⏰ ${block.start_time || ''} - ${block.end_time || ''}`, margin + 2, y);
+            doc.text(`${block.start_time || ''} - ${block.end_time || ''}`, margin + 2, y);
             y += 5;
           }
-          if (block.location) { doc.text(`📍 ${block.location}`, margin + 2, y); y += 5; }
+          if (block.location) { doc.text(`@ ${block.location}`, margin + 2, y); y += 5; }
           if (block.description) {
             const lines = doc.splitTextToSize(block.description, contentW - 4);
             checkPage(lines.length * 4 + 2);
@@ -638,7 +784,7 @@ const BriefingBuilder = () => {
           if (block.duration_minutes) parts.push(`${block.duration_minutes} min`);
           if (block.start_time) parts.push(`om ${block.start_time}`);
           if (block.location) parts.push(`@ ${block.location}`);
-          if (parts.length) { doc.text(`☕ ${parts.join(' • ')}`, margin + 2, y); y += 5; }
+          if (parts.length) { doc.text(parts.join(' • '), margin + 2, y); y += 5; }
         } else if (block.type === 'checklist') {
           if (block.title) {
             doc.setFont('helvetica', 'bold');
@@ -649,13 +795,14 @@ const BriefingBuilder = () => {
           (block.checklist_items || []).forEach(item => {
             if (item.label.trim()) {
               checkPage(5);
-              doc.text(`☐ ${item.label}`, margin + 4, y);
+              doc.rect(margin + 4, y - 3, 3, 3);
+              doc.text(item.label, margin + 10, y);
               y += 5;
             }
           });
         } else if (block.type === 'emergency_contact') {
           const parts = [block.contact_name, block.contact_phone, block.contact_role].filter(Boolean);
-          if (parts.length) { doc.text(`🚨 ${parts.join(' • ')}`, margin + 2, y); y += 5; }
+          if (parts.length) { doc.text(parts.join(' • '), margin + 2, y); y += 5; }
         } else if (block.type === 'route') {
           if (block.title) {
             doc.setFont('helvetica', 'bold');
@@ -672,7 +819,7 @@ const BriefingBuilder = () => {
           (block.waypoints || []).forEach((wp, wi) => {
             checkPage(8);
             const wpParts = [`${wi + 1}. ${wp.label || `Punt ${wi + 1}`}`];
-            if (wp.arrival_time) wpParts.push(`⏰ ${wp.arrival_time}`);
+            if (wp.arrival_time) wpParts.push(wp.arrival_time);
             doc.text(wpParts.join('  —  '), margin + 4, y);
             y += 4;
             if (wp.description) {
@@ -686,36 +833,25 @@ const BriefingBuilder = () => {
           });
         }
 
-        y += 4; // spacing between blocks
+        y += 4;
       });
     });
 
     return doc.output('blob');
   };
 
-  // ─── Send briefing via chat ───
-  const handleSendBriefing = async () => {
-    if (!taskId || !clubId || !userId) return;
-
-    // Must be saved first
+  // ─── Open send dialog ───
+  const handleOpenSendDialog = () => {
     if (!briefingId) {
       toast.error(l.saveFirstToSend);
       return;
     }
+    setShowSendDialog(true);
+  };
 
-    // Collect all assigned volunteer IDs
-    const allVolunteerIds = new Set<string>();
-    Object.values(groupVolunteers).forEach(vids => vids.forEach(v => allVolunteerIds.add(v)));
-
-    // If no volunteers assigned to groups, fall back to all task signups
-    if (allVolunteerIds.size === 0) {
-      volunteers.forEach(v => allVolunteerIds.add(v.id));
-    }
-
-    if (allVolunteerIds.size === 0) {
-      toast.error(l.noVolunteersToSend);
-      return;
-    }
+  // ─── Send briefing via chat ───
+  const handleSendBriefing = async (selectedVolunteerIds: string[], personalMessage: string) => {
+    if (!taskId || !clubId || !userId) return;
 
     setSendingBriefing(true);
     try {
@@ -734,9 +870,8 @@ const BriefingBuilder = () => {
         .from('chat-attachments')
         .getPublicUrl(storagePath);
 
-      // For each volunteer, find or create conversation and send message
-      for (const volunteerId of allVolunteerIds) {
-        // Find existing conversation for this task + volunteer
+      // For each selected volunteer, find or create conversation and send message
+      for (const volunteerId of selectedVolunteerIds) {
         const { data: existing } = await supabase
           .from('conversations')
           .select('id')
@@ -761,23 +896,28 @@ const BriefingBuilder = () => {
           convoId = created.id;
         }
 
+        // Build message content
+        const msgContent = personalMessage.trim()
+          ? `📋 ${briefingTitle || 'Briefing'}\n\n${personalMessage.trim()}`
+          : `📋 ${briefingTitle || 'Briefing'}`;
+
         // Send message with PDF attachment
         const { error: msgErr } = await supabase.from('messages').insert({
           conversation_id: convoId,
           sender_id: userId,
-          content: `📋 ${briefingTitle || 'Briefing'}`,
+          content: msgContent,
           attachment_url: publicUrl,
           attachment_type: 'document',
           attachment_name: fileName,
         });
         if (msgErr) throw msgErr;
 
-        // Update conversation timestamp
         await supabase.from('conversations')
           .update({ updated_at: new Date().toISOString() })
           .eq('id', convoId);
       }
 
+      setShowSendDialog(false);
       toast.success(l.sent);
     } catch (err: any) {
       toast.error(err.message || 'Error sending briefing');
@@ -824,11 +964,28 @@ const BriefingBuilder = () => {
             <Logo size="sm" />
           </div>
           <div className="flex items-center gap-2">
+            {allBriefings.length > 1 && (
+              <select
+                value={briefingId || ''}
+                onChange={e => e.target.value && switchBriefing(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-2 text-xs"
+              >
+                {allBriefings.map(b => (
+                  <option key={b.id} value={b.id}>{b.title}</option>
+                ))}
+              </select>
+            )}
+            <Button onClick={handleNewBriefing} size="sm" variant="ghost" title={l.newBriefing}>
+              <Plus className="w-4 h-4" />
+            </Button>
+            <Button onClick={handleDuplicate} size="sm" variant="ghost" title={l.duplicate} disabled={groups.length === 0}>
+              <Copy className="w-4 h-4" />
+            </Button>
             <Button onClick={handleSave} disabled={saving || sendingBriefing} size="sm" variant="outline">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
               {saving ? l.saving : l.save}
             </Button>
-            <Button onClick={handleSendBriefing} disabled={sendingBriefing || saving} size="sm">
+            <Button onClick={handleOpenSendDialog} disabled={sendingBriefing || saving} size="sm">
               {sendingBriefing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Send className="w-4 h-4 mr-1" />}
               {sendingBriefing ? l.sending : l.send}
             </Button>
