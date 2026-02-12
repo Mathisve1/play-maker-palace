@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, UserPlus, Copy, Trash2, Shield, ChevronDown } from 'lucide-react';
+import { X, UserPlus, Copy, Trash2, Shield, ChevronDown, Info } from 'lucide-react';
 
 type ClubRole = 'bestuurder' | 'beheerder' | 'medewerker';
 
@@ -45,6 +45,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showRolesInfo, setShowRolesInfo] = useState(false);
 
   // Invite form
   const [inviteEmail, setInviteEmail] = useState('');
@@ -238,6 +239,50 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Roles info toggle */}
+        <div className="mb-5">
+          <button
+            onClick={() => setShowRolesInfo(!showRolesInfo)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Info className="w-4 h-4" />
+            Wat kunnen de verschillende rollen?
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showRolesInfo ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showRolesInfo && (
+            <div className="mt-3 space-y-3 p-4 rounded-xl bg-muted/30 border border-border text-sm">
+              <div>
+                <p className="font-semibold text-foreground flex items-center gap-2">
+                  <span className={`inline-block w-2 h-2 rounded-full bg-primary`} />
+                  Bestuurder
+                </p>
+                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                  Volledige toegang: rollen toewijzen &amp; wijzigen, Stripe koppelen/ontkoppelen, betalingen uitvoeren, contracten aanmaken, uitsturen &amp; toekennen, taken beheren, en andere leden tot medebestuurder benoemen.
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground flex items-center gap-2">
+                  <span className={`inline-block w-2 h-2 rounded-full bg-accent-foreground`} />
+                  Beheerder
+                </p>
+                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                  Kan bijna alles: taken beheren, contracten aanmaken &amp; uitsturen, betalingen uitvoeren, en leden uitnodigen. Kan <strong>geen</strong> rollen wijzigen en <strong>geen</strong> Stripe-gegevens aanpassen of ontkoppelen.
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground flex items-center gap-2">
+                  <span className={`inline-block w-2 h-2 rounded-full bg-muted-foreground`} />
+                  Medewerker
+                </p>
+                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                  Kan taken bekijken &amp; beheren, contracten aanmaken &amp; uitsturen, en het dagelijkse werk uitvoeren. Kan <strong>geen</strong> rollen wijzigen en <strong>geen</strong> betalingen uitvoeren.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Invite section */}
