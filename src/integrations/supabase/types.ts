@@ -204,6 +204,50 @@ export type Database = {
           },
         ]
       }
+      briefing_route_waypoints: {
+        Row: {
+          arrival_time: string | null
+          block_id: string
+          created_at: string
+          description: string | null
+          id: string
+          label: string
+          lat: number
+          lng: number
+          sort_order: number
+        }
+        Insert: {
+          arrival_time?: string | null
+          block_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          label?: string
+          lat: number
+          lng: number
+          sort_order?: number
+        }
+        Update: {
+          arrival_time?: string | null
+          block_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          label?: string
+          lat?: number
+          lng?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_route_waypoints_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       briefings: {
         Row: {
           club_id: string
