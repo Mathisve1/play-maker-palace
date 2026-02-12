@@ -1336,6 +1336,16 @@ const BriefingBuilder = () => {
           </button>
         </div>
       </main>
+
+      {/* Send Briefing Dialog */}
+      <SendBriefingDialog
+        open={showSendDialog}
+        onOpenChange={setShowSendDialog}
+        volunteers={volunteers}
+        onSend={handleSendBriefing}
+        language={language}
+        sending={sendingBriefing}
+      />
     </div>
   );
 };
