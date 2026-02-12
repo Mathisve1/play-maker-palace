@@ -13,6 +13,7 @@ import ContractTemplatesDialog from '@/components/ContractTemplatesDialog';
 import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
 import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 import BulkMessageDialog from '@/components/BulkMessageDialog';
+import BriefingProgressDialog from '@/components/BriefingProgressDialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
@@ -225,6 +226,7 @@ const ClubOwnerDashboard = () => {
   const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [bulkMessageTask, setBulkMessageTask] = useState<{ taskId: string; taskTitle: string; volunteers: { id: string; full_name: string | null; email: string | null }[] } | null>(null);
+  const [briefingProgressTaskId, setBriefingProgressTaskId] = useState<string | null>(null);
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -631,7 +633,7 @@ const ClubOwnerDashboard = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-6"
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mt-6"
           >
             <button
               onClick={() => navigate('/chat')}
@@ -674,6 +676,20 @@ const ClubOwnerDashboard = () => {
               >
                 <Shield className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                 <span className="text-xs font-medium text-foreground">Leden</span>
+              </button>
+            )}
+            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
+              <button
+                onClick={() => {
+                  // Open progress for the first task that has a briefing, or show a list
+                  if (tasks.length > 0) {
+                    setBriefingProgressTaskId(tasks[0].id);
+                  }
+                }}
+                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group"
+              >
+                <ClipboardList className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-xs font-medium text-foreground">Briefings</span>
               </button>
             )}
           </motion.div>
@@ -979,6 +995,13 @@ const ClubOwnerDashboard = () => {
                       >
                         <ClipboardList className="w-3.5 h-3.5" />
                         Briefing
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setBriefingProgressTaskId(task.id); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-accent/50 text-accent-foreground hover:bg-accent transition-colors"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        Voortgang
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setConfirmDeleteTask(task.id); }}
@@ -1449,6 +1472,16 @@ const ClubOwnerDashboard = () => {
           clubOwnerId={currentUserId}
           volunteers={bulkMessageTask.volunteers}
           onClose={() => setBulkMessageTask(null)}
+        />
+      )}
+
+      {/* Briefing progress dialog */}
+      {briefingProgressTaskId && (
+        <BriefingProgressDialog
+          open={!!briefingProgressTaskId}
+          onOpenChange={(open) => { if (!open) setBriefingProgressTaskId(null); }}
+          taskId={briefingProgressTaskId}
+          language={language}
         />
       )}
     </div>

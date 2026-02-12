@@ -4,12 +4,13 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList } from 'lucide-react';
 import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
+import { VolunteerBriefingsList } from '@/components/VolunteerBriefingView';
 
 
 interface Task {
@@ -76,7 +77,7 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts' | 'briefings'>('all');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
   const [_signingContract, _setSigningContract] = useState<string | null>(null); // kept for type compat
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
@@ -523,11 +524,26 @@ const VolunteerDashboard = () => {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('briefings')}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${
+                activeTab === 'briefings'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <ClipboardList className="w-3 h-3" />
+              {language === 'nl' ? 'Briefings' : language === 'fr' ? 'Briefings' : 'Briefings'}
+            </button>
           </div>
         </div>
 
-        {/* Contracts tab */}
-        {activeTab === 'contracts' ? (
+        {/* Briefings tab */}
+        {activeTab === 'briefings' ? (
+          <div className="mt-6">
+            <VolunteerBriefingsList language={language} userId={currentUserId} />
+          </div>
+        ) : activeTab === 'contracts' ? (
           <div className="mt-6 space-y-4">
             {myContracts.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
