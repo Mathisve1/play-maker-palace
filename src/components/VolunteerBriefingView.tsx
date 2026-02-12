@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
-import { Clock, MapPin, FileText, Coffee, Phone, CheckSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, MapPin, FileText, Coffee, Phone, CheckSquare, ChevronDown, ChevronUp, Route } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
+import RouteMapEditor, { type Waypoint } from '@/components/RouteMapEditor';
 
-type BlockType = 'time_slot' | 'instruction' | 'pause' | 'checklist' | 'emergency_contact';
+type BlockType = 'time_slot' | 'instruction' | 'pause' | 'checklist' | 'emergency_contact' | 'route';
 
 interface ChecklistItemData {
   id: string;
@@ -27,6 +28,7 @@ interface BlockData {
   contact_phone?: string | null;
   contact_role?: string | null;
   checklist_items: ChecklistItemData[];
+  waypoints: Waypoint[];
 }
 
 interface GroupData {
@@ -73,6 +75,7 @@ const blockIcons: Record<BlockType, typeof Clock> = {
   pause: Coffee,
   checklist: CheckSquare,
   emergency_contact: Phone,
+  route: Route,
 };
 
 const blockColors: Record<BlockType, string> = {
@@ -81,6 +84,7 @@ const blockColors: Record<BlockType, string> = {
   pause: 'border-l-green-500',
   checklist: 'border-l-purple-500',
   emergency_contact: 'border-l-red-500',
+  route: 'border-l-cyan-500',
 };
 
 interface VolunteerBriefingViewProps {
@@ -160,6 +164,18 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
       checklistItems = items || [];
     }
 
+    // Load route waypoints
+    const routeBlockIds = (blocks || []).filter(bl => bl.type === 'route').map(bl => bl.id);
+    let routeWaypoints: any[] = [];
+    if (routeBlockIds.length > 0) {
+      const { data: wps } = await supabase
+        .from('briefing_route_waypoints')
+        .select('*')
+        .in('block_id', routeBlockIds)
+        .order('sort_order');
+      routeWaypoints = wps || [];
+    }
+
     // Load existing progress
     if (checklistItems.length > 0) {
       const itemIds = checklistItems.map(ci => ci.id);
@@ -195,6 +211,9 @@ const VolunteerBriefingView = ({ taskId, language, userId }: VolunteerBriefingVi
           contact_phone: bl.contact_phone,
           contact_role: bl.contact_role,
           checklist_items: checklistItems.filter(ci => ci.block_id === bl.id),
+          waypoints: routeWaypoints
+            .filter(wp => wp.block_id === bl.id)
+            .map(wp => ({ id: wp.id, label: wp.label, description: wp.description, lat: wp.lat, lng: wp.lng, arrival_time: wp.arrival_time, sort_order: wp.sort_order })),
         })),
     }));
 
@@ -422,6 +441,16 @@ const BlockCard = ({
             </label>
           ))}
         </div>
+      )}
+
+      {/* Route */}
+      {block.type === 'route' && block.waypoints.length > 0 && (
+        <RouteMapEditor
+          waypoints={block.waypoints}
+          onChange={() => {}}
+          language={language}
+          readOnly
+        />
       )}
     </div>
   );

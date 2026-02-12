@@ -6,15 +6,16 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
   ArrowLeft, Plus, GripVertical, Clock, MapPin, FileText, Coffee, Phone, CheckSquare,
-  Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X
+  Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X, Route
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import RouteMapEditor, { type Waypoint } from '@/components/RouteMapEditor';
 
 // ─── Types ───
-type BlockType = 'time_slot' | 'instruction' | 'pause' | 'checklist' | 'emergency_contact';
+type BlockType = 'time_slot' | 'instruction' | 'pause' | 'checklist' | 'emergency_contact' | 'route';
 
 interface ChecklistItem {
   id: string;
@@ -36,6 +37,7 @@ interface Block {
   contact_phone?: string;
   contact_role?: string;
   checklist_items?: ChecklistItem[];
+  waypoints?: Waypoint[];
 }
 
 interface Group {
@@ -69,6 +71,7 @@ const labels = {
     pause: 'Pauze',
     checklist: 'Checklist',
     emergencyContact: 'Noodcontact',
+    route: 'Route',
     startTime: 'Starttijd',
     endTime: 'Eindtijd',
     location: 'Locatie',
@@ -100,6 +103,7 @@ const labels = {
     pause: 'Pause',
     checklist: 'Checklist',
     emergencyContact: 'Contact d\'urgence',
+    route: 'Itinéraire',
     startTime: 'Heure de début',
     endTime: 'Heure de fin',
     location: 'Lieu',
@@ -131,6 +135,7 @@ const labels = {
     pause: 'Pause',
     checklist: 'Checklist',
     emergencyContact: 'Emergency contact',
+    route: 'Route',
     startTime: 'Start time',
     endTime: 'End time',
     location: 'Location',
@@ -156,6 +161,7 @@ const blockTypeConfig: Record<BlockType, { icon: typeof Clock; color: string }> 
   pause: { icon: Coffee, color: 'bg-green-500/10 text-green-600 border-green-200' },
   checklist: { icon: CheckSquare, color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
   emergency_contact: { icon: Phone, color: 'bg-red-500/10 text-red-600 border-red-200' },
+  route: { icon: Route, color: 'bg-cyan-500/10 text-cyan-600 border-cyan-200' },
 };
 
 const groupColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
@@ -248,6 +254,18 @@ const BriefingBuilder = () => {
             checklistItems = items || [];
           }
 
+          // Load route waypoints
+          const routeBlockIds = (blocks || []).filter(b => b.type === 'route').map(b => b.id);
+          let routeWaypoints: any[] = [];
+          if (routeBlockIds.length > 0) {
+            const { data: wps } = await supabase
+              .from('briefing_route_waypoints')
+              .select('*')
+              .in('block_id', routeBlockIds)
+              .order('sort_order');
+            routeWaypoints = wps || [];
+          }
+
           // Load group volunteers
           const { data: gvs } = await supabase
             .from('briefing_group_volunteers')
@@ -285,6 +303,9 @@ const BriefingBuilder = () => {
                 checklist_items: checklistItems
                   .filter(ci => ci.block_id === b.id)
                   .map(ci => ({ id: ci.id, label: ci.label, sort_order: ci.sort_order })),
+                waypoints: routeWaypoints
+                  .filter(wp => wp.block_id === b.id)
+                  .map(wp => ({ id: wp.id, label: wp.label, description: wp.description, lat: wp.lat, lng: wp.lng, arrival_time: wp.arrival_time, sort_order: wp.sort_order })),
               })),
           }));
 
@@ -338,6 +359,7 @@ const BriefingBuilder = () => {
         type,
         sort_order: g.blocks.length,
         checklist_items: type === 'checklist' ? [{ id: uid(), label: '', sort_order: 0 }] : undefined,
+        waypoints: type === 'route' ? [] : undefined,
       };
       return { ...g, blocks: [...g.blocks, newBlock] };
     }));
@@ -476,6 +498,21 @@ const BriefingBuilder = () => {
               );
             }
           }
+
+          // Insert route waypoints
+          if (block.type === 'route' && block.waypoints && block.waypoints.length > 0) {
+            await supabase.from('briefing_route_waypoints').insert(
+              block.waypoints.map((wp, idx) => ({
+                block_id: savedBlock.id,
+                label: wp.label || '',
+                description: wp.description || null,
+                lat: wp.lat,
+                lng: wp.lng,
+                arrival_time: wp.arrival_time || null,
+                sort_order: idx,
+              }))
+            );
+          }
         }
 
         // Insert group volunteers
@@ -503,6 +540,7 @@ const BriefingBuilder = () => {
       pause: l.pause,
       checklist: l.checklist,
       emergency_contact: l.emergencyContact,
+      route: l.route,
     };
     return map[type];
   };
@@ -800,13 +838,37 @@ const BriefingBuilder = () => {
                                 />
                               </div>
                             )}
+
+                            {/* Route fields */}
+                            {block.type === 'route' && (
+                              <div className="space-y-2">
+                                <Input
+                                  value={block.title || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { title: e.target.value })}
+                                  placeholder={l.title}
+                                  className="bg-background/60 text-sm font-medium"
+                                />
+                                <Textarea
+                                  value={block.description || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { description: e.target.value })}
+                                  placeholder={l.description}
+                                  className="bg-background/60 text-sm min-h-[40px]"
+                                  rows={2}
+                                />
+                                <RouteMapEditor
+                                  waypoints={block.waypoints || []}
+                                  onChange={wps => updateBlock(group.id, block.id, { waypoints: wps })}
+                                  language={language}
+                                />
+                              </div>
+                            )}
                           </motion.div>
                         );
                       })}
 
                       {/* Add block buttons */}
                       <div className="flex flex-wrap gap-2 pt-2">
-                        {(['time_slot', 'instruction', 'pause', 'checklist', 'emergency_contact'] as BlockType[]).map(type => {
+                        {(['time_slot', 'instruction', 'pause', 'checklist', 'emergency_contact', 'route'] as BlockType[]).map(type => {
                           const config = blockTypeConfig[type];
                           const Icon = config.icon;
                           return (
