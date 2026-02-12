@@ -85,15 +85,16 @@ serve(async (req) => {
       throw new Error(`Payment already exists with status: ${existingPayment.status}`);
     }
 
-    // Check if contract is signed
-    const { data: signatureReq } = await supabaseClient
+    // Check if contract is signed (look for any completed signature request)
+    const { data: signatureReqs } = await supabaseClient
       .from("signature_requests")
       .select("status")
       .eq("task_id", task_id)
       .eq("volunteer_id", volunteer_id)
-      .maybeSingle();
+      .eq("status", "completed")
+      .limit(1);
 
-    if (!signatureReq || signatureReq.status !== "completed") {
+    if (!signatureReqs || signatureReqs.length === 0) {
       throw new Error("Contract must be signed before payment can be made");
     }
 
