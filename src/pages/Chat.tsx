@@ -76,6 +76,7 @@ const Chat = () => {
   const l = chatLabels[language];
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<string | null>(conversationId || null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -100,6 +101,14 @@ const Chat = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/login'); return; }
       setUserId(session.user.id);
+
+      // Determine user role for back navigation
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      setUserRole(roleData?.role || 'volunteer');
 
       const taskId = searchParams.get('taskId');
       const clubOwnerId = searchParams.get('clubOwnerId');
@@ -408,7 +417,7 @@ const Chat = () => {
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => activeConversation ? setActiveConversation(null) : navigate(-1)}
+              onClick={() => activeConversation ? setActiveConversation(null) : navigate(userRole === 'club_owner' ? '/club-dashboard' : '/dashboard')}
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
