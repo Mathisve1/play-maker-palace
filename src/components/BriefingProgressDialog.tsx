@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
-import { CheckCircle, Circle, Users, ChevronDown, ChevronRight, ChevronLeft, CreditCard } from 'lucide-react';
+import { CheckCircle, Circle, Users, ChevronDown, ChevronRight, ChevronLeft, CreditCard, FileText, FileSignature, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
@@ -69,6 +69,8 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
   const [loading, setLoading] = useState(true);
   const [expandedVols, setExpandedVols] = useState<Set<string>>(new Set());
   const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteerId: string; volunteerName: string; briefingId: string; groupId: string } | null>(null);
+  const [briefingPdfUrls, setBriefingPdfUrls] = useState<Map<string, string>>(new Map());
+  const [contractUrls, setContractUrls] = useState<Map<string, string>>(new Map());
   const navigate = useNavigate();
   const l = labels[language];
 
@@ -238,6 +240,62 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
     }
 
     setBriefingsProgress(result);
+
+    // Load briefing PDF URLs from chat messages and contract URLs
+    const pdfMap = new Map<string, string>();
+    const ctrMap = new Map<string, string>();
+
+    // Get all volunteer IDs
+    const allVolIds = [...new Set(result.flatMap(bp => bp.groups.flatMap(g => g.volunteers.map(v => v.volunteerId))))];
+
+    if (allVolIds.length > 0) {
+      // Find briefing PDFs sent via chat (messages with attachment_type='document' and briefing in content)
+      const { data: convos } = await supabase
+        .from('conversations')
+        .select('id, volunteer_id')
+        .eq('task_id', taskId)
+        .in('volunteer_id', allVolIds);
+
+      if (convos && convos.length > 0) {
+        const convoIds = convos.map(c => c.id);
+        const convoVolMap = new Map(convos.map(c => [c.id, c.volunteer_id]));
+
+        const { data: msgs } = await supabase
+          .from('messages')
+          .select('conversation_id, attachment_url, content')
+          .in('conversation_id', convoIds)
+          .eq('attachment_type', 'document')
+          .not('attachment_url', 'is', null)
+          .order('created_at', { ascending: false });
+
+        if (msgs) {
+          for (const msg of msgs) {
+            const volId = convoVolMap.get(msg.conversation_id);
+            if (volId && !pdfMap.has(volId) && msg.content?.includes('📋')) {
+              pdfMap.set(volId, msg.attachment_url!);
+            }
+          }
+        }
+      }
+
+      // Get contract document URLs
+      const { data: sigs } = await supabase
+        .from('signature_requests')
+        .select('volunteer_id, document_url, status')
+        .eq('task_id', taskId)
+        .in('volunteer_id', allVolIds);
+
+      if (sigs) {
+        for (const sig of sigs) {
+          if (sig.document_url) {
+            ctrMap.set(sig.volunteer_id, sig.document_url);
+          }
+        }
+      }
+    }
+
+    setBriefingPdfUrls(pdfMap);
+    setContractUrls(ctrMap);
     setLoading(false);
   };
 
@@ -379,6 +437,35 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
                       </div>
                       <Progress value={pct} className="h-2 mt-2" />
                     </button>
+
+                    {/* Document preview buttons */}
+                    {(briefingPdfUrls.has(entry.volunteerId) || contractUrls.has(entry.volunteerId)) && (
+                      <div className="flex gap-2 mt-1">
+                        {briefingPdfUrls.has(entry.volunteerId) && (
+                          <a
+                            href={briefingPdfUrls.get(entry.volunteerId)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted text-foreground transition-colors"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-primary" />
+                            {language === 'nl' ? 'Briefing PDF' : language === 'fr' ? 'PDF Briefing' : 'Briefing PDF'}
+                          </a>
+                        )}
+                        {contractUrls.has(entry.volunteerId) && (
+                          <a
+                            href={contractUrls.get(entry.volunteerId)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted text-foreground transition-colors"
+                          >
+                            <FileSignature className="w-3.5 h-3.5 text-primary" />
+                            {language === 'nl' ? 'Contract' : language === 'fr' ? 'Contrat' : 'Contract'}
+                          </a>
+                        )}
+                      </div>
+                    )}
+
                     {allDone && (
                       <Button
                         size="sm"
