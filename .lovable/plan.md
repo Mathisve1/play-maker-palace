@@ -1,64 +1,43 @@
 
+# Briefings opsplitsen: Aanmaken vs. Opvolgen
 
-## Plan: DocuSeal handtekeningveld definitief laten werken
+## Wat verandert er?
 
-### Kernprobleem
+De huidige enkele "Briefings" knop in de snelkoppelingen-rij wordt opgesplitst in **twee aparte knoppen**:
 
-Na 12+ pogingen werkt ondertekening niet omdat:
+1. **"Briefing Builder"** -- Gaat naar een overzicht waar je per taak een briefing kunt aanmaken of bewerken (navigeert naar de builder)
+2. **"Opvolging"** -- Opent een overzicht waar je per taak de voortgang van vrijwilligers kunt bekijken (wie heeft wat afgevinkt)
 
-1. **PUT template velden mislukken stilletjes**: De DocuSeal API vereist `uuid` en `submitter_uuid` in elk veld-object. Die ontbreken, waardoor de PUT 200 retourneert maar geen velden toevoegt (`fields: undefined` in de logs).
-2. **Embedded text tags werken niet**: `html2canvas` maakt een rasterafbeelding (PNG) van de HTML. DocuSeal kan tekst-tags (`{{...}}`) in een afbeelding niet detecteren.
+### Snelkoppelingen-rij (bovenaan dashboard)
 
-### Oplossing: correcte PUT-payload met alle verplichte velden
-
-We passen de edge function aan zodat de PUT-aanroep naar `/templates/{id}` de juiste schema-structuur volgt:
-
+Huidige situatie:
 ```text
-Stap 1: POST /templates/pdf        -> maakt template, geeft submitters[].uuid terug
-Stap 2: PUT /templates/{id}        -> voegt veld toe MET uuid + submitter_uuid + areas
-Stap 3: POST /submissions          -> verstuurt naar vrijwilliger
+[ Instellingen ] [ Sjablonen ] [ Leden ] [ Briefings ]
 ```
 
-### Wijzigingen
-
-**Bestand: `supabase/functions/docuseal/index.ts`** (actie `send-personalized-contract`)
-
-Na Stap 1 (template aanmaken) halen we de `submitter_uuid` op uit de response:
-```javascript
-const submitterUuid = templateData.submitters?.[0]?.uuid;
+Nieuwe situatie:
+```text
+[ Instellingen ] [ Sjablonen ] [ Leden ] [ Briefings ] [ Opvolging ]
 ```
 
-Vervolgens sturen we in Stap 2 het veld met alle verplichte attributen:
-```javascript
-const fields = [{
-  uuid: crypto.randomUUID(),          // nieuw uniek ID voor het veld
-  submitter_uuid: submitterUuid,      // koppeling aan de ondertekenaar
-  name: "Handtekening",
-  type: "signature",
-  required: true,
-  areas: [{
-    attachment_uuid: documentUuid,
-    page: lastPage,
-    x: 0.55,
-    y: 0.85,
-    w: 0.35,
-    h: 0.06,
-  }],
-}];
-```
+- **Briefings** knop: opent een selectielijst van taken, klik op een taak navigeert naar de briefing builder voor die taak
+- **Opvolging** knop: opent een selectielijst van taken met briefings, klik op een taak opent de voortgangs-dialog
 
-We voegen ook extra logging toe zodat duidelijk zichtbaar is of de velden correct worden opgeslagen.
+### Per-taak knoppen
 
-**Bestand: `src/components/ContractPreview.tsx`**
+De bestaande knoppen "Briefing" en "Voortgang" per taak blijven behouden -- ze werken al correct en bieden directe toegang.
 
-De embedded text tag (`{{Handtekening;type=signature;...}}`) kan worden verwijderd of behouden. Deze heeft geen effect omdat html2canvas de tekst rasteriseert, maar doet ook geen kwaad.
+## Technische details
 
-### Waarom dit werkt
+### Wijzigingen in `src/pages/ClubOwnerDashboard.tsx`
 
-De DocuSeal OpenAPI-spec toont dat velden in een template de volgende verplichte properties hebben:
-- `uuid` (string) - uniek veld-ID
-- `submitter_uuid` (string) - koppeling aan welke ondertekenaar dit veld invult
-- `name`, `type`, `required`, `areas`
+1. **Nieuwe state**: `showBriefingTaskPicker` en `showProgressTaskPicker` (booleans) om de taakselectie-modals te togglen
+2. **Snelkoppeling "Briefings"**: In plaats van `setBriefingProgressTaskId(tasks[0].id)`, toont het een kleine takenlijst-popover/dialog waar de gebruiker een taak kiest, waarna naar `/briefing-builder?taskId=...&clubId=...` wordt genavigeerd
+3. **Nieuwe snelkoppeling "Opvolging"**: Nieuwe knop met een `Eye` of `BarChart3` icoon. Toont een takenlijst-dialog, klik op een taak opent `BriefingProgressDialog` voor die taak
+4. **Vertalingen**: Labels toevoegen voor "Opvolging" / "Suivi" / "Follow-up" in de drie talen
 
-Door deze allemaal mee te sturen, wordt het handtekeningveld daadwerkelijk aan de template gekoppeld, waardoor de vrijwilliger het interactieve handtekeningvak ziet bij het openen.
+### Nieuwe component: Taakselectie-dialog
 
+Een lichtgewicht dialog die de lijst van taken toont. Wordt hergebruikt voor zowel de briefing-selectie als de opvolging-selectie. Bij klik op een taak:
+- Voor briefings: navigeert naar de builder
+- Voor opvolging: opent de voortgangs-dialog
