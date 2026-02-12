@@ -122,8 +122,6 @@ serve(async (req) => {
         type: "volunteer_expense_reimbursement",
       },
       description: `Onkostenvergoeding - ${task.title} - ${volunteer.full_name || volunteer.email}`,
-      // Charge on behalf of the club
-      on_behalf_of: club.stripe_account_id,
     });
 
     // Create payment record
