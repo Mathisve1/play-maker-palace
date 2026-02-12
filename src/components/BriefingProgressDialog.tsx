@@ -121,7 +121,21 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
         .select('group_id, volunteer_id')
         .in('group_id', groupIds);
 
-      const volIds = [...new Set((gvs || []).map(v => v.volunteer_id))];
+      // Fallback: if no group volunteers assigned, use task_signups
+      let effectiveGvs = gvs || [];
+      if (effectiveGvs.length === 0) {
+        const { data: signups } = await supabase
+          .from('task_signups')
+          .select('volunteer_id')
+          .eq('task_id', taskId);
+
+        // Assign all signed-up volunteers to all groups
+        effectiveGvs = (signups || []).flatMap(s =>
+          groups!.map(g => ({ group_id: g.id, volunteer_id: s.volunteer_id }))
+        );
+      }
+
+      const volIds = [...new Set(effectiveGvs.map(v => v.volunteer_id))];
       let profiles: any[] = [];
       if (volIds.length > 0) {
         const { data: p } = await supabase.from('profiles').select('id, full_name, email').in('id', volIds);
@@ -172,7 +186,7 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
       }
 
       const groupsProgress: GroupProgress[] = groups.map(g => {
-        const groupVols = (gvs || []).filter(v => v.group_id === g.id);
+        const groupVols = effectiveGvs.filter(v => v.group_id === g.id);
         const groupBlocks = (blocks || []).filter(b => b.group_id === g.id);
 
         const volunteers: VolunteerProgress[] = groupVols.map(gv => {
