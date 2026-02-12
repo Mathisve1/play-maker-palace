@@ -702,7 +702,7 @@ Deno.serve(async (req) => {
     // POST send-personalized-contract: Create DocuSeal template from personalized PDF + submission
     if (req.method === "POST" && action === "send-personalized-contract") {
       const body = await req.json();
-      const { pdf_url, task_id, volunteer_id, volunteer_email, volunteer_name } = body;
+      const { pdf_url, task_id, volunteer_id, volunteer_email, volunteer_name, signature_position } = body;
 
       console.log("send-personalized-contract:", JSON.stringify({ task_id, volunteer_id, volunteer_email }));
 
@@ -752,6 +752,12 @@ Deno.serve(async (req) => {
       }
 
       const fieldUuid = crypto.randomUUID();
+      // Use dynamic signature position if provided, otherwise fall back to defaults
+      const sigPage = signature_position?.page ?? lastPage;
+      const sigX = signature_position?.x ?? 0.56;
+      const sigY = signature_position?.y ?? 0.78;
+      console.log("Step 2 - Signature position:", JSON.stringify({ sigPage, sigX, sigY, fromClient: !!signature_position }));
+
       const fieldsToSet = [
         {
           uuid: fieldUuid,
@@ -761,9 +767,9 @@ Deno.serve(async (req) => {
           required: true,
           areas: [{
             attachment_uuid: documentUuid,
-            page: lastPage,
-            x: 0.56,
-            y: 0.78,
+            page: sigPage,
+            x: sigX,
+            y: sigY,
             w: 0.30,
             h: 0.05,
           }],
