@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Send, Users, Eye, ChevronDown, ChevronUp, Loader2, Info } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { X, Send, Users, Eye, ChevronDown, ChevronUp, Loader2, Info, Paperclip, FileText, Music, Image } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -32,6 +32,9 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
   );
   const [showVars, setShowVars] = useState(false);
   const [sentCount, setSentCount] = useState(0);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleVolunteer = (id: string) => {
     setSelectedVolunteers(prev => {
@@ -61,8 +64,41 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
     setMessage(prev => prev + varKey);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) { toast.error('Bestand mag max 20MB zijn'); return; }
+    setAttachmentFile(file);
+    if (file.type.startsWith('image/')) {
+      setAttachmentPreview(URL.createObjectURL(file));
+    } else {
+      setAttachmentPreview(null);
+    }
+  };
+
+  const clearAttachment = () => {
+    setAttachmentFile(null);
+    setAttachmentPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const getAttachmentCategory = (type: string): string => {
+    if (type.startsWith('image/')) return 'image';
+    if (type.startsWith('audio/')) return 'audio';
+    return 'document';
+  };
+
+  const uploadAttachment = async (file: File, userId: string): Promise<{ url: string; type: string; name: string } | null> => {
+    const ext = file.name.split('.').pop();
+    const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from('chat-attachments').upload(path, file);
+    if (error) { toast.error('Upload mislukt'); return null; }
+    const { data: { publicUrl } } = supabase.storage.from('chat-attachments').getPublicUrl(path);
+    return { url: publicUrl, type: getAttachmentCategory(file.type), name: file.name };
+  };
+
   const handleSend = async () => {
-    if (!message.trim() || selectedVolunteers.size === 0) return;
+    if ((!message.trim() && !attachmentFile) || selectedVolunteers.size === 0) return;
     setSending(true);
     setSentCount(0);
 
@@ -71,6 +107,13 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
 
     let sent = 0;
     const selected = volunteers.filter(v => selectedVolunteers.has(v.id));
+
+    // Upload attachment once, reuse URL for all
+    let attachment: { url: string; type: string; name: string } | null = null;
+    if (attachmentFile) {
+      attachment = await uploadAttachment(attachmentFile, session.user.id);
+      if (!attachment && !message.trim()) { setSending(false); return; }
+    }
 
     for (const volunteer of selected) {
       try {
@@ -108,7 +151,12 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
         const { error: msgError } = await supabase.from('messages').insert({
           conversation_id: conversationId,
           sender_id: session.user.id,
-          content: personalizedMessage,
+          content: personalizedMessage || (attachment ? `📎 ${attachment.name}` : ''),
+          ...(attachment && {
+            attachment_url: attachment.url,
+            attachment_type: attachment.type,
+            attachment_name: attachment.name,
+          }),
         });
 
         if (msgError) {
@@ -236,8 +284,40 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
             maxLength={2000}
           />
           <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-muted-foreground">{message.length}/2000</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground">{message.length}/2000</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="Bijlage toevoegen"
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
+          {attachmentFile && (
+            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-muted/50">
+              {attachmentPreview ? (
+                <img src={attachmentPreview} alt="Preview" className="w-10 h-10 rounded object-cover" />
+              ) : attachmentFile.type.startsWith('audio/') ? (
+                <Music className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <FileText className="w-4 h-4 text-muted-foreground" />
+              )}
+              <span className="text-xs text-foreground truncate flex-1">{attachmentFile.name}</span>
+              <button onClick={clearAttachment} className="text-muted-foreground hover:text-foreground">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Preview toggle */}
@@ -270,7 +350,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
           </span>
           <button
             onClick={handleSend}
-            disabled={sending || !message.trim() || selectedVolunteers.size === 0}
+            disabled={sending || (!message.trim() && !attachmentFile) || selectedVolunteers.size === 0}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {sending ? (

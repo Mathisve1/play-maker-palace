@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Send, MessageCircle, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Send, MessageCircle, Check, CheckCheck, Paperclip, X, Image, FileText, Music, Loader2 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
@@ -25,6 +25,9 @@ interface Message {
   content: string;
   read: boolean;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
+  attachment_name?: string | null;
 }
 
 const chatLabels = {
@@ -81,7 +84,11 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [otherName, setOtherName] = useState('');
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -274,17 +281,66 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) { toast.error('Bestand mag max 20MB zijn'); return; }
+    setAttachmentFile(file);
+    if (file.type.startsWith('image/')) {
+      setAttachmentPreview(URL.createObjectURL(file));
+    } else {
+      setAttachmentPreview(null);
+    }
+  };
+
+  const clearAttachment = () => {
+    setAttachmentFile(null);
+    setAttachmentPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const getAttachmentCategory = (type: string): string => {
+    if (type.startsWith('image/')) return 'image';
+    if (type.startsWith('audio/')) return 'audio';
+    return 'document';
+  };
+
+  const uploadAttachment = async (file: File): Promise<{ url: string; type: string; name: string } | null> => {
+    if (!userId) return null;
+    const ext = file.name.split('.').pop();
+    const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from('chat-attachments').upload(path, file);
+    if (error) { toast.error('Upload mislukt'); return null; }
+    const { data: { publicUrl } } = supabase.storage.from('chat-attachments').getPublicUrl(path);
+    return { url: publicUrl, type: getAttachmentCategory(file.type), name: file.name };
+  };
+
   const handleSend = async () => {
-    if (!newMessage.trim() || !activeConversation || !userId) return;
+    if ((!newMessage.trim() && !attachmentFile) || !activeConversation || !userId) return;
     setSending(true);
+
+    let attachment: { url: string; type: string; name: string } | null = null;
+    if (attachmentFile) {
+      setUploading(true);
+      attachment = await uploadAttachment(attachmentFile);
+      setUploading(false);
+      if (!attachment && !newMessage.trim()) { setSending(false); return; }
+    }
+
     const { error } = await supabase.from('messages').insert({
       conversation_id: activeConversation,
       sender_id: userId,
-      content: newMessage.trim(),
+      content: newMessage.trim() || (attachment ? `📎 ${attachment.name}` : ''),
+      ...(attachment && {
+        attachment_url: attachment.url,
+        attachment_type: attachment.type,
+        attachment_name: attachment.name,
+      }),
     });
     if (error) toast.error(error.message);
     else {
       setNewMessage('');
+      clearAttachment();
       await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', activeConversation);
     }
     setSending(false);
@@ -402,7 +458,31 @@ const Chat = () => {
                           ? 'bg-primary text-primary-foreground rounded-br-md'
                           : 'bg-muted text-foreground rounded-bl-md'
                       }`}>
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        {msg.attachment_url && msg.attachment_type === 'image' && (
+                          <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="block mb-1.5">
+                            <img src={msg.attachment_url} alt={msg.attachment_name || 'Afbeelding'} className="max-w-full rounded-lg max-h-60 object-cover" />
+                          </a>
+                        )}
+                        {msg.attachment_url && msg.attachment_type === 'audio' && (
+                          <audio controls src={msg.attachment_url} className="max-w-full mb-1.5" />
+                        )}
+                        {msg.attachment_url && msg.attachment_type === 'document' && (
+                          <a
+                            href={msg.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center gap-2 mb-1.5 px-3 py-2 rounded-lg ${isMe ? 'bg-primary-foreground/10' : 'bg-background/50'}`}
+                          >
+                            <FileText className="w-4 h-4 shrink-0" />
+                            <span className="text-xs truncate">{msg.attachment_name || 'Document'}</span>
+                          </a>
+                        )}
+                        {msg.content && !(msg.attachment_url && msg.content === `📎 ${msg.attachment_name}`) && (
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        )}
+                        {msg.attachment_url && msg.content === `📎 ${msg.attachment_name}` && !msg.attachment_type && (
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        )}
                         <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : ''}`}>
                           <span className={`text-[10px] ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
                             {new Date(msg.created_at).toLocaleTimeString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
@@ -424,9 +504,42 @@ const Chat = () => {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Attachment preview */}
+              {attachmentFile && (
+                <div className="border-t border-border bg-card px-3 pt-2">
+                  <div className="flex items-center gap-2 max-w-3xl mx-auto p-2 rounded-lg bg-muted/50">
+                    {attachmentPreview ? (
+                      <img src={attachmentPreview} alt="Preview" className="w-12 h-12 rounded object-cover" />
+                    ) : attachmentFile.type.startsWith('audio/') ? (
+                      <Music className="w-5 h-5 text-muted-foreground" />
+                    ) : (
+                      <FileText className="w-5 h-5 text-muted-foreground" />
+                    )}
+                    <span className="text-xs text-foreground truncate flex-1">{attachmentFile.name}</span>
+                    <button onClick={clearAttachment} className="text-muted-foreground hover:text-foreground">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Input */}
               <div className="border-t border-border bg-card p-3">
                 <div className="flex gap-2 max-w-3xl mx-auto">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-2.5 rounded-xl border border-input bg-background text-muted-foreground hover:text-foreground transition-colors"
+                    title="Bijlage toevoegen"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
                   <input
                     type="text"
                     value={newMessage}
@@ -437,10 +550,10 @@ const Chat = () => {
                   />
                   <button
                     onClick={handleSend}
-                    disabled={!newMessage.trim() || sending}
+                    disabled={(!newMessage.trim() && !attachmentFile) || sending}
                     className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
                   >
-                    <Send className="w-4 h-4" />
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
