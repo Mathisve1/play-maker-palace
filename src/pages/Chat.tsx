@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Send, MessageCircle, Check, CheckCheck, Paperclip, X, Image, FileText, Music, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, MessageCircle, Check, CheckCheck, Paperclip, X, Image, FileText, Music, Loader2, Mic, Square } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
@@ -87,6 +87,11 @@ const Chat = () => {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -298,6 +303,43 @@ const Chat = () => {
     setAttachmentPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        const ext = mediaRecorder.mimeType.includes('webm') ? 'webm' : 'm4a';
+        const file = new File([blob], `audiobericht.${ext}`, { type: mediaRecorder.mimeType });
+        setAttachmentFile(file);
+        setAttachmentPreview(null);
+        stream.getTracks().forEach(t => t.stop());
+      };
+
+      mediaRecorder.start();
+      setRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+    } catch {
+      toast.error('Microfoon niet beschikbaar');
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+  };
+
+  const formatRecordingTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
   const getAttachmentCategory = (type: string): string => {
     if (type.startsWith('image/')) return 'image';
@@ -525,37 +567,61 @@ const Chat = () => {
 
               {/* Input */}
               <div className="border-t border-border bg-card p-3">
-                <div className="flex gap-2 max-w-3xl mx-auto">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-2.5 rounded-xl border border-input bg-background text-muted-foreground hover:text-foreground transition-colors"
-                    title="Bijlage toevoegen"
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </button>
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={e => setNewMessage(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder={l.typeMessage}
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <button
-                    onClick={handleSend}
-                    disabled={(!newMessage.trim() && !attachmentFile) || sending}
-                    className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
-                  >
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </div>
+                {recording ? (
+                  <div className="flex items-center gap-2 max-w-3xl mx-auto">
+                    <div className="flex items-center gap-2 flex-1 px-4 py-2.5 rounded-xl border border-destructive/50 bg-destructive/5">
+                      <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                      <span className="text-sm text-destructive font-medium">{formatRecordingTime(recordingTime)}</span>
+                      <span className="text-xs text-muted-foreground">Opname bezig...</span>
+                    </div>
+                    <button
+                      onClick={stopRecording}
+                      className="px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
+                      title="Stop opname"
+                    >
+                      <Square className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 max-w-3xl mx-auto">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-2.5 rounded-xl border border-input bg-background text-muted-foreground hover:text-foreground transition-colors"
+                      title="Bijlage toevoegen"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={startRecording}
+                      className="px-3 py-2.5 rounded-xl border border-input bg-background text-muted-foreground hover:text-foreground transition-colors"
+                      title="Audio opnemen"
+                    >
+                      <Mic className="w-4 h-4" />
+                    </button>
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={e => setNewMessage(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                      placeholder={l.typeMessage}
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <button
+                      onClick={handleSend}
+                      disabled={(!newMessage.trim() && !attachmentFile) || sending}
+                      className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}

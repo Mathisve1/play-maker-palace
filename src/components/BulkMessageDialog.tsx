@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Send, Users, Eye, ChevronDown, ChevronUp, Loader2, Info, Paperclip, FileText, Music, Image } from 'lucide-react';
+import { X, Send, Users, Eye, ChevronDown, ChevronUp, Loader2, Info, Paperclip, FileText, Music, Image, Mic, Square } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -35,6 +35,11 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [recording, setRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const toggleVolunteer = (id: string) => {
     setSelectedVolunteers(prev => {
@@ -81,6 +86,36 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
     setAttachmentPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        const ext = mediaRecorder.mimeType.includes('webm') ? 'webm' : 'm4a';
+        const file = new File([blob], `audiobericht.${ext}`, { type: mediaRecorder.mimeType });
+        setAttachmentFile(file);
+        setAttachmentPreview(null);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorder.start();
+      setRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+    } catch { toast.error('Microfoon niet beschikbaar'); }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+  };
+
+  const formatRecordingTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
   const getAttachmentCategory = (type: string): string => {
     if (type.startsWith('image/')) return 'image';
@@ -301,6 +336,26 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
               >
                 <Paperclip className="w-3.5 h-3.5" />
               </button>
+              {recording ? (
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="flex items-center gap-1 text-destructive hover:text-destructive/80 transition-colors"
+                  title="Stop opname"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-medium animate-pulse">{formatRecordingTime(recordingTime)}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Audio opnemen"
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
           {attachmentFile && (
