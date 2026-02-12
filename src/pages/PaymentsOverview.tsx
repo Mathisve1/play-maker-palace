@@ -197,7 +197,64 @@ const PaymentsOverview = () => {
     requirements?: { currently_due?: string[]; eventually_due?: string[]; pending_verification?: string[] };
   } | null>(null);
   const [loadingStripeStatus, setLoadingStripeStatus] = useState(false);
-  const [disconnecting, setDisconnecting] = useState(false);
+   const [disconnecting, setDisconnecting] = useState(false);
+
+  // Map Stripe requirement field keys to human-readable labels
+  const requirementLabel = (key: string): string => {
+    const map: Record<string, Record<string, string>> = {
+      nl: {
+        'individual.address.city': 'Stad',
+        'individual.address.line1': 'Adres',
+        'individual.address.postal_code': 'Postcode',
+        'individual.address.state': 'Provincie',
+        'individual.dob.day': 'Geboortedatum (dag)',
+        'individual.dob.month': 'Geboortedatum (maand)',
+        'individual.dob.year': 'Geboortedatum (jaar)',
+        'individual.email': 'E-mailadres',
+        'individual.first_name': 'Voornaam',
+        'individual.last_name': 'Achternaam',
+        'individual.phone': 'Telefoonnummer',
+        'individual.id_number': 'Rijksregisternummer',
+        'individual.verification.document': 'Identiteitsbewijs',
+        'individual.verification.additional_document': 'Extra identiteitsbewijs',
+        'business_profile.url': 'Website URL',
+        'business_profile.mcc': 'Bedrijfscategorie',
+        'company.address.city': 'Bedrijfsadres (stad)',
+        'company.address.line1': 'Bedrijfsadres',
+        'company.address.postal_code': 'Bedrijfsadres (postcode)',
+        'company.phone': 'Bedrijfstelefoonnummer',
+        'company.tax_id': 'BTW-nummer',
+        'external_account': 'Bankrekening',
+        'tos_acceptance.date': 'Voorwaarden acceptatie',
+        'tos_acceptance.ip': 'Voorwaarden acceptatie',
+        'representative.first_name': 'Naam vertegenwoordiger',
+        'representative.last_name': 'Achternaam vertegenwoordiger',
+        'representative.email': 'E-mail vertegenwoordiger',
+        'representative.phone': 'Telefoon vertegenwoordiger',
+        'representative.dob.day': 'Geboortedatum vertegenwoordiger',
+        'representative.address.city': 'Adres vertegenwoordiger',
+      },
+      fr: {
+        'individual.address.city': 'Ville',
+        'individual.address.line1': 'Adresse',
+        'individual.address.postal_code': 'Code postal',
+        'individual.phone': 'Numéro de téléphone',
+        'individual.id_number': 'Numéro national',
+        'individual.verification.document': 'Pièce d\'identité',
+        'external_account': 'Compte bancaire',
+      },
+      en: {
+        'individual.address.city': 'City',
+        'individual.address.line1': 'Address',
+        'individual.address.postal_code': 'Postal code',
+        'individual.phone': 'Phone number',
+        'individual.id_number': 'National ID',
+        'individual.verification.document': 'Identity document',
+        'external_account': 'Bank account',
+      },
+    };
+    return map[language]?.[key] || map['nl']?.[key] || key.split('.').pop()?.replace(/_/g, ' ') || key;
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -512,16 +569,51 @@ const PaymentsOverview = () => {
                     </Badge>
                   </div>
 
-                  {/* Requirements info */}
+                  {/* Requirements list */}
                   {stripeStatus.requirements?.currently_due && stripeStatus.requirements.currently_due.length > 0 && (
+                    <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900">
+                      <p className="text-sm font-semibold text-orange-800 dark:text-orange-300 flex items-center gap-1.5 mb-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        {language === 'nl' ? 'Je account is nog niet volledig geverifieerd' : language === 'fr' ? 'Votre compte n\'est pas encore entièrement vérifié' : 'Your account is not fully verified yet'}
+                      </p>
+                      <p className="text-xs text-orange-700 dark:text-orange-400 mb-3">
+                        {language === 'nl' ? 'Er zijn nog acties vereist om uitbetalingen te activeren. Vul de volgende gegevens aan:' : language === 'fr' ? 'Des actions sont encore nécessaires pour activer les versements. Complétez les informations suivantes :' : 'Actions are required to activate payouts. Complete the following information:'}
+                      </p>
+                      <ul className="space-y-1.5 mb-3">
+                        {stripeStatus.requirements.currently_due.map((field) => (
+                          <li key={field} className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
+                            {requirementLabel(field)}
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        onClick={handleConnectStripe}
+                        disabled={connectingStripe}
+                        className="px-4 py-2 rounded-xl bg-orange-600 text-white text-xs font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {connectingStripe ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                        {language === 'nl' ? 'Verificatie voltooien' : language === 'fr' ? 'Terminer la vérification' : 'Complete verification'}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Eventually due (upcoming) */}
+                  {stripeStatus.requirements?.eventually_due && stripeStatus.requirements.eventually_due.length > 0 && 
+                   (!stripeStatus.requirements.currently_due || stripeStatus.requirements.currently_due.length === 0) && (
                     <div className="p-3 rounded-xl bg-muted/50 border border-border">
                       <p className="text-xs font-medium text-foreground flex items-center gap-1.5 mb-1.5">
                         <Info className="w-3.5 h-3.5 text-primary" />
-                        Actie vereist
+                        {language === 'nl' ? 'Binnenkort vereist' : language === 'fr' ? 'Requis prochainement' : 'Required soon'}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Stripe vereist nog aanvullende informatie. Klik op "{t.updateAccount}" om dit af te ronden.
-                      </p>
+                      <ul className="space-y-1 mt-1">
+                        {stripeStatus.requirements.eventually_due.map((field) => (
+                          <li key={field} className="text-xs text-muted-foreground flex items-center gap-2">
+                            <span className="w-1 h-1 rounded-full bg-muted-foreground shrink-0" />
+                            {requirementLabel(field)}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
 
