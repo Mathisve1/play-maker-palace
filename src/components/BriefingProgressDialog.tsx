@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
-import { CheckCircle, Circle, Users, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { CheckCircle, Circle, Users, ChevronDown, ChevronRight, ChevronLeft, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 
 interface BlockProgress {
@@ -68,6 +69,7 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
   const [loading, setLoading] = useState(true);
   const [expandedVols, setExpandedVols] = useState<Set<string>>(new Set());
   const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteerId: string; volunteerName: string; briefingId: string; groupId: string } | null>(null);
+  const navigate = useNavigate();
   const l = labels[language];
 
   useEffect(() => {
@@ -335,36 +337,59 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
           /* ─── Overview: flat list of volunteer names only ─── */
           <div className="space-y-2">
             {briefingsProgress.map(bp => {
-              // Deduplicate volunteers across groups
-              const seenVols = new Map<string, { vol: VolunteerProgress; briefingId: string; groupId: string }>();
+              // Deduplicate volunteers and aggregate blocks across all groups
+              const seenVols = new Map<string, { volunteerId: string; volunteerName: string; briefingId: string; groupId: string; totalBlocks: number; completedBlocks: number }>();
               bp.groups.forEach(group => {
                 group.volunteers.forEach(vol => {
-                  if (!seenVols.has(vol.volunteerId)) {
-                    seenVols.set(vol.volunteerId, { vol, briefingId: bp.briefingId, groupId: group.groupId });
+                  const existing = seenVols.get(vol.volunteerId);
+                  if (existing) {
+                    existing.totalBlocks += vol.totalBlocks;
+                    existing.completedBlocks += vol.completedBlocks;
+                  } else {
+                    seenVols.set(vol.volunteerId, {
+                      volunteerId: vol.volunteerId,
+                      volunteerName: vol.volunteerName,
+                      briefingId: bp.briefingId,
+                      groupId: group.groupId,
+                      totalBlocks: vol.totalBlocks,
+                      completedBlocks: vol.completedBlocks,
+                    });
                   }
                 });
               });
 
-              return Array.from(seenVols.entries()).map(([volId, { vol, briefingId, groupId }]) => {
-                const pct = vol.totalBlocks > 0 ? Math.round((vol.completedBlocks / vol.totalBlocks) * 100) : 0;
+              return Array.from(seenVols.values()).map((entry) => {
+                const pct = entry.totalBlocks > 0 ? Math.round((entry.completedBlocks / entry.totalBlocks) * 100) : 0;
+                const allDone = pct === 100 && entry.totalBlocks > 0;
                 return (
-                  <button
-                    key={`${bp.briefingId}-${volId}`}
-                    onClick={() => setSelectedVolunteer({ volunteerId: vol.volunteerId, volunteerName: vol.volunteerName, briefingId, groupId })}
-                    className="w-full text-left bg-muted/30 rounded-xl p-3 space-y-2 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-sm font-medium text-foreground">{vol.volunteerName}</span>
+                  <div key={`${bp.briefingId}-${entry.volunteerId}`} className="bg-muted/30 rounded-xl p-3 space-y-2">
+                    <button
+                      onClick={() => setSelectedVolunteer({ volunteerId: entry.volunteerId, volunteerName: entry.volunteerName, briefingId: entry.briefingId, groupId: entry.groupId })}
+                      className="w-full text-left hover:bg-muted/50 transition-colors rounded-lg"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-sm font-medium text-foreground">{entry.volunteerName}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {entry.completedBlocks}/{entry.totalBlocks} {l.sections}
+                          {allDone && ' ✓'}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {vol.completedBlocks}/{vol.totalBlocks} {l.sections}
-                        {pct === 100 && ' ✓'}
-                      </span>
-                    </div>
-                    <Progress value={pct} className="h-2" />
-                  </button>
+                      <Progress value={pct} className="h-2 mt-2" />
+                    </button>
+                    {allDone && (
+                      <Button
+                        size="sm"
+                        className="w-full mt-1"
+                        onClick={() => { onOpenChange(false); navigate('/payments'); }}
+                      >
+                        <CreditCard className="w-4 h-4 mr-1.5" />
+                        {language === 'nl' ? 'Betaling regelen' : language === 'fr' ? 'Gérer le paiement' : 'Manage payment'}
+                      </Button>
+                    )}
+                  </div>
                 );
               });
             })}
