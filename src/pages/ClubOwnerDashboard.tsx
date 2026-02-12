@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle } from 'lucide-react';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -12,6 +12,7 @@ import NotificationBell from '@/components/NotificationBell';
 import ContractTemplatesDialog from '@/components/ContractTemplatesDialog';
 import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
 import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
+import BulkMessageDialog from '@/components/BulkMessageDialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
@@ -223,6 +224,7 @@ const ClubOwnerDashboard = () => {
   const [deletingTask, setDeletingTask] = useState<string | null>(null);
   const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [bulkMessageTask, setBulkMessageTask] = useState<{ taskId: string; taskTitle: string; volunteers: { id: string; full_name: string | null; email: string | null }[] } | null>(null);
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -945,7 +947,7 @@ const ClubOwnerDashboard = () => {
 
                   {/* Edit/Delete buttons */}
                   {isExpanded && (
-                    <div className="flex items-center gap-2 px-5 pt-3">
+                    <div className="flex items-center gap-2 px-5 pt-3 flex-wrap">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleStartEdit(task); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors"
@@ -953,6 +955,24 @@ const ClubOwnerDashboard = () => {
                         <Pencil className="w-3.5 h-3.5" />
                         {dt.editTask}
                       </button>
+                      {taskSignups.length > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setBulkMessageTask({
+                              taskId: task.id,
+                              taskTitle: task.title,
+                              volunteers: taskSignups
+                                .filter(s => s.volunteer)
+                                .map(s => ({ id: s.volunteer_id, full_name: s.volunteer!.full_name, email: s.volunteer!.email })),
+                            });
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          Bericht naar alle ({taskSignups.length})
+                        </button>
+                      )}
                       <button
                         onClick={(e) => { e.stopPropagation(); setConfirmDeleteTask(task.id); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors"
@@ -1012,7 +1032,15 @@ const ClubOwnerDashboard = () => {
                                 </div>
                               </button>
 
-                              <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {/* Individual chat button */}
+                                <button
+                                  onClick={() => navigate(`/chat?taskId=${task.id}&clubOwnerId=${currentUserId}&volunteerId=${signup.volunteer_id}`)}
+                                  className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                                  title="Bericht sturen"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                </button>
                                 {signup.status === 'assigned' ? (
                                   <>
                                     <span className="flex items-center gap-1 text-xs font-medium text-accent-foreground">
@@ -1405,6 +1433,17 @@ const ClubOwnerDashboard = () => {
         language={language}
         onProfileUpdated={(p) => setProfile({ full_name: p.full_name || '', email: p.email || '' })}
       />
+
+      {/* Bulk message dialog */}
+      {bulkMessageTask && (
+        <BulkMessageDialog
+          taskId={bulkMessageTask.taskId}
+          taskTitle={bulkMessageTask.taskTitle}
+          clubOwnerId={currentUserId}
+          volunteers={bulkMessageTask.volunteers}
+          onClose={() => setBulkMessageTask(null)}
+        />
+      )}
     </div>
   );
 };

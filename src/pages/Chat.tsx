@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Send, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Send, MessageCircle, Check, CheckCheck } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
@@ -15,6 +15,7 @@ interface Conversation {
   club_owner_id: string;
   updated_at: string;
   tasks?: { title: string; clubs?: { name: string } | null } | null;
+  unread_count?: number;
 }
 
 interface Message {
@@ -79,20 +80,48 @@ const Chat = () => {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [otherName, setOtherName] = useState('');
+  const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Init: check auth, load conversations, handle new conversation from task
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/login'); return; }
       setUserId(session.user.id);
 
-      // If coming from a task page with taskId and clubOwnerId params, find or create conversation
       const taskId = searchParams.get('taskId');
       const clubOwnerId = searchParams.get('clubOwnerId');
+      const volunteerId = searchParams.get('volunteerId');
 
-      if (taskId && clubOwnerId) {
+      // Club member initiating chat with a specific volunteer
+      if (taskId && volunteerId) {
+        const targetVolunteerId = volunteerId;
+        const targetClubOwnerId = clubOwnerId || session.user.id;
+
+        const { data: existing } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('task_id', taskId)
+          .eq('volunteer_id', targetVolunteerId)
+          .maybeSingle();
+
+        if (existing) {
+          setActiveConversation(existing.id);
+        } else {
+          const { data: created, error } = await supabase
+            .from('conversations')
+            .insert({
+              task_id: taskId,
+              volunteer_id: targetVolunteerId,
+              club_owner_id: targetClubOwnerId,
+            })
+            .select('id')
+            .single();
+          if (error) toast.error(error.message);
+          else if (created) setActiveConversation(created.id);
+        }
+      } else if (taskId && clubOwnerId) {
+        // Volunteer initiating chat
         const { data: existing } = await supabase
           .from('conversations')
           .select('id')
@@ -112,11 +141,8 @@ const Chat = () => {
             })
             .select('id')
             .single();
-          if (error) {
-            toast.error(error.message);
-          } else if (created) {
-            setActiveConversation(created.id);
-          }
+          if (error) toast.error(error.message);
+          else if (created) setActiveConversation(created.id);
         }
       }
 
@@ -125,7 +151,51 @@ const Chat = () => {
         .from('conversations')
         .select('*, tasks(title, clubs(name))')
         .order('updated_at', { ascending: false });
-      setConversations((convos as unknown as Conversation[]) || []);
+
+      const convoList = (convos as unknown as Conversation[]) || [];
+
+      // Fetch unread counts and participant names
+      if (convoList.length > 0) {
+        const convoIds = convoList.map(c => c.id);
+        const { data: unreadMessages } = await supabase
+          .from('messages')
+          .select('conversation_id')
+          .in('conversation_id', convoIds)
+          .eq('read', false)
+          .neq('sender_id', session.user.id);
+
+        const unreadCounts: Record<string, number> = {};
+        unreadMessages?.forEach(m => {
+          unreadCounts[m.conversation_id] = (unreadCounts[m.conversation_id] || 0) + 1;
+        });
+
+        convoList.forEach(c => {
+          c.unread_count = unreadCounts[c.id] || 0;
+        });
+
+        // Fetch participant names
+        const participantIds = new Set<string>();
+        convoList.forEach(c => {
+          participantIds.add(c.volunteer_id);
+          participantIds.add(c.club_owner_id);
+        });
+        participantIds.delete(session.user.id);
+
+        if (participantIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', Array.from(participantIds));
+          
+          const nameMap: Record<string, string> = {};
+          profiles?.forEach(p => {
+            nameMap[p.id] = p.full_name || p.email || 'Onbekend';
+          });
+          setParticipantNames(nameMap);
+        }
+      }
+
+      setConversations(convoList);
       setLoading(false);
     };
     init();
@@ -147,12 +217,17 @@ const Chat = () => {
       const convo = conversations.find(c => c.id === activeConversation);
       if (convo) {
         const otherId = convo.volunteer_id === userId ? convo.club_owner_id : convo.volunteer_id;
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email')
-          .eq('id', otherId)
-          .maybeSingle();
-        setOtherName(profile?.full_name || profile?.email || '');
+        const name = participantNames[otherId];
+        if (name) {
+          setOtherName(name);
+        } else {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', otherId)
+            .maybeSingle();
+          setOtherName(profile?.full_name || profile?.email || '');
+        }
       }
 
       // Mark unread messages as read
@@ -161,6 +236,11 @@ const Chat = () => {
         .update({ read: true })
         .eq('conversation_id', activeConversation)
         .neq('sender_id', userId);
+
+      // Update unread count locally
+      setConversations(prev => prev.map(c =>
+        c.id === activeConversation ? { ...c, unread_count: 0 } : c
+      ));
     };
     loadMessages();
 
@@ -168,22 +248,26 @@ const Chat = () => {
     const channel = supabase
       .channel(`messages-${activeConversation}`)
       .on('postgres_changes', {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
         table: 'messages',
         filter: `conversation_id=eq.${activeConversation}`,
       }, (payload) => {
-        const msg = payload.new as Message;
-        setMessages(prev => [...prev, msg]);
-        // Mark as read if not from us
-        if (msg.sender_id !== userId) {
-          supabase.from('messages').update({ read: true }).eq('id', msg.id);
+        if (payload.eventType === 'INSERT') {
+          const msg = payload.new as Message;
+          setMessages(prev => [...prev, msg]);
+          if (msg.sender_id !== userId) {
+            supabase.from('messages').update({ read: true }).eq('id', msg.id);
+          }
+        } else if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as Message;
+          setMessages(prev => prev.map(m => m.id === updated.id ? updated : m));
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [activeConversation, userId, conversations]);
+  }, [activeConversation, userId, conversations, participantNames]);
 
   // Auto-scroll
   useEffect(() => {
@@ -201,10 +285,14 @@ const Chat = () => {
     if (error) toast.error(error.message);
     else {
       setNewMessage('');
-      // Update conversation updated_at
       await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', activeConversation);
     }
     setSending(false);
+  };
+
+  const getConversationDisplayName = (convo: Conversation): string => {
+    const otherId = convo.volunteer_id === userId ? convo.club_owner_id : convo.volunteer_id;
+    return participantNames[otherId] || 'Onbekend';
   };
 
   if (loading) {
@@ -222,7 +310,7 @@ const Chat = () => {
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => activeConversation ? setActiveConversation(null) : navigate('/dashboard')}
+              onClick={() => activeConversation ? setActiveConversation(null) : navigate(-1)}
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -250,7 +338,7 @@ const Chat = () => {
       </header>
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Conversation list - show on mobile when no active, always on desktop */}
+        {/* Conversation list */}
         <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto`}>
           {conversations.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -267,11 +355,18 @@ const Chat = () => {
                   activeConversation === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''
                 }`}
               >
-                <p className="font-medium text-foreground text-sm truncate">
-                  {convo.tasks?.title || 'Gesprek'}
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-foreground text-sm truncate">
+                    {getConversationDisplayName(convo)}
+                  </p>
+                  {(convo.unread_count || 0) > 0 && (
+                    <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground min-w-[18px] text-center">
+                      {convo.unread_count}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {convo.tasks?.clubs?.name || ''}
+                  {convo.tasks?.title || 'Gesprek'} · {convo.tasks?.clubs?.name || ''}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {new Date(convo.updated_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
@@ -308,11 +403,20 @@ const Chat = () => {
                           : 'bg-muted text-foreground rounded-bl-md'
                       }`}>
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                        <p className={`text-[10px] mt-1 ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                          {new Date(msg.created_at).toLocaleTimeString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
-                            hour: '2-digit', minute: '2-digit'
-                          })}
-                        </p>
+                        <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : ''}`}>
+                          <span className={`text-[10px] ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                            {new Date(msg.created_at).toLocaleTimeString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </span>
+                          {isMe && (
+                            msg.read ? (
+                              <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/80" />
+                            ) : (
+                              <Check className="w-3 h-3 text-primary-foreground/50" />
+                            )
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   );
