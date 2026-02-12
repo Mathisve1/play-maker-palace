@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye } from 'lucide-react';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -14,6 +14,7 @@ import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
 import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 import BulkMessageDialog from '@/components/BulkMessageDialog';
 import BriefingProgressDialog from '@/components/BriefingProgressDialog';
+import TaskPickerDialog from '@/components/TaskPickerDialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
@@ -227,6 +228,8 @@ const ClubOwnerDashboard = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [bulkMessageTask, setBulkMessageTask] = useState<{ taskId: string; taskTitle: string; volunteers: { id: string; full_name: string | null; email: string | null }[] } | null>(null);
   const [briefingProgressTaskId, setBriefingProgressTaskId] = useState<string | null>(null);
+  const [showBriefingTaskPicker, setShowBriefingTaskPicker] = useState(false);
+  const [showProgressTaskPicker, setShowProgressTaskPicker] = useState(false);
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -633,7 +636,7 @@ const ClubOwnerDashboard = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mt-6"
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-3 mt-6"
           >
             <button
               onClick={() => navigate('/chat')}
@@ -680,16 +683,22 @@ const ClubOwnerDashboard = () => {
             )}
             {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
               <button
-                onClick={() => {
-                  // Open progress for the first task that has a briefing, or show a list
-                  if (tasks.length > 0) {
-                    setBriefingProgressTaskId(tasks[0].id);
-                  }
-                }}
+                onClick={() => setShowBriefingTaskPicker(true)}
                 className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group"
               >
                 <ClipboardList className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                 <span className="text-xs font-medium text-foreground">Briefings</span>
+              </button>
+            )}
+            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
+              <button
+                onClick={() => setShowProgressTaskPicker(true)}
+                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group"
+              >
+                <Eye className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-xs font-medium text-foreground">
+                  {language === 'nl' ? 'Opvolging' : language === 'fr' ? 'Suivi' : 'Follow-up'}
+                </span>
               </button>
             )}
           </motion.div>
@@ -1484,6 +1493,29 @@ const ClubOwnerDashboard = () => {
           language={language}
         />
       )}
+
+      {/* Task picker for briefing builder */}
+      <TaskPickerDialog
+        open={showBriefingTaskPicker}
+        onOpenChange={setShowBriefingTaskPicker}
+        tasks={tasks}
+        language={language}
+        title={language === 'nl' ? 'Briefing aanmaken' : language === 'fr' ? 'Créer un briefing' : 'Create briefing'}
+        onSelect={(taskId) => {
+          const task = tasks.find(t => t.id === taskId);
+          if (task) navigate(`/briefing-builder?taskId=${taskId}&clubId=${task.club_id || clubId}`);
+        }}
+      />
+
+      {/* Task picker for progress follow-up */}
+      <TaskPickerDialog
+        open={showProgressTaskPicker}
+        onOpenChange={setShowProgressTaskPicker}
+        tasks={tasks}
+        language={language}
+        title={language === 'nl' ? 'Opvolging bekijken' : language === 'fr' ? 'Voir le suivi' : 'View follow-up'}
+        onSelect={(taskId) => setBriefingProgressTaskId(taskId)}
+      />
     </div>
   );
 };
