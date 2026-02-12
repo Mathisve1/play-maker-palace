@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
   ArrowLeft, Plus, GripVertical, Clock, MapPin, FileText, Coffee, Phone, CheckSquare,
-  Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X, Route
+  Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X, Route, PenLine
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import RouteMapEditor, { type Waypoint } from '@/components/RouteMapEditor';
 
 // ─── Types ───
-type BlockType = 'time_slot' | 'instruction' | 'pause' | 'checklist' | 'emergency_contact' | 'route';
+type BlockType = 'time_slot' | 'instruction' | 'pause' | 'checklist' | 'emergency_contact' | 'route' | 'custom';
 
 interface ChecklistItem {
   id: string;
@@ -63,15 +63,16 @@ const labels = {
     save: 'Opslaan',
     saving: 'Opslaan...',
     saved: 'Briefing opgeslagen!',
-    addGroup: 'Groep toevoegen',
+    addGroup: 'Sectie toevoegen',
     addBlock: 'Blok toevoegen',
-    groupName: 'Groepsnaam',
+    groupName: 'Sectienaam (wordt pagina-titel)',
     timeSlot: 'Tijdslot',
     instruction: 'Instructie',
     pause: 'Pauze',
     checklist: 'Checklist',
     emergencyContact: 'Noodcontact',
     route: 'Route',
+    custom: 'Vrij veld',
     startTime: 'Starttijd',
     endTime: 'Eindtijd',
     location: 'Locatie',
@@ -104,6 +105,7 @@ const labels = {
     checklist: 'Checklist',
     emergencyContact: 'Contact d\'urgence',
     route: 'Itinéraire',
+    custom: 'Champ libre',
     startTime: 'Heure de début',
     endTime: 'Heure de fin',
     location: 'Lieu',
@@ -136,6 +138,7 @@ const labels = {
     checklist: 'Checklist',
     emergencyContact: 'Emergency contact',
     route: 'Route',
+    custom: 'Custom field',
     startTime: 'Start time',
     endTime: 'End time',
     location: 'Location',
@@ -162,6 +165,7 @@ const blockTypeConfig: Record<BlockType, { icon: typeof Clock; color: string }> 
   checklist: { icon: CheckSquare, color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
   emergency_contact: { icon: Phone, color: 'bg-red-500/10 text-red-600 border-red-200' },
   route: { icon: Route, color: 'bg-cyan-500/10 text-cyan-600 border-cyan-200' },
+  custom: { icon: PenLine, color: 'bg-slate-500/10 text-slate-600 border-slate-200' },
 };
 
 const groupColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
@@ -541,6 +545,7 @@ const BriefingBuilder = () => {
       checklist: l.checklist,
       emergency_contact: l.emergencyContact,
       route: l.route,
+      custom: l.custom,
     };
     return map[type];
   };
@@ -862,13 +867,32 @@ const BriefingBuilder = () => {
                                 />
                               </div>
                             )}
+
+                            {/* Custom free field */}
+                            {block.type === 'custom' && (
+                              <div className="space-y-2">
+                                <Input
+                                  value={block.title || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { title: e.target.value })}
+                                  placeholder={l.title}
+                                  className="bg-background/60 text-sm font-medium"
+                                />
+                                <Textarea
+                                  value={block.description || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { description: e.target.value })}
+                                  placeholder={l.description}
+                                  className="bg-background/60 text-sm min-h-[80px]"
+                                  rows={4}
+                                />
+                              </div>
+                            )}
                           </motion.div>
                         );
                       })}
 
                       {/* Add block buttons */}
                       <div className="flex flex-wrap gap-2 pt-2">
-                        {(['time_slot', 'instruction', 'pause', 'checklist', 'emergency_contact', 'route'] as BlockType[]).map(type => {
+                        {(['time_slot', 'instruction', 'pause', 'checklist', 'emergency_contact', 'route', 'custom'] as BlockType[]).map(type => {
                           const config = blockTypeConfig[type];
                           const Icon = config.icon;
                           return (
