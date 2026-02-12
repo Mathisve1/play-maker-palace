@@ -6,8 +6,9 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
   ArrowLeft, Plus, GripVertical, Clock, MapPin, FileText, Coffee, Phone, CheckSquare,
-  Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X, Route, PenLine
+  Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X, Route, PenLine, Send
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,6 +64,11 @@ const labels = {
     save: 'Opslaan',
     saving: 'Opslaan...',
     saved: 'Briefing opgeslagen!',
+    send: 'Versturen',
+    sending: 'Versturen...',
+    sent: 'Briefing verstuurd naar vrijwilligers!',
+    noVolunteersToSend: 'Geen vrijwilligers toegewezen om de briefing naar te sturen.',
+    saveFirstToSend: 'Sla de briefing eerst op voordat je verstuurt.',
     addGroup: 'Sectie toevoegen',
     addBlock: 'Blok toevoegen',
     groupName: 'Sectienaam (wordt pagina-titel)',
@@ -96,6 +102,11 @@ const labels = {
     save: 'Enregistrer',
     saving: 'Enregistrement...',
     saved: 'Briefing enregistré!',
+    send: 'Envoyer',
+    sending: 'Envoi...',
+    sent: 'Briefing envoyé aux bénévoles!',
+    noVolunteersToSend: 'Aucun bénévole assigné pour envoyer le briefing.',
+    saveFirstToSend: 'Enregistrez le briefing avant de l\'envoyer.',
     addGroup: 'Ajouter un groupe',
     addBlock: 'Ajouter un bloc',
     groupName: 'Nom du groupe',
@@ -129,6 +140,11 @@ const labels = {
     save: 'Save',
     saving: 'Saving...',
     saved: 'Briefing saved!',
+    send: 'Send',
+    sending: 'Sending...',
+    sent: 'Briefing sent to volunteers!',
+    noVolunteersToSend: 'No volunteers assigned to send the briefing to.',
+    saveFirstToSend: 'Save the briefing before sending.',
     addGroup: 'Add group',
     addBlock: 'Add block',
     groupName: 'Group name',
@@ -182,6 +198,7 @@ const BriefingBuilder = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingBriefing, setSendingBriefing] = useState(false);
   const [briefingId, setBriefingId] = useState<string | null>(null);
   const [briefingTitle, setBriefingTitle] = useState('');
   const [groups, setGroups] = useState<Group[]>([]);
@@ -536,7 +553,239 @@ const BriefingBuilder = () => {
     }
   };
 
-  // ─── Block type label ───
+  // ─── Generate PDF ───
+  const generateBriefingPdf = (): Blob => {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const contentW = pageW - margin * 2;
+    let y = margin;
+
+    const checkPage = (needed: number) => {
+      if (y + needed > doc.internal.pageSize.getHeight() - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    // Title page
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text(briefingTitle || 'Briefing', margin, y + 10);
+    y += 18;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 120, 120);
+    doc.text(taskTitle, margin, y);
+    y += 10;
+    doc.setTextColor(0, 0, 0);
+
+    groups.forEach((group, gi) => {
+      // Each group = new page (except first if title page has room)
+      if (gi > 0) {
+        doc.addPage();
+        y = margin;
+      }
+
+      // Section title
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      checkPage(12);
+      doc.text(group.name || `Sectie ${gi + 1}`, margin, y);
+      y += 10;
+
+      group.blocks.forEach(block => {
+        checkPage(20);
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(80, 80, 80);
+        const typeLabel = blockLabel(block.type).toUpperCase();
+        doc.text(typeLabel, margin, y);
+        y += 5;
+        doc.setTextColor(0, 0, 0);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+
+        if (block.type === 'time_slot') {
+          if (block.start_time || block.end_time) {
+            doc.text(`⏰ ${block.start_time || ''} - ${block.end_time || ''}`, margin + 2, y);
+            y += 5;
+          }
+          if (block.location) { doc.text(`📍 ${block.location}`, margin + 2, y); y += 5; }
+          if (block.description) {
+            const lines = doc.splitTextToSize(block.description, contentW - 4);
+            checkPage(lines.length * 4 + 2);
+            doc.text(lines, margin + 2, y);
+            y += lines.length * 4 + 2;
+          }
+        } else if (block.type === 'instruction' || block.type === 'custom') {
+          if (block.title) {
+            doc.setFont('helvetica', 'bold');
+            doc.text(block.title, margin + 2, y);
+            doc.setFont('helvetica', 'normal');
+            y += 5;
+          }
+          if (block.description) {
+            const lines = doc.splitTextToSize(block.description, contentW - 4);
+            checkPage(lines.length * 4 + 2);
+            doc.text(lines, margin + 2, y);
+            y += lines.length * 4 + 2;
+          }
+        } else if (block.type === 'pause') {
+          const parts = [];
+          if (block.duration_minutes) parts.push(`${block.duration_minutes} min`);
+          if (block.start_time) parts.push(`om ${block.start_time}`);
+          if (block.location) parts.push(`@ ${block.location}`);
+          if (parts.length) { doc.text(`☕ ${parts.join(' • ')}`, margin + 2, y); y += 5; }
+        } else if (block.type === 'checklist') {
+          if (block.title) {
+            doc.setFont('helvetica', 'bold');
+            doc.text(block.title, margin + 2, y);
+            doc.setFont('helvetica', 'normal');
+            y += 5;
+          }
+          (block.checklist_items || []).forEach(item => {
+            if (item.label.trim()) {
+              checkPage(5);
+              doc.text(`☐ ${item.label}`, margin + 4, y);
+              y += 5;
+            }
+          });
+        } else if (block.type === 'emergency_contact') {
+          const parts = [block.contact_name, block.contact_phone, block.contact_role].filter(Boolean);
+          if (parts.length) { doc.text(`🚨 ${parts.join(' • ')}`, margin + 2, y); y += 5; }
+        } else if (block.type === 'route') {
+          if (block.title) {
+            doc.setFont('helvetica', 'bold');
+            doc.text(block.title, margin + 2, y);
+            doc.setFont('helvetica', 'normal');
+            y += 5;
+          }
+          if (block.description) {
+            const lines = doc.splitTextToSize(block.description, contentW - 4);
+            checkPage(lines.length * 4 + 2);
+            doc.text(lines, margin + 2, y);
+            y += lines.length * 4 + 2;
+          }
+          (block.waypoints || []).forEach((wp, wi) => {
+            checkPage(8);
+            const wpParts = [`${wi + 1}. ${wp.label || `Punt ${wi + 1}`}`];
+            if (wp.arrival_time) wpParts.push(`⏰ ${wp.arrival_time}`);
+            doc.text(wpParts.join('  —  '), margin + 4, y);
+            y += 4;
+            if (wp.description) {
+              doc.setFontSize(9);
+              doc.setTextColor(100, 100, 100);
+              doc.text(`   ${wp.description}`, margin + 4, y);
+              doc.setTextColor(0, 0, 0);
+              doc.setFontSize(10);
+              y += 4;
+            }
+          });
+        }
+
+        y += 4; // spacing between blocks
+      });
+    });
+
+    return doc.output('blob');
+  };
+
+  // ─── Send briefing via chat ───
+  const handleSendBriefing = async () => {
+    if (!taskId || !clubId || !userId) return;
+
+    // Must be saved first
+    if (!briefingId) {
+      toast.error(l.saveFirstToSend);
+      return;
+    }
+
+    // Collect all assigned volunteer IDs
+    const allVolunteerIds = new Set<string>();
+    Object.values(groupVolunteers).forEach(vids => vids.forEach(v => allVolunteerIds.add(v)));
+
+    // If no volunteers assigned to groups, fall back to all task signups
+    if (allVolunteerIds.size === 0) {
+      volunteers.forEach(v => allVolunteerIds.add(v.id));
+    }
+
+    if (allVolunteerIds.size === 0) {
+      toast.error(l.noVolunteersToSend);
+      return;
+    }
+
+    setSendingBriefing(true);
+    try {
+      // Generate PDF
+      const pdfBlob = generateBriefingPdf();
+      const fileName = `briefing_${(briefingTitle || 'briefing').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+
+      // Upload PDF to storage
+      const storagePath = `${userId}/${Date.now()}_${fileName}`;
+      const { error: uploadErr } = await supabase.storage
+        .from('chat-attachments')
+        .upload(storagePath, pdfBlob, { contentType: 'application/pdf' });
+      if (uploadErr) throw uploadErr;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(storagePath);
+
+      // For each volunteer, find or create conversation and send message
+      for (const volunteerId of allVolunteerIds) {
+        // Find existing conversation for this task + volunteer
+        const { data: existing } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('task_id', taskId)
+          .eq('volunteer_id', volunteerId)
+          .maybeSingle();
+
+        let convoId: string;
+        if (existing) {
+          convoId = existing.id;
+        } else {
+          const { data: created, error: convoErr } = await supabase
+            .from('conversations')
+            .insert({
+              task_id: taskId,
+              volunteer_id: volunteerId,
+              club_owner_id: userId,
+            })
+            .select('id')
+            .single();
+          if (convoErr) throw convoErr;
+          convoId = created.id;
+        }
+
+        // Send message with PDF attachment
+        const { error: msgErr } = await supabase.from('messages').insert({
+          conversation_id: convoId,
+          sender_id: userId,
+          content: `📋 ${briefingTitle || 'Briefing'}`,
+          attachment_url: publicUrl,
+          attachment_type: 'document',
+          attachment_name: fileName,
+        });
+        if (msgErr) throw msgErr;
+
+        // Update conversation timestamp
+        await supabase.from('conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', convoId);
+      }
+
+      toast.success(l.sent);
+    } catch (err: any) {
+      toast.error(err.message || 'Error sending briefing');
+    } finally {
+      setSendingBriefing(false);
+    }
+  };
+
   const blockLabel = (type: BlockType) => {
     const map: Record<BlockType, string> = {
       time_slot: l.timeSlot,
@@ -574,10 +823,16 @@ const BriefingBuilder = () => {
             <span className="text-muted-foreground/40">|</span>
             <Logo size="sm" />
           </div>
-          <Button onClick={handleSave} disabled={saving} size="sm">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
-            {saving ? l.saving : l.save}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleSave} disabled={saving || sendingBriefing} size="sm" variant="outline">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+              {saving ? l.saving : l.save}
+            </Button>
+            <Button onClick={handleSendBriefing} disabled={sendingBriefing || saving} size="sm">
+              {sendingBriefing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Send className="w-4 h-4 mr-1" />}
+              {sendingBriefing ? l.sending : l.send}
+            </Button>
+          </div>
         </div>
       </header>
 
