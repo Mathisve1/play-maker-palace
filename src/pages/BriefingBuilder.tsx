@@ -1,0 +1,845 @@
+import { useEffect, useState, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/i18n/LanguageContext';
+import { toast } from 'sonner';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import {
+  ArrowLeft, Plus, GripVertical, Clock, MapPin, FileText, Coffee, Phone, CheckSquare,
+  Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X
+} from 'lucide-react';
+import Logo from '@/components/Logo';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+
+// ─── Types ───
+type BlockType = 'time_slot' | 'instruction' | 'pause' | 'checklist' | 'emergency_contact';
+
+interface ChecklistItem {
+  id: string;
+  label: string;
+  sort_order: number;
+}
+
+interface Block {
+  id: string;
+  type: BlockType;
+  sort_order: number;
+  start_time?: string;
+  end_time?: string;
+  duration_minutes?: number;
+  location?: string;
+  title?: string;
+  description?: string;
+  contact_name?: string;
+  contact_phone?: string;
+  contact_role?: string;
+  checklist_items?: ChecklistItem[];
+}
+
+interface Group {
+  id: string;
+  name: string;
+  color: string;
+  sort_order: number;
+  blocks: Block[];
+  expanded: boolean;
+}
+
+interface Volunteer {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+// ─── Labels ───
+const labels = {
+  nl: {
+    back: 'Terug',
+    briefingBuilder: 'Briefing Builder',
+    save: 'Opslaan',
+    saving: 'Opslaan...',
+    saved: 'Briefing opgeslagen!',
+    addGroup: 'Groep toevoegen',
+    addBlock: 'Blok toevoegen',
+    groupName: 'Groepsnaam',
+    timeSlot: 'Tijdslot',
+    instruction: 'Instructie',
+    pause: 'Pauze',
+    checklist: 'Checklist',
+    emergencyContact: 'Noodcontact',
+    startTime: 'Starttijd',
+    endTime: 'Eindtijd',
+    location: 'Locatie',
+    duration: 'Duur (min)',
+    title: 'Titel',
+    description: 'Beschrijving',
+    contactName: 'Naam',
+    contactPhone: 'Telefoon',
+    contactRole: 'Functie',
+    addItem: 'Item toevoegen',
+    volunteers: 'Vrijwilligers',
+    assignVolunteers: 'Vrijwilligers toewijzen',
+    noVolunteers: 'Geen aangemelde vrijwilligers',
+    briefingTitle: 'Briefing titel',
+    deleteGroup: 'Groep verwijderen',
+    deleteBlock: 'Blok verwijderen',
+  },
+  fr: {
+    back: 'Retour',
+    briefingBuilder: 'Constructeur de briefing',
+    save: 'Enregistrer',
+    saving: 'Enregistrement...',
+    saved: 'Briefing enregistré!',
+    addGroup: 'Ajouter un groupe',
+    addBlock: 'Ajouter un bloc',
+    groupName: 'Nom du groupe',
+    timeSlot: 'Créneau horaire',
+    instruction: 'Instruction',
+    pause: 'Pause',
+    checklist: 'Checklist',
+    emergencyContact: 'Contact d\'urgence',
+    startTime: 'Heure de début',
+    endTime: 'Heure de fin',
+    location: 'Lieu',
+    duration: 'Durée (min)',
+    title: 'Titre',
+    description: 'Description',
+    contactName: 'Nom',
+    contactPhone: 'Téléphone',
+    contactRole: 'Fonction',
+    addItem: 'Ajouter un élément',
+    volunteers: 'Bénévoles',
+    assignVolunteers: 'Assigner des bénévoles',
+    noVolunteers: 'Aucun bénévole inscrit',
+    briefingTitle: 'Titre du briefing',
+    deleteGroup: 'Supprimer le groupe',
+    deleteBlock: 'Supprimer le bloc',
+  },
+  en: {
+    back: 'Back',
+    briefingBuilder: 'Briefing Builder',
+    save: 'Save',
+    saving: 'Saving...',
+    saved: 'Briefing saved!',
+    addGroup: 'Add group',
+    addBlock: 'Add block',
+    groupName: 'Group name',
+    timeSlot: 'Time slot',
+    instruction: 'Instruction',
+    pause: 'Pause',
+    checklist: 'Checklist',
+    emergencyContact: 'Emergency contact',
+    startTime: 'Start time',
+    endTime: 'End time',
+    location: 'Location',
+    duration: 'Duration (min)',
+    title: 'Title',
+    description: 'Description',
+    contactName: 'Name',
+    contactPhone: 'Phone',
+    contactRole: 'Role',
+    addItem: 'Add item',
+    volunteers: 'Volunteers',
+    assignVolunteers: 'Assign volunteers',
+    noVolunteers: 'No signed up volunteers',
+    briefingTitle: 'Briefing title',
+    deleteGroup: 'Delete group',
+    deleteBlock: 'Delete block',
+  },
+};
+
+const blockTypeConfig: Record<BlockType, { icon: typeof Clock; color: string }> = {
+  time_slot: { icon: Clock, color: 'bg-blue-500/10 text-blue-600 border-blue-200' },
+  instruction: { icon: FileText, color: 'bg-amber-500/10 text-amber-600 border-amber-200' },
+  pause: { icon: Coffee, color: 'bg-green-500/10 text-green-600 border-green-200' },
+  checklist: { icon: CheckSquare, color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
+  emergency_contact: { icon: Phone, color: 'bg-red-500/10 text-red-600 border-red-200' },
+};
+
+const groupColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+
+const uid = () => crypto.randomUUID();
+
+const BriefingBuilder = () => {
+  const { language } = useLanguage();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const taskId = searchParams.get('taskId');
+  const clubId = searchParams.get('clubId');
+  const l = labels[language];
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [briefingId, setBriefingId] = useState<string | null>(null);
+  const [briefingTitle, setBriefingTitle] = useState('');
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [groupVolunteers, setGroupVolunteers] = useState<Record<string, string[]>>({});
+  const [userId, setUserId] = useState('');
+  const [taskTitle, setTaskTitle] = useState('');
+
+  // Load existing briefing or initialize
+  useEffect(() => {
+    if (!taskId || !clubId) { navigate('/club-dashboard'); return; }
+
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { navigate('/login'); return; }
+      setUserId(session.user.id);
+
+      // Get task info
+      const { data: task } = await supabase.from('tasks').select('title').eq('id', taskId).maybeSingle();
+      if (task) setTaskTitle(task.title);
+
+      // Get volunteers signed up for this task
+      const { data: signups } = await supabase
+        .from('task_signups')
+        .select('volunteer_id')
+        .eq('task_id', taskId);
+
+      if (signups && signups.length > 0) {
+        const vIds = signups.map(s => s.volunteer_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', vIds);
+        setVolunteers(profiles || []);
+      }
+
+      // Check for existing briefing
+      const { data: existing } = await supabase
+        .from('briefings')
+        .select('id, title')
+        .eq('task_id', taskId)
+        .maybeSingle();
+
+      if (existing) {
+        setBriefingId(existing.id);
+        setBriefingTitle(existing.title);
+
+        // Load groups
+        const { data: grps } = await supabase
+          .from('briefing_groups')
+          .select('*')
+          .eq('briefing_id', existing.id)
+          .order('sort_order');
+
+        if (grps && grps.length > 0) {
+          const groupIds = grps.map(g => g.id);
+
+          // Load blocks
+          const { data: blocks } = await supabase
+            .from('briefing_blocks')
+            .select('*')
+            .in('group_id', groupIds)
+            .order('sort_order');
+
+          // Load checklist items
+          const blockIds = (blocks || []).filter(b => b.type === 'checklist').map(b => b.id);
+          let checklistItems: any[] = [];
+          if (blockIds.length > 0) {
+            const { data: items } = await supabase
+              .from('briefing_checklist_items')
+              .select('*')
+              .in('block_id', blockIds)
+              .order('sort_order');
+            checklistItems = items || [];
+          }
+
+          // Load group volunteers
+          const { data: gvs } = await supabase
+            .from('briefing_group_volunteers')
+            .select('group_id, volunteer_id')
+            .in('group_id', groupIds);
+
+          const gvMap: Record<string, string[]> = {};
+          (gvs || []).forEach(gv => {
+            if (!gvMap[gv.group_id]) gvMap[gv.group_id] = [];
+            gvMap[gv.group_id].push(gv.volunteer_id);
+          });
+          setGroupVolunteers(gvMap);
+
+          const loadedGroups: Group[] = grps.map(g => ({
+            id: g.id,
+            name: g.name,
+            color: g.color,
+            sort_order: g.sort_order,
+            expanded: true,
+            blocks: (blocks || [])
+              .filter(b => b.group_id === g.id)
+              .map(b => ({
+                id: b.id,
+                type: b.type as BlockType,
+                sort_order: b.sort_order,
+                start_time: b.start_time || undefined,
+                end_time: b.end_time || undefined,
+                duration_minutes: b.duration_minutes || undefined,
+                location: b.location || undefined,
+                title: b.title || undefined,
+                description: b.description || undefined,
+                contact_name: b.contact_name || undefined,
+                contact_phone: b.contact_phone || undefined,
+                contact_role: b.contact_role || undefined,
+                checklist_items: checklistItems
+                  .filter(ci => ci.block_id === b.id)
+                  .map(ci => ({ id: ci.id, label: ci.label, sort_order: ci.sort_order })),
+              })),
+          }));
+
+          setGroups(loadedGroups);
+        }
+      } else {
+        // Initialize with one default group
+        setBriefingTitle(task?.title || '');
+        setGroups([{
+          id: uid(),
+          name: 'Algemeen',
+          color: groupColors[0],
+          sort_order: 0,
+          blocks: [],
+          expanded: true,
+        }]);
+      }
+
+      setLoading(false);
+    };
+
+    init();
+  }, [taskId, clubId, navigate]);
+
+  // ─── Group helpers ───
+  const addGroup = () => {
+    setGroups(prev => [...prev, {
+      id: uid(),
+      name: '',
+      color: groupColors[prev.length % groupColors.length],
+      sort_order: prev.length,
+      blocks: [],
+      expanded: true,
+    }]);
+  };
+
+  const updateGroup = (groupId: string, updates: Partial<Group>) => {
+    setGroups(prev => prev.map(g => g.id === groupId ? { ...g, ...updates } : g));
+  };
+
+  const removeGroup = (groupId: string) => {
+    setGroups(prev => prev.filter(g => g.id !== groupId));
+  };
+
+  // ─── Block helpers ───
+  const addBlock = (groupId: string, type: BlockType) => {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      const newBlock: Block = {
+        id: uid(),
+        type,
+        sort_order: g.blocks.length,
+        checklist_items: type === 'checklist' ? [{ id: uid(), label: '', sort_order: 0 }] : undefined,
+      };
+      return { ...g, blocks: [...g.blocks, newBlock] };
+    }));
+  };
+
+  const updateBlock = (groupId: string, blockId: string, updates: Partial<Block>) => {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      return { ...g, blocks: g.blocks.map(b => b.id === blockId ? { ...b, ...updates } : b) };
+    }));
+  };
+
+  const removeBlock = (groupId: string, blockId: string) => {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      return { ...g, blocks: g.blocks.filter(b => b.id !== blockId) };
+    }));
+  };
+
+  // ─── Checklist helpers ───
+  const addChecklistItem = (groupId: string, blockId: string) => {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      return {
+        ...g, blocks: g.blocks.map(b => {
+          if (b.id !== blockId) return b;
+          const items = b.checklist_items || [];
+          return { ...b, checklist_items: [...items, { id: uid(), label: '', sort_order: items.length }] };
+        }),
+      };
+    }));
+  };
+
+  const updateChecklistItem = (groupId: string, blockId: string, itemId: string, label: string) => {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      return {
+        ...g, blocks: g.blocks.map(b => {
+          if (b.id !== blockId) return b;
+          return { ...b, checklist_items: (b.checklist_items || []).map(ci => ci.id === itemId ? { ...ci, label } : ci) };
+        }),
+      };
+    }));
+  };
+
+  const removeChecklistItem = (groupId: string, blockId: string, itemId: string) => {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      return {
+        ...g, blocks: g.blocks.map(b => {
+          if (b.id !== blockId) return b;
+          return { ...b, checklist_items: (b.checklist_items || []).filter(ci => ci.id !== itemId) };
+        }),
+      };
+    }));
+  };
+
+  // ─── Volunteer assignment ───
+  const toggleVolunteer = (groupId: string, volunteerId: string) => {
+    setGroupVolunteers(prev => {
+      const current = prev[groupId] || [];
+      if (current.includes(volunteerId)) {
+        return { ...prev, [groupId]: current.filter(v => v !== volunteerId) };
+      }
+      return { ...prev, [groupId]: [...current, volunteerId] };
+    });
+  };
+
+  // ─── Save ───
+  const handleSave = async () => {
+    if (!taskId || !clubId) return;
+    setSaving(true);
+
+    try {
+      let bId = briefingId;
+
+      if (!bId) {
+        const { data, error } = await supabase
+          .from('briefings')
+          .insert({ task_id: taskId, club_id: clubId, title: briefingTitle, created_by: userId })
+          .select('id')
+          .single();
+        if (error) throw error;
+        bId = data.id;
+        setBriefingId(bId);
+      } else {
+        await supabase.from('briefings').update({ title: briefingTitle }).eq('id', bId);
+      }
+
+      // Delete existing groups (cascade deletes blocks, items)
+      await supabase.from('briefing_groups').delete().eq('briefing_id', bId);
+
+      // Insert groups
+      for (let gi = 0; gi < groups.length; gi++) {
+        const group = groups[gi];
+        const { data: savedGroup, error: gErr } = await supabase
+          .from('briefing_groups')
+          .insert({ briefing_id: bId!, name: group.name || 'Groep', color: group.color, sort_order: gi })
+          .select('id')
+          .single();
+        if (gErr) throw gErr;
+
+        // Insert blocks
+        for (let bi = 0; bi < group.blocks.length; bi++) {
+          const block = group.blocks[bi];
+          const { data: savedBlock, error: bErr } = await supabase
+            .from('briefing_blocks')
+            .insert({
+              group_id: savedGroup.id,
+              type: block.type,
+              sort_order: bi,
+              start_time: block.start_time || null,
+              end_time: block.end_time || null,
+              duration_minutes: block.duration_minutes || null,
+              location: block.location || null,
+              title: block.title || null,
+              description: block.description || null,
+              contact_name: block.contact_name || null,
+              contact_phone: block.contact_phone || null,
+              contact_role: block.contact_role || null,
+            })
+            .select('id')
+            .single();
+          if (bErr) throw bErr;
+
+          // Insert checklist items
+          if (block.type === 'checklist' && block.checklist_items) {
+            const validItems = block.checklist_items.filter(ci => ci.label.trim());
+            if (validItems.length > 0) {
+              await supabase.from('briefing_checklist_items').insert(
+                validItems.map((ci, idx) => ({
+                  block_id: savedBlock.id,
+                  label: ci.label.trim(),
+                  sort_order: idx,
+                }))
+              );
+            }
+          }
+        }
+
+        // Insert group volunteers
+        const vols = groupVolunteers[group.id] || [];
+        if (vols.length > 0) {
+          await supabase.from('briefing_group_volunteers').insert(
+            vols.map(vid => ({ group_id: savedGroup.id, volunteer_id: vid }))
+          );
+        }
+      }
+
+      toast.success(l.saved);
+    } catch (err: any) {
+      toast.error(err.message || 'Error saving briefing');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ─── Block type label ───
+  const blockLabel = (type: BlockType) => {
+    const map: Record<BlockType, string> = {
+      time_slot: l.timeSlot,
+      instruction: l.instruction,
+      pause: l.pause,
+      checklist: l.checklist,
+      emergency_contact: l.emergencyContact,
+    };
+    return map[type];
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/club-dashboard')}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {l.back}
+            </button>
+            <span className="text-muted-foreground/40">|</span>
+            <Logo size="sm" />
+          </div>
+          <Button onClick={handleSave} disabled={saving} size="sm">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+            {saving ? l.saving : l.save}
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-6 max-w-4xl">
+        {/* Title */}
+        <div className="mb-6">
+          <p className="text-xs text-muted-foreground mb-1">{taskTitle}</p>
+          <Input
+            value={briefingTitle}
+            onChange={e => setBriefingTitle(e.target.value)}
+            placeholder={l.briefingTitle}
+            className="text-xl font-heading font-semibold border-none shadow-none px-0 focus-visible:ring-0 h-auto"
+          />
+        </div>
+
+        {/* Groups */}
+        <div className="space-y-6">
+          {groups.map((group, gi) => (
+            <motion.div
+              key={group.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm"
+            >
+              {/* Group header */}
+              <div
+                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                onClick={() => updateGroup(group.id, { expanded: !group.expanded })}
+              >
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
+                <input
+                  value={group.name}
+                  onChange={e => { e.stopPropagation(); updateGroup(group.id, { name: e.target.value }); }}
+                  onClick={e => e.stopPropagation()}
+                  placeholder={l.groupName}
+                  className="flex-1 bg-transparent font-medium text-foreground outline-none"
+                />
+                <div className="flex items-center gap-1">
+                  {/* Color picker */}
+                  <div className="relative" onClick={e => e.stopPropagation()}>
+                    <div className="flex gap-1">
+                      {groupColors.map(c => (
+                        <button
+                          key={c}
+                          onClick={() => updateGroup(group.id, { color: c })}
+                          className={`w-4 h-4 rounded-full transition-transform ${group.color === c ? 'ring-2 ring-offset-1 ring-foreground scale-125' : 'hover:scale-110'}`}
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Volunteer count */}
+                  <span className="text-xs text-muted-foreground ml-2">
+                    <Users className="w-3.5 h-3.5 inline mr-0.5" />
+                    {(groupVolunteers[group.id] || []).length}
+                  </span>
+                  {groups.length > 1 && (
+                    <button
+                      onClick={e => { e.stopPropagation(); removeGroup(group.id); }}
+                      className="p-1 text-muted-foreground hover:text-destructive transition-colors ml-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {group.expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {group.expanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    {/* Volunteer assignment */}
+                    {volunteers.length > 0 && (
+                      <div className="px-4 pb-3 border-b border-border">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">{l.assignVolunteers}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {volunteers.map(v => {
+                            const assigned = (groupVolunteers[group.id] || []).includes(v.id);
+                            return (
+                              <button
+                                key={v.id}
+                                onClick={() => toggleVolunteer(group.id, v.id)}
+                                className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
+                                  assigned
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                }`}
+                              >
+                                {v.full_name || v.email || 'Vrijwilliger'}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Blocks */}
+                    <div className="p-4 space-y-3">
+                      {group.blocks.map((block, bi) => {
+                        const config = blockTypeConfig[block.type];
+                        const Icon = config.icon;
+                        return (
+                          <motion.div
+                            key={block.id}
+                            layout
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className={`rounded-xl border p-4 ${config.color}`}
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <GripVertical className="w-4 h-4 opacity-40 cursor-grab" />
+                                <Icon className="w-4 h-4" />
+                                <span className="text-xs font-semibold uppercase tracking-wide">{blockLabel(block.type)}</span>
+                              </div>
+                              <button
+                                onClick={() => removeBlock(group.id, block.id)}
+                                className="p-1 opacity-40 hover:opacity-100 hover:text-destructive transition-all"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Time Slot fields */}
+                            {block.type === 'time_slot' && (
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <Input
+                                  type="time"
+                                  value={block.start_time || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { start_time: e.target.value })}
+                                  placeholder={l.startTime}
+                                  className="bg-background/60 text-sm"
+                                />
+                                <Input
+                                  type="time"
+                                  value={block.end_time || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { end_time: e.target.value })}
+                                  placeholder={l.endTime}
+                                  className="bg-background/60 text-sm"
+                                />
+                                <Input
+                                  value={block.location || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { location: e.target.value })}
+                                  placeholder={l.location}
+                                  className="bg-background/60 text-sm"
+                                />
+                                <div className="sm:col-span-3">
+                                  <Input
+                                    value={block.description || ''}
+                                    onChange={e => updateBlock(group.id, block.id, { description: e.target.value })}
+                                    placeholder={l.description}
+                                    className="bg-background/60 text-sm"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Instruction fields */}
+                            {block.type === 'instruction' && (
+                              <div className="space-y-2">
+                                <Input
+                                  value={block.title || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { title: e.target.value })}
+                                  placeholder={l.title}
+                                  className="bg-background/60 text-sm font-medium"
+                                />
+                                <Textarea
+                                  value={block.description || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { description: e.target.value })}
+                                  placeholder={l.description}
+                                  className="bg-background/60 text-sm min-h-[60px]"
+                                />
+                              </div>
+                            )}
+
+                            {/* Pause fields */}
+                            {block.type === 'pause' && (
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={block.duration_minutes || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { duration_minutes: parseInt(e.target.value) || undefined })}
+                                  placeholder={l.duration}
+                                  className="bg-background/60 text-sm"
+                                />
+                                <Input
+                                  type="time"
+                                  value={block.start_time || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { start_time: e.target.value })}
+                                  placeholder={l.startTime}
+                                  className="bg-background/60 text-sm"
+                                />
+                                <Input
+                                  value={block.location || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { location: e.target.value })}
+                                  placeholder={l.location}
+                                  className="bg-background/60 text-sm"
+                                />
+                              </div>
+                            )}
+
+                            {/* Checklist fields */}
+                            {block.type === 'checklist' && (
+                              <div className="space-y-2">
+                                <Input
+                                  value={block.title || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { title: e.target.value })}
+                                  placeholder={l.title}
+                                  className="bg-background/60 text-sm font-medium"
+                                />
+                                {(block.checklist_items || []).map((item, idx) => (
+                                  <div key={item.id} className="flex items-center gap-2">
+                                    <CheckSquare className="w-3.5 h-3.5 opacity-40 shrink-0" />
+                                    <Input
+                                      value={item.label}
+                                      onChange={e => updateChecklistItem(group.id, block.id, item.id, e.target.value)}
+                                      placeholder={`Item ${idx + 1}`}
+                                      className="bg-background/60 text-sm flex-1"
+                                    />
+                                    <button
+                                      onClick={() => removeChecklistItem(group.id, block.id, item.id)}
+                                      className="p-1 opacity-40 hover:opacity-100 hover:text-destructive"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                                <button
+                                  onClick={() => addChecklistItem(group.id, block.id)}
+                                  className="text-xs text-primary hover:underline flex items-center gap-1"
+                                >
+                                  <Plus className="w-3 h-3" /> {l.addItem}
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Emergency contact fields */}
+                            {block.type === 'emergency_contact' && (
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <Input
+                                  value={block.contact_name || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { contact_name: e.target.value })}
+                                  placeholder={l.contactName}
+                                  className="bg-background/60 text-sm"
+                                />
+                                <Input
+                                  value={block.contact_phone || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { contact_phone: e.target.value })}
+                                  placeholder={l.contactPhone}
+                                  className="bg-background/60 text-sm"
+                                />
+                                <Input
+                                  value={block.contact_role || ''}
+                                  onChange={e => updateBlock(group.id, block.id, { contact_role: e.target.value })}
+                                  placeholder={l.contactRole}
+                                  className="bg-background/60 text-sm"
+                                />
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+
+                      {/* Add block buttons */}
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {(['time_slot', 'instruction', 'pause', 'checklist', 'emergency_contact'] as BlockType[]).map(type => {
+                          const config = blockTypeConfig[type];
+                          const Icon = config.icon;
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => addBlock(group.id, type)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                              {blockLabel(type)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+
+          {/* Add group button */}
+          <button
+            onClick={addGroup}
+            className="w-full py-4 rounded-2xl border-2 border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            {l.addGroup}
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default BriefingBuilder;
