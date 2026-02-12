@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
-import { CheckCircle, Circle, Users, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle, Circle, Users, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 
 interface BlockProgress {
@@ -66,6 +67,7 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
   const [briefingsProgress, setBriefingsProgress] = useState<BriefingProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedVols, setExpandedVols] = useState<Set<string>>(new Set());
+  const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteerId: string; volunteerName: string; briefingId: string; groupId: string } | null>(null);
   const l = labels[language];
 
   useEffect(() => {
@@ -237,8 +239,16 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
     setLoading(false);
   };
 
+  // Find selected volunteer's data
+  const selectedVolData = selectedVolunteer
+    ? briefingsProgress
+        .find(bp => bp.briefingId === selectedVolunteer.briefingId)
+        ?.groups.find(g => g.groupId === selectedVolunteer.groupId)
+        ?.volunteers.find(v => v.volunteerId === selectedVolunteer.volunteerId)
+    : null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) setSelectedVolunteer(null); onOpenChange(o); }}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -253,7 +263,58 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
           </div>
         ) : briefingsProgress.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">{l.noData}</p>
+        ) : selectedVolunteer && selectedVolData ? (
+          /* ─── Detail view: selected volunteer ─── */
+          <div className="space-y-4">
+            <button
+              onClick={() => setSelectedVolunteer(null)}
+              className="flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              {language === 'nl' ? 'Terug' : language === 'fr' ? 'Retour' : 'Back'}
+            </button>
+
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">{selectedVolData.volunteerName}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {selectedVolData.completedBlocks}/{selectedVolData.totalBlocks} {l.sections}
+              </p>
+              <Progress value={selectedVolData.totalBlocks > 0 ? (selectedVolData.completedBlocks / selectedVolData.totalBlocks) * 100 : 0} className="h-2 mt-2" />
+            </div>
+
+            <div className="space-y-2">
+              {selectedVolData.blocks.map(block => (
+                <div key={block.blockId} className="bg-muted/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    {block.completed
+                      ? <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
+                      : <Circle className="w-4 h-4 text-muted-foreground shrink-0" />
+                    }
+                    <span className={block.completed ? 'text-muted-foreground line-through' : 'text-foreground font-medium'}>
+                      {block.blockTitle}
+                    </span>
+                  </div>
+                  {block.checklistItems && block.checklistItems.length > 0 && (
+                    <div className="ml-6 mt-2 space-y-1">
+                      {block.checklistItems.map((ci, idx) => (
+                        <div key={idx} className="flex items-center gap-1.5 text-xs">
+                          {ci.checked
+                            ? <CheckCircle className="w-3 h-3 text-green-600 shrink-0" />
+                            : <Circle className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                          }
+                          <span className={ci.checked ? 'text-muted-foreground line-through' : 'text-muted-foreground'}>
+                            {ci.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
+          /* ─── Overview: groups with volunteer names ─── */
           <div className="space-y-6">
             {briefingsProgress.map(bp => (
               <div key={bp.briefingId}>
@@ -270,59 +331,24 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
                     <div className="space-y-2">
                       {group.volunteers.map(vol => {
                         const pct = vol.totalBlocks > 0 ? Math.round((vol.completedBlocks / vol.totalBlocks) * 100) : 0;
-                        const volKey = `${bp.briefingId}-${group.groupId}-${vol.volunteerId}`;
-                        const isExpanded = expandedVols.has(volKey);
-
                         return (
-                          <div key={vol.volunteerId} className="bg-muted/30 rounded-xl p-3 space-y-2">
-                            <button
-                              onClick={() => toggleVol(volKey)}
-                              className="flex items-center justify-between w-full text-left"
-                            >
+                          <button
+                            key={vol.volunteerId}
+                            onClick={() => setSelectedVolunteer({ volunteerId: vol.volunteerId, volunteerName: vol.volunteerName, briefingId: bp.briefingId, groupId: group.groupId })}
+                            className="w-full text-left bg-muted/30 rounded-xl p-3 space-y-2 hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                                 <span className="text-sm font-medium text-foreground">{vol.volunteerName}</span>
                               </div>
                               <span className="text-xs text-muted-foreground">
                                 {vol.completedBlocks}/{vol.totalBlocks} {l.sections}
                                 {pct === 100 && ' ✓'}
                               </span>
-                            </button>
+                            </div>
                             <Progress value={pct} className="h-2" />
-
-                            {isExpanded && (
-                              <div className="space-y-1.5 pt-1">
-                                {vol.blocks.map(block => (
-                                  <div key={block.blockId}>
-                                    <div className="flex items-center gap-2 text-xs">
-                                      {block.completed
-                                        ? <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                                        : <Circle className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                      }
-                                      <span className={block.completed ? 'text-muted-foreground line-through' : 'text-foreground'}>
-                                        {block.blockTitle}
-                                      </span>
-                                    </div>
-                                    {block.checklistItems && block.checklistItems.length > 0 && (
-                                      <div className="ml-6 mt-1 space-y-0.5">
-                                        {block.checklistItems.map((ci, idx) => (
-                                          <div key={idx} className="flex items-center gap-1.5 text-[11px]">
-                                            {ci.checked
-                                              ? <CheckCircle className="w-3 h-3 text-green-500 shrink-0" />
-                                              : <Circle className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-                                            }
-                                            <span className={ci.checked ? 'text-muted-foreground line-through' : 'text-muted-foreground'}>
-                                              {ci.label}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
