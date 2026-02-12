@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      briefing_block_progress: {
+        Row: {
+          block_id: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          volunteer_id: string
+        }
+        Insert: {
+          block_id: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          volunteer_id: string
+        }
+        Update: {
+          block_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_block_progress_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       briefing_blocks: {
         Row: {
           contact_name: string | null
