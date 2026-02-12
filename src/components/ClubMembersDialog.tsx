@@ -367,7 +367,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                       </button>
                       {showRoleDropdown === member.id && (
                         <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-elevated py-1 z-10 min-w-[140px]">
-                          {(['beheerder', 'medewerker'] as ClubRole[]).map(r => (
+                          {(['bestuurder', 'beheerder', 'medewerker'] as ClubRole[]).map(r => (
                             <button
                               key={r}
                               onClick={() => handleUpdateRole(member.id, r)}
