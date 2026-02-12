@@ -4,11 +4,13 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CreditCard, CheckCircle, Clock, AlertTriangle, Download, Send, ExternalLink, Loader2, RefreshCw, Unlink, Settings, ShieldCheck, ShieldAlert, Info } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle, Clock, AlertTriangle, Download, Send, ExternalLink, Loader2, RefreshCw, Unlink, Settings, ShieldCheck, ShieldAlert, Info, ClipboardList } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Language } from '@/i18n/translations';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import BriefingProgressDialog from '@/components/BriefingProgressDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -197,7 +199,9 @@ const PaymentsOverview = () => {
     requirements?: { currently_due?: string[]; eventually_due?: string[]; pending_verification?: string[] };
   } | null>(null);
   const [loadingStripeStatus, setLoadingStripeStatus] = useState(false);
-   const [disconnecting, setDisconnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [briefingProgress, setBriefingProgress] = useState<Map<string, { total: number; completed: number }>>(new Map());
+  const [briefingDialogTaskId, setBriefingDialogTaskId] = useState<string | null>(null);
 
   // Map Stripe requirement field keys to human-readable labels
   const requirementLabel = (key: string): string => {
@@ -343,6 +347,62 @@ const PaymentsOverview = () => {
         .eq('club_id', activeClubId)
         .order('created_at', { ascending: false });
       setPayments((paymentsData as Payment[]) || []);
+
+      // Load briefing progress per task+volunteer
+      const progressMap = new Map<string, { total: number; completed: number }>();
+      for (const tid of taskIds) {
+        const { data: briefings } = await supabase
+          .from('briefings')
+          .select('id')
+          .eq('task_id', tid);
+        if (!briefings || briefings.length === 0) continue;
+
+        const briefingIds = briefings.map(b => b.id);
+        const { data: groups } = await supabase
+          .from('briefing_groups')
+          .select('id')
+          .in('briefing_id', briefingIds);
+        if (!groups || groups.length === 0) continue;
+
+        const groupIds = groups.map(g => g.id);
+        const { data: blocks } = await supabase
+          .from('briefing_blocks')
+          .select('id, group_id')
+          .in('group_id', groupIds);
+        if (!blocks || blocks.length === 0) continue;
+
+        const blockIds = blocks.map(b => b.id);
+        const { data: blockProgress } = await supabase
+          .from('briefing_block_progress')
+          .select('block_id, volunteer_id, completed')
+          .in('block_id', blockIds)
+          .eq('completed', true);
+
+        // Get volunteers per group
+        const { data: gvs } = await supabase
+          .from('briefing_group_volunteers')
+          .select('group_id, volunteer_id')
+          .in('group_id', groupIds);
+
+        let effectiveGvs = gvs || [];
+        if (effectiveGvs.length === 0) {
+          const taskSignups = signupsData?.filter(s => s.task_id === tid) || [];
+          effectiveGvs = taskSignups.flatMap(s =>
+            groups.map(g => ({ group_id: g.id, volunteer_id: s.volunteer_id }))
+          );
+        }
+
+        const volIds = [...new Set(effectiveGvs.map(v => v.volunteer_id))];
+        for (const vid of volIds) {
+          const volGroupIds = [...new Set(effectiveGvs.filter(v => v.volunteer_id === vid).map(v => v.group_id))];
+          const volBlocks = blocks.filter(b => volGroupIds.includes(b.group_id));
+          const completedCount = volBlocks.filter(b =>
+            (blockProgress || []).some(bp => bp.block_id === b.id && bp.volunteer_id === vid)
+          ).length;
+          progressMap.set(`${tid}-${vid}`, { total: volBlocks.length, completed: completedCount });
+        }
+      }
+      setBriefingProgress(progressMap);
 
       setLoading(false);
     };
@@ -771,6 +831,31 @@ const PaymentsOverview = () => {
                       </div>
                     </div>
 
+                    {/* Briefing progress indicator */}
+                    {(() => {
+                      const bp = briefingProgress.get(key);
+                      if (!bp || bp.total === 0) return null;
+                      const pct = Math.round((bp.completed / bp.total) * 100);
+                      return (
+                        <button
+                          onClick={() => setBriefingDialogTaskId(signup.task_id)}
+                          className="mt-3 pt-3 border-t border-border w-full text-left hover:bg-muted/30 rounded-lg transition-colors -mx-1 px-1 py-1.5"
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                              <ClipboardList className="w-3.5 h-3.5" />
+                              {language === 'nl' ? 'Briefing' : language === 'fr' ? 'Briefing' : 'Briefing'}
+                            </span>
+                            <span className="text-xs font-medium text-foreground">
+                              {bp.completed}/{bp.total} {language === 'nl' ? 'secties' : language === 'fr' ? 'sections' : 'sections'}
+                              {pct === 100 && ' ✓'}
+                            </span>
+                          </div>
+                          <Progress value={pct} className="h-1.5" />
+                        </button>
+                      );
+                    })()}
+
                     {payment?.status === 'succeeded' && payment.paid_at && (
                       <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-4 text-xs text-muted-foreground">
                         <span>{t.paidOn}: {new Date(payment.paid_at).toLocaleDateString(
@@ -788,6 +873,16 @@ const PaymentsOverview = () => {
           </div>
         </div>
       </main>
+
+      {/* Briefing Progress Dialog */}
+      {briefingDialogTaskId && (
+        <BriefingProgressDialog
+          open={!!briefingDialogTaskId}
+          onOpenChange={(open) => { if (!open) setBriefingDialogTaskId(null); }}
+          taskId={briefingDialogTaskId}
+          language={language}
+        />
+      )}
     </div>
   );
 };
