@@ -14,6 +14,241 @@ export type Database = {
   }
   public: {
     Tables: {
+      briefing_blocks: {
+        Row: {
+          contact_name: string | null
+          contact_phone: string | null
+          contact_role: string | null
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          end_time: string | null
+          group_id: string
+          id: string
+          location: string | null
+          sort_order: number
+          start_time: string | null
+          title: string | null
+          type: string
+        }
+        Insert: {
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_role?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          group_id: string
+          id?: string
+          location?: string | null
+          sort_order?: number
+          start_time?: string | null
+          title?: string | null
+          type: string
+        }
+        Update: {
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_role?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          group_id?: string
+          id?: string
+          location?: string | null
+          sort_order?: number
+          start_time?: string | null
+          title?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_blocks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefing_checklist_items: {
+        Row: {
+          block_id: string
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          block_id: string
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          block_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_checklist_items_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefing_checklist_progress: {
+        Row: {
+          checked: boolean
+          checked_at: string | null
+          checklist_item_id: string
+          created_at: string
+          id: string
+          volunteer_id: string
+        }
+        Insert: {
+          checked?: boolean
+          checked_at?: string | null
+          checklist_item_id: string
+          created_at?: string
+          id?: string
+          volunteer_id: string
+        }
+        Update: {
+          checked?: boolean
+          checked_at?: string | null
+          checklist_item_id?: string
+          created_at?: string
+          id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_checklist_progress_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefing_group_volunteers: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          volunteer_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          volunteer_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_group_volunteers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefing_groups: {
+        Row: {
+          briefing_id: string
+          color: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          briefing_id: string
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Update: {
+          briefing_id?: string
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_groups_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefings: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string
+          id: string
+          task_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          task_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          task_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefings_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_invitations: {
         Row: {
           club_id: string
