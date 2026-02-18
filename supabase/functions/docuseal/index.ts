@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Webhook error:", error);
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -868,7 +868,7 @@ Deno.serve(async (req) => {
       }
 
       // Get volunteer profile
-      const { data: profile } = await supabaseClient
+      const { data: profile } = await supabase
         .from("profiles")
         .select("full_name, email")
         .eq("id", user.id)
@@ -880,10 +880,68 @@ Deno.serve(async (req) => {
       const monthNames = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
       const monthLabel = monthNames[(month || 1) - 1];
 
-      // Create a simple DocuSeal submission with a template for compliance declarations
-      // First, try to find or create a compliance template
+      // Create a DocuSeal submission for compliance declaration
       try {
-        // Create a submission using a simple text-based approach
+        // First, get available templates to find a compliance template
+        const templatesResp = await fetch(`${DOCUSEAL_API_URL}/templates`, {
+          headers: { "X-Auth-Token": DOCUSEAL_API_KEY },
+        });
+        const templates = await templatesResp.json();
+        
+        // Look for a compliance template, or use the first available one
+        let complianceTemplate = Array.isArray(templates) 
+          ? templates.find((t: any) => t.name?.toLowerCase().includes('compliance') || t.name?.toLowerCase().includes('verklaring'))
+          : null;
+        
+        if (!complianceTemplate && Array.isArray(templates) && templates.length > 0) {
+          complianceTemplate = templates[0];
+        }
+
+        if (!complianceTemplate) {
+          // No templates available - create submission via HTML template
+          const htmlContent = `
+            <h2>Verklaring op Eer - Externe Inkomsten & Uren</h2>
+            <p>Ondergetekende, <strong>${volunteerName}</strong>, verklaart op eer:</p>
+            <ul>
+              <li>Maand: <strong>${monthLabel} ${year}</strong></li>
+              <li>Extern verdiend bedrag: <strong>€ ${(external_income || 0).toFixed(2)}</strong></li>
+              <li>Externe gewerkte uren: <strong>${external_hours || 0} uren</strong></li>
+            </ul>
+            <p>Datum: ${new Date().toLocaleDateString('nl-BE')}</p>
+            {{signature}}
+          `;
+
+          // Create template from HTML
+          const createTemplateResp = await fetch(`${DOCUSEAL_API_URL}/templates/html`, {
+            method: "POST",
+            headers: {
+              "X-Auth-Token": DOCUSEAL_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              html: htmlContent,
+              name: `Compliance Verklaring - ${monthLabel} ${year}`,
+            }),
+          });
+
+          if (createTemplateResp.ok) {
+            complianceTemplate = await createTemplateResp.json();
+            console.log("Created compliance template:", complianceTemplate.id);
+          } else {
+            const errText = await createTemplateResp.text();
+            console.error("Failed to create compliance template:", errText);
+            return new Response(JSON.stringify({ 
+              success: true, 
+              signing_url: null,
+              message: "Declaration saved but DocuSeal template creation failed",
+            }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+
+        const webhookUrl = `${supabaseUrl}/functions/v1/docuseal?action=webhook`;
+
         const submissionResp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
           method: "POST",
           headers: {
@@ -891,29 +949,30 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            template_id: null, // Will use embedded form
+            template_id: complianceTemplate.id,
             send_email: false,
             submitters: [
               {
                 name: volunteerName,
                 email: volunteerEmail,
-                role: "Vrijwilliger",
-                fields: [
-                  { name: "naam", default_value: volunteerName, readonly: true },
-                  { name: "maand", default_value: `${monthLabel} ${year}`, readonly: true },
-                  { name: "extern_inkomen", default_value: `€ ${(external_income || 0).toFixed(2)}`, readonly: true },
-                  { name: "externe_uren", default_value: `${external_hours || 0} uren`, readonly: true },
-                  { name: "datum", default_value: new Date().toLocaleDateString('nl-BE'), readonly: true },
-                ],
+                role: complianceTemplate.submitters?.[0]?.name || "First Party",
+                values: {
+                  naam: volunteerName,
+                  maand: `${monthLabel} ${year}`,
+                  extern_inkomen: `€ ${(external_income || 0).toFixed(2)}`,
+                  externe_uren: `${external_hours || 0} uren`,
+                  datum: new Date().toLocaleDateString('nl-BE'),
+                },
               },
             ],
+            webhook_url: webhookUrl,
           }),
         });
 
         if (submissionResp.ok) {
           const submissionData = await submissionResp.json();
           const submitters = Array.isArray(submissionData) ? submissionData : [submissionData];
-          const signingUrl = submitters[0]?.embed_src || submitters[0]?.signing_url || null;
+          const signingUrl = submitters[0]?.embed_src || (submitters[0]?.slug ? `https://docuseal.com/s/${submitters[0].slug}` : null);
           const submissionId = submitters[0]?.submission_id || submitters[0]?.id || null;
 
           // Update the declaration with DocuSeal info
@@ -924,14 +983,14 @@ Deno.serve(async (req) => {
               .from("compliance_declarations")
               .update({
                 docuseal_submission_id: submissionId,
-                signature_status: signingUrl ? "pending" : "completed",
+                signature_status: "pending",
               })
               .eq("id", declaration_id);
           }
 
           return new Response(JSON.stringify({ 
             success: true, 
-            signing_url: signingUrl,
+            signing_url: signingUrl || submitters[0]?.embed_src,
             submission_id: submissionId,
           }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -939,7 +998,6 @@ Deno.serve(async (req) => {
         } else {
           const errText = await submissionResp.text();
           console.error("DocuSeal submission error:", errText);
-          // Don't fail - declaration is still saved, just without signature
           return new Response(JSON.stringify({ 
             success: true, 
             signing_url: null,
@@ -964,7 +1022,7 @@ Deno.serve(async (req) => {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("DocuSeal error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
