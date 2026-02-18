@@ -77,7 +77,29 @@ Deno.serve(async (req) => {
 
               console.log("Webhook: Updated signature request", sigReq.id, "to completed, document_url:", documentUrl);
             } else {
-              console.log("Webhook: No matching signature request for submission", submissionId);
+              // Check if it's a compliance declaration
+              const { data: compDecl } = await adminClient
+                .from("compliance_declarations")
+                .select("id, volunteer_id")
+                .eq("docuseal_submission_id", submissionId)
+                .maybeSingle();
+              
+              if (compDecl) {
+                const declUpdate: Record<string, unknown> = {
+                  signature_status: "completed",
+                  updated_at: new Date().toISOString(),
+                };
+                if (documentUrl) declUpdate.document_url = documentUrl;
+                
+                await adminClient
+                  .from("compliance_declarations")
+                  .update(declUpdate)
+                  .eq("id", compDecl.id);
+                
+                console.log("Webhook: Updated compliance declaration", compDecl.id, "to completed");
+              } else {
+                console.log("Webhook: No matching signature request or compliance declaration for submission", submissionId);
+              }
             }
           }
         }
@@ -900,15 +922,22 @@ Deno.serve(async (req) => {
         if (!complianceTemplate) {
           // No templates available - create submission via HTML template
           const htmlContent = `
-            <h2>Verklaring op Eer - Externe Inkomsten & Uren</h2>
-            <p>Ondergetekende, <strong>${volunteerName}</strong>, verklaart op eer:</p>
-            <ul>
-              <li>Maand: <strong>${monthLabel} ${year}</strong></li>
-              <li>Extern verdiend bedrag: <strong>€ ${(external_income || 0).toFixed(2)}</strong></li>
-              <li>Externe gewerkte uren: <strong>${external_hours || 0} uren</strong></li>
-            </ul>
+            <h2 style="text-align:center;">Verklaring op Eer</h2>
+            <h3 style="text-align:center;">Externe Inkomsten & Uren in de Sportsector</h3>
+            <br/>
+            <p>Ondergetekende, <strong>${volunteerName}</strong>, verklaart op eer dat onderstaande gegevens correct zijn:</p>
+            <br/>
+            <table style="width:100%; border-collapse:collapse;">
+              <tr><td style="padding:8px; border:1px solid #ccc;"><strong>Maand</strong></td><td style="padding:8px; border:1px solid #ccc;">${monthLabel} ${year}</td></tr>
+              <tr><td style="padding:8px; border:1px solid #ccc;"><strong>Extern verdiend bedrag</strong></td><td style="padding:8px; border:1px solid #ccc;">€ ${(external_income || 0).toFixed(2)}</td></tr>
+              <tr><td style="padding:8px; border:1px solid #ccc;"><strong>Externe gewerkte uren</strong></td><td style="padding:8px; border:1px solid #ccc;">${external_hours || 0} uren</td></tr>
+            </table>
+            <br/>
+            <p>Ik begrijp dat onjuiste informatie kan leiden tot RSZ-boetes conform de Belgische vrijwilligerswetgeving.</p>
+            <br/>
             <p>Datum: ${new Date().toLocaleDateString('nl-BE')}</p>
-            {{signature}}
+            <br/><br/>
+            <p><strong>Handtekening:</strong></p>
           `;
 
           // Create template from HTML
@@ -931,9 +960,62 @@ Deno.serve(async (req) => {
             const errText = await createTemplateResp.text();
             console.error("Failed to create compliance template:", errText);
             return new Response(JSON.stringify({ 
-              success: true, 
+              success: false, 
               signing_url: null,
               message: "Declaration saved but DocuSeal template creation failed",
+            }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+
+        // Ensure the template has a signature field - add via PUT if missing
+        const templateFields = complianceTemplate.fields || [];
+        const hasSignatureField = templateFields.some((f: any) => f.type === "signature");
+        
+        if (!hasSignatureField) {
+          console.log("Template has no signature field, adding via PUT...");
+          const documentUuid = complianceTemplate.documents?.[0]?.uuid;
+          const submitterUuid = complianceTemplate.submitters?.[0]?.uuid;
+          const lastPage = Math.max(0, (complianceTemplate.documents?.[0]?.pages?.length || 1) - 1);
+          
+          const fieldUuid = crypto.randomUUID();
+          const putFieldsResp = await fetch(`${DOCUSEAL_API_URL}/templates/${complianceTemplate.id}`, {
+            method: "PUT",
+            headers: {
+              "X-Auth-Token": DOCUSEAL_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              fields: [
+                {
+                  uuid: fieldUuid,
+                  submitter_uuid: submitterUuid,
+                  name: "Handtekening",
+                  type: "signature",
+                  required: true,
+                  areas: [{
+                    attachment_uuid: documentUuid,
+                    page: lastPage,
+                    x: 0.1,
+                    y: 0.75,
+                    w: 0.35,
+                    h: 0.08,
+                  }],
+                },
+              ],
+            }),
+          });
+          
+          const putResult = await putFieldsResp.json();
+          console.log("PUT signature field result:", putFieldsResp.status, "fields:", JSON.stringify(putResult?.fields?.map((f: any) => ({ name: f.name, type: f.type }))));
+          
+          if (!putFieldsResp.ok) {
+            console.error("Failed to add signature field:", JSON.stringify(putResult));
+            return new Response(JSON.stringify({ 
+              success: false, 
+              signing_url: null,
+              message: "Failed to configure signature field",
             }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
