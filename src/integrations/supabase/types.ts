@@ -443,6 +443,51 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_declarations: {
+        Row: {
+          created_at: string
+          declaration_month: number
+          declaration_year: number
+          declared_at: string
+          document_url: string | null
+          docuseal_submission_id: number | null
+          external_hours: number
+          external_income: number
+          id: string
+          signature_status: string
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          created_at?: string
+          declaration_month: number
+          declaration_year: number
+          declared_at?: string
+          document_url?: string | null
+          docuseal_submission_id?: number | null
+          external_hours?: number
+          external_income?: number
+          id?: string
+          signature_status?: string
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          created_at?: string
+          declaration_month?: number
+          declaration_year?: number
+          declared_at?: string
+          document_url?: string | null
+          docuseal_submission_id?: number | null
+          external_hours?: number
+          external_income?: number
+          id?: string
+          signature_status?: string
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: []
+      }
       contract_templates: {
         Row: {
           club_id: string
