@@ -1,43 +1,73 @@
 
-# Briefings opsplitsen: Aanmaken vs. Opvolgen
+# Plan: Betaalblokkade, Compliance Badge bij Sollicitaties en Notificaties
 
-## Wat verandert er?
+## Overzicht
+Drie verbeteringen aan het compliance-systeem:
+1. Server-side betaalblokkade als het jaarplafond bereikt is
+2. Compliance badge tonen bij vrijwilligers in het ClubOwnerDashboard
+3. Automatische notificaties bij 80% van het plafond
 
-De huidige enkele "Briefings" knop in de snelkoppelingen-rij wordt opgesplitst in **twee aparte knoppen**:
+---
 
-1. **"Briefing Builder"** -- Gaat naar een overzicht waar je per taak een briefing kunt aanmaken of bewerken (navigeert naar de builder)
-2. **"Opvolging"** -- Opent een overzicht waar je per taak de voortgang van vrijwilligers kunt bekijken (wie heeft wat afgevinkt)
+## 1. Server-side Betaalblokkade (Edge Function)
 
-### Snelkoppelingen-rij (bovenaan dashboard)
+De `stripe-create-transfer` edge function wordt uitgebreid met een compliance check voordat de Stripe-betaling wordt aangemaakt.
 
-Huidige situatie:
-```text
-[ Instellingen ] [ Sjablonen ] [ Leden ] [ Briefings ]
-```
+**Wat gebeurt er:**
+- Na authenticatie en validatie wordt het totaal aan betalingen + externe verklaringen van de vrijwilliger opgehaald voor het huidige jaar
+- Als het totaal (bestaande inkomsten + nieuw bedrag) boven de EUR 3.233,91 komt, wordt de betaling geweigerd met een duidelijke foutmelding
+- Zelfde check voor het urenplafond van 190 uur
 
-Nieuwe situatie:
-```text
-[ Instellingen ] [ Sjablonen ] [ Leden ] [ Briefings ] [ Opvolging ]
-```
+**Technische details:**
+- Query `volunteer_payments` (status = succeeded) voor het huidige jaar
+- Query `compliance_declarations` voor het huidige jaar
+- Tel alles op en vergelijk met de limieten
+- Retourneer een error met resterend budget als het plafond overschreden wordt
 
-- **Briefings** knop: opent een selectielijst van taken, klik op een taak navigeert naar de briefing builder voor die taak
-- **Opvolging** knop: opent een selectielijst van taken met briefings, klik op een taak opent de voortgangs-dialog
+---
 
-### Per-taak knoppen
+## 2. Compliance Badge bij Sollicitaties (ClubOwnerDashboard)
 
-De bestaande knoppen "Briefing" en "Voortgang" per taak blijven behouden -- ze werken al correct en bieden directe toegang.
+Bij elke vrijwilliger die solliciteert op een taak, wordt een compacte compliance badge (groen/oranje/rood) getoond.
 
-## Technische details
+**Wat gebeurt er:**
+- Na het laden van alle signups worden de unieke volunteer IDs verzameld
+- `fetchBatchComplianceData()` wordt aangeroepen (bestaat al in `useComplianceData.ts`)
+- De compliance status wordt opgeslagen in een `complianceMap` state
+- Naast de naam van elke vrijwilliger verschijnt een compacte `ComplianceBadge`
 
-### Wijzigingen in `src/pages/ClubOwnerDashboard.tsx`
+**Technische details:**
+- Nieuw state: `const [complianceMap, setComplianceMap] = useState<Map<string, ComplianceStatus>>(new Map())`
+- Import `fetchBatchComplianceData` en `ComplianceBadge`
+- Na het laden van signups: `fetchBatchComplianceData(volunteerIds).then(setComplianceMap)`
+- In de signup-rendering: `<ComplianceBadge compliance={complianceMap.get(signup.volunteer_id)} language={language} compact />`
 
-1. **Nieuwe state**: `showBriefingTaskPicker` en `showProgressTaskPicker` (booleans) om de taakselectie-modals te togglen
-2. **Snelkoppeling "Briefings"**: In plaats van `setBriefingProgressTaskId(tasks[0].id)`, toont het een kleine takenlijst-popover/dialog waar de gebruiker een taak kiest, waarna naar `/briefing-builder?taskId=...&clubId=...` wordt genavigeerd
-3. **Nieuwe snelkoppeling "Opvolging"**: Nieuwe knop met een `Eye` of `BarChart3` icoon. Toont een takenlijst-dialog, klik op een taak opent `BriefingProgressDialog` voor die taak
-4. **Vertalingen**: Labels toevoegen voor "Opvolging" / "Suivi" / "Follow-up" in de drie talen
+---
 
-### Nieuwe component: Taakselectie-dialog
+## 3. Compliance Notificaties bij 80% Plafond
 
-Een lichtgewicht dialog die de lijst van taken toont. Wordt hergebruikt voor zowel de briefing-selectie als de opvolging-selectie. Bij klik op een taak:
-- Voor briefings: navigeert naar de builder
-- Voor opvolging: opent de voortgangs-dialog
+Automatische in-app notificaties wanneer een vrijwilliger 80% van het plafond bereikt.
+
+**Wat gebeurt er:**
+- In de `stripe-create-transfer` edge function: na een succesvolle betaling, controleer of de vrijwilliger nu boven 80% zit
+- Zo ja, maak een notificatie aan voor de vrijwilliger ("Let op: je nadert het jaarplafond")
+- Maak ook een notificatie aan voor de club owner/penningmeester ("Vrijwilliger X nadert het plafond")
+
+**Technische details:**
+- Na het aanmaken van de `volunteer_payments` record in de edge function:
+  - Bereken nieuw totaal (bestaande + nieuwe betaling)
+  - Als totaal >= 80% van EUR 3.233,91 (= EUR 2.587,13): insert notificatie voor vrijwilliger
+  - Als totaal >= 80%: insert notificatie voor club owner
+- Notificatie types: `compliance_warning_volunteer` en `compliance_warning_club`
+- Voorkom dubbele notificaties door te checken of er al een notificatie van dit type bestaat voor dit jaar
+
+---
+
+## Bestanden die gewijzigd worden
+
+| Bestand | Wijziging |
+|---------|-----------|
+| `supabase/functions/stripe-create-transfer/index.ts` | Compliance check + notificaties toevoegen |
+| `src/pages/ClubOwnerDashboard.tsx` | ComplianceBadge importeren en tonen bij elke vrijwilliger |
+
+Geen database migraties nodig - alle benodigde tabellen bestaan al (`notifications`, `volunteer_payments`, `compliance_declarations`).
