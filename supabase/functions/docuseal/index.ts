@@ -856,6 +856,110 @@ Deno.serve(async (req) => {
       });
     }
 
+    // === Sign compliance declaration ===
+    if (action === "sign-compliance-declaration" && req.method === "POST") {
+      const { declaration_id, month, year, external_income, external_hours } = await req.json();
+
+      if (!declaration_id) {
+        return new Response(JSON.stringify({ error: "declaration_id is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get volunteer profile
+      const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .single();
+
+      const volunteerName = profile?.full_name || profile?.email || "Vrijwilliger";
+      const volunteerEmail = profile?.email || `${user.id}@volunteer.local`;
+
+      const monthNames = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+      const monthLabel = monthNames[(month || 1) - 1];
+
+      // Create a simple DocuSeal submission with a template for compliance declarations
+      // First, try to find or create a compliance template
+      try {
+        // Create a submission using a simple text-based approach
+        const submissionResp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
+          method: "POST",
+          headers: {
+            "X-Auth-Token": DOCUSEAL_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            template_id: null, // Will use embedded form
+            send_email: false,
+            submitters: [
+              {
+                name: volunteerName,
+                email: volunteerEmail,
+                role: "Vrijwilliger",
+                fields: [
+                  { name: "naam", default_value: volunteerName, readonly: true },
+                  { name: "maand", default_value: `${monthLabel} ${year}`, readonly: true },
+                  { name: "extern_inkomen", default_value: `€ ${(external_income || 0).toFixed(2)}`, readonly: true },
+                  { name: "externe_uren", default_value: `${external_hours || 0} uren`, readonly: true },
+                  { name: "datum", default_value: new Date().toLocaleDateString('nl-BE'), readonly: true },
+                ],
+              },
+            ],
+          }),
+        });
+
+        if (submissionResp.ok) {
+          const submissionData = await submissionResp.json();
+          const submitters = Array.isArray(submissionData) ? submissionData : [submissionData];
+          const signingUrl = submitters[0]?.embed_src || submitters[0]?.signing_url || null;
+          const submissionId = submitters[0]?.submission_id || submitters[0]?.id || null;
+
+          // Update the declaration with DocuSeal info
+          if (submissionId) {
+            const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+            const adminClient = createClient(supabaseUrl, serviceRoleKey);
+            await adminClient
+              .from("compliance_declarations")
+              .update({
+                docuseal_submission_id: submissionId,
+                signature_status: signingUrl ? "pending" : "completed",
+              })
+              .eq("id", declaration_id);
+          }
+
+          return new Response(JSON.stringify({ 
+            success: true, 
+            signing_url: signingUrl,
+            submission_id: submissionId,
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        } else {
+          const errText = await submissionResp.text();
+          console.error("DocuSeal submission error:", errText);
+          // Don't fail - declaration is still saved, just without signature
+          return new Response(JSON.stringify({ 
+            success: true, 
+            signing_url: null,
+            message: "Declaration saved but DocuSeal signing unavailable",
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } catch (docuErr) {
+        console.error("DocuSeal error:", docuErr);
+        return new Response(JSON.stringify({ 
+          success: true, 
+          signing_url: null,
+          message: "Declaration saved but DocuSeal signing unavailable",
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
