@@ -11,7 +11,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
 import { VolunteerBriefingsList } from '@/components/VolunteerBriefingView';
-
+import MonthlyComplianceDialog from '@/components/MonthlyComplianceDialog';
+import ComplianceBadge from '@/components/ComplianceBadge';
+import { useComplianceData } from '@/hooks/useComplianceData';
 
 interface Task {
   id: string;
@@ -83,10 +85,13 @@ const VolunteerDashboard = () => {
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
   const [myContracts, setMyContracts] = useState<SignatureContract[]>([]);
   const [checkingContract, setCheckingContract] = useState<string | null>(null);
+  const [showComplianceDialog, setShowComplianceDialog] = useState(false);
   
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [myLikes, setMyLikes] = useState<Set<string>>(new Set());
+
+  const { data: complianceData } = useComplianceData(currentUserId || null);
 
   useEffect(() => {
     const init = async () => {
@@ -204,6 +209,21 @@ const VolunteerDashboard = () => {
       }
 
       setLoading(false);
+
+      // Check if monthly compliance declaration is needed
+      const now = new Date();
+      const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+      const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      const { data: existingDecl } = await supabase
+        .from('compliance_declarations')
+        .select('id')
+        .eq('volunteer_id', session.user.id)
+        .eq('declaration_year', prevYear)
+        .eq('declaration_month', prevMonth)
+        .maybeSingle();
+      if (!existingDecl) {
+        setShowComplianceDialog(true);
+      }
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
@@ -830,6 +850,17 @@ const VolunteerDashboard = () => {
             } : prev);
             setIsFirstLogin(false);
           }}
+        />
+      )}
+
+      {/* Monthly Compliance Dialog */}
+      {currentUserId && (
+        <MonthlyComplianceDialog
+          open={showComplianceDialog}
+          onOpenChange={setShowComplianceDialog}
+          userId={currentUserId}
+          language={language}
+          onCompleted={() => setShowComplianceDialog(false)}
         />
       )}
     </div>
