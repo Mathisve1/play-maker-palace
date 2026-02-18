@@ -195,14 +195,22 @@ const MonthlyComplianceDialog = ({ open, onOpenChange, userId, language, onCompl
             }),
           });
           const result = await resp.json();
+          console.log('DocuSeal sign result:', result);
           if (resp.ok && result.signing_url) {
             // Open DocuSeal signing page
             window.open(result.signing_url, '_blank');
+          } else if (!result.signing_url) {
+            console.warn('No signing URL returned:', result.message || 'Unknown reason');
+            toast.error(language === 'nl' ? 'Handtekening kon niet worden gestart. Probeer opnieuw.' : 
+                        language === 'fr' ? 'La signature n\'a pas pu être initiée. Réessayez.' :
+                        'Signature could not be initiated. Please try again.');
           }
         }
       } catch (docuErr) {
-        // DocuSeal signing is optional - declaration is still saved
-        console.warn('DocuSeal signing not available:', docuErr);
+        console.error('DocuSeal signing error:', docuErr);
+        toast.error(language === 'nl' ? 'Fout bij het starten van de handtekening.' : 
+                    language === 'fr' ? 'Erreur lors de l\'initiation de la signature.' :
+                    'Error starting the signature process.');
       }
 
       toast.success(t.success);
