@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard } from 'lucide-react';
+import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard, BarChart3, Edit3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Language } from '@/i18n/translations';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useComplianceData, YEARLY_LIMIT, HOURS_LIMIT } from '@/hooks/useComplianceData';
+import ComplianceBadge from './ComplianceBadge';
+import MonthlyComplianceDialog from './MonthlyComplianceDialog';
 
 interface ProfileData {
   full_name: string | null;
@@ -126,6 +129,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showComplianceDialog, setShowComplianceDialog] = useState(false);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -139,6 +143,9 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [bankConsentText, setBankConsentText] = useState<string | null>(null);
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
   const [connectingStripe, setConnectingStripe] = useState(false);
+  
+
+  const { data: compliance, loading: complianceLoading, refresh: refreshCompliance } = useComplianceData(userId);
 
   useEffect(() => {
     if (!open) return;
@@ -535,6 +542,76 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
             </button>
           )}
         </div>
+
+        {/* Compliance Status Section */}
+        <div className="space-y-3 mt-6 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-primary" />
+            {language === 'nl' ? 'Compliance Status 2026' : language === 'fr' ? 'Statut de conformité 2026' : 'Compliance Status 2026'}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {language === 'nl' ? 'Bekijk je jaarlijkse vergoedingsstatus en geef externe inkomsten op.' :
+             language === 'fr' ? 'Consultez votre statut annuel de rémunération et déclarez vos revenus externes.' :
+             'View your yearly reimbursement status and declare external income.'}
+          </p>
+
+          {complianceLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : compliance ? (
+            <div className="space-y-3">
+              <ComplianceBadge compliance={compliance} language={language} showProgress />
+              
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-muted/50 border border-border">
+                  <p className="text-muted-foreground">{language === 'nl' ? 'Extern inkomen' : language === 'fr' ? 'Revenus externes' : 'External income'}</p>
+                  <p className="font-semibold text-foreground">€ {compliance.externalIncome.toFixed(2)}</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-muted/50 border border-border">
+                  <p className="text-muted-foreground">{language === 'nl' ? 'Externe uren' : language === 'fr' ? 'Heures externes' : 'External hours'}</p>
+                  <p className="font-semibold text-foreground">{compliance.externalHours} / {HOURS_LIMIT}h</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowComplianceDialog(true)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-2"
+              >
+                <Edit3 className="w-4 h-4" />
+                {language === 'nl' ? 'Maandelijkse verklaring invullen / wijzigen' : 
+                 language === 'fr' ? 'Remplir / modifier la déclaration mensuelle' : 
+                 'Fill in / edit monthly declaration'}
+              </button>
+
+              {compliance.declarationsPending && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800">
+                  <AlertTriangle className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
+                  <p className="text-[11px] text-orange-700 dark:text-orange-400">
+                    {language === 'nl' ? 'Er zijn nog openstaande maandelijkse verklaringen.' :
+                     language === 'fr' ? 'Il y a encore des déclarations mensuelles en attente.' :
+                     'There are outstanding monthly declarations.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">
+              {language === 'nl' ? 'Geen compliance data beschikbaar.' : language === 'fr' ? 'Aucune donnée de conformité disponible.' : 'No compliance data available.'}
+            </p>
+          )}
+        </div>
+
+        <MonthlyComplianceDialog
+          open={showComplianceDialog}
+          onOpenChange={setShowComplianceDialog}
+          userId={userId}
+          language={language}
+          onCompleted={() => {
+            refreshCompliance();
+          }}
+        />
 
         <div className="mt-6 pt-4 border-t border-border">
           <button

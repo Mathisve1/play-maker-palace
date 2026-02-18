@@ -23,10 +23,11 @@ export const getComplianceStatus = (totalIncome: number): 'green' | 'orange' | '
   return 'green';
 };
 
-export const useComplianceData = (volunteerId: string | null, year?: number) => {
+export const useComplianceData = (volunteerId: string | null, year?: number, refreshKey?: number) => {
   const currentYear = year || new Date().getFullYear();
   const [data, setData] = useState<ComplianceStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [internalRefreshKey, setInternalRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!volunteerId) { setLoading(false); return; }
@@ -102,9 +103,9 @@ export const useComplianceData = (volunteerId: string | null, year?: number) => 
     };
 
     load();
-  }, [volunteerId, currentYear]);
+  }, [volunteerId, currentYear, refreshKey, internalRefreshKey]);
 
-  return { data, loading, refresh: () => { setLoading(true); } };
+  return { data, loading, refresh: () => setInternalRefreshKey(k => k + 1) };
 };
 
 // Batch fetch compliance data for multiple volunteers (for club views)
