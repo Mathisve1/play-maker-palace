@@ -145,11 +145,38 @@ const ComplianceBadge = ({ compliance, language, compact = false, showProgress =
             </span>
           </div>
 
-          {compliance.externalHours > 0 && (
-            <div className="mt-2 text-[10px] text-muted-foreground">
-              Art. 17: {compliance.externalHours}/{HOURS_LIMIT} {t.hours}
+          {/* Hours progress bar */}
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-medium text-muted-foreground">Art. 17 {t.hours}</span>
+              <span className="text-[10px] font-medium text-muted-foreground">
+                {compliance.totalHours?.toFixed(1) || 0}/{HOURS_LIMIT}h
+              </span>
             </div>
-          )}
+            <div className="w-full h-2.5 rounded-full bg-muted/50 overflow-hidden flex">
+              <div
+                className="h-full bg-emerald-500 transition-all"
+                style={{ width: `${Math.min(100, ((compliance.internalHours || 0) / HOURS_LIMIT) * 100)}%` }}
+                title={`${t.internal}: ${(compliance.internalHours || 0).toFixed(1)}h`}
+              />
+              <div
+                className="h-full bg-blue-500 transition-all"
+                style={{ width: `${Math.min(100 - ((compliance.internalHours || 0) / HOURS_LIMIT) * 100, ((compliance.externalHours || 0) / HOURS_LIMIT) * 100)}%` }}
+                title={`${t.external}: ${compliance.externalHours}h`}
+              />
+            </div>
+            <div className="flex items-center gap-3 text-[10px] mt-1">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" /> {t.internal}: {(compliance.internalHours || 0).toFixed(1)}h
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-blue-500" /> {t.external}: {compliance.externalHours}h
+              </span>
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-muted" /> {t.margin}: {(compliance.remainingHours || 0).toFixed(1)}h
+              </span>
+            </div>
+          </div>
         </>
       )}
 

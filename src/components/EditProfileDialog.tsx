@@ -565,12 +565,20 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
               
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2.5 rounded-xl bg-muted/50 border border-border">
-                  <p className="text-muted-foreground">{language === 'nl' ? 'Extern inkomen' : language === 'fr' ? 'Revenus externes' : 'External income'}</p>
-                  <p className="font-semibold text-foreground">€ {compliance.externalIncome.toFixed(2)}</p>
+                  <p className="text-muted-foreground">{language === 'nl' ? 'Interne uren (taken)' : language === 'fr' ? 'Heures internes (tâches)' : 'Internal hours (tasks)'}</p>
+                  <p className="font-semibold text-foreground">{(compliance.internalHours || 0).toFixed(1)}h</p>
                 </div>
                 <div className="p-2.5 rounded-xl bg-muted/50 border border-border">
                   <p className="text-muted-foreground">{language === 'nl' ? 'Externe uren' : language === 'fr' ? 'Heures externes' : 'External hours'}</p>
-                  <p className="font-semibold text-foreground">{compliance.externalHours} / {HOURS_LIMIT}h</p>
+                  <p className="font-semibold text-foreground">{compliance.externalHours}h</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-muted/50 border border-border">
+                  <p className="text-muted-foreground">{language === 'nl' ? 'Intern inkomen' : language === 'fr' ? 'Revenus internes' : 'Internal income'}</p>
+                  <p className="font-semibold text-foreground">€ {compliance.internalIncome.toFixed(2)}</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-muted/50 border border-border">
+                  <p className="text-muted-foreground">{language === 'nl' ? 'Extern inkomen' : language === 'fr' ? 'Revenus externes' : 'External income'}</p>
+                  <p className="font-semibold text-foreground">€ {compliance.externalIncome.toFixed(2)}</p>
                 </div>
               </div>
 

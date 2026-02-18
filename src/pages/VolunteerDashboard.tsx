@@ -214,14 +214,14 @@ const VolunteerDashboard = () => {
       const now = new Date();
       const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
       const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-      const { data: existingDecl } = await supabase
+      const { data: existingDecls } = await supabase
         .from('compliance_declarations')
         .select('id')
         .eq('volunteer_id', session.user.id)
         .eq('declaration_year', prevYear)
         .eq('declaration_month', prevMonth)
-        .maybeSingle();
-      if (!existingDecl) {
+        .limit(1);
+      if (!existingDecls || existingDecls.length === 0) {
         setShowComplianceDialog(true);
       }
     };
