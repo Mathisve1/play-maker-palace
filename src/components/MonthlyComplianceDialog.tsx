@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Language } from '@/i18n/translations';
 import { YEARLY_LIMIT, HOURS_LIMIT } from '@/hooks/useComplianceData';
-import { ShieldCheck, FileSignature, Loader2, Plus, Trash2, Calendar } from 'lucide-react';
+import { ShieldCheck, FileSignature, Loader2, Plus, Trash2, Calendar, Download } from 'lucide-react';
 import ComplianceBadge from './ComplianceBadge';
 import { useComplianceData } from '@/hooks/useComplianceData';
 
@@ -35,6 +35,7 @@ interface ExistingDeclaration {
   declared_at: string;
   signature_status: string;
   docuseal_submission_id: number | null;
+  document_url: string | null;
 }
 
 const labels = {
@@ -130,7 +131,7 @@ const MonthlyComplianceDialog = ({ open, onOpenChange, userId, language, onCompl
       setLoadingExisting(true);
       const { data } = await supabase
         .from('compliance_declarations')
-        .select('id, declaration_month, declaration_year, external_income, external_hours, declared_at, signature_status, docuseal_submission_id')
+        .select('id, declaration_month, declaration_year, external_income, external_hours, declared_at, signature_status, docuseal_submission_id, document_url')
         .eq('volunteer_id', userId)
         .eq('declaration_year', selectedYear)
         .eq('declaration_month', selectedMonth)
@@ -225,6 +226,7 @@ const MonthlyComplianceDialog = ({ open, onOpenChange, userId, language, onCompl
         declared_at: new Date().toISOString(),
         signature_status: 'pending',
         docuseal_submission_id: null,
+        document_url: null,
       }, ...prev]);
       
       setExternalIncome('0');
@@ -337,12 +339,25 @@ const MonthlyComplianceDialog = ({ open, onOpenChange, userId, language, onCompl
                         {new Date(decl.declared_at).toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleDelete(decl.id)}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {decl.signature_status === 'completed' && decl.document_url && (
+                        <a
+                          href={decl.document_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                          title="Download"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      <button
+                        onClick={() => handleDelete(decl.id)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
