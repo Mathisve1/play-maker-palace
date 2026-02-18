@@ -17,6 +17,8 @@ import BriefingProgressDialog from '@/components/BriefingProgressDialog';
 import TaskPickerDialog from '@/components/TaskPickerDialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import EditProfileDialog from '@/components/EditProfileDialog';
+import ComplianceBadge from '@/components/ComplianceBadge';
+import { fetchBatchComplianceData, ComplianceStatus } from '@/hooks/useComplianceData';
 import { Language } from '@/i18n/translations';
 
 interface VolunteerProfile {
@@ -230,6 +232,7 @@ const ClubOwnerDashboard = () => {
   const [briefingProgressTaskId, setBriefingProgressTaskId] = useState<string | null>(null);
   const [showBriefingTaskPicker, setShowBriefingTaskPicker] = useState(false);
   const [showProgressTaskPicker, setShowProgressTaskPicker] = useState(false);
+  const [complianceMap, setComplianceMap] = useState<Map<string, ComplianceStatus>>(new Map());
 
   // Create task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -351,6 +354,9 @@ const ClubOwnerDashboard = () => {
             grouped[s.task_id].push(signup);
           });
           setSignups(grouped);
+
+          // Fetch compliance data for all volunteers
+          fetchBatchComplianceData(volunteerIds).then(setComplianceMap).catch(console.error);
         }
 
         // Fetch payments for this club
@@ -1073,9 +1079,12 @@ const ClubOwnerDashboard = () => {
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="min-w-0">
-                                  <p className="text-sm font-medium text-foreground truncate">
-                                    {signup.volunteer?.full_name || 'Onbekend'}
-                                  </p>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-sm font-medium text-foreground truncate">
+                                      {signup.volunteer?.full_name || 'Onbekend'}
+                                    </p>
+                                    <ComplianceBadge compliance={complianceMap.get(signup.volunteer_id) || null} language={language} compact />
+                                  </div>
                                   <p className="text-xs text-muted-foreground truncate">
                                     {signup.volunteer?.email || ''}
                                   </p>

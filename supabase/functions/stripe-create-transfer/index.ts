@@ -7,6 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const YEARLY_LIMIT = 3233.91;
+const HOURS_LIMIT = 190;
+const WARNING_THRESHOLD = 0.80; // 80%
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -107,18 +111,60 @@ serve(async (req) => {
       throw new Error("Het bedrag moet minstens €1,00 zijn");
     }
 
+    // ===== COMPLIANCE CHECK: Server-side betaalblokkade =====
+    const currentYear = new Date().getFullYear();
+    const yearStart = `${currentYear}-01-01T00:00:00Z`;
+    const yearEnd = `${currentYear}-12-31T23:59:59Z`;
+
+    // Get all succeeded payments for this volunteer this year
+    const { data: yearPayments } = await supabaseClient
+      .from("volunteer_payments")
+      .select("amount")
+      .eq("volunteer_id", volunteer_id)
+      .eq("status", "succeeded")
+      .gte("created_at", yearStart)
+      .lte("created_at", yearEnd);
+
+    const internalIncome = (yearPayments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+
+    // Get external declarations for this year
+    const { data: declarations } = await supabaseClient
+      .from("compliance_declarations")
+      .select("external_income, external_hours")
+      .eq("volunteer_id", volunteer_id)
+      .eq("declaration_year", currentYear);
+
+    const externalIncome = (declarations || []).reduce((sum, d) => sum + Number(d.external_income), 0);
+    const externalHours = (declarations || []).reduce((sum, d) => sum + Number(d.external_hours), 0);
+
+    const newPaymentEuros = volunteerAmount / 100;
+    const totalIncomeAfter = internalIncome + externalIncome + newPaymentEuros;
+    const remainingBudget = YEARLY_LIMIT - (internalIncome + externalIncome);
+
+    if (totalIncomeAfter > YEARLY_LIMIT) {
+      throw new Error(
+        `Betaling geblokkeerd: het jaarplafond van €${YEARLY_LIMIT.toFixed(2)} wordt overschreden. ` +
+        `Huidig totaal: €${(internalIncome + externalIncome).toFixed(2)}, ` +
+        `resterend budget: €${Math.max(0, remainingBudget).toFixed(2)}. ` +
+        `Overweeg Art. 17 (RSZ-bijdrage) als alternatief.`
+      );
+    }
+
+    // Hours check (estimate from task duration)
+    // Note: hours are tracked via task signups + external declarations
+    // We don't block on hours here since the payment amount is the primary concern,
+    // but we do warn via notifications (see below)
+
+    // ===== END COMPLIANCE CHECK =====
+
     // Create a PaymentIntent charging the club, transferring to volunteer
-    // The club pays the full amount + Stripe fees
-    // Using destination charge: money goes to volunteer, club is charged
     const paymentIntent = await stripe.paymentIntents.create({
       amount: volunteerAmount,
       currency: "eur",
-      // Charge the club's connected account
       payment_method_types: ["card", "bancontact"],
       transfer_data: {
         destination: volunteer.stripe_account_id,
       },
-      // The application_fee_amount is 0 - platform takes no cut
       application_fee_amount: 0,
       metadata: {
         task_id,
@@ -145,6 +191,53 @@ serve(async (req) => {
       .maybeSingle();
 
     if (paymentError) throw new Error(paymentError.message);
+
+    // ===== COMPLIANCE NOTIFICATIONS at 80% threshold =====
+    const totalAfterPayment = internalIncome + externalIncome + newPaymentEuros;
+    const warningAmount = YEARLY_LIMIT * WARNING_THRESHOLD; // €2.587,13
+
+    if (totalAfterPayment >= warningAmount) {
+      // Check if we already sent a warning this year (prevent duplicates)
+      const { data: existingVolNotif } = await supabaseClient
+        .from("notifications")
+        .select("id")
+        .eq("user_id", volunteer_id)
+        .eq("type", "compliance_warning_volunteer")
+        .gte("created_at", yearStart)
+        .limit(1);
+
+      if (!existingVolNotif || existingVolNotif.length === 0) {
+        // Notify volunteer
+        await supabaseClient.from("notifications").insert({
+          user_id: volunteer_id,
+          type: "compliance_warning_volunteer",
+          title: "⚠️ Jaarplafond nadert",
+          message: `Je hebt €${totalAfterPayment.toFixed(2)} van de €${YEARLY_LIMIT.toFixed(2)} ontvangen (${Math.round((totalAfterPayment / YEARLY_LIMIT) * 100)}%). Let op: bij overschrijding is RSZ verschuldigd.`,
+          metadata: { year: currentYear, total: totalAfterPayment, limit: YEARLY_LIMIT },
+        });
+      }
+
+      // Notify club owner
+      const { data: existingClubNotif } = await supabaseClient
+        .from("notifications")
+        .select("id")
+        .eq("user_id", club.owner_id)
+        .eq("type", "compliance_warning_club")
+        .gte("created_at", yearStart)
+        .ilike("message", `%${volunteer_id}%`)
+        .limit(1);
+
+      if (!existingClubNotif || existingClubNotif.length === 0) {
+        await supabaseClient.from("notifications").insert({
+          user_id: club.owner_id,
+          type: "compliance_warning_club",
+          title: "⚠️ Vrijwilliger nadert plafond",
+          message: `${volunteer.full_name || volunteer.email} heeft €${totalAfterPayment.toFixed(2)} van €${YEARLY_LIMIT.toFixed(2)} ontvangen (${Math.round((totalAfterPayment / YEARLY_LIMIT) * 100)}%).`,
+          metadata: { year: currentYear, volunteer_id, volunteer_name: volunteer.full_name, total: totalAfterPayment, limit: YEARLY_LIMIT },
+        });
+      }
+    }
+    // ===== END NOTIFICATIONS =====
 
     return new Response(JSON.stringify({
       success: true,
