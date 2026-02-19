@@ -40,7 +40,7 @@ serve(async (req) => {
     // Get club info
     const { data: task } = await supabaseClient
       .from("tasks")
-      .select("id, club_id, title, expense_amount")
+      .select("id, club_id, title, expense_amount, compensation_type, hourly_rate, estimated_hours")
       .eq("id", task_id)
       .maybeSingle();
     if (!task) throw new Error("Task not found");
@@ -102,10 +102,31 @@ serve(async (req) => {
       throw new Error("Contract must be signed before payment can be made");
     }
 
-    // Use the expense_amount from the task if available, otherwise use the provided amount
-    const volunteerAmount = task.expense_amount
-      ? Math.round(task.expense_amount * 100)
-      : paymentAmount;
+    // Determine payment amount based on compensation type
+    let volunteerAmount: number;
+    const isHourly = (task as any).compensation_type === 'hourly';
+
+    if (isHourly) {
+      // For hourly tasks, check hour_confirmations for approved hours
+      const { data: hourConf } = await supabaseClient
+        .from("hour_confirmations")
+        .select("final_hours, final_amount, status")
+        .eq("task_id", task_id)
+        .eq("volunteer_id", volunteer_id)
+        .eq("status", "approved")
+        .maybeSingle();
+
+      if (!hourConf) {
+        throw new Error("De gewerkte uren moeten eerst door beide partijen bevestigd worden voordat de betaling kan worden verwerkt.");
+      }
+
+      volunteerAmount = Math.round((hourConf.final_amount || 0) * 100);
+    } else {
+      // Fixed amount
+      volunteerAmount = task.expense_amount
+        ? Math.round(task.expense_amount * 100)
+        : paymentAmount;
+    }
 
     if (volunteerAmount < 100) {
       throw new Error("Het bedrag moet minstens €1,00 zijn");

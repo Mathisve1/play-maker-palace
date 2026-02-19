@@ -643,6 +643,59 @@ export type Database = {
           },
         ]
       }
+      hour_confirmations: {
+        Row: {
+          club_approved: boolean
+          club_reported_hours: number | null
+          created_at: string
+          final_amount: number | null
+          final_hours: number | null
+          id: string
+          status: string
+          task_id: string
+          updated_at: string
+          volunteer_approved: boolean
+          volunteer_id: string
+          volunteer_reported_hours: number | null
+        }
+        Insert: {
+          club_approved?: boolean
+          club_reported_hours?: number | null
+          created_at?: string
+          final_amount?: number | null
+          final_hours?: number | null
+          id?: string
+          status?: string
+          task_id: string
+          updated_at?: string
+          volunteer_approved?: boolean
+          volunteer_id: string
+          volunteer_reported_hours?: number | null
+        }
+        Update: {
+          club_approved?: boolean
+          club_reported_hours?: number | null
+          created_at?: string
+          final_amount?: number | null
+          final_hours?: number | null
+          id?: string
+          status?: string
+          task_id?: string
+          updated_at?: string
+          volunteer_approved?: boolean
+          volunteer_id?: string
+          volunteer_reported_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hour_confirmations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachment_name: string | null
@@ -884,14 +937,17 @@ export type Database = {
           briefing_location: string | null
           briefing_time: string | null
           club_id: string
+          compensation_type: string
           contract_template_id: string | null
           created_at: string
           description: string | null
           end_time: string | null
+          estimated_hours: number | null
           event_group_id: string | null
           event_id: string | null
           expense_amount: number | null
           expense_reimbursement: boolean
+          hourly_rate: number | null
           id: string
           location: string | null
           notes: string | null
@@ -905,14 +961,17 @@ export type Database = {
           briefing_location?: string | null
           briefing_time?: string | null
           club_id: string
+          compensation_type?: string
           contract_template_id?: string | null
           created_at?: string
           description?: string | null
           end_time?: string | null
+          estimated_hours?: number | null
           event_group_id?: string | null
           event_id?: string | null
           expense_amount?: number | null
           expense_reimbursement?: boolean
+          hourly_rate?: number | null
           id?: string
           location?: string | null
           notes?: string | null
@@ -926,14 +985,17 @@ export type Database = {
           briefing_location?: string | null
           briefing_time?: string | null
           club_id?: string
+          compensation_type?: string
           contract_template_id?: string | null
           created_at?: string
           description?: string | null
           end_time?: string | null
+          estimated_hours?: number | null
           event_group_id?: string | null
           event_id?: string | null
           expense_amount?: number | null
           expense_reimbursement?: boolean
+          hourly_rate?: number | null
           id?: string
           location?: string | null
           notes?: string | null
