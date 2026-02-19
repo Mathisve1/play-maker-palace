@@ -326,6 +326,136 @@ const weeztixAdapter = {
   },
 };
 
+// ========== TICKETMATIC ADAPTER (Official API: https://apps.ticketmatic.com/docs/api/) ==========
+const ticketmaticAdapter = {
+  // Base URL helper
+  _baseUrl(config: any): string {
+    const configData = config.config_data || {};
+    const accountName = configData.account_name;
+    if (!accountName) throw new Error("Ticketmatic Account Name is niet geconfigureerd");
+    return `https://apps.ticketmatic.com/api/1/${encodeURIComponent(accountName)}`;
+  },
+
+  _headers(config: any): Record<string, string> {
+    return {
+      Authorization: `Bearer ${config.api_key}`,
+      "Content-Type": "application/json",
+    };
+  },
+
+  // GET /api/1/{accountname}/events → test connection
+  async testConnection(config: any): Promise<{ success: boolean; events_count?: number }> {
+    const base = this._baseUrl(config);
+    const res = await fetch(`${base}/events?limit=1`, {
+      headers: this._headers(config),
+    });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Ticketmatic auth failed (${res.status}): ${errorText}`);
+    }
+    const data = await res.json();
+    return { success: true, events_count: data.nbrofresults || data.data?.length || 0 };
+  },
+
+  // GET /api/1/{accountname}/orders → search orders by contact email, match volunteer
+  async createTicket(config: any, volunteer: any): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
+    const base = this._baseUrl(config);
+    const headers = this._headers(config);
+    const configData = config.config_data || {};
+
+    // Step 1: Find contact by email
+    let contactId: number | null = null;
+    if (volunteer.email) {
+      const contactRes = await fetch(`${base}/contacts?searchterm=${encodeURIComponent(volunteer.email)}&limit=5`, { headers });
+      if (contactRes.ok) {
+        const contactData = await contactRes.json();
+        const contacts = contactData.data || contactData || [];
+        if (Array.isArray(contacts) && contacts.length > 0) {
+          // Match by email
+          const match = contacts.find((c: any) => (c.email || "").toLowerCase() === volunteer.email.toLowerCase());
+          contactId = match?.id || contacts[0]?.id || null;
+        }
+      }
+    }
+
+    // Step 2: If no contact found by email, search by name
+    if (!contactId && volunteer.name) {
+      const contactRes = await fetch(`${base}/contacts?searchterm=${encodeURIComponent(volunteer.name)}&limit=5`, { headers });
+      if (contactRes.ok) {
+        const contactData = await contactRes.json();
+        const contacts = contactData.data || contactData || [];
+        if (Array.isArray(contacts) && contacts.length > 0) {
+          contactId = contacts[0]?.id || null;
+        }
+      }
+    }
+
+    if (!contactId) {
+      throw new Error(
+        `Geen contact gevonden in Ticketmatic voor ${volunteer.name || volunteer.email}. ` +
+        `Maak eerst een contact aan in Ticketmatic voor deze vrijwilliger.`
+      );
+    }
+
+    // Step 3: Find orders for this contact
+    const eventId = config.event_id_external;
+    let orderUrl = `${base}/orders?filter=customerid%3D${contactId}&limit=10`;
+    const orderRes = await fetch(orderUrl, { headers });
+    if (!orderRes.ok) {
+      const errorText = await orderRes.text();
+      throw new Error(`Ticketmatic orders failed (${orderRes.status}): ${errorText}`);
+    }
+
+    const orderData = await orderRes.json();
+    const orders = orderData.data || orderData || [];
+
+    // Find an order, optionally filtering by event
+    let matchedOrder: any = null;
+    for (const order of (Array.isArray(orders) ? orders : [])) {
+      if (eventId) {
+        // Check if order contains tickets for this event
+        const tickets = order.tickets || [];
+        if (tickets.some((t: any) => String(t.eventid) === String(eventId))) {
+          matchedOrder = order;
+          break;
+        }
+      } else {
+        matchedOrder = order;
+        break;
+      }
+    }
+
+    if (!matchedOrder) {
+      throw new Error(
+        `Geen bestelling gevonden in Ticketmatic voor ${volunteer.name || volunteer.email}` +
+        (eventId ? ` bij event ${eventId}` : "") + `. Maak eerst een ticket aan in Ticketmatic.`
+      );
+    }
+
+    // Extract barcode from first ticket
+    const tickets = matchedOrder.tickets || [];
+    const firstTicket = tickets[0] || {};
+    const barcode = firstTicket.barcode || firstTicket.ticketholderbarcode || "";
+    const orderId = matchedOrder.orderid || matchedOrder.id || "";
+
+    // Try to get PDF document
+    let ticketUrl = "";
+    if (orderId) {
+      try {
+        // GET /api/1/{accountname}/orders/{id}/documents/{documentid}/{language}
+        // Use a default document, or just link to the order
+        ticketUrl = `${base}/orders/${orderId}/documents/1/nl`;
+      } catch (_) { /* ignore */ }
+    }
+
+    return {
+      ticket_id: String(orderId),
+      ticket_url: ticketUrl || `https://apps.ticketmatic.com/#/orders/${orderId}`,
+      barcode: barcode || String(orderId),
+    };
+  },
+};
+
 // ========== STUB ADAPTERS (voor providers zonder publieke API-documentatie) ==========
 const createStubAdapter = (providerName: string) => ({
   async testConnection(_config: any) {
@@ -359,7 +489,7 @@ const providerAdapters: Record<string, {
   eventix: weeztixAdapter,
   yourticketprovider: createStubAdapter("ytp"),
   paylogic_seetickets: createStubAdapter("pl"),
-  ticketmatic: createStubAdapter("tkm"),
+  ticketmatic: ticketmaticAdapter,
 };
 
 Deno.serve(async (req) => {

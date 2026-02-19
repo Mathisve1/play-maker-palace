@@ -562,6 +562,23 @@ const TicketingDashboard = () => {
                       <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
                     </div>
                   </>
+                ) : provider === 'ticketmatic' ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>API Key <span className="text-xs text-muted-foreground">(Ticketmatic → Settings → API Keys)</span></Label>
+                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Jouw Ticketmatic API key" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Account Name <span className="text-xs text-muted-foreground">(Jouw Ticketmatic account slug)</span></Label>
+                        <Input value={configData.account_name || ''} onChange={e => setConfigData(prev => ({ ...prev, account_name: e.target.value }))} placeholder="mijnclub" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Event ID <span className="text-xs text-muted-foreground">(optioneel, om te filteren op specifiek event)</span></Label>
+                      <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="12345" />
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
