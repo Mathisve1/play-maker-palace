@@ -23,7 +23,7 @@ const PROVIDERS = [
   { value: 'ticketmaster_sport', label: 'Ticketmaster Sport' },
   { value: 'roboticket', label: 'Roboticket' },
   { value: 'tymes', label: 'Tymes' },
-  { value: 'eventix', label: 'Eventix' },
+  { value: 'eventix', label: 'Weeztix' },
   { value: 'yourticketprovider', label: 'YourTicketProvider' },
   { value: 'paylogic_seetickets', label: 'Paylogic / See Tickets' },
   { value: 'ticketmatic', label: 'Ticketmatic' },
