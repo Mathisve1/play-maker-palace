@@ -126,7 +126,9 @@ const weezeventAdapter = {
 // ========== EVENTBRITE ADAPTER (with auto-sync) ==========
 const eventbriteAdapter = {
   _getToken(config: any): string {
-    return config.api_key; // Private token stored as api_key
+    // Try private token from config_data first (club-specific keys), then fall back to api_key
+    const configData = config.config_data || {};
+    return configData.eb_api_key || configData.eb_public_token || config.api_key;
   },
 
   // GET /v3/users/me/ → test connection
