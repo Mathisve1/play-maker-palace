@@ -270,26 +270,36 @@ const eventbriteAdapter = {
   // 1. Try to find the volunteer in Eventbrite attendees → use real barcode
   // 2. If not found, generate an internal barcode as fallback (fully automatic, no errors)
   async createAttendee(config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string | null; barcode: string }> {
-    const token = this._getToken(config);
+    // Try private token from config_data first, then fall back to api_key
+    const configData = config.config_data || {};
+    const token = configData.eb_api_key || configData.eb_public_token || config.api_key;
+
+    console.log(`Eventbrite createAttendee: eventId=${eventId}, ticketClassId=${ticketClassId}, volunteer=${JSON.stringify(volunteer)}`);
+    console.log(`Using token starting with: ${token?.substring(0, 6)}...`);
 
     // Try to find the volunteer in existing Eventbrite attendees
     let page = 1;
     let matched: any = null;
+    let totalAttendeesChecked = 0;
 
     try {
       while (!matched) {
         const url = `https://www.eventbriteapi.com/v3/events/${encodeURIComponent(eventId)}/attendees/?page=${page}`;
+        console.log(`Fetching attendees page ${page}: ${url}`);
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!res.ok) {
-          console.warn(`Eventbrite attendees lookup failed (${res.status}), falling back to internal barcode`);
+          const errText = await res.text();
+          console.warn(`Eventbrite attendees lookup failed (${res.status}): ${errText}`);
           break;
         }
 
         const data = await res.json();
         const attendees = data.attendees || [];
+        totalAttendeesChecked += attendees.length;
+        console.log(`Page ${page}: found ${attendees.length} attendees. Emails: ${attendees.map((a: any) => a.profile?.email).join(', ')}`);
 
         // Match by email first (most reliable)
         if (volunteer.email) {
