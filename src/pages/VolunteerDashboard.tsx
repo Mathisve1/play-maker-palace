@@ -187,23 +187,20 @@ const VolunteerDashboard = () => {
           }
           const { data: myLikeData } = await supabase.from('task_likes').select('task_id').eq('user_id', session.user.id);
           if (myLikeData) { setMyLikes(new Set(myLikeData.map(l => l.task_id))); }
-
-          // Fetch events that have open tasks
-          const eventIds: string[] = [...new Set(enrichedTasks.filter(t => t.event_id).map(t => t.event_id as string))];
-          if (eventIds.length > 0) {
-            const { data: eventsData } = await (supabase as any).from('events').select('*').in('id', eventIds);
-            if (eventsData) {
-              // Get club names for events
-              const clubIds = [...new Set(eventsData.map((e: any) => e.club_id))] as string[];
-              const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);
-              const clubMap = new Map(clubsData?.map(c => [c.id, c.name]) || []);
-              setEvents(eventsData.map((e: any) => ({ ...e, club_name: clubMap.get(e.club_id) || '' })));
-            }
-            // Fetch event groups
-            const { data: groupsData } = await (supabase as any).from('event_groups').select('*').in('event_id', eventIds).order('sort_order', { ascending: true });
-            setEventGroups(groupsData || []);
-          }
         }
+      }
+
+      // Fetch ALL events (always, regardless of tasks)
+      const { data: allEventsData } = await (supabase as any).from('events').select('*').order('event_date', { ascending: true });
+      if (allEventsData && allEventsData.length > 0) {
+        const clubIds = [...new Set(allEventsData.map((e: any) => e.club_id))] as string[];
+        const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);
+        const clubMap = new Map(clubsData?.map(c => [c.id, c.name]) || []);
+        setEvents(allEventsData.map((e: any) => ({ ...e, club_name: clubMap.get(e.club_id) || '' })));
+        
+        const allEventIds = allEventsData.map((e: any) => e.id);
+        const { data: groupsData } = await (supabase as any).from('event_groups').select('*').in('event_id', allEventIds).order('sort_order', { ascending: true });
+        setEventGroups(groupsData || []);
       }
 
       const { data: signupsData } = await supabase.from('task_signups').select('task_id, status').eq('volunteer_id', session.user.id);
