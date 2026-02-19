@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Settings2, CalendarDays, Radio, Ticket, Copy, Check, AlertCircle, Loader2, Send, RefreshCw, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { ArrowLeft, Settings2, CalendarDays, Radio, Ticket, Copy, Check, AlertCircle, Loader2, Send, RefreshCw, ChevronDown, ChevronUp, Users, QrCode } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -403,9 +403,11 @@ const TicketingDashboard = () => {
     const key = volunteerId + '_' + taskId;
     setGeneratingIds(prev => new Set(prev).add(key));
     try {
+      // Use internal ticket system if no external provider is configured
+      const action = configId ? 'create_ticket' : 'create_internal_ticket';
       const { data, error } = await supabase.functions.invoke('ticketing-generate', {
         body: {
-          action: 'create_ticket',
+          action,
           club_id: clubId,
           event_id: selectedEventId,
           volunteer_id: volunteerId,
@@ -415,8 +417,6 @@ const TicketingDashboard = () => {
       if (error) throw error;
       if (data?.success) {
         toast.success(labels.sent);
-        // Reload volunteers
-        setSelectedEventId(prev => prev);
       } else {
         toast.error(data?.error || labels.error);
       }
@@ -498,6 +498,12 @@ const TicketingDashboard = () => {
           </button>
           <Logo />
           <h1 className="text-lg font-bold text-foreground ml-2">{labels.title}</h1>
+          <div className="ml-auto">
+            <Button onClick={() => navigate('/scan')} size="sm" className="gap-2">
+              <QrCode className="w-4 h-4" />
+              {language === 'nl' ? 'QR Scanner' : language === 'fr' ? 'Scanner QR' : 'QR Scanner'}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -747,14 +753,6 @@ const TicketingDashboard = () => {
 
           {/* PLANNING TAB */}
           <TabsContent value="planning">
-            {!configId ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <AlertCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">{labels.noConfig}</p>
-                </CardContent>
-              </Card>
-            ) : (
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                   <Select value={selectedEventId} onValueChange={setSelectedEventId}>
@@ -835,19 +833,10 @@ const TicketingDashboard = () => {
                   </Card>
                 )}
               </div>
-            )}
           </TabsContent>
 
           {/* LIVE TAB */}
           <TabsContent value="live">
-            {!configId ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <AlertCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">{labels.noConfig}</p>
-                </CardContent>
-              </Card>
-            ) : (
               <div className="space-y-4">
                 <Select value={selectedEventId} onValueChange={setSelectedEventId}>
                   <SelectTrigger className="w-full sm:w-80">
@@ -918,7 +907,6 @@ const TicketingDashboard = () => {
                   </>
                 )}
               </div>
-            )}
           </TabsContent>
         </Tabs>
 

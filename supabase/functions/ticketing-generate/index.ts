@@ -1026,20 +1026,23 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, club_id } = body;
 
-    // Get ticketing config
+    // Get ticketing config (not required for create_internal_ticket)
     const { data: config, error: configError } = await supabase
       .from("ticketing_configs")
       .select("*")
       .eq("club_id", club_id)
       .maybeSingle();
 
-    if (configError || !config) {
+    // For internal tickets, config is optional
+    if (action === "create_internal_ticket") {
+      // Will be handled below without needing adapter/config
+    } else if (configError || !config) {
       return new Response(JSON.stringify({ success: false, error: "No ticketing config found" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const adapter = providerAdapters[config.provider];
-    if (!adapter) {
-      return new Response(JSON.stringify({ success: false, error: `Unsupported provider: ${config.provider}` }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const adapter = config ? providerAdapters[config.provider] : null;
+    if (action !== "create_internal_ticket" && !adapter) {
+      return new Response(JSON.stringify({ success: false, error: `Unsupported provider: ${config?.provider}` }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ========== ACTION: test ==========
@@ -1473,6 +1476,66 @@ Deno.serve(async (req) => {
           error_message: e.message,
         }, { onConflict: "id" });
 
+        return new Response(JSON.stringify({ success: false, error: e.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ========== ACTION: create_internal_ticket ==========
+    if (action === "create_internal_ticket") {
+      const { event_id, volunteer_id, task_id } = body;
+
+      try {
+        // Generate unique internal barcode: VT-{short_club}-{random}
+        const clubPrefix = club_id.substring(0, 3).toUpperCase();
+        const randomPart = Array.from(crypto.getRandomValues(new Uint8Array(4)))
+          .map(b => b.toString(36).toUpperCase())
+          .join("")
+          .substring(0, 6);
+        const barcode = `VT-${clubPrefix}-${randomPart}`;
+
+        // Check for existing ticket
+        const { data: existing } = await supabase
+          .from("volunteer_tickets")
+          .select("id")
+          .eq("club_id", club_id)
+          .eq("volunteer_id", volunteer_id)
+          .eq("task_id", task_id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase.from("volunteer_tickets").update({
+            barcode,
+            status: "sent",
+            error_message: null,
+          }).eq("id", existing.id);
+        } else {
+          await supabase.from("volunteer_tickets").insert({
+            club_id,
+            event_id,
+            volunteer_id,
+            task_id,
+            barcode,
+            status: "sent",
+          });
+        }
+
+        await supabase.from("ticketing_logs").insert({
+          club_id,
+          action: "create_internal_ticket",
+          request_payload: { volunteer_id, task_id },
+          response_payload: { barcode },
+          status: "success",
+        });
+
+        return new Response(JSON.stringify({ success: true, ticket: { barcode, ticket_id: barcode } }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (e: any) {
+        await supabase.from("ticketing_logs").insert({
+          club_id,
+          action: "create_internal_ticket",
+          request_payload: { volunteer_id, task_id },
+          status: "error",
+          error_message: e.message,
+        });
         return new Response(JSON.stringify({ success: false, error: e.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
