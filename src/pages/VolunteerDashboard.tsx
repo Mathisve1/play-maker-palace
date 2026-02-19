@@ -515,32 +515,40 @@ const VolunteerDashboard = () => {
               <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Je hebt nog geen tickets.' : language === 'fr' ? 'Vous n\'avez pas encore de tickets.' : 'No tickets yet.'}</p></div>
             ) : (
               myTickets.map((ticket, i) => (
-                <motion.div key={ticket.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl p-5 shadow-card border ${ticket.status === 'checked_in' ? 'border-accent/30' : ticket.status === 'sent' ? 'border-primary/30' : 'border-transparent'}`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{ticket.task_title || ticket.event_title || 'Ticket'}</p>
-                      {ticket.club_name && <p className="text-xs text-muted-foreground">{ticket.club_name}</p>}
-                      <div className="flex items-center gap-2 mt-2">
+                <motion.div key={ticket.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl overflow-hidden shadow-card border ${ticket.status === 'checked_in' ? 'border-accent/30' : ticket.status === 'sent' ? 'border-primary/30' : 'border-transparent'}`}>
+                  {/* Ticket header */}
+                  <div className="p-5 pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{ticket.task_title || ticket.event_title || 'Ticket'}</p>
+                        {ticket.club_name && <p className="text-xs text-muted-foreground mt-0.5">{ticket.club_name}</p>}
+                      </div>
+                      <div className="shrink-0">
                         {ticket.status === 'checked_in' ? (
-                          <span className="flex items-center gap-1 text-xs font-medium text-accent-foreground"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Ingecheckt' : language === 'fr' ? 'Enregistré' : 'Checked in'}</span>
+                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-foreground"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Ingecheckt' : language === 'fr' ? 'Enregistré' : 'Checked in'}</span>
                         ) : ticket.status === 'sent' ? (
-                          <span className="flex items-center gap-1 text-xs font-medium text-primary"><Ticket className="w-3.5 h-3.5" />{language === 'nl' ? 'Ticket ontvangen' : language === 'fr' ? 'Ticket reçu' : 'Ticket received'}</span>
+                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><Ticket className="w-3.5 h-3.5" />{language === 'nl' ? 'Geldig' : language === 'fr' ? 'Valide' : 'Valid'}</span>
                         ) : (
-                          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In afwachting' : language === 'fr' ? 'En attente' : 'Pending'}</span>
+                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In afwachting' : language === 'fr' ? 'En attente' : 'Pending'}</span>
                         )}
-                        {ticket.barcode && <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{ticket.barcode}</span>}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      {ticket.ticket_url && (
-                        <a href={ticket.ticket_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
-                          <ExternalLink className="w-3.5 h-3.5" />{language === 'nl' ? 'Bekijk ticket' : language === 'fr' ? 'Voir le ticket' : 'View ticket'}
-                        </a>
-                      )}
-                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">{language === 'nl' ? 'Aangemaakt op' : language === 'fr' ? 'Créé le' : 'Created on'}: {new Date(ticket.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    {ticket.checked_in_at && <p className="text-xs text-accent-foreground mt-1">{language === 'nl' ? 'Ingecheckt op' : language === 'fr' ? 'Enregistré le' : 'Checked in at'}: {new Date(ticket.checked_in_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">{language === 'nl' ? 'Aangemaakt op' : language === 'fr' ? 'Créé le' : 'Created on'}: {new Date(ticket.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  {ticket.checked_in_at && <p className="text-xs text-accent-foreground mt-1">{language === 'nl' ? 'Ingecheckt op' : language === 'fr' ? 'Enregistré le' : 'Checked in at'}: {new Date(ticket.checked_in_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
+                  {/* Barcode / ticket body */}
+                  {ticket.barcode && (
+                    <div className="border-t border-dashed border-border mx-3" />
+                  )}
+                  {ticket.barcode && (
+                    <div className="p-5 pt-3 flex flex-col items-center gap-2">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{language === 'nl' ? 'Toon deze code bij het inchecken' : language === 'fr' ? 'Montrez ce code à l\'entrée' : 'Show this code at check-in'}</p>
+                      <div className="bg-foreground/5 rounded-xl px-6 py-3 flex flex-col items-center gap-1">
+                        <span className="text-lg font-mono font-bold tracking-widest text-foreground">{ticket.barcode}</span>
+                        <span className="text-[10px] text-muted-foreground">ID: {ticket.external_ticket_id?.slice(-12) || ticket.id.slice(0, 8)}</span>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               ))
             )}
