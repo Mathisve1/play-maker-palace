@@ -272,86 +272,191 @@ const eventbriteAdapter = {
   // 1. Try to find the volunteer in Eventbrite attendees → use real barcode
   // 2. If not found, generate an internal barcode as fallback (fully automatic, no errors)
   async createAttendee(config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string | null; barcode: string }> {
-    // Try private token from config_data first, then fall back to api_key
-    const configData = config.config_data || {};
-    const token = configData.eb_api_key || configData.eb_public_token || config.api_key;
+    const token = this._getToken(config);
+    const volunteerEmail = (volunteer.email || "").toLowerCase().trim();
+    const nameParts = (volunteer.name || "").split(" ");
+    const firstName = nameParts[0] || "Vrijwilliger";
+    const lastName = nameParts.slice(1).join(" ") || "";
 
-    console.log(`Eventbrite createAttendee: eventId=${eventId}, ticketClassId=${ticketClassId}, volunteer=${JSON.stringify(volunteer)}`);
-    console.log(`Using token starting with: ${token?.substring(0, 6)}...`);
+    console.log(`createAttendee: eventId=${eventId}, ticketClassId=${ticketClassId}, email=${volunteerEmail}, name=${volunteer.name}`);
 
-    // Try to find the volunteer in existing Eventbrite attendees
-    let page = 1;
-    let matched: any = null;
-    let totalAttendeesChecked = 0;
-
+    // STEP 1: Check if attendee already exists in Eventbrite
+    let existingAttendee: any = null;
     try {
-      while (!matched) {
+      let page = 1;
+      while (!existingAttendee) {
         const url = `https://www.eventbriteapi.com/v3/events/${encodeURIComponent(eventId)}/attendees/?page=${page}`;
-        console.log(`Fetching attendees page ${page}: ${url}`);
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) {
           const errText = await res.text();
-          console.warn(`Eventbrite attendees lookup failed (${res.status}): ${errText}`);
+          console.warn(`Attendee list failed (${res.status}): ${errText}`);
           break;
         }
-
         const data = await res.json();
         const attendees = data.attendees || [];
-        totalAttendeesChecked += attendees.length;
-        console.log(`Page ${page}: found ${attendees.length} attendees. Emails: ${attendees.map((a: any) => a.profile?.email).join(', ')}`);
+        console.log(`Page ${page}: ${attendees.length} attendees. Emails: ${attendees.map((a: any) => a.profile?.email).join(', ')}`);
 
-        // Match by email first (most reliable)
-        if (volunteer.email) {
-          matched = attendees.find((a: any) =>
-            a.profile?.email?.toLowerCase() === volunteer.email!.toLowerCase()
-          );
+        if (volunteerEmail) {
+          existingAttendee = attendees.find((a: any) => a.profile?.email?.toLowerCase() === volunteerEmail);
         }
-
-        // Fallback: match by name
-        if (!matched && volunteer.name) {
-          const nameParts = volunteer.name.toLowerCase().split(" ");
-          matched = attendees.find((a: any) => {
-            const firstName = (a.profile?.first_name || "").toLowerCase();
-            const lastName = (a.profile?.last_name || "").toLowerCase();
-            return nameParts.some((part: string) => firstName.includes(part) || lastName.includes(part));
+        if (!existingAttendee && volunteer.name) {
+          existingAttendee = attendees.find((a: any) => {
+            const fn = (a.profile?.first_name || "").toLowerCase();
+            const ln = (a.profile?.last_name || "").toLowerCase();
+            return fn === firstName.toLowerCase() && ln === lastName.toLowerCase();
           });
         }
 
-        if (!matched && data.pagination?.has_more_items) {
+        if (!existingAttendee && data.pagination?.has_more_items) {
           page++;
         } else {
           break;
         }
       }
     } catch (e) {
-      console.warn("Eventbrite attendee search error, using internal barcode:", e);
+      console.warn("Attendee lookup error:", e);
     }
 
-    // If found in Eventbrite → use real barcode
-    if (matched) {
-      const barcode = matched.barcodes?.[0]?.barcode || "";
+    if (existingAttendee) {
+      const barcode = existingAttendee.barcodes?.[0]?.barcode || "";
       if (barcode) {
-        console.log(`Found real Eventbrite barcode for ${volunteer.email || volunteer.name}`);
-        return {
-          ticket_id: String(matched.id),
-          ticket_url: null,
-          barcode,
-        };
+        console.log(`Found existing attendee with barcode: ${barcode}`);
+        return { ticket_id: String(existingAttendee.id), ticket_url: null, barcode };
       }
     }
 
-    // Fallback: generate internal barcode automatically (no manual step needed)
-    console.log(`No Eventbrite attendee found for ${volunteer.email || volunteer.name}, generating internal barcode`);
+    // STEP 2: Automatically create attendee via Eventbrite API
+    // Try multiple approaches since Eventbrite API varies by account type
+
+    // Approach A: POST /v3/events/{id}/attendees/ (works for some org types)
+    try {
+      console.log("Attempting to create attendee via POST /attendees/...");
+      const attendeeRes = await fetch(
+        `https://www.eventbriteapi.com/v3/events/${encodeURIComponent(eventId)}/attendees/`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            attendee: {
+              profile: { first_name: firstName, last_name: lastName || ".", email: volunteerEmail },
+              ticket_class_id: ticketClassId,
+              quantity: 1,
+            },
+          }),
+        }
+      );
+      if (attendeeRes.ok) {
+        const attendeeData = await attendeeRes.json();
+        const barcode = attendeeData.barcodes?.[0]?.barcode || "";
+        console.log(`Attendee created via POST /attendees/. ID: ${attendeeData.id}, barcode: ${barcode}`);
+        return { ticket_id: String(attendeeData.id), ticket_url: null, barcode };
+      }
+      const errA = await attendeeRes.text();
+      console.log(`POST /attendees/ failed (${attendeeRes.status}): ${errA}`);
+    } catch (e) {
+      console.warn("POST /attendees/ error:", e);
+    }
+
+    // Approach B: POST /v3/events/{id}/orders/ (Order-based creation for free tickets)
+    try {
+      console.log("Attempting to create order via POST /orders/...");
+      const orderRes = await fetch(
+        `https://www.eventbriteapi.com/v3/events/${encodeURIComponent(eventId)}/orders/`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order: {
+              attendees: [{
+                profile: { first_name: firstName, last_name: lastName || ".", email: volunteerEmail },
+                ticket_class_id: ticketClassId,
+                quantity: 1,
+              }],
+            },
+          }),
+        }
+      );
+      if (orderRes.ok) {
+        const orderData = await orderRes.json();
+        console.log(`Order created. ID: ${orderData.id}`);
+        // Fetch attendees from the created order
+        const orderAttendeesRes = await fetch(
+          `https://www.eventbriteapi.com/v3/orders/${orderData.id}/?expand=attendees`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (orderAttendeesRes.ok) {
+          const orderFull = await orderAttendeesRes.json();
+          const att = orderFull.attendees?.[0];
+          if (att) {
+            const barcode = att.barcodes?.[0]?.barcode || "";
+            console.log(`Got barcode from order attendee: ${barcode}`);
+            return { ticket_id: String(att.id), ticket_url: null, barcode };
+          }
+        } else {
+          await orderAttendeesRes.text();
+        }
+        return { ticket_id: String(orderData.id), ticket_url: null, barcode: `EB-ORD-${orderData.id}` };
+      }
+      const errB = await orderRes.text();
+      console.log(`POST /orders/ failed (${orderRes.status}): ${errB}`);
+    } catch (e) {
+      console.warn("POST /orders/ error:", e);
+    }
+
+    // Approach C: POST /v3/events/{id}/orders/place/ (Checkout API for free tickets)
+    try {
+      console.log("Attempting checkout via POST /orders/place/...");
+      const placeRes = await fetch(
+        `https://www.eventbriteapi.com/v3/events/${encodeURIComponent(eventId)}/orders/place/`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            attendees: [{
+              first_name: firstName,
+              last_name: lastName || ".",
+              email: volunteerEmail,
+              ticket_class_id: ticketClassId,
+            }],
+          }),
+        }
+      );
+      if (placeRes.ok) {
+        const placeData = await placeRes.json();
+        console.log(`Order placed via /orders/place/. Response keys: ${Object.keys(placeData).join(',')}`);
+        const orderId = placeData.id || placeData.order_id;
+        if (orderId) {
+          // Fetch the order to get barcode
+          const orderDetailRes = await fetch(
+            `https://www.eventbriteapi.com/v3/orders/${orderId}/?expand=attendees`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (orderDetailRes.ok) {
+            const orderDetail = await orderDetailRes.json();
+            const att = orderDetail.attendees?.[0];
+            if (att?.barcodes?.[0]?.barcode) {
+              console.log(`Got barcode from placed order: ${att.barcodes[0].barcode}`);
+              return { ticket_id: String(att.id), ticket_url: null, barcode: att.barcodes[0].barcode };
+            }
+          } else {
+            await orderDetailRes.text();
+          }
+        }
+        return { ticket_id: String(placeData.id || Date.now()), ticket_url: null, barcode: `EB-PLC-${placeData.id || Date.now()}` };
+      }
+      const errC = await placeRes.text();
+      console.log(`POST /orders/place/ failed (${placeRes.status}): ${errC}`);
+    } catch (e) {
+      console.warn("POST /orders/place/ error:", e);
+    }
+
+    // STEP 3: All automatic creation attempts failed - generate internal barcode as last resort
+    console.log(`All Eventbrite auto-creation attempts failed for ${volunteerEmail}. Generating internal barcode.`);
     const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-    const barcode = `EB${eventId.slice(-6)}${ticketClassId.slice(-4)}${timestamp}${random}`;
-    const ticketId = `eb-internal-${timestamp}-${random}`;
+    const barcode = `EB${eventId.slice(-6)}${ticketClassId.slice(-4)}${timestamp}`;
 
     return {
-      ticket_id: ticketId,
+      ticket_id: `eb-internal-${timestamp}`,
       ticket_url: null,
       barcode,
     };
