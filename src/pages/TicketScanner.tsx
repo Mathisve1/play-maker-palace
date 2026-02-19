@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,9 +20,8 @@ const t = {
     task: 'Taak',
     event: 'Event',
     checkedInAt: 'Ingecheckt om',
-    scanNext: 'Volgende scannen',
+    scanNext: 'OK — Volgende scannen',
     cameraError: 'Kon camera niet openen. Geef toestemming voor cameragebruik.',
-    loading: 'Camera laden...',
     noAccess: 'Je hebt geen toegang tot deze pagina',
     retry: 'Opnieuw proberen',
     processing: 'Verwerken...',
@@ -37,9 +36,8 @@ const t = {
     task: 'Tâche',
     event: 'Événement',
     checkedInAt: 'Enregistré à',
-    scanNext: 'Scanner suivant',
-    cameraError: "Impossible d'ouvrir la caméra. Autorisez l'accès à la caméra.",
-    loading: 'Chargement de la caméra...',
+    scanNext: 'OK — Scanner suivant',
+    cameraError: "Impossible d'ouvrir la caméra.",
     noAccess: "Vous n'avez pas accès à cette page",
     retry: 'Réessayer',
     processing: 'Traitement...',
@@ -54,9 +52,8 @@ const t = {
     task: 'Task',
     event: 'Event',
     checkedInAt: 'Checked in at',
-    scanNext: 'Scan next',
+    scanNext: 'OK — Scan next',
     cameraError: 'Could not open camera. Please allow camera access.',
-    loading: 'Loading camera...',
     noAccess: 'You do not have access to this page',
     retry: 'Retry',
     processing: 'Processing...',
@@ -73,21 +70,26 @@ type ScanResult = {
   error?: string;
 };
 
+// State machine: idle -> scanning -> processing -> showing_result -> (user clicks OK) -> scanning
+type ScannerState = 'idle' | 'scanning' | 'processing' | 'showing_result';
+
 const TicketScanner = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const labels = t[language as keyof typeof t] || t.nl;
   const scannerRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const lastScannedRef = useRef<string>('');
+  const processingRef = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(true);
-  const [processing, setProcessing] = useState(false);
+  const [scannerState, setScannerState] = useState<ScannerState>('idle');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [cameraError, setCameraError] = useState(false);
   const [noAccess, setNoAccess] = useState(false);
+
+  // Store clubId in ref so the scan callback always has latest value
+  const clubIdRef = useRef<string | null>(null);
+  useEffect(() => { clubIdRef.current = clubId; }, [clubId]);
 
   // Check auth & club membership
   useEffect(() => {
@@ -108,19 +110,26 @@ const TicketScanner = () => {
       }
       setClubId(cid);
       setLoading(false);
+      setScannerState('scanning');
     };
     init();
   }, [navigate]);
 
-  // Initialize scanner with higher FPS and smaller QR box for speed
+  // Initialize / restart scanner whenever state transitions to 'scanning'
   useEffect(() => {
-    if (loading || !clubId || !scanning) return;
+    if (scannerState !== 'scanning' || loading) return;
 
     let html5QrCode: any = null;
+    let mounted = true;
 
     const startScanner = async () => {
       try {
         const { Html5Qrcode } = await import('html5-qrcode');
+        
+        // Wait a tick for the DOM element to mount
+        await new Promise(r => setTimeout(r, 50));
+        if (!mounted) return;
+
         html5QrCode = new Html5Qrcode('qr-reader');
         scannerRef.current = html5QrCode;
 
@@ -132,83 +141,96 @@ const TicketScanner = () => {
             aspectRatio: 1,
             disableFlip: false,
           },
-          (decodedText: string) => {
-            // Debounce: skip if same barcode scanned within 3 seconds
-            if (decodedText === lastScannedRef.current) return;
-            lastScannedRef.current = decodedText;
-            handleScan(decodedText);
+          async (decodedText: string) => {
+            // Use ref to prevent race conditions with stale closures
+            if (processingRef.current) return;
+            processingRef.current = true;
+
+            // Stop scanner immediately
+            try { await html5QrCode.stop(); } catch {}
+
+            if (!mounted) return;
+            setScannerState('processing');
+
+            const cid = clubIdRef.current;
+            if (!cid) {
+              processingRef.current = false;
+              return;
+            }
+
+            try {
+              const { data, error } = await supabase.functions.invoke('ticketing-scan', {
+                body: { barcode: decodedText, club_id: cid },
+              });
+
+              if (!mounted) return;
+
+              if (error) throw error;
+
+              if (data?.success) {
+                setResult({
+                  type: 'success',
+                  volunteerName: data.volunteer_name,
+                  avatarUrl: data.avatar_url,
+                  taskTitle: data.task_title,
+                  eventTitle: data.event_title,
+                  checkedInAt: data.checked_in_at,
+                });
+              } else if (data?.status === 'already_checked_in') {
+                setResult({
+                  type: 'already_checked_in',
+                  volunteerName: data.volunteer_name,
+                  avatarUrl: data.avatar_url,
+                  taskTitle: data.task_title,
+                  checkedInAt: data.checked_in_at,
+                });
+              } else {
+                setResult({
+                  type: 'error',
+                  error: data?.error || labels.invalidTicket,
+                });
+              }
+            } catch (e: any) {
+              if (!mounted) return;
+              setResult({
+                type: 'error',
+                error: e.message || labels.invalidTicket,
+              });
+            }
+
+            if (mounted) {
+              setScannerState('showing_result');
+            }
+            processingRef.current = false;
           },
-          () => {}
+          () => {} // ignore scan failures
         );
       } catch (err) {
         console.error('Camera error:', err);
-        setCameraError(true);
+        if (mounted) setCameraError(true);
       }
     };
 
     startScanner();
 
     return () => {
+      mounted = false;
       if (html5QrCode) {
         html5QrCode.stop().catch(() => {});
       }
     };
-  }, [loading, clubId, scanning]);
+  }, [scannerState, loading, labels.invalidTicket]);
 
-  const handleScan = useCallback(async (barcode: string) => {
-    if (processing || !clubId) return;
-    setProcessing(true);
-    setScanning(false);
-
-    // Stop scanner immediately
-    if (scannerRef.current) {
-      try { await scannerRef.current.stop(); } catch {}
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('ticketing-scan', {
-        body: { barcode, club_id: clubId },
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        setResult({
-          type: 'success',
-          volunteerName: data.volunteer_name,
-          avatarUrl: data.avatar_url,
-          taskTitle: data.task_title,
-          eventTitle: data.event_title,
-          checkedInAt: data.checked_in_at,
-        });
-      } else if (data?.status === 'already_checked_in') {
-        setResult({
-          type: 'already_checked_in',
-          volunteerName: data.volunteer_name,
-          avatarUrl: data.avatar_url,
-          taskTitle: data.task_title,
-          checkedInAt: data.checked_in_at,
-        });
-      } else {
-        setResult({
-          type: 'error',
-          error: data?.error || labels.invalidTicket,
-        });
-      }
-    } catch (e: any) {
-      setResult({
-        type: 'error',
-        error: e.message || labels.invalidTicket,
-      });
-    }
-
-    setProcessing(false);
-  }, [clubId, processing, labels.invalidTicket]);
-
-  const handleScanNext = () => {
-    lastScannedRef.current = '';
+  // User presses OK -> immediately restart scanner
+  const handleOk = () => {
     setResult(null);
-    setScanning(true);
+    processingRef.current = false;
+    setScannerState('scanning');
+  };
+
+  const initials = (name?: string) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   if (loading) {
@@ -233,11 +255,6 @@ const TicketScanner = () => {
     );
   }
 
-  const initials = (name?: string) => {
-    if (!name) return '?';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -252,18 +269,17 @@ const TicketScanner = () => {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        {/* Scanner view */}
-        {scanning && !cameraError && (
+        {/* Scanner view — visible when scanning */}
+        {scannerState === 'scanning' && !cameraError && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Camera className="w-5 h-5" />
+              <Camera className="w-5 h-5 animate-pulse" />
               <span className="text-sm">{labels.scanning}</span>
             </div>
             <div
-              ref={containerRef}
               id="qr-reader"
-              className="w-full rounded-xl overflow-hidden border-2 border-border bg-muted"
-              style={{ minHeight: 300 }}
+              className="w-full rounded-xl overflow-hidden border-2 border-primary/30 bg-muted"
+              style={{ minHeight: 320 }}
             />
           </div>
         )}
@@ -274,7 +290,7 @@ const TicketScanner = () => {
             <CardContent className="pt-6 text-center space-y-3">
               <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
               <p className="text-foreground">{labels.cameraError}</p>
-              <Button onClick={() => { setCameraError(false); setScanning(true); }} variant="outline" className="gap-2">
+              <Button onClick={() => { setCameraError(false); setScannerState('scanning'); }} variant="outline" className="gap-2">
                 <RotateCcw className="w-4 h-4" />
                 {labels.retry}
               </Button>
@@ -282,68 +298,51 @@ const TicketScanner = () => {
           </Card>
         )}
 
-        {/* Processing */}
-        {processing && (
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-3" />
-              <p className="text-muted-foreground">{labels.processing}</p>
-            </CardContent>
-          </Card>
+        {/* Processing spinner */}
+        {scannerState === 'processing' && (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">{labels.processing}</p>
+          </div>
         )}
 
-        {/* Result */}
+        {/* Result screen */}
         <AnimatePresence mode="wait">
-          {result && (
+          {scannerState === 'showing_result' && result && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
             >
               {/* SUCCESS */}
               {result.type === 'success' && (
-                <div className="flex flex-col items-center gap-6 py-8">
+                <div className="flex flex-col items-center gap-5 py-6">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.1 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 15 }}
                   >
-                    <div className="w-32 h-32 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <CheckCircle2 className="w-20 h-20 text-emerald-500" />
+                    <div className="w-28 h-28 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <CheckCircle2 className="w-18 h-18 text-emerald-500" strokeWidth={2.5} style={{ width: 72, height: 72 }} />
                     </div>
                   </motion.div>
 
-                  <motion.h2
-                    className="text-2xl font-bold text-emerald-600 dark:text-emerald-400"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
+                  <h2 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                     {labels.success}
-                  </motion.h2>
+                  </h2>
 
-                  <motion.div
-                    className="flex flex-col items-center gap-3"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <Avatar className="w-24 h-24 border-4 border-emerald-500/30">
+                  <div className="flex flex-col items-center gap-3">
+                    <Avatar className="w-24 h-24 border-4 border-emerald-500/30 shadow-lg">
                       <AvatarImage src={result.avatarUrl || undefined} alt={result.volunteerName} />
                       <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
                         {initials(result.volunteerName)}
                       </AvatarFallback>
                     </Avatar>
                     <p className="text-3xl font-bold text-foreground">{result.volunteerName}</p>
-                  </motion.div>
+                  </div>
 
-                  <motion.div
-                    className="space-y-1 text-center text-sm text-muted-foreground"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                  >
+                  <div className="space-y-1 text-center text-sm text-muted-foreground">
                     {result.taskTitle && (
                       <p>{labels.task}: <span className="font-medium text-foreground">{result.taskTitle}</span></p>
                     )}
@@ -353,19 +352,12 @@ const TicketScanner = () => {
                     {result.checkedInAt && (
                       <p>{labels.checkedInAt}: <span className="font-medium text-foreground">{new Date(result.checkedInAt).toLocaleTimeString()}</span></p>
                     )}
-                  </motion.div>
+                  </div>
 
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="w-full"
-                  >
-                    <Button onClick={handleScanNext} className="w-full gap-2" size="lg">
-                      <Camera className="w-5 h-5" />
-                      {labels.scanNext}
-                    </Button>
-                  </motion.div>
+                  <Button onClick={handleOk} className="w-full gap-2 text-lg py-6" size="lg">
+                    <CheckCircle2 className="w-6 h-6" />
+                    {labels.scanNext}
+                  </Button>
                 </div>
               )}
 
@@ -395,8 +387,7 @@ const TicketScanner = () => {
                       )}
                     </div>
 
-                    <Button onClick={handleScanNext} className="mt-4 gap-2 w-full" size="lg">
-                      <Camera className="w-5 h-5" />
+                    <Button onClick={handleOk} className="mt-2 gap-2 w-full text-lg py-6" size="lg">
                       {labels.scanNext}
                     </Button>
                   </CardContent>
@@ -411,8 +402,7 @@ const TicketScanner = () => {
                     <h2 className="text-xl font-bold text-foreground">{labels.invalidTicket}</h2>
                     {result.error && <p className="text-sm text-destructive">{result.error}</p>}
 
-                    <Button onClick={handleScanNext} className="mt-4 gap-2 w-full" size="lg">
-                      <Camera className="w-5 h-5" />
+                    <Button onClick={handleOk} className="mt-2 gap-2 w-full text-lg py-6" size="lg">
                       {labels.scanNext}
                     </Button>
                   </CardContent>
