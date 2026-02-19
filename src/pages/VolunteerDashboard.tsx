@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Timer } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Timer, Gift } from 'lucide-react';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
@@ -102,7 +102,7 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts' | 'briefings'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty'>('all');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
@@ -118,6 +118,11 @@ const VolunteerDashboard = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [eventGroups, setEventGroups] = useState<EventGroup[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
+
+  // Loyalty state
+  const [loyaltyPrograms, setLoyaltyPrograms] = useState<{ id: string; name: string; description: string | null; reward_description: string; required_tasks: number; club_id: string; club_name?: string }[]>([]);
+  const [loyaltyEnrollments, setLoyaltyEnrollments] = useState<Record<string, { id: string; tasks_completed: number; reward_claimed: boolean }>>({});
+  const [enrollingProgram, setEnrollingProgram] = useState<string | null>(null);
 
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
@@ -222,6 +227,24 @@ const VolunteerDashboard = () => {
         setMyContracts(contractsData.map(c => { const t = ctMap.get(c.task_id); return { ...c, task_title: t?.title, club_name: (t as any)?.clubs?.name }; }));
       }
 
+      // Fetch loyalty programs
+      const { data: allPrograms } = await (supabase as any).from('loyalty_programs').select('*').eq('is_active', true);
+      if (allPrograms && allPrograms.length > 0) {
+        const clubIds = [...new Set(allPrograms.map((p: any) => p.club_id))] as string[];
+        const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);
+        const clubMap = new Map(clubsData?.map(c => [c.id, c.name]) || []);
+        setLoyaltyPrograms(allPrograms.map((p: any) => ({ ...p, club_name: clubMap.get(p.club_id) || '' })));
+
+        // Fetch my enrollments
+        const programIds = allPrograms.map((p: any) => p.id);
+        const { data: myEnrollments } = await (supabase as any).from('loyalty_enrollments').select('*').eq('volunteer_id', session.user.id).in('program_id', programIds);
+        if (myEnrollments) {
+          const enrollMap: Record<string, { id: string; tasks_completed: number; reward_claimed: boolean }> = {};
+          myEnrollments.forEach((e: any) => { enrollMap[e.program_id] = { id: e.id, tasks_completed: e.tasks_completed, reward_claimed: e.reward_claimed }; });
+          setLoyaltyEnrollments(enrollMap);
+        }
+      }
+
       setLoading(false);
 
       // Check compliance
@@ -268,6 +291,20 @@ const VolunteerDashboard = () => {
       setMyLikes(prev => { const s = new Set(prev); s.delete(taskId); return s; });
       setLikeCounts(prev => ({ ...prev, [taskId]: Math.max((prev[taskId] || 1) - 1, 0) }));
     }
+  };
+
+  const handleEnrollLoyalty = async (programId: string) => {
+    if (!currentUserId) return;
+    setEnrollingProgram(programId);
+    const { data, error } = await (supabase as any).from('loyalty_enrollments').insert({ program_id: programId, volunteer_id: currentUserId }).select('*').maybeSingle();
+    if (error) {
+      if (error.code === '23505') { toast.info(language === 'nl' ? 'Je bent al ingeschreven!' : language === 'fr' ? 'Vous êtes déjà inscrit!' : 'You are already enrolled!'); }
+      else { toast.error(error.message); }
+    } else if (data) {
+      toast.success(language === 'nl' ? 'Ingeschreven voor loyaliteitsprogramma!' : language === 'fr' ? 'Inscrit au programme de fidélité!' : 'Enrolled in loyalty program!');
+      setLoyaltyEnrollments(prev => ({ ...prev, [programId]: { id: data.id, tasks_completed: 0, reward_claimed: false } }));
+    }
+    setEnrollingProgram(null);
   };
 
   const isSignedUp = (taskId: string) => signups.some(s => s.task_id === taskId);
@@ -422,11 +459,59 @@ const VolunteerDashboard = () => {
             <button onClick={() => setActiveTab('briefings')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'briefings' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
               <ClipboardList className="w-3 h-3" /> Briefings
             </button>
+            <button onClick={() => setActiveTab('loyalty')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'loyalty' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
+              <Gift className="w-3 h-3" /> {language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'} {loyaltyPrograms.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'loyalty' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`}>{loyaltyPrograms.length}</span>}
+            </button>
           </div>
         </div>
 
         {/* Content */}
-        {activeTab === 'briefings' ? (
+        {activeTab === 'loyalty' ? (
+          <div className="mt-6 space-y-4">
+            {loyaltyPrograms.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground"><Gift className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen loyaliteitsprogramma\'s beschikbaar.' : language === 'fr' ? 'Aucun programme de fidélité disponible.' : 'No loyalty programs available.'}</p></div>
+            ) : (
+              loyaltyPrograms.map((program, i) => {
+                const enrollment = loyaltyEnrollments[program.id];
+                const progress = enrollment ? Math.min(100, (enrollment.tasks_completed / program.required_tasks) * 100) : 0;
+                return (
+                  <motion.div key={program.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-card rounded-2xl p-5 shadow-card border border-transparent">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Gift className="w-4 h-4 text-primary" />
+                          <h3 className="font-heading font-semibold text-foreground">{program.name}</h3>
+                        </div>
+                        {program.club_name && <p className="text-xs text-muted-foreground mt-0.5">{program.club_name}</p>}
+                        {program.description && <p className="text-sm text-muted-foreground mt-1">{program.description}</p>}
+                        <p className="text-sm mt-2">🎁 {program.reward_description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{program.required_tasks} {language === 'nl' ? 'taken vereist' : language === 'fr' ? 'tâches requises' : 'tasks required'}</p>
+                      </div>
+                      <div className="shrink-0">
+                        {!enrollment ? (
+                          <button onClick={() => handleEnrollLoyalty(program.id)} disabled={enrollingProgram === program.id} className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
+                            {enrollingProgram === program.id ? '...' : language === 'nl' ? 'Deelnemen' : language === 'fr' ? 'Participer' : 'Join'}
+                          </button>
+                        ) : enrollment.reward_claimed ? (
+                          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-accent/20 text-accent-foreground">✅ {language === 'nl' ? 'Beloning ontvangen' : language === 'fr' ? 'Récompense reçue' : 'Reward received'}</span>
+                        ) : (
+                          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-muted text-muted-foreground">{enrollment.tasks_completed}/{program.required_tasks}</span>
+                        )}
+                      </div>
+                    </div>
+                    {enrollment && (
+                      <div className="mt-3">
+                        <div className="bg-muted rounded-full h-2 w-full">
+                          <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${progress}%` }} />
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+        ) : activeTab === 'briefings' ? (
           <div className="mt-6"><VolunteerBriefingsList language={language} userId={currentUserId} /></div>
         ) : activeTab === 'contracts' ? (
           <div className="mt-6 space-y-4">
