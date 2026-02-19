@@ -168,7 +168,7 @@ const eventbriteAdapter = {
     return { organizations: orgs };
   },
 
-  // POST /v3/organizations/{org_id}/events/ → create event
+  // POST /v3/organizations/{org_id}/events/ → create event + publish it
   async createEvent(config: any, eventData: { title: string; start: string; end: string; timezone: string; currency?: string; location?: string }): Promise<{ event_id: string; event_url: string }> {
     const token = this._getToken(config);
     const configData = config.config_data || {};
@@ -198,10 +198,28 @@ const eventbriteAdapter = {
     }
 
     const data = await res.json();
-    return { event_id: String(data.id), event_url: data.url || "" };
+    const eventId = String(data.id);
+    const eventUrl = data.url || `https://www.eventbrite.com/e/${eventId}`;
+
+    // Publish the event so tickets can be ordered
+    try {
+      const publishRes = await fetch(`https://www.eventbriteapi.com/v3/events/${eventId}/publish/`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!publishRes.ok) {
+        const publishErr = await publishRes.text();
+        console.warn(`Eventbrite publish warning (${publishRes.status}): ${publishErr}`);
+        // Don't throw - event is created, publish may need a ticket class first
+      }
+    } catch (e) {
+      console.warn("Eventbrite publish attempt failed:", e);
+    }
+
+    return { event_id: eventId, event_url: eventUrl };
   },
 
-  // POST /v3/events/{event_id}/ticket_classes/ → create free ticket class
+  // POST /v3/events/{event_id}/ticket_classes/ → create free ticket class, then publish event
   async createTicketClass(config: any, eventId: string, taskName: string, quantity?: number): Promise<{ ticket_class_id: string }> {
     const token = this._getToken(config);
 
@@ -227,21 +245,38 @@ const eventbriteAdapter = {
     }
 
     const data = await res.json();
-    return { ticket_class_id: String(data.id) };
+    const ticketClassId = String(data.id);
+
+    // Now that a ticket class exists, try to publish the event
+    try {
+      const publishRes = await fetch(`https://www.eventbriteapi.com/v3/events/${eventId}/publish/`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!publishRes.ok) {
+        const publishErr = await publishRes.text();
+        console.warn(`Eventbrite publish after ticket-class (${publishRes.status}): ${publishErr}`);
+      } else {
+        console.log(`Eventbrite event ${eventId} published successfully`);
+      }
+    } catch (e) {
+      console.warn("Eventbrite publish attempt failed:", e);
+    }
+
+    return { ticket_class_id: ticketClassId };
   },
 
-  // Register volunteer: Eventbrite API doesn't support POST to /attendees/ (read-only).
-  // Instead, generate a direct checkout URL that pre-selects the correct free ticket class.
-  // Once the volunteer completes the (free) checkout, they appear in the Eventbrite dashboard.
+  // Register volunteer: generate the event page URL where they can register for the free ticket.
+  // The event must be published and have a ticket class. The volunteer clicks the link and registers.
   async createAttendee(_config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
     const internalId = `eb-${eventId}-${ticketClassId}-${Date.now()}`;
     const barcode = `EB${Date.now()}`;
-    // Direct checkout URL with pre-selected ticket class (quantity 1)
-    const checkoutUrl = `https://www.eventbrite.com/checkout-external?eid=${eventId}&selectedTicketClasses=${ticketClassId}:1`;
+    // Use the standard event page URL - works for both listed and unlisted events
+    const eventUrl = `https://www.eventbrite.com/e/${eventId}`;
 
     return {
       ticket_id: internalId,
-      ticket_url: checkoutUrl,
+      ticket_url: eventUrl,
       barcode,
     };
   },
