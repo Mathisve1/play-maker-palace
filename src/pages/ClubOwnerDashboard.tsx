@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy } from 'lucide-react';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
@@ -145,6 +145,11 @@ const dashboardT = {
     eventDeleted: 'Evenement verwijderd!',
     groupDeleted: 'Groep verwijderd!',
     groupCreated: 'Groep aangemaakt!',
+    editEvent: 'Evenement bewerken',
+    eventUpdated: 'Evenement bijgewerkt!',
+    duplicateEvent: 'Evenement dupliceren',
+    eventDuplicated: 'Evenement gedupliceerd!',
+    duplicating: 'Dupliceren...',
   },
   fr: {
     title: 'Tableau de bord Club',
@@ -205,6 +210,11 @@ const dashboardT = {
     eventDeleted: 'Événement supprimé!',
     groupDeleted: 'Groupe supprimé!',
     groupCreated: 'Groupe créé!',
+    editEvent: "Modifier l'événement",
+    eventUpdated: 'Événement mis à jour!',
+    duplicateEvent: "Dupliquer l'événement",
+    eventDuplicated: 'Événement dupliqué!',
+    duplicating: 'Duplication...',
   },
   en: {
     title: 'Club Dashboard',
@@ -265,6 +275,11 @@ const dashboardT = {
     eventDeleted: 'Event deleted!',
     groupDeleted: 'Group deleted!',
     groupCreated: 'Group created!',
+    editEvent: 'Edit event',
+    eventUpdated: 'Event updated!',
+    duplicateEvent: 'Duplicate event',
+    eventDuplicated: 'Event duplicated!',
+    duplicating: 'Duplicating...',
   },
 };
 
@@ -327,6 +342,10 @@ const ClubOwnerDashboard = () => {
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
   const [confirmDeleteEvent, setConfirmDeleteEvent] = useState<string | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<string | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EventData | null>(null);
+  const [editEventForm, setEditEventForm] = useState({ title: '', description: '', event_date: '', location: '' });
+  const [savingEvent, setSavingEvent] = useState(false);
+  const [duplicatingEvent, setDuplicatingEvent] = useState<string | null>(null);
 
   // Create loose task form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -576,6 +595,122 @@ const ClubOwnerDashboard = () => {
       if (expandedEvent === eventId) setExpandedEvent(null);
     }
     setDeletingEvent(null);
+  };
+
+  const handleStartEditEvent = (event: EventData) => {
+    setEditingEvent(event);
+    setEditEventForm({
+      title: event.title,
+      description: event.description || '',
+      event_date: event.event_date ? new Date(event.event_date).toISOString().slice(0, 16) : '',
+      location: event.location || '',
+    });
+  };
+
+  const handleSaveEditEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEvent) return;
+    setSavingEvent(true);
+    const { error } = await (supabase as any).from('events').update({
+      title: editEventForm.title.trim(),
+      description: editEventForm.description.trim() || null,
+      event_date: editEventForm.event_date || null,
+      location: editEventForm.location.trim() || null,
+    }).eq('id', editingEvent.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(dt.eventUpdated);
+      setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? {
+        ...ev,
+        title: editEventForm.title.trim(),
+        description: editEventForm.description.trim() || null,
+        event_date: editEventForm.event_date || null,
+        location: editEventForm.location.trim() || null,
+      } : ev));
+      setEditingEvent(null);
+    }
+    setSavingEvent(false);
+  };
+
+  const handleDuplicateEvent = async (eventId: string) => {
+    if (!clubId) return;
+    setDuplicatingEvent(eventId);
+    const sourceEvent = events.find(e => e.id === eventId);
+    if (!sourceEvent) { setDuplicatingEvent(null); return; }
+
+    // 1. Create new event (copy without date)
+    const { data: newEvt, error: evtErr } = await (supabase as any)
+      .from('events')
+      .insert({
+        club_id: clubId,
+        title: sourceEvent.title + (language === 'nl' ? ' (kopie)' : language === 'fr' ? ' (copie)' : ' (copy)'),
+        description: sourceEvent.description,
+        event_date: null,
+        location: sourceEvent.location,
+      })
+      .select('*')
+      .maybeSingle();
+    if (evtErr || !newEvt) { toast.error(evtErr?.message || 'Error'); setDuplicatingEvent(null); return; }
+
+    // 2. Copy groups
+    const sourceGroups = eventGroups.filter(g => g.event_id === eventId);
+    const groupMap: Record<string, string> = {}; // old -> new
+    const newGroups: EventGroup[] = [];
+    for (const g of sourceGroups) {
+      const { data: newG } = await (supabase as any)
+        .from('event_groups')
+        .insert({ event_id: newEvt.id, name: g.name, color: g.color, sort_order: g.sort_order })
+        .select('*')
+        .maybeSingle();
+      if (newG) {
+        groupMap[g.id] = newG.id;
+        newGroups.push(newG);
+      }
+    }
+
+    // 3. Copy tasks (without date, reset signups)
+    const sourceTasks = tasks.filter(t => t.event_id === eventId);
+    const newTasks: Task[] = [];
+    for (const t of sourceTasks) {
+      const { data: fullTask } = await supabase.from('tasks').select('*').eq('id', t.id).maybeSingle();
+      if (fullTask) {
+        const newGroupId = t.event_group_id ? groupMap[t.event_group_id] || null : null;
+        const { data: newT } = await (supabase as any)
+          .from('tasks')
+          .insert({
+            club_id: clubId,
+            title: fullTask.title,
+            description: fullTask.description,
+            task_date: null,
+            location: fullTask.location,
+            spots_available: fullTask.spots_available,
+            briefing_time: null,
+            briefing_location: fullTask.briefing_location,
+            start_time: null,
+            end_time: null,
+            notes: fullTask.notes,
+            expense_reimbursement: fullTask.expense_reimbursement,
+            expense_amount: fullTask.expense_amount,
+            contract_template_id: fullTask.contract_template_id,
+            event_id: newEvt.id,
+            event_group_id: newGroupId,
+            compensation_type: (fullTask as any).compensation_type || 'fixed',
+            hourly_rate: (fullTask as any).hourly_rate,
+            estimated_hours: (fullTask as any).estimated_hours,
+          })
+          .select('id, title, description, task_date, location, spots_available, status, club_id, event_id, event_group_id')
+          .maybeSingle();
+        if (newT) newTasks.push(newT);
+      }
+    }
+
+    setEvents(prev => [...prev, newEvt]);
+    setEventGroups(prev => [...prev, ...newGroups]);
+    setTasks(prev => [...prev, ...newTasks]);
+    setExpandedEvent(newEvt.id);
+    toast.success(dt.eventDuplicated);
+    setDuplicatingEvent(null);
   };
 
   const handleAddGroup = async (eventId: string) => {
@@ -1346,6 +1481,19 @@ const ClubOwnerDashboard = () => {
                             <Plus className="w-3.5 h-3.5" /> {dt.addGroup}
                           </button>
                           <button
+                            onClick={() => handleStartEditEvent(event)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> {dt.editEvent}
+                          </button>
+                          <button
+                            onClick={() => handleDuplicateEvent(event.id)}
+                            disabled={duplicatingEvent === event.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                          >
+                            {duplicatingEvent === event.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />} {duplicatingEvent === event.id ? dt.duplicating : dt.duplicateEvent}
+                          </button>
+                          <button
                             onClick={() => setConfirmDeleteEvent(event.id)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors"
                           >
@@ -1584,6 +1732,46 @@ const ClubOwnerDashboard = () => {
                   {deletingEvent === confirmDeleteEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : dt.delete}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Event Dialog */}
+      <AnimatePresence>
+        {editingEvent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditingEvent(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-heading font-semibold text-foreground">{dt.editEvent}</h2>
+                <button onClick={() => setEditingEvent(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+              </div>
+              <form onSubmit={handleSaveEditEvent} className="space-y-4">
+                <div>
+                  <label className={labelClass}>{dt.eventTitle} *</label>
+                  <input type="text" required maxLength={200} value={editEventForm.title} onChange={e => setEditEventForm(p => ({ ...p, title: e.target.value }))} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>{dt.eventDescription}</label>
+                  <textarea rows={2} maxLength={2000} value={editEventForm.description} onChange={e => setEditEventForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>{dt.eventDate}</label>
+                    <input type="datetime-local" value={editEventForm.event_date} onChange={e => setEditEventForm(p => ({ ...p, event_date: e.target.value }))} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{dt.eventLocation}</label>
+                    <input type="text" maxLength={300} value={editEventForm.location} onChange={e => setEditEventForm(p => ({ ...p, location: e.target.value }))} className={inputClass} />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => setEditingEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
+                  <button type="submit" disabled={savingEvent || !editEventForm.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                    {savingEvent ? dt.saving : dt.save}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
