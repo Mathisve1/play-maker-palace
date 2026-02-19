@@ -266,17 +266,15 @@ const eventbriteAdapter = {
     return { ticket_class_id: ticketClassId };
   },
 
-  // Register volunteer: generate the event page URL where they can register for the free ticket.
-  // The event must be published and have a ticket class. The volunteer clicks the link and registers.
-  async createAttendee(_config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
+  // Register volunteer: ticket is assigned internally, no external URL needed.
+  // The barcode is generated for scanning purposes. No public Eventbrite page is exposed.
+  async createAttendee(_config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string | null; barcode: string }> {
     const internalId = `eb-${eventId}-${ticketClassId}-${Date.now()}`;
-    const barcode = `EB${Date.now()}`;
-    // Use the standard event page URL - works for both listed and unlisted events
-    const eventUrl = `https://www.eventbrite.com/e/${eventId}`;
+    const barcode = `EB${Date.now()}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
 
     return {
       ticket_id: internalId,
-      ticket_url: eventUrl,
+      ticket_url: null,
       barcode,
     };
   },
