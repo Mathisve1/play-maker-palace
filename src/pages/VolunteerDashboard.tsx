@@ -188,7 +188,7 @@ const VolunteerDashboard = () => {
             const { data: eventsData } = await (supabase as any).from('events').select('*').in('id', eventIds);
             if (eventsData) {
               // Get club names for events
-              const clubIds = [...new Set(eventsData.map((e: any) => e.club_id))];
+              const clubIds = [...new Set(eventsData.map((e: any) => e.club_id))] as string[];
               const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);
               const clubMap = new Map(clubsData?.map(c => [c.id, c.name]) || []);
               setEvents(eventsData.map((e: any) => ({ ...e, club_name: clubMap.get(e.club_id) || '' })));
