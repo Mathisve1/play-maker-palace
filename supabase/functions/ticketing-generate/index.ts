@@ -1020,12 +1020,146 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ========== ACTION: create_ticket (legacy / non-eventbrite) ==========
+    // ========== ACTION: create_ticket ==========
     if (action === "create_ticket") {
       const { event_id, volunteer_id, task_id } = body;
 
       const { data: profile } = await supabase.from("profiles").select("full_name, email").eq("id", volunteer_id).maybeSingle();
 
+      // For Eventbrite: use auto-sync flow (lookup external_event_id from event, auto-create ticket class, create attendee)
+      if (config.provider === "eventbrite") {
+        try {
+          // 1. Get external_event_id from the event
+          let externalEventId: string | null = null;
+          if (event_id) {
+            const { data: eventData } = await supabase.from("events").select("external_event_id, title, event_date").eq("id", event_id).maybeSingle();
+            externalEventId = (eventData as any)?.external_event_id || null;
+
+            // Auto-create event in Eventbrite if not yet synced
+            if (!externalEventId && eventData) {
+              const eventDate = eventData.event_date ? new Date(eventData.event_date) : new Date();
+              const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000); // +4h
+              const formatUtc = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, "Z");
+
+              const createResult = await eventbriteAdapter.createEvent(config, {
+                title: eventData.title || "Event",
+                start: formatUtc(eventDate),
+                end: formatUtc(endDate),
+                timezone: "Europe/Brussels",
+              });
+              externalEventId = createResult.event_id;
+
+              // Save it
+              await supabase.from("events").update({ external_event_id: externalEventId } as any).eq("id", event_id);
+
+              await supabase.from("ticketing_logs").insert({
+                club_id,
+                action: "auto_create_event",
+                request_payload: { event_id, event_title: eventData.title },
+                response_payload: createResult,
+                status: "success",
+              });
+            }
+          }
+
+          if (!externalEventId) {
+            throw new Error("Kon geen Eventbrite event aanmaken of vinden voor dit evenement.");
+          }
+
+          // 2. Get or create ticket class for this task
+          let ticketClassId: string | null = null;
+          if (task_id) {
+            const { data: taskData } = await supabase.from("tasks").select("external_ticket_class_id, title").eq("id", task_id).maybeSingle();
+            ticketClassId = (taskData as any)?.external_ticket_class_id || null;
+
+            if (!ticketClassId) {
+              const tcResult = await eventbriteAdapter.createTicketClass(config, externalEventId, taskData?.title || "Vrijwilliger", 100);
+              ticketClassId = tcResult.ticket_class_id;
+
+              await supabase.from("tasks").update({ external_ticket_class_id: ticketClassId } as any).eq("id", task_id);
+
+              await supabase.from("ticketing_logs").insert({
+                club_id,
+                action: "auto_create_ticket_class",
+                request_payload: { task_id, task_name: taskData?.title, external_event_id: externalEventId },
+                response_payload: tcResult,
+                status: "success",
+              });
+            }
+          }
+
+          if (!ticketClassId) {
+            throw new Error("Kon geen ticket-class aanmaken voor deze taak.");
+          }
+
+          // 3. Create attendee
+          const result = await eventbriteAdapter.createAttendee(config, externalEventId, ticketClassId, {
+            name: profile?.full_name,
+            email: profile?.email,
+          });
+
+          // Upsert ticket record
+          const { data: existing } = await supabase
+            .from("volunteer_tickets")
+            .select("id")
+            .eq("club_id", club_id)
+            .eq("volunteer_id", volunteer_id)
+            .eq("task_id", task_id)
+            .maybeSingle();
+
+          if (existing) {
+            await supabase.from("volunteer_tickets").update({
+              external_ticket_id: result.ticket_id,
+              ticket_url: result.ticket_url,
+              barcode: result.barcode,
+              status: "sent",
+              error_message: null,
+            }).eq("id", existing.id);
+          } else {
+            await supabase.from("volunteer_tickets").insert({
+              club_id,
+              event_id,
+              volunteer_id,
+              task_id,
+              external_ticket_id: result.ticket_id,
+              ticket_url: result.ticket_url,
+              barcode: result.barcode,
+              status: "sent",
+            });
+          }
+
+          await supabase.from("ticketing_logs").insert({
+            club_id,
+            action: "create_ticket",
+            request_payload: { volunteer_id, task_id, provider: "eventbrite", auto_sync: true },
+            response_payload: result,
+            status: "success",
+          });
+
+          return new Response(JSON.stringify({ success: true, ticket: result }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        } catch (e: any) {
+          await supabase.from("ticketing_logs").insert({
+            club_id,
+            action: "create_ticket",
+            request_payload: { volunteer_id, task_id, provider: "eventbrite" },
+            status: "error",
+            error_message: e.message,
+          });
+
+          await supabase.from("volunteer_tickets").upsert({
+            club_id,
+            event_id,
+            volunteer_id,
+            task_id,
+            status: "none",
+            error_message: e.message,
+          }, { onConflict: "id" });
+
+          return new Response(JSON.stringify({ success: false, error: e.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      }
+
+      // Non-Eventbrite: use legacy adapter flow
       try {
         const result = await adapter.createTicket(config, { id: volunteer_id, name: profile?.full_name, email: profile?.email });
 
