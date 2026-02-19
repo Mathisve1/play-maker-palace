@@ -72,6 +72,40 @@ type ScanResult = {
 
 type ScannerState = 'idle' | 'scanning' | 'processing' | 'showing_result';
 
+// Generate a short beep using Web Audio API (no file needed)
+const playBeep = (frequency = 880, duration = 150, type: OscillatorType = 'sine') => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = frequency;
+    gain.gain.value = 0.4;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+    osc.stop(ctx.currentTime + duration / 1000 + 0.05);
+  } catch (e) {
+    console.warn('Audio not available:', e);
+  }
+};
+
+const playSuccessChime = () => {
+  playBeep(660, 100, 'sine');
+  setTimeout(() => playBeep(880, 100, 'sine'), 120);
+  setTimeout(() => playBeep(1100, 150, 'sine'), 250);
+};
+
+const playErrorBuzz = () => {
+  playBeep(200, 300, 'square');
+};
+
+const playWarningTone = () => {
+  playBeep(440, 200, 'triangle');
+  setTimeout(() => playBeep(440, 200, 'triangle'), 250);
+};
+
 const TicketScanner = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
@@ -84,77 +118,11 @@ const TicketScanner = () => {
   const [cameraError, setCameraError] = useState(false);
   const [noAccess, setNoAccess] = useState(false);
 
-  // Component-level mounted ref — survives state changes
-  const isMounted = useRef(true);
-  useEffect(() => {
-    isMounted.current = true;
-    return () => { isMounted.current = false; };
-  }, []);
+  // Pending barcode — triggers processing in a separate effect
+  const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
 
   const clubIdRef = useRef<string | null>(null);
   useEffect(() => { clubIdRef.current = clubId; }, [clubId]);
-
-  const processingRef = useRef(false);
-
-  // Process barcode — completely outside the scanner useEffect
-  const processBarcode = useCallback(async (barcode: string) => {
-    const cid = clubIdRef.current;
-    if (!cid) {
-      processingRef.current = false;
-      setScannerState('scanning');
-      return;
-    }
-
-    let scanResult: ScanResult;
-
-    try {
-      const { data, error } = await supabase.functions.invoke('ticketing-scan', {
-        body: { barcode, club_id: cid },
-      });
-
-      console.log('Scan response:', { data, error });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        scanResult = {
-          type: 'success',
-          volunteerName: data.volunteer_name,
-          avatarUrl: data.avatar_url,
-          taskTitle: data.task_title,
-          eventTitle: data.event_title,
-          checkedInAt: data.checked_in_at,
-        };
-      } else if (data?.status === 'already_checked_in') {
-        scanResult = {
-          type: 'already_checked_in',
-          volunteerName: data.volunteer_name,
-          avatarUrl: data.avatar_url,
-          taskTitle: data.task_title,
-          checkedInAt: data.checked_in_at,
-        };
-      } else {
-        scanResult = {
-          type: 'error',
-          error: data?.error || labels.invalidTicket,
-        };
-      }
-    } catch (e: any) {
-      console.error('Scan error:', e);
-      scanResult = {
-        type: 'error',
-        error: e.message || labels.invalidTicket,
-      };
-    }
-
-    // Use component-level ref, not useEffect-scoped variable
-    if (isMounted.current) {
-      console.log('Setting result:', scanResult);
-      setResult(scanResult);
-      setScannerState('showing_result');
-      processingRef.current = false;
-    }
-  }, [labels.invalidTicket]);
 
   // Check auth & club membership
   useEffect(() => {
@@ -180,7 +148,7 @@ const TicketScanner = () => {
     init();
   }, [navigate]);
 
-  // Scanner lifecycle — ONLY manages camera start/stop
+  // EFFECT 1: Scanner lifecycle — ONLY manages camera start/stop
   useEffect(() => {
     if (scannerState !== 'scanning' || loading) return;
 
@@ -190,26 +158,31 @@ const TicketScanner = () => {
     const startScanner = async () => {
       try {
         const { Html5Qrcode } = await import('html5-qrcode');
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 150));
         if (stopped) return;
+
+        const el = document.getElementById('qr-reader');
+        if (!el) {
+          console.error('qr-reader element not found');
+          return;
+        }
 
         html5QrCode = new Html5Qrcode('qr-reader');
 
         await html5QrCode.start(
           { facingMode: 'environment' },
           { fps: 15, qrbox: { width: 280, height: 280 }, aspectRatio: 1, disableFlip: false },
-          async (decodedText: string) => {
-            if (processingRef.current) return;
-            processingRef.current = true;
+          (decodedText: string) => {
+            if (stopped) return;
+            stopped = true; // prevent double scans
 
-            // Stop scanner
-            try { await html5QrCode.stop(); } catch {}
+            // Stop scanner first
+            html5QrCode.stop().catch(() => {});
 
-            // Update UI to processing
+            // Set pending barcode — this triggers EFFECT 2
+            console.log('[Scanner] Barcode detected:', decodedText);
             setScannerState('processing');
-
-            // Fire-and-forget: processBarcode handles the rest
-            processBarcode(decodedText);
+            setPendingBarcode(decodedText);
           },
           () => {} // ignore scan failures
         );
@@ -227,11 +200,103 @@ const TicketScanner = () => {
         html5QrCode.stop().catch(() => {});
       }
     };
-  }, [scannerState, loading, processBarcode]);
+  }, [scannerState, loading]);
+
+  // EFFECT 2: Process barcode — completely separate from scanner lifecycle
+  useEffect(() => {
+    if (!pendingBarcode) return;
+
+    const cid = clubIdRef.current;
+    if (!cid) {
+      console.error('[Process] No club ID');
+      setPendingBarcode(null);
+      setScannerState('scanning');
+      return;
+    }
+
+    let cancelled = false;
+    const barcode = pendingBarcode;
+
+    const process = async () => {
+      console.log('[Process] Calling ticketing-scan with barcode:', barcode);
+
+      let scanResult: ScanResult;
+
+      try {
+        const response = await supabase.functions.invoke('ticketing-scan', {
+          body: { barcode, club_id: cid },
+        });
+
+        console.log('[Process] Raw response:', JSON.stringify(response));
+
+        // supabase.functions.invoke returns { data, error }
+        // data is the parsed JSON body, error is set for non-2xx or network errors
+        const data = response.data;
+        const error = response.error;
+
+        if (error) {
+          console.error('[Process] Invoke error:', error);
+          scanResult = {
+            type: 'error',
+            error: typeof error === 'string' ? error : (error as any)?.message || labels.invalidTicket,
+          };
+        } else if (data?.success === true) {
+          scanResult = {
+            type: 'success',
+            volunteerName: data.volunteer_name,
+            avatarUrl: data.avatar_url,
+            taskTitle: data.task_title,
+            eventTitle: data.event_title,
+            checkedInAt: data.checked_in_at,
+          };
+        } else if (data?.status === 'already_checked_in') {
+          scanResult = {
+            type: 'already_checked_in',
+            volunteerName: data.volunteer_name,
+            avatarUrl: data.avatar_url,
+            taskTitle: data.task_title,
+            checkedInAt: data.checked_in_at,
+          };
+        } else {
+          scanResult = {
+            type: 'error',
+            error: data?.error || labels.invalidTicket,
+          };
+        }
+      } catch (e: any) {
+        console.error('[Process] Exception:', e);
+        scanResult = {
+          type: 'error',
+          error: e.message || labels.invalidTicket,
+        };
+      }
+
+      if (cancelled) return;
+
+      console.log('[Process] Setting result:', scanResult.type, scanResult);
+
+      // Play sound based on result
+      if (scanResult.type === 'success') {
+        playSuccessChime();
+      } else if (scanResult.type === 'already_checked_in') {
+        playWarningTone();
+      } else {
+        playErrorBuzz();
+      }
+
+      setResult(scanResult);
+      setScannerState('showing_result');
+      setPendingBarcode(null);
+    };
+
+    process();
+
+    return () => { cancelled = true; };
+  }, [pendingBarcode, labels.invalidTicket]);
 
   const handleOk = () => {
     setResult(null);
-    processingRef.current = false;
+    setPendingBarcode(null);
     setScannerState('scanning');
   };
 
@@ -275,6 +340,7 @@ const TicketScanner = () => {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
+        {/* Scanner view */}
         {scannerState === 'scanning' && !cameraError && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -289,6 +355,7 @@ const TicketScanner = () => {
           </div>
         )}
 
+        {/* Camera error */}
         {cameraError && (
           <Card>
             <CardContent className="pt-6 text-center space-y-3">
@@ -302,6 +369,7 @@ const TicketScanner = () => {
           </Card>
         )}
 
+        {/* Processing spinner */}
         {scannerState === 'processing' && (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -309,14 +377,17 @@ const TicketScanner = () => {
           </div>
         )}
 
+        {/* Result screen */}
         <AnimatePresence mode="wait">
           {scannerState === 'showing_result' && result && (
             <motion.div
+              key="result"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
             >
+              {/* SUCCESS */}
               {result.type === 'success' && (
                 <div className="flex flex-col items-center gap-5 py-6">
                   <motion.div
@@ -350,6 +421,7 @@ const TicketScanner = () => {
                 </div>
               )}
 
+              {/* ALREADY CHECKED IN */}
               {result.type === 'already_checked_in' && (
                 <Card className="border-2 border-amber-400 bg-amber-50/50 dark:bg-amber-950/20">
                   <CardContent className="pt-6 text-center space-y-4">
@@ -373,6 +445,7 @@ const TicketScanner = () => {
                 </Card>
               )}
 
+              {/* ERROR */}
               {result.type === 'error' && (
                 <Card className="border-2 border-destructive bg-destructive/5">
                   <CardContent className="pt-6 text-center space-y-3">
