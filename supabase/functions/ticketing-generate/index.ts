@@ -1037,6 +1037,28 @@ Deno.serve(async (req) => {
 
             // Auto-create event in Eventbrite if not yet synced
             if (!externalEventId && eventData) {
+              // Auto-fetch organization ID if missing
+              const configData = config.config_data || {};
+              if (!configData.organization_id) {
+                const orgResult = await eventbriteAdapter.getOrganizations(config);
+                if (orgResult.organizations.length > 0) {
+                  const orgId = orgResult.organizations[0].id;
+                  const newConfigData = { ...configData, organization_id: orgId };
+                  config.config_data = newConfigData;
+                  // Persist it
+                  await supabase.from("ticketing_configs").update({ config_data: newConfigData }).eq("id", config.id);
+                  await supabase.from("ticketing_logs").insert({
+                    club_id,
+                    action: "auto_get_org",
+                    request_payload: {},
+                    response_payload: { organization_id: orgId },
+                    status: "success",
+                  });
+                } else {
+                  throw new Error("Geen Eventbrite organisatie gevonden voor dit account.");
+                }
+              }
+
               const eventDate = eventData.event_date ? new Date(eventData.event_date) : new Date();
               const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000); // +4h
               const formatUtc = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, "Z");
