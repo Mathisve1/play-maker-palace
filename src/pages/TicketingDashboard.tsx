@@ -509,7 +509,7 @@ const TicketingDashboard = () => {
 
       <main className="max-w-6xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="setup" className="gap-2">
               <Settings2 className="w-4 h-4" />
               {labels.setup}
@@ -521,6 +521,10 @@ const TicketingDashboard = () => {
             <TabsTrigger value="live" className="gap-2">
               <Radio className="w-4 h-4" />
               {labels.live}
+            </TabsTrigger>
+            <TabsTrigger value="scan" className="gap-2" onClick={() => navigate('/scan')}>
+              <QrCode className="w-4 h-4" />
+              {language === 'nl' ? 'Scanner' : language === 'fr' ? 'Scanner' : 'Scanner'}
             </TabsTrigger>
           </TabsList>
 
