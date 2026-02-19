@@ -35,8 +35,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Look up the ticket by barcode and club_id
-    const { data: ticket, error: ticketError } = await supabase
+    // Use service role for faster lookups (no RLS overhead)
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Look up ticket + volunteer + task + event in parallel
+    const { data: ticket, error: ticketError } = await serviceClient
       .from("volunteer_tickets")
       .select("id, volunteer_id, task_id, event_id, status, checked_in_at, barcode")
       .eq("barcode", barcode)
@@ -54,30 +60,26 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Fetch profile, task, event in parallel
+    const [profileRes, taskRes, eventRes] = await Promise.all([
+      serviceClient.from("profiles").select("full_name, avatar_url").eq("id", ticket.volunteer_id).maybeSingle(),
+      ticket.task_id ? serviceClient.from("tasks").select("title").eq("id", ticket.task_id).maybeSingle() : Promise.resolve({ data: null }),
+      ticket.event_id ? serviceClient.from("events").select("title").eq("id", ticket.event_id).maybeSingle() : Promise.resolve({ data: null }),
+    ]);
+
+    const volunteerName = profileRes.data?.full_name || "Onbekend";
+    const avatarUrl = profileRes.data?.avatar_url || null;
+    const taskTitle = taskRes.data?.title || "";
+    const eventTitle = eventRes.data?.title || "";
+
     // Check if already checked in
     if (ticket.status === "checked_in") {
-      // Get volunteer info anyway
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", ticket.volunteer_id)
-        .maybeSingle();
-
-      let taskTitle = "";
-      if (ticket.task_id) {
-        const { data: task } = await supabase
-          .from("tasks")
-          .select("title")
-          .eq("id", ticket.task_id)
-          .maybeSingle();
-        taskTitle = task?.title || "";
-      }
-
       return new Response(
         JSON.stringify({
           success: false,
           status: "already_checked_in",
-          volunteer_name: profile?.full_name || "Onbekend",
+          volunteer_name: volunteerName,
+          avatar_url: avatarUrl,
           task_title: taskTitle,
           checked_in_at: ticket.checked_in_at,
           error: "Al ingecheckt",
@@ -88,7 +90,7 @@ Deno.serve(async (req) => {
 
     // Update ticket to checked_in
     const now = new Date().toISOString();
-    const { error: updateError } = await supabase
+    const { error: updateError } = await serviceClient
       .from("volunteer_tickets")
       .update({ status: "checked_in", checked_in_at: now })
       .eq("id", ticket.id);
@@ -100,34 +102,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get volunteer info
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", ticket.volunteer_id)
-      .maybeSingle();
-
-    let taskTitle = "";
-    let eventTitle = "";
-    if (ticket.task_id) {
-      const { data: task } = await supabase
-        .from("tasks")
-        .select("title")
-        .eq("id", ticket.task_id)
-        .maybeSingle();
-      taskTitle = task?.title || "";
-    }
-    if (ticket.event_id) {
-      const { data: event } = await supabase
-        .from("events")
-        .select("title")
-        .eq("id", ticket.event_id)
-        .maybeSingle();
-      eventTitle = event?.title || "";
-    }
-
-    // Log the scan
-    await supabase.from("ticketing_logs").insert({
+    // Log the scan (fire-and-forget, don't block response)
+    serviceClient.from("ticketing_logs").insert({
       club_id,
       action: "scan_checkin",
       request_payload: { barcode },
@@ -140,7 +116,8 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         status: "checked_in",
-        volunteer_name: profile?.full_name || "Onbekend",
+        volunteer_name: volunteerName,
+        avatar_url: avatarUrl,
         task_title: taskTitle,
         event_title: eventTitle,
         checked_in_at: now,
