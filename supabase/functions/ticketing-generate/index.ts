@@ -266,15 +266,49 @@ const eventbriteAdapter = {
     return { ticket_class_id: ticketClassId };
   },
 
-  // Register volunteer: ticket is assigned internally, no external URL needed.
-  // The barcode is generated for scanning purposes. No public Eventbrite page is exposed.
-  async createAttendee(_config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string | null; barcode: string }> {
-    const internalId = `eb-${eventId}-${ticketClassId}-${Date.now()}`;
-    const barcode = `EB${Date.now()}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+  // Register volunteer via Eventbrite API and retrieve real barcode for scanning.
+  // No public Eventbrite page is exposed to the volunteer.
+  async createAttendee(config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string | null; barcode: string }> {
+    const token = this._getToken(config);
+    
+    // Split volunteer name into first/last
+    const nameParts = (volunteer.name || "Vrijwilliger").split(" ");
+    const firstName = nameParts[0] || "Vrijwilliger";
+    const lastName = nameParts.slice(1).join(" ") || "-";
+    const email = volunteer.email || `volunteer-${Date.now()}@internal.local`;
+
+    // Create attendee via Eventbrite API
+    const payload = {
+      attendee: {
+        profile: {
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+        },
+        ticket_class_id: ticketClassId,
+      },
+    };
+
+    const res = await fetch(`https://www.eventbriteapi.com/v3/events/${eventId}/attendees/`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Eventbrite create attendee failed (${res.status}): ${errorText}`);
+    }
+
+    const data = await res.json();
+    const attendeeId = String(data.id);
+    
+    // Extract the real barcode from Eventbrite response
+    const barcode = data.barcodes?.[0]?.barcode || `EB${Date.now()}`;
 
     return {
-      ticket_id: internalId,
-      ticket_url: null,
+      ticket_id: attendeeId,
+      ticket_url: null, // No external link exposed for privacy
       barcode,
     };
   },
