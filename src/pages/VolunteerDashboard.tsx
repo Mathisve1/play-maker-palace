@@ -120,8 +120,8 @@ const VolunteerDashboard = () => {
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
 
   // Loyalty state
-  const [loyaltyPrograms, setLoyaltyPrograms] = useState<{ id: string; name: string; description: string | null; reward_description: string; required_tasks: number; club_id: string; club_name?: string }[]>([]);
-  const [loyaltyEnrollments, setLoyaltyEnrollments] = useState<Record<string, { id: string; tasks_completed: number; reward_claimed: boolean }>>({});
+  const [loyaltyPrograms, setLoyaltyPrograms] = useState<{ id: string; name: string; description: string | null; reward_description: string; required_tasks: number; required_points: number | null; points_based: boolean; club_id: string; club_name?: string }[]>([]);
+  const [loyaltyEnrollments, setLoyaltyEnrollments] = useState<Record<string, { id: string; tasks_completed: number; points_earned: number; reward_claimed: boolean }>>({});
   const [enrollingProgram, setEnrollingProgram] = useState<string | null>(null);
 
   const { data: complianceData } = useComplianceData(currentUserId || null);
@@ -239,8 +239,8 @@ const VolunteerDashboard = () => {
         const programIds = allPrograms.map((p: any) => p.id);
         const { data: myEnrollments } = await (supabase as any).from('loyalty_enrollments').select('*').eq('volunteer_id', session.user.id).in('program_id', programIds);
         if (myEnrollments) {
-          const enrollMap: Record<string, { id: string; tasks_completed: number; reward_claimed: boolean }> = {};
-          myEnrollments.forEach((e: any) => { enrollMap[e.program_id] = { id: e.id, tasks_completed: e.tasks_completed, reward_claimed: e.reward_claimed }; });
+          const enrollMap: Record<string, { id: string; tasks_completed: number; points_earned: number; reward_claimed: boolean }> = {};
+          myEnrollments.forEach((e: any) => { enrollMap[e.program_id] = { id: e.id, tasks_completed: e.tasks_completed, points_earned: e.points_earned || 0, reward_claimed: e.reward_claimed }; });
           setLoyaltyEnrollments(enrollMap);
         }
       }
@@ -302,7 +302,7 @@ const VolunteerDashboard = () => {
       else { toast.error(error.message); }
     } else if (data) {
       toast.success(language === 'nl' ? 'Ingeschreven voor loyaliteitsprogramma!' : language === 'fr' ? 'Inscrit au programme de fidélité!' : 'Enrolled in loyalty program!');
-      setLoyaltyEnrollments(prev => ({ ...prev, [programId]: { id: data.id, tasks_completed: 0, reward_claimed: false } }));
+      setLoyaltyEnrollments(prev => ({ ...prev, [programId]: { id: data.id, tasks_completed: 0, points_earned: 0, reward_claimed: false } }));
     }
     setEnrollingProgram(null);
   };
@@ -473,7 +473,9 @@ const VolunteerDashboard = () => {
             ) : (
               loyaltyPrograms.map((program, i) => {
                 const enrollment = loyaltyEnrollments[program.id];
-                const progress = enrollment ? Math.min(100, (enrollment.tasks_completed / program.required_tasks) * 100) : 0;
+                const isPointsBased = program.points_based && program.required_points;
+                const progress = enrollment ? (isPointsBased ? Math.min(100, (enrollment.points_earned / (program.required_points || 1)) * 100) : Math.min(100, (enrollment.tasks_completed / program.required_tasks) * 100)) : 0;
+                const goalReached = enrollment ? (isPointsBased ? enrollment.points_earned >= (program.required_points || 0) : enrollment.tasks_completed >= program.required_tasks) : false;
                 return (
                   <motion.div key={program.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-card rounded-2xl p-5 shadow-card border border-transparent">
                     <div className="flex items-start justify-between gap-3">
@@ -481,11 +483,16 @@ const VolunteerDashboard = () => {
                         <div className="flex items-center gap-2">
                           <Gift className="w-4 h-4 text-primary" />
                           <h3 className="font-heading font-semibold text-foreground">{program.name}</h3>
+                          {isPointsBased && <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-primary/10 text-primary font-semibold">{language === 'nl' ? 'Punten' : language === 'fr' ? 'Points' : 'Points'}</span>}
                         </div>
                         {program.club_name && <p className="text-xs text-muted-foreground mt-0.5">{program.club_name}</p>}
                         {program.description && <p className="text-sm text-muted-foreground mt-1">{program.description}</p>}
                         <p className="text-sm mt-2">🎁 {program.reward_description}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{program.required_tasks} {language === 'nl' ? 'taken vereist' : language === 'fr' ? 'tâches requises' : 'tasks required'}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {isPointsBased
+                            ? `${program.required_points} ${language === 'nl' ? 'punten vereist' : language === 'fr' ? 'points requis' : 'points required'}`
+                            : `${program.required_tasks} ${language === 'nl' ? 'taken vereist' : language === 'fr' ? 'tâches requises' : 'tasks required'}`}
+                        </p>
                       </div>
                       <div className="shrink-0">
                         {!enrollment ? (
@@ -495,7 +502,9 @@ const VolunteerDashboard = () => {
                         ) : enrollment.reward_claimed ? (
                           <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-accent/20 text-accent-foreground">✅ {language === 'nl' ? 'Beloning ontvangen' : language === 'fr' ? 'Récompense reçue' : 'Reward received'}</span>
                         ) : (
-                          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-muted text-muted-foreground">{enrollment.tasks_completed}/{program.required_tasks}</span>
+                          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-muted text-muted-foreground">
+                            {isPointsBased ? `${enrollment.points_earned}/${program.required_points}` : `${enrollment.tasks_completed}/${program.required_tasks}`}
+                          </span>
                         )}
                       </div>
                     </div>

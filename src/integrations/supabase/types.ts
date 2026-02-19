@@ -701,6 +701,7 @@ export type Database = {
           claimed_at: string | null
           created_at: string
           id: string
+          points_earned: number
           program_id: string
           reward_claimed: boolean
           tasks_completed: number
@@ -711,6 +712,7 @@ export type Database = {
           claimed_at?: string | null
           created_at?: string
           id?: string
+          points_earned?: number
           program_id: string
           reward_claimed?: boolean
           tasks_completed?: number
@@ -721,6 +723,7 @@ export type Database = {
           claimed_at?: string | null
           created_at?: string
           id?: string
+          points_earned?: number
           program_id?: string
           reward_claimed?: boolean
           tasks_completed?: number
@@ -737,6 +740,42 @@ export type Database = {
           },
         ]
       }
+      loyalty_program_excluded_tasks: {
+        Row: {
+          created_at: string
+          id: string
+          program_id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_id: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_program_excluded_tasks_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_program_excluded_tasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_programs: {
         Row: {
           club_id: string
@@ -745,6 +784,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          points_based: boolean
+          required_points: number | null
           required_tasks: number
           reward_description: string
           updated_at: string
@@ -756,6 +797,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          points_based?: boolean
+          required_points?: number | null
           required_tasks?: number
           reward_description: string
           updated_at?: string
@@ -767,6 +810,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          points_based?: boolean
+          required_points?: number | null
           required_tasks?: number
           reward_description?: string
           updated_at?: string
@@ -1035,6 +1080,8 @@ export type Database = {
           hourly_rate: number | null
           id: string
           location: string | null
+          loyalty_eligible: boolean
+          loyalty_points: number | null
           notes: string | null
           spots_available: number | null
           start_time: string | null
@@ -1059,6 +1106,8 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           location?: string | null
+          loyalty_eligible?: boolean
+          loyalty_points?: number | null
           notes?: string | null
           spots_available?: number | null
           start_time?: string | null
@@ -1083,6 +1132,8 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           location?: string | null
+          loyalty_eligible?: boolean
+          loyalty_points?: number | null
           notes?: string | null
           spots_available?: number | null
           start_time?: string | null
