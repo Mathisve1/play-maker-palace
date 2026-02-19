@@ -1,45 +1,89 @@
 
 
-## Probleem
+# Eigen Ticketing & Scan Systeem met QR-codes
 
-Wanneer een vrijwilliger op "Registreer op Eventbrite" klikt, wordt hij doorgestuurd naar een **publieke Eventbrite-pagina** waar alle tickets zichtbaar zijn. Dit is een privacyprobleem. Bovendien moet de vrijwilliger zelf actie ondernemen om zich te registreren, wat niet gebruiksvriendelijk is.
+## Overzicht
 
-## Oplossing
+Een volledig intern ticketing-systeem bouwen met QR-codes, zonder afhankelijkheid van externe providers zoals Eventbrite. Club medewerkers scannen QR-codes via hun telefoon-camera om vrijwilligers in te checken.
 
-De Eventbrite checkout-link volledig verwijderen en tickets **intern** beheren binnen het platform. Het Eventbrite-evenement blijft op de achtergrond bestaan voor scanning/check-in doeleinden, maar de vrijwilliger ziet **alleen** zijn eigen ticket in het dashboard - zonder externe links.
+## Wat er verandert
 
-### Wat er verandert:
+### 1. Nieuwe Scan-pagina (`/scan`)
+Een mobielvriendelijke pagina waar club medewerkers QR-codes scannen:
+- Camera opent automatisch via de `html5-qrcode` library (geen native app nodig)
+- QR-code wordt herkend en de barcode wordt naar de backend gestuurd
+- Resultaat wordt getoond: naam vrijwilliger, taak/event info
+- Visuele feedback: groen = succes, rood = ongeldig of al ingecheckt
+- Alleen toegankelijk voor club medewerkers (bestuurder/beheerder/medewerker)
 
-**1. Edge Function (`ticketing-generate`) - `createAttendee` aanpassen**
-- De `ticket_url` wordt niet meer gevuld met een Eventbrite-link
-- In plaats daarvan wordt `ticket_url` leeg gelaten (of `null`)
-- De barcode en het ticket-ID blijven bestaan voor scanning
-- Status wordt direct op `sent` gezet (geen handmatige registratie meer nodig)
+### 2. Nieuwe backend functie (`ticketing-scan`)
+Verwerkt scan-verzoeken:
+- Ontvangt een barcode
+- Zoekt het ticket op in de database
+- Controleert of het al ingecheckt is (dubbele check-in blokkeren)
+- Update status naar `checked_in` met timestamp
+- Geeft vrijwilliger-info terug voor weergave op het scherm
 
-**2. Volunteer Dashboard - Ticket-weergave vereenvoudigen**
-- De "Registreer op Eventbrite" knop en link worden volledig verwijderd
-- De barcode wordt altijd getoond (niet alleen als `ticket_url` leeg is)
-- De vrijwilliger ziet alleen zijn eigen ticket met barcode, status en event-info
-- Bestaande `ticket_url` waarden in de database worden genegeerd/niet getoond
+### 3. Edge Function vereenvoudigen (`ticketing-generate`)
+- Voegt een nieuw pad toe: `action: "create_internal_ticket"`
+- Genereert een unieke interne barcode in het formaat `VT-{korteId}-{uniekeCode}` (bijv. `VT-ABC-7X9K2M`)
+- Status wordt direct op `sent` gezet
+- Geen externe API-calls nodig
+- De bestaande provider-adapters blijven bestaan als optionele fallback
 
-**3. Database - Bestaande tickets opschonen**
-- Bestaande tickets met Eventbrite URLs worden bijgewerkt: `ticket_url` op `null` gezet en `status` op `sent`
+### 4. Ticketing Dashboard aanpassen
+- Nieuwe "QR Scanner" knop die naar `/scan` navigeert
+- "Intern systeem" als optie toevoegen naast externe providers
+- Mogelijkheid om tickets te genereren zonder externe provider-configuratie
 
-### Technische details
+### 5. Vrijwilliger Dashboard
+- Blijft grotendeels hetzelfde (QR-code wordt al correct getoond via `qrcode.react`)
+- De barcode wordt altijd als QR-code weergegeven -- dit werkt al
+
+## Technische details
+
+### Nieuwe bestanden:
+- `src/pages/TicketScanner.tsx` -- Camera-gebaseerde QR-scanner pagina
+- `supabase/functions/ticketing-scan/index.ts` -- Check-in verwerking
+
+### Aangepaste bestanden:
+- `supabase/functions/ticketing-generate/index.ts` -- Intern ticket-generatie pad toevoegen
+- `src/pages/TicketingDashboard.tsx` -- "Scan" knop en intern systeem optie
+- `src/App.tsx` -- Route `/scan` toevoegen
+
+### Nieuwe dependency:
+- `html5-qrcode` -- Lichtgewicht QR-scanner library die de camera gebruikt
+
+### Scan-flow:
 
 ```text
-HUIDIGE FLOW:
-Vrijwilliger -> Klik "Registreer op Eventbrite" -> Publieke Eventbrite pagina -> Handmatig registreren
-
-NIEUWE FLOW:
-Ticket wordt aangemaakt -> Status = "sent" -> Vrijwilliger ziet barcode direct in dashboard
+Club medewerker opent /scan op telefoon
+        |
+Camera activeert, richt op QR-code
+        |
+Barcode herkend (bijv. VT-ABC-7X9K2M)
+        |
+POST naar ticketing-scan met barcode + club_id
+        |
+    +--------+--------+
+    |        |        |
+ Geldig   Al in    Onbekend
+    |     gecheckt     |
+ Toon naam  Toon    Toon fout
+ + event    waarsch.  "Ongeldig
+ info       "Al       ticket"
+    |     ingecheckt"
+ Status ->
+ checked_in
+ Groen vinkje
 ```
 
-### Bestanden die worden aangepast:
-- `supabase/functions/ticketing-generate/index.ts` - `createAttendee` methode: `ticket_url` op `null` zetten
-- `src/pages/VolunteerDashboard.tsx` - Eventbrite-link sectie verwijderen, barcode altijd tonen
-- SQL update voor bestaande tickets met Eventbrite URLs
+### Database:
+- Geen schema-wijzigingen nodig -- `volunteer_tickets` heeft al alle kolommen: `barcode`, `status`, `checked_in_at`, `volunteer_id`, `club_id`
+- Bestaande RLS-policies blijven werken
 
-### Beveiliging
-De bestaande RLS-policies op `volunteer_tickets` zorgen er al voor dat vrijwilligers alleen hun eigen tickets kunnen zien. Door de externe link te verwijderen, is er geen risico meer dat iemand via een publieke pagina tickets van anderen kan bekijken.
+### Beveiliging:
+- Scan-pagina: authenticatie vereist, club-lidmaatschap gecontroleerd
+- `ticketing-scan` functie: valideert dat de scanner lid is van de club waartoe het ticket behoort
+- Dubbele check-in wordt geblokkeerd
 
