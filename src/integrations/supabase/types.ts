@@ -564,6 +564,85 @@ export type Database = {
           },
         ]
       }
+      event_groups: {
+        Row: {
+          color: string
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_groups_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          club_id: string
+          created_at: string
+          description: string | null
+          event_date: string | null
+          id: string
+          location: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          location?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          location?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachment_name: string | null
@@ -809,6 +888,8 @@ export type Database = {
           created_at: string
           description: string | null
           end_time: string | null
+          event_group_id: string | null
+          event_id: string | null
           expense_amount: number | null
           expense_reimbursement: boolean
           id: string
@@ -828,6 +909,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_time?: string | null
+          event_group_id?: string | null
+          event_id?: string | null
           expense_amount?: number | null
           expense_reimbursement?: boolean
           id?: string
@@ -847,6 +930,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_time?: string | null
+          event_group_id?: string | null
+          event_id?: string | null
           expense_amount?: number | null
           expense_reimbursement?: boolean
           id?: string
@@ -871,6 +956,20 @@ export type Database = {
             columns: ["contract_template_id"]
             isOneToOne: false
             referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_event_group_id_fkey"
+            columns: ["event_group_id"]
+            isOneToOne: false
+            referencedRelation: "event_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
