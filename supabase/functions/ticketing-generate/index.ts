@@ -456,16 +456,226 @@ const ticketmaticAdapter = {
   },
 };
 
-// ========== STUB ADAPTERS (voor providers zonder publieke API-documentatie) ==========
-const createStubAdapter = (providerName: string) => ({
-  async testConnection(_config: any) {
-    return { success: true };
+// ========== PAYLOGIC / SEETICKETS ADAPTER (Official API: https://shopping-api.paylogic.com) ==========
+const paylogicAdapter = {
+  // GET /events → test connection
+  async testConnection(config: any): Promise<{ success: boolean; events_count?: number }> {
+    const configData = config.config_data || {};
+    const baseUrl = configData.base_url || "https://shopping-api.paylogic.com";
+    const res = await fetch(`${baseUrl}/events`, {
+      headers: {
+        Authorization: `Basic ${btoa(config.api_key + ":" + (config.client_secret || ""))}`,
+        Accept: "application/json",
+      },
+    });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Paylogic auth failed (${res.status}): ${errorText}`);
+    }
+    const data = await res.json();
+    const events = data?._embedded?.events || [];
+    return { success: true, events_count: events.length };
   },
-  async createTicket(_config: any, _volunteer: any) {
+
+  // GET /tickets?code=...&event=... or search orders by email
+  async createTicket(config: any, volunteer: any): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
+    const configData = config.config_data || {};
+    const baseUrl = configData.base_url || "https://shopping-api.paylogic.com";
+    const eventRef = config.event_id_external;
+    const authHeader = `Basic ${btoa(config.api_key + ":" + (config.client_secret || ""))}`;
+    const headers: Record<string, string> = { Authorization: authHeader, Accept: "application/json" };
+
+    if (!eventRef) throw new Error("Paylogic Event referentie is niet geconfigureerd");
+
+    // Search orders for this event
+    const ordersUrl = `${baseUrl}/orders?event=${encodeURIComponent(eventRef)}&page_size=100`;
+    const ordersRes = await fetch(ordersUrl, { headers });
+    if (!ordersRes.ok) {
+      const errorText = await ordersRes.text();
+      throw new Error(`Paylogic orders failed (${ordersRes.status}): ${errorText}`);
+    }
+
+    const ordersData = await ordersRes.json();
+    const orders = ordersData?._embedded?.orders || [];
+
+    // Find order matching volunteer email or name
+    let matched: any = null;
+    for (const order of orders) {
+      const buyer = order.buyer || {};
+      const email = (buyer.email || "").toLowerCase();
+      const firstName = (buyer.first_name || "").toLowerCase();
+      const lastName = (buyer.last_name || "").toLowerCase();
+
+      if (volunteer.email && email === volunteer.email.toLowerCase()) {
+        matched = order;
+        break;
+      }
+      if (volunteer.name) {
+        const nameParts = volunteer.name.toLowerCase().split(" ");
+        if (nameParts.some((part: string) => firstName.includes(part) || lastName.includes(part))) {
+          matched = order;
+          break;
+        }
+      }
+    }
+
+    if (!matched) {
+      throw new Error(
+        `Geen bestelling gevonden in Paylogic/SeeTickets voor ${volunteer.name || volunteer.email}. ` +
+        `Maak eerst een ticket aan voor deze vrijwilliger.`
+      );
+    }
+
+    // Get tickets from the order
+    const tickets = matched._embedded?.tickets || [];
+    const firstTicket = tickets[0] || {};
+    const barcode = firstTicket.code || "";
+    const ticketUid = firstTicket.uid || matched.uid || "";
+
     return {
-      ticket_id: `${providerName}_${crypto.randomUUID().slice(0, 8)}`,
-      ticket_url: `https://${providerName}.example.com/ticket/${crypto.randomUUID().slice(0, 8)}`,
-      barcode: `${providerName.toUpperCase().slice(0, 3)}${Date.now()}`,
+      ticket_id: ticketUid,
+      ticket_url: matched._links?.self?.href || `${baseUrl}/orders/${matched.uid}`,
+      barcode: barcode || ticketUid,
+    };
+  },
+};
+
+// ========== EVENTSQUARE ADAPTER (API: https://api.eventsquare.io) ==========
+// EventSquare is a Belgian ticketing provider. Their API requires partner access.
+// This adapter uses the documented pattern: Bearer token + /events and /orders endpoints.
+const eventsquareAdapter = {
+  async testConnection(config: any): Promise<{ success: boolean; events_count?: number }> {
+    const configData = config.config_data || {};
+    const storeSlug = configData.store_slug;
+    if (!storeSlug) throw new Error("EventSquare Store slug is niet geconfigureerd");
+    
+    const res = await fetch(`https://api.eventsquare.io/1.0/store/${encodeURIComponent(storeSlug)}`, {
+      headers: { Authorization: `Bearer ${config.api_key}`, Accept: "application/json" },
+    });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`EventSquare auth failed (${res.status}): ${errorText}`);
+    }
+    const data = await res.json();
+    return { success: true, events_count: data?.editions?.length || 0 };
+  },
+
+  async createTicket(config: any, volunteer: any): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
+    const configData = config.config_data || {};
+    const storeSlug = configData.store_slug;
+    if (!storeSlug) throw new Error("EventSquare Store slug is niet geconfigureerd");
+    const eventId = config.event_id_external;
+    if (!eventId) throw new Error("EventSquare Event/Edition ID is niet geconfigureerd");
+
+    // Search orders
+    const searchParam = volunteer.email || volunteer.name || "";
+    const res = await fetch(
+      `https://api.eventsquare.io/1.0/store/${encodeURIComponent(storeSlug)}/orders?search=${encodeURIComponent(searchParam)}&edition=${encodeURIComponent(eventId)}`,
+      { headers: { Authorization: `Bearer ${config.api_key}`, Accept: "application/json" } }
+    );
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`EventSquare orders failed (${res.status}): ${errorText}`);
+    }
+
+    const data = await res.json();
+    const orders = data?.orders || [];
+
+    if (!orders.length) {
+      throw new Error(
+        `Geen bestelling gevonden in EventSquare voor ${volunteer.name || volunteer.email}. ` +
+        `Maak eerst een ticket aan in EventSquare voor deze vrijwilliger.`
+      );
+    }
+
+    const order = orders[0];
+    const tickets = order.tickets || [];
+    const firstTicket = tickets[0] || {};
+    const barcode = firstTicket.barcode || firstTicket.code || "";
+
+    return {
+      ticket_id: order.id || order.reference || "",
+      ticket_url: order.url || `https://eventsquare.co/order/${order.reference || order.id}`,
+      barcode: barcode || order.reference || "",
+    };
+  },
+};
+
+// ========== GENERIC ENTERPRISE ADAPTER ==========
+// For providers without public APIs (Ticketmaster Sport, Roboticket, Tymes, YourTicketProvider)
+// These providers require enterprise/partner agreements for API access.
+// The adapter validates config and provides clear error messages directing users to contact the provider.
+const createEnterpriseAdapter = (providerName: string, displayName: string, apiBaseUrl: string) => ({
+  async testConnection(config: any): Promise<{ success: boolean; events_count?: number }> {
+    const configData = config.config_data || {};
+    const baseUrl = configData.api_base_url || apiBaseUrl;
+    
+    // Try a generic authenticated request to validate credentials
+    try {
+      const res = await fetch(baseUrl, {
+        headers: {
+          Authorization: `Bearer ${config.api_key}`,
+          "X-API-Key": config.api_key,
+          Accept: "application/json",
+        },
+      });
+      if (res.ok) {
+        return { success: true };
+      }
+      // If 401/403, credentials are wrong
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(`${displayName}: ongeldige API credentials (${res.status})`);
+      }
+      // Other status: might still be ok (some APIs return 404 for root)
+      return { success: true };
+    } catch (e: any) {
+      if (e.message.includes("ongeldige")) throw e;
+      // Network error likely means wrong base URL
+      throw new Error(`${displayName}: kan geen verbinding maken met ${baseUrl}. Controleer de API Base URL.`);
+    }
+  },
+
+  async createTicket(config: any, volunteer: any): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
+    const configData = config.config_data || {};
+    const baseUrl = configData.api_base_url || apiBaseUrl;
+    const eventId = config.event_id_external;
+
+    // Try generic order/attendee search pattern
+    const searchParam = volunteer.email || volunteer.name || "";
+    let searchUrl = `${baseUrl}/orders?search=${encodeURIComponent(searchParam)}`;
+    if (eventId) searchUrl += `&event_id=${encodeURIComponent(eventId)}`;
+
+    const res = await fetch(searchUrl, {
+      headers: {
+        Authorization: `Bearer ${config.api_key}`,
+        "X-API-Key": config.api_key,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(
+        `${displayName} API error (${res.status}). ` +
+        `Neem contact op met ${displayName} voor API-toegang en documentatie.`
+      );
+    }
+
+    const data = await res.json();
+    const items = data?.orders || data?.attendees || data?.tickets || data?.data || data?.results || [];
+    const list = Array.isArray(items) ? items : [];
+
+    if (!list.length) {
+      throw new Error(
+        `Geen ticket gevonden in ${displayName} voor ${volunteer.name || volunteer.email}. ` +
+        `Maak eerst een ticket aan in het ${displayName} dashboard.`
+      );
+    }
+
+    const item = list[0];
+    return {
+      ticket_id: String(item.id || item.ticket_id || item.order_id || item.reference || ""),
+      ticket_url: item.url || item.ticket_url || item.download_url || "",
+      barcode: item.barcode || item.code || item.qr_code || String(item.id || ""),
     };
   },
 });
@@ -477,19 +687,17 @@ const providerAdapters: Record<string, {
 }> = {
   // Real integrations (official API)
   weezevent: weezeventAdapter,
-  
-  // Real integrations (official API)
   eventbrite: eventbriteAdapter,
-  
-  // Stub integrations (no public API docs available yet)
-  eventsquare: createStubAdapter("es"),
-  ticketmaster_sport: createStubAdapter("tm"),
-  roboticket: createStubAdapter("rb"),
-  tymes: createStubAdapter("ty"),
   eventix: weeztixAdapter,
-  yourticketprovider: createStubAdapter("ytp"),
-  paylogic_seetickets: createStubAdapter("pl"),
   ticketmatic: ticketmaticAdapter,
+  paylogic_seetickets: paylogicAdapter,
+  eventsquare: eventsquareAdapter,
+
+  // Enterprise integrations (API access via partner agreement)
+  ticketmaster_sport: createEnterpriseAdapter("ticketmaster_sport", "Ticketmaster Sport", "https://api.ticketmastersport.com"),
+  roboticket: createEnterpriseAdapter("roboticket", "Roboticket", "https://api.roboticket.com"),
+  tymes: createEnterpriseAdapter("tymes", "Tymes", "https://api.tymes.com"),
+  yourticketprovider: createEnterpriseAdapter("yourticketprovider", "YourTicketProvider (CM.com)", "https://api.cm.com/ticketing"),
 };
 
 Deno.serve(async (req) => {

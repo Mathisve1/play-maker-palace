@@ -579,6 +579,70 @@ const TicketingDashboard = () => {
                       <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="12345" />
                     </div>
                   </>
+                ) : provider === 'paylogic_seetickets' ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>API Key <span className="text-xs text-muted-foreground">(Paylogic application key)</span></Label>
+                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Jouw Paylogic API key" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>API Secret <span className="text-xs text-muted-foreground">(Basic Auth password)</span></Label>
+                        <Input type="password" value={clientSecret} onChange={e => setClientSecret(e.target.value)} placeholder="Jouw Paylogic secret" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Event Referentie <span className="text-xs text-muted-foreground">(Event URL uit Paylogic)</span></Label>
+                        <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="https://shopping-api.paylogic.com/events/abc123" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Base URL <span className="text-xs text-muted-foreground">(optioneel, standaard: shopping-api.paylogic.com)</span></Label>
+                        <Input value={configData.base_url || ''} onChange={e => setConfigData(prev => ({ ...prev, base_url: e.target.value }))} placeholder="https://shopping-api.paylogic.com" />
+                      </div>
+                    </div>
+                  </>
+                ) : provider === 'eventsquare' ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>API Key <span className="text-xs text-muted-foreground">(EventSquare partner API key)</span></Label>
+                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Jouw EventSquare API key" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Store Slug <span className="text-xs text-muted-foreground">(Jouw EventSquare store naam)</span></Label>
+                        <Input value={configData.store_slug || ''} onChange={e => setConfigData(prev => ({ ...prev, store_slug: e.target.value }))} placeholder="mijn-club" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Edition ID <span className="text-xs text-muted-foreground">(Event/editie ID)</span></Label>
+                      <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="edition_abc123" />
+                    </div>
+                  </>
+                ) : (provider === 'ticketmaster_sport' || provider === 'roboticket' || provider === 'tymes' || provider === 'yourticketprovider') ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>API Key <span className="text-xs text-muted-foreground">(Verkregen via partneraccount)</span></Label>
+                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Jouw API key" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>API Base URL <span className="text-xs text-muted-foreground">(Ontvangen van de provider)</span></Label>
+                        <Input value={configData.api_base_url || ''} onChange={e => setConfigData(prev => ({ ...prev, api_base_url: e.target.value }))} placeholder="https://api.provider.com/v1" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Event ID <span className="text-xs text-muted-foreground">(Extern event ID)</span></Label>
+                      <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="evt_123..." />
+                    </div>
+                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      <AlertCircle className="inline w-4 h-4 mr-1" />
+                      {language === 'nl' 
+                        ? `${PROVIDERS.find(p => p.value === provider)?.label} vereist een partneraccount voor API-toegang. Neem contact op met je accountmanager voor de juiste credentials en API-documentatie.`
+                        : `${PROVIDERS.find(p => p.value === provider)?.label} requires a partner account for API access. Contact your account manager for credentials and API documentation.`
+                      }
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
