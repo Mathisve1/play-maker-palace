@@ -230,42 +230,16 @@ const eventbriteAdapter = {
     return { ticket_class_id: String(data.id) };
   },
 
-  // POST /v3/events/{event_id}/attendees/ → register volunteer as attendee
-  async createAttendee(config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
-    const token = this._getToken(config);
-
-    const nameParts = (volunteer.name || "Vrijwilliger").split(" ");
-    const firstName = nameParts[0] || "Vrijwilliger";
-    const lastName = nameParts.slice(1).join(" ") || "";
-
-    const payload = {
-      attendee: {
-        profile: {
-          email: volunteer.email || `volunteer-${Date.now()}@placeholder.local`,
-          first_name: firstName,
-          last_name: lastName,
-        },
-        ticket_class_id: ticketClassId,
-      },
-    };
-
-    const res = await fetch(`https://www.eventbriteapi.com/v3/events/${eventId}/attendees/`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Eventbrite create attendee failed (${res.status}): ${errorText}`);
-    }
-
-    const data = await res.json();
-    const barcode = data.barcodes?.[0]?.barcode || "";
+  // Register volunteer: Eventbrite API doesn't support POST to /attendees/ (read-only).
+  // Instead, generate an internal ticket with the event URL for self-registration.
+  async createAttendee(_config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
+    const internalId = `eb-${eventId}-${ticketClassId}-${Date.now()}`;
+    const barcode = `EB${Date.now()}`;
+    const eventUrl = `https://www.eventbrite.com/e/${eventId}`;
 
     return {
-      ticket_id: String(data.id),
-      ticket_url: data.resource_uri || `https://www.eventbrite.com/e/${eventId}`,
+      ticket_id: internalId,
+      ticket_url: eventUrl,
       barcode,
     };
   },
