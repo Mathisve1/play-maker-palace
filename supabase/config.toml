@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.stripe-payment-status]
 verify_jwt = false
+
+[functions.ticketing-webhook]
+verify_jwt = false
+
+[functions.ticketing-generate]
+verify_jwt = false

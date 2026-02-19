@@ -304,12 +304,13 @@ const TicketingDashboard = () => {
     loadVolunteers();
   }, [clubId, selectedEventId]);
 
-  // Realtime subscription for volunteer_tickets
+  // Realtime subscription for volunteer_tickets + polling fallback
   useEffect(() => {
     if (!clubId) return;
     const channel = supabase
-      .channel('volunteer_tickets_realtime')
+      .channel(`volunteer_tickets_rt_${clubId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'volunteer_tickets', filter: `club_id=eq.${clubId}` }, (payload) => {
+        console.log('[Realtime] volunteer_tickets change:', payload);
         const updated = payload.new as any;
         if (!updated) return;
         setVolunteers(prev => prev.map(v =>
@@ -318,9 +319,31 @@ const TicketingDashboard = () => {
             : v
         ));
       })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [clubId]);
+      .subscribe((status) => {
+        console.log('[Realtime] subscription status:', status);
+      });
+    
+    // Polling fallback every 10 seconds for live tab reliability
+    const pollInterval = setInterval(async () => {
+      if (!selectedEventId) return;
+      const { data: tickets } = await supabase.from('volunteer_tickets').select('*').eq('club_id', clubId).eq('event_id', selectedEventId);
+      if (tickets) {
+        const ticketMap = Object.fromEntries(tickets.map(t => [t.volunteer_id + '_' + t.task_id, t]));
+        setVolunteers(prev => prev.map(v => {
+          const ticket = ticketMap[v.volunteer_id + '_' + v.task_id];
+          if (ticket && (ticket.status !== v.status || ticket.checked_in_at !== v.checked_in_at)) {
+            return { ...v, status: ticket.status, checked_in_at: ticket.checked_in_at, external_ticket_id: ticket.external_ticket_id, error_message: ticket.error_message, id: ticket.id };
+          }
+          return v;
+        }));
+      }
+    }, 10000);
+
+    return () => { 
+      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+    };
+  }, [clubId, selectedEventId]);
 
   // Load logs
   const loadLogs = useCallback(async () => {
