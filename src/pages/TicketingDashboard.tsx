@@ -532,17 +532,33 @@ const TicketingDashboard = () => {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Private Token <span className="text-xs text-muted-foreground">(eventbrite.com → API Keys)</span></Label>
-                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Jouw Eventbrite private OAuth token" />
+                        <Label>Private Token <span className="text-xs text-muted-foreground">(Gebruikt als Bearer token voor API-calls)</span></Label>
+                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="FDWSG63FB4..." />
                       </div>
+                      <div className="space-y-2">
+                        <Label>API Key <span className="text-xs text-muted-foreground">(Eventbrite App Key)</span></Label>
+                        <Input value={configData.eb_api_key || ''} onChange={e => setConfigData(prev => ({ ...prev, eb_api_key: e.target.value }))} placeholder="ZZY6DVCEQ2..." />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Client Secret <span className="text-xs text-muted-foreground">(OAuth App Secret)</span></Label>
+                        <Input type="password" value={clientSecret} onChange={e => setClientSecret(e.target.value)} placeholder="4Y5XR5XTV..." />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Public Token <span className="text-xs text-muted-foreground">(optioneel, voor client-side widgets)</span></Label>
+                        <Input value={configData.eb_public_token || ''} onChange={e => setConfigData(prev => ({ ...prev, eb_public_token: e.target.value }))} placeholder="2P6AZ6KNK..." />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Organization ID <span className="text-xs text-muted-foreground">(optioneel, voor events lijst)</span></Label>
                         <Input value={configData.organization_id || ''} onChange={e => setConfigData(prev => ({ ...prev, organization_id: e.target.value }))} placeholder="123456789" />
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Event ID <span className="text-xs text-muted-foreground">(Eventbrite event ID uit de URL)</span></Label>
-                      <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="123456789012" />
+                      <div className="space-y-2">
+                        <Label>Event ID <span className="text-xs text-muted-foreground">(Eventbrite event ID uit de URL)</span></Label>
+                        <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="123456789012" />
+                      </div>
                     </div>
                   </>
                 ) : provider === 'eventix' ? (
