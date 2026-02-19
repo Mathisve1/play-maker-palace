@@ -1,105 +1,109 @@
 
 
-# Plan: Evenementen-structuur met groepen en taken
+# Ticketing Integratie Dashboard
 
 ## Overzicht
+Een volledig ticketing-beheermodule voor clubs, waarmee ze een externe ticketingprovider koppelen, tickets genereren voor vrijwilligers, en live de incheck-status opvolgen via webhooks.
 
-De huidige structuur is plat: clubs maken losse taken aan. De nieuwe structuur voegt een hiërarchisch niveau toe:
+## Nieuwe pagina's en componenten
 
-```text
-Club
- ├── Evenement (bv. "Voetbalmatch KV Mechelen - Club Brugge")
- │    ├── Groep: Stewards
- │    │    ├── Taak: 10 stewards tribune 1
- │    │    └── Taak: 20 stewards tribune 2
- │    ├── Groep: Parking
- │    │    └── Taak: 5 parkeerwachters
- │    └── Groep: Catering
- │         └── Taak: 8 medewerkers bar
- └── Losse taak (zonder evenement, blijft mogelijk)
-```
+### 1. Ticketing Dashboard (`/ticketing`) - Nieuwe pagina
+Een pagina met 3 tabs (of zijmenu-navigatie):
+- **Planning** - Overzicht van evenementen en gekoppelde vrijwilligers
+- **Ticketing Setup** - API-configuratie voor de gekozen provider
+- **Live Opvolging** - Real-time incheck-status met progress bar
 
-## Wat verandert er voor de club?
+### 2. Database-uitbreidingen
 
-- **Nieuw "+" menu** met twee opties: "Nieuw evenement" of "Nieuwe losse taak"
-- **Evenement aanmaken**: titel, datum, locatie, beschrijving
-- **Binnen een evenement**: groepen toevoegen (bv. "Stewards", "Parking") met een kleur
-- **Binnen een groep**: taken aanmaken zoals nu (titel, aantal plaatsen, tijdslot, vergoeding, etc.)
-- Het dashboard toont evenementen als uitklapbare kaarten, met daarbinnen de groepen en taken
-- Losse taken worden apart getoond zoals nu
+**Tabel `ticketing_configs`** - Slaat de API-configuratie per club op:
+- `id`, `club_id`, `provider` (enum van 10 providers), `api_key` (encrypted), `client_secret`, `event_id_external`, `webhook_url`, `is_active`, `created_at`, `updated_at`
 
-## Wat verandert er voor de vrijwilliger?
+**Tabel `volunteer_tickets`** - Koppelt tickets aan vrijwilligers:
+- `id`, `club_id`, `event_id` (onze interne event), `volunteer_id`, `task_id`, `external_ticket_id`, `ticket_url`, `barcode`, `status` ('none' | 'sent' | 'checked_in'), `checked_in_at`, `error_message`, `created_at`, `updated_at`
 
-- Het dashboard toont evenementen als grote kaarten met datum/locatie
-- Doorklikken op een evenement toont de groepen en beschikbare taken
-- Per taak kan de vrijwilliger zich inschrijven zoals nu
-- Losse taken (zonder evenement) blijven ook zichtbaar in de lijst
+**Tabel `ticketing_logs`** - Logging van API-calls:
+- `id`, `club_id`, `volunteer_ticket_id`, `action` (create_ticket, webhook_scan, etc.), `request_payload`, `response_payload`, `status` (success/error), `error_message`, `created_at`
 
----
+### 3. Edge Functions
+
+**`ticketing-generate` edge function:**
+- Ontvangt: provider, API credentials, vrijwilliger-gegevens
+- Stuurt een POST naar de API van de geselecteerde provider
+- Maakt het ticket aan en slaat het `external_ticket_id` op
+- Logt resultaat in `ticketing_logs`
+
+**`ticketing-webhook` edge function:**
+- Publiek endpoint (verify_jwt = false)
+- Ontvangt scan-events van de provider
+- Matcht het gescande ticket met `volunteer_tickets` via `external_ticket_id`
+- Updatet status naar 'checked_in' met tijdstempel
+- Logt het event
+
+### 4. UI-componenten
+
+**Ticketing Setup tab:**
+- Dropdown met 10 providers: EventSquare, Weezevent, Eventbrite, Ticketmaster Sport, Roboticket, Tymes, Eventix, YourTicketProvider, Paylogic/See Tickets, Ticketmatic
+- Invoervelden voor API Key, Client Secret, Event ID, Webhook URL (auto-gegenereerd)
+- Test-knop om de verbinding te valideren
+- Opslaan-knop
+
+**Planning tab:**
+- Evenement-selectie dropdown
+- Tabel met vrijwilligers (naam, taak, ticketstatus)
+- "Genereer & Verstuur Ticket" knop per vrijwilliger of bulk
+- Status-badges: Geen ticket (grijs), Ticket Verzonden (blauw), Ingecheckt (groen)
+
+**Live Opvolging tab:**
+- Progress bar: X% van Y stewards ingecheckt
+- Real-time tabel met vrijwilligers, status en incheck-tijdstempel
+- Realtime updates via Supabase Realtime op `volunteer_tickets`
+
+**Log-sectie:**
+- Uitklapbare sectie met recente API-calls
+- Succes/fout-indicatie per log-entry
+
+### 5. Navigatie
+- Nieuwe "Ticketing" knop in het ClubOwnerDashboard actie-grid (naast Loyaliteit)
+- Route `/ticketing` toevoegen aan App.tsx
+
+### 6. RLS Policies
+- `ticketing_configs`: Alleen club owner/bestuurder/beheerder kan CRUD
+- `volunteer_tickets`: Club staff kan lezen/schrijven, vrijwilligers kunnen eigen tickets lezen
+- `ticketing_logs`: Alleen club staff kan lezen
+
+### 7. Vertalingen
+- NL/FR/EN vertalingen voor alle labels
 
 ## Technische details
 
-### 1. Database migratie
+### Provider API Abstractie
+Elke provider heeft een eigen API-formaat. De edge function bevat een `providerAdapter` pattern:
 
-Twee nieuwe tabellen:
+```text
+providerAdapters = {
+  eventsquare: { createTicket(config, volunteer) },
+  weezevent:   { createTicket(config, volunteer) },
+  eventbrite:  { createTicket(config, volunteer) },
+  ...
+}
+```
 
-**`events`** tabel:
-- `id` (uuid, PK)
-- `club_id` (uuid, FK naar clubs)
-- `title` (text, NOT NULL)
-- `description` (text, nullable)
-- `event_date` (timestamptz, nullable)
-- `location` (text, nullable)
-- `status` (text, default 'open')
-- `created_at`, `updated_at` (timestamptz)
+De adapters vertalen de generieke aanvraag naar het juiste API-formaat per provider. Initieel worden de adapters als stubs opgezet - de daadwerkelijke API-integratie per provider vereist documentatie-onderzoek.
 
-**`event_groups`** tabel:
-- `id` (uuid, PK)
-- `event_id` (uuid, FK naar events)
-- `name` (text, NOT NULL)
-- `color` (text, default '#3b82f6')
-- `sort_order` (integer, default 0)
-- `created_at` (timestamptz)
+### Webhook URL
+De webhook URL wordt automatisch gegenereerd op basis van het project:
+`https://{project_id}.supabase.co/functions/v1/ticketing-webhook?club_id={club_id}`
 
-**Wijziging aan `tasks` tabel:**
-- Toevoegen: `event_id` (uuid, nullable, FK naar events)
-- Toevoegen: `event_group_id` (uuid, nullable, FK naar event_groups)
-- Beide nullable zodat losse taken zonder evenement mogelijk blijven
+De club kopieert deze URL naar de webhook-configuratie van hun ticketingprovider.
 
-**RLS policies:**
-- `events`: leesbaar voor iedereen (zoals tasks), CRUD voor club owners/bestuurders/beheerders
-- `event_groups`: leesbaar voor iedereen, CRUD voor club rollen via event -> club_id
-- `tasks`: bestaande policies blijven intact
+### Realtime
+`volunteer_tickets` wordt toegevoegd aan de Supabase realtime publication zodat de Live Opvolging tab instant updates krijgt bij incheck-events.
 
-### 2. ClubOwnerDashboard aanpassingen
-
-- **Nieuw "+" dropdown**: keuze "Evenement aanmaken" of "Losse taak aanmaken"
-- **Evenement-aanmaakformulier**: titel, datum, locatie, beschrijving
-- **Evenement-detailweergave**: accordion met groepen, per groep de taken
-- **Groep toevoegen**: naam + kleur kiezen binnen een evenement
-- **Taak aanmaken binnen groep**: hetzelfde formulier als nu, maar gekoppeld aan event_id + event_group_id
-- **Losse taken**: worden apart getoond in een sectie "Losse taken"
-
-### 3. VolunteerDashboard aanpassingen
-
-- **Evenementen sectie**: kaarten met evenement-info (titel, datum, locatie, club)
-- **Evenement-detailview**: klikken opent een dialog/pagina met groepen en taken
-- **Per groep**: lijst van taken met spots/signup-status
-- **Losse taken**: apart getoond onder "Overige taken"
-- **Zoekfunctie**: zoekt in zowel evenement-titels als taak-titels
-
-### 4. Bestanden die gewijzigd/aangemaakt worden
-
-| Bestand | Actie |
-|---------|-------|
-| Database migratie | Nieuw: `events`, `event_groups` tabellen + `tasks` kolommen |
-| `src/pages/ClubOwnerDashboard.tsx` | Uitbreiden met evenement-CRUD, groepen, en hiërarchische weergave |
-| `src/pages/VolunteerDashboard.tsx` | Evenementen-weergave met doorklik-flow |
-| `src/components/EventDetailDialog.tsx` | **Nieuw**: dialog voor vrijwilligers om groepen/taken in een evenement te bekijken |
-| `src/components/EventGroupCard.tsx` | **Nieuw**: herbruikbare component voor een groep met taken |
-
-### 5. Migratie van bestaande data
-
-- Bestaande taken krijgen `event_id = NULL` en `event_group_id = NULL`, waardoor ze als losse taken blijven functioneren
-- Geen data gaat verloren, alle bestaande functionaliteit blijft werken
+### Bestandswijzigingen
+- **Nieuw**: `src/pages/TicketingDashboard.tsx`
+- **Nieuw**: `supabase/functions/ticketing-generate/index.ts`
+- **Nieuw**: `supabase/functions/ticketing-webhook/index.ts`
+- **Wijziging**: `src/App.tsx` (route toevoegen)
+- **Wijziging**: `src/pages/ClubOwnerDashboard.tsx` (navigatieknop toevoegen)
+- **Migratie**: Nieuwe tabellen + RLS policies + realtime
 
