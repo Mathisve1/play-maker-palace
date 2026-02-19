@@ -528,6 +528,23 @@ const TicketingDashboard = () => {
                       <Input value={configData.ticket_id || ''} onChange={e => setConfigData(prev => ({ ...prev, ticket_id: e.target.value }))} placeholder="198251" />
                     </div>
                   </>
+                ) : provider === 'eventbrite' ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Private Token <span className="text-xs text-muted-foreground">(eventbrite.com → API Keys)</span></Label>
+                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Jouw Eventbrite private OAuth token" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Organization ID <span className="text-xs text-muted-foreground">(optioneel, voor events lijst)</span></Label>
+                        <Input value={configData.organization_id || ''} onChange={e => setConfigData(prev => ({ ...prev, organization_id: e.target.value }))} placeholder="123456789" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Event ID <span className="text-xs text-muted-foreground">(Eventbrite event ID uit de URL)</span></Label>
+                      <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="123456789012" />
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

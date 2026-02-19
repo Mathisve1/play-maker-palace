@@ -133,6 +133,95 @@ const weezeventAdapter = {
   },
 };
 
+// ========== EVENTBRITE ADAPTER (Official API: https://www.eventbriteapi.com/v3/) ==========
+const eventbriteAdapter = {
+  // GET /v3/users/me/ → test connection
+  async testConnection(config: any): Promise<{ success: boolean; events_count?: number }> {
+    const res = await fetch("https://www.eventbriteapi.com/v3/users/me/", {
+      headers: { Authorization: `Bearer ${config.api_key}` },
+    });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Eventbrite auth failed (${res.status}): ${errorText}`);
+    }
+    // Optionally count events for the organization
+    const configData = config.config_data || {};
+    if (configData.organization_id) {
+      const evtRes = await fetch(
+        `https://www.eventbriteapi.com/v3/organizations/${configData.organization_id}/events/?status=live`,
+        { headers: { Authorization: `Bearer ${config.api_key}` } }
+      );
+      if (evtRes.ok) {
+        const evtData = await evtRes.json();
+        return { success: true, events_count: evtData.pagination?.object_count || 0 };
+      }
+    }
+    return { success: true };
+  },
+
+  // GET /v3/events/{event_id}/attendees/ → match volunteer by email
+  async createTicket(config: any, volunteer: any): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
+    const eventId = config.event_id_external;
+    if (!eventId) throw new Error("Eventbrite Event ID is niet geconfigureerd");
+
+    // Paginate through attendees to find a match
+    let page = 1;
+    let matched: any = null;
+
+    while (!matched) {
+      const url = `https://www.eventbriteapi.com/v3/events/${encodeURIComponent(eventId)}/attendees/?page=${page}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${config.api_key}` },
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Eventbrite attendees failed (${res.status}): ${errorText}`);
+      }
+
+      const data = await res.json();
+      const attendees = data.attendees || [];
+
+      // Match by email
+      if (volunteer.email) {
+        matched = attendees.find((a: any) =>
+          a.profile?.email?.toLowerCase() === volunteer.email.toLowerCase()
+        );
+      }
+
+      // Match by name if no email match
+      if (!matched && volunteer.name) {
+        const nameParts = volunteer.name.toLowerCase().split(" ");
+        matched = attendees.find((a: any) => {
+          const firstName = (a.profile?.first_name || "").toLowerCase();
+          const lastName = (a.profile?.last_name || "").toLowerCase();
+          return nameParts.some((part: string) => firstName.includes(part) || lastName.includes(part));
+        });
+      }
+
+      // Check if there are more pages
+      if (!matched && data.pagination?.has_more_items) {
+        page++;
+      } else {
+        break;
+      }
+    }
+
+    if (!matched) {
+      throw new Error(
+        `Geen overeenkomend ticket gevonden in Eventbrite voor ${volunteer.name || volunteer.email}. ` +
+        `Maak eerst een ticket aan in Eventbrite voor deze vrijwilliger.`
+      );
+    }
+
+    const barcode = matched.barcodes?.[0]?.barcode || "";
+    return {
+      ticket_id: String(matched.id),
+      ticket_url: matched.resource_uri || `https://www.eventbrite.com/e/${eventId}`,
+      barcode,
+    };
+  },
+};
+
 // ========== STUB ADAPTERS (voor providers zonder publieke API-documentatie) ==========
 const createStubAdapter = (providerName: string) => ({
   async testConnection(_config: any) {
@@ -155,9 +244,11 @@ const providerAdapters: Record<string, {
   // Real integrations (official API)
   weezevent: weezeventAdapter,
   
+  // Real integrations (official API)
+  eventbrite: eventbriteAdapter,
+  
   // Stub integrations (no public API docs available yet)
   eventsquare: createStubAdapter("es"),
-  eventbrite: createStubAdapter("eb"),
   ticketmaster_sport: createStubAdapter("tm"),
   roboticket: createStubAdapter("rb"),
   tymes: createStubAdapter("ty"),
