@@ -1,73 +1,105 @@
 
-# Plan: Betaalblokkade, Compliance Badge bij Sollicitaties en Notificaties
+
+# Plan: Evenementen-structuur met groepen en taken
 
 ## Overzicht
-Drie verbeteringen aan het compliance-systeem:
-1. Server-side betaalblokkade als het jaarplafond bereikt is
-2. Compliance badge tonen bij vrijwilligers in het ClubOwnerDashboard
-3. Automatische notificaties bij 80% van het plafond
+
+De huidige structuur is plat: clubs maken losse taken aan. De nieuwe structuur voegt een hiërarchisch niveau toe:
+
+```text
+Club
+ ├── Evenement (bv. "Voetbalmatch KV Mechelen - Club Brugge")
+ │    ├── Groep: Stewards
+ │    │    ├── Taak: 10 stewards tribune 1
+ │    │    └── Taak: 20 stewards tribune 2
+ │    ├── Groep: Parking
+ │    │    └── Taak: 5 parkeerwachters
+ │    └── Groep: Catering
+ │         └── Taak: 8 medewerkers bar
+ └── Losse taak (zonder evenement, blijft mogelijk)
+```
+
+## Wat verandert er voor de club?
+
+- **Nieuw "+" menu** met twee opties: "Nieuw evenement" of "Nieuwe losse taak"
+- **Evenement aanmaken**: titel, datum, locatie, beschrijving
+- **Binnen een evenement**: groepen toevoegen (bv. "Stewards", "Parking") met een kleur
+- **Binnen een groep**: taken aanmaken zoals nu (titel, aantal plaatsen, tijdslot, vergoeding, etc.)
+- Het dashboard toont evenementen als uitklapbare kaarten, met daarbinnen de groepen en taken
+- Losse taken worden apart getoond zoals nu
+
+## Wat verandert er voor de vrijwilliger?
+
+- Het dashboard toont evenementen als grote kaarten met datum/locatie
+- Doorklikken op een evenement toont de groepen en beschikbare taken
+- Per taak kan de vrijwilliger zich inschrijven zoals nu
+- Losse taken (zonder evenement) blijven ook zichtbaar in de lijst
 
 ---
 
-## 1. Server-side Betaalblokkade (Edge Function)
+## Technische details
 
-De `stripe-create-transfer` edge function wordt uitgebreid met een compliance check voordat de Stripe-betaling wordt aangemaakt.
+### 1. Database migratie
 
-**Wat gebeurt er:**
-- Na authenticatie en validatie wordt het totaal aan betalingen + externe verklaringen van de vrijwilliger opgehaald voor het huidige jaar
-- Als het totaal (bestaande inkomsten + nieuw bedrag) boven de EUR 3.233,91 komt, wordt de betaling geweigerd met een duidelijke foutmelding
-- Zelfde check voor het urenplafond van 190 uur
+Twee nieuwe tabellen:
 
-**Technische details:**
-- Query `volunteer_payments` (status = succeeded) voor het huidige jaar
-- Query `compliance_declarations` voor het huidige jaar
-- Tel alles op en vergelijk met de limieten
-- Retourneer een error met resterend budget als het plafond overschreden wordt
+**`events`** tabel:
+- `id` (uuid, PK)
+- `club_id` (uuid, FK naar clubs)
+- `title` (text, NOT NULL)
+- `description` (text, nullable)
+- `event_date` (timestamptz, nullable)
+- `location` (text, nullable)
+- `status` (text, default 'open')
+- `created_at`, `updated_at` (timestamptz)
 
----
+**`event_groups`** tabel:
+- `id` (uuid, PK)
+- `event_id` (uuid, FK naar events)
+- `name` (text, NOT NULL)
+- `color` (text, default '#3b82f6')
+- `sort_order` (integer, default 0)
+- `created_at` (timestamptz)
 
-## 2. Compliance Badge bij Sollicitaties (ClubOwnerDashboard)
+**Wijziging aan `tasks` tabel:**
+- Toevoegen: `event_id` (uuid, nullable, FK naar events)
+- Toevoegen: `event_group_id` (uuid, nullable, FK naar event_groups)
+- Beide nullable zodat losse taken zonder evenement mogelijk blijven
 
-Bij elke vrijwilliger die solliciteert op een taak, wordt een compacte compliance badge (groen/oranje/rood) getoond.
+**RLS policies:**
+- `events`: leesbaar voor iedereen (zoals tasks), CRUD voor club owners/bestuurders/beheerders
+- `event_groups`: leesbaar voor iedereen, CRUD voor club rollen via event -> club_id
+- `tasks`: bestaande policies blijven intact
 
-**Wat gebeurt er:**
-- Na het laden van alle signups worden de unieke volunteer IDs verzameld
-- `fetchBatchComplianceData()` wordt aangeroepen (bestaat al in `useComplianceData.ts`)
-- De compliance status wordt opgeslagen in een `complianceMap` state
-- Naast de naam van elke vrijwilliger verschijnt een compacte `ComplianceBadge`
+### 2. ClubOwnerDashboard aanpassingen
 
-**Technische details:**
-- Nieuw state: `const [complianceMap, setComplianceMap] = useState<Map<string, ComplianceStatus>>(new Map())`
-- Import `fetchBatchComplianceData` en `ComplianceBadge`
-- Na het laden van signups: `fetchBatchComplianceData(volunteerIds).then(setComplianceMap)`
-- In de signup-rendering: `<ComplianceBadge compliance={complianceMap.get(signup.volunteer_id)} language={language} compact />`
+- **Nieuw "+" dropdown**: keuze "Evenement aanmaken" of "Losse taak aanmaken"
+- **Evenement-aanmaakformulier**: titel, datum, locatie, beschrijving
+- **Evenement-detailweergave**: accordion met groepen, per groep de taken
+- **Groep toevoegen**: naam + kleur kiezen binnen een evenement
+- **Taak aanmaken binnen groep**: hetzelfde formulier als nu, maar gekoppeld aan event_id + event_group_id
+- **Losse taken**: worden apart getoond in een sectie "Losse taken"
 
----
+### 3. VolunteerDashboard aanpassingen
 
-## 3. Compliance Notificaties bij 80% Plafond
+- **Evenementen sectie**: kaarten met evenement-info (titel, datum, locatie, club)
+- **Evenement-detailview**: klikken opent een dialog/pagina met groepen en taken
+- **Per groep**: lijst van taken met spots/signup-status
+- **Losse taken**: apart getoond onder "Overige taken"
+- **Zoekfunctie**: zoekt in zowel evenement-titels als taak-titels
 
-Automatische in-app notificaties wanneer een vrijwilliger 80% van het plafond bereikt.
+### 4. Bestanden die gewijzigd/aangemaakt worden
 
-**Wat gebeurt er:**
-- In de `stripe-create-transfer` edge function: na een succesvolle betaling, controleer of de vrijwilliger nu boven 80% zit
-- Zo ja, maak een notificatie aan voor de vrijwilliger ("Let op: je nadert het jaarplafond")
-- Maak ook een notificatie aan voor de club owner/penningmeester ("Vrijwilliger X nadert het plafond")
+| Bestand | Actie |
+|---------|-------|
+| Database migratie | Nieuw: `events`, `event_groups` tabellen + `tasks` kolommen |
+| `src/pages/ClubOwnerDashboard.tsx` | Uitbreiden met evenement-CRUD, groepen, en hiërarchische weergave |
+| `src/pages/VolunteerDashboard.tsx` | Evenementen-weergave met doorklik-flow |
+| `src/components/EventDetailDialog.tsx` | **Nieuw**: dialog voor vrijwilligers om groepen/taken in een evenement te bekijken |
+| `src/components/EventGroupCard.tsx` | **Nieuw**: herbruikbare component voor een groep met taken |
 
-**Technische details:**
-- Na het aanmaken van de `volunteer_payments` record in de edge function:
-  - Bereken nieuw totaal (bestaande + nieuwe betaling)
-  - Als totaal >= 80% van EUR 3.233,91 (= EUR 2.587,13): insert notificatie voor vrijwilliger
-  - Als totaal >= 80%: insert notificatie voor club owner
-- Notificatie types: `compliance_warning_volunteer` en `compliance_warning_club`
-- Voorkom dubbele notificaties door te checken of er al een notificatie van dit type bestaat voor dit jaar
+### 5. Migratie van bestaande data
 
----
+- Bestaande taken krijgen `event_id = NULL` en `event_group_id = NULL`, waardoor ze als losse taken blijven functioneren
+- Geen data gaat verloren, alle bestaande functionaliteit blijft werken
 
-## Bestanden die gewijzigd worden
-
-| Bestand | Wijziging |
-|---------|-----------|
-| `supabase/functions/stripe-create-transfer/index.ts` | Compliance check + notificaties toevoegen |
-| `src/pages/ClubOwnerDashboard.tsx` | ComplianceBadge importeren en tonen bij elke vrijwilliger |
-
-Geen database migraties nodig - alle benodigde tabellen bestaan al (`notifications`, `volunteer_payments`, `compliance_declarations`).
