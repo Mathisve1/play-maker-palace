@@ -4,7 +4,8 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer } from 'lucide-react';
+import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -58,6 +59,9 @@ interface Task {
   contract_templates?: { name: string } | null;
   event_id?: string | null;
   event_group_id?: string | null;
+  compensation_type?: string;
+  hourly_rate?: number | null;
+  estimated_hours?: number | null;
 }
 
 interface EventData {
@@ -298,7 +302,9 @@ const ClubOwnerDashboard = () => {
     title: '', description: '', task_date: '', location: '', spots_available: 1,
     briefing_time: '', briefing_location: '', start_time: '', end_time: '',
     notes: '', expense_reimbursement: false, expense_amount: '', contract_template_id: '',
+    compensation_type: 'fixed' as string, hourly_rate: '', estimated_hours: '',
   });
+  const [hourConfirmOpen, setHourConfirmOpen] = useState<{ taskId: string; volunteerId: string; volunteerName: string; hourlyRate: number; estimatedHours: number } | null>(null);
   const [savingTask, setSavingTask] = useState(false);
   const [deletingTask, setDeletingTask] = useState<string | null>(null);
   const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null);
@@ -329,6 +335,7 @@ const ClubOwnerDashboard = () => {
     title: '', description: '', task_date: '', location: '', spots_available: 1,
     briefing_time: '', briefing_location: '', start_time: '', end_time: '',
     notes: '', expense_reimbursement: false, expense_amount: '',
+    compensation_type: 'fixed' as string, hourly_rate: '', estimated_hours: '',
   });
 
   useEffect(() => {
@@ -618,11 +625,14 @@ const ClubOwnerDashboard = () => {
       start_time: newTask.start_time || null,
       end_time: newTask.end_time || null,
       notes: newTask.notes.trim() || null,
-      expense_reimbursement: newTask.expense_reimbursement,
-      expense_amount: newTask.expense_reimbursement && newTask.expense_amount ? parseFloat(newTask.expense_amount) : null,
+      expense_reimbursement: newTask.compensation_type === 'fixed' ? newTask.expense_reimbursement : false,
+      expense_amount: newTask.compensation_type === 'fixed' && newTask.expense_reimbursement && newTask.expense_amount ? parseFloat(newTask.expense_amount) : null,
       contract_template_id: selectedTemplateId,
       event_id: eventId || null,
       event_group_id: groupId || null,
+      compensation_type: newTask.compensation_type,
+      hourly_rate: newTask.compensation_type === 'hourly' && newTask.hourly_rate ? parseFloat(newTask.hourly_rate) : null,
+      estimated_hours: newTask.compensation_type === 'hourly' && newTask.estimated_hours ? parseFloat(newTask.estimated_hours) : null,
     };
 
     const { data, error } = await (supabase as any)
@@ -639,11 +649,7 @@ const ClubOwnerDashboard = () => {
       setShowCreateForm(false);
       setAddingTaskToGroup(null);
       setSelectedTemplateId('');
-      setNewTask({
-        title: '', description: '', task_date: '', location: '', spots_available: 1,
-        briefing_time: '', briefing_location: '', start_time: '', end_time: '',
-        notes: '', expense_reimbursement: false, expense_amount: '',
-      });
+      setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '' });
     }
     setCreatingTask(false);
   };
@@ -683,6 +689,9 @@ const ClubOwnerDashboard = () => {
           expense_reimbursement: data.expense_reimbursement || false,
           expense_amount: data.expense_amount ? String(data.expense_amount) : '',
           contract_template_id: data.contract_template_id || '',
+          compensation_type: (data as any).compensation_type || 'fixed',
+          hourly_rate: (data as any).hourly_rate ? String((data as any).hourly_rate) : '',
+          estimated_hours: (data as any).estimated_hours ? String((data as any).estimated_hours) : '',
         });
       }
     });
@@ -703,9 +712,12 @@ const ClubOwnerDashboard = () => {
       start_time: editForm.start_time || null,
       end_time: editForm.end_time || null,
       notes: editForm.notes.trim() || null,
-      expense_reimbursement: editForm.expense_reimbursement,
-      expense_amount: editForm.expense_reimbursement && editForm.expense_amount ? parseFloat(editForm.expense_amount) : null,
+      expense_reimbursement: editForm.compensation_type === 'fixed' ? editForm.expense_reimbursement : false,
+      expense_amount: editForm.compensation_type === 'fixed' && editForm.expense_reimbursement && editForm.expense_amount ? parseFloat(editForm.expense_amount) : null,
       contract_template_id: editForm.contract_template_id || null,
+      compensation_type: editForm.compensation_type,
+      hourly_rate: editForm.compensation_type === 'hourly' && editForm.hourly_rate ? parseFloat(editForm.hourly_rate) : null,
+      estimated_hours: editForm.compensation_type === 'hourly' && editForm.estimated_hours ? parseFloat(editForm.estimated_hours) : null,
     };
     const { error } = await supabase.from('tasks').update(updateData as any).eq('id', editingTask.id);
     if (error) {
@@ -886,7 +898,27 @@ const ClubOwnerDashboard = () => {
                             const sigInfo = signatureStatuses[payKey];
                             const contractSigned = sigInfo?.status === 'completed';
                             const volHasStripe = !!volunteerStripeIds[signup.volunteer_id];
+                            const isHourly = task.compensation_type === 'hourly';
                             const canPay = clubStripeId && volHasStripe && contractSigned && (!payment || payment.status === 'failed');
+
+                            // Show hour confirmation button for hourly tasks
+                            if (isHourly && contractSigned && (!payment || payment.status === 'failed')) {
+                              return (
+                                <div className="flex items-center gap-1">
+                                  {sigInfo?.document_url && (
+                                    <a href={sigInfo.document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+                                      <Download className="w-3 h-3" /> Contract
+                                    </a>
+                                  )}
+                                  <button
+                                    onClick={() => setHourConfirmOpen({ taskId: task.id, volunteerId: signup.volunteer_id, volunteerName: signup.volunteer?.full_name || 'Vrijwilliger', hourlyRate: task.hourly_rate || 0, estimatedHours: task.estimated_hours || 0 })}
+                                    className="px-2.5 py-1 text-[10px] rounded-lg bg-accent/50 text-accent-foreground hover:bg-accent transition-colors flex items-center gap-1"
+                                  >
+                                    <Timer className="w-3 h-3" /> Uren
+                                  </button>
+                                </div>
+                              );
+                            }
 
                             if (payment && payment.status === 'succeeded') {
                               return (
@@ -1044,15 +1076,45 @@ const ClubOwnerDashboard = () => {
           <label className={labelClass}>{dt.taskNotes}</label>
           <input type="text" maxLength={500} value={newTask.notes} onChange={e => setNewTask(p => ({ ...p, notes: e.target.value }))} className={inputClass} />
         </div>
-        <div className="sm:col-span-2 flex items-center gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={newTask.expense_reimbursement} onChange={e => setNewTask(p => ({ ...p, expense_reimbursement: e.target.checked }))} className="w-4 h-4 rounded border-input accent-primary" />
-            <span className="text-sm text-foreground">{dt.taskExpenseReimbursement}</span>
-          </label>
-          {newTask.expense_reimbursement && (
-            <input type="number" min={1} step={0.01} placeholder={dt.taskExpenseAmount} value={newTask.expense_amount} onChange={e => setNewTask(p => ({ ...p, expense_amount: e.target.value }))} className={inputClass + ' max-w-[150px]'} />
-          )}
+        <div className="sm:col-span-2">
+          <label className={labelClass}>{language === 'nl' ? 'Vergoedingstype' : language === 'fr' ? 'Type de rémunération' : 'Compensation type'}</label>
+          <div className="flex gap-2 mt-1">
+            <button type="button" onClick={() => setNewTask(p => ({ ...p, compensation_type: 'fixed' }))} className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${newTask.compensation_type === 'fixed' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
+              {language === 'nl' ? 'Vast bedrag' : language === 'fr' ? 'Montant fixe' : 'Fixed amount'}
+            </button>
+            <button type="button" onClick={() => setNewTask(p => ({ ...p, compensation_type: 'hourly' }))} className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1.5 ${newTask.compensation_type === 'hourly' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
+              <Timer className="w-3.5 h-3.5" /> {language === 'nl' ? 'Uurloon' : language === 'fr' ? 'Taux horaire' : 'Hourly rate'}
+            </button>
+          </div>
         </div>
+        {newTask.compensation_type === 'fixed' && (
+          <div className="sm:col-span-2 flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={newTask.expense_reimbursement} onChange={e => setNewTask(p => ({ ...p, expense_reimbursement: e.target.checked }))} className="w-4 h-4 rounded border-input accent-primary" />
+              <span className="text-sm text-foreground">{dt.taskExpenseReimbursement}</span>
+            </label>
+            {newTask.expense_reimbursement && (
+              <input type="number" min={1} step={0.01} placeholder={dt.taskExpenseAmount} value={newTask.expense_amount} onChange={e => setNewTask(p => ({ ...p, expense_amount: e.target.value }))} className={inputClass + ' max-w-[150px]'} />
+            )}
+          </div>
+        )}
+        {newTask.compensation_type === 'hourly' && (
+          <div className="sm:col-span-2 grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>{language === 'nl' ? 'Uurloon (€)' : language === 'fr' ? 'Taux horaire (€)' : 'Hourly rate (€)'} *</label>
+              <input type="number" min={1} step={0.01} required value={newTask.hourly_rate} onChange={e => setNewTask(p => ({ ...p, hourly_rate: e.target.value }))} className={inputClass} placeholder="5.00" />
+            </div>
+            <div>
+              <label className={labelClass}>{language === 'nl' ? 'Geschatte uren' : language === 'fr' ? 'Heures estimées' : 'Estimated hours'} *</label>
+              <input type="number" min={0.5} step={0.5} required value={newTask.estimated_hours} onChange={e => setNewTask(p => ({ ...p, estimated_hours: e.target.value }))} className={inputClass} placeholder="5" />
+            </div>
+            {newTask.hourly_rate && newTask.estimated_hours && (
+              <div className="col-span-2 bg-muted/50 rounded-xl p-3">
+                <p className="text-xs text-muted-foreground">{language === 'nl' ? 'Geschatte vergoeding' : language === 'fr' ? 'Rémunération estimée' : 'Estimated compensation'}: <span className="font-bold text-foreground">€{(parseFloat(newTask.hourly_rate) * parseFloat(newTask.estimated_hours)).toFixed(2)}</span></p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex justify-end gap-3 mt-6">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
@@ -1334,7 +1396,7 @@ const ClubOwnerDashboard = () => {
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <button
-                                        onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setNewTask({ title: '', description: '', task_date: '', location: event.location || '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '' }); }}
+                                        onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setNewTask({ title: '', description: '', task_date: '', location: event.location || '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '' }); }}
                                         className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                                         title={dt.addTaskToGroup}
                                       >
@@ -1532,6 +1594,20 @@ const ClubOwnerDashboard = () => {
       {briefingProgressTaskId && <BriefingProgressDialog open={!!briefingProgressTaskId} onOpenChange={(open) => { if (!open) setBriefingProgressTaskId(null); }} taskId={briefingProgressTaskId} language={language} />}
       <TaskPickerDialog open={showBriefingTaskPicker} onOpenChange={setShowBriefingTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Briefing aanmaken' : language === 'fr' ? 'Créer un briefing' : 'Create briefing'} onSelect={(taskId) => { const task = tasks.find(t => t.id === taskId); if (task) navigate(`/briefing-builder?taskId=${taskId}&clubId=${task.club_id || clubId}`); }} />
       <TaskPickerDialog open={showProgressTaskPicker} onOpenChange={setShowProgressTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Opvolging bekijken' : language === 'fr' ? 'Voir le suivi' : 'View follow-up'} onSelect={(taskId) => setBriefingProgressTaskId(taskId)} />
+      {hourConfirmOpen && (
+        <HourConfirmationDialog
+          open={!!hourConfirmOpen}
+          onOpenChange={(open) => { if (!open) setHourConfirmOpen(null); }}
+          taskId={hourConfirmOpen.taskId}
+          volunteerId={hourConfirmOpen.volunteerId}
+          volunteerName={hourConfirmOpen.volunteerName}
+          hourlyRate={hourConfirmOpen.hourlyRate}
+          estimatedHours={hourConfirmOpen.estimatedHours}
+          role="club"
+          language={language}
+          onOpenChat={() => { setHourConfirmOpen(null); navigate(`/chat?taskId=${hourConfirmOpen.taskId}&clubOwnerId=${currentUserId}&volunteerId=${hourConfirmOpen.volunteerId}`); }}
+        />
+      )}
     </div>
   );
 };
