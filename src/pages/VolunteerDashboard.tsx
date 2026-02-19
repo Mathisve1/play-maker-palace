@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Timer, Gift } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Timer, Gift, Ticket, ExternalLink } from 'lucide-react';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
@@ -69,6 +69,22 @@ interface SignatureContract {
   club_name?: string;
 }
 
+interface VolunteerTicket {
+  id: string;
+  task_id: string | null;
+  event_id: string | null;
+  club_id: string;
+  status: string;
+  ticket_url: string | null;
+  barcode: string | null;
+  external_ticket_id: string | null;
+  created_at: string;
+  checked_in_at: string | null;
+  task_title?: string;
+  club_name?: string;
+  event_title?: string;
+}
+
 interface EventData {
   id: string;
   club_id: string;
@@ -102,12 +118,13 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets'>('all');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
   const [myContracts, setMyContracts] = useState<SignatureContract[]>([]);
   const [checkingContract, setCheckingContract] = useState<string | null>(null);
+  const [myTickets, setMyTickets] = useState<VolunteerTicket[]>([]);
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
   
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
@@ -222,6 +239,32 @@ const VolunteerDashboard = () => {
         const { data: contractTasks } = await supabase.from('tasks').select('id, title, clubs(name)').in('id', contractTaskIds);
         const ctMap = new Map(contractTasks?.map(t => [t.id, t]) || []);
         setMyContracts(contractsData.map(c => { const t = ctMap.get(c.task_id); return { ...c, task_title: t?.title, club_name: (t as any)?.clubs?.name }; }));
+      }
+
+      // Fetch tickets
+      const { data: ticketsData } = await (supabase as any).from('volunteer_tickets').select('id, task_id, event_id, club_id, status, ticket_url, barcode, external_ticket_id, created_at, checked_in_at').eq('volunteer_id', session.user.id).order('created_at', { ascending: false });
+      if (ticketsData && ticketsData.length > 0) {
+        const ticketClubIds = [...new Set(ticketsData.map((t: any) => t.club_id))] as string[];
+        const ticketTaskIds = [...new Set(ticketsData.filter((t: any) => t.task_id).map((t: any) => t.task_id))] as string[];
+        const ticketEventIds = [...new Set(ticketsData.filter((t: any) => t.event_id).map((t: any) => t.event_id))] as string[];
+        const { data: tClubs } = await supabase.from('clubs').select('id, name').in('id', ticketClubIds);
+        const clubMap2 = new Map(tClubs?.map(c => [c.id, c.name]) || []);
+        const taskMap2 = new Map<string, string>();
+        if (ticketTaskIds.length > 0) {
+          const { data: tTasks } = await supabase.from('tasks').select('id, title').in('id', ticketTaskIds);
+          tTasks?.forEach(t => taskMap2.set(t.id, t.title));
+        }
+        const eventMap2 = new Map<string, string>();
+        if (ticketEventIds.length > 0) {
+          const { data: tEvents } = await (supabase as any).from('events').select('id, title').in('id', ticketEventIds);
+          tEvents?.forEach((e: any) => eventMap2.set(e.id, e.title));
+        }
+        setMyTickets(ticketsData.map((t: any) => ({
+          ...t,
+          club_name: clubMap2.get(t.club_id) || '',
+          task_title: t.task_id ? taskMap2.get(t.task_id) || '' : '',
+          event_title: t.event_id ? eventMap2.get(t.event_id) || '' : '',
+        })));
       }
 
       // Fetch loyalty programs
@@ -459,11 +502,50 @@ const VolunteerDashboard = () => {
             <button onClick={() => setActiveTab('loyalty')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'loyalty' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
               <Gift className="w-3 h-3" /> {language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'} {loyaltyPrograms.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'loyalty' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`}>{loyaltyPrograms.length}</span>}
             </button>
+            <button onClick={() => setActiveTab('tickets')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'tickets' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
+              <Ticket className="w-3 h-3" /> Tickets {myTickets.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'tickets' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`}>{myTickets.length}</span>}
+            </button>
           </div>
         </div>
 
         {/* Content */}
-        {activeTab === 'loyalty' ? (
+        {activeTab === 'tickets' ? (
+          <div className="mt-6 space-y-4">
+            {myTickets.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Je hebt nog geen tickets.' : language === 'fr' ? 'Vous n\'avez pas encore de tickets.' : 'No tickets yet.'}</p></div>
+            ) : (
+              myTickets.map((ticket, i) => (
+                <motion.div key={ticket.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl p-5 shadow-card border ${ticket.status === 'checked_in' ? 'border-accent/30' : ticket.status === 'sent' ? 'border-primary/30' : 'border-transparent'}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{ticket.task_title || ticket.event_title || 'Ticket'}</p>
+                      {ticket.club_name && <p className="text-xs text-muted-foreground">{ticket.club_name}</p>}
+                      <div className="flex items-center gap-2 mt-2">
+                        {ticket.status === 'checked_in' ? (
+                          <span className="flex items-center gap-1 text-xs font-medium text-accent-foreground"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Ingecheckt' : language === 'fr' ? 'Enregistré' : 'Checked in'}</span>
+                        ) : ticket.status === 'sent' ? (
+                          <span className="flex items-center gap-1 text-xs font-medium text-primary"><Ticket className="w-3.5 h-3.5" />{language === 'nl' ? 'Ticket ontvangen' : language === 'fr' ? 'Ticket reçu' : 'Ticket received'}</span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In afwachting' : language === 'fr' ? 'En attente' : 'Pending'}</span>
+                        )}
+                        {ticket.barcode && <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{ticket.barcode}</span>}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {ticket.ticket_url && (
+                        <a href={ticket.ticket_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+                          <ExternalLink className="w-3.5 h-3.5" />{language === 'nl' ? 'Bekijk ticket' : language === 'fr' ? 'Voir le ticket' : 'View ticket'}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">{language === 'nl' ? 'Aangemaakt op' : language === 'fr' ? 'Créé le' : 'Created on'}: {new Date(ticket.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  {ticket.checked_in_at && <p className="text-xs text-accent-foreground mt-1">{language === 'nl' ? 'Ingecheckt op' : language === 'fr' ? 'Enregistré le' : 'Checked in at'}: {new Date(ticket.checked_in_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
+                </motion.div>
+              ))
+            )}
+          </div>
+        ) : activeTab === 'loyalty' ? (
           <div className="mt-6 space-y-4">
             {loyaltyPrograms.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground"><Gift className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen loyaliteitsprogramma\'s beschikbaar.' : language === 'fr' ? 'Aucun programme de fidélité disponible.' : 'No loyalty programs available.'}</p></div>
