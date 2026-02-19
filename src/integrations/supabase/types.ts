@@ -605,6 +605,7 @@ export type Database = {
           created_at: string
           description: string | null
           event_date: string | null
+          external_event_id: string | null
           id: string
           location: string | null
           status: string
@@ -616,6 +617,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           event_date?: string | null
+          external_event_id?: string | null
           id?: string
           location?: string | null
           status?: string
@@ -627,6 +629,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           event_date?: string | null
+          external_event_id?: string | null
           id?: string
           location?: string | null
           status?: string
@@ -1077,6 +1080,7 @@ export type Database = {
           event_id: string | null
           expense_amount: number | null
           expense_reimbursement: boolean
+          external_ticket_class_id: string | null
           hourly_rate: number | null
           id: string
           location: string | null
@@ -1103,6 +1107,7 @@ export type Database = {
           event_id?: string | null
           expense_amount?: number | null
           expense_reimbursement?: boolean
+          external_ticket_class_id?: string | null
           hourly_rate?: number | null
           id?: string
           location?: string | null
@@ -1129,6 +1134,7 @@ export type Database = {
           event_id?: string | null
           expense_amount?: number | null
           expense_reimbursement?: boolean
+          external_ticket_class_id?: string | null
           hourly_rate?: number | null
           id?: string
           location?: string | null

@@ -578,6 +578,39 @@ const ClubOwnerDashboard = () => {
       setShowCreateEventForm(false);
       setNewEvent({ title: '', description: '', event_date: '', location: '' });
       setExpandedEvent(data.id);
+
+      // Auto-sync to Eventbrite if configured
+      try {
+        const { data: ticketConfig } = await supabase.from('ticketing_configs').select('*').eq('club_id', clubId).eq('is_active', true).maybeSingle();
+        if (ticketConfig && ticketConfig.provider === 'eventbrite' && (ticketConfig as any).config_data?.organization_id) {
+          const eventDate = newEvent.event_date ? new Date(newEvent.event_date) : new Date();
+          const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000); // +4 hours default
+          const startUtc = eventDate.toISOString().replace('.000Z', 'Z');
+          const endUtc = endDate.toISOString().replace('.000Z', 'Z');
+
+          const { data: ebResult, error: ebError } = await supabase.functions.invoke('ticketing-generate', {
+            body: {
+              action: 'create_event',
+              club_id: clubId,
+              event_title: data.title,
+              event_start: startUtc,
+              event_end: endUtc,
+              timezone: 'Europe/Brussels',
+              internal_event_id: data.id,
+            },
+          });
+          if (ebError) {
+            console.error('Eventbrite sync error:', ebError);
+            toast.error(language === 'nl' ? 'Eventbrite-sync mislukt: ' + ebError.message : 'Eventbrite sync failed: ' + ebError.message);
+          } else if (ebResult?.success) {
+            toast.success(language === 'nl' ? 'Evenement automatisch aangemaakt in Eventbrite!' : 'Event automatically created in Eventbrite!');
+          } else if (ebResult?.error) {
+            toast.error('Eventbrite: ' + ebResult.error);
+          }
+        }
+      } catch (syncErr: any) {
+        console.error('Eventbrite auto-sync error:', syncErr);
+      }
     }
     setCreatingEvent(false);
   };

@@ -206,6 +206,7 @@ const TicketingDashboard = () => {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [syncingOrg, setSyncingOrg] = useState(false);
   // Provider-specific config data
   const [configData, setConfigData] = useState<Record<string, string>>({});
 
@@ -410,6 +411,27 @@ const TicketingDashboard = () => {
       await handleGenerateTicket(v.volunteer_id, v.task_id || '');
     }
     setGeneratingAll(false);
+  };
+
+  // Sync Eventbrite organization
+  const handleSyncOrg = async () => {
+    if (!clubId) return;
+    setSyncingOrg(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ticketing-generate', {
+        body: { action: 'auto_get_org', club_id: clubId },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setConfigData(prev => ({ ...prev, organization_id: data.organization_id, organization_name: data.organization_name }));
+        toast.success(language === 'nl' ? `Organisatie gevonden: ${data.organization_name}` : `Organization found: ${data.organization_name}`);
+      } else {
+        toast.error(data?.error || 'Failed to sync organization');
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setSyncingOrg(false);
   };
 
   // Copy webhook URL
