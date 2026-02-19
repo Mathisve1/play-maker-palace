@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star } from 'lucide-react';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import Logo from '@/components/Logo';
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
@@ -355,6 +355,7 @@ const ClubOwnerDashboard = () => {
     briefing_time: '', briefing_location: '', start_time: '', end_time: '',
     notes: '', expense_reimbursement: false, expense_amount: '',
     compensation_type: 'fixed' as string, hourly_rate: '', estimated_hours: '',
+    loyalty_eligible: true, loyalty_points: '',
   });
 
   useEffect(() => {
@@ -768,6 +769,8 @@ const ClubOwnerDashboard = () => {
       compensation_type: newTask.compensation_type,
       hourly_rate: newTask.compensation_type === 'hourly' && newTask.hourly_rate ? parseFloat(newTask.hourly_rate) : null,
       estimated_hours: newTask.compensation_type === 'hourly' && newTask.estimated_hours ? parseFloat(newTask.estimated_hours) : null,
+      loyalty_eligible: newTask.loyalty_eligible,
+      loyalty_points: newTask.loyalty_points ? parseInt(newTask.loyalty_points) : null,
     };
 
     const { data, error } = await (supabase as any)
@@ -784,7 +787,7 @@ const ClubOwnerDashboard = () => {
       setShowCreateForm(false);
       setAddingTaskToGroup(null);
       setSelectedTemplateId('');
-      setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '' });
+      setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '' });
     }
     setCreatingTask(false);
   };
@@ -1250,6 +1253,24 @@ const ClubOwnerDashboard = () => {
             )}
           </div>
         )}
+        {/* Loyalty fields */}
+        <div className="sm:col-span-2 border-t border-border pt-4 mt-2">
+          <label className={labelClass}>{language === 'nl' ? 'Loyaliteitsprogramma' : language === 'fr' ? 'Programme de fidélité' : 'Loyalty program'}</label>
+          <label className="flex items-center gap-2 cursor-pointer mt-1.5">
+            <input type="checkbox" checked={newTask.loyalty_eligible} onChange={e => setNewTask(p => ({ ...p, loyalty_eligible: e.target.checked }))} className="w-4 h-4 rounded border-input accent-primary" />
+            <span className="text-sm text-foreground">{language === 'nl' ? 'Telt mee voor loyaliteitsprogramma' : language === 'fr' ? 'Compte pour le programme de fidélité' : 'Counts toward loyalty program'}</span>
+          </label>
+          {newTask.loyalty_eligible && (
+            <div className="mt-3">
+              <label className={labelClass}>{language === 'nl' ? 'Loyaliteitspunten (optioneel)' : language === 'fr' ? 'Points de fidélité (optionnel)' : 'Loyalty points (optional)'}</label>
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-primary" />
+                <input type="number" min={0} max={9999} placeholder={language === 'nl' ? 'bv. 10' : language === 'fr' ? 'ex. 10' : 'e.g. 10'} value={newTask.loyalty_points} onChange={e => setNewTask(p => ({ ...p, loyalty_points: e.target.value }))} className={inputClass + ' max-w-[150px]'} />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">{language === 'nl' ? 'Laat leeg als het programma op taken is gebaseerd.' : language === 'fr' ? 'Laissez vide si le programme est basé sur les tâches.' : 'Leave empty if the program is task-based.'}</p>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex justify-end gap-3 mt-6">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
@@ -1550,7 +1571,7 @@ const ClubOwnerDashboard = () => {
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <button
-                                        onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setNewTask({ title: '', description: '', task_date: '', location: event.location || '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '' }); }}
+                                        onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setNewTask({ title: '', description: '', task_date: '', location: event.location || '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '' }); }}
                                         className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                                         title={dt.addTaskToGroup}
                                       >
