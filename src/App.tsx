@@ -21,6 +21,7 @@ import ContractBuilder from "./pages/ContractBuilder";
 import BriefingBuilder from "./pages/BriefingBuilder";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
 import LoyaltyPrograms from "./pages/LoyaltyPrograms";
+import TicketingDashboard from "./pages/TicketingDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/briefing-builder" element={<BriefingBuilder />} />
             <Route path="/compliance" element={<ComplianceDashboard />} />
             <Route path="/loyalty" element={<LoyaltyPrograms />} />
+            <Route path="/ticketing" element={<TicketingDashboard />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/chat/:conversationId" element={<Chat />} />
             <Route path="*" element={<NotFound />} />

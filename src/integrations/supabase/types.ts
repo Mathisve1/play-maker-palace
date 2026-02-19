@@ -1172,6 +1172,104 @@ export type Database = {
           },
         ]
       }
+      ticketing_configs: {
+        Row: {
+          api_key: string
+          client_secret: string | null
+          club_id: string
+          created_at: string
+          event_id_external: string | null
+          id: string
+          is_active: boolean
+          provider: Database["public"]["Enums"]["ticketing_provider"]
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key?: string
+          client_secret?: string | null
+          club_id: string
+          created_at?: string
+          event_id_external?: string | null
+          id?: string
+          is_active?: boolean
+          provider: Database["public"]["Enums"]["ticketing_provider"]
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key?: string
+          client_secret?: string | null
+          club_id?: string
+          created_at?: string
+          event_id_external?: string | null
+          id?: string
+          is_active?: boolean
+          provider?: Database["public"]["Enums"]["ticketing_provider"]
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticketing_configs_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticketing_logs: {
+        Row: {
+          action: string
+          club_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          request_payload: Json | null
+          response_payload: Json | null
+          status: string
+          volunteer_ticket_id: string | null
+        }
+        Insert: {
+          action: string
+          club_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: string
+          volunteer_ticket_id?: string | null
+        }
+        Update: {
+          action?: string
+          club_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: string
+          volunteer_ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticketing_logs_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticketing_logs_volunteer_ticket_id_fkey"
+            columns: ["volunteer_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -1259,6 +1357,76 @@ export type Database = {
           },
         ]
       }
+      volunteer_tickets: {
+        Row: {
+          barcode: string | null
+          checked_in_at: string | null
+          club_id: string
+          created_at: string
+          error_message: string | null
+          event_id: string | null
+          external_ticket_id: string | null
+          id: string
+          status: Database["public"]["Enums"]["ticket_status"]
+          task_id: string | null
+          ticket_url: string | null
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          barcode?: string | null
+          checked_in_at?: string | null
+          club_id: string
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          external_ticket_id?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          task_id?: string | null
+          ticket_url?: string | null
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          barcode?: string | null
+          checked_in_at?: string | null
+          club_id?: string
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          external_ticket_id?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          task_id?: string | null
+          ticket_url?: string | null
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_tickets_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_tickets_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1283,6 +1451,18 @@ export type Database = {
     Enums: {
       app_role: "admin" | "club_owner" | "volunteer"
       club_role: "bestuurder" | "beheerder" | "medewerker"
+      ticket_status: "none" | "sent" | "checked_in"
+      ticketing_provider:
+        | "eventsquare"
+        | "weezevent"
+        | "eventbrite"
+        | "ticketmaster_sport"
+        | "roboticket"
+        | "tymes"
+        | "eventix"
+        | "yourticketprovider"
+        | "paylogic_seetickets"
+        | "ticketmatic"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1412,6 +1592,19 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "club_owner", "volunteer"],
       club_role: ["bestuurder", "beheerder", "medewerker"],
+      ticket_status: ["none", "sent", "checked_in"],
+      ticketing_provider: [
+        "eventsquare",
+        "weezevent",
+        "eventbrite",
+        "ticketmaster_sport",
+        "roboticket",
+        "tymes",
+        "eventix",
+        "yourticketprovider",
+        "paylogic_seetickets",
+        "ticketmatic",
+      ],
     },
   },
 } as const
