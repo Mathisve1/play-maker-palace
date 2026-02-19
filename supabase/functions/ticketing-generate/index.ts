@@ -125,15 +125,55 @@ const weezeventAdapter = {
 
 // ========== EVENTBRITE ADAPTER (with auto-sync) ==========
 const eventbriteAdapter = {
-  _getToken(config: any): string {
-    // Try private token from config_data first (club-specific keys), then fall back to api_key
+  _cachedToken: null as string | null,
+
+  // Collect all possible tokens from the config
+  _getAllTokens(config: any): string[] {
     const configData = config.config_data || {};
-    return configData.eb_api_key || configData.eb_public_token || config.api_key;
+    const tokens: string[] = [];
+    // Add all available tokens - we'll try each one
+    if (config.api_key) tokens.push(config.api_key);
+    if (configData.eb_api_key) tokens.push(configData.eb_api_key);
+    if (configData.eb_public_token) tokens.push(configData.eb_public_token);
+    if (config.client_secret) tokens.push(config.client_secret);
+    // Deduplicate
+    return [...new Set(tokens)];
+  },
+
+  // Try all tokens against /v3/users/me/ and return the first working one
+  async _findWorkingToken(config: any): Promise<string> {
+    if (this._cachedToken) return this._cachedToken;
+
+    const tokens = this._getAllTokens(config);
+    console.log(`Testing ${tokens.length} available tokens...`);
+
+    for (const token of tokens) {
+      const masked = token.slice(0, 4) + "..." + token.slice(-4);
+      try {
+        const res = await fetch("https://www.eventbriteapi.com/v3/users/me/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const body = await res.json();
+          console.log(`✅ Token ${masked} works! User: ${body.name || body.email || 'unknown'}`);
+          this._cachedToken = token;
+          return token;
+        }
+        const errText = await res.text();
+        console.log(`❌ Token ${masked} failed (${res.status}): ${errText.slice(0, 100)}`);
+      } catch (e) {
+        console.log(`❌ Token ${masked} error: ${e}`);
+      }
+    }
+
+    // None worked - return first token and let caller handle the error
+    console.error("⚠️ No working Eventbrite token found! All tokens failed auth.");
+    return tokens[0] || "";
   },
 
   // GET /v3/users/me/ → test connection
   async testConnection(config: any): Promise<{ success: boolean; events_count?: number }> {
-    const token = this._getToken(config);
+    const token = await this._findWorkingToken(config);
     const res = await fetch("https://www.eventbriteapi.com/v3/users/me/", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -157,7 +197,7 @@ const eventbriteAdapter = {
 
   // GET /v3/users/me/organizations/ → auto get org id
   async getOrganizations(config: any): Promise<{ organizations: { id: string; name: string }[] }> {
-    const token = this._getToken(config);
+    const token = await this._findWorkingToken(config);
     const res = await fetch("https://www.eventbriteapi.com/v3/users/me/organizations/", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -172,7 +212,7 @@ const eventbriteAdapter = {
 
   // POST /v3/organizations/{org_id}/events/ → create event + publish it
   async createEvent(config: any, eventData: { title: string; start: string; end: string; timezone: string; currency?: string; location?: string }): Promise<{ event_id: string; event_url: string }> {
-    const token = this._getToken(config);
+    const token = await this._findWorkingToken(config);
     const configData = config.config_data || {};
     const orgId = configData.organization_id;
     if (!orgId) throw new Error("Organization ID is niet beschikbaar. Sync eerst je organisatie.");
@@ -223,7 +263,7 @@ const eventbriteAdapter = {
 
   // POST /v3/events/{event_id}/ticket_classes/ → create free ticket class, then publish event
   async createTicketClass(config: any, eventId: string, taskName: string, quantity?: number): Promise<{ ticket_class_id: string }> {
-    const token = this._getToken(config);
+    const token = await this._findWorkingToken(config);
 
     const payload = {
       ticket_class: {
@@ -272,7 +312,7 @@ const eventbriteAdapter = {
   // 1. Try to find the volunteer in Eventbrite attendees → use real barcode
   // 2. If not found, generate an internal barcode as fallback (fully automatic, no errors)
   async createAttendee(config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string | null; barcode: string }> {
-    const token = this._getToken(config);
+    const token = await this._findWorkingToken(config);
     const volunteerEmail = (volunteer.email || "").toLowerCase().trim();
     const nameParts = (volunteer.name || "").split(" ");
     const firstName = nameParts[0] || "Vrijwilliger";
@@ -464,7 +504,7 @@ const eventbriteAdapter = {
 
   // Legacy: search existing attendees (fallback for non-auto-sync events)
   async createTicket(config: any, volunteer: any): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
-    const token = this._getToken(config);
+    const token = await this._findWorkingToken(config);
     const eventId = config.event_id_external;
     if (!eventId) throw new Error("Eventbrite Event ID is niet geconfigureerd");
 
