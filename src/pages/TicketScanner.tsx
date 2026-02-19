@@ -141,7 +141,7 @@ const TicketScanner = () => {
             aspectRatio: 1,
             disableFlip: false,
           },
-          async (decodedText: string) => {
+            async (decodedText: string) => {
             // Use ref to prevent race conditions with stale closures
             if (processingRef.current) return;
             processingRef.current = true;
@@ -155,53 +155,57 @@ const TicketScanner = () => {
             const cid = clubIdRef.current;
             if (!cid) {
               processingRef.current = false;
+              setScannerState('scanning');
               return;
             }
+
+            let scanResult: ScanResult;
 
             try {
               const { data, error } = await supabase.functions.invoke('ticketing-scan', {
                 body: { barcode: decodedText, club_id: cid },
               });
 
-              if (!mounted) return;
+              console.log('Scan response:', { data, error });
 
               if (error) throw error;
 
               if (data?.success) {
-                setResult({
+                scanResult = {
                   type: 'success',
                   volunteerName: data.volunteer_name,
                   avatarUrl: data.avatar_url,
                   taskTitle: data.task_title,
                   eventTitle: data.event_title,
                   checkedInAt: data.checked_in_at,
-                });
+                };
               } else if (data?.status === 'already_checked_in') {
-                setResult({
+                scanResult = {
                   type: 'already_checked_in',
                   volunteerName: data.volunteer_name,
                   avatarUrl: data.avatar_url,
                   taskTitle: data.task_title,
                   checkedInAt: data.checked_in_at,
-                });
+                };
               } else {
-                setResult({
+                scanResult = {
                   type: 'error',
                   error: data?.error || labels.invalidTicket,
-                });
+                };
               }
             } catch (e: any) {
-              if (!mounted) return;
-              setResult({
+              console.error('Scan error:', e);
+              scanResult = {
                 type: 'error',
                 error: e.message || labels.invalidTicket,
-              });
+              };
             }
 
             if (mounted) {
+              setResult(scanResult);
               setScannerState('showing_result');
+              processingRef.current = false;
             }
-            processingRef.current = false;
           },
           () => {} // ignore scan failures
         );
@@ -282,6 +286,11 @@ const TicketScanner = () => {
               style={{ minHeight: 320 }}
             />
           </div>
+        )}
+
+        {/* Debug: show current state */}
+        {process.env.NODE_ENV === 'development' && (
+          <p className="text-xs text-muted-foreground text-center">State: {scannerState} | Result: {result?.type || 'none'}</p>
         )}
 
         {/* Camera error */}
