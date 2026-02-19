@@ -231,15 +231,17 @@ const eventbriteAdapter = {
   },
 
   // Register volunteer: Eventbrite API doesn't support POST to /attendees/ (read-only).
-  // Instead, generate an internal ticket with the event URL for self-registration.
+  // Instead, generate a direct checkout URL that pre-selects the correct free ticket class.
+  // Once the volunteer completes the (free) checkout, they appear in the Eventbrite dashboard.
   async createAttendee(_config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
     const internalId = `eb-${eventId}-${ticketClassId}-${Date.now()}`;
     const barcode = `EB${Date.now()}`;
-    const eventUrl = `https://www.eventbrite.com/e/${eventId}`;
+    // Direct checkout URL with pre-selected ticket class (quantity 1)
+    const checkoutUrl = `https://www.eventbrite.com/checkout-external?eid=${eventId}&selectedTicketClasses=${ticketClassId}:1`;
 
     return {
       ticket_id: internalId,
-      ticket_url: eventUrl,
+      ticket_url: checkoutUrl,
       barcode,
     };
   },

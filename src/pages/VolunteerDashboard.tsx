@@ -536,18 +536,30 @@ const VolunteerDashboard = () => {
                     <p className="text-xs text-muted-foreground mt-2">{language === 'nl' ? 'Aangemaakt op' : language === 'fr' ? 'Créé le' : 'Created on'}: {new Date(ticket.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                     {ticket.checked_in_at && <p className="text-xs text-accent-foreground mt-1">{language === 'nl' ? 'Ingecheckt op' : language === 'fr' ? 'Enregistré le' : 'Checked in at'}: {new Date(ticket.checked_in_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
                   </div>
-                  {/* Barcode / ticket body */}
-                  {ticket.barcode && (
-                    <div className="border-t border-dashed border-border mx-3" />
-                  )}
-                  {ticket.barcode && (
-                    <div className="p-5 pt-3 flex flex-col items-center gap-2">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{language === 'nl' ? 'Toon deze code bij het inchecken' : language === 'fr' ? 'Montrez ce code à l\'entrée' : 'Show this code at check-in'}</p>
-                      <div className="bg-foreground/5 rounded-xl px-6 py-3 flex flex-col items-center gap-1">
-                        <span className="text-lg font-mono font-bold tracking-widest text-foreground">{ticket.barcode}</span>
-                        <span className="text-[10px] text-muted-foreground">ID: {ticket.external_ticket_id?.slice(-12) || ticket.id.slice(0, 8)}</span>
+                  {/* Action: checkout link for Eventbrite */}
+                  {ticket.ticket_url && (
+                    <>
+                      <div className="border-t border-dashed border-border mx-3" />
+                      <div className="p-4 flex flex-col items-center gap-2">
+                        <p className="text-[11px] text-muted-foreground text-center">{language === 'nl' ? 'Registreer je gratis via Eventbrite om je ticket te activeren' : language === 'fr' ? 'Inscrivez-vous gratuitement via Eventbrite pour activer votre ticket' : 'Register for free via Eventbrite to activate your ticket'}</p>
+                        <a href={ticket.ticket_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity shadow-sm">
+                          <ExternalLink className="w-4 h-4" />{language === 'nl' ? 'Registreer op Eventbrite' : language === 'fr' ? 'S\'inscrire sur Eventbrite' : 'Register on Eventbrite'}
+                        </a>
                       </div>
-                    </div>
+                    </>
+                  )}
+                  {/* Barcode / ticket body */}
+                  {ticket.barcode && !ticket.ticket_url && (
+                    <>
+                      <div className="border-t border-dashed border-border mx-3" />
+                      <div className="p-5 pt-3 flex flex-col items-center gap-2">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{language === 'nl' ? 'Toon deze code bij het inchecken' : language === 'fr' ? 'Montrez ce code à l\'entrée' : 'Show this code at check-in'}</p>
+                        <div className="bg-foreground/5 rounded-xl px-6 py-3 flex flex-col items-center gap-1">
+                          <span className="text-lg font-mono font-bold tracking-widest text-foreground">{ticket.barcode}</span>
+                          <span className="text-[10px] text-muted-foreground">ID: {ticket.external_ticket_id?.slice(-12) || ticket.id.slice(0, 8)}</span>
+                        </div>
+                      </div>
+                    </>
                   )}
                 </motion.div>
               ))
