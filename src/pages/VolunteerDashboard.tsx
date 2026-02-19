@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -536,14 +537,17 @@ const VolunteerDashboard = () => {
                     <p className="text-xs text-muted-foreground mt-2">{language === 'nl' ? 'Aangemaakt op' : language === 'fr' ? 'Créé le' : 'Created on'}: {new Date(ticket.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                     {ticket.checked_in_at && <p className="text-xs text-accent-foreground mt-1">{language === 'nl' ? 'Ingecheckt op' : language === 'fr' ? 'Enregistré le' : 'Checked in at'}: {new Date(ticket.checked_in_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
                   </div>
-                  {/* Barcode / ticket body - always shown */}
+                  {/* QR code + barcode - always shown */}
                   {ticket.barcode && (
                     <>
                       <div className="border-t border-dashed border-border mx-3" />
-                      <div className="p-5 pt-3 flex flex-col items-center gap-2">
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{language === 'nl' ? 'Toon deze code bij het inchecken' : language === 'fr' ? 'Montrez ce code à l\'entrée' : 'Show this code at check-in'}</p>
-                        <div className="bg-foreground/5 rounded-xl px-6 py-3 flex flex-col items-center gap-1">
-                          <span className="text-lg font-mono font-bold tracking-widest text-foreground">{ticket.barcode}</span>
+                      <div className="p-5 pt-3 flex flex-col items-center gap-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{language === 'nl' ? 'Scan deze QR-code bij het inchecken' : language === 'fr' ? 'Scannez ce QR code à l\'entrée' : 'Scan this QR code at check-in'}</p>
+                        <div className="bg-white rounded-xl p-3 shadow-sm">
+                          <QRCodeSVG value={ticket.barcode} size={160} level="H" />
+                        </div>
+                        <div className="bg-foreground/5 rounded-xl px-6 py-2 flex flex-col items-center gap-0.5">
+                          <span className="text-xs font-mono font-bold tracking-widest text-foreground">{ticket.barcode}</span>
                           <span className="text-[10px] text-muted-foreground">ID: {ticket.external_ticket_id?.slice(-12) || ticket.id.slice(0, 8)}</span>
                         </div>
                       </div>
