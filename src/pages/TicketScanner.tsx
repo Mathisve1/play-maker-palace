@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -70,15 +70,12 @@ type ScanResult = {
   error?: string;
 };
 
-// State machine: idle -> scanning -> processing -> showing_result -> (user clicks OK) -> scanning
 type ScannerState = 'idle' | 'scanning' | 'processing' | 'showing_result';
 
 const TicketScanner = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const labels = t[language as keyof typeof t] || t.nl;
-  const scannerRef = useRef<any>(null);
-  const processingRef = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
@@ -87,9 +84,77 @@ const TicketScanner = () => {
   const [cameraError, setCameraError] = useState(false);
   const [noAccess, setNoAccess] = useState(false);
 
-  // Store clubId in ref so the scan callback always has latest value
+  // Component-level mounted ref — survives state changes
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
+
   const clubIdRef = useRef<string | null>(null);
   useEffect(() => { clubIdRef.current = clubId; }, [clubId]);
+
+  const processingRef = useRef(false);
+
+  // Process barcode — completely outside the scanner useEffect
+  const processBarcode = useCallback(async (barcode: string) => {
+    const cid = clubIdRef.current;
+    if (!cid) {
+      processingRef.current = false;
+      setScannerState('scanning');
+      return;
+    }
+
+    let scanResult: ScanResult;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ticketing-scan', {
+        body: { barcode, club_id: cid },
+      });
+
+      console.log('Scan response:', { data, error });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        scanResult = {
+          type: 'success',
+          volunteerName: data.volunteer_name,
+          avatarUrl: data.avatar_url,
+          taskTitle: data.task_title,
+          eventTitle: data.event_title,
+          checkedInAt: data.checked_in_at,
+        };
+      } else if (data?.status === 'already_checked_in') {
+        scanResult = {
+          type: 'already_checked_in',
+          volunteerName: data.volunteer_name,
+          avatarUrl: data.avatar_url,
+          taskTitle: data.task_title,
+          checkedInAt: data.checked_in_at,
+        };
+      } else {
+        scanResult = {
+          type: 'error',
+          error: data?.error || labels.invalidTicket,
+        };
+      }
+    } catch (e: any) {
+      console.error('Scan error:', e);
+      scanResult = {
+        type: 'error',
+        error: e.message || labels.invalidTicket,
+      };
+    }
+
+    // Use component-level ref, not useEffect-scoped variable
+    if (isMounted.current) {
+      console.log('Setting result:', scanResult);
+      setResult(scanResult);
+      setScannerState('showing_result');
+      processingRef.current = false;
+    }
+  }, [labels.invalidTicket]);
 
   // Check auth & club membership
   useEffect(() => {
@@ -115,117 +180,55 @@ const TicketScanner = () => {
     init();
   }, [navigate]);
 
-  // Initialize / restart scanner whenever state transitions to 'scanning'
+  // Scanner lifecycle — ONLY manages camera start/stop
   useEffect(() => {
     if (scannerState !== 'scanning' || loading) return;
 
     let html5QrCode: any = null;
-    let mounted = true;
+    let stopped = false;
 
     const startScanner = async () => {
       try {
         const { Html5Qrcode } = await import('html5-qrcode');
-        
-        // Wait a tick for the DOM element to mount
-        await new Promise(r => setTimeout(r, 50));
-        if (!mounted) return;
+        await new Promise(r => setTimeout(r, 100));
+        if (stopped) return;
 
         html5QrCode = new Html5Qrcode('qr-reader');
-        scannerRef.current = html5QrCode;
 
         await html5QrCode.start(
           { facingMode: 'environment' },
-          {
-            fps: 15,
-            qrbox: { width: 280, height: 280 },
-            aspectRatio: 1,
-            disableFlip: false,
-          },
-            async (decodedText: string) => {
-            // Use ref to prevent race conditions with stale closures
+          { fps: 15, qrbox: { width: 280, height: 280 }, aspectRatio: 1, disableFlip: false },
+          async (decodedText: string) => {
             if (processingRef.current) return;
             processingRef.current = true;
 
-            // Stop scanner immediately
+            // Stop scanner
             try { await html5QrCode.stop(); } catch {}
 
-            if (!mounted) return;
+            // Update UI to processing
             setScannerState('processing');
 
-            const cid = clubIdRef.current;
-            if (!cid) {
-              processingRef.current = false;
-              setScannerState('scanning');
-              return;
-            }
-
-            let scanResult: ScanResult;
-
-            try {
-              const { data, error } = await supabase.functions.invoke('ticketing-scan', {
-                body: { barcode: decodedText, club_id: cid },
-              });
-
-              console.log('Scan response:', { data, error });
-
-              if (error) throw error;
-
-              if (data?.success) {
-                scanResult = {
-                  type: 'success',
-                  volunteerName: data.volunteer_name,
-                  avatarUrl: data.avatar_url,
-                  taskTitle: data.task_title,
-                  eventTitle: data.event_title,
-                  checkedInAt: data.checked_in_at,
-                };
-              } else if (data?.status === 'already_checked_in') {
-                scanResult = {
-                  type: 'already_checked_in',
-                  volunteerName: data.volunteer_name,
-                  avatarUrl: data.avatar_url,
-                  taskTitle: data.task_title,
-                  checkedInAt: data.checked_in_at,
-                };
-              } else {
-                scanResult = {
-                  type: 'error',
-                  error: data?.error || labels.invalidTicket,
-                };
-              }
-            } catch (e: any) {
-              console.error('Scan error:', e);
-              scanResult = {
-                type: 'error',
-                error: e.message || labels.invalidTicket,
-              };
-            }
-
-            if (mounted) {
-              setResult(scanResult);
-              setScannerState('showing_result');
-              processingRef.current = false;
-            }
+            // Fire-and-forget: processBarcode handles the rest
+            processBarcode(decodedText);
           },
           () => {} // ignore scan failures
         );
       } catch (err) {
         console.error('Camera error:', err);
-        if (mounted) setCameraError(true);
+        if (!stopped) setCameraError(true);
       }
     };
 
     startScanner();
 
     return () => {
-      mounted = false;
+      stopped = true;
       if (html5QrCode) {
         html5QrCode.stop().catch(() => {});
       }
     };
-  }, [scannerState, loading, labels.invalidTicket]);
+  }, [scannerState, loading, processBarcode]);
 
-  // User presses OK -> immediately restart scanner
   const handleOk = () => {
     setResult(null);
     processingRef.current = false;
@@ -261,7 +264,6 @@ const TicketScanner = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-30 bg-card/80 backdrop-blur border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate('/ticketing')} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -273,7 +275,6 @@ const TicketScanner = () => {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        {/* Scanner view — visible when scanning */}
         {scannerState === 'scanning' && !cameraError && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -288,12 +289,6 @@ const TicketScanner = () => {
           </div>
         )}
 
-        {/* Debug: show current state */}
-        {process.env.NODE_ENV === 'development' && (
-          <p className="text-xs text-muted-foreground text-center">State: {scannerState} | Result: {result?.type || 'none'}</p>
-        )}
-
-        {/* Camera error */}
         {cameraError && (
           <Card>
             <CardContent className="pt-6 text-center space-y-3">
@@ -307,7 +302,6 @@ const TicketScanner = () => {
           </Card>
         )}
 
-        {/* Processing spinner */}
         {scannerState === 'processing' && (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -315,7 +309,6 @@ const TicketScanner = () => {
           </div>
         )}
 
-        {/* Result screen */}
         <AnimatePresence mode="wait">
           {scannerState === 'showing_result' && result && (
             <motion.div
@@ -324,7 +317,6 @@ const TicketScanner = () => {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
             >
-              {/* SUCCESS */}
               {result.type === 'success' && (
                 <div className="flex flex-col items-center gap-5 py-6">
                   <motion.div
@@ -333,14 +325,10 @@ const TicketScanner = () => {
                     transition={{ type: 'spring', stiffness: 300, damping: 15 }}
                   >
                     <div className="w-28 h-28 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <CheckCircle2 className="w-18 h-18 text-emerald-500" strokeWidth={2.5} style={{ width: 72, height: 72 }} />
+                      <CheckCircle2 className="text-emerald-500" strokeWidth={2.5} style={{ width: 72, height: 72 }} />
                     </div>
                   </motion.div>
-
-                  <h2 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                    {labels.success}
-                  </h2>
-
+                  <h2 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{labels.success}</h2>
                   <div className="flex flex-col items-center gap-3">
                     <Avatar className="w-24 h-24 border-4 border-emerald-500/30 shadow-lg">
                       <AvatarImage src={result.avatarUrl || undefined} alt={result.volunteerName} />
@@ -350,19 +338,11 @@ const TicketScanner = () => {
                     </Avatar>
                     <p className="text-3xl font-bold text-foreground">{result.volunteerName}</p>
                   </div>
-
                   <div className="space-y-1 text-center text-sm text-muted-foreground">
-                    {result.taskTitle && (
-                      <p>{labels.task}: <span className="font-medium text-foreground">{result.taskTitle}</span></p>
-                    )}
-                    {result.eventTitle && (
-                      <p>{labels.event}: <span className="font-medium text-foreground">{result.eventTitle}</span></p>
-                    )}
-                    {result.checkedInAt && (
-                      <p>{labels.checkedInAt}: <span className="font-medium text-foreground">{new Date(result.checkedInAt).toLocaleTimeString()}</span></p>
-                    )}
+                    {result.taskTitle && <p>{labels.task}: <span className="font-medium text-foreground">{result.taskTitle}</span></p>}
+                    {result.eventTitle && <p>{labels.event}: <span className="font-medium text-foreground">{result.eventTitle}</span></p>}
+                    {result.checkedInAt && <p>{labels.checkedInAt}: <span className="font-medium text-foreground">{new Date(result.checkedInAt).toLocaleTimeString()}</span></p>}
                   </div>
-
                   <Button onClick={handleOk} className="w-full gap-2 text-lg py-6" size="lg">
                     <CheckCircle2 className="w-6 h-6" />
                     {labels.scanNext}
@@ -370,13 +350,11 @@ const TicketScanner = () => {
                 </div>
               )}
 
-              {/* ALREADY CHECKED IN */}
               {result.type === 'already_checked_in' && (
                 <Card className="border-2 border-amber-400 bg-amber-50/50 dark:bg-amber-950/20">
                   <CardContent className="pt-6 text-center space-y-4">
                     <AlertTriangle className="w-16 h-16 text-amber-500 mx-auto" />
                     <h2 className="text-xl font-bold text-foreground">{labels.alreadyCheckedIn}</h2>
-
                     <div className="flex flex-col items-center gap-2">
                       <Avatar className="w-16 h-16 border-2 border-amber-400/30">
                         <AvatarImage src={result.avatarUrl || undefined} alt={result.volunteerName} />
@@ -386,34 +364,22 @@ const TicketScanner = () => {
                       </Avatar>
                       <p className="text-xl font-bold text-foreground">{result.volunteerName}</p>
                     </div>
-
                     <div className="space-y-1 text-sm text-muted-foreground">
-                      {result.taskTitle && (
-                        <p>{labels.task}: <span className="font-medium text-foreground">{result.taskTitle}</span></p>
-                      )}
-                      {result.checkedInAt && (
-                        <p>{labels.checkedInAt}: <span className="font-medium text-foreground">{new Date(result.checkedInAt).toLocaleTimeString()}</span></p>
-                      )}
+                      {result.taskTitle && <p>{labels.task}: <span className="font-medium text-foreground">{result.taskTitle}</span></p>}
+                      {result.checkedInAt && <p>{labels.checkedInAt}: <span className="font-medium text-foreground">{new Date(result.checkedInAt).toLocaleTimeString()}</span></p>}
                     </div>
-
-                    <Button onClick={handleOk} className="mt-2 gap-2 w-full text-lg py-6" size="lg">
-                      {labels.scanNext}
-                    </Button>
+                    <Button onClick={handleOk} className="mt-2 gap-2 w-full text-lg py-6" size="lg">{labels.scanNext}</Button>
                   </CardContent>
                 </Card>
               )}
 
-              {/* ERROR */}
               {result.type === 'error' && (
                 <Card className="border-2 border-destructive bg-destructive/5">
                   <CardContent className="pt-6 text-center space-y-3">
                     <XCircle className="w-16 h-16 text-destructive mx-auto" />
                     <h2 className="text-xl font-bold text-foreground">{labels.invalidTicket}</h2>
                     {result.error && <p className="text-sm text-destructive">{result.error}</p>}
-
-                    <Button onClick={handleOk} className="mt-2 gap-2 w-full text-lg py-6" size="lg">
-                      {labels.scanNext}
-                    </Button>
+                    <Button onClick={handleOk} className="mt-2 gap-2 w-full text-lg py-6" size="lg">{labels.scanNext}</Button>
                   </CardContent>
                 </Card>
               )}
