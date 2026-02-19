@@ -5,59 +5,166 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Provider adapter stubs - each returns a mock ticket for now
-const providerAdapters: Record<string, { createTicket: (config: any, volunteer: any) => Promise<{ ticket_id: string; ticket_url: string; barcode: string }> }> = {
-  eventsquare: {
-    async createTicket(config, volunteer) {
-      // Stub: would POST to EventSquare API
-      return { ticket_id: `es_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://eventsquare.co/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `ES${Date.now()}` };
+// ========== WEEZEVENT ADAPTER (Official API: https://api.weezevent.com/) ==========
+const weezeventAdapter = {
+  // POST /auth/access_token → returns accessToken
+  async authenticate(config: any): Promise<string> {
+    const configData = config.config_data || {};
+    const params = new URLSearchParams();
+    params.append("username", configData.username || "");
+    params.append("password", configData.password || "");
+    params.append("api_key", config.api_key);
+
+    const res = await fetch("https://api.weezevent.com/auth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded; charset=utf-8" },
+      body: params.toString(),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Weezevent auth failed (${res.status}): ${errorText}`);
     }
-  },
-  weezevent: {
-    async createTicket(config, volunteer) {
-      return { ticket_id: `wz_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://weezevent.com/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `WZ${Date.now()}` };
+
+    const data = await res.json();
+    if (!data.accessToken) {
+      throw new Error("Weezevent auth: no accessToken returned");
     }
+    return data.accessToken;
   },
-  eventbrite: {
-    async createTicket(config, volunteer) {
-      return { ticket_id: `eb_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://eventbrite.com/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `EB${Date.now()}` };
+
+  // GET /events → test connection by listing events
+  async testConnection(config: any): Promise<{ success: boolean; events_count?: number }> {
+    const accessToken = await this.authenticate(config);
+    const url = `https://api.weezevent.com/events?api_key=${encodeURIComponent(config.api_key)}&access_token=${encodeURIComponent(accessToken)}`;
+    
+    const res = await fetch(url);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Weezevent events failed (${res.status}): ${errorText}`);
     }
+
+    const data = await res.json();
+    return { success: true, events_count: data.events?.length || 0 };
   },
-  ticketmaster_sport: {
-    async createTicket(config, volunteer) {
-      return { ticket_id: `tm_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://ticketmaster.com/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `TM${Date.now()}` };
+
+  // GET /participant/list → list participants for scan/check-in matching
+  async getParticipants(config: any, eventId: string): Promise<any[]> {
+    const accessToken = await this.authenticate(config);
+    const url = `https://api.weezevent.com/participant/list?api_key=${encodeURIComponent(config.api_key)}&access_token=${encodeURIComponent(accessToken)}&id_event[]=${encodeURIComponent(eventId)}&full=1`;
+    
+    const res = await fetch(url);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Weezevent participants failed (${res.status}): ${errorText}`);
     }
+
+    const data = await res.json();
+    return data.participants || [];
   },
-  roboticket: {
-    async createTicket(config, volunteer) {
-      return { ticket_id: `rb_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://roboticket.com/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `RB${Date.now()}` };
+
+  // GET /tickets/:id/stats → scan statistics
+  async getTicketStats(config: any, ticketId: string): Promise<{ total: number; scanned: number }> {
+    const accessToken = await this.authenticate(config);
+    const url = `https://api.weezevent.com/tickets/${encodeURIComponent(ticketId)}/stats?api_key=${encodeURIComponent(config.api_key)}&access_token=${encodeURIComponent(accessToken)}`;
+    
+    const res = await fetch(url);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Weezevent ticket stats failed (${res.status}): ${errorText}`);
     }
+
+    const data = await res.json();
+    return { total: data.stats?.total || 0, scanned: data.stats?.scanned || 0 };
   },
-  tymes: {
-    async createTicket(config, volunteer) {
-      return { ticket_id: `ty_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://tymes.com/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `TY${Date.now()}` };
+
+  // Note: Weezevent's public API does not have a direct "create participant/ticket" endpoint.
+  // Participants are created via the Weezevent back-office or checkout flow.
+  // For volunteer ticketing, we match existing participants by email/name.
+  // This adapter searches for a matching participant and returns their barcode.
+  async createTicket(config: any, volunteer: any): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
+    const eventId = config.event_id_external;
+    if (!eventId) throw new Error("Weezevent Event ID is niet geconfigureerd");
+
+    const accessToken = await this.authenticate(config);
+    
+    // Fetch all participants for this event to find a match by email
+    const url = `https://api.weezevent.com/participant/list?api_key=${encodeURIComponent(config.api_key)}&access_token=${encodeURIComponent(accessToken)}&id_event[]=${encodeURIComponent(eventId)}&full=1`;
+    
+    const res = await fetch(url);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Weezevent API error (${res.status}): ${errorText}`);
     }
-  },
-  eventix: {
-    async createTicket(config, volunteer) {
-      return { ticket_id: `ex_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://eventix.io/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `EX${Date.now()}` };
+
+    const data = await res.json();
+    const participants = data.participants || [];
+
+    // Try to match by email
+    let matched = null;
+    if (volunteer.email) {
+      matched = participants.find((p: any) =>
+        p.owner?.email?.toLowerCase() === volunteer.email.toLowerCase()
+      );
     }
-  },
-  yourticketprovider: {
-    async createTicket(config, volunteer) {
-      return { ticket_id: `ytp_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://yourticketprovider.nl/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `YTP${Date.now()}` };
+
+    // If no email match, try by name
+    if (!matched && volunteer.name) {
+      const nameParts = volunteer.name.toLowerCase().split(" ");
+      matched = participants.find((p: any) => {
+        const firstName = (p.owner?.first_name || "").toLowerCase();
+        const lastName = (p.owner?.last_name || "").toLowerCase();
+        return nameParts.some((part: string) => firstName.includes(part) || lastName.includes(part));
+      });
     }
-  },
-  paylogic_seetickets: {
-    async createTicket(config, volunteer) {
-      return { ticket_id: `pl_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://seetickets.com/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `PL${Date.now()}` };
+
+    if (!matched) {
+      throw new Error(
+        `Geen overeenkomend ticket gevonden in Weezevent voor ${volunteer.name || volunteer.email}. ` +
+        `Maak eerst een ticket aan in het Weezevent back-office voor deze vrijwilliger.`
+      );
     }
+
+    return {
+      ticket_id: matched.id_weez_ticket || String(matched.id_participant),
+      ticket_url: `https://weezevent.com/ticket/${matched.id_weez_ticket || matched.id_participant}`,
+      barcode: matched.barcode || "",
+    };
   },
-  ticketmatic: {
-    async createTicket(config, volunteer) {
-      return { ticket_id: `tkm_${crypto.randomUUID().slice(0, 8)}`, ticket_url: `https://ticketmatic.com/ticket/${crypto.randomUUID().slice(0, 8)}`, barcode: `TKM${Date.now()}` };
-    }
+};
+
+// ========== STUB ADAPTERS (voor providers zonder publieke API-documentatie) ==========
+const createStubAdapter = (providerName: string) => ({
+  async testConnection(_config: any) {
+    return { success: true };
   },
+  async createTicket(_config: any, _volunteer: any) {
+    return {
+      ticket_id: `${providerName}_${crypto.randomUUID().slice(0, 8)}`,
+      ticket_url: `https://${providerName}.example.com/ticket/${crypto.randomUUID().slice(0, 8)}`,
+      barcode: `${providerName.toUpperCase().slice(0, 3)}${Date.now()}`,
+    };
+  },
+});
+
+// Provider adapter registry
+const providerAdapters: Record<string, {
+  testConnection: (config: any) => Promise<{ success: boolean; events_count?: number }>;
+  createTicket: (config: any, volunteer: any) => Promise<{ ticket_id: string; ticket_url: string; barcode: string }>;
+}> = {
+  // Real integrations (official API)
+  weezevent: weezeventAdapter,
+  
+  // Stub integrations (no public API docs available yet)
+  eventsquare: createStubAdapter("es"),
+  eventbrite: createStubAdapter("eb"),
+  ticketmaster_sport: createStubAdapter("tm"),
+  roboticket: createStubAdapter("rb"),
+  tymes: createStubAdapter("ty"),
+  eventix: createStubAdapter("ex"),
+  yourticketprovider: createStubAdapter("ytp"),
+  paylogic_seetickets: createStubAdapter("pl"),
+  ticketmatic: createStubAdapter("tkm"),
 };
 
 Deno.serve(async (req) => {
@@ -96,32 +203,41 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: "No ticketing config found" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const adapter = providerAdapters[config.provider];
+    if (!adapter) {
+      return new Response(JSON.stringify({ success: false, error: `Unsupported provider: ${config.provider}` }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Test connection
     if (action === "test") {
-      const adapter = providerAdapters[config.provider];
-      if (!adapter) {
-        return new Response(JSON.stringify({ success: false, error: `Unsupported provider: ${config.provider}` }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      try {
+        const result = await adapter.testConnection(config);
+
+        await supabase.from("ticketing_logs").insert({
+          club_id,
+          action: "test_connection",
+          request_payload: { provider: config.provider },
+          response_payload: result,
+          status: "success",
+        });
+
+        return new Response(JSON.stringify({ success: true, ...result }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (e: any) {
+        await supabase.from("ticketing_logs").insert({
+          club_id,
+          action: "test_connection",
+          request_payload: { provider: config.provider },
+          status: "error",
+          error_message: e.message,
+        });
+
+        return new Response(JSON.stringify({ success: false, error: e.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-
-      // Log the test
-      await supabase.from("ticketing_logs").insert({
-        club_id,
-        action: "test_connection",
-        request_payload: { provider: config.provider },
-        response_payload: { result: "ok" },
-        status: "success",
-      });
-
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Create ticket
     if (action === "create_ticket") {
       const { event_id, volunteer_id, task_id } = body;
-      const adapter = providerAdapters[config.provider];
-      if (!adapter) {
-        return new Response(JSON.stringify({ success: false, error: `Unsupported provider: ${config.provider}` }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
 
       // Get volunteer profile
       const { data: profile } = await supabase.from("profiles").select("full_name, email").eq("id", volunteer_id).maybeSingle();

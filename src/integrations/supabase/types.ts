@@ -1177,6 +1177,7 @@ export type Database = {
           api_key: string
           client_secret: string | null
           club_id: string
+          config_data: Json | null
           created_at: string
           event_id_external: string | null
           id: string
@@ -1189,6 +1190,7 @@ export type Database = {
           api_key?: string
           client_secret?: string | null
           club_id: string
+          config_data?: Json | null
           created_at?: string
           event_id_external?: string | null
           id?: string
@@ -1201,6 +1203,7 @@ export type Database = {
           api_key?: string
           client_secret?: string | null
           club_id?: string
+          config_data?: Json | null
           created_at?: string
           event_id_external?: string | null
           id?: string
