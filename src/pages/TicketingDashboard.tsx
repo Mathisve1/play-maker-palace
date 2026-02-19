@@ -545,6 +545,23 @@ const TicketingDashboard = () => {
                       <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="123456789012" />
                     </div>
                   </>
+                ) : provider === 'eventix' ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Access Token <span className="text-xs text-muted-foreground">(OAuth Bearer token via Weeztix dashboard)</span></Label>
+                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Jouw Weeztix Bearer access token" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Company GUID <span className="text-xs text-muted-foreground">(Te vinden in Weeztix dashboard URL)</span></Label>
+                        <Input value={configData.company_guid || ''} onChange={e => setConfigData(prev => ({ ...prev, company_guid: e.target.value }))} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Event GUID <span className="text-xs text-muted-foreground">(optioneel, voor filtering)</span></Label>
+                      <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

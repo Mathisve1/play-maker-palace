@@ -222,6 +222,110 @@ const eventbriteAdapter = {
   },
 };
 
+// ========== WEEZTIX (ex-EVENTIX) ADAPTER (Official API: https://api.weeztix.com) ==========
+const weeztixAdapter = {
+  // GET /event/upcoming → test connection by listing upcoming events
+  async testConnection(config: any): Promise<{ success: boolean; events_count?: number }> {
+    const res = await fetch("https://api.weeztix.com/event/upcoming", {
+      headers: { Authorization: `Bearer ${config.api_key}` },
+    });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Weeztix auth failed (${res.status}): ${errorText}`);
+    }
+    const data = await res.json();
+    return { success: true, events_count: Array.isArray(data) ? data.length : 0 };
+  },
+
+  // POST /statistics/orders/:company_guid → search orders, match volunteer by email
+  async createTicket(config: any, volunteer: any): Promise<{ ticket_id: string; ticket_url: string; barcode: string }> {
+    const configData = config.config_data || {};
+    const companyGuid = configData.company_guid;
+    if (!companyGuid) throw new Error("Weeztix Company GUID is niet geconfigureerd");
+
+    // Search orders for this company to find matching attendee
+    const res = await fetch(`https://api.weeztix.com/statistics/orders/${encodeURIComponent(companyGuid)}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.api_key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: volunteer.email || volunteer.name || "",
+        size: 50,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Weeztix orders search failed (${res.status}): ${errorText}`);
+    }
+
+    const data = await res.json();
+    const orders = data.hits?.hits || data.orders || data || [];
+
+    // Try to find a matching order by email
+    let matched: any = null;
+    const orderList = Array.isArray(orders) ? orders : [];
+
+    for (const order of orderList) {
+      const source = order._source || order;
+      const email = (source.email || "").toLowerCase();
+      const firstName = (source.first_name || "").toLowerCase();
+      const lastName = (source.last_name || "").toLowerCase();
+
+      if (volunteer.email && email === volunteer.email.toLowerCase()) {
+        matched = source;
+        break;
+      }
+      if (volunteer.name) {
+        const nameParts = volunteer.name.toLowerCase().split(" ");
+        if (nameParts.some((part: string) => firstName.includes(part) || lastName.includes(part))) {
+          matched = source;
+          break;
+        }
+      }
+    }
+
+    if (!matched) {
+      throw new Error(
+        `Geen overeenkomend ticket gevonden in Weeztix voor ${volunteer.name || volunteer.email}. ` +
+        `Maak eerst een ticket aan in het Weeztix dashboard voor deze vrijwilliger.`
+      );
+    }
+
+    // Get ticket retrieve link if we have order guid and ticket guid
+    const orderGuid = matched.guid || matched.id || "";
+    const tickets = matched.tickets || [];
+    let barcode = "";
+    let ticketUrl = "";
+
+    if (tickets.length > 0) {
+      const ticket = tickets[0];
+      barcode = ticket.barcode || ticket.guid || "";
+      // Try to get the PDF retrieve link
+      if (orderGuid && ticket.guid) {
+        try {
+          const linkRes = await fetch(
+            `https://api.weeztix.com/order/${encodeURIComponent(orderGuid)}/tickets/${encodeURIComponent(ticket.guid)}/retrievelink`,
+            { headers: { Authorization: `Bearer ${config.api_key}` } }
+          );
+          if (linkRes.ok) {
+            const linkData = await linkRes.json();
+            ticketUrl = linkData.url || linkData.link || "";
+          }
+        } catch (_) { /* ignore */ }
+      }
+    }
+
+    return {
+      ticket_id: orderGuid,
+      ticket_url: ticketUrl || `https://shop.weeztix.com/order/${orderGuid}`,
+      barcode: barcode || orderGuid,
+    };
+  },
+};
+
 // ========== STUB ADAPTERS (voor providers zonder publieke API-documentatie) ==========
 const createStubAdapter = (providerName: string) => ({
   async testConnection(_config: any) {
@@ -252,7 +356,7 @@ const providerAdapters: Record<string, {
   ticketmaster_sport: createStubAdapter("tm"),
   roboticket: createStubAdapter("rb"),
   tymes: createStubAdapter("ty"),
-  eventix: createStubAdapter("ex"),
+  eventix: weeztixAdapter,
   yourticketprovider: createStubAdapter("ytp"),
   paylogic_seetickets: createStubAdapter("pl"),
   ticketmatic: createStubAdapter("tkm"),
