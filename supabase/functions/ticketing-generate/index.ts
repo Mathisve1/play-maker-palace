@@ -266,19 +266,73 @@ const eventbriteAdapter = {
     return { ticket_class_id: ticketClassId };
   },
 
-  // Assign ticket internally with a unique barcode for check-in scanning.
+  // Search existing Eventbrite attendees to retrieve their real barcode for QR scanning.
   // Eventbrite API does not support direct attendee creation (405 Method Not Allowed),
-  // so we generate a scannable barcode linked to the volunteer in our own system.
-  async createAttendee(_config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string | null; barcode: string }> {
-    // Generate a unique, scannable barcode
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-    const barcode = `EB${eventId.slice(-6)}${ticketClassId.slice(-4)}${timestamp}${random}`;
-    const ticketId = `eb-${eventId}-${ticketClassId}-${timestamp}`;
+  // so we look up the volunteer among already-registered attendees to get the official barcode.
+  async createAttendee(config: any, eventId: string, ticketClassId: string, volunteer: { name?: string; email?: string }): Promise<{ ticket_id: string; ticket_url: string | null; barcode: string }> {
+    const token = this._getToken(config);
+
+    // Search attendees across all pages to find the volunteer
+    let page = 1;
+    let matched: any = null;
+
+    while (!matched) {
+      const url = `https://www.eventbriteapi.com/v3/events/${encodeURIComponent(eventId)}/attendees/?page=${page}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Eventbrite attendees lookup failed (${res.status}): ${errorText}`);
+      }
+
+      const data = await res.json();
+      const attendees = data.attendees || [];
+
+      // Match by email first (most reliable)
+      if (volunteer.email) {
+        matched = attendees.find((a: any) =>
+          a.profile?.email?.toLowerCase() === volunteer.email!.toLowerCase()
+        );
+      }
+
+      // Fallback: match by name
+      if (!matched && volunteer.name) {
+        const nameParts = volunteer.name.toLowerCase().split(" ");
+        matched = attendees.find((a: any) => {
+          const firstName = (a.profile?.first_name || "").toLowerCase();
+          const lastName = (a.profile?.last_name || "").toLowerCase();
+          return nameParts.some((part: string) => firstName.includes(part) || lastName.includes(part));
+        });
+      }
+
+      if (!matched && data.pagination?.has_more_items) {
+        page++;
+      } else {
+        break;
+      }
+    }
+
+    if (!matched) {
+      throw new Error(
+        `Geen overeenkomende attendee gevonden in Eventbrite voor ${volunteer.name || volunteer.email}. ` +
+        `Zorg dat de vrijwilliger geregistreerd is in Eventbrite (via het Eventbrite dashboard) voordat je het ticket genereert.`
+      );
+    }
+
+    // Extract the real Eventbrite barcode
+    const barcode = matched.barcodes?.[0]?.barcode || "";
+    if (!barcode) {
+      throw new Error(
+        `Attendee gevonden in Eventbrite maar geen barcode beschikbaar. ` +
+        `Controleer of het ticket correct is aangemaakt in Eventbrite.`
+      );
+    }
 
     return {
-      ticket_id: ticketId,
-      ticket_url: null, // No external link for privacy
+      ticket_id: String(matched.id),
+      ticket_url: null, // No external link exposed for privacy
       barcode,
     };
   },
