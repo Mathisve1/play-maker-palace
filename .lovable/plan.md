@@ -1,89 +1,32 @@
 
+# Fix: QR Scanner Feedbackscherm verschijnt niet
 
-# Eigen Ticketing & Scan Systeem met QR-codes
+## Oorzaak van het probleem
 
-## Overzicht
+Er zit een race condition in de `useEffect` die de scanner beheert. De `scannerState` is een dependency van de useEffect, waardoor:
 
-Een volledig intern ticketing-systeem bouwen met QR-codes, zonder afhankelijkheid van externe providers zoals Eventbrite. Club medewerkers scannen QR-codes via hun telefoon-camera om vrijwilligers in te checken.
+1. Wanneer een QR-code wordt gescand, wordt `setScannerState('processing')` aangeroepen
+2. Dit triggert de cleanup van de useEffect (omdat `scannerState` verandert), wat `mounted = false` zet
+3. Wanneer de edge function response terugkomt, faalt de `if (mounted)` check
+4. `setResult()` en `setScannerState('showing_result')` worden nooit uitgevoerd
 
-## Wat er verandert
+## Oplossing
 
-### 1. Nieuwe Scan-pagina (`/scan`)
-Een mobielvriendelijke pagina waar club medewerkers QR-codes scannen:
-- Camera opent automatisch via de `html5-qrcode` library (geen native app nodig)
-- QR-code wordt herkend en de barcode wordt naar de backend gestuurd
-- Resultaat wordt getoond: naam vrijwilliger, taak/event info
-- Visuele feedback: groen = succes, rood = ongeldig of al ingecheckt
-- Alleen toegankelijk voor club medewerkers (bestuurder/beheerder/medewerker)
+De edge function call moet **buiten** de useEffect-scope worden afgehandeld, zodat de `mounted` variabele niet wordt gereset door state-veranderingen.
 
-### 2. Nieuwe backend functie (`ticketing-scan`)
-Verwerkt scan-verzoeken:
-- Ontvangt een barcode
-- Zoekt het ticket op in de database
-- Controleert of het al ingecheckt is (dubbele check-in blokkeren)
-- Update status naar `checked_in` met timestamp
-- Geeft vrijwilliger-info terug voor weergave op het scherm
+### Aanpak:
 
-### 3. Edge Function vereenvoudigen (`ticketing-generate`)
-- Voegt een nieuw pad toe: `action: "create_internal_ticket"`
-- Genereert een unieke interne barcode in het formaat `VT-{korteId}-{uniekeCode}` (bijv. `VT-ABC-7X9K2M`)
-- Status wordt direct op `sent` gezet
-- Geen externe API-calls nodig
-- De bestaande provider-adapters blijven bestaan als optionele fallback
+**Bestand: `src/pages/TicketScanner.tsx`**
 
-### 4. Ticketing Dashboard aanpassen
-- Nieuwe "QR Scanner" knop die naar `/scan` navigeert
-- "Intern systeem" als optie toevoegen naast externe providers
-- Mogelijkheid om tickets te genereren zonder externe provider-configuratie
+1. De scan-callback in de useEffect moet alleen de scanner stoppen en de gescande tekst opslaan in een state/ref
+2. Een aparte functie (buiten de useEffect) handelt de API-call af
+3. De useEffect beheert alleen de camera lifecycle (starten/stoppen), niet de API-verwerking
 
-### 5. Vrijwilliger Dashboard
-- Blijft grotendeels hetzelfde (QR-code wordt al correct getoond via `qrcode.react`)
-- De barcode wordt altijd als QR-code weergegeven -- dit werkt al
+### Technische wijzigingen:
 
-## Technische details
+- Voeg een `scannedBarcode` state toe die de laatst gescande barcode bijhoudt
+- De scan-callback zet alleen: scanner stoppen, barcode opslaan, state naar 'processing'
+- Een aparte `useEffect` reageert op `scannedBarcode` en voert de API-call uit (zonder `mounted` probleem)
+- Of: gebruik een losse async functie `processBarcode(barcode)` die direct wordt aangeroepen vanuit de callback, maar met een aparte `isMounted` ref die niet wordt gereset door de scanner-useEffect
 
-### Nieuwe bestanden:
-- `src/pages/TicketScanner.tsx` -- Camera-gebaseerde QR-scanner pagina
-- `supabase/functions/ticketing-scan/index.ts` -- Check-in verwerking
-
-### Aangepaste bestanden:
-- `supabase/functions/ticketing-generate/index.ts` -- Intern ticket-generatie pad toevoegen
-- `src/pages/TicketingDashboard.tsx` -- "Scan" knop en intern systeem optie
-- `src/App.tsx` -- Route `/scan` toevoegen
-
-### Nieuwe dependency:
-- `html5-qrcode` -- Lichtgewicht QR-scanner library die de camera gebruikt
-
-### Scan-flow:
-
-```text
-Club medewerker opent /scan op telefoon
-        |
-Camera activeert, richt op QR-code
-        |
-Barcode herkend (bijv. VT-ABC-7X9K2M)
-        |
-POST naar ticketing-scan met barcode + club_id
-        |
-    +--------+--------+
-    |        |        |
- Geldig   Al in    Onbekend
-    |     gecheckt     |
- Toon naam  Toon    Toon fout
- + event    waarsch.  "Ongeldig
- info       "Al       ticket"
-    |     ingecheckt"
- Status ->
- checked_in
- Groen vinkje
-```
-
-### Database:
-- Geen schema-wijzigingen nodig -- `volunteer_tickets` heeft al alle kolommen: `barcode`, `status`, `checked_in_at`, `volunteer_id`, `club_id`
-- Bestaande RLS-policies blijven werken
-
-### Beveiliging:
-- Scan-pagina: authenticatie vereist, club-lidmaatschap gecontroleerd
-- `ticketing-scan` functie: valideert dat de scanner lid is van de club waartoe het ticket behoort
-- Dubbele check-in wordt geblokkeerd
-
+De eenvoudigste fix: verplaats de API-call logica naar een aparte async functie buiten de useEffect, en gebruik een component-level ref voor mounted-tracking in plaats van de useEffect-scope variabele.
