@@ -1,109 +1,79 @@
 
 
-# Ticketing Integratie Dashboard
+# Eventbrite Auto-Sync: Automatisch evenementen aanmaken
 
-## Overzicht
-Een volledig ticketing-beheermodule voor clubs, waarmee ze een externe ticketingprovider koppelen, tickets genereren voor vrijwilligers, en live de incheck-status opvolgen via webhooks.
+## Wat gaat er veranderen?
 
-## Nieuwe pagina's en componenten
+Wanneer een club Eventbrite als ticketing-provider heeft geconfigureerd, zal het systeem **automatisch** een evenement aanmaken in Eventbrite wanneer de club een nieuw evenement aanmaakt in het platform. De Organization ID en Event ID worden dan automatisch ingevuld -- geen handmatige configuratie meer nodig.
 
-### 1. Ticketing Dashboard (`/ticketing`) - Nieuwe pagina
-Een pagina met 3 tabs (of zijmenu-navigatie):
-- **Planning** - Overzicht van evenementen en gekoppelde vrijwilligers
-- **Ticketing Setup** - API-configuratie voor de gekozen provider
-- **Live Opvolging** - Real-time incheck-status met progress bar
+Daarnaast wordt het ook mogelijk om **per taak** (bijv. "Stewards Tribune 1") automatisch een gratis ticket-class aan te maken in Eventbrite en vrijwilligers direct als attendee te registreren.
 
-### 2. Database-uitbreidingen
+## Functionele flow
 
-**Tabel `ticketing_configs`** - Slaat de API-configuratie per club op:
-- `id`, `club_id`, `provider` (enum van 10 providers), `api_key` (encrypted), `client_secret`, `event_id_external`, `webhook_url`, `is_active`, `created_at`, `updated_at`
+1. **Club configureert Eventbrite** in Ticketing Setup: enkel Private Token nodig (Organization ID wordt automatisch opgehaald via `/v3/users/me/organizations/`)
+2. **Club maakt een evenement aan** in het dashboard -> systeem maakt automatisch een Eventbrite-event aan via de API en slaat het `event_id_external` op
+3. **Club voegt taken toe** (bijv. "Stewards Tribune 1") -> systeem maakt automatisch een gratis ticket-class aan per taak
+4. **Ticket genereren** voor een vrijwilliger -> systeem registreert de vrijwilliger als attendee via de Eventbrite API (i.p.v. zoeken naar bestaande attendees)
 
-**Tabel `volunteer_tickets`** - Koppelt tickets aan vrijwilligers:
-- `id`, `club_id`, `event_id` (onze interne event), `volunteer_id`, `task_id`, `external_ticket_id`, `ticket_url`, `barcode`, `status` ('none' | 'sent' | 'checked_in'), `checked_in_at`, `error_message`, `created_at`, `updated_at`
+## Technische wijzigingen
 
-**Tabel `ticketing_logs`** - Logging van API-calls:
-- `id`, `club_id`, `volunteer_ticket_id`, `action` (create_ticket, webhook_scan, etc.), `request_payload`, `response_payload`, `status` (success/error), `error_message`, `created_at`
+### 1. Edge Function uitbreiden (`supabase/functions/ticketing-generate/index.ts`)
 
-### 3. Edge Functions
+Nieuwe actions toevoegen aan de edge function:
 
-**`ticketing-generate` edge function:**
-- Ontvangt: provider, API credentials, vrijwilliger-gegevens
-- Stuurt een POST naar de API van de geselecteerde provider
-- Maakt het ticket aan en slaat het `external_ticket_id` op
-- Logt resultaat in `ticketing_logs`
+- **`action: "auto_get_org"`**: Haalt automatisch de Organization ID op via `GET /v3/users/me/organizations/` en slaat deze op in `config_data.organization_id`
+- **`action: "create_event"`**: Maakt een nieuw Eventbrite-event aan via `POST /v3/organizations/{org_id}/events/` met titel, datum, locatie en tijdzone. Retourneert de `event_id` die opgeslagen wordt.
+- **`action: "create_ticket_class"`**: Maakt een gratis ticket-class aan per taak via `POST /v3/events/{event_id}/ticket_classes/`
+- **`action: "create_attendee"`** (update van `create_ticket`): In plaats van bestaande attendees te zoeken, maakt de adapter nu **direct een attendee aan** via `POST /v3/events/{event_id}/attendees/` met de naam en email van de vrijwilliger. Dit vervangt de huidige "zoek en match"-logica.
 
-**`ticketing-webhook` edge function:**
-- Publiek endpoint (verify_jwt = false)
-- Ontvangt scan-events van de provider
-- Matcht het gescande ticket met `volunteer_tickets` via `external_ticket_id`
-- Updatet status naar 'checked_in' met tijdstempel
-- Logt het event
+De `eventbriteAdapter` krijgt deze nieuwe methodes:
+- `getOrganizations(config)` - haal org-lijst op
+- `createEvent(config, eventData)` - maak event aan
+- `createTicketClass(config, eventId, taskName)` - maak ticket-class aan
+- `createAttendee(config, eventId, ticketClassId, volunteer)` - registreer vrijwilliger
 
-### 4. UI-componenten
+### 2. Database uitbreiding (migratie)
 
-**Ticketing Setup tab:**
-- Dropdown met 10 providers: EventSquare, Weezevent, Eventbrite, Ticketmaster Sport, Roboticket, Tymes, Eventix, YourTicketProvider, Paylogic/See Tickets, Ticketmatic
-- Invoervelden voor API Key, Client Secret, Event ID, Webhook URL (auto-gegenereerd)
-- Test-knop om de verbinding te valideren
-- Opslaan-knop
+Nieuwe kolom toevoegen aan de `events` tabel:
+- `external_event_id TEXT` - slaat het Eventbrite event ID op per intern evenement
 
-**Planning tab:**
-- Evenement-selectie dropdown
-- Tabel met vrijwilligers (naam, taak, ticketstatus)
-- "Genereer & Verstuur Ticket" knop per vrijwilliger of bulk
-- Status-badges: Geen ticket (grijs), Ticket Verzonden (blauw), Ingecheckt (groen)
+Nieuwe kolom toevoegen aan de `tasks` tabel:
+- `external_ticket_class_id TEXT` - slaat het Eventbrite ticket-class ID op per taak
 
-**Live Opvolging tab:**
-- Progress bar: X% van Y stewards ingecheckt
-- Real-time tabel met vrijwilligers, status en incheck-tijdstempel
-- Realtime updates via Supabase Realtime op `volunteer_tickets`
+### 3. Ticketing Setup UI aanpassen (`src/pages/TicketingDashboard.tsx`)
 
-**Log-sectie:**
-- Uitklapbare sectie met recente API-calls
-- Succes/fout-indicatie per log-entry
+- Organization ID wordt automatisch opgehaald bij het opslaan van de configuratie (niet meer handmatig invullen)
+- Event ID veld wordt vervangen door een info-tekst: "Evenementen worden automatisch gesynchroniseerd"
+- Toon een "Sync Organization" knop die de org-ID ophaalt en invult
 
-### 5. Navigatie
-- Nieuwe "Ticketing" knop in het ClubOwnerDashboard actie-grid (naast Loyaliteit)
-- Route `/ticketing` toevoegen aan App.tsx
+### 4. ClubOwnerDashboard aanpassen (`src/pages/ClubOwnerDashboard.tsx`)
 
-### 6. RLS Policies
-- `ticketing_configs`: Alleen club owner/bestuurder/beheerder kan CRUD
-- `volunteer_tickets`: Club staff kan lezen/schrijven, vrijwilligers kunnen eigen tickets lezen
-- `ticketing_logs`: Alleen club staff kan lezen
+Na het aanmaken van een evenement in de database:
+- Check of de club een actieve Eventbrite-configuratie heeft
+- Zo ja, roep de edge function aan met `action: "create_event"` om het automatisch aan te maken in Eventbrite
+- Sla het `external_event_id` op bij het interne event
+- Toon een toast-melding bij succes/fout
 
-### 7. Vertalingen
-- NL/FR/EN vertalingen voor alle labels
+### 5. Planning tab uitbreiden (`src/pages/TicketingDashboard.tsx`)
 
-## Technische details
+- "Genereer Ticket" maakt nu direct een attendee aan in Eventbrite (i.p.v. zoeken)
+- Automatisch een ticket-class aanmaken als die nog niet bestaat voor de taak
+- Toon de Eventbrite event-link bij elk evenement
 
-### Provider API Abstractie
-Elke provider heeft een eigen API-formaat. De edge function bevat een `providerAdapter` pattern:
+### 6. Vertalingen
 
-```text
-providerAdapters = {
-  eventsquare: { createTicket(config, volunteer) },
-  weezevent:   { createTicket(config, volunteer) },
-  eventbrite:  { createTicket(config, volunteer) },
-  ...
-}
-```
+Nieuwe labels in NL/FR/EN:
+- "Organisatie wordt automatisch opgehaald"
+- "Evenement wordt automatisch aangemaakt in Eventbrite"
+- "Ticket-class aangemaakt voor taak X"
+- "Vrijwilliger geregistreerd als attendee"
 
-De adapters vertalen de generieke aanvraag naar het juiste API-formaat per provider. Initieel worden de adapters als stubs opgezet - de daadwerkelijke API-integratie per provider vereist documentatie-onderzoek.
+## Samenvatting van bestanden
 
-### Webhook URL
-De webhook URL wordt automatisch gegenereerd op basis van het project:
-`https://{project_id}.supabase.co/functions/v1/ticketing-webhook?club_id={club_id}`
-
-De club kopieert deze URL naar de webhook-configuratie van hun ticketingprovider.
-
-### Realtime
-`volunteer_tickets` wordt toegevoegd aan de Supabase realtime publication zodat de Live Opvolging tab instant updates krijgt bij incheck-events.
-
-### Bestandswijzigingen
-- **Nieuw**: `src/pages/TicketingDashboard.tsx`
-- **Nieuw**: `supabase/functions/ticketing-generate/index.ts`
-- **Nieuw**: `supabase/functions/ticketing-webhook/index.ts`
-- **Wijziging**: `src/App.tsx` (route toevoegen)
-- **Wijziging**: `src/pages/ClubOwnerDashboard.tsx` (navigatieknop toevoegen)
-- **Migratie**: Nieuwe tabellen + RLS policies + realtime
+| Bestand | Wijziging |
+|---|---|
+| `supabase/functions/ticketing-generate/index.ts` | Nieuwe actions + adapter-methodes voor auto-create |
+| `src/pages/TicketingDashboard.tsx` | Setup UI vereenvoudigen, planning tab uitbreiden |
+| `src/pages/ClubOwnerDashboard.tsx` | Auto-sync bij event-aanmaak |
+| Migratie SQL | `external_event_id` op events, `external_ticket_class_id` op tasks |
 
