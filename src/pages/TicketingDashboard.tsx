@@ -206,6 +206,8 @@ const TicketingDashboard = () => {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Provider-specific config data
+  const [configData, setConfigData] = useState<Record<string, string>>({});
 
   // Planning state
   const [events, setEvents] = useState<{ id: string; title: string; event_date: string | null }[]>([]);
@@ -247,6 +249,7 @@ const TicketingDashboard = () => {
         setClientSecret(config.client_secret || '');
         setEventIdExternal(config.event_id_external || '');
         if (config.webhook_url) setWebhookUrl(config.webhook_url);
+        if ((config as any).config_data) setConfigData((config as any).config_data);
       }
 
       // Load events
@@ -331,7 +334,7 @@ const TicketingDashboard = () => {
   const handleSaveConfig = async () => {
     if (!clubId || !provider) return;
     setSaving(true);
-    const configData = {
+    const saveData: any = {
       club_id: clubId,
       provider: provider as any,
       api_key: apiKey,
@@ -339,13 +342,14 @@ const TicketingDashboard = () => {
       event_id_external: eventIdExternal,
       webhook_url: webhookUrl,
       is_active: true,
+      config_data: configData,
     };
     if (configId) {
-      const { error } = await supabase.from('ticketing_configs').update(configData).eq('id', configId);
+      const { error } = await supabase.from('ticketing_configs').update(saveData).eq('id', configId);
       if (error) toast.error(error.message);
       else toast.success(labels.saved);
     } else {
-      const { data, error } = await supabase.from('ticketing_configs').insert(configData).select().single();
+      const { data, error } = await supabase.from('ticketing_configs').insert(saveData).select().single();
       if (error) toast.error(error.message);
       else { setConfigId(data.id); toast.success(labels.saved); }
     }
@@ -495,20 +499,54 @@ const TicketingDashboard = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{labels.apiKey}</Label>
-                    <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="sk_live_..." />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{labels.clientSecret}</Label>
-                    <Input type="password" value={clientSecret} onChange={e => setClientSecret(e.target.value)} placeholder="cs_..." />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>{labels.eventId}</Label>
-                  <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="evt_123..." />
-                </div>
+
+                {/* Provider-specific fields */}
+                {provider === 'weezevent' ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>API Key <span className="text-xs text-muted-foreground">(Back-office → Outils → Clé API)</span></Label>
+                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Votre Weezevent API key" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Username <span className="text-xs text-muted-foreground">(Organisateur login)</span></Label>
+                        <Input value={configData.username || ''} onChange={e => setConfigData(prev => ({ ...prev, username: e.target.value }))} placeholder="votre@email.com" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Password <span className="text-xs text-muted-foreground">(Organisateur wachtwoord)</span></Label>
+                        <Input type="password" value={configData.password || ''} onChange={e => setConfigData(prev => ({ ...prev, password: e.target.value }))} placeholder="••••••••" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Event ID <span className="text-xs text-muted-foreground">(Weezevent event nummer)</span></Label>
+                        <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="49015" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Ticket ID <span className="text-xs text-muted-foreground">(Prijscategorie voor vrijwilligers, optioneel)</span></Label>
+                      <Input value={configData.ticket_id || ''} onChange={e => setConfigData(prev => ({ ...prev, ticket_id: e.target.value }))} placeholder="198251" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>{labels.apiKey}</Label>
+                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="sk_live_..." />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{labels.clientSecret}</Label>
+                        <Input type="password" value={clientSecret} onChange={e => setClientSecret(e.target.value)} placeholder="cs_..." />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{labels.eventId}</Label>
+                      <Input value={eventIdExternal} onChange={e => setEventIdExternal(e.target.value)} placeholder="evt_123..." />
+                    </div>
+                  </>
+                )}
+
                 <div className="space-y-2">
                   <Label>{labels.webhookUrl}</Label>
                   <div className="flex gap-2">
