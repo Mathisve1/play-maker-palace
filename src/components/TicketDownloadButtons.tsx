@@ -10,10 +10,12 @@ interface TicketDownloadButtonsProps {
   clubName?: string;
   eventTitle?: string;
   ticketId: string;
+  volunteerName?: string;
+  dateOfBirth?: string | null;
   language: string;
 }
 
-const TicketDownloadButtons = ({ barcode, ticketTitle, clubName, eventTitle, ticketId, language }: TicketDownloadButtonsProps) => {
+const TicketDownloadButtons = ({ barcode, ticketTitle, clubName, eventTitle, ticketId, volunteerName, dateOfBirth, language }: TicketDownloadButtonsProps) => {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [addingWallet, setAddingWallet] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
@@ -61,10 +63,26 @@ const TicketDownloadButtons = ({ barcode, ticketTitle, clubName, eventTitle, tic
 
       const yAfterTitle = 38 + titleLines.length * 6;
 
-      // Dashed line
+      // Volunteer name
+      if (volunteerName) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(34, 34, 34);
+        doc.text(volunteerName, 50, yAfterTitle + 2, { align: 'center' });
+      }
+      // Date of birth
+      if (dateOfBirth) {
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(120, 120, 120);
+        const dobLabel = language === 'nl' ? 'Geboortedatum' : language === 'fr' ? 'Date de naissance' : 'Date of birth';
+        doc.text(`${dobLabel}: ${dateOfBirth}`, 50, yAfterTitle + 8, { align: 'center' });
+      }
+
+      const yAfterVolunteer = yAfterTitle + (volunteerName ? 6 : 0) + (dateOfBirth ? 8 : 0);
       doc.setDrawColor(200, 200, 200);
       doc.setLineDashPattern([2, 2], 0);
-      doc.line(10, yAfterTitle + 4, 90, yAfterTitle + 4);
+      doc.line(10, yAfterVolunteer + 4, 90, yAfterVolunteer + 4);
 
       // QR code from hidden canvas
       const canvas = qrRef.current?.querySelector('canvas');
@@ -72,7 +90,7 @@ const TicketDownloadButtons = ({ barcode, ticketTitle, clubName, eventTitle, tic
         const qrDataUrl = canvas.toDataURL('image/png');
         const qrSize = 50;
         const qrX = (100 - qrSize) / 2;
-        const qrY = yAfterTitle + 10;
+        const qrY = yAfterVolunteer + 10;
         
         // White background for QR
         doc.setFillColor(255, 255, 255);
