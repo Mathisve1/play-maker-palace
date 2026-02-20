@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.ticketing-scan]
 verify_jwt = false
+
+[functions.sepa-generate]
+verify_jwt = false

@@ -78,11 +78,12 @@ const Signup = () => {
           phone: formData.phone.trim() || null,
           avatar_url: avatarUrl,
           bank_iban: cleanIban,
+          bank_bic: formData.bic?.trim() || null,
           bank_holder_name: formData.bankHolderName.trim(),
           bank_consent_given: true,
           bank_consent_date: new Date().toISOString(),
           bank_consent_text: consentText,
-        })
+        } as any)
         .eq('id', userId);
 
       if (error) throw error;
