@@ -205,11 +205,13 @@ const TicketScanner = () => {
 
             console.log('[Camera] Barcode detected:', decodedText);
 
-            // Stop camera, then process
-            html5QrCode.stop().catch(() => {}).finally(() => {
+            // Do NOT call html5QrCode.stop() here!
+            // Changing phase triggers useEffect cleanup which stops the camera safely.
+            // Use setTimeout to escape the html5-qrcode callback stack.
+            setTimeout(() => {
               setPhase('processing');
               processBarcode(decodedText);
-            });
+            }, 0);
           },
           () => {} // ignore scan failures
         );
