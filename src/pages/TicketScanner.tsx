@@ -340,8 +340,8 @@ const TicketScanner = () => {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        {/* Scanner view */}
-        {scannerState === 'scanning' && !cameraError && (
+        {/* QR reader element — always in DOM so html5-qrcode can clean up properly */}
+        <div style={{ display: scannerState === 'scanning' && !cameraError ? 'block' : 'none' }}>
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Camera className="w-5 h-5 animate-pulse" />
@@ -353,7 +353,7 @@ const TicketScanner = () => {
               style={{ minHeight: 320 }}
             />
           </div>
-        )}
+        </div>
 
         {/* Camera error */}
         {cameraError && (
