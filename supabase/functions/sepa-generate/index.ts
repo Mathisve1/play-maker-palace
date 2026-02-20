@@ -238,12 +238,11 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-  if (claimsError || !claimsData?.claims) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
-  const userId = claimsData.claims.sub;
+  const userId = user.id;
 
   if (action === 'generate-xml') {
     try {
@@ -400,11 +399,14 @@ Deno.serve(async (req) => {
         }),
       });
 
-      const submission = await submissionRes.json();
+      const submissionText = await submissionRes.text();
+      console.log('DocuSeal submission response:', submissionRes.status, submissionText);
+      let submission;
+      try { submission = JSON.parse(submissionText); } catch { submission = null; }
       const submitter = Array.isArray(submission) ? submission[0] : submission;
       
       if (!submitter?.id) {
-        return new Response(JSON.stringify({ error: 'Failed to create submission' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Failed to create submission', details: submissionText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Update batch with submission info
