@@ -1,8 +1,7 @@
 import { useState, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Download, Smartphone, Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 interface TicketDownloadButtonsProps {
   barcode: string;
@@ -17,13 +16,12 @@ interface TicketDownloadButtonsProps {
 
 const TicketDownloadButtons = ({ barcode, ticketTitle, clubName, eventTitle, ticketId, volunteerName, dateOfBirth, language }: TicketDownloadButtonsProps) => {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const [addingWallet, setAddingWallet] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
   const labels = {
-    nl: { pdf: 'Download PDF', wallet: 'Toevoegen aan Wallet', walletDesc: 'Apple / Google Wallet' },
-    fr: { pdf: 'Télécharger PDF', wallet: 'Ajouter au Wallet', walletDesc: 'Apple / Google Wallet' },
-    en: { pdf: 'Download PDF', wallet: 'Add to Wallet', walletDesc: 'Apple / Google Wallet' },
+    nl: { pdf: 'Download PDF' },
+    fr: { pdf: 'Télécharger PDF' },
+    en: { pdf: 'Download PDF' },
   };
   const l = labels[language as keyof typeof labels] || labels.nl;
 
@@ -133,46 +131,6 @@ const TicketDownloadButtons = ({ barcode, ticketTitle, clubName, eventTitle, tic
     setDownloadingPdf(false);
   };
 
-  const handleAddToWallet = async () => {
-    setAddingWallet(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('wallet-pass', {
-        body: { ticket_id: ticketId, barcode, title: eventTitle || ticketTitle, club_name: clubName },
-      });
-      if (error) throw error;
-
-      if (data?.google_wallet_url) {
-        // Detect if Apple device
-        const isApple = /iPhone|iPad|iPod|Mac/.test(navigator.userAgent);
-        
-        if (isApple && data?.pkpass_base64) {
-          // Download .pkpass file for Apple Wallet
-          const binary = atob(data.pkpass_base64);
-          const bytes = new Uint8Array(binary.length);
-          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-          const blob = new Blob([bytes], { type: 'application/vnd.apple.pkpass' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `ticket-${barcode}.pkpass`;
-          a.click();
-          URL.revokeObjectURL(url);
-          toast.success(language === 'nl' ? 'Toegevoegd aan Apple Wallet!' : 'Added to Apple Wallet!');
-        } else {
-          // Open Google Wallet link
-          window.open(data.google_wallet_url, '_blank');
-          toast.success(language === 'nl' ? 'Geopend in Google Wallet!' : 'Opened in Google Wallet!');
-        }
-      } else {
-        toast.info(language === 'nl' ? 'Wallet functie is nog niet geconfigureerd.' : 'Wallet feature is not configured yet.');
-      }
-    } catch (e: any) {
-      console.error('Wallet error:', e);
-      toast.info(language === 'nl' ? 'Wallet functie is nog niet beschikbaar.' : 'Wallet feature is not available yet.');
-    }
-    setAddingWallet(false);
-  };
-
   return (
     <div className="flex flex-col gap-2 w-full">
       {/* Hidden QR canvas for PDF */}
@@ -180,24 +138,14 @@ const TicketDownloadButtons = ({ barcode, ticketTitle, clubName, eventTitle, tic
         <QRCodeCanvas value={barcode} size={400} level="H" />
       </div>
 
-      <div className="flex gap-2">
-        <button
-          onClick={handleDownloadPdf}
-          disabled={downloadingPdf}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {downloadingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-          {l.pdf}
-        </button>
-        <button
-          onClick={handleAddToWallet}
-          disabled={addingWallet}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium border border-border bg-card text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-        >
-          {addingWallet ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Smartphone className="w-3.5 h-3.5" />}
-          {l.wallet}
-        </button>
-      </div>
+      <button
+        onClick={handleDownloadPdf}
+        disabled={downloadingPdf}
+        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
+      >
+        {downloadingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+        {l.pdf}
+      </button>
     </div>
   );
 };
