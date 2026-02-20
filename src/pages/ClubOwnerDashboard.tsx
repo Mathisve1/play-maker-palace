@@ -1401,6 +1401,12 @@ const ClubOwnerDashboard = () => {
               </button>
             )}
             {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
+              <button onClick={() => navigate('/sepa-payouts')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
+                <FileText className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-xs font-medium text-foreground">SEPA</span>
+              </button>
+            )}
+            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
               <button onClick={() => setShowMembers(true)} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
                 <Shield className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                 <span className="text-xs font-medium text-foreground">Leden</span>

@@ -909,6 +909,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bank_bic: string | null
           bank_consent_date: string | null
           bank_consent_given: boolean
           bank_consent_text: string | null
@@ -926,6 +927,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bank_bic?: string | null
           bank_consent_date?: string | null
           bank_consent_given?: boolean
           bank_consent_text?: string | null
@@ -943,6 +945,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bank_bic?: string | null
           bank_consent_date?: string | null
           bank_consent_given?: boolean
           bank_consent_text?: string | null
@@ -959,6 +962,119 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sepa_batch_items: {
+        Row: {
+          amount: number
+          batch_id: string
+          bic: string | null
+          created_at: string
+          holder_name: string | null
+          iban: string
+          id: string
+          status: string
+          task_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          amount: number
+          batch_id: string
+          bic?: string | null
+          created_at?: string
+          holder_name?: string | null
+          iban: string
+          id?: string
+          status?: string
+          task_id: string
+          volunteer_id: string
+        }
+        Update: {
+          amount?: number
+          batch_id?: string
+          bic?: string | null
+          created_at?: string
+          holder_name?: string | null
+          iban?: string
+          id?: string
+          status?: string
+          task_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sepa_batch_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "sepa_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sepa_batch_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sepa_batches: {
+        Row: {
+          batch_message: string | null
+          batch_reference: string
+          club_id: string
+          created_at: string
+          created_by: string
+          docuseal_document_url: string | null
+          docuseal_submission_id: number | null
+          id: string
+          item_count: number
+          signer_name: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          xml_content: string | null
+        }
+        Insert: {
+          batch_message?: string | null
+          batch_reference: string
+          club_id: string
+          created_at?: string
+          created_by: string
+          docuseal_document_url?: string | null
+          docuseal_submission_id?: number | null
+          id?: string
+          item_count?: number
+          signer_name?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          xml_content?: string | null
+        }
+        Update: {
+          batch_message?: string | null
+          batch_reference?: string
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          docuseal_document_url?: string | null
+          docuseal_submission_id?: number | null
+          id?: string
+          item_count?: number
+          signer_name?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          xml_content?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sepa_batches_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       signature_requests: {
         Row: {
