@@ -17,6 +17,7 @@ import MonthlyComplianceDialog from '@/components/MonthlyComplianceDialog';
 import ComplianceBadge from '@/components/ComplianceBadge';
 import { useComplianceData } from '@/hooks/useComplianceData';
 import EventDetailDialog from '@/components/EventDetailDialog';
+import TicketDownloadButtons from '@/components/TicketDownloadButtons';
 
 interface Task {
   id: string;
@@ -550,6 +551,14 @@ const VolunteerDashboard = () => {
                           <span className="text-xs font-mono font-bold tracking-widest text-foreground">{ticket.barcode}</span>
                           <span className="text-[10px] text-muted-foreground">ID: {ticket.external_ticket_id?.slice(-12) || ticket.id.slice(0, 8)}</span>
                         </div>
+                        <TicketDownloadButtons
+                          barcode={ticket.barcode}
+                          ticketTitle={ticket.task_title || 'Ticket'}
+                          clubName={ticket.club_name}
+                          eventTitle={ticket.event_title}
+                          ticketId={ticket.id}
+                          language={language}
+                        />
                       </div>
                     </>
                   )}
