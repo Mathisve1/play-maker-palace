@@ -175,11 +175,11 @@ const LoyaltyPrograms = () => {
   // Create form
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [newProgram, setNewProgram] = useState({ name: '', description: '', reward_description: '', required_tasks: 10, points_based: false, required_points: 100 });
+  const [newProgram, setNewProgram] = useState({ name: '', description: '', reward_description: '', required_tasks: 10, points_based: true, required_points: 100 });
 
   // Edit
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', description: '', reward_description: '', required_tasks: 10, points_based: false, required_points: 100 });
+  const [editForm, setEditForm] = useState({ name: '', description: '', reward_description: '', required_tasks: 10, points_based: true, required_points: 100 });
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Delete
@@ -265,7 +265,7 @@ const LoyaltyPrograms = () => {
       toast.success(dt.programCreated);
       setPrograms(prev => [data, ...prev]);
       setShowCreateForm(false);
-      setNewProgram({ name: '', description: '', reward_description: '', required_tasks: 10, points_based: false, required_points: 100 });
+      setNewProgram({ name: '', description: '', reward_description: '', required_tasks: 10, points_based: true, required_points: 100 });
     }
     setCreating(false);
   };
@@ -410,17 +410,6 @@ const LoyaltyPrograms = () => {
     );
   }
 
-  // Render the mode toggle for points vs tasks
-  const renderModeToggle = (value: boolean, onChange: (v: boolean) => void) => (
-    <div className="flex gap-2 mt-1">
-      <button type="button" onClick={() => onChange(false)} className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${!value ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
-        {dt.tasksBased}
-      </button>
-      <button type="button" onClick={() => onChange(true)} className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1.5 ${value ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
-        <Star className="w-3.5 h-3.5" /> {dt.pointsBased}
-      </button>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -466,20 +455,9 @@ const LoyaltyPrograms = () => {
                   <input type="text" required maxLength={300} placeholder={dt.rewardPlaceholder} value={newProgram.reward_description} onChange={e => setNewProgram(p => ({ ...p, reward_description: e.target.value }))} className={inputClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>{language === 'nl' ? 'Type programma' : language === 'fr' ? 'Type de programme' : 'Program type'}</label>
-                  {renderModeToggle(newProgram.points_based, v => setNewProgram(p => ({ ...p, points_based: v })))}
+                  <label className={labelClass}>{dt.requiredPoints} *</label>
+                  <input type="number" min={1} max={99999} value={newProgram.required_points} onChange={e => setNewProgram(p => ({ ...p, required_points: parseInt(e.target.value) || 1 }))} className={inputClass} />
                 </div>
-                {newProgram.points_based ? (
-                  <div>
-                    <label className={labelClass}>{dt.requiredPoints} *</label>
-                    <input type="number" min={1} max={99999} value={newProgram.required_points} onChange={e => setNewProgram(p => ({ ...p, required_points: parseInt(e.target.value) || 1 }))} className={inputClass} />
-                  </div>
-                ) : (
-                  <div>
-                    <label className={labelClass}>{dt.requiredTasks}</label>
-                    <input type="number" min={1} max={999} value={newProgram.required_tasks} onChange={e => setNewProgram(p => ({ ...p, required_tasks: parseInt(e.target.value) || 1 }))} className={inputClass} />
-                  </div>
-                )}
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
@@ -657,20 +635,9 @@ const LoyaltyPrograms = () => {
                 <input type="text" required maxLength={300} value={editForm.reward_description} onChange={e => setEditForm(p => ({ ...p, reward_description: e.target.value }))} className={inputClass} />
               </div>
               <div>
-                <label className={labelClass}>{language === 'nl' ? 'Type programma' : language === 'fr' ? 'Type de programme' : 'Program type'}</label>
-                {renderModeToggle(editForm.points_based, v => setEditForm(p => ({ ...p, points_based: v })))}
+                <label className={labelClass}>{dt.requiredPoints} *</label>
+                <input type="number" min={1} max={99999} value={editForm.required_points} onChange={e => setEditForm(p => ({ ...p, required_points: parseInt(e.target.value) || 1 }))} className={inputClass} />
               </div>
-              {editForm.points_based ? (
-                <div>
-                  <label className={labelClass}>{dt.requiredPoints} *</label>
-                  <input type="number" min={1} max={99999} value={editForm.required_points} onChange={e => setEditForm(p => ({ ...p, required_points: parseInt(e.target.value) || 1 }))} className={inputClass} />
-                </div>
-              ) : (
-                <div>
-                  <label className={labelClass}>{dt.requiredTasks}</label>
-                  <input type="number" min={1} max={999} value={editForm.required_tasks} onChange={e => setEditForm(p => ({ ...p, required_tasks: parseInt(e.target.value) || 1 }))} className={inputClass} />
-                </div>
-              )}
               <div className="flex justify-end gap-3">
                 <button type="button" onClick={() => setEditingProgram(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{dt.cancel}</button>
                 <button type="submit" disabled={savingEdit} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium disabled:opacity-50">{savingEdit ? '...' : dt.save}</button>
