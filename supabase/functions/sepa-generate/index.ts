@@ -361,7 +361,7 @@ Deno.serve(async (req) => {
         </div>
       `;
 
-      // Create template
+      // Create template with fields
       const templateRes = await fetch('https://api.docuseal.com/templates/html', {
         method: 'POST',
         headers: {
@@ -371,12 +371,23 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           html: htmlContent,
           name: `SEPA Verklaring - ${batch.batch_reference}`,
+          fields: [
+            {
+              name: 'signature',
+              type: 'signature',
+              role: 'First Party',
+              required: true,
+            },
+          ],
         }),
       });
 
-      const template = await templateRes.json();
+      const templateText = await templateRes.text();
+      console.log('DocuSeal template response:', templateRes.status, templateText);
+      let template;
+      try { template = JSON.parse(templateText); } catch { template = null; }
       if (!template?.id) {
-        return new Response(JSON.stringify({ error: 'Failed to create template' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Failed to create template', details: templateText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Create submission
