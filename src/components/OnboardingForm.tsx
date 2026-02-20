@@ -54,7 +54,7 @@ const findBic = (bankName: string): string => {
   return '';
 };
 
-const bankSuggestions = [...new Set(Object.keys(BELGIAN_BANKS))].sort();
+const bankDropdownOptions = [...new Set(Object.keys(BELGIAN_BANKS))].sort();
 
 const formatIban = (value: string) => {
   const cleaned = value.replace(/\s/g, '').toUpperCase();
@@ -100,8 +100,12 @@ const labels = {
     ibanConfirm: 'Bevestig IBAN',
     ibanMismatch: 'IBAN komt niet overeen',
     bankName: 'Naam van je bank',
-    bankNamePlaceholder: 'bv. KBC, Belfius, ING...',
-    bic: 'BIC-code (automatisch)',
+    bankNamePlaceholder: 'Selecteer je bank',
+    otherBank: 'Andere',
+    customBankPlaceholder: 'Vul de naam van je bank in',
+    customBicPlaceholder: 'Vul de BIC-code in',
+    bic: 'BIC-code',
+    bicAutomatic: 'BIC-code (automatisch)',
     accountHolder: 'Naam rekeninghouder',
     accountHolderPlaceholder: 'Naam zoals op je bankrekening',
     consent: 'Juridische toestemming',
@@ -133,8 +137,12 @@ const labels = {
     ibanConfirm: 'Confirmez l\'IBAN',
     ibanMismatch: 'L\'IBAN ne correspond pas',
     bankName: 'Nom de votre banque',
-    bankNamePlaceholder: 'ex. KBC, Belfius, ING...',
-    bic: 'Code BIC (automatique)',
+    bankNamePlaceholder: 'Sélectionnez votre banque',
+    otherBank: 'Autre',
+    customBankPlaceholder: 'Entrez le nom de votre banque',
+    customBicPlaceholder: 'Entrez le code BIC',
+    bic: 'Code BIC',
+    bicAutomatic: 'Code BIC (automatique)',
     accountHolder: 'Titulaire du compte',
     accountHolderPlaceholder: 'Nom tel qu\'il figure sur votre compte',
     consent: 'Consentement juridique',
@@ -165,9 +173,13 @@ const labels = {
     ibanPlaceholder: 'BE00 0000 0000 0000',
     ibanConfirm: 'Confirm IBAN',
     ibanMismatch: 'IBAN does not match',
-    bankName: 'Your bank name',
-    bankNamePlaceholder: 'e.g. KBC, Belfius, ING...',
-    bic: 'BIC code (automatic)',
+    bankName: 'Your bank',
+    bankNamePlaceholder: 'Select your bank',
+    otherBank: 'Other',
+    customBankPlaceholder: 'Enter your bank name',
+    customBicPlaceholder: 'Enter BIC code',
+    bic: 'BIC code',
+    bicAutomatic: 'BIC code (automatic)',
     accountHolder: 'Account holder name',
     accountHolderPlaceholder: 'Name as on your bank account',
     consent: 'Legal consent',
@@ -206,7 +218,8 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
     bankConsentGiven: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showBankSuggestions, setShowBankSuggestions] = useState(false);
+  const [showBankDropdown, setShowBankDropdown] = useState(false);
+  const [isCustomBank, setIsCustomBank] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -238,6 +251,7 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
       if (!formData.ibanConfirm.replace(/\s/g, '')) errs.ibanConfirm = 'Verplicht';
       if (formData.iban.replace(/\s/g, '') !== formData.ibanConfirm.replace(/\s/g, '')) errs.ibanConfirm = l.ibanMismatch;
       if (!formData.bankName.trim()) errs.bankName = 'Verplicht';
+      if (isCustomBank && !formData.bic.trim()) errs.bic = 'Verplicht';
       if (!formData.bankHolderName.trim()) errs.bankHolderName = 'Verplicht';
       if (!formData.bankConsentGiven) errs.consent = 'Verplicht';
     }
@@ -264,9 +278,18 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
     update('avatarPreview', URL.createObjectURL(file));
   };
 
-  const filteredBanks = formData.bankName.trim()
-    ? bankSuggestions.filter(b => b.toLowerCase().includes(formData.bankName.toLowerCase()))
-    : bankSuggestions;
+  const handleBankSelect = (bankName: string) => {
+    if (bankName === '__other__') {
+      setIsCustomBank(true);
+      update('bankName', '');
+      update('bic', '');
+    } else {
+      setIsCustomBank(false);
+      update('bankName', bankName);
+    }
+    setShowBankDropdown(false);
+  };
+
 
   const progress = ((currentStep + 1) / steps.length) * 100;
   const inputClass = "w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -443,36 +466,83 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
 
             <div className="relative">
               <label className={labelClass}>{l.bankName} *</label>
-              <input
-                type="text"
-                value={formData.bankName}
-                onChange={e => { update('bankName', e.target.value); setShowBankSuggestions(true); }}
-                onFocus={() => setShowBankSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowBankSuggestions(false), 200)}
-                className={cn(inputClass, errors.bankName && "border-destructive")}
-                placeholder={l.bankNamePlaceholder}
-                autoComplete="off"
-              />
-              {errors.bankName && <p className="text-xs text-destructive mt-1">{errors.bankName}</p>}
-              {showBankSuggestions && filteredBanks.length > 0 && formData.bankName.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-xl shadow-elevated max-h-40 overflow-y-auto">
-                  {filteredBanks.slice(0, 8).map(bank => (
+              <button
+                type="button"
+                onClick={() => setShowBankDropdown(!showBankDropdown)}
+                className={cn(
+                  inputClass,
+                  "text-left flex items-center justify-between",
+                  errors.bankName && "border-destructive",
+                  !formData.bankName && !isCustomBank && "text-muted-foreground"
+                )}
+              >
+                <span>{isCustomBank ? l.otherBank : formData.bankName || l.bankNamePlaceholder}</span>
+                <svg className={cn("w-4 h-4 text-muted-foreground transition-transform", showBankDropdown && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              {errors.bankName && !isCustomBank && <p className="text-xs text-destructive mt-1">{errors.bankName}</p>}
+              {showBankDropdown && (
+                <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                  {bankDropdownOptions.map(bank => (
                     <button
                       key={bank}
                       type="button"
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors first:rounded-t-xl last:rounded-b-xl"
-                      onMouseDown={() => { update('bankName', bank); setShowBankSuggestions(false); }}
+                      className={cn(
+                        "w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition-colors first:rounded-t-xl",
+                        formData.bankName === bank && !isCustomBank && "bg-primary/10 text-primary font-medium"
+                      )}
+                      onClick={() => handleBankSelect(bank)}
                     >
                       {bank}
+                      {formData.bic && formData.bankName === bank && !isCustomBank && (
+                        <span className="ml-2 text-xs text-muted-foreground font-mono">{formData.bic}</span>
+                      )}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition-colors last:rounded-b-xl border-t border-border font-medium",
+                      isCustomBank && "bg-primary/10 text-primary"
+                    )}
+                    onClick={() => handleBankSelect('__other__')}
+                  >
+                    {l.otherBank}
+                  </button>
                 </div>
               )}
             </div>
 
-            {formData.bic && (
+            {isCustomBank && (
+              <div className="space-y-4">
+                <div>
+                  <label className={labelClass}>{l.bankName} *</label>
+                  <input
+                    type="text"
+                    value={formData.bankName}
+                    onChange={e => update('bankName', e.target.value)}
+                    className={cn(inputClass, errors.bankName && "border-destructive")}
+                    placeholder={l.customBankPlaceholder}
+                  />
+                  {errors.bankName && <p className="text-xs text-destructive mt-1">{errors.bankName}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>{l.bic} *</label>
+                  <input
+                    type="text"
+                    value={formData.bic}
+                    onChange={e => update('bic', e.target.value.toUpperCase())}
+                    className={cn(inputClass, errors.bic && "border-destructive")}
+                    placeholder={l.customBicPlaceholder}
+                    maxLength={11}
+                  />
+                  {errors.bic && <p className="text-xs text-destructive mt-1">{errors.bic}</p>}
+                </div>
+              </div>
+            )}
+
+            {!isCustomBank && formData.bic && (
               <div>
-                <label className={labelClass}>{l.bic}</label>
+                <label className={labelClass}>{l.bicAutomatic}</label>
                 <div className="px-3 py-2.5 rounded-xl bg-muted/50 border border-border text-sm text-foreground font-mono">
                   {formData.bic}
                 </div>
