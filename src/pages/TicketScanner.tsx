@@ -70,9 +70,26 @@ type ScanResult = {
 };
 
 // ── Audio helpers (Web Audio API, no files needed) ──────────────────
+// Reuse a single AudioContext so mobile browsers don't block playback
+let _audioCtx: AudioContext | null = null;
+const getAudioCtx = (): AudioContext => {
+  if (!_audioCtx) {
+    _audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  // Resume if suspended (mobile Safari / Chrome policy)
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+};
+// Warm up AudioContext on first user tap anywhere on the page
+if (typeof window !== 'undefined') {
+  const warmUp = () => { getAudioCtx(); document.removeEventListener('touchstart', warmUp); document.removeEventListener('click', warmUp); };
+  document.addEventListener('touchstart', warmUp, { once: true });
+  document.addEventListener('click', warmUp, { once: true });
+}
+
 const playBeep = (frequency = 880, duration = 150, type: OscillatorType = 'sine') => {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = type;
