@@ -16,6 +16,7 @@ interface ProfileData {
   avatar_url: string | null;
   phone: string | null;
   bio: string | null;
+  date_of_birth: string | null;
   bank_iban: string | null;
   bank_holder_name: string | null;
   bank_consent_given: boolean;
@@ -40,6 +41,7 @@ const labels = {
     name: 'Volledige naam',
     email: 'E-mailadres',
     phone: 'Telefoonnummer',
+    dateOfBirth: 'Geboortedatum',
     bio: 'Over mij',
     bioPlaceholder: 'Vertel iets over jezelf, je interesses en ervaring als vrijwilliger...',
     changePhoto: 'Foto wijzigen',
@@ -67,6 +69,7 @@ const labels = {
     name: 'Nom complet',
     email: 'Adresse e-mail',
     phone: 'Numéro de téléphone',
+    dateOfBirth: 'Date de naissance',
     bio: 'À propos de moi',
     bioPlaceholder: 'Parlez de vous, vos intérêts et votre expérience en tant que bénévole...',
     changePhoto: 'Modifier la photo',
@@ -94,6 +97,7 @@ const labels = {
     name: 'Full name',
     email: 'Email address',
     phone: 'Phone number',
+    dateOfBirth: 'Date of birth',
     bio: 'About me',
     bioPlaceholder: 'Tell us about yourself, your interests and volunteering experience...',
     changePhoto: 'Change photo',
@@ -138,6 +142,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [bankIban, setBankIban] = useState('');
   const [bankHolderName, setBankHolderName] = useState('');
   const [bio, setBio] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [bankConsentGiven, setBankConsentGiven] = useState(false);
   const [bankConsentDate, setBankConsentDate] = useState<string | null>(null);
   const [bankConsentText, setBankConsentText] = useState<string | null>(null);
@@ -153,7 +158,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       setLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_url, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, stripe_account_id')
+        .select('full_name, email, avatar_url, phone, bio, date_of_birth, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, stripe_account_id')
         .eq('id', userId)
         .maybeSingle();
 
@@ -164,6 +169,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
         setAvatarUrl(data.avatar_url);
         setBankIban(data.bank_iban ? formatIban(data.bank_iban) : '');
         setBio(data.bio || '');
+        setDateOfBirth(data.date_of_birth || '');
         setBankHolderName(data.bank_holder_name || '');
         setBankConsentGiven(data.bank_consent_given || false);
         setBankConsentDate(data.bank_consent_date);
@@ -222,6 +228,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       full_name: fullName.trim() || null,
       phone: phone.trim() || null,
       bio: bio.trim() || null,
+      date_of_birth: dateOfBirth || null,
       bank_iban: cleanIban || null,
       bank_holder_name: bankHolderName.trim() || null,
       bank_consent_given: bankConsentGiven,
@@ -248,6 +255,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
         avatar_url: avatarUrl,
         phone: phone.trim() || null,
         bio: bio.trim() || null,
+        date_of_birth: dateOfBirth || null,
         bank_iban: cleanIban || null,
         bank_holder_name: bankHolderName.trim() || null,
         bank_consent_given: bankConsentGiven,
@@ -358,6 +366,16 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
               onChange={e => setPhone(e.target.value)}
               className={inputClass}
               placeholder="+32 470 00 00 00"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>{l.dateOfBirth} *</label>
+            <input
+              type="date"
+              value={dateOfBirth}
+              onChange={e => setDateOfBirth(e.target.value)}
+              className={inputClass}
+              max={new Date().toISOString().split('T')[0]}
             />
           </div>
           <div>

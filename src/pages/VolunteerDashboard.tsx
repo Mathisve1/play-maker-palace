@@ -153,7 +153,7 @@ const VolunteerDashboard = () => {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_url, phone, bio')
+        .select('full_name, email, avatar_url, phone, bio, date_of_birth')
         .eq('id', session.user.id)
         .maybeSingle();
       setProfile(profileData);
@@ -557,6 +557,8 @@ const VolunteerDashboard = () => {
                           clubName={ticket.club_name}
                           eventTitle={ticket.event_title}
                           ticketId={ticket.id}
+                          volunteerName={profile?.full_name || undefined}
+                          dateOfBirth={(profile as any)?.date_of_birth || undefined}
                           language={language}
                         />
                       </div>
