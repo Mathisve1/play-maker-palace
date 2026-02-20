@@ -228,6 +228,7 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
     if (step === 0) {
       if (!formData.fullName.trim()) errs.fullName = 'Verplicht';
       if (!formData.dateOfBirth) errs.dateOfBirth = 'Verplicht';
+      if (!formData.phone.trim()) errs.phone = 'Verplicht';
     }
     if (step === 1) {
       if (!formData.avatarFile && !formData.avatarPreview) errs.avatar = l.photoRequired;
@@ -347,14 +348,15 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
             </div>
 
             <div>
-              <label className={labelClass}>{l.phone}</label>
+              <label className={labelClass}>{l.phone} *</label>
               <input
                 type="tel"
                 value={formData.phone}
                 onChange={e => update('phone', e.target.value)}
-                className={inputClass}
+                className={cn(inputClass, errors.phone && "border-destructive")}
                 placeholder={l.phonePlaceholder}
               />
+              {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
             </div>
           </div>
         )}
