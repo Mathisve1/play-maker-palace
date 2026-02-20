@@ -2,6 +2,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Handshake, Smile, Trophy, Users, UserPlus, Search, CheckCircle, Heart } from 'lucide-react';
+import { Component as TestimonialCards } from '@/components/ui/twitter-testimonial-cards';
 import Navbar from '@/components/Navbar';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
@@ -94,6 +95,16 @@ const VolunteerLanding = () => {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{t.volunteer.testimonialsTitle}</h2>
+          </div>
+          <TestimonialCards />
         </div>
       </section>
 
