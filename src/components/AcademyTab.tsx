@@ -87,7 +87,7 @@ const AcademyTab = ({ language, navigate }: { language: Language; navigate: Retu
     const [certRes, trainRes, eventsRes] = await Promise.all([
       supabase.from('volunteer_certificates').select('*').eq('volunteer_id', userId),
       supabase.from('academy_trainings').select('*, clubs(name)').eq('is_published', true),
-      supabase.from('events').select('*').not('training_id', 'is', null).eq('status', 'open'),
+      supabase.from('events').select('*').eq('event_type', 'training').eq('status', 'open'),
     ]);
 
     const certs = (certRes.data || []) as any[];

@@ -204,6 +204,17 @@ const VolunteerDashboard = () => {
             event_id: (extraMap.get(t.id) as any)?.event_id || null,
             event_group_id: (extraMap.get(t.id) as any)?.event_group_id || null,
           }));
+
+          // Filter out tasks belonging to training events
+          const trainingEventIds = new Set<string>();
+          if (enrichedTasks.some(t => t.event_id)) {
+            const eventIdsToCheck = [...new Set(enrichedTasks.filter(t => t.event_id).map(t => t.event_id!))] as string[];
+            if (eventIdsToCheck.length > 0) {
+              const { data: trainingEvents } = await (supabase as any).from('events').select('id').eq('event_type', 'training').in('id', eventIdsToCheck);
+              (trainingEvents || []).forEach((e: any) => trainingEventIds.add(e.id));
+            }
+          }
+          enrichedTasks = enrichedTasks.filter(t => !t.event_id || !trainingEventIds.has(t.event_id));
         }
         setTasks(enrichedTasks);
 
@@ -227,7 +238,7 @@ const VolunteerDashboard = () => {
       }
 
       // Fetch events WITHOUT training_id (regular events like matches, not trainings)
-      const { data: allEventsData } = await (supabase as any).from('events').select('*').is('training_id', null).order('event_date', { ascending: true });
+      const { data: allEventsData } = await (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: true });
       if (allEventsData && allEventsData.length > 0) {
         const clubIds = [...new Set(allEventsData.map((e: any) => e.club_id))] as string[];
         const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);
