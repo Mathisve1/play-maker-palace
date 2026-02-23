@@ -356,7 +356,7 @@ Deno.serve(async (req) => {
           </div>
           <div style="margin-top: 40px;">
             <p style="color: #6b7280; font-size: 14px;">Handtekening:</p>
-            <p>{{Handtekening;type=signature}}</p>
+            <signature-field name="Handtekening" role="First Party" style="width: 200px; height: 80px; display: inline-block;"></signature-field>
           </div>
         </div>
       `;
