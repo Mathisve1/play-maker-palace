@@ -9,7 +9,7 @@ import {
   ChevronDown, ChevronUp, Eye, EyeOff, Loader2, ArrowLeft, Award, Save, Users,
   HelpCircle, Copy, Type, Heading1, Heading2, Minus, AlignLeft, AlignCenter, AlignRight,
   Bold, Italic, Palette, Youtube, Upload, ToggleLeft, ToggleRight, CheckSquare, Square,
-  Wand2, Bot, MessageSquare
+  Wand2, Bot, MessageSquare, CalendarDays, MapPin, UserCheck, QrCode, Send
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
@@ -128,6 +128,14 @@ const labels = {
     aiDescription: 'Beschrijf het onderwerp en AI maakt een volledige training met modules, tekst en afbeeldingen.',
     aiSuccess: 'AI training gegenereerd! Modules zijn toegevoegd.',
     aiReplace: 'Bestaande modules vervangen', aiAppend: 'Toevoegen aan bestaande modules',
+    // Training events
+    trainingEvents: 'Fysieke trainingen', createEvent: 'Nieuw trainingsmoment',
+    eventDate: 'Datum', eventLocation: 'Locatie', eventDesc: 'Beschrijving',
+    signups: 'Inschrijvingen', checkedIn: 'Ingecheckt', awardCerts: 'Certificaten toekennen',
+    awardConfirm: 'Certificaten toekennen aan alle ingecheckte vrijwilligers?',
+    certsAwarded: 'Certificaten toegekend!', noEvents: 'Nog geen fysieke trainingsmomenten.',
+    spots: 'Plaatsen', eventCreated: 'Trainingsmoment aangemaakt!',
+    generateTickets: 'Tickets genereren', ticketsGenerated: 'Tickets gegenereerd!',
   },
   fr: {
     title: 'Academy Builder', back: 'Retour', newTraining: 'Nouvelle formation',
@@ -164,6 +172,13 @@ const labels = {
     aiDescription: 'Décrivez le sujet et l\'IA créera une formation complète avec modules, texte et images.',
     aiSuccess: 'Formation IA générée ! Les modules ont été ajoutés.',
     aiReplace: 'Remplacer les modules existants', aiAppend: 'Ajouter aux modules existants',
+    trainingEvents: 'Formations physiques', createEvent: 'Nouveau moment de formation',
+    eventDate: 'Date', eventLocation: 'Lieu', eventDesc: 'Description',
+    signups: 'Inscriptions', checkedIn: 'Enregistré', awardCerts: 'Attribuer certificats',
+    awardConfirm: 'Attribuer les certificats à tous les volontaires enregistrés ?',
+    certsAwarded: 'Certificats attribués !', noEvents: 'Pas encore de formations physiques.',
+    spots: 'Places', eventCreated: 'Moment de formation créé !',
+    generateTickets: 'Générer les tickets', ticketsGenerated: 'Tickets générés !',
   },
   en: {
     title: 'Academy Builder', back: 'Back', newTraining: 'New training',
@@ -200,6 +215,13 @@ const labels = {
     aiDescription: 'Describe the topic and AI will create a complete training with modules, text and images.',
     aiSuccess: 'AI training generated! Modules have been added.',
     aiReplace: 'Replace existing modules', aiAppend: 'Add to existing modules',
+    trainingEvents: 'Physical trainings', createEvent: 'New training session',
+    eventDate: 'Date', eventLocation: 'Location', eventDesc: 'Description',
+    signups: 'Sign-ups', checkedIn: 'Checked in', awardCerts: 'Award certificates',
+    awardConfirm: 'Award certificates to all checked-in volunteers?',
+    certsAwarded: 'Certificates awarded!', noEvents: 'No physical training sessions yet.',
+    spots: 'Spots', eventCreated: 'Training session created!',
+    generateTickets: 'Generate tickets', ticketsGenerated: 'Tickets generated!',
   },
 };
 
@@ -704,6 +726,30 @@ const AcademyBuilder = () => {
   const [selectedVolunteer, setSelectedVolunteer] = useState('');
   const [certificates, setCertificates] = useState<Certificate[]>([]);
 
+  // Training events state
+  interface TrainingEvent {
+    id: string;
+    title: string;
+    event_date: string | null;
+    location: string | null;
+    description: string | null;
+    status: string;
+    training_id: string;
+    task?: { id: string; spots_available: number | null } | null;
+    signupCount?: number;
+    checkedInCount?: number;
+    ticketCount?: number;
+  }
+  const [trainingEvents, setTrainingEvents] = useState<TrainingEvent[]>([]);
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventLocation, setNewEventLocation] = useState('');
+  const [newEventDesc, setNewEventDesc] = useState('');
+  const [newEventSpots, setNewEventSpots] = useState(30);
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [eventSignups, setEventSignups] = useState<{ volunteer_id: string; full_name: string | null; status: string; ticket_status: string | null; checked_in: boolean }[]>([]);
+
   const [globalQuiz, setGlobalQuiz] = useState<Quiz | null>(null);
   const [globalQuestions, setGlobalQuestions] = useState<QuizQuestion[]>([]);
   const [globalPassingScore, setGlobalPassingScore] = useState(7);
@@ -785,6 +831,7 @@ const AcademyBuilder = () => {
   const selectTraining = (t: Training) => {
     setSelectedTraining(t.id); setEditTitle(t.title); setEditDesc(t.description || '');
     loadTrainingDetail(t.id);
+    loadTrainingEvents(t.id);
   };
 
   const handleCreateTraining = async () => {
@@ -1016,6 +1063,154 @@ const AcademyBuilder = () => {
     setVolunteers((profiles || []) as any);
   };
 
+  // ── Training Events ──
+  const loadTrainingEvents = async (trainingId: string) => {
+    const { data: events } = await supabase
+      .from('events')
+      .select('*')
+      .eq('training_id', trainingId)
+      .eq('club_id', clubId!)
+      .order('event_date', { ascending: false });
+
+    if (!events || events.length === 0) { setTrainingEvents([]); return; }
+
+    // For each event, load task + signup/ticket counts
+    const enriched: TrainingEvent[] = [];
+    for (const ev of events) {
+      const { data: tasks } = await supabase.from('tasks').select('id, spots_available').eq('event_id', ev.id).limit(1);
+      const task = tasks?.[0] || null;
+      let signupCount = 0, checkedInCount = 0, ticketCount = 0;
+      if (task) {
+        const { count: sc } = await supabase.from('task_signups').select('id', { count: 'exact', head: true }).eq('task_id', task.id);
+        signupCount = sc || 0;
+        const { data: tickets } = await supabase.from('volunteer_tickets').select('status').eq('event_id', ev.id).eq('club_id', clubId!);
+        ticketCount = (tickets || []).length;
+        checkedInCount = (tickets || []).filter((t: any) => t.status === 'checked_in').length;
+      }
+      enriched.push({ ...ev, training_id: ev.training_id!, task: task ? { id: task.id, spots_available: task.spots_available } : null, signupCount, checkedInCount, ticketCount });
+    }
+    setTrainingEvents(enriched);
+  };
+
+  const handleCreateTrainingEvent = async () => {
+    if (!selectedTraining || !clubId || !newEventTitle.trim()) return;
+    // Create event linked to training
+    const { data: ev, error: evErr } = await supabase.from('events').insert({
+      club_id: clubId, title: newEventTitle, event_date: newEventDate || null,
+      location: newEventLocation || null, description: newEventDesc || null,
+      training_id: selectedTraining, status: 'open',
+    }).select().single();
+    if (evErr || !ev) { toast.error(evErr?.message || 'Error'); return; }
+
+    // Auto-create task under this event for signups
+    await supabase.from('tasks').insert({
+      club_id: clubId, title: newEventTitle, event_id: (ev as any).id,
+      task_date: newEventDate || null, location: newEventLocation || null,
+      spots_available: newEventSpots, status: 'open', compensation_type: 'none',
+      required_training_id: null,
+    });
+
+    toast.success((l as any).eventCreated);
+    setShowCreateEvent(false);
+    setNewEventTitle(''); setNewEventDate(''); setNewEventLocation(''); setNewEventDesc('');
+    await loadTrainingEvents(selectedTraining);
+  };
+
+  const loadEventSignups = async (eventId: string) => {
+    const ev = trainingEvents.find(e => e.id === eventId);
+    if (!ev?.task) { setEventSignups([]); return; }
+
+    const { data: signups } = await supabase.from('task_signups').select('volunteer_id, status').eq('task_id', ev.task.id);
+    if (!signups || signups.length === 0) { setEventSignups([]); return; }
+
+    const volIds = signups.map((s: any) => s.volunteer_id);
+    const [profilesRes, ticketsRes] = await Promise.all([
+      supabase.from('profiles').select('id, full_name').in('id', volIds),
+      supabase.from('volunteer_tickets').select('volunteer_id, status').eq('event_id', eventId).eq('club_id', clubId!),
+    ]);
+
+    const profiles = (profilesRes.data || []) as any[];
+    const tickets = (ticketsRes.data || []) as any[];
+
+    setEventSignups(signups.map((s: any) => {
+      const prof = profiles.find(p => p.id === s.volunteer_id);
+      const ticket = tickets.find(t => t.volunteer_id === s.volunteer_id);
+      return {
+        volunteer_id: s.volunteer_id,
+        full_name: prof?.full_name || s.volunteer_id.slice(0, 8),
+        status: s.status,
+        ticket_status: ticket?.status || null,
+        checked_in: ticket?.status === 'checked_in',
+      };
+    }));
+  };
+
+  const handleGenerateTickets = async (eventId: string) => {
+    const ev = trainingEvents.find(e => e.id === eventId);
+    if (!ev?.task || !clubId) return;
+
+    const { data: signups } = await supabase.from('task_signups').select('volunteer_id').eq('task_id', ev.task.id).eq('status', 'approved');
+    if (!signups || signups.length === 0) { toast.error('Geen goedgekeurde inschrijvingen'); return; }
+
+    // Check existing tickets
+    const { data: existing } = await supabase.from('volunteer_tickets').select('volunteer_id').eq('event_id', eventId).eq('club_id', clubId);
+    const existingIds = new Set((existing || []).map((t: any) => t.volunteer_id));
+
+    const newTickets = signups
+      .filter((s: any) => !existingIds.has(s.volunteer_id))
+      .map((s: any) => ({
+        club_id: clubId,
+        event_id: eventId,
+        task_id: ev.task!.id,
+        volunteer_id: s.volunteer_id,
+        barcode: `VT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+        status: 'sent' as const,
+      }));
+
+    if (newTickets.length > 0) {
+      await supabase.from('volunteer_tickets').insert(newTickets);
+    }
+    toast.success(`${newTickets.length} ${(l as any).ticketsGenerated}`);
+    await loadTrainingEvents(selectedTraining!);
+    await loadEventSignups(eventId);
+  };
+
+  const handleAwardCertsToCheckedIn = async (eventId: string) => {
+    if (!confirm((l as any).awardConfirm)) return;
+    if (!selectedTraining || !clubId) return;
+
+    const { data: tickets } = await supabase.from('volunteer_tickets')
+      .select('volunteer_id')
+      .eq('event_id', eventId)
+      .eq('club_id', clubId)
+      .eq('status', 'checked_in');
+
+    if (!tickets || tickets.length === 0) { toast.error('Geen ingecheckte vrijwilligers'); return; }
+
+    // Check existing certs
+    const { data: existingCerts } = await supabase.from('volunteer_certificates')
+      .select('volunteer_id')
+      .eq('training_id', selectedTraining)
+      .eq('club_id', clubId);
+    const existingCertIds = new Set((existingCerts || []).map((c: any) => c.volunteer_id));
+
+    const newCerts = tickets
+      .filter((t: any) => !existingCertIds.has(t.volunteer_id))
+      .map((t: any) => ({
+        volunteer_id: t.volunteer_id,
+        training_id: selectedTraining!,
+        club_id: clubId!,
+        type: 'physical_event',
+      }));
+
+    if (newCerts.length > 0) {
+      await supabase.from('volunteer_certificates').insert(newCerts);
+    }
+    toast.success(`${newCerts.length} ${(l as any).certsAwarded}`);
+    await loadTrainingDetail(selectedTraining!);
+    await loadTrainingEvents(selectedTraining!);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1217,16 +1412,97 @@ const AcademyBuilder = () => {
                   onGenerateAI={() => handleGenerateAI('global')} generatingAI={generatingAI} l={l} />
               </div>
 
-              {/* ─── Certificates ─── */}
-              <div className="bg-card rounded-2xl border border-border p-5">
+              {/* ─── Training Events (Physical) ─── */}
+              <div className="bg-card rounded-2xl border-2 border-accent/20 p-5">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
-                    <Award className="w-4 h-4 text-primary" /> {l.certificates} ({certificates.length})
+                    <CalendarDays className="w-4 h-4 text-accent" /> {(l as any).trainingEvents}
+                    <span className="text-xs text-muted-foreground font-normal">({trainingEvents.length})</span>
                   </h3>
-                  <Button variant="outline" size="sm" onClick={() => { setShowPhysicalCert(true); loadVolunteers(); }} className="gap-1.5">
-                    <Users className="w-4 h-4" /> {l.physicalTraining}
+                  <Button variant="outline" size="sm" onClick={() => setShowCreateEvent(true)} className="gap-1.5">
+                    <Plus className="w-4 h-4" /> {(l as any).createEvent}
                   </Button>
                 </div>
+
+                {trainingEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">{(l as any).noEvents}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {trainingEvents.map(ev => (
+                      <div key={ev.id} className="rounded-xl border border-border overflow-hidden">
+                        <button
+                          onClick={() => { const newId = expandedEventId === ev.id ? null : ev.id; setExpandedEventId(newId); if (newId) loadEventSignups(newId); }}
+                          className="w-full text-left p-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+                              <CalendarDays className="w-4 h-4 text-accent" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{ev.title}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                {ev.event_date && <span>{new Date(ev.event_date).toLocaleDateString()}</span>}
+                                {ev.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{ev.location}</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs">
+                            <span className="text-muted-foreground">{ev.signupCount} {(l as any).signups}</span>
+                            <span className="text-accent font-medium">{ev.checkedInCount} {(l as any).checkedIn}</span>
+                            {ev.ticketCount! > 0 && <span className="text-primary">🎫 {ev.ticketCount}</span>}
+                            {expandedEventId === ev.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                          </div>
+                        </button>
+
+                        <AnimatePresence>
+                          {expandedEventId === ev.id && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                              <div className="px-3 pb-3 border-t border-border pt-3 space-y-3">
+                                {/* Action buttons */}
+                                <div className="flex gap-2 flex-wrap">
+                                  <Button variant="outline" size="sm" onClick={() => handleGenerateTickets(ev.id)} className="gap-1.5 text-xs">
+                                    <QrCode className="w-3.5 h-3.5" /> {(l as any).generateTickets}
+                                  </Button>
+                                  <Button variant="default" size="sm" onClick={() => handleAwardCertsToCheckedIn(ev.id)} disabled={ev.checkedInCount === 0} className="gap-1.5 text-xs">
+                                    <Award className="w-3.5 h-3.5" /> {(l as any).awardCerts}
+                                  </Button>
+                                </div>
+
+                                {/* Signup list */}
+                                {eventSignups.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {eventSignups.map(s => (
+                                      <div key={s.volunteer_id} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-lg bg-muted/30">
+                                        <span className="text-foreground font-medium">{s.full_name}</span>
+                                        <div className="flex items-center gap-2">
+                                          {s.ticket_status && (
+                                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${s.checked_in ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
+                                              {s.checked_in ? '✅ Ingecheckt' : '🎫 Ticket'}
+                                            </span>
+                                          )}
+                                          {!s.ticket_status && <span className="text-[10px] text-muted-foreground">Geen ticket</span>}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground text-center py-2">Geen inschrijvingen</p>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ─── Certificates ─── */}
+              <div className="bg-card rounded-2xl border border-border p-5">
+                <h3 className="font-heading font-semibold text-foreground flex items-center gap-2 mb-3">
+                  <Award className="w-4 h-4 text-primary" /> {l.certificates} ({certificates.length})
+                </h3>
                 {certificates.length > 0 && (
                   <div className="space-y-1">
                     {certificates.map(cert => (
@@ -1251,7 +1527,43 @@ const AcademyBuilder = () => {
         )}
       </main>
 
-      {/* Physical certificate dialog */}
+      {/* Create training event dialog */}
+      <Dialog open={showCreateEvent} onOpenChange={setShowCreateEvent}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 text-accent" /> {(l as any).createEvent}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-foreground">{l.trainingTitle}</label>
+              <Input value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">{(l as any).eventDate}</label>
+              <Input type="datetime-local" value={newEventDate} onChange={e => setNewEventDate(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">{(l as any).eventLocation}</label>
+              <Input value={newEventLocation} onChange={e => setNewEventLocation(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">{(l as any).spots}</label>
+              <Input type="number" min={1} value={newEventSpots} onChange={e => setNewEventSpots(Number(e.target.value))} className="mt-1 w-24" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">{(l as any).eventDesc}</label>
+              <Textarea value={newEventDesc} onChange={e => setNewEventDesc(e.target.value)} rows={2} className="mt-1" />
+            </div>
+            <Button onClick={handleCreateTrainingEvent} disabled={!newEventTitle.trim()} className="w-full gap-2">
+              <CalendarDays className="w-4 h-4" /> {(l as any).createEvent}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Physical certificate dialog (manual) */}
       <Dialog open={showPhysicalCert} onOpenChange={setShowPhysicalCert}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
