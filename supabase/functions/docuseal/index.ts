@@ -98,7 +98,100 @@ Deno.serve(async (req) => {
                 
                 console.log("Webhook: Updated compliance declaration", compDecl.id, "to completed");
               } else {
-                console.log("Webhook: No matching signature request or compliance declaration for submission", submissionId);
+                // Check if it's a SEPA batch signing
+                const { data: sepaBatch } = await adminClient
+                  .from("sepa_batches")
+                  .select("id, club_id")
+                  .eq("docuseal_submission_id", submissionId)
+                  .maybeSingle();
+
+                if (sepaBatch) {
+                  await adminClient
+                    .from("sepa_batches")
+                    .update({
+                      status: "signed",
+                      docuseal_document_url: documentUrl,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", sepaBatch.id);
+
+                  // Update all batch items to sent_to_bank
+                  await adminClient
+                    .from("sepa_batch_items")
+                    .update({ status: "sent_to_bank" })
+                    .eq("batch_id", sepaBatch.id);
+
+                  console.log("Webhook: Updated SEPA batch", sepaBatch.id, "to signed");
+
+                  // Send notification emails to volunteers
+                  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+                  const resendFromEmail = Deno.env.get("RESEND_FROM_EMAIL");
+                  if (resendApiKey && resendFromEmail) {
+                    const { data: items } = await adminClient
+                      .from("sepa_batch_items")
+                      .select("volunteer_id, amount")
+                      .eq("batch_id", sepaBatch.id);
+
+                    if (items && items.length > 0) {
+                      const volunteerIds = items.map((i: { volunteer_id: string }) => i.volunteer_id);
+                      const { data: profiles } = await adminClient
+                        .from("profiles")
+                        .select("id, email, full_name")
+                        .in("id", volunteerIds);
+
+                      const { data: club } = await adminClient
+                        .from("clubs")
+                        .select("name")
+                        .eq("id", sepaBatch.club_id)
+                        .single();
+
+                      for (const profile of (profiles || [])) {
+                        if (!profile.email) continue;
+                        const item = items.find((i: { volunteer_id: string }) => i.volunteer_id === profile.id);
+                        const amount = item ? Number(item.amount).toFixed(2) : "0.00";
+
+                        try {
+                          await fetch("https://api.resend.com/emails", {
+                            method: "POST",
+                            headers: {
+                              "Authorization": `Bearer ${resendApiKey}`,
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                              from: resendFromEmail,
+                              to: [profile.email],
+                              subject: `Uitbetaling klaargezet - €${amount}`,
+                              html: `
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                  <h2>Goed nieuws, ${profile.full_name || "vrijwilliger"}! 🎉</h2>
+                                  <p>Je onkostenvergoeding van <strong>€${amount}</strong> is door ${club?.name || "de club"} klaargezet voor de bank.</p>
+                                  <div style="background: #f4f4f5; border-radius: 12px; padding: 16px; margin: 16px 0;">
+                                    <p style="margin: 0; color: #71717a; font-size: 14px;">
+                                      ⏳ <strong>Let op:</strong> Het kan tot <strong>7 werkdagen</strong> duren voordat het bedrag op je rekening staat.
+                                    </p>
+                                  </div>
+                                  <p style="color: #71717a; font-size: 13px;">Dit is een automatisch bericht.</p>
+                                </div>
+                              `,
+                            }),
+                          });
+                        } catch (emailErr) {
+                          console.error("Email send error:", emailErr);
+                        }
+
+                        // Create in-app notification
+                        await adminClient.from("notifications").insert({
+                          user_id: profile.id,
+                          title: "Uitbetaling klaargezet",
+                          message: `Je onkostenvergoeding van €${amount} is klaargezet voor de bank. Het kan tot 7 werkdagen duren.`,
+                          type: "payment_sent",
+                        });
+                      }
+                    }
+                  }
+                } else {
+                  console.log("Webhook: No matching signature request, compliance declaration, or SEPA batch for submission", submissionId);
+                }
               }
             }
           }
