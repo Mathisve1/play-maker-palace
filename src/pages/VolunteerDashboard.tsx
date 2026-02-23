@@ -5,7 +5,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Timer, Gift, Ticket, Euro, Banknote } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Timer, Gift, Ticket, Euro, Banknote, Award } from 'lucide-react';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
@@ -37,6 +37,7 @@ interface Task {
   start_time?: string | null;
   end_time?: string | null;
   notes?: string | null;
+  required_training_id?: string | null;
   clubs?: { name: string; sport: string | null; location: string | null };
   event_id?: string | null;
   event_group_id?: string | null;
@@ -147,6 +148,7 @@ const VolunteerDashboard = () => {
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [myLikes, setMyLikes] = useState<Set<string>>(new Set());
+  const [myCertifiedTrainingIds, setMyCertifiedTrainingIds] = useState<Set<string>>(new Set());
 
   // Events state
   const [events, setEvents] = useState<EventData[]>([]);
@@ -331,6 +333,15 @@ const VolunteerDashboard = () => {
           myEnrollments.forEach((e: any) => { enrollMap[e.program_id] = { id: e.id, tasks_completed: e.tasks_completed, points_earned: e.points_earned || 0, reward_claimed: e.reward_claimed }; });
           setLoyaltyEnrollments(enrollMap);
         }
+      }
+
+      // Fetch my certificates for training badge
+      const { data: myCerts } = await supabase
+        .from('volunteer_certificates')
+        .select('training_id')
+        .eq('volunteer_id', session.user.id);
+      if (myCerts) {
+        setMyCertifiedTrainingIds(new Set(myCerts.map(c => c.training_id)));
       }
 
       setLoading(false);
@@ -889,6 +900,13 @@ const VolunteerDashboard = () => {
                                 {task.task_date && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
                                 {(task.location || task.clubs?.location) && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{task.location || task.clubs?.location}</span>}
                                 <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{signupCounts[task.id] || 0}/{task.spots_available} {dt.spots}</span>
+                                {task.required_training_id && (
+                                  myCertifiedTrainingIds.has(task.required_training_id) ? (
+                                    <span className="flex items-center gap-1 text-accent font-medium"><Award className="w-3.5 h-3.5" /> {language === 'nl' ? 'Gecertificeerd' : language === 'fr' ? 'Certifié' : 'Certified'}</span>
+                                  ) : (
+                                    <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-medium"><Award className="w-3.5 h-3.5" /> {language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required'}</span>
+                                  )
+                                )}
                               </div>
                             </div>
                             <div className="shrink-0 flex flex-col items-end gap-2">

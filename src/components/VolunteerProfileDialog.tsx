@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Mail, User, Calendar, Landmark, ShieldCheck } from 'lucide-react';
+import { Mail, User, Calendar, Landmark, ShieldCheck, Award } from 'lucide-react';
 import { Language } from '@/i18n/translations';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VolunteerProfile {
   id: string;
@@ -45,6 +47,10 @@ const labels = {
     consentNotGiven: 'Geen toestemming',
     consentDate: 'Toestemming op',
     noBankDetails: 'Nog geen bankgegevens ingevuld',
+    certificates: 'Certificaten',
+    noCertificates: 'Nog geen certificaten behaald',
+    earnedOn: 'Behaald op',
+    score: 'Score',
   },
   fr: {
     profile: 'Profil bénévole',
@@ -64,6 +70,10 @@ const labels = {
     consentNotGiven: 'Pas de consentement',
     consentDate: 'Consentement le',
     noBankDetails: 'Pas encore de coordonnées bancaires',
+    certificates: 'Certificats',
+    noCertificates: 'Aucun certificat obtenu',
+    earnedOn: 'Obtenu le',
+    score: 'Score',
   },
   en: {
     profile: 'Volunteer profile',
@@ -83,6 +93,10 @@ const labels = {
     consentNotGiven: 'No consent',
     consentDate: 'Consent on',
     noBankDetails: 'No bank details provided yet',
+    certificates: 'Certificates',
+    noCertificates: 'No certificates earned yet',
+    earnedOn: 'Earned on',
+    score: 'Score',
   },
 };
 
@@ -108,6 +122,15 @@ const formatDateTime = (dateStr: string | null | undefined, lang: Language) => {
   });
 };
 
+interface Certificate {
+  id: string;
+  training_title: string;
+  club_name: string;
+  issue_date: string;
+  score: number | null;
+  type: string;
+}
+
 const VolunteerProfileDialog = ({
   volunteer,
   open,
@@ -116,6 +139,39 @@ const VolunteerProfileDialog = ({
   signupStatus,
   signedUpAt,
 }: VolunteerProfileDialogProps) => {
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+
+  useEffect(() => {
+    if (!volunteer?.id || !open) { setCertificates([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('volunteer_certificates')
+        .select('id, issue_date, score, type, training_id, club_id')
+        .eq('volunteer_id', volunteer.id)
+        .order('issue_date', { ascending: false });
+      if (data && data.length > 0) {
+        const trainingIds = [...new Set(data.map(c => c.training_id))];
+        const clubIds = [...new Set(data.map(c => c.club_id))];
+        const [tRes, cRes] = await Promise.all([
+          supabase.from('academy_trainings').select('id, title').in('id', trainingIds),
+          supabase.from('clubs').select('id, name').in('id', clubIds),
+        ]);
+        const tMap = new Map((tRes.data || []).map(t => [t.id, t.title]));
+        const cMap = new Map((cRes.data || []).map(c => [c.id, c.name]));
+        setCertificates(data.map(c => ({
+          id: c.id,
+          training_title: tMap.get(c.training_id) || '',
+          club_name: cMap.get(c.club_id) || '',
+          issue_date: c.issue_date,
+          score: c.score,
+          type: c.type,
+        })));
+      } else {
+        setCertificates([]);
+      }
+    })();
+  }, [volunteer?.id, open]);
+
   if (!volunteer) return null;
   const l = labels[language];
   const initials = (volunteer.full_name || volunteer.email || '?')
@@ -219,6 +275,35 @@ const VolunteerProfileDialog = ({
                 <p className="text-sm font-medium text-foreground">{volunteer.phone}</p>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Certificates section */}
+        <div className="border-t border-border pt-4 mt-2">
+          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <Award className="w-3.5 h-3.5" />
+            {l.certificates}
+          </h4>
+          {certificates.length > 0 ? (
+            <div className="space-y-2">
+              {certificates.map(cert => (
+                <div key={cert.id} className="flex items-center gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shrink-0">
+                    <Award className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">{cert.training_title}</p>
+                    <p className="text-xs text-muted-foreground">{cert.club_name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-muted-foreground">{l.earnedOn}: {formatDate(cert.issue_date, language)}</span>
+                      {cert.score != null && <span className="text-[10px] font-medium text-primary">{l.score}: {cert.score}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">{l.noCertificates}</p>
           )}
         </div>
 

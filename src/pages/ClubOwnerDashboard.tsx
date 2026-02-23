@@ -356,7 +356,9 @@ const ClubOwnerDashboard = () => {
     notes: '', expense_reimbursement: false, expense_amount: '',
     compensation_type: 'fixed' as string, hourly_rate: '', estimated_hours: '',
     loyalty_eligible: true, loyalty_points: '',
+    required_training_id: '',
   });
+  const [academyTrainings, setAcademyTrainings] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -417,6 +419,14 @@ const ClubOwnerDashboard = () => {
         .order('created_at', { ascending: false });
       setContractTemplates(templatesData || []);
 
+      // Fetch academy trainings for this club
+      const { data: trainingsData } = await supabase
+        .from('academy_trainings')
+        .select('id, title')
+        .eq('club_id', activeClub.id)
+        .eq('is_published', true)
+        .order('title');
+      setAcademyTrainings(trainingsData || []);
       // Fetch events for this club
       const { data: eventsData } = await (supabase as any)
         .from('events')
@@ -804,6 +814,7 @@ const ClubOwnerDashboard = () => {
       estimated_hours: newTask.compensation_type === 'hourly' && newTask.estimated_hours ? parseFloat(newTask.estimated_hours) : null,
       loyalty_eligible: newTask.loyalty_eligible,
       loyalty_points: newTask.loyalty_points ? parseInt(newTask.loyalty_points) : null,
+      required_training_id: newTask.required_training_id || null,
     };
 
     const { data, error } = await (supabase as any)
@@ -820,7 +831,7 @@ const ClubOwnerDashboard = () => {
       setShowCreateForm(false);
       setAddingTaskToGroup(null);
       setSelectedTemplateId('');
-      setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '' });
+      setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '', required_training_id: '' });
     }
     setCreatingTask(false);
   };
@@ -1305,6 +1316,17 @@ const ClubOwnerDashboard = () => {
             </div>
           )}
         </div>
+        {/* Required training */}
+        {academyTrainings.length > 0 && (
+          <div className="sm:col-span-2 border-t border-border pt-4 mt-2">
+            <label className={labelClass}>{language === 'nl' ? 'Verplichte training (optioneel)' : language === 'fr' ? 'Formation obligatoire (optionnel)' : 'Required training (optional)'}</label>
+            <select value={newTask.required_training_id} onChange={e => setNewTask(p => ({ ...p, required_training_id: e.target.value }))} className={inputClass}>
+              <option value="">{language === 'nl' ? 'Geen verplichte training' : language === 'fr' ? 'Pas de formation obligatoire' : 'No required training'}</option>
+              {academyTrainings.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+            </select>
+            <p className="text-[11px] text-muted-foreground mt-1">{language === 'nl' ? 'Vrijwilligers moeten deze training voltooid hebben om zich in te schrijven.' : language === 'fr' ? 'Les bénévoles doivent avoir terminé cette formation pour s\'inscrire.' : 'Volunteers must have completed this training to sign up.'}</p>
+          </div>
+        )}
       </div>
       <div className="flex justify-end gap-3 mt-6">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
@@ -1618,7 +1640,7 @@ const ClubOwnerDashboard = () => {
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <button
-                                        onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setNewTask({ title: '', description: '', task_date: '', location: event.location || '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '' }); }}
+                                        onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setNewTask({ title: '', description: '', task_date: '', location: event.location || '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '', required_training_id: '' }); }}
                                         className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                                         title={dt.addTaskToGroup}
                                       >
