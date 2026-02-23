@@ -1538,6 +1538,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          module_id: string | null
           passing_score: number
           total_questions: number
           training_id: string
@@ -1545,6 +1546,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          module_id?: string | null
           passing_score?: number
           total_questions?: number
           training_id: string
@@ -1552,15 +1554,23 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          module_id?: string | null
           passing_score?: number
           total_questions?: number
           training_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "training_quizzes_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "training_quizzes_training_id_fkey"
             columns: ["training_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "academy_trainings"
             referencedColumns: ["id"]
           },
