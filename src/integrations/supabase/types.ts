@@ -648,6 +648,7 @@ export type Database = {
           location: string | null
           status: string
           title: string
+          training_id: string | null
           updated_at: string
         }
         Insert: {
@@ -660,6 +661,7 @@ export type Database = {
           location?: string | null
           status?: string
           title: string
+          training_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -672,6 +674,7 @@ export type Database = {
           location?: string | null
           status?: string
           title?: string
+          training_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -680,6 +683,13 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "academy_trainings"
             referencedColumns: ["id"]
           },
         ]
