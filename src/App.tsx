@@ -1,9 +1,13 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import BottomTabBar from "@/components/BottomTabBar";
+import IOSInstallOverlay from "@/components/IOSInstallOverlay";
+import { initOneSignal } from "@/lib/onesignal";
 import VolunteerLanding from "./pages/VolunteerLanding";
 import ClubsLanding from "./pages/ClubsLanding";
 import Login from "./pages/Login";
@@ -28,7 +32,12 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    initOneSignal();
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <TooltipProvider>
@@ -59,10 +68,13 @@ const App = () => (
             <Route path="/chat/:conversationId" element={<Chat />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <BottomTabBar />
+          <IOSInstallOverlay />
         </BrowserRouter>
       </TooltipProvider>
     </LanguageProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
