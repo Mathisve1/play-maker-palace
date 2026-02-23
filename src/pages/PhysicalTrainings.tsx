@@ -373,9 +373,6 @@ const PhysicalTrainings = () => {
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                       <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
                         <div className="flex gap-2 flex-wrap">
-                          <Button variant="outline" size="sm" onClick={() => handleGenerateTickets(ev.id)} className="gap-1.5 text-xs">
-                            <QrCode className="w-3.5 h-3.5" /> {l.generateTickets}
-                          </Button>
                           <Button variant="default" size="sm" onClick={() => handleAwardCerts(ev.id)} disabled={ev.checkedInCount === 0 || (!ev.training_id && !ev.certificate_design_id)} className="gap-1.5 text-xs" title={(!ev.training_id && !ev.certificate_design_id) ? (language === 'nl' ? 'Geen training of sjabloon gekoppeld' : 'No training or template linked') : ''}>
                             <Award className="w-3.5 h-3.5" /> {l.awardCerts}
                           </Button>
@@ -387,12 +384,14 @@ const PhysicalTrainings = () => {
                               <div key={s.volunteer_id} className="flex items-center justify-between text-sm py-2 px-3 rounded-xl bg-muted/30">
                                 <span className="text-foreground font-medium">{s.full_name}</span>
                                 <div className="flex items-center gap-2">
-                                  {s.ticket_status ? (
-                                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${s.checked_in ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
-                                      {s.checked_in ? '✅ Ingecheckt' : '🎫 Ticket'}
+                                  {s.checked_in ? (
+                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+                                      ✅ {language === 'nl' ? 'Aanwezig' : language === 'fr' ? 'Présent' : 'Present'}
                                     </span>
                                   ) : (
-                                    <span className="text-[10px] text-muted-foreground">Geen ticket</span>
+                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                      {language === 'nl' ? 'Ingeschreven' : language === 'fr' ? 'Inscrit' : 'Signed up'}
+                                    </span>
                                   )}
                                 </div>
                               </div>

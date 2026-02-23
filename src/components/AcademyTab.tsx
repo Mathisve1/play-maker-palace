@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
-import { Award, BookOpen, ArrowRight, CalendarDays, MapPin, Users, Ticket, CheckCircle } from 'lucide-react';
+import { Award, BookOpen, ArrowRight, CalendarDays, MapPin, Users, Ticket, CheckCircle, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/i18n/translations';
 import { toast } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Certificate {
   id: string;
@@ -33,6 +35,7 @@ interface TrainingEvent {
   location: string | null;
   training_id: string | null;
   training_title?: string;
+  club_id: string;
   club_name?: string;
   task_id?: string;
   spots_available?: number | null;
@@ -137,6 +140,7 @@ const AcademyTab = ({ language, navigate }: { language: Language; navigate: Retu
           location: ev.location,
           training_id: ev.training_id,
           training_title: training?.title,
+          club_id: ev.club_id,
           club_name: training?.clubs?.name || ev.club_id,
           task_id: task?.id,
           spots_available: task?.spots_available,
@@ -151,16 +155,30 @@ const AcademyTab = ({ language, navigate }: { language: Language; navigate: Retu
     setLoading(false);
   };
 
+  const [qrDialogBarcode, setQrDialogBarcode] = useState<string | null>(null);
+
   const handleSignup = async (event: TrainingEvent) => {
     if (!event.task_id) return;
     setSigningUp(event.id);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    // 1. Sign up
     const { error } = await supabase.from('task_signups').insert({
       task_id: event.task_id, volunteer_id: session.user.id, status: 'approved',
     });
     if (error) { toast.error(error.message); setSigningUp(null); return; }
+
+    // 2. Auto-generate QR ticket
+    const barcode = `VT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    await supabase.from('volunteer_tickets').insert({
+      club_id: event.club_id || '',
+      event_id: event.id,
+      task_id: event.task_id,
+      volunteer_id: session.user.id,
+      barcode,
+      status: 'sent' as any,
+    });
 
     toast.success(l.signupSuccess);
     setSigningUp(null);
@@ -234,12 +252,10 @@ const AcademyTab = ({ language, navigate }: { language: Language; navigate: Retu
                   <div className="shrink-0">
                     {ev.already_signed_up ? (
                       ev.has_ticket ? (
-                        <div className="text-center">
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-accent/10 text-accent block mb-1">🎫 {ev.ticket_barcode}</span>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 justify-center">
-                            <CheckCircle className="w-3 h-3 text-accent" /> {l.signedUp}
-                          </span>
-                        </div>
+                        <Button size="sm" variant="outline" onClick={() => setQrDialogBarcode(ev.ticket_barcode || null)} className="gap-1.5 text-xs">
+                          <QrCode className="w-3.5 h-3.5 text-accent" />
+                          {l.viewTicket}
+                        </Button>
                       ) : (
                         <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" /> {l.signedUp}
@@ -281,6 +297,29 @@ const AcademyTab = ({ language, navigate }: { language: Language; navigate: Retu
           </div>
         </div>
       )}
+
+      {/* QR Code Dialog */}
+      <Dialog open={!!qrDialogBarcode} onOpenChange={() => setQrDialogBarcode(null)}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 justify-center">
+              <QrCode className="w-5 h-5 text-accent" />
+              {language === 'nl' ? 'Jouw QR-ticket' : language === 'fr' ? 'Votre ticket QR' : 'Your QR ticket'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {qrDialogBarcode && (
+              <div className="bg-white p-4 rounded-2xl">
+                <QRCodeSVG value={qrDialogBarcode} size={200} level="H" />
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground text-center">
+              {language === 'nl' ? 'Toon deze QR-code bij aankomst om in te checken.' : language === 'fr' ? 'Montrez ce code QR à votre arrivée.' : 'Show this QR code on arrival to check in.'}
+            </p>
+            <p className="text-[10px] font-mono text-muted-foreground">{qrDialogBarcode}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
