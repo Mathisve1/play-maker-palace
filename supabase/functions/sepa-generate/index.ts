@@ -484,6 +484,104 @@ Deno.serve(async (req) => {
     }
   }
 
+  if (action === 'create-rollback-signing') {
+    try {
+      const body = await req.json();
+      const { batchId, batchReference, totalAmount, itemCount, signerName, signerEmail } = body;
+
+      const docusealApiKey = Deno.env.get('DOCUSEAL_API_KEY');
+      if (!docusealApiKey) {
+        return new Response(JSON.stringify({ error: 'DocuSeal not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('nl-BE', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 40px;">
+          <h1 style="color: #dc2626; font-size: 20px; border-bottom: 2px solid #fecaca; padding-bottom: 12px;">
+            SEPA Annuleringsverklaring
+          </h1>
+          <p style="color: #4b5563; line-height: 1.6;">
+            Datum: <strong>${dateStr}</strong><br/>
+            Referentie: <strong>${escapeXml(batchReference)}</strong><br/>
+            Totaalbedrag: <strong>€${Number(totalAmount).toFixed(2)}</strong><br/>
+            Aantal transacties: <strong>${itemCount}</strong>
+          </p>
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <p style="margin: 0; color: #1f2937; line-height: 1.8;">
+              Ik, <strong>${escapeXml(signerName)}</strong>, verklaar hierbij dat ik de SEPA-batch met referentie <strong>${escapeXml(batchReference)}</strong> wens terug te draaien en te annuleren. 
+              Ik begrijp dat alle transacties in deze batch ongedaan worden gemaakt en dat de betrokken vrijwilligers opnieuw in de betaallijst verschijnen. 
+              Ik bevestig dat het bijbehorende SEPA XML-bestand NIET is geüpload naar de bank, of dat ik de nodige stappen heb ondernomen om de banktransactie te annuleren.
+            </p>
+          </div>
+          <div style="margin-top: 40px;">
+            <p style="color: #6b7280; font-size: 14px;">Handtekening:</p>
+            <signature-field name="Handtekening" role="First Party" style="width: 200px; height: 80px; display: inline-block;"></signature-field>
+          </div>
+        </div>
+      `;
+
+      // Create template
+      const templateRes = await fetch('https://api.docuseal.com/templates/html', {
+        method: 'POST',
+        headers: {
+          'X-Auth-Token': docusealApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          html: htmlContent,
+          name: `SEPA Annulering - ${batchReference}`,
+        }),
+      });
+
+      const templateText = await templateRes.text();
+      let template;
+      try { template = JSON.parse(templateText); } catch { template = null; }
+      if (!template?.id) {
+        return new Response(JSON.stringify({ error: 'Failed to create template', details: templateText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Create submission
+      const submissionRes = await fetch('https://api.docuseal.com/submissions', {
+        method: 'POST',
+        headers: {
+          'X-Auth-Token': docusealApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          template_id: template.id,
+          send_email: false,
+          submitters: [
+            {
+              email: signerEmail,
+              name: signerName,
+              role: 'First Party',
+            },
+          ],
+        }),
+      });
+
+      const submissionText = await submissionRes.text();
+      let submission;
+      try { submission = JSON.parse(submissionText); } catch { submission = null; }
+      const submitter = Array.isArray(submission) ? submission[0] : submission;
+
+      if (!submitter?.id) {
+        return new Response(JSON.stringify({ error: 'Failed to create submission', details: submissionText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        signingUrl: submitter.embed_src || submitter.signing_url,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (err: any) {
+      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+  }
+
   if (action === 'rollback') {
     try {
       const body = await req.json();

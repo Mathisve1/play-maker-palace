@@ -105,6 +105,9 @@ const SepaPayouts = () => {
   const [batchItems, setBatchItems] = useState<Record<string, SepaBatchItem[]>>({});
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
   const [flaggingItem, setFlaggingItem] = useState<string | null>(null);
+  const [rollbackSigningUrl, setRollbackSigningUrl] = useState<string | null>(null);
+  const [rollbackBatchId, setRollbackBatchId] = useState<string | null>(null);
+  const [showRollbackSigningDialog, setShowRollbackSigningDialog] = useState(false);
 
   useEffect(() => {
     init();
@@ -574,11 +577,65 @@ const SepaPayouts = () => {
   };
 
   const handleRollback = async (batchId: string) => {
-    if (!confirm('Weet je zeker dat je deze batch wilt terugdraaien? De batch wordt volledig verwijderd en de vrijwilligers verschijnen opnieuw in de betaallijst.')) return;
+    if (!confirm('Weet je zeker dat je deze batch wilt terugdraaien? Je moet eerst een annuleringsverklaring ondertekenen.')) return;
     setRollingBack(batchId);
+    setRollbackBatchId(batchId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+
+      // Get user profile for signer info
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', session.user.id)
+        .single();
+
+      // Create DocuSeal signing for rollback confirmation
+      const batch = batches.find(b => b.id === batchId);
+      const signRes = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sepa-generate?action=create-rollback-signing`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            batchId,
+            batchReference: batch?.batch_reference || '',
+            totalAmount: batch?.total_amount || 0,
+            itemCount: batch?.item_count || 0,
+            signerName: profile?.full_name || session.user.email,
+            signerEmail: profile?.email || session.user.email,
+          }),
+        }
+      );
+
+      const signData = await signRes.json();
+      if (!signRes.ok || !signData.success) throw new Error(signData.error || 'Ondertekening aanmaken mislukt');
+
+      setRollbackSigningUrl(signData.signingUrl);
+      setShowRollbackSigningDialog(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Rollback mislukt');
+      setRollingBack(null);
+      setRollbackBatchId(null);
+    }
+  };
+
+  const handleRollbackSigningComplete = async () => {
+    setShowRollbackSigningDialog(false);
+    setRollbackSigningUrl(null);
+
+    if (!rollbackBatchId) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Now perform the actual rollback
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sepa-generate?action=rollback`,
         {
@@ -588,17 +645,18 @@ const SepaPayouts = () => {
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ batchId }),
+          body: JSON.stringify({ batchId: rollbackBatchId }),
         }
       );
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Rollback failed');
-      toast.success('Batch verwijderd. Vrijwilligers staan opnieuw in de betaallijst.');
+      toast.success('Batch verwijderd na ondertekening. Vrijwilligers staan opnieuw in de betaallijst.');
       init();
     } catch (err: any) {
       toast.error(err.message || 'Rollback mislukt');
     }
     setRollingBack(null);
+    setRollbackBatchId(null);
   };
 
   const handleFlagItem = async (itemId: string, flag: boolean, message?: string) => {
@@ -1078,7 +1136,7 @@ const SepaPayouts = () => {
               Batch ondertekend!
             </DialogTitle>
             <DialogDescription>
-              De SEPA batch <span className="font-mono font-semibold">{downloadBatchRef}</span> is succesvol ondertekend. Download nu het XML-bestand en/of de ondertekende verklaring.
+              De SEPA batch <span className="font-mono font-semibold">{downloadBatchRef}</span> is succesvol ondertekend.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-2">
@@ -1094,9 +1152,9 @@ const SepaPayouts = () => {
               <Button
                 variant="outline"
                 className="w-full gap-2"
-                onClick={() => handleDownloadAccountingPdf(pendingDownloadBatchId!)}
+                onClick={() => handleDownloadCsv(pendingDownloadBatchId!)}
               >
-                <FileText className="w-4 h-4" /> Boekhoudkundig Verantwoordingsstuk (PDF)
+                <FileSpreadsheet className="w-4 h-4" /> CSV Downloaden
               </Button>
             )}
             {downloadDocUrl && (
@@ -1110,6 +1168,27 @@ const SepaPayouts = () => {
                 <FileSignature className="w-4 h-4" /> Ondertekende Verklaring Downloaden
               </Button>
             )}
+
+            <div className="border-t border-border pt-3 mt-3">
+              <p className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-primary" />
+                Boekhoudkundig Verantwoordingsstuk
+              </p>
+              <p className="text-xs text-muted-foreground mb-2">
+                Dit PDF-document bevat een gedetailleerd overzicht van alle vrijwilligers, hun taken, data en vergoedingen. 
+                Bewaar dit document in je boekhouding als bewijs voor de uitbetaling conform de Belgische vrijwilligerswet.
+              </p>
+              {pendingDownloadBatchId && (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => handleDownloadAccountingPdf(pendingDownloadBatchId!)}
+                >
+                  <FileText className="w-4 h-4" /> Verantwoordingsstuk PDF Downloaden
+                </Button>
+              )}
+            </div>
+
             <Button
               variant="ghost"
               className="w-full text-muted-foreground"
@@ -1118,6 +1197,40 @@ const SepaPayouts = () => {
               Sluiten
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rollback Signing Dialog */}
+      <Dialog open={showRollbackSigningDialog} onOpenChange={(open) => {
+        if (!open && !rollbackSigningUrl) {
+          setRollingBack(null);
+          setRollbackBatchId(null);
+        }
+        setShowRollbackSigningDialog(open);
+      }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-destructive" />
+              Annuleringsverklaring Ondertekenen
+            </DialogTitle>
+            <DialogDescription>
+              Onderteken deze verklaring om de batch terug te draaien. Na ondertekening worden de vrijwilligers opnieuw beschikbaar in de betaallijst.
+            </DialogDescription>
+          </DialogHeader>
+          {rollbackSigningUrl ? (
+            <DocusealForm
+              src={rollbackSigningUrl}
+              withTitle={false}
+              withSendCopyButton={false}
+              onComplete={() => handleRollbackSigningComplete()}
+              className="w-full"
+            />
+          ) : (
+            <div className="h-[500px] flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
