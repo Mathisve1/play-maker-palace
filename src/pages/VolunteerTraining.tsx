@@ -10,10 +10,20 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import Logo from '@/components/Logo';
 
+interface ContentBlockStyle {
+  align?: 'left' | 'center' | 'right';
+  bold?: boolean;
+  italic?: boolean;
+  fontSize?: 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl';
+  color?: string;
+  bgColor?: string;
+}
+
 interface ContentBlock {
   id: string;
-  type: 'text' | 'video' | 'image';
+  type: 'heading' | 'subheading' | 'text' | 'video' | 'image' | 'divider';
   value: string;
+  style?: ContentBlockStyle;
 }
 
 interface TrainingModule {
@@ -37,6 +47,7 @@ interface ModuleQuizData {
   quizId: string;
   questions: QuizQuestion[];
   passingScore: number;
+  isPractice: boolean;
 }
 
 const parseBlocks = (mod: any): ContentBlock[] => {
@@ -197,6 +208,7 @@ const VolunteerTraining = () => {
           correct_answer_index: q.correct_answer_index,
         })),
         passingScore: mq.passing_score,
+        isPractice: mq.is_practice || false,
       };
     }
     setModuleQuizzes(mQuizzes);
@@ -208,8 +220,15 @@ const VolunteerTraining = () => {
   const currentModuleQuiz = currentModule ? moduleQuizzes[currentModule.id] : null;
 
   const handleNextModule = () => {
-    // Check if current module has a quiz that hasn't been passed
-    if (currentModuleQuiz && currentModuleQuiz.questions.length > 0 && moduleQuizResult !== 'passed') {
+    // Check if current module has a non-practice quiz that hasn't been passed
+    if (currentModuleQuiz && currentModuleQuiz.questions.length > 0 && !currentModuleQuiz.isPractice && moduleQuizResult !== 'passed') {
+      setPhase('module_quiz');
+      setModuleQuizAnswers({});
+      setModuleQuizResult('pending');
+      return;
+    }
+    // Practice quizzes are optional - offer but don't block
+    if (currentModuleQuiz && currentModuleQuiz.questions.length > 0 && currentModuleQuiz.isPractice && moduleQuizResult !== 'passed') {
       setPhase('module_quiz');
       setModuleQuizAnswers({});
       setModuleQuizResult('pending');
@@ -322,32 +341,51 @@ const VolunteerTraining = () => {
 
               {/* Render mixed content blocks */}
               <div className="space-y-4">
-                {currentModule.blocks.map(block => (
-                  <motion.div key={block.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                    {block.type === 'text' && (
-                      <div className="prose prose-sm max-w-none bg-card rounded-2xl border border-border p-6 text-foreground whitespace-pre-wrap">
-                        {block.value}
-                      </div>
-                    )}
-                    {block.type === 'video' && block.value && (
-                      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-                        <div className="aspect-video">
-                          <iframe
-                            src={block.value.replace('watch?v=', 'embed/')}
-                            className="w-full h-full"
-                            allowFullScreen
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          />
+                {currentModule.blocks.map(block => {
+                  const s = block.style || {};
+                  const alignClass = s.align === 'center' ? 'text-center' : s.align === 'right' ? 'text-right' : '';
+                  const fontClass = s.fontSize ? { sm: 'text-sm', base: 'text-base', lg: 'text-lg', xl: 'text-xl', '2xl': 'text-2xl', '3xl': 'text-3xl' }[s.fontSize] || '' : '';
+                  const weightClass = s.bold ? 'font-bold' : '';
+                  const italicClass = s.italic ? 'italic' : '';
+                  const inlineStyle: React.CSSProperties = {};
+                  if (s.color) inlineStyle.color = s.color;
+                  if (s.bgColor) inlineStyle.backgroundColor = s.bgColor;
+
+                  return (
+                    <motion.div key={block.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+                      {block.type === 'heading' && (
+                        <h2 className={`text-2xl font-heading font-bold text-foreground ${alignClass} ${fontClass} ${weightClass} ${italicClass}`} style={inlineStyle}>{block.value}</h2>
+                      )}
+                      {block.type === 'subheading' && (
+                        <h3 className={`text-lg font-semibold text-foreground ${alignClass} ${fontClass} ${weightClass} ${italicClass}`} style={inlineStyle}>{block.value}</h3>
+                      )}
+                      {block.type === 'text' && (
+                        <div className={`prose prose-sm max-w-none bg-card rounded-2xl border border-border p-6 text-foreground whitespace-pre-wrap ${alignClass} ${fontClass} ${weightClass} ${italicClass}`} style={inlineStyle}>
+                          {block.value}
                         </div>
-                      </div>
-                    )}
-                    {block.type === 'image' && block.value && (
-                      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-                        <img src={block.value} alt="" className="w-full max-h-96 object-contain" />
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
+                      )}
+                      {block.type === 'video' && block.value && (
+                        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                          <div className="aspect-video">
+                            <iframe
+                              src={block.value.replace('watch?v=', 'embed/').replace(/youtu\.be\//, 'www.youtube.com/embed/')}
+                              className="w-full h-full" allowFullScreen
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {block.type === 'image' && block.value && (
+                        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                          <img src={block.value} alt="" className="w-full max-h-96 object-contain" />
+                        </div>
+                      )}
+                      {block.type === 'divider' && (
+                        <hr className="border-border my-4" />
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
 
               {/* Navigation */}
@@ -419,11 +457,16 @@ const VolunteerTraining = () => {
                 </>
               )}
 
-              {/* Back to module content */}
-              <div className="mt-4">
+              {/* Back to module content + skip for practice */}
+              <div className="mt-4 flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setPhase('modules')} className="gap-1 text-muted-foreground">
                   <ArrowLeft className="w-4 h-4" /> {l.back}
                 </Button>
+                {currentModuleQuiz?.isPractice && moduleQuizResult !== 'passed' && (
+                  <Button variant="outline" size="sm" onClick={goToNextModule} className="gap-1 ml-auto">
+                    {l.continueToNext} <ArrowRight className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </motion.div>
           )}
