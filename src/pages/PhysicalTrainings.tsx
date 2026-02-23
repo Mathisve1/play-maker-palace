@@ -95,6 +95,8 @@ const PhysicalTrainings = () => {
   const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [eventSignups, setEventSignups] = useState<EventSignup[]>([]);
+  const [certDesigns, setCertDesigns] = useState<{ id: string; name: string }[]>([]);
+  const [selectedDesignId, setSelectedDesignId] = useState<string>('');
 
   // Create event dialog
   const [showCreateEvent, setShowCreateEvent] = useState(false);
@@ -124,6 +126,11 @@ const PhysicalTrainings = () => {
     // Load trainings for dropdown
     const { data: tData } = await supabase.from('academy_trainings').select('id, title').eq('club_id', cid).order('title');
     setTrainings((tData || []) as Training[]);
+
+    // Load certificate designs
+    const { data: designsData } = await (supabase as any).from('certificate_designs').select('id, name').eq('club_id', cid);
+    setCertDesigns((designsData || []) as { id: string; name: string }[]);
+    if (designsData && designsData.length > 0) setSelectedDesignId(designsData[0].id);
 
     await loadAllEvents(cid);
     setLoading(false);
@@ -303,9 +310,14 @@ const PhysicalTrainings = () => {
       <main className="px-4 py-6 pb-tab-bar max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-heading font-bold text-foreground">{l.title}</h2>
-          <Button onClick={() => setShowCreateEvent(true)} size="sm" className="gap-1.5">
-            <Plus className="w-4 h-4" /> {l.createEvent}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/academy/certificate-builder')} className="gap-1.5">
+              <Award className="w-4 h-4" /> {language === 'nl' ? 'Certificaat ontwerpen' : language === 'fr' ? 'Concevoir certificat' : 'Design certificate'}
+            </Button>
+            <Button onClick={() => setShowCreateEvent(true)} size="sm" className="gap-1.5">
+              <Plus className="w-4 h-4" /> {l.createEvent}
+            </Button>
+          </div>
         </div>
 
         {events.length === 0 ? (

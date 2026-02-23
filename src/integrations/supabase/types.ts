@@ -366,6 +366,53 @@ export type Database = {
           },
         ]
       }
+      certificate_designs: {
+        Row: {
+          accent_color: string | null
+          club_id: string
+          created_at: string
+          custom_text: string | null
+          id: string
+          issuer_name: string | null
+          issuer_title: string | null
+          name: string
+          signature_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          club_id: string
+          created_at?: string
+          custom_text?: string | null
+          id?: string
+          issuer_name?: string | null
+          issuer_title?: string | null
+          name?: string
+          signature_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          club_id?: string
+          created_at?: string
+          custom_text?: string | null
+          id?: string
+          issuer_name?: string | null
+          issuer_title?: string | null
+          name?: string
+          signature_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_designs_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_invitations: {
         Row: {
           club_id: string
@@ -1609,36 +1656,49 @@ export type Database = {
       }
       volunteer_certificates: {
         Row: {
+          certificate_design_id: string | null
           club_id: string
           created_at: string
           id: string
           issue_date: string
+          pdf_url: string | null
           score: number | null
           training_id: string
           type: string
           volunteer_id: string
         }
         Insert: {
+          certificate_design_id?: string | null
           club_id: string
           created_at?: string
           id?: string
           issue_date?: string
+          pdf_url?: string | null
           score?: number | null
           training_id: string
           type?: string
           volunteer_id: string
         }
         Update: {
+          certificate_design_id?: string | null
           club_id?: string
           created_at?: string
           id?: string
           issue_date?: string
+          pdf_url?: string | null
           score?: number | null
           training_id?: string
           type?: string
           volunteer_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "volunteer_certificates_certificate_design_id_fkey"
+            columns: ["certificate_design_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_designs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "volunteer_certificates_club_id_fkey"
             columns: ["club_id"]

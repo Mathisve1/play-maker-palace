@@ -226,8 +226,8 @@ const VolunteerDashboard = () => {
         }
       }
 
-      // Fetch ALL events (always, regardless of tasks)
-      const { data: allEventsData } = await (supabase as any).from('events').select('*').order('event_date', { ascending: true });
+      // Fetch events WITHOUT training_id (regular events like matches, not trainings)
+      const { data: allEventsData } = await (supabase as any).from('events').select('*').is('training_id', null).order('event_date', { ascending: true });
       if (allEventsData && allEventsData.length > 0) {
         const clubIds = [...new Set(allEventsData.map((e: any) => e.club_id))] as string[];
         const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);

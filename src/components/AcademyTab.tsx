@@ -31,7 +31,7 @@ interface TrainingEvent {
   title: string;
   event_date: string | null;
   location: string | null;
-  training_id: string;
+  training_id: string | null;
   training_title?: string;
   club_name?: string;
   task_id?: string;
