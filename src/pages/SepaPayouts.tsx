@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +23,7 @@ import {
 import Logo from '@/components/Logo';
 import NotificationBell from '@/components/NotificationBell';
 import { BELGIAN_BANKS, findBic } from '@/components/OnboardingForm';
+import { DocusealForm } from '@docuseal/react';
 
 interface PayableVolunteer {
   volunteerId: string;
@@ -722,20 +723,12 @@ const SepaPayouts = () => {
             </DialogDescription>
           </DialogHeader>
           {signingUrl ? (
-            <iframe
+            <DocusealForm
               src={signingUrl}
-              className="w-full h-[500px] rounded-lg border border-border"
-              title="DocuSeal Signing"
-              onLoad={() => {
-                // Listen for completion via postMessage
-                const handler = (event: MessageEvent) => {
-                  if (event.data?.type === 'completed' || event.data?.event === 'completed') {
-                    window.removeEventListener('message', handler);
-                    handleSigningComplete();
-                  }
-                };
-                window.addEventListener('message', handler);
-              }}
+              withTitle={false}
+              withSendCopyButton={false}
+              onComplete={() => handleSigningComplete()}
+              className="w-full"
             />
           ) : (
             <div className="h-[500px] flex items-center justify-center">
