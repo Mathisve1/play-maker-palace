@@ -5,7 +5,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Timer, Gift, Ticket } from 'lucide-react';
+import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Timer, Gift, Ticket, Euro, Banknote } from 'lucide-react';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
@@ -87,6 +87,19 @@ interface VolunteerTicket {
   event_title?: string;
 }
 
+interface SepaPayoutItem {
+  id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  error_flag: boolean;
+  error_message: string | null;
+  batch_status: string;
+  batch_reference: string;
+  task_title?: string;
+  club_name?: string;
+}
+
 interface EventData {
   id: string;
   club_id: string;
@@ -128,6 +141,7 @@ const VolunteerDashboard = () => {
   const [checkingContract, setCheckingContract] = useState<string | null>(null);
   const [myTickets, setMyTickets] = useState<VolunteerTicket[]>([]);
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
+  const [sepaPayouts, setSepaPayouts] = useState<SepaPayoutItem[]>([]);
   
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -232,6 +246,37 @@ const VolunteerDashboard = () => {
         const { data: paymentTasks } = await supabase.from('tasks').select('id, title, club_id, clubs(name)').in('id', paymentTaskIds);
         const taskMap = new Map(paymentTasks?.map(t => [t.id, t]) || []);
         setMyPayments(paymentsData.map(p => { const t = taskMap.get(p.task_id); return { ...p, task_title: t?.title, club_name: (t as any)?.clubs?.name }; }));
+      }
+
+      // Fetch SEPA batch items for this volunteer
+      const { data: sepaItems } = await (supabase as any)
+        .from('sepa_batch_items')
+        .select('id, amount, status, created_at, error_flag, error_message, batch_id, task_id, volunteer_id')
+        .eq('volunteer_id', session.user.id)
+        .order('created_at', { ascending: false });
+      if (sepaItems && sepaItems.length > 0) {
+        const batchIds = [...new Set(sepaItems.map((s: any) => s.batch_id))] as string[];
+        const sepaTaskIds = [...new Set(sepaItems.map((s: any) => s.task_id))] as string[];
+        const { data: batchesData } = await (supabase as any).from('sepa_batches').select('id, status, batch_reference, club_id').in('id', batchIds);
+        const batchMap = new Map((batchesData || []).map((b: any) => [b.id, b]));
+        const { data: sepaTasks } = await supabase.from('tasks').select('id, title, club_id, clubs(name)').in('id', sepaTaskIds);
+        const sepaTaskMap = new Map(sepaTasks?.map(t => [t.id, t]) || []);
+        setSepaPayouts(sepaItems.map((item: any) => {
+          const batch = batchMap.get(item.batch_id) as any;
+          const task = sepaTaskMap.get(item.task_id);
+          return {
+            id: item.id,
+            amount: Number(item.amount),
+            status: item.status,
+            created_at: item.created_at,
+            error_flag: item.error_flag,
+            error_message: item.error_message,
+            batch_status: batch?.status || 'pending',
+            batch_reference: batch?.batch_reference || '',
+            task_title: task?.title,
+            club_name: (task as any)?.clubs?.name,
+          };
+        }));
       }
 
       // Fetch contracts
@@ -647,39 +692,122 @@ const VolunteerDashboard = () => {
           </div>
         ) : activeTab === 'payments' ? (
           <div className="mt-6 space-y-4">
-            {myPayments.length === 0 ? (
+            {myPayments.length === 0 && sepaPayouts.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground"><CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{dt.noPayments}</p></div>
             ) : (
               <>
+                {/* Summary cards */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-card rounded-2xl shadow-card border border-transparent p-5">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.paid}</p>
-                    <p className="text-2xl font-heading font-bold text-green-600 mt-1">€{myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0).toFixed(2)}</p>
+                    <p className="text-2xl font-heading font-bold text-green-600 mt-1">€{(
+                      myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0) +
+                      sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0)
+                    ).toFixed(2)}</p>
                   </div>
                   <div className="bg-card rounded-2xl shadow-card border border-transparent p-5">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.processing}</p>
-                    <p className="text-2xl font-heading font-bold text-primary mt-1">€{myPayments.filter(p => p.status === 'processing').reduce((s, p) => s + p.amount, 0).toFixed(2)}</p>
+                    <p className="text-2xl font-heading font-bold text-primary mt-1">€{(
+                      myPayments.filter(p => p.status === 'processing').reduce((s, p) => s + p.amount, 0) +
+                      sepaPayouts.filter(s => ['signed', 'awaiting_signature', 'pending'].includes(s.batch_status) && !s.error_flag).reduce((s, p) => s + p.amount, 0)
+                    ).toFixed(2)}</p>
                   </div>
                 </div>
-                {myPayments.map((payment, i) => (
-                  <motion.div key={payment.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl p-5 shadow-card border ${payment.status === 'succeeded' ? 'border-green-200' : 'border-transparent'}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{payment.task_title || 'Taak'}</p>
-                        {payment.club_name && <p className="text-xs text-muted-foreground">{payment.club_name}</p>}
-                        <p className="text-lg font-heading font-bold text-foreground mt-1">€{payment.amount.toFixed(2)}</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="flex items-center gap-1 text-xs">
-                          {payment.status === 'succeeded' ? <CheckCircle className="w-4 h-4 text-green-600" /> : payment.status === 'processing' ? <Clock className="w-4 h-4 text-yellow-600" /> : payment.status === 'failed' ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <Clock className="w-4 h-4 text-muted-foreground" />}
-                          <span className="font-medium">{payment.status === 'succeeded' ? dt.paid : payment.status === 'processing' ? dt.processing : payment.status === 'failed' ? dt.failed : dt.pending}</span>
+
+                {/* SEPA Payouts Section */}
+                {sepaPayouts.length > 0 && (
+                  <>
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-2">
+                      <Banknote className="w-4 h-4 text-primary" />
+                      {language === 'nl' ? 'Mijn Vergoedingen (SEPA)' : language === 'fr' ? 'Mes Remboursements (SEPA)' : 'My Reimbursements (SEPA)'}
+                    </h3>
+                    {sepaPayouts.map((payout, i) => {
+                      const isExported = ['downloaded', 'signed'].includes(payout.batch_status);
+                      const isPending = ['pending', 'awaiting_signature'].includes(payout.batch_status);
+                      return (
+                        <motion.div key={payout.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                          className={`bg-card rounded-2xl p-5 shadow-card border ${payout.error_flag ? 'border-destructive/30' : isExported ? 'border-primary/20' : 'border-transparent'}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">{payout.task_title || 'Taak'}</p>
+                              {payout.club_name && <p className="text-xs text-muted-foreground">{payout.club_name}</p>}
+                              <p className="text-lg font-heading font-bold text-foreground mt-1">€{payout.amount.toFixed(2)}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              {payout.error_flag ? (
+                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive">
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  {payout.error_message || 'Fout'}
+                                </span>
+                              ) : isExported ? (
+                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  {language === 'nl' ? 'Geëxporteerd' : language === 'fr' ? 'Exporté' : 'Exported'}
+                                </span>
+                              ) : isPending ? (
+                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  {language === 'nl' ? 'In verwerking' : language === 'fr' ? 'En cours' : 'Processing'}
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  {payout.batch_status}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Specific message for exported status */}
+                          {isExported && !payout.error_flag && (
+                            <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                              <p className="text-xs text-foreground leading-relaxed">
+                                {language === 'nl' 
+                                  ? 'De club heeft je betaling klaargezet en gedownload voor verwerking. Het kan nu nog tot 7 werkdagen duren voordat het bedrag op je rekening staat.'
+                                  : language === 'fr'
+                                  ? 'Le club a préparé et téléchargé votre paiement pour traitement. Il peut encore falloir jusqu\'à 7 jours ouvrables avant que le montant ne soit crédité sur votre compte.'
+                                  : 'The club has prepared and downloaded your payment for processing. It may take up to 7 business days for the amount to appear in your account.'}
+                              </p>
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {language === 'nl' ? 'Ref' : 'Ref'}: {payout.batch_reference} · {new Date(payout.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </motion.div>
+                      );
+                    })}
+                  </>
+                )}
+
+                {/* Stripe Payments Section */}
+                {myPayments.length > 0 && (
+                  <>
+                    {sepaPayouts.length > 0 && (
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-4">
+                        <CreditCard className="w-4 h-4 text-primary" />
+                        {language === 'nl' ? 'Stripe Betalingen' : language === 'fr' ? 'Paiements Stripe' : 'Stripe Payments'}
+                      </h3>
+                    )}
+                    {myPayments.map((payment, i) => (
+                      <motion.div key={payment.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl p-5 shadow-card border ${payment.status === 'succeeded' ? 'border-green-200' : 'border-transparent'}`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{payment.task_title || 'Taak'}</p>
+                            {payment.club_name && <p className="text-xs text-muted-foreground">{payment.club_name}</p>}
+                            <p className="text-lg font-heading font-bold text-foreground mt-1">€{payment.amount.toFixed(2)}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-1 text-xs">
+                              {payment.status === 'succeeded' ? <CheckCircle className="w-4 h-4 text-green-600" /> : payment.status === 'processing' ? <Clock className="w-4 h-4 text-yellow-600" /> : payment.status === 'failed' ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <Clock className="w-4 h-4 text-muted-foreground" />}
+                              <span className="font-medium">{payment.status === 'succeeded' ? dt.paid : payment.status === 'processing' ? dt.processing : payment.status === 'failed' ? dt.failed : dt.pending}</span>
+                            </div>
+                            {payment.stripe_receipt_url && <a href={payment.stripe_receipt_url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors" title={dt.receipt}><Download className="w-3.5 h-3.5 text-muted-foreground" /></a>}
+                          </div>
                         </div>
-                        {payment.stripe_receipt_url && <a href={payment.stripe_receipt_url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors" title={dt.receipt}><Download className="w-3.5 h-3.5 text-muted-foreground" /></a>}
-                      </div>
-                    </div>
-                    {payment.paid_at && <p className="text-xs text-muted-foreground mt-2">{dt.paidOn}: {new Date(payment.paid_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
-                  </motion.div>
-                ))}
+                        {payment.paid_at && <p className="text-xs text-muted-foreground mt-2">{dt.paidOn}: {new Date(payment.paid_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
+                      </motion.div>
+                    ))}
+                  </>
+                )}
               </>
             )}
           </div>

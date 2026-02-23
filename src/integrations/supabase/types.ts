@@ -972,6 +972,8 @@ export type Database = {
           batch_id: string
           bic: string | null
           created_at: string
+          error_flag: boolean
+          error_message: string | null
           holder_name: string | null
           iban: string
           id: string
@@ -984,6 +986,8 @@ export type Database = {
           batch_id: string
           bic?: string | null
           created_at?: string
+          error_flag?: boolean
+          error_message?: string | null
           holder_name?: string | null
           iban: string
           id?: string
@@ -996,6 +1000,8 @@ export type Database = {
           batch_id?: string
           bic?: string | null
           created_at?: string
+          error_flag?: boolean
+          error_message?: string | null
           holder_name?: string | null
           iban?: string
           id?: string
