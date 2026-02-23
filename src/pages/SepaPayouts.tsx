@@ -50,6 +50,7 @@ interface SepaBatch {
   status: string;
   created_at: string;
   signer_name: string | null;
+  docuseal_document_url: string | null;
 }
 
 const validateIban = (iban: string): boolean => {
@@ -80,6 +81,10 @@ const SepaPayouts = () => {
   const [batches, setBatches] = useState<SepaBatch[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [pendingDownloadBatchId, setPendingDownloadBatchId] = useState<string | null>(null);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  const [downloadBatchRef, setDownloadBatchRef] = useState('');
+  const [downloadXmlContent, setDownloadXmlContent] = useState<string | null>(null);
+  const [downloadDocUrl, setDownloadDocUrl] = useState<string | null>(null);
 
   useEffect(() => {
     init();
@@ -194,7 +199,7 @@ const SepaPayouts = () => {
     // Fetch batch history
     const { data: batchHistory } = await supabase
       .from('sepa_batches')
-      .select('id, batch_reference, batch_message, total_amount, item_count, status, created_at, signer_name')
+      .select('id, batch_reference, batch_message, total_amount, item_count, status, created_at, signer_name, docuseal_document_url')
       .eq('club_id', resolvedClubId)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -358,34 +363,19 @@ const SepaPayouts = () => {
       attempts++;
       const { data } = await supabase
         .from('sepa_batches')
-        .select('status, xml_content')
+        .select('status, xml_content, batch_reference, docuseal_document_url')
         .eq('id', currentBatchId)
         .single();
 
       if (data?.status === 'signed' || attempts > 30) {
         clearInterval(poll);
         if (data?.status === 'signed' && data.xml_content) {
+          // Show download dialog instead of auto-downloading
+          setDownloadBatchRef(data.batch_reference);
+          setDownloadXmlContent(data.xml_content);
+          setDownloadDocUrl(data.docuseal_document_url || null);
           setPendingDownloadBatchId(currentBatchId);
-          downloadXml(data.xml_content, `SEPA-${Date.now()}.xml`);
-          
-          // Mark as downloaded
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sepa-generate?action=mark-downloaded`,
-              {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${session.access_token}`,
-                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ batchId: currentBatchId }),
-              }
-            );
-          }
-          
-          toast.success('SEPA XML gedownload! Vrijwilligers worden genotificeerd.');
+          setShowDownloadDialog(true);
           setSelected(new Set());
           init(); // Refresh
         } else if (attempts > 30) {
@@ -393,6 +383,49 @@ const SepaPayouts = () => {
         }
       }
     }, 2000);
+  };
+
+  const handleDownloadBatchXml = async (batchId: string) => {
+    const { data } = await supabase
+      .from('sepa_batches')
+      .select('xml_content, batch_reference, docuseal_document_url, status')
+      .eq('id', batchId)
+      .single();
+    
+    if (!data || !data.xml_content || !['signed', 'downloaded'].includes(data.status)) {
+      toast.error('Batch is niet ondertekend of XML ontbreekt.');
+      return;
+    }
+
+    setDownloadBatchRef(data.batch_reference);
+    setDownloadXmlContent(data.xml_content);
+    setDownloadDocUrl(data.docuseal_document_url || null);
+    setPendingDownloadBatchId(batchId);
+    setShowDownloadDialog(true);
+  };
+
+  const performDownloadXml = async () => {
+    if (!downloadXmlContent || !pendingDownloadBatchId) return;
+    downloadXml(downloadXmlContent, `${downloadBatchRef}.xml`);
+
+    // Mark as downloaded
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sepa-generate?action=mark-downloaded`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ batchId: pendingDownloadBatchId }),
+        }
+      );
+    }
+    toast.success('SEPA XML gedownload!');
+    init();
   };
 
   const downloadXml = (content: string, filename: string) => {
@@ -670,13 +703,14 @@ const SepaPayouts = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                    <TableHead>Referentie</TableHead>
-                    <TableHead>Mededeling</TableHead>
-                    <TableHead>Bedrag</TableHead>
-                    <TableHead>Transacties</TableHead>
-                    <TableHead>Ondertekenaar</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Datum</TableHead>
+                     <TableHead>Referentie</TableHead>
+                     <TableHead>Mededeling</TableHead>
+                     <TableHead>Bedrag</TableHead>
+                     <TableHead>Transacties</TableHead>
+                     <TableHead>Ondertekenaar</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead>Datum</TableHead>
+                     <TableHead className="text-right">Acties</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -688,11 +722,26 @@ const SepaPayouts = () => {
                       <TableCell>{b.item_count}</TableCell>
                       <TableCell className="text-sm">{b.signer_name || '-'}</TableCell>
                       <TableCell>{statusBadge(b.status)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(b.created_at).toLocaleDateString('nl-BE')}
-                      </TableCell>
+                       <TableCell className="text-sm text-muted-foreground">
+                         {new Date(b.created_at).toLocaleDateString('nl-BE')}
+                       </TableCell>
+                       <TableCell className="text-right">
+                         {['signed', 'downloaded'].includes(b.status) ? (
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             className="gap-1.5 text-xs"
+                             onClick={() => handleDownloadBatchXml(b.id)}
+                           >
+                             <Download className="w-3.5 h-3.5" /> Download
+                           </Button>
+                         ) : (
+                           <span className="text-xs text-muted-foreground">—</span>
+                         )}
+                       </TableCell>
                     </TableRow>
                   ))}
+
                 </TableBody>
               </Table>
             </div>
@@ -735,6 +784,49 @@ const SepaPayouts = () => {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Download Dialog after signing */}
+      <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-emerald-500" />
+              Batch ondertekend!
+            </DialogTitle>
+            <DialogDescription>
+              De SEPA batch <span className="font-mono font-semibold">{downloadBatchRef}</span> is succesvol ondertekend. Download nu het XML-bestand en/of de ondertekende verklaring.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <Button
+              className="w-full gap-2"
+              onClick={() => {
+                performDownloadXml();
+              }}
+            >
+              <Download className="w-4 h-4" /> SEPA XML Downloaden
+            </Button>
+            {downloadDocUrl && (
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => {
+                  window.open(downloadDocUrl, '_blank');
+                }}
+              >
+                <FileText className="w-4 h-4" /> Ondertekende Verklaring Downloaden
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              className="w-full text-muted-foreground"
+              onClick={() => setShowDownloadDialog(false)}
+            >
+              Sluiten
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
