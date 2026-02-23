@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,8 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft, Download, FileSignature, Loader2, AlertTriangle,
   CheckCircle, Clock, Building2, Users, Euro, Search, Ban,
-  FileText, History, ChevronDown, ChevronUp
+  FileText, History, ChevronDown, ChevronUp, RotateCcw, Flag,
+  FileSpreadsheet, AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +54,20 @@ interface SepaBatch {
   docuseal_document_url: string | null;
 }
 
+interface SepaBatchItem {
+  id: string;
+  batch_id: string;
+  volunteer_id: string;
+  task_id: string;
+  amount: number;
+  iban: string;
+  bic: string | null;
+  holder_name: string | null;
+  status: string;
+  error_flag: boolean;
+  error_message: string | null;
+}
+
 const validateIban = (iban: string): boolean => {
   const cleaned = iban.replace(/\s/g, '').toUpperCase();
   if (cleaned.length < 15 || cleaned.length > 34) return false;
@@ -85,6 +100,10 @@ const SepaPayouts = () => {
   const [downloadBatchRef, setDownloadBatchRef] = useState('');
   const [downloadXmlContent, setDownloadXmlContent] = useState<string | null>(null);
   const [downloadDocUrl, setDownloadDocUrl] = useState<string | null>(null);
+  const [rollingBack, setRollingBack] = useState<string | null>(null);
+  const [batchItems, setBatchItems] = useState<Record<string, SepaBatchItem[]>>({});
+  const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
+  const [flaggingItem, setFlaggingItem] = useState<string | null>(null);
 
   useEffect(() => {
     init();
@@ -428,8 +447,8 @@ const SepaPayouts = () => {
     init();
   };
 
-  const downloadXml = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'application/xml' });
+  const downloadFile = (content: string, filename: string, type: string) => {
+    const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -438,12 +457,134 @@ const SepaPayouts = () => {
     URL.revokeObjectURL(url);
   };
 
+  const downloadXml = (content: string, filename: string) => {
+    downloadFile(content, filename, 'application/xml');
+  };
+
+  const handleDownloadCsv = async (batchId: string) => {
+    const items = batchItems[batchId] || [];
+    if (items.length === 0) {
+      // Fetch items first
+      const { data } = await supabase
+        .from('sepa_batch_items')
+        .select('*')
+        .eq('batch_id', batchId)
+        .eq('error_flag', false);
+      if (!data || data.length === 0) {
+        toast.error('Geen items in batch');
+        return;
+      }
+      const batch = batches.find(b => b.id === batchId);
+      const csvContent = generateCsv(data as SepaBatchItem[], batch?.batch_message || '');
+      downloadFile(csvContent, `${batch?.batch_reference || 'batch'}.csv`, 'text/csv;charset=utf-8');
+    } else {
+      const validItems = items.filter(i => !i.error_flag);
+      const batch = batches.find(b => b.id === batchId);
+      const csvContent = generateCsv(validItems, batch?.batch_message || '');
+      downloadFile(csvContent, `${batch?.batch_reference || 'batch'}.csv`, 'text/csv;charset=utf-8');
+    }
+    toast.success('CSV gedownload!');
+  };
+
+  const generateCsv = (items: SepaBatchItem[], message: string): string => {
+    const header = 'Naam,IBAN,BIC,Bedrag,Mededeling';
+    const rows = items.map(item => {
+      const name = (item.holder_name || '').replace(/"/g, '""');
+      const iban = item.iban.replace(/\s/g, '');
+      const bic = (item.bic || '').replace(/\s/g, '');
+      const amount = Number(item.amount).toFixed(2);
+      const msg = message.replace(/"/g, '""');
+      return `"${name}","${iban}","${bic}","${amount}","${msg}"`;
+    });
+    return [header, ...rows].join('\n');
+  };
+
+  const handleRollback = async (batchId: string) => {
+    if (!confirm('Weet je zeker dat je deze batch wilt terugdraaien? De status wordt teruggezet naar "concept" en de koppeling met het SEPA-bestand wordt verbroken.')) return;
+    setRollingBack(batchId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sepa-generate?action=rollback`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ batchId }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Rollback failed');
+      toast.success('Batch teruggedraaid naar concept.');
+      init();
+    } catch (err: any) {
+      toast.error(err.message || 'Rollback mislukt');
+    }
+    setRollingBack(null);
+  };
+
+  const handleFlagItem = async (itemId: string, flag: boolean, message?: string) => {
+    setFlaggingItem(itemId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sepa-generate?action=flag-item`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ itemId, errorFlag: flag, errorMessage: message }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Flag failed');
+      toast.success(flag ? 'Transactie gemarkeerd als fout.' : 'Fout-markering verwijderd.');
+      // Update local state
+      setBatchItems(prev => {
+        const updated = { ...prev };
+        for (const batchId of Object.keys(updated)) {
+          updated[batchId] = updated[batchId].map(item =>
+            item.id === itemId ? { ...item, error_flag: flag, error_message: flag ? (message || 'Fout gemarkeerd') : null } : item
+          );
+        }
+        return updated;
+      });
+      init();
+    } catch (err: any) {
+      toast.error(err.message || 'Markering mislukt');
+    }
+    setFlaggingItem(null);
+  };
+
+  const loadBatchItems = async (batchId: string) => {
+    if (batchItems[batchId]) {
+      setExpandedBatchId(expandedBatchId === batchId ? null : batchId);
+      return;
+    }
+    const { data } = await supabase
+      .from('sepa_batch_items')
+      .select('*')
+      .eq('batch_id', batchId);
+    if (data) {
+      setBatchItems(prev => ({ ...prev, [batchId]: data as SepaBatchItem[] }));
+    }
+    setExpandedBatchId(batchId);
+  };
+
   const statusBadge = (status: string) => {
     switch (status) {
       case 'pending': return <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" /> Open</Badge>;
       case 'awaiting_signature': return <Badge className="gap-1 bg-amber-500/10 text-amber-600 border-amber-200"><FileSignature className="w-3 h-3" /> Wacht op handtekening</Badge>;
       case 'signed': return <Badge className="gap-1 bg-blue-500/10 text-blue-600 border-blue-200"><CheckCircle className="w-3 h-3" /> Ondertekend</Badge>;
-      case 'downloaded': return <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-200"><Download className="w-3 h-3" /> Gedownload</Badge>;
+      case 'downloaded': return <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-200"><Download className="w-3 h-3" /> Geëxporteerd</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
@@ -715,7 +856,8 @@ const SepaPayouts = () => {
                 </TableHeader>
                 <TableBody>
                   {batches.map(b => (
-                    <TableRow key={b.id}>
+                    <React.Fragment key={b.id}>
+                    <TableRow className="cursor-pointer hover:bg-muted/20" onClick={() => loadBatchItems(b.id)}>
                       <TableCell className="font-mono text-xs">{b.batch_reference}</TableCell>
                       <TableCell className="text-sm max-w-[200px] truncate">{b.batch_message || '-'}</TableCell>
                       <TableCell className="font-semibold">€{Number(b.total_amount).toFixed(2)}</TableCell>
@@ -725,23 +867,86 @@ const SepaPayouts = () => {
                        <TableCell className="text-sm text-muted-foreground">
                          {new Date(b.created_at).toLocaleDateString('nl-BE')}
                        </TableCell>
-                       <TableCell className="text-right">
-                         {['signed', 'downloaded'].includes(b.status) ? (
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             className="gap-1.5 text-xs"
-                             onClick={() => handleDownloadBatchXml(b.id)}
-                           >
-                             <Download className="w-3.5 h-3.5" /> Download
-                           </Button>
-                         ) : (
-                           <span className="text-xs text-muted-foreground">—</span>
-                         )}
+                       <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                         <div className="flex items-center gap-1.5 justify-end flex-wrap">
+                           {['signed', 'downloaded'].includes(b.status) && (
+                             <>
+                               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => handleDownloadBatchXml(b.id)}>
+                                 <Download className="w-3.5 h-3.5" /> XML
+                               </Button>
+                               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => handleDownloadCsv(b.id)}>
+                                 <FileSpreadsheet className="w-3.5 h-3.5" /> CSV
+                               </Button>
+                             </>
+                           )}
+                           {['signed', 'downloaded'].includes(b.status) && (
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               className="gap-1 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                               onClick={() => handleRollback(b.id)}
+                               disabled={rollingBack === b.id}
+                             >
+                               {rollingBack === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                               Terugdraaien
+                             </Button>
+                           )}
+                           {!['signed', 'downloaded'].includes(b.status) && b.status !== 'awaiting_signature' && (
+                             <span className="text-xs text-muted-foreground">—</span>
+                           )}
+                         </div>
                        </TableCell>
                     </TableRow>
+                    {/* Expandable batch items */}
+                    {expandedBatchId === b.id && batchItems[b.id] && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="p-0 bg-muted/10">
+                          <div className="p-4 space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Transacties in batch</p>
+                            {batchItems[b.id].map(item => (
+                              <div key={item.id} className={`flex items-center justify-between gap-3 p-3 rounded-lg border ${item.error_flag ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-card'}`}>
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div>
+                                    <p className="text-sm font-medium text-foreground">{item.holder_name || 'Onbekend'}</p>
+                                    <p className="text-xs font-mono text-muted-foreground">{item.iban}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <span className="font-semibold text-foreground">€{Number(item.amount).toFixed(2)}</span>
+                                  {item.error_flag && (
+                                    <span className="text-xs text-destructive flex items-center gap-1">
+                                      <AlertCircle className="w-3.5 h-3.5" />
+                                      {item.error_message || 'Fout'}
+                                    </span>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant={item.error_flag ? 'outline' : 'ghost'}
+                                    className={`gap-1 text-xs ${item.error_flag ? 'text-foreground' : 'text-destructive'}`}
+                                    disabled={flaggingItem === item.id}
+                                    onClick={() => {
+                                      if (item.error_flag) {
+                                        handleFlagItem(item.id, false);
+                                      } else {
+                                        const msg = prompt('Reden voor fout-markering (bijv. "IBAN onbekend"):');
+                                        if (msg !== null) {
+                                          handleFlagItem(item.id, true, msg || 'Fout gemarkeerd');
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    {flaggingItem === item.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Flag className="w-3 h-3" />}
+                                    {item.error_flag ? 'Markering opheffen' : 'Markeer als fout'}
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </React.Fragment>
                   ))}
-
                 </TableBody>
               </Table>
             </div>

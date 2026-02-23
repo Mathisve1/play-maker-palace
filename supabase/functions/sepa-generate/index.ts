@@ -446,6 +446,129 @@ Deno.serve(async (req) => {
         .update({ status: 'downloaded' })
         .eq('id', batchId);
 
+      // Send push notifications to volunteers in this batch
+      const { data: items } = await adminClient
+        .from('sepa_batch_items')
+        .select('volunteer_id, amount')
+        .eq('batch_id', batchId)
+        .eq('error_flag', false);
+
+      if (items && items.length > 0) {
+        for (const item of items) {
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                type: 'payment_exported',
+                user_id: item.volunteer_id,
+                title: 'Goed nieuws! 🎉',
+                message: `Je vergoeding van €${Number(item.amount).toFixed(2)} is in verwerking.`,
+                url: '/dashboard',
+              }),
+            });
+          } catch (pushErr) {
+            console.error('Push notification error:', pushErr);
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (err: any) {
+      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+  }
+
+  if (action === 'rollback') {
+    try {
+      const body = await req.json();
+      const { batchId } = body;
+
+      const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Get the batch
+      const { data: batch, error: batchErr } = await adminClient
+        .from('sepa_batches')
+        .select('*')
+        .eq('id', batchId)
+        .single();
+
+      if (batchErr || !batch) {
+        return new Response(JSON.stringify({ error: 'Batch not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Reset batch status and clear XML/signing data
+      await adminClient
+        .from('sepa_batches')
+        .update({
+          status: 'pending',
+          xml_content: null,
+          docuseal_submission_id: null,
+          docuseal_document_url: null,
+          signer_name: null,
+        })
+        .eq('id', batchId);
+
+      // Reset all batch items to pending
+      await adminClient
+        .from('sepa_batch_items')
+        .update({ status: 'pending' })
+        .eq('batch_id', batchId);
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (err: any) {
+      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+  }
+
+  if (action === 'flag-item') {
+    try {
+      const body = await req.json();
+      const { itemId, errorFlag, errorMessage } = body;
+
+      const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+      await adminClient
+        .from('sepa_batch_items')
+        .update({
+          error_flag: errorFlag,
+          error_message: errorFlag ? (errorMessage || 'Fout gemarkeerd') : null,
+        })
+        .eq('id', itemId);
+
+      // Recalculate batch totals
+      const { data: item } = await adminClient
+        .from('sepa_batch_items')
+        .select('batch_id')
+        .eq('id', itemId)
+        .single();
+
+      if (item) {
+        const { data: validItems } = await adminClient
+          .from('sepa_batch_items')
+          .select('amount')
+          .eq('batch_id', item.batch_id)
+          .eq('error_flag', false);
+
+        const newTotal = (validItems || []).reduce((sum, i) => sum + Number(i.amount), 0);
+        const newCount = (validItems || []).length;
+
+        await adminClient
+          .from('sepa_batches')
+          .update({
+            total_amount: newTotal,
+            item_count: newCount,
+          })
+          .eq('id', item.batch_id);
+      }
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
