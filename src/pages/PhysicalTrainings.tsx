@@ -26,7 +26,7 @@ interface TrainingEvent {
   location: string | null;
   description: string | null;
   status: string;
-  training_id: string;
+  training_id: string | null;
   training_title?: string;
   task?: { id: string; spots_available: number | null } | null;
   signupCount?: number;
@@ -133,7 +133,6 @@ const PhysicalTrainings = () => {
     const { data: evData } = await supabase
       .from('events')
       .select('*, academy_trainings(title)')
-      .not('training_id', 'is', null)
       .eq('club_id', cid)
       .order('event_date', { ascending: false });
 
@@ -162,12 +161,12 @@ const PhysicalTrainings = () => {
   };
 
   const handleCreateEvent = async () => {
-    if (!clubId || !selectedTrainingId || !newEventTitle.trim()) return;
+    if (!clubId || !newEventTitle.trim()) return;
 
     const { data: ev, error: evErr } = await supabase.from('events').insert({
       club_id: clubId, title: newEventTitle, event_date: newEventDate || null,
       location: newEventLocation || null, description: newEventDesc || null,
-      training_id: selectedTrainingId, status: 'open',
+      training_id: selectedTrainingId || null, status: 'open',
     }).select().single();
     if (evErr || !ev) { toast.error(evErr?.message || 'Error'); return; }
 
@@ -251,6 +250,11 @@ const PhysicalTrainings = () => {
 
     if (!tickets || tickets.length === 0) { toast.error(l.noCheckedIn); return; }
 
+    if (!ev.training_id) {
+      toast.error(language === 'nl' ? 'Geen training gekoppeld, certificaten niet mogelijk' : 'No training linked, certificates not possible');
+      return;
+    }
+
     const { data: existingCerts } = await supabase.from('volunteer_certificates')
       .select('volunteer_id')
       .eq('training_id', ev.training_id)
@@ -261,7 +265,7 @@ const PhysicalTrainings = () => {
       .filter((t: any) => !existingIds.has(t.volunteer_id))
       .map((t: any) => ({
         volunteer_id: t.volunteer_id,
-        training_id: ev.training_id,
+        training_id: ev.training_id!,
         club_id: clubId!,
         type: 'physical_event',
       }));
@@ -348,7 +352,7 @@ const PhysicalTrainings = () => {
                           <Button variant="outline" size="sm" onClick={() => handleGenerateTickets(ev.id)} className="gap-1.5 text-xs">
                             <QrCode className="w-3.5 h-3.5" /> {l.generateTickets}
                           </Button>
-                          <Button variant="default" size="sm" onClick={() => handleAwardCerts(ev.id)} disabled={ev.checkedInCount === 0} className="gap-1.5 text-xs">
+                          <Button variant="default" size="sm" onClick={() => handleAwardCerts(ev.id)} disabled={ev.checkedInCount === 0 || !ev.training_id} className="gap-1.5 text-xs" title={!ev.training_id ? (language === 'nl' ? 'Geen training gekoppeld' : 'No training linked') : ''}>
                             <Award className="w-3.5 h-3.5" /> {l.awardCerts}
                           </Button>
                         </div>
@@ -393,10 +397,10 @@ const PhysicalTrainings = () => {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-foreground">{l.selectTraining}</label>
+              <label className="text-sm font-medium text-foreground">{l.selectTraining} <span className="text-muted-foreground font-normal">({language === 'nl' ? 'optioneel' : language === 'fr' ? 'optionnel' : 'optional'})</span></label>
               <select value={selectedTrainingId} onChange={e => setSelectedTrainingId(e.target.value)}
                 className="w-full mt-1 rounded-lg border border-input bg-background px-3 py-2 text-sm">
-                <option value="">--</option>
+                <option value="">{language === 'nl' ? 'Geen training (losstaand)' : language === 'fr' ? 'Aucune formation (indépendant)' : 'No training (standalone)'}</option>
                 {trainings.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
               </select>
             </div>
@@ -420,7 +424,7 @@ const PhysicalTrainings = () => {
               <label className="text-sm font-medium text-foreground">{l.eventDesc}</label>
               <Textarea value={newEventDesc} onChange={e => setNewEventDesc(e.target.value)} rows={2} className="mt-1" />
             </div>
-            <Button onClick={handleCreateEvent} disabled={!newEventTitle.trim() || !selectedTrainingId} className="w-full gap-2">
+            <Button onClick={handleCreateEvent} disabled={!newEventTitle.trim()} className="w-full gap-2">
               <CalendarDays className="w-4 h-4" /> {l.createEvent}
             </Button>
           </div>
