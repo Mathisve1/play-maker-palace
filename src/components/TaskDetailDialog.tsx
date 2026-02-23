@@ -245,6 +245,27 @@ const TaskDetailDialog = ({ task, open, onOpenChange, language, signupCount, isS
           )}
         </div>
 
+        {/* Required training badge */}
+        {task.required_training_id && trainingName && (
+          <div className="flex items-start gap-3 mt-4 pt-4 border-t border-border">
+            <Award className={`w-4 h-4 mt-0.5 shrink-0 ${isCertified ? 'text-accent' : 'text-yellow-500'}`} />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">{l.requiredTraining}</p>
+              <p className="text-sm text-muted-foreground">{trainingName}</p>
+              {isCertified ? (
+                <span className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-accent"><Award className="w-3 h-3" /> {l.certified}</span>
+              ) : (
+                <button
+                  onClick={() => navigate(`/training/${task.required_training_id}`)}
+                  className="mt-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border border-yellow-500/20 hover:bg-yellow-500/20 transition-colors"
+                >
+                  {l.followTraining} →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Action button */}
         <div className="mt-4 pt-4 border-t border-border">
           {isSignedUp ? (
@@ -253,6 +274,13 @@ const TaskDetailDialog = ({ task, open, onOpenChange, language, signupCount, isS
               className="w-full px-4 py-2.5 rounded-xl text-sm font-medium border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
             >
               {l.alreadySignedUp} — {l.cancel}
+            </button>
+          ) : needsTraining ? (
+            <button
+              onClick={() => navigate(`/training/${task.required_training_id}`)}
+              className="w-full px-4 py-2.5 rounded-xl text-sm font-medium bg-yellow-500 text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            >
+              <Award className="w-4 h-4" /> {l.followTraining}
             </button>
           ) : (
             <button
