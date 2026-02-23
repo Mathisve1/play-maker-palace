@@ -49,7 +49,7 @@ const TicketDownloadButtons = ({ barcode, ticketTitle, clubName, eventTitle, tic
       // Subtitle
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text(clubName || 'PlayMaker Palace', 50, 20, { align: 'center' });
+      doc.text(clubName || 'De 12e Man', 50, 20, { align: 'center' });
 
       // Event / task title
       doc.setTextColor(34, 34, 34);
@@ -119,7 +119,7 @@ const TicketDownloadButtons = ({ barcode, ticketTitle, clubName, eventTitle, tic
       // Footer
       doc.setFontSize(6);
       doc.setTextColor(180, 180, 180);
-      doc.text('Powered by PlayMaker Palace', 50, 174, { align: 'center' });
+      doc.text('Powered by De 12e Man', 50, 174, { align: 'center' });
 
       const filename = `ticket-${barcode}.pdf`;
       doc.save(filename);

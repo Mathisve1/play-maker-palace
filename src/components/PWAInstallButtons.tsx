@@ -282,7 +282,7 @@ export const InstallInstructionsDialog = ({
                   </div>
                   <div>
                     <h2 className="text-lg font-heading font-bold text-background">
-                      Installeer PlayMaker
+                      Installeer De 12e Man
                     </h2>
                     <p className="text-sm text-background/70">
                       {platform === 'ios' ? 'voor iPhone & iPad' : 'voor Android'}
