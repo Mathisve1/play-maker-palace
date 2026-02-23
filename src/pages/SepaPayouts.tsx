@@ -25,6 +25,7 @@ import Logo from '@/components/Logo';
 import NotificationBell from '@/components/NotificationBell';
 import { BELGIAN_BANKS, findBic } from '@/components/OnboardingForm';
 import { DocusealForm } from '@docuseal/react';
+import { generateAccountingPdf, type BatchItemForPdf } from '@/lib/generateAccountingPdf';
 
 interface PayableVolunteer {
   volunteerId: string;
@@ -461,6 +462,79 @@ const SepaPayouts = () => {
     downloadFile(content, filename, 'application/xml');
   };
 
+  const handleDownloadAccountingPdf = async (batchId: string) => {
+    try {
+      // Get batch info
+      const batch = batches.find(b => b.id === batchId);
+      if (!batch || !['signed', 'downloaded'].includes(batch.status)) {
+        toast.error('Batch moet eerst ondertekend zijn.');
+        return;
+      }
+
+      // Get batch items with task details
+      let items = batchItems[batchId];
+      if (!items) {
+        const { data } = await supabase
+          .from('sepa_batch_items')
+          .select('*')
+          .eq('batch_id', batchId);
+        if (!data || data.length === 0) {
+          toast.error('Geen items in batch');
+          return;
+        }
+        items = data as SepaBatchItem[];
+        setBatchItems(prev => ({ ...prev, [batchId]: items! }));
+      }
+
+      // Get task details for each item
+      const taskIds = [...new Set(items.map(i => i.task_id))];
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('id, title, task_date')
+        .in('id', taskIds);
+      const taskMap = new Map(tasks?.map(t => [t.id, t]) || []);
+
+      // Get volunteer names
+      const volIds = [...new Set(items.map(i => i.volunteer_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', volIds);
+      const profileMap = new Map(profiles?.map(p => [p.id, p.full_name || '']) || []);
+
+      const pdfItems: BatchItemForPdf[] = items.map(item => {
+        const task = taskMap.get(item.task_id);
+        return {
+          holder_name: item.holder_name,
+          iban: item.iban,
+          bic: item.bic,
+          amount: item.amount,
+          task_title: task?.title || '—',
+          task_date: task?.task_date || null,
+          volunteer_name: profileMap.get(item.volunteer_id) || item.holder_name || 'Onbekend',
+          error_flag: item.error_flag,
+        };
+      });
+
+      const doc = generateAccountingPdf({
+        batchReference: batch.batch_reference,
+        batchMessage: batch.batch_message,
+        clubName,
+        clubIban,
+        signerName: batch.signer_name,
+        createdAt: batch.created_at,
+        totalAmount: Number(batch.total_amount),
+        itemCount: batch.item_count,
+        items: pdfItems,
+      });
+
+      doc.save(`Verantwoordingsstuk-${batch.batch_reference}.pdf`);
+      toast.success('Boekhoudkundig verantwoordingsstuk gedownload!');
+    } catch (err: any) {
+      toast.error(err.message || 'PDF generatie mislukt');
+    }
+  };
+
   const handleDownloadCsv = async (batchId: string) => {
     const items = batchItems[batchId] || [];
     if (items.length === 0) {
@@ -874,6 +948,9 @@ const SepaPayouts = () => {
                                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => handleDownloadBatchXml(b.id)}>
                                  <Download className="w-3.5 h-3.5" /> XML
                                </Button>
+                               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => handleDownloadAccountingPdf(b.id)}>
+                                 <FileText className="w-3.5 h-3.5" /> PDF
+                               </Button>
                                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => handleDownloadCsv(b.id)}>
                                  <FileSpreadsheet className="w-3.5 h-3.5" /> CSV
                                </Button>
@@ -1013,6 +1090,15 @@ const SepaPayouts = () => {
             >
               <Download className="w-4 h-4" /> SEPA XML Downloaden
             </Button>
+            {pendingDownloadBatchId && (
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => handleDownloadAccountingPdf(pendingDownloadBatchId!)}
+              >
+                <FileText className="w-4 h-4" /> Boekhoudkundig Verantwoordingsstuk (PDF)
+              </Button>
+            )}
             {downloadDocUrl && (
               <Button
                 variant="outline"
@@ -1021,7 +1107,7 @@ const SepaPayouts = () => {
                   window.open(downloadDocUrl, '_blank');
                 }}
               >
-                <FileText className="w-4 h-4" /> Ondertekende Verklaring Downloaden
+                <FileSignature className="w-4 h-4" /> Ondertekende Verklaring Downloaden
               </Button>
             )}
             <Button
