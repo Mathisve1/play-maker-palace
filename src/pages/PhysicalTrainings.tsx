@@ -27,6 +27,7 @@ interface TrainingEvent {
   description: string | null;
   status: string;
   training_id: string | null;
+  certificate_design_id: string | null;
   training_title?: string;
   task?: { id: string; spots_available: number | null } | null;
   signupCount?: number;
@@ -55,6 +56,7 @@ const labels = {
     selectTraining: 'Selecteer training', noTrainings: 'Maak eerst een training aan in de Academy Builder.',
     noSignups: 'Geen inschrijvingen', noApproved: 'Geen goedgekeurde inschrijvingen',
     noCheckedIn: 'Geen ingecheckte vrijwilligers',
+    selectCertDesign: 'Certificaat sjabloon', noCertDesign: 'Geen sjabloon (geen certificaat)',
   },
   fr: {
     title: 'Formations physiques', back: 'Retour',
@@ -68,6 +70,7 @@ const labels = {
     selectTraining: 'Sélectionner formation', noTrainings: 'Créez d\'abord une formation dans l\'Academy Builder.',
     noSignups: 'Aucune inscription', noApproved: 'Aucune inscription approuvée',
     noCheckedIn: 'Aucun volontaire enregistré',
+    selectCertDesign: 'Modèle de certificat', noCertDesign: 'Aucun modèle (pas de certificat)',
   },
   en: {
     title: 'Physical trainings', back: 'Back',
@@ -81,6 +84,7 @@ const labels = {
     selectTraining: 'Select training', noTrainings: 'Create a training first in the Academy Builder.',
     noSignups: 'No sign-ups', noApproved: 'No approved sign-ups',
     noCheckedIn: 'No checked-in volunteers',
+    selectCertDesign: 'Certificate template', noCertDesign: 'No template (no certificate)',
   },
 };
 
@@ -106,6 +110,7 @@ const PhysicalTrainings = () => {
   const [newEventLocation, setNewEventLocation] = useState('');
   const [newEventDesc, setNewEventDesc] = useState('');
   const [newEventSpots, setNewEventSpots] = useState(30);
+  const [newEventCertDesignId, setNewEventCertDesignId] = useState('');
 
   useEffect(() => { init(); }, []);
 
@@ -160,6 +165,7 @@ const PhysicalTrainings = () => {
       }
       enriched.push({
         ...ev, training_id: ev.training_id!,
+        certificate_design_id: ev.certificate_design_id || null,
         training_title: ev.academy_trainings?.title,
         task: task ? { id: task.id, spots_available: task.spots_available } : null,
         signupCount, checkedInCount, ticketCount,
@@ -175,6 +181,7 @@ const PhysicalTrainings = () => {
       club_id: clubId, title: newEventTitle, event_date: newEventDate || null,
       location: newEventLocation || null, description: newEventDesc || null,
       training_id: selectedTrainingId || null, event_type: 'training', status: 'open',
+      certificate_design_id: newEventCertDesignId || null,
     }).select().single();
     if (evErr || !ev) { toast.error(evErr?.message || 'Error'); return; }
 
@@ -186,7 +193,7 @@ const PhysicalTrainings = () => {
 
     toast.success(l.eventCreated);
     setShowCreateEvent(false);
-    setNewEventTitle(''); setNewEventDate(''); setNewEventLocation(''); setNewEventDesc(''); setSelectedTrainingId('');
+    setNewEventTitle(''); setNewEventDate(''); setNewEventLocation(''); setNewEventDesc(''); setSelectedTrainingId(''); setNewEventCertDesignId('');
     await loadAllEvents(clubId);
   };
 
@@ -258,14 +265,17 @@ const PhysicalTrainings = () => {
 
     if (!tickets || tickets.length === 0) { toast.error(l.noCheckedIn); return; }
 
-    if (!ev.training_id) {
-      toast.error(language === 'nl' ? 'Geen training gekoppeld, certificaten niet mogelijk' : 'No training linked, certificates not possible');
+    if (!ev.training_id && !ev.certificate_design_id) {
+      toast.error(language === 'nl' ? 'Geen training of certificaat sjabloon gekoppeld' : 'No training or certificate template linked');
       return;
     }
 
+    // Use event id as fallback training_id for standalone training events
+    const trainingId = ev.training_id || ev.id;
+
     const { data: existingCerts } = await supabase.from('volunteer_certificates')
       .select('volunteer_id')
-      .eq('training_id', ev.training_id)
+      .eq('training_id', trainingId)
       .eq('club_id', clubId);
     const existingIds = new Set((existingCerts || []).map((c: any) => c.volunteer_id));
 
@@ -273,9 +283,10 @@ const PhysicalTrainings = () => {
       .filter((t: any) => !existingIds.has(t.volunteer_id))
       .map((t: any) => ({
         volunteer_id: t.volunteer_id,
-        training_id: ev.training_id!,
+        training_id: trainingId,
         club_id: clubId!,
         type: 'physical_event',
+        certificate_design_id: ev.certificate_design_id || null,
       }));
 
     if (newCerts.length > 0) {
@@ -365,7 +376,7 @@ const PhysicalTrainings = () => {
                           <Button variant="outline" size="sm" onClick={() => handleGenerateTickets(ev.id)} className="gap-1.5 text-xs">
                             <QrCode className="w-3.5 h-3.5" /> {l.generateTickets}
                           </Button>
-                          <Button variant="default" size="sm" onClick={() => handleAwardCerts(ev.id)} disabled={ev.checkedInCount === 0 || !ev.training_id} className="gap-1.5 text-xs" title={!ev.training_id ? (language === 'nl' ? 'Geen training gekoppeld' : 'No training linked') : ''}>
+                          <Button variant="default" size="sm" onClick={() => handleAwardCerts(ev.id)} disabled={ev.checkedInCount === 0 || (!ev.training_id && !ev.certificate_design_id)} className="gap-1.5 text-xs" title={(!ev.training_id && !ev.certificate_design_id) ? (language === 'nl' ? 'Geen training of sjabloon gekoppeld' : 'No training or template linked') : ''}>
                             <Award className="w-3.5 h-3.5" /> {l.awardCerts}
                           </Button>
                         </div>
@@ -436,6 +447,14 @@ const PhysicalTrainings = () => {
             <div>
               <label className="text-sm font-medium text-foreground">{l.eventDesc}</label>
               <Textarea value={newEventDesc} onChange={e => setNewEventDesc(e.target.value)} rows={2} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">{l.selectCertDesign}</label>
+              <select value={newEventCertDesignId} onChange={e => setNewEventCertDesignId(e.target.value)}
+                className="w-full mt-1 rounded-lg border border-input bg-background px-3 py-2 text-sm">
+                <option value="">{l.noCertDesign}</option>
+                {certDesigns.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
             </div>
             <Button onClick={handleCreateEvent} disabled={!newEventTitle.trim()} className="w-full gap-2">
               <CalendarDays className="w-4 h-4" /> {l.createEvent}

@@ -686,6 +686,7 @@ export type Database = {
       }
       events: {
         Row: {
+          certificate_design_id: string | null
           club_id: string
           created_at: string
           description: string | null
@@ -700,6 +701,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          certificate_design_id?: string | null
           club_id: string
           created_at?: string
           description?: string | null
@@ -714,6 +716,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          certificate_design_id?: string | null
           club_id?: string
           created_at?: string
           description?: string | null
@@ -728,6 +731,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "events_certificate_design_id_fkey"
+            columns: ["certificate_design_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_designs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_club_id_fkey"
             columns: ["club_id"]
