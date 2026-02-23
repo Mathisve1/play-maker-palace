@@ -1242,7 +1242,12 @@ const AcademyBuilder = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-heading font-bold text-foreground">{l.title}</h2>
-              <Button onClick={handleCreateTraining} size="sm" className="gap-1.5"><Plus className="w-4 h-4" /> {l.newTraining}</Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate('/academy/physical-trainings')} className="gap-1.5">
+                  <CalendarDays className="w-4 h-4" /> {(l as any).trainingEvents}
+                </Button>
+                <Button onClick={handleCreateTraining} size="sm" className="gap-1.5"><Plus className="w-4 h-4" /> {l.newTraining}</Button>
+              </div>
             </div>
             {trainings.length === 0 ? (
               <div className="text-center py-16"><Award className="w-12 h-12 text-muted-foreground mx-auto mb-3" /><p className="text-muted-foreground">{l.noTrainings}</p></div>
@@ -1412,91 +1417,7 @@ const AcademyBuilder = () => {
                   onGenerateAI={() => handleGenerateAI('global')} generatingAI={generatingAI} l={l} />
               </div>
 
-              {/* ─── Training Events (Physical) ─── */}
-              <div className="bg-card rounded-2xl border-2 border-accent/20 p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-accent" /> {(l as any).trainingEvents}
-                    <span className="text-xs text-muted-foreground font-normal">({trainingEvents.length})</span>
-                  </h3>
-                  <Button variant="outline" size="sm" onClick={() => setShowCreateEvent(true)} className="gap-1.5">
-                    <Plus className="w-4 h-4" /> {(l as any).createEvent}
-                  </Button>
-                </div>
-
-                {trainingEvents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">{(l as any).noEvents}</p>
-                ) : (
-                  <div className="space-y-2">
-                    {trainingEvents.map(ev => (
-                      <div key={ev.id} className="rounded-xl border border-border overflow-hidden">
-                        <button
-                          onClick={() => { const newId = expandedEventId === ev.id ? null : ev.id; setExpandedEventId(newId); if (newId) loadEventSignups(newId); }}
-                          className="w-full text-left p-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
-                              <CalendarDays className="w-4 h-4 text-accent" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{ev.title}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                {ev.event_date && <span>{new Date(ev.event_date).toLocaleDateString()}</span>}
-                                {ev.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{ev.location}</span>}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs">
-                            <span className="text-muted-foreground">{ev.signupCount} {(l as any).signups}</span>
-                            <span className="text-accent font-medium">{ev.checkedInCount} {(l as any).checkedIn}</span>
-                            {ev.ticketCount! > 0 && <span className="text-primary">🎫 {ev.ticketCount}</span>}
-                            {expandedEventId === ev.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                          </div>
-                        </button>
-
-                        <AnimatePresence>
-                          {expandedEventId === ev.id && (
-                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                              <div className="px-3 pb-3 border-t border-border pt-3 space-y-3">
-                                {/* Action buttons */}
-                                <div className="flex gap-2 flex-wrap">
-                                  <Button variant="outline" size="sm" onClick={() => handleGenerateTickets(ev.id)} className="gap-1.5 text-xs">
-                                    <QrCode className="w-3.5 h-3.5" /> {(l as any).generateTickets}
-                                  </Button>
-                                  <Button variant="default" size="sm" onClick={() => handleAwardCertsToCheckedIn(ev.id)} disabled={ev.checkedInCount === 0} className="gap-1.5 text-xs">
-                                    <Award className="w-3.5 h-3.5" /> {(l as any).awardCerts}
-                                  </Button>
-                                </div>
-
-                                {/* Signup list */}
-                                {eventSignups.length > 0 ? (
-                                  <div className="space-y-1">
-                                    {eventSignups.map(s => (
-                                      <div key={s.volunteer_id} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-lg bg-muted/30">
-                                        <span className="text-foreground font-medium">{s.full_name}</span>
-                                        <div className="flex items-center gap-2">
-                                          {s.ticket_status && (
-                                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${s.checked_in ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
-                                              {s.checked_in ? '✅ Ingecheckt' : '🎫 Ticket'}
-                                            </span>
-                                          )}
-                                          {!s.ticket_status && <span className="text-[10px] text-muted-foreground">Geen ticket</span>}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-xs text-muted-foreground text-center py-2">Geen inschrijvingen</p>
-                                )}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Physical trainings moved to /academy/physical-trainings */}
 
               {/* ─── Certificates ─── */}
               <div className="bg-card rounded-2xl border border-border p-5">
@@ -1527,41 +1448,7 @@ const AcademyBuilder = () => {
         )}
       </main>
 
-      {/* Create training event dialog */}
-      <Dialog open={showCreateEvent} onOpenChange={setShowCreateEvent}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarDays className="w-5 h-5 text-accent" /> {(l as any).createEvent}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-foreground">{l.trainingTitle}</label>
-              <Input value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">{(l as any).eventDate}</label>
-              <Input type="datetime-local" value={newEventDate} onChange={e => setNewEventDate(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">{(l as any).eventLocation}</label>
-              <Input value={newEventLocation} onChange={e => setNewEventLocation(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">{(l as any).spots}</label>
-              <Input type="number" min={1} value={newEventSpots} onChange={e => setNewEventSpots(Number(e.target.value))} className="mt-1 w-24" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">{(l as any).eventDesc}</label>
-              <Textarea value={newEventDesc} onChange={e => setNewEventDesc(e.target.value)} rows={2} className="mt-1" />
-            </div>
-            <Button onClick={handleCreateTrainingEvent} disabled={!newEventTitle.trim()} className="w-full gap-2">
-              <CalendarDays className="w-4 h-4" /> {(l as any).createEvent}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Create training event dialog moved to /academy/physical-trainings */}
 
       {/* Physical certificate dialog (manual) */}
       <Dialog open={showPhysicalCert} onOpenChange={setShowPhysicalCert}>

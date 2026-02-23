@@ -29,6 +29,7 @@ import TicketingDashboard from "./pages/TicketingDashboard";
 import TicketScanner from "./pages/TicketScanner";
 import SepaPayouts from "./pages/SepaPayouts";
 import AcademyBuilder from "./pages/AcademyBuilder";
+import PhysicalTrainings from "./pages/PhysicalTrainings";
 import VolunteerTraining from "./pages/VolunteerTraining";
 import NotFound from "./pages/NotFound";
 
@@ -67,6 +68,7 @@ const App = () => {
             <Route path="/scan" element={<TicketScanner />} />
             <Route path="/sepa-payouts" element={<SepaPayouts />} />
             <Route path="/academy" element={<AcademyBuilder />} />
+            <Route path="/academy/physical-trainings" element={<PhysicalTrainings />} />
             <Route path="/training/:trainingId" element={<VolunteerTraining />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/chat/:conversationId" element={<Chat />} />
