@@ -1070,7 +1070,8 @@ const ClubOwnerDashboard = () => {
                             const contractSigned = sigInfo?.status === 'completed';
                             const volHasStripe = !!volunteerStripeIds[signup.volunteer_id];
                             const isHourly = task.compensation_type === 'hourly';
-                            const canPay = clubStripeId && volHasStripe && contractSigned && (!payment || payment.status === 'failed');
+                            // Stripe payments temporarily disabled - using SEPA only
+                            const canPay = false; // was: clubStripeId && volHasStripe && contractSigned && (!payment || payment.status === 'failed');
 
                             // Show hour confirmation button for hourly tasks
                             if (isHourly && contractSigned && (!payment || payment.status === 'failed')) {
@@ -1394,12 +1395,7 @@ const ClubOwnerDashboard = () => {
                 <span className="text-xs font-medium text-foreground">Contracten</span>
               </button>
             )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => navigate('/payments')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <CreditCard className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">Betalingen</span>
-              </button>
-            )}
+            {/* Stripe payments temporarily disabled - using SEPA only */}
             {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
               <button onClick={() => navigate('/sepa-payouts')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
                 <FileText className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />

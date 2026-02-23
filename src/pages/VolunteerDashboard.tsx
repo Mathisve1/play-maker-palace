@@ -778,36 +778,7 @@ const VolunteerDashboard = () => {
                   </>
                 )}
 
-                {/* Stripe Payments Section */}
-                {myPayments.length > 0 && (
-                  <>
-                    {sepaPayouts.length > 0 && (
-                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-4">
-                        <CreditCard className="w-4 h-4 text-primary" />
-                        {language === 'nl' ? 'Stripe Betalingen' : language === 'fr' ? 'Paiements Stripe' : 'Stripe Payments'}
-                      </h3>
-                    )}
-                    {myPayments.map((payment, i) => (
-                      <motion.div key={payment.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl p-5 shadow-card border ${payment.status === 'succeeded' ? 'border-green-200' : 'border-transparent'}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{payment.task_title || 'Taak'}</p>
-                            {payment.club_name && <p className="text-xs text-muted-foreground">{payment.club_name}</p>}
-                            <p className="text-lg font-heading font-bold text-foreground mt-1">€{payment.amount.toFixed(2)}</p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <div className="flex items-center gap-1 text-xs">
-                              {payment.status === 'succeeded' ? <CheckCircle className="w-4 h-4 text-green-600" /> : payment.status === 'processing' ? <Clock className="w-4 h-4 text-yellow-600" /> : payment.status === 'failed' ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <Clock className="w-4 h-4 text-muted-foreground" />}
-                              <span className="font-medium">{payment.status === 'succeeded' ? dt.paid : payment.status === 'processing' ? dt.processing : payment.status === 'failed' ? dt.failed : dt.pending}</span>
-                            </div>
-                            {payment.stripe_receipt_url && <a href={payment.stripe_receipt_url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors" title={dt.receipt}><Download className="w-3.5 h-3.5 text-muted-foreground" /></a>}
-                          </div>
-                        </div>
-                        {payment.paid_at && <p className="text-xs text-muted-foreground mt-2">{dt.paidOn}: {new Date(payment.paid_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
-                      </motion.div>
-                    ))}
-                  </>
-                )}
+                {/* Stripe Payments Section - temporarily disabled, using SEPA only */}
               </>
             )}
           </div>
