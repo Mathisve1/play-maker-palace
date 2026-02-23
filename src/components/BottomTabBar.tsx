@@ -38,14 +38,15 @@ const BottomTabBar = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden no-select">
       <div
         className={cn(
-          "bg-background/80 backdrop-blur-2xl border-t border-border/50",
-          "pb-safe-bottom"
+          "bg-background/90 backdrop-blur-2xl border-t border-border/50",
+          "-webkit-backdrop-filter: blur(24px)",
+          "pb-safe-bottom pl-safe-left pr-safe-right"
         )}
       >
-        <div className="flex items-center justify-around h-14">
+        <div className="flex items-center justify-around h-[52px]">
           {tabs.map((tab) => {
             const active = isActive(tab);
             const Icon = tab.icon;

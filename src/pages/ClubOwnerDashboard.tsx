@@ -1317,8 +1317,8 @@ const ClubOwnerDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40">
+        <div className="px-4 h-14 flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
             {clubInfo?.logo_url ? (
               <img src={clubInfo.logo_url} alt={clubInfo.name} className="w-9 h-9 rounded-xl object-cover border border-border" />
@@ -1347,7 +1347,7 @@ const ClubOwnerDashboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="px-4 py-6 pb-tab-bar max-w-4xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">{dt.title}</h1>

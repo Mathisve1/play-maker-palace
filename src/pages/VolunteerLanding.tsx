@@ -37,7 +37,7 @@ const VolunteerLanding = () => {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-28 pb-20 px-4 relative overflow-hidden">
+      <section className="pt-24 pb-16 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
         <div className="container mx-auto relative">
           <motion.div 
