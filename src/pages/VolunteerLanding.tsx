@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -6,6 +7,7 @@ import { Component as TestimonialCards } from '@/components/ui/twitter-testimoni
 import Navbar from '@/components/Navbar';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
+import { AppStoreButtons, InstallInstructionsDialog } from '@/components/PWAInstallButtons';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -14,6 +16,7 @@ const fadeUp = {
 
 const VolunteerLanding = () => {
   const { t } = useLanguage();
+  const [installPlatform, setInstallPlatform] = useState<'ios' | 'android' | null>(null);
 
   const benefits = [
     { icon: Handshake, title: t.volunteer.benefit1Title, desc: t.volunteer.benefit1Desc },
@@ -63,6 +66,13 @@ const VolunteerLanding = () => {
               <a href="#why" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors">
                 {t.volunteer.heroCtaSecondary}
               </a>
+            </motion.div>
+            <motion.div variants={fadeUp} custom={3} className="mt-6 flex justify-center">
+              <AppStoreButtons
+                variant="primary"
+                onClickIOS={() => setInstallPlatform('ios')}
+                onClickAndroid={() => setInstallPlatform('android')}
+              />
             </motion.div>
           </motion.div>
         </div>
@@ -150,6 +160,12 @@ const VolunteerLanding = () => {
       </section>
 
       <Footer />
+
+      <InstallInstructionsDialog
+        open={installPlatform !== null}
+        onClose={() => setInstallPlatform(null)}
+        platform={installPlatform || 'ios'}
+      />
     </div>
   );
 };
