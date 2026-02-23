@@ -413,7 +413,7 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40">
+      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="px-4 h-14 flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
             <button
@@ -575,7 +575,7 @@ const Chat = () => {
               )}
 
               {/* Input */}
-              <div className="border-t border-border bg-card p-3 pb-safe-bottom">
+              <div className="border-t border-border bg-card p-3" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}>
                 {recording ? (
                   <div className="flex items-center gap-2 max-w-3xl mx-auto">
                     <div className="flex items-center gap-2 flex-1 px-4 py-2.5 rounded-xl border border-destructive/50 bg-destructive/5">

@@ -38,13 +38,16 @@ const BottomTabBar = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden no-select">
-      <div
-        className={cn(
-          "bg-background/90 backdrop-blur-2xl border-t border-border/50",
-          "-webkit-backdrop-filter: blur(24px)",
-          "pb-safe-bottom pl-safe-left pr-safe-right"
-        )}
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden no-select"
+      style={{
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      }}
+    >
+      <div className="bg-background/95 backdrop-blur-2xl border-t border-border/50"
+        style={{ WebkitBackdropFilter: 'blur(24px)' }}
       >
         <div className="flex items-center justify-around h-[52px]">
           {tabs.map((tab) => {
@@ -55,7 +58,7 @@ const BottomTabBar = () => {
                 key={tab.label}
                 onClick={() => navigate(tab.path)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
+                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-h-[44px] min-w-[44px] transition-colors active:opacity-70",
                   active
                     ? "text-primary"
                     : "text-muted-foreground"
