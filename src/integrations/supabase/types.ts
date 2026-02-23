@@ -921,6 +921,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          onesignal_player_id: string | null
           phone: string | null
           stripe_account_id: string | null
           updated_at: string
@@ -939,6 +940,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          onesignal_player_id?: string | null
           phone?: string | null
           stripe_account_id?: string | null
           updated_at?: string
@@ -957,6 +959,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          onesignal_player_id?: string | null
           phone?: string | null
           stripe_account_id?: string | null
           updated_at?: string

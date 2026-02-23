@@ -472,7 +472,7 @@ const VolunteerDashboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="container mx-auto px-4 py-8 pb-tab-bar max-w-4xl">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl font-heading font-bold text-foreground">{dt.welcome}, {profile?.full_name || profile?.email || ''}! 👋</h1>
           <p className="text-muted-foreground mt-1">{dt.availableTasks}: {tasks.length}</p>

@@ -136,4 +136,22 @@
   .shadow-elevated {
     box-shadow: var(--shadow-elevated);
   }
+
+  /* Safe Area Insets for iOS PWA */
+  .pb-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pt-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .mb-safe-bottom {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Extra bottom padding when bottom tab bar is visible on mobile */
+  .pb-tab-bar {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }
