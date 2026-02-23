@@ -31,6 +31,7 @@ import SepaPayouts from "./pages/SepaPayouts";
 import AcademyBuilder from "./pages/AcademyBuilder";
 import PhysicalTrainings from "./pages/PhysicalTrainings";
 import VolunteerTraining from "./pages/VolunteerTraining";
+import CertificateBuilder from "./pages/CertificateBuilder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ const App = () => {
             <Route path="/sepa-payouts" element={<SepaPayouts />} />
             <Route path="/academy" element={<AcademyBuilder />} />
             <Route path="/academy/physical-trainings" element={<PhysicalTrainings />} />
+            <Route path="/academy/certificate-builder" element={<CertificateBuilder />} />
             <Route path="/training/:trainingId" element={<VolunteerTraining />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/chat/:conversationId" element={<Chat />} />
