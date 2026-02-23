@@ -1,0 +1,1 @@
+ALTER TABLE public.academy_trainings ADD COLUMN certificate_design_id uuid REFERENCES public.certificate_designs(id) ON DELETE SET NULL DEFAULT NULL;
