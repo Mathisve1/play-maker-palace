@@ -28,6 +28,8 @@ import LoyaltyPrograms from "./pages/LoyaltyPrograms";
 import TicketingDashboard from "./pages/TicketingDashboard";
 import TicketScanner from "./pages/TicketScanner";
 import SepaPayouts from "./pages/SepaPayouts";
+import AcademyBuilder from "./pages/AcademyBuilder";
+import VolunteerTraining from "./pages/VolunteerTraining";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +66,8 @@ const App = () => {
             <Route path="/ticketing" element={<TicketingDashboard />} />
             <Route path="/scan" element={<TicketScanner />} />
             <Route path="/sepa-payouts" element={<SepaPayouts />} />
+            <Route path="/academy" element={<AcademyBuilder />} />
+            <Route path="/training/:trainingId" element={<VolunteerTraining />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/chat/:conversationId" element={<Chat />} />
             <Route path="*" element={<NotFound />} />

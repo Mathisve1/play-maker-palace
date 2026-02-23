@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { MapPin, Calendar, Users, Clock, Euro, FileText, UserCheck, AlertCircle } from 'lucide-react';
+import { MapPin, Calendar, Users, Clock, Euro, FileText, UserCheck, AlertCircle, Award } from 'lucide-react';
 import { Language } from '@/i18n/translations';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Task {
   id: string;
@@ -19,6 +22,7 @@ interface Task {
   start_time?: string | null;
   end_time?: string | null;
   notes?: string | null;
+  required_training_id?: string | null;
   clubs?: { name: string; sport: string | null; location: string | null };
 }
 
@@ -52,6 +56,9 @@ const labels = {
     cancel: 'Uitschrijven',
     persons: 'personen',
     yes: 'Ja',
+    requiredTraining: 'Verplichte training',
+    followTraining: 'Volg eerst deze training',
+    certified: '✓ Gecertificeerd',
   },
   fr: {
     details: 'Détails de la tâche',
@@ -70,6 +77,9 @@ const labels = {
     cancel: 'Se désinscrire',
     persons: 'personnes',
     yes: 'Oui',
+    requiredTraining: 'Formation obligatoire',
+    followTraining: 'Suivez d\'abord cette formation',
+    certified: '✓ Certifié',
   },
   en: {
     details: 'Task details',
@@ -88,6 +98,9 @@ const labels = {
     cancel: 'Unsubscribe',
     persons: 'persons',
     yes: 'Yes',
+    requiredTraining: 'Required training',
+    followTraining: 'Complete this training first',
+    certified: '✓ Certified',
   },
 };
 
@@ -106,8 +119,31 @@ const formatTimeOnly = (dateStr: string | null | undefined, lang: Language) => {
 };
 
 const TaskDetailDialog = ({ task, open, onOpenChange, language, signupCount, isSignedUp, onSignup, onCancel, signingUp }: TaskDetailDialogProps) => {
+  const navigate = useNavigate();
+  const [trainingName, setTrainingName] = useState<string | null>(null);
+  const [isCertified, setIsCertified] = useState(false);
+  const [checkingCert, setCheckingCert] = useState(false);
+
+  useEffect(() => {
+    if (!task?.required_training_id || !open) { setTrainingName(null); setIsCertified(false); return; }
+    setCheckingCert(true);
+    (async () => {
+      const [tRes, { data: { session } }] = await Promise.all([
+        supabase.from('academy_trainings').select('title').eq('id', task.required_training_id!).maybeSingle(),
+        supabase.auth.getSession(),
+      ]);
+      setTrainingName((tRes.data as any)?.title || null);
+      if (session) {
+        const { data: certs } = await supabase.from('volunteer_certificates').select('id').eq('training_id', task.required_training_id!).eq('volunteer_id', session.user.id).limit(1);
+        setIsCertified((certs || []).length > 0);
+      }
+      setCheckingCert(false);
+    })();
+  }, [task?.required_training_id, open]);
+
   if (!task) return null;
   const l = labels[language];
+  const needsTraining = !!task.required_training_id && !isCertified && !isSignedUp;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
