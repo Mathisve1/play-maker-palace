@@ -1538,6 +1538,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_practice: boolean
           module_id: string | null
           passing_score: number
           total_questions: number
@@ -1546,6 +1547,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_practice?: boolean
           module_id?: string | null
           passing_score?: number
           total_questions?: number
@@ -1554,6 +1556,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_practice?: boolean
           module_id?: string | null
           passing_score?: number
           total_questions?: number
