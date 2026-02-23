@@ -500,7 +500,7 @@ const SepaPayouts = () => {
   };
 
   const handleRollback = async (batchId: string) => {
-    if (!confirm('Weet je zeker dat je deze batch wilt terugdraaien? De status wordt teruggezet naar "concept" en de koppeling met het SEPA-bestand wordt verbroken.')) return;
+    if (!confirm('Weet je zeker dat je deze batch wilt terugdraaien? De batch wordt volledig verwijderd en de vrijwilligers verschijnen opnieuw in de betaallijst.')) return;
     setRollingBack(batchId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -519,7 +519,7 @@ const SepaPayouts = () => {
       );
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Rollback failed');
-      toast.success('Batch teruggedraaid naar concept.');
+      toast.success('Batch verwijderd. Vrijwilligers staan opnieuw in de betaallijst.');
       init();
     } catch (err: any) {
       toast.error(err.message || 'Rollback mislukt');
