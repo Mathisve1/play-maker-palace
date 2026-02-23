@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -5,6 +6,7 @@ import { ClipboardList, Users, Zap, Heart } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Logo from '@/components/Logo';
+import { AppStoreButtons, InstallInstructionsDialog } from '@/components/PWAInstallButtons';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -13,6 +15,7 @@ const fadeUp = {
 
 const ClubsLanding = () => {
   const { t } = useLanguage();
+  const [installPlatform, setInstallPlatform] = useState<'ios' | 'android' | null>(null);
 
   const features = [
     { icon: ClipboardList, title: t.clubs.feature1Title, desc: t.clubs.feature1Desc },
@@ -48,6 +51,13 @@ const ClubsLanding = () => {
               <a href="#features" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors">
                 {t.clubs.heroCtaSecondary}
               </a>
+            </motion.div>
+            <motion.div variants={fadeUp} custom={3} className="mt-6 flex justify-center">
+              <AppStoreButtons
+                variant="secondary"
+                onClickIOS={() => setInstallPlatform('ios')}
+                onClickAndroid={() => setInstallPlatform('android')}
+              />
             </motion.div>
           </motion.div>
         </div>
@@ -95,6 +105,12 @@ const ClubsLanding = () => {
       </section>
 
       <Footer />
+
+      <InstallInstructionsDialog
+        open={installPlatform !== null}
+        onClose={() => setInstallPlatform(null)}
+        platform={installPlatform || 'ios'}
+      />
     </div>
   );
 };
