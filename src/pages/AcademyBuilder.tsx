@@ -8,7 +8,8 @@ import {
   Plus, Trash2, GripVertical, Sparkles, BookOpen, Video, FileText, Image as ImageIcon,
   ChevronDown, ChevronUp, Eye, EyeOff, Loader2, ArrowLeft, Award, Save, Users,
   HelpCircle, Copy, Type, Heading1, Heading2, Minus, AlignLeft, AlignCenter, AlignRight,
-  Bold, Italic, Palette, Youtube, Upload, ToggleLeft, ToggleRight, CheckSquare, Square
+  Bold, Italic, Palette, Youtube, Upload, ToggleLeft, ToggleRight, CheckSquare, Square,
+  Wand2, Bot, MessageSquare
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
@@ -121,6 +122,12 @@ const labels = {
     styling: 'Opmaak', fontSize: 'Tekstgrootte', alignment: 'Uitlijning',
     youtubeHint: 'Plak een YouTube link of video URL',
     dropHere: 'Sleep hier',
+    aiAssistant: 'AI Assistent', aiTopic: 'Waar gaat de training over?',
+    aiExtraInstructions: 'Extra instructies (optioneel)', aiNumModules: 'Aantal modules',
+    aiGenerate: 'Training genereren', aiGenerating: 'AI genereert training...',
+    aiDescription: 'Beschrijf het onderwerp en AI maakt een volledige training met modules, tekst en afbeeldingen.',
+    aiSuccess: 'AI training gegenereerd! Modules zijn toegevoegd.',
+    aiReplace: 'Bestaande modules vervangen', aiAppend: 'Toevoegen aan bestaande modules',
   },
   fr: {
     title: 'Academy Builder', back: 'Retour', newTraining: 'Nouvelle formation',
@@ -151,6 +158,12 @@ const labels = {
     styling: 'Mise en forme', fontSize: 'Taille du texte', alignment: 'Alignement',
     youtubeHint: 'Collez un lien YouTube ou une URL vidéo',
     dropHere: 'Déposez ici',
+    aiAssistant: 'Assistant IA', aiTopic: 'Quel est le sujet de la formation ?',
+    aiExtraInstructions: 'Instructions supplémentaires (optionnel)', aiNumModules: 'Nombre de modules',
+    aiGenerate: 'Générer la formation', aiGenerating: 'IA génère la formation...',
+    aiDescription: 'Décrivez le sujet et l\'IA créera une formation complète avec modules, texte et images.',
+    aiSuccess: 'Formation IA générée ! Les modules ont été ajoutés.',
+    aiReplace: 'Remplacer les modules existants', aiAppend: 'Ajouter aux modules existants',
   },
   en: {
     title: 'Academy Builder', back: 'Back', newTraining: 'New training',
@@ -181,6 +194,12 @@ const labels = {
     styling: 'Styling', fontSize: 'Font size', alignment: 'Alignment',
     youtubeHint: 'Paste a YouTube link or video URL',
     dropHere: 'Drop here',
+    aiAssistant: 'AI Assistant', aiTopic: 'What is the training about?',
+    aiExtraInstructions: 'Extra instructions (optional)', aiNumModules: 'Number of modules',
+    aiGenerate: 'Generate training', aiGenerating: 'AI is generating training...',
+    aiDescription: 'Describe the topic and AI will create a complete training with modules, text and images.',
+    aiSuccess: 'AI training generated! Modules have been added.',
+    aiReplace: 'Replace existing modules', aiAppend: 'Add to existing modules',
   },
 };
 
@@ -693,6 +712,14 @@ const AcademyBuilder = () => {
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
 
+  // AI Assistant state
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiExtraInstructions, setAiExtraInstructions] = useState('');
+  const [aiNumModules, setAiNumModules] = useState(4);
+  const [generatingTraining, setGeneratingTraining] = useState(false);
+  const [aiReplaceMode, setAiReplaceMode] = useState(true);
+
   useEffect(() => { init(); }, []);
 
   const init = async () => {
@@ -917,6 +944,58 @@ const AcademyBuilder = () => {
     setGeneratingAI(false);
   };
 
+  const handleGenerateTraining = async () => {
+    if (!aiTopic.trim() || !selectedTraining) return;
+    setGeneratingTraining(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-training-content`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: aiTopic, num_modules: aiNumModules, language, extra_instructions: aiExtraInstructions }),
+      });
+      if (!resp.ok) { const err = await resp.json(); throw new Error(err.error || 'AI error'); }
+      const result = await resp.json();
+
+      // Update title and description if empty
+      if (!editTitle || editTitle === l.newTraining) setEditTitle(result.title);
+      if (!editDesc) setEditDesc(result.description);
+
+      // Convert AI modules to TrainingModule format
+      const aiModules: TrainingModule[] = (result.modules || []).map((m: any, i: number) => ({
+        id: `new-${Date.now()}-${i}`,
+        training_id: selectedTraining,
+        title: m.title,
+        content_type: 'mixed',
+        content_body: null,
+        content_url: null,
+        sort_order: (aiReplaceMode ? 0 : modules.length) + i,
+        blocks: (m.blocks || []).map((b: any) => ({
+          id: b.id || crypto.randomUUID(),
+          type: b.type,
+          value: b.value,
+          style: b.style || (b.type === 'heading' ? { fontSize: '2xl', bold: true } : b.type === 'subheading' ? { fontSize: 'lg', bold: true } : {}),
+        })),
+        expanded: i === 0,
+      }));
+
+      if (aiReplaceMode) {
+        setModules(aiModules);
+        setModuleQuizzes({});
+      } else {
+        setModules(prev => [...prev, ...aiModules]);
+      }
+
+      toast.success(l.aiSuccess);
+      setShowAIAssistant(false);
+      setAiTopic('');
+      setAiExtraInstructions('');
+    } catch (err: any) { toast.error(err.message); }
+    setGeneratingTraining(false);
+  };
+
+
   const handleIssueCert = async () => {
     if (!selectedVolunteer || !selectedTraining || !clubId) return;
     const { error } = await supabase.from('volunteer_certificates').insert({
@@ -1019,6 +1098,9 @@ const AcademyBuilder = () => {
                   <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} className="text-xl font-heading font-bold border-0 bg-transparent px-0 focus-visible:ring-0 text-foreground" placeholder={l.trainingTitle} />
                 </div>
                 <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowAIAssistant(true)} className="gap-1.5">
+                    <Wand2 className="w-4 h-4" /> {l.aiAssistant}
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleTogglePublish}>
                     {currentTraining?.is_published ? <><EyeOff className="w-4 h-4 mr-1" />{l.unpublish}</> : <><Eye className="w-4 h-4 mr-1" />{l.publish}</>}
                   </Button>
@@ -1186,6 +1268,72 @@ const AcademyBuilder = () => {
             </div>
             <Button onClick={handleIssueCert} disabled={!selectedVolunteer} className="w-full">
               <Award className="w-4 h-4 mr-2" /> {l.issueCert}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Assistant dialog */}
+      <Dialog open={showAIAssistant} onOpenChange={setShowAIAssistant}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Wand2 className="w-4 h-4 text-primary" />
+              </div>
+              {l.aiAssistant}
+            </DialogTitle>
+            <DialogDescription>{l.aiDescription}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">{l.aiTopic}</label>
+              <Textarea
+                value={aiTopic}
+                onChange={e => setAiTopic(e.target.value)}
+                placeholder={language === 'nl' ? 'bv. Steward opleiding voor voetbalwedstrijden, EHBO basistraining, Evenement veiligheid...' : language === 'fr' ? 'ex. Formation steward pour matchs de football, Formation premiers secours...' : 'e.g. Steward training for football matches, First aid basics...'}
+                rows={2}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">{l.aiExtraInstructions}</label>
+              <Textarea
+                value={aiExtraInstructions}
+                onChange={e => setAiExtraInstructions(e.target.value)}
+                placeholder={language === 'nl' ? 'bv. Focus op Belgische wetgeving, voeg een module over communicatie toe...' : language === 'fr' ? 'ex. Focalisez sur la législation belge...' : 'e.g. Focus on Belgian legislation, add a module about communication...'}
+                rows={2}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">{l.aiNumModules}</label>
+                <Input type="number" min={2} max={8} value={aiNumModules} onChange={e => setAiNumModules(Number(e.target.value))} className="w-20 mt-1" />
+              </div>
+              {modules.length > 0 && (
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-foreground block mb-1">Modus</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setAiReplaceMode(true)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${aiReplaceMode ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {l.aiReplace}
+                    </button>
+                    <button
+                      onClick={() => setAiReplaceMode(false)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${!aiReplaceMode ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {l.aiAppend}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <Button onClick={handleGenerateTraining} disabled={generatingTraining || !aiTopic.trim()} className="w-full gap-2">
+              {generatingTraining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {generatingTraining ? l.aiGenerating : l.aiGenerate}
             </Button>
           </div>
         </DialogContent>
