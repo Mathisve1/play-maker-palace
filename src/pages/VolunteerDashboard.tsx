@@ -18,6 +18,7 @@ import ComplianceBadge from '@/components/ComplianceBadge';
 import { useComplianceData } from '@/hooks/useComplianceData';
 import EventDetailDialog from '@/components/EventDetailDialog';
 import TicketDownloadButtons from '@/components/TicketDownloadButtons';
+import AcademyTab from '@/components/AcademyTab';
 
 interface Task {
   id: string;
@@ -133,7 +134,7 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy'>('all');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
@@ -547,11 +548,16 @@ const VolunteerDashboard = () => {
             <button onClick={() => setActiveTab('tickets')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'tickets' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
               <Ticket className="w-3 h-3" /> Tickets {myTickets.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'tickets' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`}>{myTickets.length}</span>}
             </button>
+            <button onClick={() => setActiveTab('academy')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'academy' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
+              <ClipboardList className="w-3 h-3" /> Academy
+            </button>
           </div>
         </div>
 
         {/* Content */}
-        {activeTab === 'tickets' ? (
+        {activeTab === 'academy' ? (
+          <AcademyTab language={language} navigate={navigate} />
+        ) : activeTab === 'tickets' ? (
           <div className="mt-6 space-y-4">
             {myTickets.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Je hebt nog geen tickets.' : language === 'fr' ? 'Vous n\'avez pas encore de tickets.' : 'No tickets yet.'}</p></div>

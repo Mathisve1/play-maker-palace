@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_trainings: {
+        Row: {
+          club_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_trainings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       briefing_block_progress: {
         Row: {
           block_id: string
@@ -966,6 +1004,44 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_questions: {
+        Row: {
+          correct_answer_index: number
+          created_at: string
+          id: string
+          options: Json
+          question_text: string
+          quiz_id: string
+          sort_order: number
+        }
+        Insert: {
+          correct_answer_index?: number
+          created_at?: string
+          id?: string
+          options?: Json
+          question_text: string
+          quiz_id: string
+          sort_order?: number
+        }
+        Update: {
+          correct_answer_index?: number
+          created_at?: string
+          id?: string
+          options?: Json
+          question_text?: string
+          quiz_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "training_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sepa_batch_items: {
         Row: {
           amount: number
@@ -1215,6 +1291,7 @@ export type Database = {
           loyalty_eligible: boolean
           loyalty_points: number | null
           notes: string | null
+          required_training_id: string | null
           spots_available: number | null
           start_time: string | null
           status: string
@@ -1242,6 +1319,7 @@ export type Database = {
           loyalty_eligible?: boolean
           loyalty_points?: number | null
           notes?: string | null
+          required_training_id?: string | null
           spots_available?: number | null
           start_time?: string | null
           status?: string
@@ -1269,6 +1347,7 @@ export type Database = {
           loyalty_eligible?: boolean
           loyalty_points?: number | null
           notes?: string | null
+          required_training_id?: string | null
           spots_available?: number | null
           start_time?: string | null
           status?: string
@@ -1302,6 +1381,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_required_training_id_fkey"
+            columns: ["required_training_id"]
+            isOneToOne: false
+            referencedRelation: "academy_trainings"
             referencedColumns: ["id"]
           },
         ]
@@ -1407,6 +1493,79 @@ export type Database = {
           },
         ]
       }
+      training_modules: {
+        Row: {
+          content_body: string | null
+          content_type: string
+          content_url: string | null
+          created_at: string
+          id: string
+          sort_order: number
+          title: string
+          training_id: string
+        }
+        Insert: {
+          content_body?: string | null
+          content_type?: string
+          content_url?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          training_id: string
+        }
+        Update: {
+          content_body?: string | null
+          content_type?: string
+          content_url?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_modules_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "academy_trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_quizzes: {
+        Row: {
+          created_at: string
+          id: string
+          passing_score: number
+          total_questions: number
+          training_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          passing_score?: number
+          total_questions?: number
+          training_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          passing_score?: number
+          total_questions?: number
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_quizzes_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: true
+            referencedRelation: "academy_trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -1424,6 +1583,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      volunteer_certificates: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          issue_date: string
+          score: number | null
+          training_id: string
+          type: string
+          volunteer_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          issue_date?: string
+          score?: number | null
+          training_id: string
+          type?: string
+          volunteer_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          issue_date?: string
+          score?: number | null
+          training_id?: string
+          type?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_certificates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_certificates_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "academy_trainings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       volunteer_payments: {
         Row: {
