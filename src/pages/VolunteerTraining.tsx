@@ -282,6 +282,7 @@ const VolunteerTraining = () => {
           club_id: training.club_id,
           score: correct,
           type: 'digital_quiz',
+          certificate_design_id: (training as any).certificate_design_id || null,
         });
       }
       confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['hsl(24, 85%, 55%)', 'hsl(145, 55%, 42%)', 'hsl(35, 90%, 60%)', '#FFD700'] });

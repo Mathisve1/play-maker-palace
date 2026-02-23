@@ -27,6 +27,7 @@ interface Training {
   description: string | null;
   is_published: boolean;
   created_at: string;
+  certificate_design_id: string | null;
 }
 
 interface ContentBlockStyle {
@@ -757,7 +758,8 @@ const AcademyBuilder = () => {
 
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
-
+  const [editCertDesignId, setEditCertDesignId] = useState<string>('');
+  const [certDesigns, setCertDesigns] = useState<{ id: string; name: string }[]>([]);
   // AI Assistant state
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [aiTopic, setAiTopic] = useState('');
@@ -772,12 +774,18 @@ const AcademyBuilder = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { navigate('/club-login'); return; }
     const { data: ownClub } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id).maybeSingle();
-    if (ownClub) { setClubId(ownClub.id); await loadTrainings(ownClub.id); }
+    let cid: string | null = null;
+    if (ownClub) { cid = ownClub.id; }
     else {
       const { data: membership } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1).maybeSingle();
-      if (membership) { setClubId(membership.club_id); await loadTrainings(membership.club_id); }
+      if (membership) { cid = membership.club_id; }
       else { navigate('/club-dashboard'); return; }
     }
+    setClubId(cid!);
+    await loadTrainings(cid!);
+    // Load certificate designs
+    const { data: designsData } = await (supabase as any).from('certificate_designs').select('id, name').eq('club_id', cid!);
+    setCertDesigns((designsData || []) as { id: string; name: string }[]);
     setLoading(false);
   };
 
@@ -830,6 +838,7 @@ const AcademyBuilder = () => {
 
   const selectTraining = (t: Training) => {
     setSelectedTraining(t.id); setEditTitle(t.title); setEditDesc(t.description || '');
+    setEditCertDesignId(t.certificate_design_id || '');
     loadTrainingDetail(t.id);
     loadTrainingEvents(t.id);
   };
@@ -847,7 +856,7 @@ const AcademyBuilder = () => {
     if (!selectedTraining || !clubId) return;
     setSaving(true);
     try {
-      await supabase.from('academy_trainings').update({ title: editTitle, description: editDesc || null }).eq('id', selectedTraining);
+      await supabase.from('academy_trainings').update({ title: editTitle, description: editDesc || null, certificate_design_id: editCertDesignId || null }).eq('id', selectedTraining);
       const { data: existingMods } = await supabase.from('training_modules').select('id').eq('training_id', selectedTraining);
       const currentIds = new Set(modules.filter(m => !m.id.startsWith('new-')).map(m => m.id));
       const toDelete = (existingMods || []).filter((em: any) => !currentIds.has(em.id));
@@ -1243,6 +1252,9 @@ const AcademyBuilder = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-heading font-bold text-foreground">{l.title}</h2>
               <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate('/academy/certificate-builder')} className="gap-1.5">
+                  <Award className="w-4 h-4" /> {language === 'nl' ? 'Certificaat sjablonen' : language === 'fr' ? 'Modèles certificats' : 'Certificate templates'}
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => navigate('/academy/physical-trainings')} className="gap-1.5">
                   <CalendarDays className="w-4 h-4" /> {(l as any).trainingEvents}
                 </Button>
@@ -1417,7 +1429,25 @@ const AcademyBuilder = () => {
                   onGenerateAI={() => handleGenerateAI('global')} generatingAI={generatingAI} l={l} />
               </div>
 
-              {/* Physical trainings moved to /academy/physical-trainings */}
+              {/* ─── Certificate Template Selector ─── */}
+              <div className="bg-card rounded-2xl border border-border p-5">
+                <h3 className="font-heading font-semibold text-foreground flex items-center gap-2 mb-3">
+                  <Award className="w-4 h-4 text-accent" /> {language === 'nl' ? 'Certificaat sjabloon' : language === 'fr' ? 'Modèle de certificat' : 'Certificate template'}
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {language === 'nl' ? 'Selecteer een certificaat sjabloon dat automatisch wordt toegekend wanneer een vrijwilliger slaagt voor de quiz.' : language === 'fr' ? 'Sélectionnez un modèle de certificat attribué automatiquement lorsqu\'un volontaire réussit le quiz.' : 'Select a certificate template automatically awarded when a volunteer passes the quiz.'}
+                </p>
+                <div className="flex items-center gap-3">
+                  <select value={editCertDesignId} onChange={e => setEditCertDesignId(e.target.value)}
+                    className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm">
+                    <option value="">{language === 'nl' ? 'Geen sjabloon (geen certificaat)' : language === 'fr' ? 'Aucun modèle' : 'No template (no certificate)'}</option>
+                    {certDesigns.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/academy/certificate-builder')} className="gap-1.5 shrink-0">
+                    <Plus className="w-3.5 h-3.5" /> {language === 'nl' ? 'Nieuw sjabloon' : language === 'fr' ? 'Nouveau' : 'New template'}
+                  </Button>
+                </div>
+              </div>
 
               {/* ─── Certificates ─── */}
               <div className="bg-card rounded-2xl border border-border p-5">
