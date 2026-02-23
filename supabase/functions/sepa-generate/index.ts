@@ -502,23 +502,17 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Batch not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Reset batch status and clear XML/signing data
-      await adminClient
-        .from('sepa_batches')
-        .update({
-          status: 'pending',
-          xml_content: null,
-          docuseal_submission_id: null,
-          docuseal_document_url: null,
-          signer_name: null,
-        })
-        .eq('id', batchId);
-
-      // Reset all batch items to pending
+      // Delete all batch items first (FK constraint)
       await adminClient
         .from('sepa_batch_items')
-        .update({ status: 'pending' })
+        .delete()
         .eq('batch_id', batchId);
+
+      // Delete the batch itself
+      await adminClient
+        .from('sepa_batches')
+        .delete()
+        .eq('id', batchId);
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
