@@ -25,14 +25,14 @@ async function sendAcceptNotification(supabaseAdmin: any, invite: any, acceptorN
       method: "POST",
       headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: Deno.env.get("RESEND_FROM_EMAIL") || "PlayMaker <onboarding@resend.dev>",
+from: Deno.env.get("RESEND_FROM_EMAIL") || "De 12e Man <onboarding@resend.dev>",
         to: [inviterProfile.email],
         subject: `${acceptorName} heeft je uitnodiging geaccepteerd`,
         html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
           <h2>Uitnodiging geaccepteerd! 🎉</h2>
           <p><strong>${acceptorName}</strong> heeft de uitnodiging voor <strong>${clubName}</strong> geaccepteerd als <strong>${roleLabel}</strong>.</p>
           <p>Je kunt het nieuwe lid nu terugvinden in je club dashboard.</p>
-          <p style="color:#666;font-size:14px;margin-top:24px;">— PlayMaker</p>
+          <p style="color:#666;font-size:14px;margin-top:24px;">— De 12e Man</p>
         </div>`,
       }),
     });
@@ -94,9 +94,9 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: Deno.env.get("RESEND_FROM_EMAIL") || "PlayMaker <onboarding@resend.dev>",
+          from: Deno.env.get("RESEND_FROM_EMAIL") || "De 12e Man <onboarding@resend.dev>",
           to: [email],
-          subject: `Je bent uitgenodigd voor ${club_name || 'een club'} op PlayMaker`,
+          subject: `Je bent uitgenodigd voor ${club_name || 'een club'} op De 12e Man`,
           html: `
             <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
               <h2>Je bent uitgenodigd!</h2>

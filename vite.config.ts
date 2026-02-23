@@ -25,8 +25,8 @@ export default defineConfig(({ mode }) => ({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
       },
       manifest: {
-        name: 'PlayMaker Palace',
-        short_name: 'PlayMaker',
+        name: 'De 12e Man',
+        short_name: 'De12eMan',
         description: 'Beheer je vrijwilligerswerk in één app',
         theme_color: '#e87c3a',
         background_color: '#faf8f5',
