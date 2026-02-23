@@ -440,39 +440,34 @@ const VolunteerDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40">
+        <div className="px-4 h-14 flex items-center justify-between max-w-4xl mx-auto">
           <Logo size="sm" linkTo="/dashboard" />
-          <div className="flex items-center gap-4">
-            <div className="flex gap-1">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-0.5">
               {(['nl', 'fr', 'en'] as Language[]).map(lang => (
-                <button key={lang} onClick={() => setLanguage(lang)} className={`px-2 py-1 text-xs rounded-md transition-colors ${language === lang ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:text-foreground'}`}>
+                <button key={lang} onClick={() => setLanguage(lang)} className={`px-2 py-1 text-xs rounded-md transition-colors touch-target flex items-center justify-center ${language === lang ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:text-foreground'}`}>
                   {langLabels[lang]}
                 </button>
               ))}
             </div>
-            <button onClick={() => navigate('/chat')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors" title={dt.allTasks}>
-              <MessageCircle className="w-4 h-4" />
+            <button onClick={() => navigate('/chat')} className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted transition-colors" title={dt.allTasks}>
+              <MessageCircle className="w-5 h-5 text-muted-foreground" />
             </button>
             <button onClick={() => setShowProfileDialog(true)} className="relative group" title="Mijn profiel">
               <Avatar className="w-8 h-8">
                 {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name || ''} />}
                 <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">{(profile?.full_name || profile?.email || '?')[0].toUpperCase()}</AvatarFallback>
               </Avatar>
-              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <User className="w-3.5 h-3.5 text-white" />
-              </div>
             </button>
-            <span className="text-sm text-muted-foreground hidden md:block">{profile?.full_name || profile?.email}</span>
-            <button onClick={async () => { await supabase.auth.signOut(); navigate('/login'); }} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <LogOut className="w-4 h-4" />
-              <span className="hidden md:inline">{dt.logout}</span>
+            <button onClick={async () => { await supabase.auth.signOut(); navigate('/login'); }} className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted transition-colors">
+              <LogOut className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pb-tab-bar max-w-4xl">
+      <main className="px-4 py-6 pb-tab-bar max-w-4xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl font-heading font-bold text-foreground">{dt.welcome}, {profile?.full_name || profile?.email || ''}! 👋</h1>
           <p className="text-muted-foreground mt-1">{dt.availableTasks}: {tasks.length}</p>

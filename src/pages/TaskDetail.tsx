@@ -379,8 +379,8 @@ const TaskDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40">
+        <div className="px-4 h-14 flex items-center justify-between max-w-3xl mx-auto">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/dashboard')}
@@ -437,7 +437,7 @@ const TaskDetail = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 max-w-3xl">
+      <main className="px-4 py-6 pb-tab-bar max-w-3xl mx-auto">
         {/* Hero section */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex flex-wrap items-center gap-2 mb-3">

@@ -413,8 +413,8 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40">
+        <div className="px-4 h-14 flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
             <button
               onClick={() => activeConversation ? setActiveConversation(null) : navigate(userRole === 'club_owner' ? '/club-dashboard' : '/dashboard')}
@@ -446,7 +446,7 @@ const Chat = () => {
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Conversation list */}
-        <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto`}>
+        <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto pb-tab-bar md:pb-0`}>
           {conversations.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <MessageCircle className="w-12 h-12 text-muted-foreground/30 mb-3" />
@@ -575,7 +575,7 @@ const Chat = () => {
               )}
 
               {/* Input */}
-              <div className="border-t border-border bg-card p-3">
+              <div className="border-t border-border bg-card p-3 pb-safe-bottom">
                 {recording ? (
                   <div className="flex items-center gap-2 max-w-3xl mx-auto">
                     <div className="flex items-center gap-2 flex-1 px-4 py-2.5 rounded-xl border border-destructive/50 bg-destructive/5">
