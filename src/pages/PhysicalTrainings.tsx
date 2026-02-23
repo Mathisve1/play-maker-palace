@@ -141,6 +141,7 @@ const PhysicalTrainings = () => {
       .from('events')
       .select('*, academy_trainings(title)')
       .eq('club_id', cid)
+      .eq('event_type', 'training')
       .order('event_date', { ascending: false });
 
     if (!evData || evData.length === 0) { setEvents([]); return; }
@@ -173,7 +174,7 @@ const PhysicalTrainings = () => {
     const { data: ev, error: evErr } = await supabase.from('events').insert({
       club_id: clubId, title: newEventTitle, event_date: newEventDate || null,
       location: newEventLocation || null, description: newEventDesc || null,
-      training_id: selectedTrainingId || null, status: 'open',
+      training_id: selectedTrainingId || null, event_type: 'training', status: 'open',
     }).select().single();
     if (evErr || !ev) { toast.error(evErr?.message || 'Error'); return; }
 
