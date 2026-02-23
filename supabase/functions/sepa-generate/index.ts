@@ -337,7 +337,7 @@ Deno.serve(async (req) => {
       const now = new Date();
       const dateStr = now.toLocaleDateString('nl-BE', { year: 'numeric', month: 'long', day: 'numeric' });
 
-      // Create HTML template for signing
+      // Create HTML template for signing - use DocuSeal {{field;type=signature}} syntax
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 40px;">
           <h1 style="color: #1a1a1a; font-size: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
@@ -356,12 +356,12 @@ Deno.serve(async (req) => {
           </div>
           <div style="margin-top: 40px;">
             <p style="color: #6b7280; font-size: 14px;">Handtekening:</p>
-            {{signature}}
+            <p>{{Handtekening;type=signature}}</p>
           </div>
         </div>
       `;
 
-      // Create template with fields
+      // Create template via HTML API
       const templateRes = await fetch('https://api.docuseal.com/templates/html', {
         method: 'POST',
         headers: {
@@ -371,14 +371,6 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           html: htmlContent,
           name: `SEPA Verklaring - ${batch.batch_reference}`,
-          fields: [
-            {
-              name: 'signature',
-              type: 'signature',
-              role: 'First Party',
-              required: true,
-            },
-          ],
         }),
       });
 
