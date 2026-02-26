@@ -33,6 +33,7 @@ import PhysicalTrainings from "./pages/PhysicalTrainings";
 import VolunteerTraining from "./pages/VolunteerTraining";
 import CertificateBuilder from "./pages/CertificateBuilder";
 import ExternalPartners from "./pages/ExternalPartners";
+import PartnerLogin from "./pages/PartnerLogin";
 import PartnerDashboard from "./pages/PartnerDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -76,6 +77,7 @@ const App = () => {
             <Route path="/training/:trainingId" element={<VolunteerTraining />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/chat/:conversationId" element={<Chat />} />
+            <Route path="/partner-login" element={<PartnerLogin />} />
             <Route path="/external-partners" element={<ExternalPartners />} />
             <Route path="/partner-dashboard" element={<PartnerDashboard />} />
             <Route path="*" element={<NotFound />} />
