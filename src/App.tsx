@@ -35,6 +35,7 @@ import CertificateBuilder from "./pages/CertificateBuilder";
 import ExternalPartners from "./pages/ExternalPartners";
 import PartnerLogin from "./pages/PartnerLogin";
 import PartnerDashboard from "./pages/PartnerDashboard";
+import ReportingDashboard from "./pages/ReportingDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +81,7 @@ const App = () => {
             <Route path="/partner-login" element={<PartnerLogin />} />
             <Route path="/external-partners" element={<ExternalPartners />} />
             <Route path="/partner-dashboard" element={<PartnerDashboard />} />
+            <Route path="/reporting" element={<ReportingDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomTabBar />
