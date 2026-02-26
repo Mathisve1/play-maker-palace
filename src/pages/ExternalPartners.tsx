@@ -11,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Users, Mail, Eye, Calendar, Download, Trash2, Loader2, Upload, X, Handshake, Check, Clock } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Plus, Users, Mail, Eye, Calendar, Download, Trash2, Loader2, Upload, X, Handshake, Check, Clock, UserCheck, UserX, Ticket, ClipboardList, Send } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 interface Partner {
@@ -35,6 +36,7 @@ interface PartnerMember {
   national_id?: string | null;
   city?: string | null;
   shirt_size?: string | null;
+  user_id?: string | null;
 }
 
 interface EventAccess {
@@ -55,7 +57,17 @@ interface PartnerTask {
   spots_available: number;
   partner_acceptance_status: string;
   event_title?: string | null;
-  signups: { volunteer_name: string; status: string }[];
+  event_id?: string | null;
+  signups: { volunteer_name: string; status: string; member_id: string }[];
+}
+
+interface TrackingRecord {
+  event_title: string;
+  event_date: string | null;
+  task_title: string;
+  member_name: string;
+  checked_in: boolean;
+  checked_in_at: string | null;
 }
 
 const categoryLabels: Record<string, Record<string, string>> = {
@@ -74,8 +86,10 @@ const categoryColors: Record<string, string> = {
 const ExternalPartners = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const nl = language === 'nl';
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
+  const [clubName, setClubName] = useState('');
   const [partners, setPartners] = useState<Partner[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -90,11 +104,20 @@ const ExternalPartners = () => {
   const [eventAccess, setEventAccess] = useState<EventAccess[]>([]);
   const [partnerTasks, setPartnerTasks] = useState<PartnerTask[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailTab, setDetailTab] = useState('overview');
 
   // Invite
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+
+  // Member invite (volunteer account)
+  const [invitingMemberId, setInvitingMemberId] = useState<string | null>(null);
+
+  // Ticket sending
+  const [sendingTicketFor, setSendingTicketFor] = useState<string | null>(null);
+  const [ticketTaskId, setTicketTaskId] = useState('');
+  const [sendingTicket, setSendingTicket] = useState(false);
 
   // Event access
   const [events, setEvents] = useState<{ id: string; title: string; event_date: string | null }[]>([]);
@@ -106,19 +129,29 @@ const ExternalPartners = () => {
   // Export
   const [exporting, setExporting] = useState(false);
 
+  // Tracking
+  const [trackingRecords, setTrackingRecords] = useState<TrackingRecord[]>([]);
+  const [loadingTracking, setLoadingTracking] = useState(false);
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/login'); return; }
 
-      const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
+      const { data: ownedClubs } = await supabase.from('clubs').select('id, name').eq('owner_id', session.user.id);
       let cid = ownedClubs?.[0]?.id;
+      let cname = ownedClubs?.[0]?.name || '';
       if (!cid) {
         const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
         cid = memberships?.[0]?.club_id;
+        if (cid) {
+          const { data: c } = await supabase.from('clubs').select('name').eq('id', cid).maybeSingle();
+          cname = c?.name || '';
+        }
       }
       if (!cid) { navigate('/club-dashboard'); return; }
       setClubId(cid);
+      setClubName(cname);
       await fetchPartners(cid);
       
       const { data: evts } = await supabase.from('events').select('id, title, event_date').eq('club_id', cid).order('event_date', { ascending: false });
@@ -129,7 +162,6 @@ const ExternalPartners = () => {
   }, []);
 
   const fetchPartners = async (cid: string) => {
-    // Fetch partners linked to this club via partner_clubs junction
     const { data: links } = await supabase.from('partner_clubs').select('partner_id').eq('club_id', cid);
     const partnerIds = (links || []).map((l: any) => l.partner_id);
     if (partnerIds.length === 0) { setPartners([]); return; }
@@ -148,8 +180,6 @@ const ExternalPartners = () => {
     setCreating(true);
     try {
       const finalCategory = newPartner.category === 'andere' ? (newPartner.custom_category.trim() || 'andere') : newPartner.category;
-
-      // Upload logo if provided
       let logoUrl: string | null = null;
       if (logoFile) {
         const ext = logoFile.name.split('.').pop();
@@ -161,75 +191,55 @@ const ExternalPartners = () => {
       }
 
       const { data: partner, error } = await supabase.from('external_partners').insert({
-        club_id: clubId,
-        name: newPartner.name.trim(),
-        category: finalCategory,
-        contact_name: newPartner.contact_name || null,
-        contact_email: newPartner.contact_email || null,
-        external_payroll: newPartner.external_payroll,
-        logo_url: logoUrl,
+        club_id: clubId, name: newPartner.name.trim(), category: finalCategory,
+        contact_name: newPartner.contact_name || null, contact_email: newPartner.contact_email || null,
+        external_payroll: newPartner.external_payroll, logo_url: logoUrl,
       }).select('id').single();
-
       if (error) throw error;
 
-      // Also insert into partner_clubs junction
       if (partner) {
         await supabase.from('partner_clubs').insert({ partner_id: partner.id, club_id: clubId });
       }
 
-      // Send invitations to all provided emails
       const { data: { session } } = await supabase.auth.getSession();
       if (session && partner) {
         const validEmails = inviteEmails.filter(e => e.trim());
         const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).maybeSingle();
-        
         for (const email of validEmails) {
           try {
             const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-              club_id: clubId,
-              email: email.trim(),
-              role: 'medewerker' as any,
-              invited_by: session.user.id,
+              club_id: clubId, email: email.trim(), role: 'medewerker' as any, invited_by: session.user.id,
             }).select('invite_token').single();
-
             if (invErr) continue;
-
             await supabase.functions.invoke('club-invite?action=send-email', {
               body: { email: email.trim(), invite_token: inv.invite_token, role: 'partner_admin', club_name: club?.name, partner_id: partner.id, partner_name: newPartner.name.trim() },
               headers: { Authorization: `Bearer ${session.access_token}` },
             });
-          } catch { /* skip failed individual invites */ }
+          } catch { /* skip */ }
         }
-
-        if (validEmails.length > 0) {
-          toast.success(language === 'nl' ? `${validEmails.length} uitnodiging(en) verstuurd!` : `${validEmails.length} invitation(s) sent!`);
-        }
+        if (validEmails.length > 0) toast.success(`${validEmails.length} ${nl ? 'uitnodiging(en) verstuurd!' : 'invitation(s) sent!'}`);
       }
 
-      toast.success(language === 'nl' ? 'Partner aangemaakt!' : 'Partner created!');
+      toast.success(nl ? 'Partner aangemaakt!' : 'Partner created!');
       setShowCreate(false);
       setNewPartner({ name: '', category: 'stewards', custom_category: '', contact_name: '', contact_email: '', external_payroll: false });
-      setLogoFile(null);
-      setLogoPreview(null);
-      setInviteEmails(['']);
+      setLogoFile(null); setLogoPreview(null); setInviteEmails(['']);
       await fetchPartners(clubId);
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err: any) { toast.error(err.message); }
     setCreating(false);
   };
 
   const handleSelectPartner = async (partner: Partner) => {
     setSelectedPartner(partner);
+    setDetailTab('overview');
     setLoadingDetail(true);
     const [membersRes, accessRes, tasksRes] = await Promise.all([
-      supabase.from('partner_members').select('id, full_name, email, phone, date_of_birth, national_id, city, shirt_size').eq('partner_id', partner.id),
+      supabase.from('partner_members').select('id, full_name, email, phone, date_of_birth, national_id, city, shirt_size, user_id').eq('partner_id', partner.id),
       supabase.from('partner_event_access').select('id, event_id, max_spots').eq('partner_id', partner.id),
       supabase.from('tasks').select('id, title, description, task_date, location, spots_available, partner_acceptance_status, event_id').eq('partner_only', true).eq('assigned_partner_id', partner.id),
     ]);
     setMembers(membersRes.data || []);
 
-    // Enrich event access
     const accessData = accessRes.data || [];
     const enriched = await Promise.all(accessData.map(async (a: any) => {
       const evt = events.find(e => e.id === a.event_id);
@@ -238,37 +248,31 @@ const ExternalPartners = () => {
     }));
     setEventAccess(enriched);
 
-    // Enrich partner tasks with event titles and direct task assignments
     const allTasks = tasksRes.data || [];
     const partnerMembers = membersRes.data || [];
     const taskIds = allTasks.map(t => t.id);
 
-    // Fetch direct task assignments
-    let assignmentMap: Record<string, { volunteer_name: string; status: string }[]> = {};
+    let assignmentMap: Record<string, { volunteer_name: string; status: string; member_id: string }[]> = {};
     if (taskIds.length > 0) {
       const { data: assignments } = await supabase.from('partner_task_assignments').select('task_id, partner_member_id').in('task_id', taskIds);
       (assignments || []).forEach((a: any) => {
         const member = partnerMembers.find(m => m.id === a.partner_member_id);
         if (!assignmentMap[a.task_id]) assignmentMap[a.task_id] = [];
-        assignmentMap[a.task_id].push({ volunteer_name: member?.full_name || '?', status: 'assigned' });
+        assignmentMap[a.task_id].push({ volunteer_name: member?.full_name || '?', status: 'assigned', member_id: a.partner_member_id });
       });
     }
 
     const enrichedTasks: PartnerTask[] = await Promise.all(allTasks.map(async (t: any) => {
       let eventTitle: string | null = null;
-      if (t.event_id) {
-        const evt = events.find(e => e.id === t.event_id);
-        eventTitle = evt?.title || null;
-      }
-      // Combine event signups and direct task assignments
-      const signups: { volunteer_name: string; status: string }[] = assignmentMap[t.id] || [];
+      if (t.event_id) { const evt = events.find(e => e.id === t.event_id); eventTitle = evt?.title || null; }
+      const signups: { volunteer_name: string; status: string; member_id: string }[] = assignmentMap[t.id] || [];
       if (t.event_id) {
         const access = accessData.find((a: any) => a.event_id === t.event_id);
         if (access) {
           const { data: signupData } = await supabase.from('partner_event_signups').select('partner_member_id, status').eq('partner_event_access_id', access.id);
           (signupData || []).forEach((s: any) => {
             const member = partnerMembers.find(m => m.id === s.partner_member_id);
-            signups.push({ volunteer_name: member?.full_name || '?', status: s.status });
+            signups.push({ volunteer_name: member?.full_name || '?', status: s.status, member_id: s.partner_member_id });
           });
         }
       }
@@ -278,54 +282,162 @@ const ExternalPartners = () => {
     setLoadingDetail(false);
   };
 
+  const fetchTracking = async (partner: Partner) => {
+    setLoadingTracking(true);
+    // Get all task assignments for this partner's members
+    const { data: memberData } = await supabase.from('partner_members').select('id, full_name').eq('partner_id', partner.id);
+    if (!memberData?.length) { setTrackingRecords([]); setLoadingTracking(false); return; }
+    
+    const memberIds = memberData.map(m => m.id);
+    const memberMap: Record<string, string> = {};
+    memberData.forEach(m => { memberMap[m.id] = m.full_name; });
+
+    // Get task assignments
+    const { data: assignments } = await supabase.from('partner_task_assignments').select('task_id, partner_member_id').in('partner_member_id', memberIds);
+    if (!assignments?.length) { setTrackingRecords([]); setLoadingTracking(false); return; }
+
+    const taskIds = [...new Set(assignments.map(a => a.task_id))];
+    const { data: tasks } = await supabase.from('tasks').select('id, title, event_id, task_date').in('id', taskIds);
+    const taskMap: Record<string, any> = {};
+    (tasks || []).forEach(t => { taskMap[t.id] = t; });
+
+    const eventIds = [...new Set((tasks || []).filter(t => t.event_id).map(t => t.event_id!))];
+    let eventMap: Record<string, any> = {};
+    if (eventIds.length > 0) {
+      const { data: evts } = await supabase.from('events').select('id, title, event_date').in('id', eventIds);
+      (evts || []).forEach(e => { eventMap[e.id] = e; });
+    }
+
+    // Check volunteer_tickets for check-in status (match via task_id + look up by member user_id or metadata)
+    // For partner members with user_id, check volunteer_tickets
+    const membersWithUser = memberData.filter(m => (m as any).user_id);
+    // Re-fetch with user_id
+    const { data: membersWithUserId } = await supabase.from('partner_members').select('id, full_name, user_id').eq('partner_id', partner.id);
+    const userIdMap: Record<string, string | null> = {};
+    (membersWithUserId || []).forEach((m: any) => { userIdMap[m.id] = m.user_id; });
+
+    // Fetch all tickets for these tasks
+    let ticketMap: Record<string, any> = {};
+    if (taskIds.length > 0 && clubId) {
+      const { data: tickets } = await supabase.from('volunteer_tickets').select('id, task_id, volunteer_id, status, checked_in_at, barcode').eq('club_id', clubId).in('task_id', taskIds);
+      (tickets || []).forEach(t => {
+        const key = `${t.task_id}_${t.volunteer_id}`;
+        ticketMap[key] = t;
+      });
+    }
+
+    const records: TrackingRecord[] = assignments.map(a => {
+      const task = taskMap[a.task_id];
+      const event = task?.event_id ? eventMap[task.event_id] : null;
+      const userId = userIdMap[a.partner_member_id];
+      const ticketKey = `${a.task_id}_${userId}`;
+      const ticket = userId ? ticketMap[ticketKey] : null;
+
+      return {
+        event_title: event?.title || '-',
+        event_date: event?.event_date || task?.task_date || null,
+        task_title: task?.title || '?',
+        member_name: memberMap[a.partner_member_id] || '?',
+        checked_in: ticket?.status === 'checked_in',
+        checked_in_at: ticket?.checked_in_at || null,
+      };
+    });
+
+    // Sort by event date desc
+    records.sort((a, b) => {
+      const da = a.event_date ? new Date(a.event_date).getTime() : 0;
+      const db = b.event_date ? new Date(b.event_date).getTime() : 0;
+      return db - da;
+    });
+
+    setTrackingRecords(records);
+    setLoadingTracking(false);
+  };
+
   const handleInviteAdmin = async () => {
     if (!selectedPartner || !inviteEmail.trim() || !clubId) return;
     setInviting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-
-      // Create invitation record
       const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-        club_id: clubId,
-        email: inviteEmail.trim(),
-        role: 'medewerker' as any,
-        invited_by: session.user.id,
+        club_id: clubId, email: inviteEmail.trim(), role: 'medewerker' as any, invited_by: session.user.id,
       }).select('invite_token').single();
-
       if (invErr) throw invErr;
-
-      // Send email via edge function with partner metadata
       const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).maybeSingle();
       await supabase.functions.invoke('club-invite?action=send-email', {
         body: { email: inviteEmail.trim(), invite_token: inv.invite_token, role: 'partner_admin', club_name: club?.name, partner_id: selectedPartner.id, partner_name: selectedPartner.name },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-
-      toast.success(language === 'nl' ? 'Uitnodiging verstuurd!' : 'Invitation sent!');
-      setShowInvite(false);
-      setInviteEmail('');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+      toast.success(nl ? 'Uitnodiging verstuurd!' : 'Invitation sent!');
+      setShowInvite(false); setInviteEmail('');
+    } catch (err: any) { toast.error(err.message); }
     setInviting(false);
+  };
+
+  const handleInviteMemberAsVolunteer = async (member: PartnerMember) => {
+    if (!clubId || !member.email) { toast.error(nl ? 'Deze medewerker heeft geen e-mailadres.' : 'This member has no email.'); return; }
+    setInvitingMemberId(member.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
+        club_id: clubId, email: member.email, role: 'medewerker' as any, invited_by: session.user.id,
+      }).select('invite_token').single();
+      if (invErr) throw invErr;
+      await supabase.functions.invoke('club-invite?action=send-email', {
+        body: { email: member.email, invite_token: inv.invite_token, role: 'medewerker', club_name: clubName },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      toast.success(nl ? `Uitnodiging verstuurd naar ${member.full_name}!` : `Invitation sent to ${member.full_name}!`);
+    } catch (err: any) { toast.error(err.message); }
+    setInvitingMemberId(null);
+  };
+
+  const handleSendTicket = async (member: PartnerMember) => {
+    if (!clubId || !ticketTaskId) return;
+    setSendingTicket(true);
+    try {
+      // Find the task to get event_id
+      const task = partnerTasks.find(t => t.id === ticketTaskId);
+      const barcode = `VT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      
+      // If member has user_id, use it; otherwise use a placeholder
+      const volunteerId = member.user_id;
+      if (!volunteerId) {
+        toast.error(nl ? 'Deze medewerker heeft nog geen vrijwilligersaccount. Stuur eerst een uitnodiging.' : 'This member has no volunteer account yet. Send an invitation first.');
+        setSendingTicket(false);
+        return;
+      }
+
+      const { error } = await supabase.from('volunteer_tickets').insert({
+        club_id: clubId,
+        volunteer_id: volunteerId,
+        task_id: ticketTaskId,
+        event_id: task?.event_id || null,
+        barcode,
+        status: 'active' as any,
+      });
+      if (error) throw error;
+      toast.success(nl ? `Ticket aangemaakt voor ${member.full_name}!` : `Ticket created for ${member.full_name}!`);
+      setSendingTicketFor(null);
+      setTicketTaskId('');
+    } catch (err: any) { toast.error(err.message); }
+    setSendingTicket(false);
   };
 
   const handleAddEventAccess = async () => {
     if (!selectedPartner || !selectedEventId) return;
     setAddingEvent(true);
     const { error } = await supabase.from('partner_event_access').insert({
-      partner_id: selectedPartner.id,
-      event_id: selectedEventId,
+      partner_id: selectedPartner.id, event_id: selectedEventId,
       max_spots: maxSpots ? parseInt(maxSpots) : null,
     });
     if (error) {
-      toast.error(error.message?.includes('duplicate') ? (language === 'nl' ? 'Dit evenement is al opengesteld.' : 'Event already added.') : error.message);
+      toast.error(error.message?.includes('duplicate') ? (nl ? 'Dit evenement is al opengesteld.' : 'Event already added.') : error.message);
     } else {
-      toast.success(language === 'nl' ? 'Evenement opengesteld!' : 'Event access added!');
-      setShowAddEvent(false);
-      setSelectedEventId('');
-      setMaxSpots('');
+      toast.success(nl ? 'Evenement opengesteld!' : 'Event access added!');
+      setShowAddEvent(false); setSelectedEventId(''); setMaxSpots('');
       handleSelectPartner(selectedPartner);
     }
     setAddingEvent(false);
@@ -335,44 +447,28 @@ const ExternalPartners = () => {
     if (!clubId) return;
     const { error } = await supabase.from('external_partners').delete().eq('id', partnerId);
     if (error) toast.error(error.message);
-    else {
-      toast.success(language === 'nl' ? 'Partner verwijderd.' : 'Partner deleted.');
-      setSelectedPartner(null);
-      await fetchPartners(clubId);
-    }
+    else { toast.success(nl ? 'Partner verwijderd.' : 'Partner deleted.'); setSelectedPartner(null); await fetchPartners(clubId); }
   };
 
   const handleExportAttendees = async (accessId: string, eventTitle: string) => {
     setExporting(true);
     try {
-      const { data: signups } = await supabase
-        .from('partner_event_signups')
-        .select('status, partner_member_id')
-        .eq('partner_event_access_id', accessId);
-
-      if (!signups?.length) { toast.info(language === 'nl' ? 'Geen inschrijvingen.' : 'No signups.'); setExporting(false); return; }
-
+      const { data: signups } = await supabase.from('partner_event_signups').select('status, partner_member_id').eq('partner_event_access_id', accessId);
+      if (!signups?.length) { toast.info(nl ? 'Geen inschrijvingen.' : 'No signups.'); setExporting(false); return; }
       const memberIds = signups.map(s => s.partner_member_id);
       const { data: memberData } = await supabase.from('partner_members').select('id, full_name, date_of_birth, email, phone').in('id', memberIds);
-
-      const partner = selectedPartner;
       const lines = ['Naam,Geboortedatum,E-mail,Telefoon,Partner,Status'];
       signups.forEach(s => {
         const m = memberData?.find(md => md.id === s.partner_member_id);
-        if (m) lines.push(`"${m.full_name}","${m.date_of_birth || ''}","${m.email || ''}","${m.phone || ''}","${partner?.name || ''}","${s.status}"`);
+        if (m) lines.push(`"${m.full_name}","${m.date_of_birth || ''}","${m.email || ''}","${m.phone || ''}","${selectedPartner?.name || ''}","${s.status}"`);
       });
-
       const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `aanwezigen-${eventTitle.replace(/\s/g, '_')}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(language === 'nl' ? 'Export gedownload!' : 'Export downloaded!');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+      a.href = url; a.download = `aanwezigen-${eventTitle.replace(/\s/g, '_')}.csv`;
+      a.click(); URL.revokeObjectURL(url);
+      toast.success(nl ? 'Export gedownload!' : 'Export downloaded!');
+    } catch (err: any) { toast.error(err.message); }
     setExporting(false);
   };
 
@@ -380,37 +476,31 @@ const ExternalPartners = () => {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      {/* Header */}
       <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate('/club-dashboard')} className="text-muted-foreground hover:text-foreground"><ArrowLeft className="w-5 h-5" /></button>
           <Logo size="sm" />
           <h1 className="text-lg font-heading font-semibold text-foreground flex-1">
-            {language === 'nl' ? 'Externe Partners' : language === 'fr' ? 'Partenaires Externes' : 'External Partners'}
+            {nl ? 'Externe Partners' : language === 'fr' ? 'Partenaires Externes' : 'External Partners'}
           </h1>
           <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="w-4 h-4 mr-1" />
-            {language === 'nl' ? 'Nieuw' : 'New'}
+            <Plus className="w-4 h-4 mr-1" />{nl ? 'Nieuw' : 'New'}
           </Button>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 mt-6 space-y-4">
-        {/* Partner detail view */}
         {selectedPartner ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => setSelectedPartner(null)}>
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                {language === 'nl' ? 'Terug' : 'Back'}
+                <ArrowLeft className="w-4 h-4 mr-1" />{nl ? 'Terug' : 'Back'}
               </Button>
               <h2 className="text-xl font-heading font-semibold flex-1">{selectedPartner.name}</h2>
               <Badge className={categoryColors[selectedPartner.category]}>
                 {categoryLabels[language]?.[selectedPartner.category] || selectedPartner.category}
               </Badge>
-              {selectedPartner.external_payroll && (
-                <Badge variant="outline" className="text-xs">Externe Payroll</Badge>
-              )}
+              {selectedPartner.external_payroll && <Badge variant="outline" className="text-xs">Externe Payroll</Badge>}
             </div>
 
             {loadingDetail ? (
@@ -420,139 +510,234 @@ const ExternalPartners = () => {
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={() => setShowInvite(true)}>
-                    <Mail className="w-4 h-4 mr-1" />
-                    {language === 'nl' ? 'Beheerder uitnodigen' : 'Invite admin'}
+                    <Mail className="w-4 h-4 mr-1" />{nl ? 'Beheerder uitnodigen' : 'Invite admin'}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setShowAddEvent(true)}>
-                    <Calendar className="w-4 h-4 mr-1" />
-                    {language === 'nl' ? 'Evenement openstellen' : 'Add event'}
+                    <Calendar className="w-4 h-4 mr-1" />{nl ? 'Evenement openstellen' : 'Add event'}
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => handleDeletePartner(selectedPartner.id)}>
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    {language === 'nl' ? 'Verwijderen' : 'Delete'}
+                    <Trash2 className="w-4 h-4 mr-1" />{nl ? 'Verwijderen' : 'Delete'}
                   </Button>
                 </div>
 
-                {/* Members (read-only for club owner) */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      {language === 'nl' ? `Medewerkers (${members.length})` : `Members (${members.length})`}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {members.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">{language === 'nl' ? 'Nog geen medewerkers toegevoegd door de partner.' : 'No members added yet.'}</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {members.map(m => (
-                          <div key={m.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                            <div>
-                              <p className="text-sm font-medium">{m.full_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {m.email || ''}{m.date_of_birth ? ` • ${m.date_of_birth}` : ''}
-                                {m.city ? ` • ${m.city}` : ''}{m.shirt_size ? ` • ${m.shirt_size}` : ''}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                {/* Tabs */}
+                <Tabs value={detailTab} onValueChange={(v) => {
+                  setDetailTab(v);
+                  if (v === 'tracking' && trackingRecords.length === 0) fetchTracking(selectedPartner);
+                }}>
+                  <TabsList className="w-full grid grid-cols-3">
+                    <TabsTrigger value="overview" className="gap-1"><Eye className="w-3.5 h-3.5" />{nl ? 'Overzicht' : 'Overview'}</TabsTrigger>
+                    <TabsTrigger value="members" className="gap-1"><Users className="w-3.5 h-3.5" />{nl ? 'Medewerkers' : 'Members'}</TabsTrigger>
+                    <TabsTrigger value="tracking" className="gap-1"><ClipboardList className="w-3.5 h-3.5" />{nl ? 'Opvolging' : 'Tracking'}</TabsTrigger>
+                  </TabsList>
 
-                {/* Assigned tasks with acceptance status */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Handshake className="w-4 h-4" />
-                      {language === 'nl' ? `Toegewezen taken (${partnerTasks.length})` : `Assigned tasks (${partnerTasks.length})`}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {partnerTasks.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">{language === 'nl' ? 'Nog geen taken toegewezen.' : 'No tasks assigned yet.'}</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {partnerTasks.map(task => (
-                          <div key={task.id} className="p-3 rounded-lg border border-border bg-muted/30">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium">{task.title}</p>
-                                {task.event_title && <p className="text-[11px] text-primary mt-0.5">{task.event_title}</p>}
-                                {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                                <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">
-                                  {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
-                                  {task.location && <span>{task.location}</span>}
+                  {/* OVERVIEW TAB */}
+                  <TabsContent value="overview" className="space-y-4 mt-4">
+                    {/* Assigned tasks */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Handshake className="w-4 h-4" />
+                          {nl ? `Toegewezen taken (${partnerTasks.length})` : `Assigned tasks (${partnerTasks.length})`}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {partnerTasks.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen taken toegewezen.' : 'No tasks assigned yet.'}</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {partnerTasks.map(task => (
+                              <div key={task.id} className="p-3 rounded-lg border border-border bg-muted/30">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium">{task.title}</p>
+                                    {task.event_title && <p className="text-[11px] text-primary mt-0.5">{task.event_title}</p>}
+                                    <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">
+                                      {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
+                                      {task.location && <span>{task.location}</span>}
+                                    </div>
+                                  </div>
+                                  <Badge
+                                    variant={task.partner_acceptance_status === 'accepted' ? 'default' : task.partner_acceptance_status === 'rejected' ? 'destructive' : 'secondary'}
+                                    className="text-xs shrink-0"
+                                  >
+                                    {task.partner_acceptance_status === 'accepted' ? '✅' : task.partner_acceptance_status === 'rejected' ? '❌' : '⏳'}
+                                    {' '}{task.partner_acceptance_status === 'accepted' ? (nl ? 'Aanvaard' : 'Accepted') : task.partner_acceptance_status === 'rejected' ? (nl ? 'Geweigerd' : 'Rejected') : (nl ? 'Wachtend' : 'Pending')}
+                                  </Badge>
+                                </div>
+                                {task.signups.length > 0 && (
+                                  <div className="mt-2 pt-2 border-t border-border">
+                                    <p className="text-[11px] font-medium text-muted-foreground mb-1">{nl ? 'Toegewezen:' : 'Assigned:'}</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {task.signups.map((s, idx) => (
+                                        <Badge key={idx} variant="outline" className="text-[11px]">{s.volunteer_name}</Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Event access */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />{nl ? 'Opengestelde evenementen' : 'Event access'}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {eventAccess.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen evenementen opengesteld.' : 'No events assigned yet.'}</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {eventAccess.map(ea => (
+                              <div key={ea.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                <div>
+                                  <p className="text-sm font-medium">{ea.event_title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {ea.event_date ? new Date(ea.event_date).toLocaleDateString() : ''}
+                                    {ea.max_spots ? ` • Max ${ea.max_spots}` : ''}
+                                    {` • ${ea.signup_count} ${nl ? 'inschrijvingen' : 'signups'}`}
+                                  </p>
+                                </div>
+                                <Button variant="ghost" size="sm" onClick={() => handleExportAttendees(ea.id, ea.event_title || '')} disabled={exporting}>
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* MEMBERS TAB */}
+                  <TabsContent value="members" className="space-y-3 mt-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          {nl ? `Medewerkers (${members.length})` : `Members (${members.length})`}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {members.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen medewerkers.' : 'No members yet.'}</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {members.map(m => (
+                              <div key={m.id} className="p-3 rounded-lg border border-border bg-muted/30">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium shrink-0"
+                                    style={{ background: m.user_id ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--muted))', color: m.user_id ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}>
+                                    {m.user_id ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-sm font-medium">{m.full_name}</p>
+                                      {m.user_id ? (
+                                        <Badge variant="outline" className="text-[10px] gap-0.5 border-green-500/40 text-green-700 dark:text-green-400">
+                                          <UserCheck className="w-2.5 h-2.5" />{nl ? 'Account' : 'Account'}
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-[10px] gap-0.5 border-amber-500/40 text-amber-700 dark:text-amber-400">
+                                          <UserX className="w-2.5 h-2.5" />{nl ? 'Geen account' : 'No account'}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      {m.email || ''}{m.date_of_birth ? ` • ${m.date_of_birth}` : ''}{m.city ? ` • ${m.city}` : ''}{m.shirt_size ? ` • ${m.shirt_size}` : ''}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-1 shrink-0">
+                                    {!m.user_id && m.email && (
+                                      <Button
+                                        variant="outline" size="sm" className="h-7 text-[11px] px-2"
+                                        onClick={() => handleInviteMemberAsVolunteer(m)}
+                                        disabled={invitingMemberId === m.id}
+                                      >
+                                        {invitingMemberId === m.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3 mr-0.5" />}
+                                        {nl ? 'Uitnodigen' : 'Invite'}
+                                      </Button>
+                                    )}
+                                    {m.user_id && (
+                                      <Button
+                                        variant="outline" size="sm" className="h-7 text-[11px] px-2"
+                                        onClick={() => { setSendingTicketFor(m.id); setTicketTaskId(''); }}
+                                      >
+                                        <Ticket className="w-3 h-3 mr-0.5" />{nl ? 'Ticket' : 'Ticket'}
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                              <Badge 
-                                variant={task.partner_acceptance_status === 'accepted' ? 'default' : task.partner_acceptance_status === 'rejected' ? 'destructive' : 'secondary'} 
-                                className="text-xs shrink-0"
-                              >
-                                {task.partner_acceptance_status === 'accepted' 
-                                  ? (language === 'nl' ? '✅ Aanvaard' : '✅ Accepted')
-                                  : task.partner_acceptance_status === 'rejected'
-                                  ? (language === 'nl' ? '❌ Geweigerd' : '❌ Rejected')
-                                  : (language === 'nl' ? '⏳ In afwachting' : '⏳ Pending')}
-                              </Badge>
-                            </div>
-                            {/* Show assigned volunteers */}
-                            {task.signups.length > 0 && (
-                              <div className="mt-2 pt-2 border-t border-border">
-                                <p className="text-[11px] font-medium text-muted-foreground mb-1">
-                                  {language === 'nl' ? 'Toegewezen medewerkers:' : 'Assigned members:'}
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {task.signups.map((s, idx) => (
-                                    <Badge key={idx} variant="outline" className="text-[11px]">
-                                      {s.volunteer_name}
-                                      {s.status === 'approved' ? ' ✅' : s.status === 'rejected' ? ' ❌' : ' ⏳'}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
 
-                {/* Event access */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      {language === 'nl' ? 'Opengestelde evenementen' : 'Event access'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {eventAccess.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">{language === 'nl' ? 'Nog geen evenementen opengesteld.' : 'No events assigned yet.'}</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {eventAccess.map(ea => (
-                          <div key={ea.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                            <div>
-                              <p className="text-sm font-medium">{ea.event_title}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {ea.event_date ? new Date(ea.event_date).toLocaleDateString() : ''}
-                                {ea.max_spots ? ` • Max ${ea.max_spots} spots` : ''}
-                                {` • ${ea.signup_count} ${language === 'nl' ? 'inschrijvingen' : 'signups'}`}
-                              </p>
-                            </div>
-                            <Button variant="ghost" size="sm" onClick={() => handleExportAttendees(ea.id, ea.event_title || '')} disabled={exporting}>
-                              <Download className="w-4 h-4" />
-                            </Button>
+                  {/* TRACKING TAB */}
+                  <TabsContent value="tracking" className="space-y-4 mt-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <ClipboardList className="w-4 h-4" />
+                          {nl ? 'Aanwezigheidsopvolging' : 'Attendance tracking'}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {loadingTracking ? (
+                          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                        ) : trackingRecords.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen gegevens beschikbaar.' : 'No data available yet.'}</p>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-border text-left">
+                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Evenement' : 'Event'}</th>
+                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Datum' : 'Date'}</th>
+                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Taak' : 'Task'}</th>
+                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Medewerker' : 'Member'}</th>
+                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Status' : 'Status'}</th>
+                                  <th className="py-2 font-medium text-muted-foreground">{nl ? 'Ingecheckt' : 'Checked in'}</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {trackingRecords.map((r, idx) => (
+                                  <tr key={idx} className="border-b border-border/50">
+                                    <td className="py-2 pr-3">{r.event_title}</td>
+                                    <td className="py-2 pr-3 text-muted-foreground">{r.event_date ? new Date(r.event_date).toLocaleDateString() : '-'}</td>
+                                    <td className="py-2 pr-3">{r.task_title}</td>
+                                    <td className="py-2 pr-3 font-medium">{r.member_name}</td>
+                                    <td className="py-2 pr-3">
+                                      {r.checked_in ? (
+                                        <Badge variant="outline" className="text-[10px] border-green-500/40 text-green-700 dark:text-green-400">
+                                          <Check className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Aanwezig' : 'Present'}
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">
+                                          <Clock className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Niet ingecheckt' : 'Not checked in'}
+                                        </Badge>
+                                      )}
+                                    </td>
+                                    <td className="py-2 text-muted-foreground">{r.checked_in_at ? new Date(r.checked_in_at).toLocaleString() : '-'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
               </>
             )}
           </div>
@@ -562,7 +747,7 @@ const ExternalPartners = () => {
             {partners.length === 0 ? (
               <div className="text-center py-16">
                 <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
-                <p className="text-muted-foreground">{language === 'nl' ? 'Nog geen externe partners.' : 'No external partners yet.'}</p>
+                <p className="text-muted-foreground">{nl ? 'Nog geen externe partners.' : 'No external partners yet.'}</p>
               </div>
             ) : (
               partners.map(p => (
@@ -585,7 +770,7 @@ const ExternalPartners = () => {
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
                         {p.contact_name || ''}{p.contact_name && p.contact_email ? ' • ' : ''}{p.contact_email || ''}
-                        {` • ${p.member_count || 0} ${language === 'nl' ? 'medewerkers' : 'members'}`}
+                        {` • ${p.member_count || 0} ${nl ? 'medewerkers' : 'members'}`}
                       </p>
                     </div>
                     <Eye className="w-4 h-4 text-muted-foreground" />
@@ -604,122 +789,61 @@ const ExternalPartners = () => {
       }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{language === 'nl' ? 'Nieuwe partner aanmaken' : 'Create new partner'}</DialogTitle>
+            <DialogTitle>{nl ? 'Nieuwe partner aanmaken' : 'Create new partner'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Logo upload */}
             <div>
-              <Label>{language === 'nl' ? 'Logo (optioneel)' : 'Logo (optional)'}</Label>
+              <Label>{nl ? 'Logo (optioneel)' : 'Logo (optional)'}</Label>
               <div className="mt-1 flex items-center gap-3">
                 {logoPreview ? (
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
                     <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
-                    <button
-                      onClick={() => { setLogoFile(null); setLogoPreview(null); }}
-                      className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl p-0.5"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                    <button onClick={() => { setLogoFile(null); setLogoPreview(null); }} className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl p-0.5"><X className="w-3 h-3" /></button>
                   </div>
                 ) : (
                   <label className="w-16 h-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
                     <Upload className="w-5 h-5 text-muted-foreground" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setLogoFile(file);
-                          setLogoPreview(URL.createObjectURL(file));
-                        }
-                      }}
-                    />
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) { setLogoFile(file); setLogoPreview(URL.createObjectURL(file)); } }} />
                   </label>
                 )}
-                <p className="text-xs text-muted-foreground">{language === 'nl' ? 'Upload het logo van de partnerorganisatie' : 'Upload the partner organization logo'}</p>
               </div>
             </div>
-
+            <div><Label>{nl ? 'Naam' : 'Name'} *</Label><Input value={newPartner.name} onChange={e => setNewPartner(p => ({ ...p, name: e.target.value }))} placeholder="Stewards VZW Antwerp" /></div>
             <div>
-              <Label>{language === 'nl' ? 'Naam' : 'Name'} *</Label>
-              <Input value={newPartner.name} onChange={e => setNewPartner(p => ({ ...p, name: e.target.value }))} placeholder="Stewards VZW Antwerp" />
-            </div>
-
-            <div>
-              <Label>{language === 'nl' ? 'Categorie' : 'Category'}</Label>
+              <Label>{nl ? 'Categorie' : 'Category'}</Label>
               <Select value={newPartner.category} onValueChange={v => setNewPartner(p => ({ ...p, category: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="stewards">Stewards</SelectItem>
                   <SelectItem value="horeca">Horeca</SelectItem>
                   <SelectItem value="supporters">Supporters</SelectItem>
-                  <SelectItem value="andere">{language === 'nl' ? 'Andere...' : 'Other...'}</SelectItem>
+                  <SelectItem value="andere">{nl ? 'Andere...' : 'Other...'}</SelectItem>
                 </SelectContent>
               </Select>
-              {newPartner.category === 'andere' && (
-                <Input
-                  className="mt-2"
-                  value={newPartner.custom_category}
-                  onChange={e => setNewPartner(p => ({ ...p, custom_category: e.target.value }))}
-                  placeholder={language === 'nl' ? 'Specificeer categorie...' : 'Specify category...'}
-                />
-              )}
+              {newPartner.category === 'andere' && <Input className="mt-2" value={newPartner.custom_category} onChange={e => setNewPartner(p => ({ ...p, custom_category: e.target.value }))} placeholder={nl ? 'Specificeer categorie...' : 'Specify category...'} />}
             </div>
-
+            <div><Label>{nl ? 'Contactpersoon' : 'Contact name'}</Label><Input value={newPartner.contact_name} onChange={e => setNewPartner(p => ({ ...p, contact_name: e.target.value }))} /></div>
+            <div><Label>E-mail</Label><Input type="email" value={newPartner.contact_email} onChange={e => setNewPartner(p => ({ ...p, contact_email: e.target.value }))} /></div>
             <div>
-              <Label>{language === 'nl' ? 'Contactpersoon' : 'Contact name'}</Label>
-              <Input value={newPartner.contact_name} onChange={e => setNewPartner(p => ({ ...p, contact_name: e.target.value }))} />
-            </div>
-            <div>
-              <Label>E-mail</Label>
-              <Input type="email" value={newPartner.contact_email} onChange={e => setNewPartner(p => ({ ...p, contact_email: e.target.value }))} />
-            </div>
-
-            {/* Invite partner admins */}
-            <div>
-              <Label className="flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5" />
-                {language === 'nl' ? 'Verantwoordelijken uitnodigen' : 'Invite administrators'}
-              </Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                {language === 'nl' ? 'Nodig verantwoordelijken uit die hun medewerkers kunnen beheren via het partner portaal.' : 'Invite administrators who can manage their staff via the partner portal.'}
-              </p>
+              <Label className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{nl ? 'Verantwoordelijken uitnodigen' : 'Invite administrators'}</Label>
+              <p className="text-xs text-muted-foreground mb-2">{nl ? 'Nodig verantwoordelijken uit die hun medewerkers kunnen beheren via het partner portaal.' : 'Invite administrators who can manage their staff via the partner portal.'}</p>
               <div className="space-y-2">
                 {inviteEmails.map((email, idx) => (
                   <div key={idx} className="flex items-center gap-2">
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={e => {
-                        const updated = [...inviteEmails];
-                        updated[idx] = e.target.value;
-                        setInviteEmails(updated);
-                      }}
-                      placeholder={`verantwoordelijke${idx + 1}@partner.be`}
-                    />
-                    {inviteEmails.length > 1 && (
-                      <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setInviteEmails(inviteEmails.filter((_, i) => i !== idx))}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
+                    <Input type="email" value={email} onChange={e => { const updated = [...inviteEmails]; updated[idx] = e.target.value; setInviteEmails(updated); }} placeholder={`verantwoordelijke${idx + 1}@partner.be`} />
+                    {inviteEmails.length > 1 && <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setInviteEmails(inviteEmails.filter((_, i) => i !== idx))}><X className="w-4 h-4" /></Button>}
                   </div>
                 ))}
-                <Button variant="outline" size="sm" onClick={() => setInviteEmails([...inviteEmails, ''])}>
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  {language === 'nl' ? 'Nog iemand toevoegen' : 'Add another'}
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => setInviteEmails([...inviteEmails, ''])}><Plus className="w-3.5 h-3.5 mr-1" />{nl ? 'Nog iemand toevoegen' : 'Add another'}</Button>
               </div>
             </div>
-
             <div className="flex items-center gap-2">
               <Checkbox checked={newPartner.external_payroll} onCheckedChange={c => setNewPartner(p => ({ ...p, external_payroll: !!c }))} id="payroll" />
-              <Label htmlFor="payroll" className="cursor-pointer">{language === 'nl' ? 'Externe Payroll (medewerkers hebben al een contract)' : 'External Payroll (members have existing contracts)'}</Label>
+              <Label htmlFor="payroll" className="cursor-pointer">{nl ? 'Externe Payroll (medewerkers hebben al een contract)' : 'External Payroll (members have existing contracts)'}</Label>
             </div>
             <Button onClick={handleCreatePartner} disabled={creating || !newPartner.name.trim()} className="w-full">
               {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {language === 'nl' ? 'Aanmaken & uitnodigen' : 'Create & invite'}
+              {nl ? 'Aanmaken & uitnodigen' : 'Create & invite'}
             </Button>
           </div>
         </DialogContent>
@@ -728,17 +852,12 @@ const ExternalPartners = () => {
       {/* Invite Admin Dialog */}
       <Dialog open={showInvite} onOpenChange={setShowInvite}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{language === 'nl' ? 'Partner beheerder uitnodigen' : 'Invite partner admin'}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{nl ? 'Partner beheerder uitnodigen' : 'Invite partner admin'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>E-mail</Label>
-              <Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="beheerder@partner.be" />
-            </div>
+            <div><Label>E-mail</Label><Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="beheerder@partner.be" /></div>
             <Button onClick={handleInviteAdmin} disabled={inviting || !inviteEmail.trim()} className="w-full">
               {inviting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
-              {language === 'nl' ? 'Uitnodiging versturen' : 'Send invitation'}
+              {nl ? 'Uitnodiging versturen' : 'Send invitation'}
             </Button>
           </div>
         </DialogContent>
@@ -747,29 +866,55 @@ const ExternalPartners = () => {
       {/* Add Event Access Dialog */}
       <Dialog open={showAddEvent} onOpenChange={setShowAddEvent}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{language === 'nl' ? 'Evenement openstellen' : 'Add event access'}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{nl ? 'Evenement openstellen' : 'Add event access'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{language === 'nl' ? 'Evenement' : 'Event'}</Label>
+              <Label>{nl ? 'Evenement' : 'Event'}</Label>
               <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-                <SelectTrigger><SelectValue placeholder={language === 'nl' ? 'Selecteer...' : 'Select...'} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={nl ? 'Selecteer...' : 'Select...'} /></SelectTrigger>
                 <SelectContent>
-                  {events.map(e => (
-                    <SelectItem key={e.id} value={e.id}>{e.title}{e.event_date ? ` (${new Date(e.event_date).toLocaleDateString()})` : ''}</SelectItem>
-                  ))}
+                  {events.map(e => <SelectItem key={e.id} value={e.id}>{e.title}{e.event_date ? ` (${new Date(e.event_date).toLocaleDateString()})` : ''}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>{language === 'nl' ? 'Max plaatsen (optioneel)' : 'Max spots (optional)'}</Label>
-              <Input type="number" min={1} value={maxSpots} onChange={e => setMaxSpots(e.target.value)} />
-            </div>
+            <div><Label>{nl ? 'Max plaatsen (optioneel)' : 'Max spots (optional)'}</Label><Input type="number" min={1} value={maxSpots} onChange={e => setMaxSpots(e.target.value)} /></div>
             <Button onClick={handleAddEventAccess} disabled={addingEvent || !selectedEventId} className="w-full">
               {addingEvent ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {language === 'nl' ? 'Openstellen' : 'Add'}
+              {nl ? 'Openstellen' : 'Add'}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Ticket Dialog */}
+      <Dialog open={!!sendingTicketFor} onOpenChange={() => setSendingTicketFor(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{nl ? 'Ticket versturen' : 'Send ticket'}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            {(() => {
+              const member = members.find(m => m.id === sendingTicketFor);
+              if (!member) return null;
+              return (
+                <>
+                  <p className="text-sm">{nl ? 'Ticket aanmaken voor' : 'Create ticket for'} <strong>{member.full_name}</strong></p>
+                  <div>
+                    <Label>{nl ? 'Taak' : 'Task'}</Label>
+                    <Select value={ticketTaskId} onValueChange={setTicketTaskId}>
+                      <SelectTrigger><SelectValue placeholder={nl ? 'Selecteer taak...' : 'Select task...'} /></SelectTrigger>
+                      <SelectContent>
+                        {partnerTasks.filter(t => t.partner_acceptance_status === 'accepted').map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.title}{t.event_title ? ` (${t.event_title})` : ''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={() => handleSendTicket(member)} disabled={sendingTicket || !ticketTaskId} className="w-full">
+                    {sendingTicket ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Ticket className="w-4 h-4 mr-2" />}
+                    {nl ? 'Ticket aanmaken' : 'Create ticket'}
+                  </Button>
+                </>
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>
