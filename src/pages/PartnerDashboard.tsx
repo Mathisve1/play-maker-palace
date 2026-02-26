@@ -41,6 +41,17 @@ interface EventWithAccess {
   partner_tasks: { id: string; title: string; description: string | null; task_date: string | null; location: string | null; spots_available: number; }[];
 }
 
+interface StandaloneTask {
+  id: string;
+  title: string;
+  description: string | null;
+  task_date: string | null;
+  location: string | null;
+  spots_available: number;
+  event_id: string | null;
+  event_title?: string | null;
+}
+
 const PartnerDashboard = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
@@ -48,6 +59,7 @@ const PartnerDashboard = () => {
   const [partner, setPartner] = useState<PartnerInfo | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [events, setEvents] = useState<EventWithAccess[]>([]);
+  const [standaloneTasks, setStandaloneTasks] = useState<StandaloneTask[]>([]);
   const [userId, setUserId] = useState('');
 
   // Add member
@@ -87,14 +99,18 @@ const PartnerDashboard = () => {
   }, []);
 
   const fetchData = async (partnerId: string) => {
-    const [membersRes, accessRes] = await Promise.all([
+    const [membersRes, accessRes, allTasksRes] = await Promise.all([
       supabase.from('partner_members').select('*').eq('partner_id', partnerId).order('created_at'),
       supabase.from('partner_event_access').select('id, event_id, max_spots').eq('partner_id', partnerId),
+      supabase.from('tasks').select('id, title, description, task_date, location, spots_available, event_id').eq('partner_only', true).eq('assigned_partner_id', partnerId),
     ]);
     const mems = membersRes.data || [];
     setMembers(mems);
 
+    const allPartnerTasks = allTasksRes.data || [];
     const accessData = accessRes.data || [];
+    const eventAccessIds = new Set(accessData.map((a: any) => a.event_id));
+
     const eventsEnriched: EventWithAccess[] = await Promise.all(accessData.map(async (a: any) => {
       const { data: evt } = await supabase.from('events').select('title, event_date').eq('id', a.event_id).maybeSingle();
       const { data: signups } = await supabase.from('partner_event_signups').select('id, partner_member_id, status').eq('partner_event_access_id', a.id);
@@ -102,11 +118,21 @@ const PartnerDashboard = () => {
         const member = mems.find(m => m.id === s.partner_member_id);
         return { ...s, member_name: member?.full_name || '?' };
       });
-      // Fetch partner-only tasks for this event
-      const { data: partnerTasks } = await supabase.from('tasks').select('id, title, description, task_date, location, spots_available').eq('event_id', a.event_id).eq('partner_only', true).eq('assigned_partner_id', partnerId);
-      return { access_id: a.id, event_id: a.event_id, event_title: evt?.title || '?', event_date: evt?.event_date, max_spots: a.max_spots, signups: enrichedSignups, partner_tasks: partnerTasks || [] };
+      const partnerTasks = allPartnerTasks.filter(t => t.event_id === a.event_id);
+      return { access_id: a.id, event_id: a.event_id, event_title: evt?.title || '?', event_date: evt?.event_date, max_spots: a.max_spots, signups: enrichedSignups, partner_tasks: partnerTasks };
     }));
     setEvents(eventsEnriched);
+
+    // Find tasks that are NOT linked to an event with access (standalone or different events)
+    const tasksWithoutAccess = allPartnerTasks.filter(t => !t.event_id || !eventAccessIds.has(t.event_id));
+    // Enrich with event titles where applicable
+    const uniqueEventIds = [...new Set(tasksWithoutAccess.filter(t => t.event_id).map(t => t.event_id!))];
+    let eventMap: Record<string, string> = {};
+    if (uniqueEventIds.length > 0) {
+      const { data: evts } = await supabase.from('events').select('id, title').in('id', uniqueEventIds);
+      (evts || []).forEach((e: any) => { eventMap[e.id] = e.title; });
+    }
+    setStandaloneTasks(tasksWithoutAccess.map(t => ({ ...t, event_title: t.event_id ? eventMap[t.event_id] || null : null })));
   };
 
   const handleAddMember = async () => {
@@ -219,7 +245,7 @@ const PartnerDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="events" className="gap-1">
               <Calendar className="w-4 h-4" />
-              {language === 'nl' ? 'Evenementen' : 'Events'}
+              {language === 'nl' ? 'Taken & Evenementen' : 'Tasks & Events'}
             </TabsTrigger>
           </TabsList>
 
@@ -254,82 +280,117 @@ const PartnerDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Events Tab */}
+          {/* Events & Tasks Tab */}
           <TabsContent value="events" className="space-y-4 mt-4">
-            {events.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                {language === 'nl' ? 'Er zijn nog geen evenementen voor je opengesteld.' : 'No events available yet.'}
-              </p>
-            ) : (
-              events.map(evt => (
-                <Card key={evt.access_id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center justify-between">
-                      <span>{evt.event_title}</span>
-                      <Button size="sm" variant="outline" onClick={() => { setShowSignup(evt.access_id); setSelectedMembers([]); }}>
-                        <Plus className="w-3 h-3 mr-1" />
-                        {language === 'nl' ? 'Inschrijven' : 'Sign up'}
-                      </Button>
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground">
-                      {evt.event_date ? new Date(evt.event_date).toLocaleDateString() : ''}
-                      {evt.max_spots ? ` • Max ${evt.max_spots} plaatsen` : ''}
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Partner-only tasks */}
-                    {evt.partner_tasks.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                          <Handshake className="w-3.5 h-3.5" />
-                          {language === 'nl' ? 'Toegewezen taken' : 'Assigned tasks'}
-                        </p>
-                        <div className="space-y-2">
-                          {evt.partner_tasks.map(task => (
-                            <div key={task.id} className="p-3 rounded-lg border border-border bg-muted/30">
-                              <p className="text-sm font-medium">{task.title}</p>
-                              {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                              <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
-                                {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
-                                {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
-                                <span>{task.spots_available} {language === 'nl' ? 'plaatsen' : 'spots'}</span>
+            {/* Standalone partner tasks (not linked to event access) */}
+            {standaloneTasks.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                  <Handshake className="w-4 h-4 text-primary" />
+                  {language === 'nl' ? 'Toegewezen taken' : 'Assigned tasks'}
+                </h3>
+                <div className="space-y-2">
+                  {standaloneTasks.map(task => (
+                    <Card key={task.id}>
+                      <CardContent className="p-3">
+                        <p className="text-sm font-medium">{task.title}</p>
+                        {task.event_title && <p className="text-[11px] text-primary mt-0.5">{task.event_title}</p>}
+                        {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                        <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
+                          {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
+                          {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
+                          <span>{task.spots_available} {language === 'nl' ? 'plaatsen' : 'spots'}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Events with access */}
+            {events.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  {language === 'nl' ? 'Opengestelde evenementen' : 'Available events'}
+                </h3>
+                {events.map(evt => (
+                  <Card key={evt.access_id} className="mb-3">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center justify-between">
+                        <span>{evt.event_title}</span>
+                        <Button size="sm" variant="outline" onClick={() => { setShowSignup(evt.access_id); setSelectedMembers([]); }}>
+                          <Plus className="w-3 h-3 mr-1" />
+                          {language === 'nl' ? 'Inschrijven' : 'Sign up'}
+                        </Button>
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        {evt.event_date ? new Date(evt.event_date).toLocaleDateString() : ''}
+                        {evt.max_spots ? ` • Max ${evt.max_spots} plaatsen` : ''}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Partner-only tasks */}
+                      {evt.partner_tasks.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                            <Handshake className="w-3.5 h-3.5" />
+                            {language === 'nl' ? 'Toegewezen taken' : 'Assigned tasks'}
+                          </p>
+                          <div className="space-y-2">
+                            {evt.partner_tasks.map(task => (
+                              <div key={task.id} className="p-3 rounded-lg border border-border bg-muted/30">
+                                <p className="text-sm font-medium">{task.title}</p>
+                                {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                                <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
+                                  {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
+                                  {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
+                                  <span>{task.spots_available} {language === 'nl' ? 'plaatsen' : 'spots'}</span>
+                                </div>
                               </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Signups */}
+                      {evt.signups.length === 0 && evt.partner_tasks.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">{language === 'nl' ? 'Nog niemand ingeschreven.' : 'No signups yet.'}</p>
+                      ) : evt.signups.length > 0 ? (
+                        <div className="space-y-2">
+                          {evt.signups.map(s => (
+                            <div key={s.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{s.member_name}</span>
+                                <Badge variant={s.status === 'approved' ? 'default' : s.status === 'rejected' ? 'destructive' : 'secondary'} className="text-xs">
+                                  {s.status === 'approved' ? '✅ Goedgekeurd' : s.status === 'rejected' ? '❌ Afgewezen' : '⏳ In afwachting'}
+                                </Badge>
+                              </div>
+                              {s.status === 'pending' && (
+                                <div className="flex gap-1">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleApprove(s.id)}>
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleReject(s.id)}>
+                                    <X className="w-4 h-4 text-red-600" />
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
 
-                    {/* Signups */}
-                    {evt.signups.length === 0 && evt.partner_tasks.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">{language === 'nl' ? 'Nog niemand ingeschreven.' : 'No signups yet.'}</p>
-                    ) : evt.signups.length > 0 ? (
-                      <div className="space-y-2">
-                        {evt.signups.map(s => (
-                          <div key={s.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">{s.member_name}</span>
-                              <Badge variant={s.status === 'approved' ? 'default' : s.status === 'rejected' ? 'destructive' : 'secondary'} className="text-xs">
-                                {s.status === 'approved' ? '✅ Goedgekeurd' : s.status === 'rejected' ? '❌ Afgewezen' : '⏳ In afwachting'}
-                              </Badge>
-                            </div>
-                            {s.status === 'pending' && (
-                              <div className="flex gap-1">
-                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleApprove(s.id)}>
-                                  <Check className="w-4 h-4 text-green-600" />
-                                </Button>
-                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleReject(s.id)}>
-                                  <X className="w-4 h-4 text-red-600" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              ))
+            {events.length === 0 && standaloneTasks.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {language === 'nl' ? 'Er zijn nog geen taken of evenementen voor je opengesteld.' : 'No tasks or events available yet.'}
+              </p>
             )}
           </TabsContent>
         </Tabs>
