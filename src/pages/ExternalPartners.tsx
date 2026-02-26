@@ -32,6 +32,9 @@ interface PartnerMember {
   email: string | null;
   phone: string | null;
   date_of_birth: string | null;
+  national_id?: string | null;
+  city?: string | null;
+  shirt_size?: string | null;
 }
 
 interface EventAccess {
@@ -212,7 +215,7 @@ const ExternalPartners = () => {
     setSelectedPartner(partner);
     setLoadingDetail(true);
     const [membersRes, accessRes, tasksRes] = await Promise.all([
-      supabase.from('partner_members').select('id, full_name, email, phone, date_of_birth').eq('partner_id', partner.id),
+      supabase.from('partner_members').select('id, full_name, email, phone, date_of_birth, national_id, city, shirt_size').eq('partner_id', partner.id),
       supabase.from('partner_event_access').select('id, event_id, max_spots').eq('partner_id', partner.id),
       supabase.from('tasks').select('id, title, description, task_date, location, spots_available, partner_acceptance_status, event_id').eq('partner_only', true).eq('assigned_partner_id', partner.id),
     ]);
@@ -227,17 +230,30 @@ const ExternalPartners = () => {
     }));
     setEventAccess(enriched);
 
-    // Enrich partner tasks with event titles and member signups
+    // Enrich partner tasks with event titles and direct task assignments
     const allTasks = tasksRes.data || [];
     const partnerMembers = membersRes.data || [];
+    const taskIds = allTasks.map(t => t.id);
+
+    // Fetch direct task assignments
+    let assignmentMap: Record<string, { volunteer_name: string; status: string }[]> = {};
+    if (taskIds.length > 0) {
+      const { data: assignments } = await supabase.from('partner_task_assignments').select('task_id, partner_member_id').in('task_id', taskIds);
+      (assignments || []).forEach((a: any) => {
+        const member = partnerMembers.find(m => m.id === a.partner_member_id);
+        if (!assignmentMap[a.task_id]) assignmentMap[a.task_id] = [];
+        assignmentMap[a.task_id].push({ volunteer_name: member?.full_name || '?', status: 'assigned' });
+      });
+    }
+
     const enrichedTasks: PartnerTask[] = await Promise.all(allTasks.map(async (t: any) => {
       let eventTitle: string | null = null;
       if (t.event_id) {
         const evt = events.find(e => e.id === t.event_id);
         eventTitle = evt?.title || null;
       }
-      // Get partner member signups for this task's event access
-      const signups: { volunteer_name: string; status: string }[] = [];
+      // Combine event signups and direct task assignments
+      const signups: { volunteer_name: string; status: string }[] = assignmentMap[t.id] || [];
       if (t.event_id) {
         const access = accessData.find((a: any) => a.event_id === t.event_id);
         if (access) {
@@ -426,7 +442,10 @@ const ExternalPartners = () => {
                           <div key={m.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                             <div>
                               <p className="text-sm font-medium">{m.full_name}</p>
-                              <p className="text-xs text-muted-foreground">{m.email || ''} {m.date_of_birth ? `• ${m.date_of_birth}` : ''}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {m.email || ''}{m.date_of_birth ? ` • ${m.date_of_birth}` : ''}
+                                {m.city ? ` • ${m.city}` : ''}{m.shirt_size ? ` • ${m.shirt_size}` : ''}
+                              </p>
                             </div>
                           </div>
                         ))}
