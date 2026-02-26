@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, CalendarDays, Radio, Ticket, Loader2, Send, Users, QrCode, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Radio, Ticket, Loader2, Send, Users, QrCode, Mail, CheckCircle2, AlertCircle, Search, UserCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import Logo from '@/components/Logo';
 
 const t = {
@@ -116,6 +117,8 @@ const TicketingDashboard = () => {
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const [generatingAll, setGeneratingAll] = useState(false);
   const [sendingEmailIds, setSendingEmailIds] = useState<Set<string>>(new Set());
+  const [liveSearch, setLiveSearch] = useState('');
+  const [manualCheckingIds, setManualCheckingIds] = useState<Set<string>>(new Set());
 
   // Load club & events
   useEffect(() => {
@@ -325,6 +328,58 @@ const TicketingDashboard = () => {
       toast.error(e.message);
     }
     setSendingEmailIds(prev => { const n = new Set(prev); n.delete(key); return n; });
+  };
+
+  // Manual check-in without QR
+  const handleManualCheckin = async (v: VolunteerTicketRow) => {
+    if (!clubId || !selectedEventId) return;
+    const key = v.volunteer_id + '_' + v.task_id;
+    setManualCheckingIds(prev => new Set(prev).add(key));
+    try {
+      // First ensure a ticket exists
+      let barcode = '';
+      const { data: existingTicket } = await supabase
+        .from('volunteer_tickets')
+        .select('id, barcode')
+        .eq('volunteer_id', v.volunteer_id)
+        .eq('event_id', selectedEventId)
+        .eq('club_id', clubId)
+        .maybeSingle();
+
+      if (existingTicket) {
+        barcode = existingTicket.barcode || '';
+        // Update directly to checked_in
+        await supabase
+          .from('volunteer_tickets')
+          .update({ status: 'checked_in' as any, checked_in_at: new Date().toISOString() })
+          .eq('id', existingTicket.id);
+      } else {
+        // Create ticket and immediately check in
+        barcode = `VT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        await supabase
+          .from('volunteer_tickets')
+          .insert({
+            club_id: clubId,
+            event_id: selectedEventId,
+            volunteer_id: v.volunteer_id,
+            task_id: v.task_id,
+            barcode,
+            status: 'checked_in' as any,
+            checked_in_at: new Date().toISOString(),
+          });
+      }
+
+      // Update local state
+      setVolunteers(prev => prev.map(vol =>
+        (vol.volunteer_id === v.volunteer_id && vol.task_id === v.task_id)
+          ? { ...vol, status: 'checked_in', checked_in_at: new Date().toISOString() }
+          : vol
+      ));
+      toast.success(`${v.volunteer_name} ingecheckt`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setManualCheckingIds(prev => { const n = new Set(prev); n.delete(key); return n; });
   };
 
   // Status badge
@@ -553,6 +608,17 @@ const TicketingDashboard = () => {
                     </CardContent>
                   </Card>
 
+                  {/* Search for manual check-in */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Zoek vrijwilliger om handmatig in te checken..."
+                      value={liveSearch}
+                      onChange={(e) => setLiveSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+
                   <Card>
                     <CardContent className="p-0">
                       <Table>
@@ -562,19 +628,43 @@ const TicketingDashboard = () => {
                             <TableHead>{labels.task}</TableHead>
                             <TableHead>{labels.ticketStatus}</TableHead>
                             <TableHead>{labels.checkedInAt}</TableHead>
+                            <TableHead className="text-right">{labels.actions}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {volunteers.map(v => (
-                            <TableRow key={v.id} className={v.status === 'checked_in' ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : ''}>
-                              <TableCell className="font-medium">{v.volunteer_name}</TableCell>
-                              <TableCell className="text-muted-foreground">{v.task_title}</TableCell>
-                              <TableCell><StatusBadge status={v.status} /></TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {v.checked_in_at ? new Date(v.checked_in_at).toLocaleTimeString() : '—'}
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {volunteers
+                            .filter(v => !liveSearch || v.volunteer_name.toLowerCase().includes(liveSearch.toLowerCase()))
+                            .map(v => {
+                              const key = v.volunteer_id + '_' + v.task_id;
+                              return (
+                                <TableRow key={v.id} className={v.status === 'checked_in' ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : ''}>
+                                  <TableCell className="font-medium">{v.volunteer_name}</TableCell>
+                                  <TableCell className="text-muted-foreground">{v.task_title}</TableCell>
+                                  <TableCell><StatusBadge status={v.status} /></TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {v.checked_in_at ? new Date(v.checked_in_at).toLocaleTimeString() : '—'}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {v.status !== 'checked_in' && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleManualCheckin(v)}
+                                        disabled={manualCheckingIds.has(key)}
+                                        className="gap-1.5"
+                                      >
+                                        {manualCheckingIds.has(key) ? (
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                          <UserCheck className="w-3.5 h-3.5" />
+                                        )}
+                                        Inchecken
+                                      </Button>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
                         </TableBody>
                       </Table>
                     </CardContent>
