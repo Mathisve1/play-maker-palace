@@ -1103,6 +1103,42 @@ export type Database = {
           },
         ]
       }
+      partner_clubs: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          partner_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          partner_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_clubs_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_clubs_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_event_access: {
         Row: {
           created_at: string
@@ -2163,6 +2199,7 @@ export type Database = {
     }
     Functions: {
       get_partner_club_id: { Args: { _partner_id: string }; Returns: string }
+      get_partner_club_ids: { Args: { _partner_id: string }; Returns: string[] }
       get_signup_partner_id: { Args: { _access_id: string }; Returns: string }
       has_club_role: {
         Args: {

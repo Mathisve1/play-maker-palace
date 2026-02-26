@@ -129,9 +129,12 @@ const ExternalPartners = () => {
   }, []);
 
   const fetchPartners = async (cid: string) => {
-    const { data } = await supabase.from('external_partners').select('*').eq('club_id', cid).order('created_at', { ascending: false });
+    // Fetch partners linked to this club via partner_clubs junction
+    const { data: links } = await supabase.from('partner_clubs').select('partner_id').eq('club_id', cid);
+    const partnerIds = (links || []).map((l: any) => l.partner_id);
+    if (partnerIds.length === 0) { setPartners([]); return; }
+    const { data } = await supabase.from('external_partners').select('*').in('id', partnerIds).order('created_at', { ascending: false });
     if (data) {
-      // Get member counts
       const partnersWithCounts = await Promise.all(data.map(async (p: any) => {
         const { count } = await supabase.from('partner_members').select('*', { count: 'exact', head: true }).eq('partner_id', p.id);
         return { ...p, member_count: count || 0 };
@@ -168,6 +171,11 @@ const ExternalPartners = () => {
       }).select('id').single();
 
       if (error) throw error;
+
+      // Also insert into partner_clubs junction
+      if (partner) {
+        await supabase.from('partner_clubs').insert({ partner_id: partner.id, club_id: clubId });
+      }
 
       // Send invitations to all provided emails
       const { data: { session } } = await supabase.auth.getSession();
