@@ -48,9 +48,9 @@ const ClubsLanding = () => {
               <Link to="/club-login" className="px-6 py-3 rounded-xl bg-hero-secondary text-secondary-foreground font-medium hover:opacity-90 transition-opacity">
                 {t.clubs.heroCta}
               </Link>
-              <a href="#features" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors">
-                {t.clubs.heroCtaSecondary}
-              </a>
+              <Link to="/partner-login" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors flex items-center gap-2 justify-center">
+                <span>Partner Login</span>
+              </Link>
             </motion.div>
             <motion.div variants={fadeUp} custom={3} className="mt-6 flex justify-center">
               <AppStoreButtons
