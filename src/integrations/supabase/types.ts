@@ -1186,33 +1186,57 @@ export type Database = {
       }
       partner_members: {
         Row: {
+          address: string | null
+          city: string | null
           created_at: string
           date_of_birth: string | null
           email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           full_name: string
           id: string
+          national_id: string | null
+          notes: string | null
           partner_id: string
           phone: string | null
+          postal_code: string | null
+          shirt_size: string | null
           user_id: string | null
         }
         Insert: {
+          address?: string | null
+          city?: string | null
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           full_name: string
           id?: string
+          national_id?: string | null
+          notes?: string | null
           partner_id: string
           phone?: string | null
+          postal_code?: string | null
+          shirt_size?: string | null
           user_id?: string | null
         }
         Update: {
+          address?: string | null
+          city?: string | null
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           full_name?: string
           id?: string
+          national_id?: string | null
+          notes?: string | null
           partner_id?: string
           phone?: string | null
+          postal_code?: string | null
+          shirt_size?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1221,6 +1245,45 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_task_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          id: string
+          partner_member_id: string
+          task_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          partner_member_id: string
+          task_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          partner_member_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_task_assignments_partner_member_id_fkey"
+            columns: ["partner_member_id"]
+            isOneToOne: false
+            referencedRelation: "partner_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_task_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
