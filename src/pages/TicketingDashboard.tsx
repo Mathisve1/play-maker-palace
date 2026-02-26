@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, CalendarDays, Radio, Ticket, Loader2, Send, Users, QrCode } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Radio, Ticket, Loader2, Send, Users, QrCode, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -95,6 +95,9 @@ interface VolunteerTicketRow {
   error_message: string | null;
   volunteer_name: string;
   task_title: string;
+  is_partner: boolean;
+  has_account: boolean;
+  partner_email: string | null;
 }
 
 const TicketingDashboard = () => {
@@ -112,6 +115,7 @@ const TicketingDashboard = () => {
   const [volunteers, setVolunteers] = useState<VolunteerTicketRow[]>([]);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const [generatingAll, setGeneratingAll] = useState(false);
+  const [sendingEmailIds, setSendingEmailIds] = useState<Set<string>>(new Set());
 
   // Load club & events
   useEffect(() => {
@@ -155,10 +159,18 @@ const TicketingDashboard = () => {
       // Also fetch partner member assignments
       const { data: partnerAssignments } = await supabase.from('partner_task_assignments').select('id, partner_member_id, task_id').in('task_id', taskIds);
       const partnerMemberIds = [...new Set((partnerAssignments || []).map(a => a.partner_member_id))];
-      let partnerMemberMap: Record<string, string> = {};
+      let partnerMemberMap: Record<string, { name: string; email: string | null }> = {};
       if (partnerMemberIds.length > 0) {
-        const { data: partnerMembers } = await supabase.from('partner_members').select('id, full_name').in('id', partnerMemberIds);
-        partnerMemberMap = Object.fromEntries((partnerMembers || []).map(m => [m.id, m.full_name || 'Onbekend']));
+        const { data: partnerMembers } = await supabase.from('partner_members').select('id, full_name, email').in('id', partnerMemberIds);
+        partnerMemberMap = Object.fromEntries((partnerMembers || []).map(m => [m.id, { name: m.full_name || 'Onbekend', email: m.email || null }]));
+      }
+
+      // Check which partner member emails have a matching account in profiles
+      const partnerEmails = Object.values(partnerMemberMap).map(m => m.email).filter(Boolean) as string[];
+      let accountEmailSet = new Set<string>();
+      if (partnerEmails.length > 0) {
+        const { data: matchedProfiles } = await supabase.from('profiles').select('email').in('email', partnerEmails);
+        accountEmailSet = new Set((matchedProfiles || []).map(p => p.email?.toLowerCase()).filter(Boolean) as string[]);
       }
 
       const { data: tickets } = await supabase.from('volunteer_tickets').select('*').eq('club_id', clubId).eq('event_id', selectedEventId);
@@ -179,12 +191,17 @@ const TicketingDashboard = () => {
           error_message: ticket?.error_message || null,
           volunteer_name: profileMap[s.volunteer_id] || 'Onbekend',
           task_title: taskMap[s.task_id] || '',
+          is_partner: false,
+          has_account: true,
+          partner_email: null,
         });
       });
 
       // Partner members
       (partnerAssignments || []).forEach(a => {
         const ticket = ticketMap[a.partner_member_id + '_' + a.task_id];
+        const member = partnerMemberMap[a.partner_member_id] || { name: 'Onbekend', email: null };
+        const hasAccount = member.email ? accountEmailSet.has(member.email.toLowerCase()) : false;
         rows.push({
           id: ticket?.id || `partner_${a.partner_member_id}_${a.task_id}`,
           volunteer_id: a.partner_member_id,
@@ -193,8 +210,11 @@ const TicketingDashboard = () => {
           checked_in_at: ticket?.checked_in_at || null,
           external_ticket_id: ticket?.external_ticket_id || null,
           error_message: ticket?.error_message || null,
-          volunteer_name: `${partnerMemberMap[a.partner_member_id] || 'Onbekend'} (partner)`,
+          volunteer_name: `${member.name} (partner)`,
           task_title: taskMap[a.task_id] || '',
+          is_partner: true,
+          has_account: hasAccount,
+          partner_email: member.email,
         });
       });
 
@@ -278,6 +298,35 @@ const TicketingDashboard = () => {
     setGeneratingAll(false);
   };
 
+  // Send ticket + invite via email for partner members without account
+  const handleSendTicketEmail = async (v: VolunteerTicketRow) => {
+    if (!clubId || !selectedEventId || !v.partner_email) return;
+    const key = v.volunteer_id + '_' + v.task_id;
+    setSendingEmailIds(prev => new Set(prev).add(key));
+    try {
+      const { data, error } = await supabase.functions.invoke('ticketing-generate', {
+        body: {
+          action: 'send_ticket_email_invite',
+          club_id: clubId,
+          event_id: selectedEventId,
+          volunteer_id: v.volunteer_id,
+          task_id: v.task_id,
+          email: v.partner_email,
+          volunteer_name: v.volunteer_name.replace(' (partner)', ''),
+        },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success('Ticket & uitnodiging verstuurd via e-mail');
+      } else {
+        toast.error(data?.error || labels.error);
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setSendingEmailIds(prev => { const n = new Set(prev); n.delete(key); return n; });
+  };
+
   // Status badge
   const StatusBadge = ({ status }: { status: string }) => {
     switch (status) {
@@ -285,6 +334,25 @@ const TicketingDashboard = () => {
       case 'sent': return <Badge className="bg-blue-500/15 text-blue-700 border-blue-300">{labels.sent}</Badge>;
       default: return <Badge variant="secondary">{labels.noTicket}</Badge>;
     }
+  };
+
+  // Account status badge for partner members
+  const AccountBadge = ({ v }: { v: VolunteerTicketRow }) => {
+    if (!v.is_partner) return null;
+    if (v.has_account) {
+      return (
+        <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-300 gap-1">
+          <CheckCircle2 className="w-3 h-3" />
+          Account
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="destructive" className="gap-1">
+        <AlertCircle className="w-3 h-3" />
+        Geen account
+      </Badge>
+    );
   };
 
   // Progress calculations
@@ -376,31 +444,38 @@ const TicketingDashboard = () => {
                           <TableRow>
                             <TableHead>{labels.volunteer}</TableHead>
                             <TableHead>{labels.task}</TableHead>
+                            <TableHead>Account</TableHead>
                             <TableHead>{labels.ticketStatus}</TableHead>
                             <TableHead className="text-right">{labels.actions}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {volunteers.map(v => (
+                          {volunteers.map(v => {
+                            const key = v.volunteer_id + '_' + v.task_id;
+                            return (
                             <TableRow key={v.id}>
                               <TableCell className="font-medium">{v.volunteer_name}</TableCell>
                               <TableCell className="text-muted-foreground">{v.task_title}</TableCell>
+                              <TableCell>
+                                <AccountBadge v={v} />
+                                {!v.is_partner && <span className="text-xs text-muted-foreground">—</span>}
+                              </TableCell>
                               <TableCell>
                                 <StatusBadge status={v.status} />
                                 {v.error_message && (
                                   <p className="text-xs text-destructive mt-1">{v.error_message}</p>
                                 )}
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-right flex gap-1.5 justify-end">
                                 {v.status === 'none' && (
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => handleGenerateTicket(v.volunteer_id, v.task_id || '')}
-                                    disabled={generatingIds.has(v.volunteer_id + '_' + v.task_id)}
+                                    disabled={generatingIds.has(key)}
                                     className="gap-1.5"
                                   >
-                                    {generatingIds.has(v.volunteer_id + '_' + v.task_id) ? (
+                                    {generatingIds.has(key) ? (
                                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     ) : (
                                       <Ticket className="w-3.5 h-3.5" />
@@ -408,9 +483,26 @@ const TicketingDashboard = () => {
                                     {labels.generate}
                                   </Button>
                                 )}
+                                {v.is_partner && !v.has_account && v.partner_email && (
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => handleSendTicketEmail(v)}
+                                    disabled={sendingEmailIds.has(key)}
+                                    className="gap-1.5"
+                                  >
+                                    {sendingEmailIds.has(key) ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <Mail className="w-3.5 h-3.5" />
+                                    )}
+                                    E-mail ticket & uitnodiging
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
-                          ))}
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     )}
