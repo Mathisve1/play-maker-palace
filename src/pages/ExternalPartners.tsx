@@ -170,7 +170,7 @@ const ExternalPartners = () => {
 
             if (invErr) continue;
 
-            await supabase.functions.invoke('club-invite', {
+            await supabase.functions.invoke('club-invite?action=send-email', {
               body: { email: email.trim(), invite_token: inv.invite_token, role: 'partner_admin', club_name: club?.name, partner_id: partner.id, partner_name: newPartner.name.trim() },
               headers: { Authorization: `Bearer ${session.access_token}` },
             });
@@ -234,7 +234,7 @@ const ExternalPartners = () => {
 
       // Send email via edge function with partner metadata
       const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).maybeSingle();
-      await supabase.functions.invoke('club-invite', {
+      await supabase.functions.invoke('club-invite?action=send-email', {
         body: { email: inviteEmail.trim(), invite_token: inv.invite_token, role: 'partner_admin', club_name: club?.name, partner_id: selectedPartner.id, partner_name: selectedPartner.name },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
