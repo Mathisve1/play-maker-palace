@@ -222,6 +222,8 @@ serve(async (req: Request) => {
         });
       }
 
+      // Try to create user, if already exists, try to sign in instead
+      let userId: string;
       const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -230,12 +232,25 @@ serve(async (req: Request) => {
       });
 
       if (authErr) {
-        return new Response(JSON.stringify({ error: authErr.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        // If user already exists, try to find them and use their id
+        if (authErr.message?.includes("already been registered")) {
+          const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+          const existingUser = existingUsers?.users?.find((u: any) => u.email === email);
+          if (existingUser) {
+            userId = existingUser.id;
+          } else {
+            return new Response(JSON.stringify({ error: "Account bestaat al maar kon niet gevonden worden. Probeer in te loggen." }), {
+              status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        } else {
+          return new Response(JSON.stringify({ error: authErr.message }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else {
+        userId = authData.user.id;
       }
-
-      const userId = authData.user.id;
       const isPartnerInvite = !!partner_id;
 
       if (isPartnerInvite) {
