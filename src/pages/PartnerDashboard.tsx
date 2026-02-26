@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus } from 'lucide-react';
+import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import Logo from '@/components/Logo';
 
@@ -38,6 +38,7 @@ interface EventWithAccess {
   event_date: string | null;
   max_spots: number | null;
   signups: { id: string; partner_member_id: string; status: string; member_name?: string }[];
+  partner_tasks: { id: string; title: string; description: string | null; task_date: string | null; location: string | null; spots_available: number; }[];
 }
 
 const PartnerDashboard = () => {
@@ -101,7 +102,9 @@ const PartnerDashboard = () => {
         const member = mems.find(m => m.id === s.partner_member_id);
         return { ...s, member_name: member?.full_name || '?' };
       });
-      return { access_id: a.id, event_id: a.event_id, event_title: evt?.title || '?', event_date: evt?.event_date, max_spots: a.max_spots, signups: enrichedSignups };
+      // Fetch partner-only tasks for this event
+      const { data: partnerTasks } = await supabase.from('tasks').select('id, title, description, task_date, location, spots_available').eq('event_id', a.event_id).eq('partner_only', true).eq('assigned_partner_id', partnerId);
+      return { access_id: a.id, event_id: a.event_id, event_title: evt?.title || '?', event_date: evt?.event_date, max_spots: a.max_spots, signups: enrichedSignups, partner_tasks: partnerTasks || [] };
     }));
     setEvents(eventsEnriched);
   };
@@ -273,10 +276,34 @@ const PartnerDashboard = () => {
                       {evt.max_spots ? ` • Max ${evt.max_spots} plaatsen` : ''}
                     </p>
                   </CardHeader>
-                  <CardContent>
-                    {evt.signups.length === 0 ? (
+                  <CardContent className="space-y-4">
+                    {/* Partner-only tasks */}
+                    {evt.partner_tasks.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                          <Handshake className="w-3.5 h-3.5" />
+                          {language === 'nl' ? 'Toegewezen taken' : 'Assigned tasks'}
+                        </p>
+                        <div className="space-y-2">
+                          {evt.partner_tasks.map(task => (
+                            <div key={task.id} className="p-3 rounded-lg border border-border bg-muted/30">
+                              <p className="text-sm font-medium">{task.title}</p>
+                              {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                              <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
+                                {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
+                                {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
+                                <span>{task.spots_available} {language === 'nl' ? 'plaatsen' : 'spots'}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Signups */}
+                    {evt.signups.length === 0 && evt.partner_tasks.length === 0 ? (
                       <p className="text-xs text-muted-foreground">{language === 'nl' ? 'Nog niemand ingeschreven.' : 'No signups yet.'}</p>
-                    ) : (
+                    ) : evt.signups.length > 0 ? (
                       <div className="space-y-2">
                         {evt.signups.map(s => (
                           <div key={s.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
@@ -299,7 +326,7 @@ const PartnerDashboard = () => {
                           </div>
                         ))}
                       </div>
-                    )}
+                    ) : null}
                   </CardContent>
                 </Card>
               ))

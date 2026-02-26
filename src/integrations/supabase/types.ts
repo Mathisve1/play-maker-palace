@@ -1552,6 +1552,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assigned_partner_id: string | null
           briefing_location: string | null
           briefing_time: string | null
           club_id: string
@@ -1572,6 +1573,7 @@ export type Database = {
           loyalty_eligible: boolean
           loyalty_points: number | null
           notes: string | null
+          partner_only: boolean
           required_training_id: string | null
           spots_available: number | null
           start_time: string | null
@@ -1580,6 +1582,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          assigned_partner_id?: string | null
           briefing_location?: string | null
           briefing_time?: string | null
           club_id: string
@@ -1600,6 +1603,7 @@ export type Database = {
           loyalty_eligible?: boolean
           loyalty_points?: number | null
           notes?: string | null
+          partner_only?: boolean
           required_training_id?: string | null
           spots_available?: number | null
           start_time?: string | null
@@ -1608,6 +1612,7 @@ export type Database = {
           title: string
         }
         Update: {
+          assigned_partner_id?: string | null
           briefing_location?: string | null
           briefing_time?: string | null
           club_id?: string
@@ -1628,6 +1633,7 @@ export type Database = {
           loyalty_eligible?: boolean
           loyalty_points?: number | null
           notes?: string | null
+          partner_only?: boolean
           required_training_id?: string | null
           spots_available?: number | null
           start_time?: string | null
@@ -1636,6 +1642,13 @@ export type Database = {
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_partner_id_fkey"
+            columns: ["assigned_partner_id"]
+            isOneToOne: false
+            referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_club_id_fkey"
             columns: ["club_id"]

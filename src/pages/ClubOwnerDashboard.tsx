@@ -357,7 +357,9 @@ const ClubOwnerDashboard = () => {
     compensation_type: 'fixed' as string, hourly_rate: '', estimated_hours: '',
     loyalty_eligible: true, loyalty_points: '',
     required_training_id: '',
+    partner_only: false, assigned_partner_id: '',
   });
+  const [externalPartners, setExternalPartners] = useState<{ id: string; name: string }[]>([]);
   const [academyTrainings, setAcademyTrainings] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
@@ -427,7 +429,15 @@ const ClubOwnerDashboard = () => {
         .eq('is_published', true)
         .order('title');
       setAcademyTrainings(trainingsData || []);
-      // Fetch events for this club
+
+      // Fetch external partners for this club
+      const { data: partnersData } = await supabase
+        .from('external_partners')
+        .select('id, name')
+        .eq('club_id', activeClub.id)
+        .order('name');
+      setExternalPartners(partnersData || []);
+
       const { data: eventsData } = await (supabase as any)
         .from('events')
         .select('*')
@@ -815,6 +825,8 @@ const ClubOwnerDashboard = () => {
       loyalty_eligible: newTask.loyalty_eligible,
       loyalty_points: newTask.loyalty_points ? parseInt(newTask.loyalty_points) : null,
       required_training_id: newTask.required_training_id || null,
+      partner_only: newTask.partner_only,
+      assigned_partner_id: newTask.partner_only && newTask.assigned_partner_id ? newTask.assigned_partner_id : null,
     };
 
     const { data, error } = await (supabase as any)
@@ -831,7 +843,7 @@ const ClubOwnerDashboard = () => {
       setShowCreateForm(false);
       setAddingTaskToGroup(null);
       setSelectedTemplateId('');
-      setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '', required_training_id: '' });
+      setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '', required_training_id: '', partner_only: false, assigned_partner_id: '' });
     }
     setCreatingTask(false);
   };
@@ -966,7 +978,14 @@ const ClubOwnerDashboard = () => {
           className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors"
         >
           <div className="flex-1">
-            <h3 className="font-heading font-semibold text-foreground">{task.title}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-heading font-semibold text-foreground">{task.title}</h3>
+              {(task as any).partner_only && (
+                <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-accent/20 text-accent-foreground flex items-center gap-0.5">
+                  <Handshake className="w-3 h-3" /> Partner
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
               {task.task_date && (
                 <span className="flex items-center gap-1">
@@ -1327,10 +1346,34 @@ const ClubOwnerDashboard = () => {
             <p className="text-[11px] text-muted-foreground mt-1">{language === 'nl' ? 'Vrijwilligers moeten deze training voltooid hebben om zich in te schrijven.' : language === 'fr' ? 'Les bénévoles doivent avoir terminé cette formation pour s\'inscrire.' : 'Volunteers must have completed this training to sign up.'}</p>
           </div>
         )}
+        {/* Partner-only task */}
+        {externalPartners.length > 0 && (
+          <div className="sm:col-span-2 border-t border-border pt-4 mt-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={newTask.partner_only} onChange={e => setNewTask(p => ({ ...p, partner_only: e.target.checked, assigned_partner_id: '' }))} className="w-4 h-4 rounded border-input accent-primary" />
+              <span className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <Handshake className="w-4 h-4 text-primary" />
+                {language === 'nl' ? 'Enkel voor externe partner' : language === 'fr' ? 'Uniquement pour partenaire externe' : 'Partner-only task'}
+              </span>
+            </label>
+            <p className="text-[11px] text-muted-foreground mt-1 ml-6">
+              {language === 'nl' ? 'Alleen de geselecteerde partner kan leden toewijzen aan deze taak.' : language === 'fr' ? 'Seul le partenaire sélectionné peut assigner des membres à cette tâche.' : 'Only the selected partner can assign members to this task.'}
+            </p>
+            {newTask.partner_only && (
+              <div className="mt-3 ml-6">
+                <label className={labelClass}>{language === 'nl' ? 'Selecteer partner' : language === 'fr' ? 'Sélectionner partenaire' : 'Select partner'} *</label>
+                <select required value={newTask.assigned_partner_id} onChange={e => setNewTask(p => ({ ...p, assigned_partner_id: e.target.value }))} className={inputClass}>
+                  <option value="">{language === 'nl' ? 'Kies een partner...' : language === 'fr' ? 'Choisir un partenaire...' : 'Choose a partner...'}</option>
+                  {externalPartners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex justify-end gap-3 mt-6">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
-        <button type="submit" disabled={creatingTask || !newTask.title.trim() || !selectedTemplateId} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+        <button type="submit" disabled={creatingTask || !newTask.title.trim() || !selectedTemplateId || (newTask.partner_only && !newTask.assigned_partner_id)} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
           {creatingTask ? dt.creating : dt.create}
         </button>
       </div>
@@ -1646,7 +1689,7 @@ const ClubOwnerDashboard = () => {
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <button
-                                        onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setNewTask({ title: '', description: '', task_date: '', location: event.location || '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '', required_training_id: '' }); }}
+                                        onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setNewTask({ title: '', description: '', task_date: '', location: event.location || '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '', required_training_id: '', partner_only: false, assigned_partner_id: '' }); }}
                                         className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                                         title={dt.addTaskToGroup}
                                       >
