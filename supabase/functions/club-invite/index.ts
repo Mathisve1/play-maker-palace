@@ -59,7 +59,7 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Send invitation email
+  // Send invitation email (supports both club member and partner admin invites)
   if (action === "send-email" && req.method === "POST") {
     try {
       const authHeader = req.headers.get("Authorization");
@@ -69,7 +69,7 @@ serve(async (req) => {
         });
       }
 
-      const { email, invite_token, role, club_name } = await req.json();
+      const { email, invite_token, role, club_name, partner_id, partner_name } = await req.json();
       if (!email || !invite_token) {
         return new Response(JSON.stringify({ error: "Email en token zijn verplicht." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -83,9 +83,13 @@ serve(async (req) => {
         });
       }
 
+      const isPartnerInvite = role === 'partner_admin' && partner_id;
       const origin = req.headers.get("origin") || "https://play-maker-palace.lovable.app";
-      const inviteLink = `${origin}/club-invite/${invite_token}`;
-      const roleLabel = role === 'bestuurder' ? 'Bestuurder' : role === 'beheerder' ? 'Beheerder' : 'Medewerker';
+      const inviteLink = isPartnerInvite
+        ? `${origin}/club-invite/${invite_token}?partner_id=${partner_id}`
+        : `${origin}/club-invite/${invite_token}`;
+      const roleLabel = isPartnerInvite ? 'Partner Beheerder' : role === 'bestuurder' ? 'Bestuurder' : role === 'beheerder' ? 'Beheerder' : 'Medewerker';
+      const contextName = isPartnerInvite ? (partner_name || club_name || 'een partner') : (club_name || 'een club');
 
       const emailResp = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -96,11 +100,11 @@ serve(async (req) => {
         body: JSON.stringify({
           from: Deno.env.get("RESEND_FROM_EMAIL") || "De 12e Man <onboarding@resend.dev>",
           to: [email],
-          subject: `Je bent uitgenodigd voor ${club_name || 'een club'} op De 12e Man`,
+          subject: `Je bent uitgenodigd voor ${contextName} op De 12e Man`,
           html: `
             <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
               <h2>Je bent uitgenodigd!</h2>
-              <p>Je bent uitgenodigd om lid te worden van <strong>${club_name || 'een club'}</strong> als <strong>${roleLabel}</strong>.</p>
+              <p>Je bent uitgenodigd om ${isPartnerInvite ? `beheerder te worden van <strong>${partner_name || 'een partner'}</strong> bij <strong>${club_name || 'een club'}</strong>` : `lid te worden van <strong>${club_name || 'een club'}</strong>`} als <strong>${roleLabel}</strong>.</p>
               <p>Klik op de onderstaande knop om de uitnodiging te accepteren:</p>
               <a href="${inviteLink}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">
                 Uitnodiging accepteren
@@ -115,9 +119,16 @@ serve(async (req) => {
       if (!emailResp.ok) {
         const errData = await emailResp.json();
         console.error("Resend error:", errData);
-        return new Response(JSON.stringify({ error: "E-mail kon niet worden verstuurd. Controleer de Resend configuratie." }), {
+        return new Response(JSON.stringify({ error: "E-mail kon niet worden verstuurd." }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // If partner invite, store partner_id in invitation metadata for accept flow
+      if (isPartnerInvite) {
+        await supabaseAdmin.from("club_invitations").update({
+          email: email,
+        }).eq("invite_token", invite_token);
       }
 
       return new Response(JSON.stringify({ success: true }), {

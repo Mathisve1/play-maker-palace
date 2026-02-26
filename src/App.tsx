@@ -32,6 +32,8 @@ import AcademyBuilder from "./pages/AcademyBuilder";
 import PhysicalTrainings from "./pages/PhysicalTrainings";
 import VolunteerTraining from "./pages/VolunteerTraining";
 import CertificateBuilder from "./pages/CertificateBuilder";
+import ExternalPartners from "./pages/ExternalPartners";
+import PartnerDashboard from "./pages/PartnerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,6 +76,8 @@ const App = () => {
             <Route path="/training/:trainingId" element={<VolunteerTraining />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/chat/:conversationId" element={<Chat />} />
+            <Route path="/external-partners" element={<ExternalPartners />} />
+            <Route path="/partner-dashboard" element={<PartnerDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomTabBar />

@@ -764,6 +764,50 @@ export type Database = {
           },
         ]
       }
+      external_partners: {
+        Row: {
+          category: string
+          club_id: string
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string
+          external_payroll: boolean
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          club_id: string
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          external_payroll?: boolean
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          club_id?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          external_payroll?: boolean
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_partners_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hour_confirmations: {
         Row: {
           club_approved: boolean
@@ -1023,6 +1067,160 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      partner_admins: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string | null
+          partner_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          partner_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          partner_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_admins_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_event_access: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          max_spots: number | null
+          partner_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          max_spots?: number | null
+          partner_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          max_spots?: number | null
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_event_access_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_event_access_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_event_signups: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          id: string
+          partner_event_access_id: string
+          partner_member_id: string
+          status: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          partner_event_access_id: string
+          partner_member_id: string
+          status?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          partner_event_access_id?: string
+          partner_member_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_event_signups_partner_event_access_id_fkey"
+            columns: ["partner_event_access_id"]
+            isOneToOne: false
+            referencedRelation: "partner_event_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_event_signups_partner_member_id_fkey"
+            columns: ["partner_member_id"]
+            isOneToOne: false
+            referencedRelation: "partner_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_members: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          full_name: string
+          id: string
+          partner_id: string
+          phone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          partner_id: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          partner_id?: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_members_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1882,6 +2080,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_partner_club_id: { Args: { _partner_id: string }; Returns: string }
+      get_signup_partner_id: { Args: { _access_id: string }; Returns: string }
       has_club_role: {
         Args: {
           _club_id: string
@@ -1895,6 +2095,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_partner_admin: {
+        Args: { _partner_id: string; _user_id: string }
         Returns: boolean
       }
     }
