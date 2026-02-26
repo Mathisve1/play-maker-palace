@@ -106,6 +106,9 @@ const ExternalPartners = () => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailTab, setDetailTab] = useState('overview');
 
+  // Selected task for members/tracking view
+  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<PartnerTask | null>(null);
+
   // Invite
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
@@ -522,13 +525,18 @@ const ExternalPartners = () => {
 
                 {/* Tabs */}
                 <Tabs value={detailTab} onValueChange={(v) => {
+                  if (v === 'overview') setSelectedTaskForDetail(null);
                   setDetailTab(v);
-                  if (v === 'tracking' && trackingRecords.length === 0) fetchTracking(selectedPartner);
+                  if (v === 'tracking' && trackingRecords.length === 0 && selectedTaskForDetail) fetchTracking(selectedPartner);
                 }}>
-                  <TabsList className="w-full grid grid-cols-3">
+                  <TabsList className={`w-full grid ${selectedTaskForDetail ? 'grid-cols-3' : 'grid-cols-1'}`}>
                     <TabsTrigger value="overview" className="gap-1"><Eye className="w-3.5 h-3.5" />{nl ? 'Overzicht' : 'Overview'}</TabsTrigger>
-                    <TabsTrigger value="members" className="gap-1"><Users className="w-3.5 h-3.5" />{nl ? 'Medewerkers' : 'Members'}</TabsTrigger>
-                    <TabsTrigger value="tracking" className="gap-1"><ClipboardList className="w-3.5 h-3.5" />{nl ? 'Opvolging' : 'Tracking'}</TabsTrigger>
+                    {selectedTaskForDetail && (
+                      <TabsTrigger value="members" className="gap-1"><Users className="w-3.5 h-3.5" />{nl ? 'Medewerkers' : 'Members'}</TabsTrigger>
+                    )}
+                    {selectedTaskForDetail && (
+                      <TabsTrigger value="tracking" className="gap-1"><ClipboardList className="w-3.5 h-3.5" />{nl ? 'Opvolging' : 'Tracking'}</TabsTrigger>
+                    )}
                   </TabsList>
 
                   {/* OVERVIEW TAB */}
@@ -540,6 +548,7 @@ const ExternalPartners = () => {
                           <Handshake className="w-4 h-4" />
                           {nl ? `Toegewezen taken (${partnerTasks.length})` : `Assigned tasks (${partnerTasks.length})`}
                         </CardTitle>
+                        <p className="text-xs text-muted-foreground">{nl ? 'Klik op een taak om medewerkers en opvolging te bekijken.' : 'Click a task to view members and tracking.'}</p>
                       </CardHeader>
                       <CardContent>
                         {partnerTasks.length === 0 ? (
@@ -547,7 +556,16 @@ const ExternalPartners = () => {
                         ) : (
                           <div className="space-y-3">
                             {partnerTasks.map(task => (
-                              <div key={task.id} className="p-3 rounded-lg border border-border bg-muted/30">
+                              <div
+                                key={task.id}
+                                className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedTaskForDetail?.id === task.id ? 'border-primary bg-primary/5' : 'border-border bg-muted/30 hover:border-primary/40'}`}
+                                onClick={() => {
+                                  setSelectedTaskForDetail(task);
+                                  setDetailTab('members');
+                                  // Fetch tracking for this specific task
+                                  setTrackingRecords([]);
+                                }}
+                              >
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium">{task.title}</p>
@@ -557,24 +575,19 @@ const ExternalPartners = () => {
                                       {task.location && <span>{task.location}</span>}
                                     </div>
                                   </div>
-                                  <Badge
-                                    variant={task.partner_acceptance_status === 'accepted' ? 'default' : task.partner_acceptance_status === 'rejected' ? 'destructive' : 'secondary'}
-                                    className="text-xs shrink-0"
-                                  >
-                                    {task.partner_acceptance_status === 'accepted' ? '✅' : task.partner_acceptance_status === 'rejected' ? '❌' : '⏳'}
-                                    {' '}{task.partner_acceptance_status === 'accepted' ? (nl ? 'Aanvaard' : 'Accepted') : task.partner_acceptance_status === 'rejected' ? (nl ? 'Geweigerd' : 'Rejected') : (nl ? 'Wachtend' : 'Pending')}
-                                  </Badge>
-                                </div>
-                                {task.signups.length > 0 && (
-                                  <div className="mt-2 pt-2 border-t border-border">
-                                    <p className="text-[11px] font-medium text-muted-foreground mb-1">{nl ? 'Toegewezen:' : 'Assigned:'}</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {task.signups.map((s, idx) => (
-                                        <Badge key={idx} variant="outline" className="text-[11px]">{s.volunteer_name}</Badge>
-                                      ))}
-                                    </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <Badge variant="outline" className="text-[10px]">
+                                      <Users className="w-2.5 h-2.5 mr-0.5" />{task.signups.length}
+                                    </Badge>
+                                    <Badge
+                                      variant={task.partner_acceptance_status === 'accepted' ? 'default' : task.partner_acceptance_status === 'rejected' ? 'destructive' : 'secondary'}
+                                      className="text-xs shrink-0"
+                                    >
+                                      {task.partner_acceptance_status === 'accepted' ? '✅' : task.partner_acceptance_status === 'rejected' ? '❌' : '⏳'}
+                                      {' '}{task.partner_acceptance_status === 'accepted' ? (nl ? 'Aanvaard' : 'Accepted') : task.partner_acceptance_status === 'rejected' ? (nl ? 'Geweigerd' : 'Rejected') : (nl ? 'Wachtend' : 'Pending')}
+                                    </Badge>
                                   </div>
-                                )}
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -615,128 +628,152 @@ const ExternalPartners = () => {
                     </Card>
                   </TabsContent>
 
-                  {/* MEMBERS TAB */}
-                  <TabsContent value="members" className="space-y-3 mt-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          {nl ? `Medewerkers (${members.length})` : `Members (${members.length})`}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {members.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen medewerkers.' : 'No members yet.'}</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {members.map(m => (
-                              <div key={m.id} className="p-3 rounded-lg border border-border bg-muted/30">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium shrink-0"
-                                    style={{ background: m.user_id ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--muted))', color: m.user_id ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}>
-                                    {m.user_id ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <p className="text-sm font-medium">{m.full_name}</p>
-                                      {m.user_id ? (
-                                        <Badge variant="outline" className="text-[10px] gap-0.5 border-green-500/40 text-green-700 dark:text-green-400">
-                                          <UserCheck className="w-2.5 h-2.5" />{nl ? 'Account' : 'Account'}
-                                        </Badge>
-                                      ) : (
-                                        <Badge variant="outline" className="text-[10px] gap-0.5 border-amber-500/40 text-amber-700 dark:text-amber-400">
-                                          <UserX className="w-2.5 h-2.5" />{nl ? 'Geen account' : 'No account'}
-                                        </Badge>
-                                      )}
+                  {/* MEMBERS TAB - Only assigned members for selected task */}
+                  {selectedTaskForDetail && (
+                    <TabsContent value="members" className="space-y-3 mt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Button variant="ghost" size="sm" onClick={() => { setSelectedTaskForDetail(null); setDetailTab('overview'); }}>
+                          <ArrowLeft className="w-4 h-4 mr-1" />{nl ? 'Terug' : 'Back'}
+                        </Button>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{selectedTaskForDetail.title}</p>
+                          {selectedTaskForDetail.event_title && <p className="text-[11px] text-primary">{selectedTaskForDetail.event_title}</p>}
+                        </div>
+                      </div>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            {nl ? `Toegewezen medewerkers (${selectedTaskForDetail.signups.length})` : `Assigned members (${selectedTaskForDetail.signups.length})`}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {selectedTaskForDetail.signups.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">{nl ? 'Nog geen medewerkers toegewezen aan deze taak.' : 'No members assigned to this task yet.'}</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {selectedTaskForDetail.signups.map((s, idx) => {
+                                const member = members.find(m => m.id === s.member_id);
+                                return (
+                                  <div key={idx} className="p-3 rounded-lg border border-border bg-muted/30">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium shrink-0"
+                                        style={{ background: member?.user_id ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--muted))', color: member?.user_id ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}>
+                                        {member?.user_id ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <p className="text-sm font-medium">{s.volunteer_name}</p>
+                                          {member?.user_id ? (
+                                            <Badge variant="outline" className="text-[10px] gap-0.5 border-green-500/40 text-green-700 dark:text-green-400">
+                                              <UserCheck className="w-2.5 h-2.5" />{nl ? 'Account' : 'Account'}
+                                            </Badge>
+                                          ) : member && !member.user_id ? (
+                                            <Badge variant="outline" className="text-[10px] gap-0.5 border-amber-500/40 text-amber-700 dark:text-amber-400">
+                                              <UserX className="w-2.5 h-2.5" />{nl ? 'Geen account' : 'No account'}
+                                            </Badge>
+                                          ) : null}
+                                        </div>
+                                        {member && (
+                                          <p className="text-xs text-muted-foreground">
+                                            {member.email || ''}{member.city ? ` • ${member.city}` : ''}{member.shirt_size ? ` • ${member.shirt_size}` : ''}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-1 shrink-0">
+                                        {member && !member.user_id && member.email && (
+                                          <Button
+                                            variant="outline" size="sm" className="h-7 text-[11px] px-2"
+                                            onClick={() => handleInviteMemberAsVolunteer(member)}
+                                            disabled={invitingMemberId === member.id}
+                                          >
+                                            {invitingMemberId === member.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3 mr-0.5" />}
+                                            {nl ? 'Uitnodigen' : 'Invite'}
+                                          </Button>
+                                        )}
+                                        {member?.user_id && (
+                                          <Button
+                                            variant="outline" size="sm" className="h-7 text-[11px] px-2"
+                                            onClick={() => { setSendingTicketFor(member.id); setTicketTaskId(selectedTaskForDetail.id); }}
+                                          >
+                                            <Ticket className="w-3 h-3 mr-0.5" />{nl ? 'Ticket' : 'Ticket'}
+                                          </Button>
+                                        )}
+                                      </div>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">
-                                      {m.email || ''}{m.date_of_birth ? ` • ${m.date_of_birth}` : ''}{m.city ? ` • ${m.city}` : ''}{m.shirt_size ? ` • ${m.shirt_size}` : ''}
-                                    </p>
                                   </div>
-                                  <div className="flex gap-1 shrink-0">
-                                    {!m.user_id && m.email && (
-                                      <Button
-                                        variant="outline" size="sm" className="h-7 text-[11px] px-2"
-                                        onClick={() => handleInviteMemberAsVolunteer(m)}
-                                        disabled={invitingMemberId === m.id}
-                                      >
-                                        {invitingMemberId === m.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3 mr-0.5" />}
-                                        {nl ? 'Uitnodigen' : 'Invite'}
-                                      </Button>
-                                    )}
-                                    {m.user_id && (
-                                      <Button
-                                        variant="outline" size="sm" className="h-7 text-[11px] px-2"
-                                        onClick={() => { setSendingTicketFor(m.id); setTicketTaskId(''); }}
-                                      >
-                                        <Ticket className="w-3 h-3 mr-0.5" />{nl ? 'Ticket' : 'Ticket'}
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  )}
 
-                  {/* TRACKING TAB */}
-                  <TabsContent value="tracking" className="space-y-4 mt-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <ClipboardList className="w-4 h-4" />
-                          {nl ? 'Aanwezigheidsopvolging' : 'Attendance tracking'}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {loadingTracking ? (
-                          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-                        ) : trackingRecords.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen gegevens beschikbaar.' : 'No data available yet.'}</p>
-                        ) : (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                              <thead>
-                                <tr className="border-b border-border text-left">
-                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Evenement' : 'Event'}</th>
-                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Datum' : 'Date'}</th>
-                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Taak' : 'Task'}</th>
-                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Medewerker' : 'Member'}</th>
-                                  <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Status' : 'Status'}</th>
-                                  <th className="py-2 font-medium text-muted-foreground">{nl ? 'Ingecheckt' : 'Checked in'}</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {trackingRecords.map((r, idx) => (
-                                  <tr key={idx} className="border-b border-border/50">
-                                    <td className="py-2 pr-3">{r.event_title}</td>
-                                    <td className="py-2 pr-3 text-muted-foreground">{r.event_date ? new Date(r.event_date).toLocaleDateString() : '-'}</td>
-                                    <td className="py-2 pr-3">{r.task_title}</td>
-                                    <td className="py-2 pr-3 font-medium">{r.member_name}</td>
-                                    <td className="py-2 pr-3">
-                                      {r.checked_in ? (
-                                        <Badge variant="outline" className="text-[10px] border-green-500/40 text-green-700 dark:text-green-400">
-                                          <Check className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Aanwezig' : 'Present'}
-                                        </Badge>
-                                      ) : (
-                                        <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">
-                                          <Clock className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Niet ingecheckt' : 'Not checked in'}
-                                        </Badge>
-                                      )}
-                                    </td>
-                                    <td className="py-2 text-muted-foreground">{r.checked_in_at ? new Date(r.checked_in_at).toLocaleString() : '-'}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
+                  {/* TRACKING TAB - Scoped to selected task */}
+                  {selectedTaskForDetail && (
+                    <TabsContent value="tracking" className="space-y-4 mt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Button variant="ghost" size="sm" onClick={() => { setSelectedTaskForDetail(null); setDetailTab('overview'); }}>
+                          <ArrowLeft className="w-4 h-4 mr-1" />{nl ? 'Terug' : 'Back'}
+                        </Button>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{selectedTaskForDetail.title}</p>
+                          {selectedTaskForDetail.event_title && <p className="text-[11px] text-primary">{selectedTaskForDetail.event_title}</p>}
+                        </div>
+                      </div>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <ClipboardList className="w-4 h-4" />
+                            {nl ? 'Aanwezigheidsopvolging' : 'Attendance tracking'}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {loadingTracking ? (
+                            <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                          ) : (() => {
+                            const taskRecords = trackingRecords.filter(r => r.task_title === selectedTaskForDetail.title);
+                            return taskRecords.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">{nl ? 'Nog geen gegevens beschikbaar voor deze taak.' : 'No data available for this task yet.'}</p>
+                            ) : (
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr className="border-b border-border text-left">
+                                      <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Medewerker' : 'Member'}</th>
+                                      <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Status' : 'Status'}</th>
+                                      <th className="py-2 font-medium text-muted-foreground">{nl ? 'Ingecheckt' : 'Checked in'}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {taskRecords.map((r, idx) => (
+                                      <tr key={idx} className="border-b border-border/50">
+                                        <td className="py-2 pr-3 font-medium">{r.member_name}</td>
+                                        <td className="py-2 pr-3">
+                                          {r.checked_in ? (
+                                            <Badge variant="outline" className="text-[10px] border-green-500/40 text-green-700 dark:text-green-400">
+                                              <Check className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Aanwezig' : 'Present'}
+                                            </Badge>
+                                          ) : (
+                                            <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">
+                                              <Clock className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Niet ingecheckt' : 'Not checked in'}
+                                            </Badge>
+                                          )}
+                                        </td>
+                                        <td className="py-2 text-muted-foreground">{r.checked_in_at ? new Date(r.checked_in_at).toLocaleString() : '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            );
+                          })()}
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  )}
                 </Tabs>
               </>
             )}
