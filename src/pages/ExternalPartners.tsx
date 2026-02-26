@@ -8,10 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Users, Mail, Eye, Calendar, Download, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Mail, Eye, Calendar, Download, Trash2, Loader2, Upload, X } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 interface Partner {
@@ -21,6 +21,7 @@ interface Partner {
   contact_name: string | null;
   contact_email: string | null;
   external_payroll: boolean;
+  logo_url: string | null;
   created_at: string;
   member_count?: number;
 }
@@ -43,15 +44,16 @@ interface EventAccess {
 }
 
 const categoryLabels: Record<string, Record<string, string>> = {
-  nl: { horeca: 'Horeca', stewards: 'Stewards', supporters: 'Supporters' },
-  fr: { horeca: 'Horeca', stewards: 'Stewards', supporters: 'Supporters' },
-  en: { horeca: 'Catering', stewards: 'Stewards', supporters: 'Supporters' },
+  nl: { horeca: 'Horeca', stewards: 'Stewards', supporters: 'Supporters', andere: 'Andere' },
+  fr: { horeca: 'Horeca', stewards: 'Stewards', supporters: 'Supporters', andere: 'Autre' },
+  en: { horeca: 'Catering', stewards: 'Stewards', supporters: 'Supporters', andere: 'Other' },
 };
 
 const categoryColors: Record<string, string> = {
   horeca: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
   stewards: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
   supporters: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  andere: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
 };
 
 const ExternalPartners = () => {
@@ -62,7 +64,10 @@ const ExternalPartners = () => {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [newPartner, setNewPartner] = useState({ name: '', category: 'stewards', contact_name: '', contact_email: '', external_payroll: false });
+  const [newPartner, setNewPartner] = useState({ name: '', category: 'stewards', custom_category: '', contact_name: '', contact_email: '', external_payroll: false });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [inviteEmails, setInviteEmails] = useState<string[]>(['']);
 
   // Detail view
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
@@ -122,20 +127,70 @@ const ExternalPartners = () => {
   const handleCreatePartner = async () => {
     if (!clubId || !newPartner.name.trim()) return;
     setCreating(true);
-    const { error } = await supabase.from('external_partners').insert({
-      club_id: clubId,
-      name: newPartner.name.trim(),
-      category: newPartner.category,
-      contact_name: newPartner.contact_name || null,
-      contact_email: newPartner.contact_email || null,
-      external_payroll: newPartner.external_payroll,
-    });
-    if (error) { toast.error(error.message); }
-    else {
+    try {
+      const finalCategory = newPartner.category === 'andere' ? (newPartner.custom_category.trim() || 'andere') : newPartner.category;
+
+      // Upload logo if provided
+      let logoUrl: string | null = null;
+      if (logoFile) {
+        const ext = logoFile.name.split('.').pop();
+        const path = `partner-logos/${clubId}/${Date.now()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from('club-logos').upload(path, logoFile);
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage.from('club-logos').getPublicUrl(path);
+        logoUrl = urlData.publicUrl;
+      }
+
+      const { data: partner, error } = await supabase.from('external_partners').insert({
+        club_id: clubId,
+        name: newPartner.name.trim(),
+        category: finalCategory,
+        contact_name: newPartner.contact_name || null,
+        contact_email: newPartner.contact_email || null,
+        external_payroll: newPartner.external_payroll,
+        logo_url: logoUrl,
+      }).select('id').single();
+
+      if (error) throw error;
+
+      // Send invitations to all provided emails
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && partner) {
+        const validEmails = inviteEmails.filter(e => e.trim());
+        const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).maybeSingle();
+        
+        for (const email of validEmails) {
+          try {
+            const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
+              club_id: clubId,
+              email: email.trim(),
+              role: 'medewerker' as any,
+              invited_by: session.user.id,
+            }).select('invite_token').single();
+
+            if (invErr) continue;
+
+            await supabase.functions.invoke('club-invite', {
+              body: { email: email.trim(), invite_token: inv.invite_token, role: 'partner_admin', club_name: club?.name, partner_id: partner.id, partner_name: newPartner.name.trim() },
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+          } catch { /* skip failed individual invites */ }
+        }
+
+        if (validEmails.length > 0) {
+          toast.success(language === 'nl' ? `${validEmails.length} uitnodiging(en) verstuurd!` : `${validEmails.length} invitation(s) sent!`);
+        }
+      }
+
       toast.success(language === 'nl' ? 'Partner aangemaakt!' : 'Partner created!');
       setShowCreate(false);
-      setNewPartner({ name: '', category: 'stewards', contact_name: '', contact_email: '', external_payroll: false });
+      setNewPartner({ name: '', category: 'stewards', custom_category: '', contact_name: '', contact_email: '', external_payroll: false });
+      setLogoFile(null);
+      setLogoPreview(null);
+      setInviteEmails(['']);
       await fetchPartners(clubId);
+    } catch (err: any) {
+      toast.error(err.message);
     }
     setCreating(false);
   };
@@ -388,13 +443,17 @@ const ExternalPartners = () => {
               partners.map(p => (
                 <Card key={p.id} className="cursor-pointer hover:border-primary/40 transition-colors" onClick={() => handleSelectPartner(p)}>
                   <CardContent className="flex items-center gap-4 p-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-primary" />
-                    </div>
+                    {p.logo_url ? (
+                      <img src={p.logo_url} alt={p.name} className="w-10 h-10 rounded-full object-cover border border-border" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-primary" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium text-foreground">{p.name}</p>
-                        <Badge className={`text-xs ${categoryColors[p.category]}`}>
+                        <Badge className={`text-xs ${categoryColors[p.category] || categoryColors['andere']}`}>
                           {categoryLabels[language]?.[p.category] || p.category}
                         </Badge>
                         {p.external_payroll && <Badge variant="outline" className="text-xs">Externe Payroll</Badge>}
@@ -414,16 +473,55 @@ const ExternalPartners = () => {
       </main>
 
       {/* Create Partner Dialog */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent>
+      <Dialog open={showCreate} onOpenChange={(open) => {
+        setShowCreate(open);
+        if (!open) { setLogoFile(null); setLogoPreview(null); setInviteEmails(['']); }
+      }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{language === 'nl' ? 'Nieuwe partner aanmaken' : 'Create new partner'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Logo upload */}
+            <div>
+              <Label>{language === 'nl' ? 'Logo (optioneel)' : 'Logo (optional)'}</Label>
+              <div className="mt-1 flex items-center gap-3">
+                {logoPreview ? (
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
+                    <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => { setLogoFile(null); setLogoPreview(null); }}
+                      className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-16 h-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                    <Upload className="w-5 h-5 text-muted-foreground" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setLogoFile(file);
+                          setLogoPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+                <p className="text-xs text-muted-foreground">{language === 'nl' ? 'Upload het logo van de partnerorganisatie' : 'Upload the partner organization logo'}</p>
+              </div>
+            </div>
+
             <div>
               <Label>{language === 'nl' ? 'Naam' : 'Name'} *</Label>
               <Input value={newPartner.name} onChange={e => setNewPartner(p => ({ ...p, name: e.target.value }))} placeholder="Stewards VZW Antwerp" />
             </div>
+
             <div>
               <Label>{language === 'nl' ? 'Categorie' : 'Category'}</Label>
               <Select value={newPartner.category} onValueChange={v => setNewPartner(p => ({ ...p, category: v }))}>
@@ -432,9 +530,19 @@ const ExternalPartners = () => {
                   <SelectItem value="stewards">Stewards</SelectItem>
                   <SelectItem value="horeca">Horeca</SelectItem>
                   <SelectItem value="supporters">Supporters</SelectItem>
+                  <SelectItem value="andere">{language === 'nl' ? 'Andere...' : 'Other...'}</SelectItem>
                 </SelectContent>
               </Select>
+              {newPartner.category === 'andere' && (
+                <Input
+                  className="mt-2"
+                  value={newPartner.custom_category}
+                  onChange={e => setNewPartner(p => ({ ...p, custom_category: e.target.value }))}
+                  placeholder={language === 'nl' ? 'Specificeer categorie...' : 'Specify category...'}
+                />
+              )}
             </div>
+
             <div>
               <Label>{language === 'nl' ? 'Contactpersoon' : 'Contact name'}</Label>
               <Input value={newPartner.contact_name} onChange={e => setNewPartner(p => ({ ...p, contact_name: e.target.value }))} />
@@ -443,13 +551,50 @@ const ExternalPartners = () => {
               <Label>E-mail</Label>
               <Input type="email" value={newPartner.contact_email} onChange={e => setNewPartner(p => ({ ...p, contact_email: e.target.value }))} />
             </div>
+
+            {/* Invite partner admins */}
+            <div>
+              <Label className="flex items-center gap-1">
+                <Mail className="w-3.5 h-3.5" />
+                {language === 'nl' ? 'Verantwoordelijken uitnodigen' : 'Invite administrators'}
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                {language === 'nl' ? 'Nodig verantwoordelijken uit die hun medewerkers kunnen beheren via het partner portaal.' : 'Invite administrators who can manage their staff via the partner portal.'}
+              </p>
+              <div className="space-y-2">
+                {inviteEmails.map((email, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={e => {
+                        const updated = [...inviteEmails];
+                        updated[idx] = e.target.value;
+                        setInviteEmails(updated);
+                      }}
+                      placeholder={`verantwoordelijke${idx + 1}@partner.be`}
+                    />
+                    {inviteEmails.length > 1 && (
+                      <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setInviteEmails(inviteEmails.filter((_, i) => i !== idx))}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={() => setInviteEmails([...inviteEmails, ''])}>
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  {language === 'nl' ? 'Nog iemand toevoegen' : 'Add another'}
+                </Button>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2">
               <Checkbox checked={newPartner.external_payroll} onCheckedChange={c => setNewPartner(p => ({ ...p, external_payroll: !!c }))} id="payroll" />
               <Label htmlFor="payroll" className="cursor-pointer">{language === 'nl' ? 'Externe Payroll (medewerkers hebben al een contract)' : 'External Payroll (members have existing contracts)'}</Label>
             </div>
             <Button onClick={handleCreatePartner} disabled={creating || !newPartner.name.trim()} className="w-full">
               {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {language === 'nl' ? 'Aanmaken' : 'Create'}
+              {language === 'nl' ? 'Aanmaken & uitnodigen' : 'Create & invite'}
             </Button>
           </div>
         </DialogContent>
