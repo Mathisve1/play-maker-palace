@@ -62,6 +62,8 @@ interface Task {
   compensation_type?: string;
   hourly_rate?: number | null;
   estimated_hours?: number | null;
+  partner_only?: boolean;
+  assigned_partner_id?: string | null;
 }
 
 interface EventData {
@@ -359,7 +361,7 @@ const ClubOwnerDashboard = () => {
     required_training_id: '',
     partner_only: false, assigned_partner_id: '',
   });
-  const [externalPartners, setExternalPartners] = useState<{ id: string; name: string }[]>([]);
+  const [externalPartners, setExternalPartners] = useState<{ id: string; name: string; external_payroll: boolean }[]>([]);
   const [academyTrainings, setAcademyTrainings] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
@@ -433,7 +435,7 @@ const ClubOwnerDashboard = () => {
       // Fetch external partners for this club
       const { data: partnersData } = await supabase
         .from('external_partners')
-        .select('id, name')
+        .select('id, name, external_payroll')
         .eq('club_id', activeClub.id)
         .order('name');
       setExternalPartners(partnersData || []);
@@ -567,7 +569,9 @@ const ClubOwnerDashboard = () => {
       });
       if (newStatus === 'assigned' && volunteer) {
         const task = tasks.find(t => t.id === taskId);
-        if (task && task.contract_template_id) {
+        // Skip contract dialog if task is partner_only and partner handles payroll externally
+        const isExternalPayroll = task?.partner_only && task?.assigned_partner_id && externalPartners.find(p => p.id === task.assigned_partner_id)?.external_payroll;
+        if (task && task.contract_template_id && !isExternalPayroll) {
           setContractConfirm({ volunteer, task });
         }
       }
@@ -1148,6 +1152,15 @@ const ClubOwnerDashboard = () => {
                               );
                             }
                             if (!contractSigned) {
+                              // If partner handles contracts externally, show badge instead of send button
+                              const isExternalPayroll = (task as any).partner_only && (task as any).assigned_partner_id && externalPartners.find(p => p.id === (task as any).assigned_partner_id)?.external_payroll;
+                              if (isExternalPayroll) {
+                                return (
+                                  <span className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-lg border border-muted text-muted-foreground">
+                                    <Handshake className="w-3 h-3" /> Extern contract
+                                  </span>
+                                );
+                              }
                               const contractKey = `${signup.task_id}-${signup.volunteer_id}`;
                               const isSending = sendingContract === contractKey;
                               return (
