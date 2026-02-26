@@ -78,16 +78,16 @@ const PartnerDashboard = () => {
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
+      if (!session) { navigate('/partner-login'); return; }
       setUserId(session.user.id);
 
       // Find partner admin record
       const { data: adminRecords } = await supabase.from('partner_admins').select('partner_id').eq('user_id', session.user.id);
-      if (!adminRecords?.length) { navigate('/dashboard'); return; }
+      if (!adminRecords?.length) { navigate('/partner-login'); return; }
 
       const partnerId = adminRecords[0].partner_id;
       const { data: partnerData } = await supabase.from('external_partners').select('id, name, category, external_payroll, club_id').eq('id', partnerId).maybeSingle();
-      if (!partnerData) { navigate('/dashboard'); return; }
+      if (!partnerData) { navigate('/partner-login'); return; }
 
       const { data: club } = await supabase.from('clubs').select('name').eq('id', partnerData.club_id).maybeSingle();
       setPartner({ ...partnerData, club_name: club?.name || '' });

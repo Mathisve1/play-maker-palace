@@ -26,7 +26,7 @@ const BottomTabBar = () => {
   if (!isMobile) return null;
 
   // Only show on dashboard/chat pages (authenticated pages)
-  const showOnPaths = ['/dashboard', '/chat', '/task', '/partner-dashboard'];
+  const showOnPaths = ['/dashboard', '/chat', '/task'];
   const shouldShow = showOnPaths.some(p => location.pathname.startsWith(p));
   if (!shouldShow) return null;
 

@@ -24,6 +24,15 @@ const Login = () => {
       toast.error(error.message);
     } else {
       toast.success('Logged in!');
+      // Check if user is a partner admin
+      const { data: partnerAdmins } = await supabase
+        .from('partner_admins')
+        .select('id')
+        .eq('user_id', data.user.id);
+      if (partnerAdmins && partnerAdmins.length > 0) {
+        navigate('/partner-dashboard');
+        return;
+      }
       // Check if user is a club_owner
       const { data: roles } = await supabase
         .from('user_roles')
