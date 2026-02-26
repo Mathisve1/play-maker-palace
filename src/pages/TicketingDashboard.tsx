@@ -147,18 +147,29 @@ const TicketingDashboard = () => {
       const taskMap = Object.fromEntries(tasks.map(t => [t.id, t.title]));
 
       const { data: signups } = await supabase.from('task_signups').select('volunteer_id, task_id').in('task_id', taskIds).eq('status', 'assigned');
-      if (!signups?.length) { setVolunteers([]); return; }
 
-      const volIds = [...new Set(signups.map(s => s.volunteer_id))];
-      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', volIds);
+      const volIds = [...new Set((signups || []).map(s => s.volunteer_id))];
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', volIds.length > 0 ? volIds : ['__none__']);
       const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p.full_name || 'Onbekend']));
+
+      // Also fetch partner member assignments
+      const { data: partnerAssignments } = await supabase.from('partner_task_assignments').select('id, partner_member_id, task_id').in('task_id', taskIds);
+      const partnerMemberIds = [...new Set((partnerAssignments || []).map(a => a.partner_member_id))];
+      let partnerMemberMap: Record<string, string> = {};
+      if (partnerMemberIds.length > 0) {
+        const { data: partnerMembers } = await supabase.from('partner_members').select('id, full_name').in('id', partnerMemberIds);
+        partnerMemberMap = Object.fromEntries((partnerMembers || []).map(m => [m.id, m.full_name || 'Onbekend']));
+      }
 
       const { data: tickets } = await supabase.from('volunteer_tickets').select('*').eq('club_id', clubId).eq('event_id', selectedEventId);
       const ticketMap = Object.fromEntries((tickets || []).map(t => [t.volunteer_id + '_' + t.task_id, t]));
 
-      const rows: VolunteerTicketRow[] = signups.map(s => {
+      const rows: VolunteerTicketRow[] = [];
+
+      // Regular volunteers
+      (signups || []).forEach(s => {
         const ticket = ticketMap[s.volunteer_id + '_' + s.task_id];
-        return {
+        rows.push({
           id: ticket?.id || `${s.volunteer_id}_${s.task_id}`,
           volunteer_id: s.volunteer_id,
           task_id: s.task_id,
@@ -168,8 +179,26 @@ const TicketingDashboard = () => {
           error_message: ticket?.error_message || null,
           volunteer_name: profileMap[s.volunteer_id] || 'Onbekend',
           task_title: taskMap[s.task_id] || '',
-        };
+        });
       });
+
+      // Partner members
+      (partnerAssignments || []).forEach(a => {
+        const ticket = ticketMap[a.partner_member_id + '_' + a.task_id];
+        rows.push({
+          id: ticket?.id || `partner_${a.partner_member_id}_${a.task_id}`,
+          volunteer_id: a.partner_member_id,
+          task_id: a.task_id,
+          status: ticket?.status || 'none',
+          checked_in_at: ticket?.checked_in_at || null,
+          external_ticket_id: ticket?.external_ticket_id || null,
+          error_message: ticket?.error_message || null,
+          volunteer_name: `${partnerMemberMap[a.partner_member_id] || 'Onbekend'} (partner)`,
+          task_title: taskMap[a.task_id] || '',
+        });
+      });
+
+      if (rows.length === 0) { setVolunteers([]); return; }
       setVolunteers(rows);
     };
     loadVolunteers();
