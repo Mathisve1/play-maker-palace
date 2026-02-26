@@ -25,7 +25,7 @@ async function sendAcceptNotification(supabaseAdmin: any, invite: any, acceptorN
       method: "POST",
       headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-from: Deno.env.get("RESEND_FROM_EMAIL") || "De 12e Man <onboarding@resend.dev>",
+        from: Deno.env.get("RESEND_FROM_EMAIL") || "De 12e Man <onboarding@resend.dev>",
         to: [inviterProfile.email],
         subject: `${acceptorName} heeft je uitnodiging geaccepteerd`,
         html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
@@ -46,7 +46,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -59,7 +59,7 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Send invitation email (supports both club member and partner admin invites)
+  // Send invitation email
   if (action === "send-email" && req.method === "POST") {
     try {
       const authHeader = req.headers.get("Authorization");
@@ -124,7 +124,6 @@ serve(async (req) => {
         });
       }
 
-      // If partner invite, store partner_id in invitation metadata for accept flow
       if (isPartnerInvite) {
         await supabaseAdmin.from("club_invitations").update({
           email: email,
@@ -134,7 +133,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (err) {
+    } catch (err: any) {
       return new Response(JSON.stringify({ error: err.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -163,12 +162,20 @@ serve(async (req) => {
         });
       }
 
-      // Get club name
       const { data: club } = await supabaseAdmin
         .from("clubs")
         .select("name, logo_url, sport")
         .eq("id", invite.club_id)
         .maybeSingle();
+
+      // Detect partner invite via URL param
+      const urlPartnerId = url.searchParams.get("partner_id");
+      let partnerName: string | null = null;
+      if (urlPartnerId) {
+        const { data: partner } = await supabaseAdmin
+          .from("external_partners").select("name").eq("id", urlPartnerId).maybeSingle();
+        partnerName = partner?.name || null;
+      }
 
       return new Response(JSON.stringify({
         role: invite.role,
@@ -177,10 +184,13 @@ serve(async (req) => {
         club_name: club?.name || null,
         club_logo: club?.logo_url || null,
         club_sport: club?.sport || null,
+        partner_id: urlPartnerId || null,
+        partner_name: partnerName,
+        is_partner_invite: !!urlPartnerId,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (err) {
+    } catch (err: any) {
       return new Response(JSON.stringify({ error: err.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -190,14 +200,14 @@ serve(async (req) => {
   // Sign up invited user + accept
   if (action === "signup-and-accept" && req.method === "POST") {
     try {
-      const { token, email, password, full_name } = await req.json();
+      const body = await req.json();
+      const { token, email, password, full_name, partner_id } = body;
       if (!token || !email || !password) {
         return new Response(JSON.stringify({ error: "Alle velden zijn verplicht." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Find invitation
       const { data: invite, error: invErr } = await supabaseAdmin
         .from("club_invitations")
         .select("*")
@@ -212,7 +222,6 @@ serve(async (req) => {
         });
       }
 
-      // Create user
       const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -227,35 +236,42 @@ serve(async (req) => {
       }
 
       const userId = authData.user.id;
+      const isPartnerInvite = !!partner_id;
 
-      // Update user role to club_owner
-      await supabaseAdmin
-        .from("user_roles")
-        .update({ role: "club_owner" })
-        .eq("user_id", userId);
-
-      // Add as club member
-      await supabaseAdmin
-        .from("club_members")
-        .upsert({
-          club_id: invite.club_id,
+      if (isPartnerInvite) {
+        // Partner invite: add as partner_admin only
+        await supabaseAdmin.from("partner_admins").upsert({
+          partner_id: partner_id,
           user_id: userId,
-          role: invite.role,
-        }, { onConflict: "club_id,user_id" });
+          invited_by: invite.invited_by,
+        }, { onConflict: "partner_id,user_id" });
+      } else {
+        // Club invite: add as club member
+        await supabaseAdmin
+          .from("user_roles")
+          .update({ role: "club_owner" })
+          .eq("user_id", userId);
 
-      // Mark invitation as accepted
+        await supabaseAdmin
+          .from("club_members")
+          .upsert({
+            club_id: invite.club_id,
+            user_id: userId,
+            role: invite.role,
+          }, { onConflict: "club_id,user_id" });
+      }
+
       await supabaseAdmin
         .from("club_invitations")
         .update({ status: "accepted" })
         .eq("id", invite.id);
 
-      // Send notification to inviter
       await sendAcceptNotification(supabaseAdmin, invite, full_name || email);
 
-      return new Response(JSON.stringify({ success: true, club_id: invite.club_id }), {
+      return new Response(JSON.stringify({ success: true, club_id: invite.club_id, is_partner: isPartnerInvite }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (err) {
+    } catch (err: any) {
       return new Response(JSON.stringify({ error: err.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -265,7 +281,8 @@ serve(async (req) => {
   // Accept invitation (existing user)
   if (action === "accept" && req.method === "POST") {
     try {
-      const { token, user_id } = await req.json();
+      const body = await req.json();
+      const { token, user_id, partner_id } = body;
       if (!token || !user_id) {
         return new Response(JSON.stringify({ error: "Token en user_id zijn verplicht." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -286,25 +303,35 @@ serve(async (req) => {
         });
       }
 
-      await supabaseAdmin
-        .from("club_members")
-        .upsert({
-          club_id: invite.club_id,
-          user_id,
-          role: invite.role,
-        }, { onConflict: "club_id,user_id" });
+      const isPartnerInvite = !!partner_id;
 
-      const { data: existingRole } = await supabaseAdmin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user_id)
-        .maybeSingle();
-
-      if (existingRole && existingRole.role !== "club_owner") {
+      if (isPartnerInvite) {
+        await supabaseAdmin.from("partner_admins").upsert({
+          partner_id: partner_id,
+          user_id: user_id,
+          invited_by: invite.invited_by,
+        }, { onConflict: "partner_id,user_id" });
+      } else {
         await supabaseAdmin
+          .from("club_members")
+          .upsert({
+            club_id: invite.club_id,
+            user_id,
+            role: invite.role,
+          }, { onConflict: "club_id,user_id" });
+
+        const { data: existingRole } = await supabaseAdmin
           .from("user_roles")
-          .update({ role: "club_owner" })
-          .eq("user_id", user_id);
+          .select("role")
+          .eq("user_id", user_id)
+          .maybeSingle();
+
+        if (existingRole && existingRole.role !== "club_owner") {
+          await supabaseAdmin
+            .from("user_roles")
+            .update({ role: "club_owner" })
+            .eq("user_id", user_id);
+        }
       }
 
       await supabaseAdmin
@@ -312,20 +339,19 @@ serve(async (req) => {
         .update({ status: "accepted" })
         .eq("id", invite.id);
 
-      // Get user name for notification
       const { data: acceptorProfile } = await supabaseAdmin
         .from("profiles")
         .select("full_name, email")
         .eq("id", user_id)
         .maybeSingle();
-      
+
       const acceptorName = acceptorProfile?.full_name || acceptorProfile?.email || "Een gebruiker";
       await sendAcceptNotification(supabaseAdmin, invite, acceptorName);
 
-      return new Response(JSON.stringify({ success: true, club_id: invite.club_id }), {
+      return new Response(JSON.stringify({ success: true, club_id: invite.club_id, is_partner: isPartnerInvite }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (err) {
+    } catch (err: any) {
       return new Response(JSON.stringify({ error: err.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

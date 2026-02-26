@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -13,16 +13,20 @@ interface InviteInfo {
   club_name: string | null;
   club_logo: string | null;
   club_sport: string | null;
+  partner_id: string | null;
+  partner_name: string | null;
 }
 
 const roleLabels: Record<string, string> = {
   bestuurder: 'Bestuurder',
   beheerder: 'Beheerder',
   medewerker: 'Medewerker',
+  partner_admin: 'Partner Beheerder',
 };
 
 const ClubInviteAccept = () => {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'show-options' | 'login' | 'signup' | 'accepting' | 'success' | 'error'>('loading');
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
@@ -40,13 +44,16 @@ const ClubInviteAccept = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const isPartnerInvite = !!inviteInfo?.partner_id || !!searchParams.get('partner_id');
+  const partnerId = inviteInfo?.partner_id || searchParams.get('partner_id');
+
   useEffect(() => {
     if (!token) return;
     const init = async () => {
-      // Fetch invite info
       try {
+        const partnerParam = searchParams.get('partner_id') ? `&partner_id=${searchParams.get('partner_id')}` : '';
         const resp = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/club-invite?action=info&token=${token}`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/club-invite?action=info&token=${token}${partnerParam}`,
           { headers: { 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
         );
         const data = await resp.json();
@@ -72,16 +79,18 @@ const ClubInviteAccept = () => {
         return;
       }
 
-      // Check if user is already logged in
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await acceptWithSession(session);
+        // Don't auto-accept yet, wait for inviteInfo to be set
+        setStatus('show-options');
       } else {
         setStatus('show-options');
       }
     };
     init();
   }, [token]);
+
+  const getRedirectPath = () => isPartnerInvite ? '/partner-dashboard' : '/club-dashboard';
 
   const acceptWithSession = async (session: { access_token: string; user: { id: string } }) => {
     setStatus('accepting');
@@ -95,14 +104,15 @@ const ClubInviteAccept = () => {
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             'Authorization': `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ token, user_id: session.user.id }),
+          body: JSON.stringify({ token, user_id: session.user.id, partner_id: partnerId }),
         }
       );
       const data = await resp.json();
       if (resp.ok && data.success) {
         setStatus('success');
-        toast.success('Je bent toegevoegd aan de club!');
-        setTimeout(() => navigate('/club-dashboard'), 2000);
+        const dest = data.is_partner ? '/partner-dashboard' : '/club-dashboard';
+        toast.success(data.is_partner ? 'Je bent toegevoegd als partner beheerder!' : 'Je bent toegevoegd aan de club!');
+        setTimeout(() => navigate(dest), 2000);
       } else {
         setStatus('error');
         setErrorMsg(data.error || 'Er ging iets mis');
@@ -150,12 +160,12 @@ const ClubInviteAccept = () => {
             email: signupEmail,
             password: signupPassword,
             full_name: signupName,
+            partner_id: partnerId,
           }),
         }
       );
       const data = await resp.json();
       if (resp.ok && data.success) {
-        // Sign in the user
         const { error: signInErr } = await supabase.auth.signInWithPassword({
           email: signupEmail,
           password: signupPassword,
@@ -166,8 +176,9 @@ const ClubInviteAccept = () => {
           return;
         }
         setStatus('success');
-        toast.success('Account aangemaakt en toegevoegd aan de club!');
-        setTimeout(() => navigate('/club-dashboard'), 2000);
+        const dest = data.is_partner ? '/partner-dashboard' : '/club-dashboard';
+        toast.success(data.is_partner ? 'Account aangemaakt! Je wordt doorgestuurd naar het partner dashboard.' : 'Account aangemaakt en toegevoegd aan de club!');
+        setTimeout(() => navigate(dest), 2000);
       } else {
         toast.error(data.error || 'Er ging iets mis');
       }
@@ -187,21 +198,24 @@ const ClubInviteAccept = () => {
         </div>
 
         <div className="bg-card rounded-2xl shadow-elevated p-8">
-          {/* Club info header */}
+          {/* Club/Partner info header */}
           {inviteInfo && (
             <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-muted/30 border border-border">
               {inviteInfo.club_logo ? (
                 <img src={inviteInfo.club_logo} alt="" className="w-10 h-10 rounded-lg object-cover" />
               ) : (
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                  {(inviteInfo.club_name || '?')[0].toUpperCase()}
+                  {(inviteInfo.partner_name || inviteInfo.club_name || '?')[0].toUpperCase()}
                 </div>
               )}
               <div>
-                <p className="text-sm font-semibold text-foreground">{inviteInfo.club_name || 'Club'}</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {isPartnerInvite ? inviteInfo.partner_name || 'Partner' : inviteInfo.club_name || 'Club'}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   Rol: {roleLabels[inviteInfo.role] || inviteInfo.role}
-                  {inviteInfo.club_sport && ` · ${inviteInfo.club_sport}`}
+                  {isPartnerInvite && inviteInfo.club_name && ` · ${inviteInfo.club_name}`}
+                  {!isPartnerInvite && inviteInfo.club_sport && ` · ${inviteInfo.club_sport}`}
                 </p>
               </div>
             </div>
@@ -219,7 +233,7 @@ const ClubInviteAccept = () => {
           {status === 'show-options' && (
             <>
               <h2 className="text-xl font-heading font-bold text-foreground text-center mb-2">
-                Uitnodiging accepteren
+                {isPartnerInvite ? 'Partner uitnodiging accepteren' : 'Uitnodiging accepteren'}
               </h2>
               <p className="text-sm text-muted-foreground text-center mb-6">
                 Heb je al een account of wil je een nieuw account aanmaken?
@@ -270,7 +284,9 @@ const ClubInviteAccept = () => {
             <>
               <h2 className="text-xl font-heading font-bold text-foreground text-center mb-1">Account aanmaken</h2>
               <p className="text-sm text-muted-foreground text-center mb-4">
-                Maak een account aan om lid te worden van de club
+                {isPartnerInvite
+                  ? 'Maak een account aan om in te loggen op het partner platform'
+                  : 'Maak een account aan om lid te worden van de club'}
               </p>
               <form onSubmit={handleSignup} className="space-y-4">
                 <div>
@@ -314,8 +330,12 @@ const ClubInviteAccept = () => {
           {status === 'success' && (
             <div className="text-center">
               <div className="text-4xl mb-3">🎉</div>
-              <h2 className="text-xl font-heading font-bold text-foreground mb-2">Welkom bij de club!</h2>
-              <p className="text-muted-foreground">Je wordt doorgestuurd naar het dashboard...</p>
+              <h2 className="text-xl font-heading font-bold text-foreground mb-2">
+                {isPartnerInvite ? 'Welkom als partner!' : 'Welkom bij de club!'}
+              </h2>
+              <p className="text-muted-foreground">
+                Je wordt doorgestuurd naar het {isPartnerInvite ? 'partner' : 'club'} dashboard...
+              </p>
             </div>
           )}
 
@@ -324,7 +344,7 @@ const ClubInviteAccept = () => {
               <h2 className="text-xl font-heading font-bold text-foreground mb-2">Uitnodiging mislukt</h2>
               <p className="text-muted-foreground mb-4">{errorMsg}</p>
               <button
-                onClick={() => navigate('/club-login')}
+                onClick={() => navigate(isPartnerInvite ? '/partner-login' : '/club-login')}
                 className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
               >
                 Naar inloggen
