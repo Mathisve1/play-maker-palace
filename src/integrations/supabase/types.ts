@@ -1573,6 +1573,7 @@ export type Database = {
           loyalty_eligible: boolean
           loyalty_points: number | null
           notes: string | null
+          partner_acceptance_status: string
           partner_only: boolean
           required_training_id: string | null
           spots_available: number | null
@@ -1603,6 +1604,7 @@ export type Database = {
           loyalty_eligible?: boolean
           loyalty_points?: number | null
           notes?: string | null
+          partner_acceptance_status?: string
           partner_only?: boolean
           required_training_id?: string | null
           spots_available?: number | null
@@ -1633,6 +1635,7 @@ export type Database = {
           loyalty_eligible?: boolean
           loyalty_points?: number | null
           notes?: string | null
+          partner_acceptance_status?: string
           partner_only?: boolean
           required_training_id?: string | null
           spots_available?: number | null

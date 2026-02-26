@@ -38,7 +38,7 @@ interface EventWithAccess {
   event_date: string | null;
   max_spots: number | null;
   signups: { id: string; partner_member_id: string; status: string; member_name?: string }[];
-  partner_tasks: { id: string; title: string; description: string | null; task_date: string | null; location: string | null; spots_available: number; }[];
+  partner_tasks: { id: string; title: string; description: string | null; task_date: string | null; location: string | null; spots_available: number; partner_acceptance_status: string; }[];
 }
 
 interface StandaloneTask {
@@ -50,6 +50,7 @@ interface StandaloneTask {
   spots_available: number;
   event_id: string | null;
   event_title?: string | null;
+  partner_acceptance_status: string;
 }
 
 const PartnerDashboard = () => {
@@ -102,7 +103,7 @@ const PartnerDashboard = () => {
     const [membersRes, accessRes, allTasksRes] = await Promise.all([
       supabase.from('partner_members').select('*').eq('partner_id', partnerId).order('created_at'),
       supabase.from('partner_event_access').select('id, event_id, max_spots').eq('partner_id', partnerId),
-      supabase.from('tasks').select('id, title, description, task_date, location, spots_available, event_id').eq('partner_only', true).eq('assigned_partner_id', partnerId),
+      supabase.from('tasks').select('id, title, description, task_date, location, spots_available, event_id, partner_acceptance_status').eq('partner_only', true).eq('assigned_partner_id', partnerId),
     ]);
     const mems = membersRes.data || [];
     setMembers(mems);
@@ -132,7 +133,21 @@ const PartnerDashboard = () => {
       const { data: evts } = await supabase.from('events').select('id, title').in('id', uniqueEventIds);
       (evts || []).forEach((e: any) => { eventMap[e.id] = e.title; });
     }
-    setStandaloneTasks(tasksWithoutAccess.map(t => ({ ...t, event_title: t.event_id ? eventMap[t.event_id] || null : null })));
+    setStandaloneTasks(tasksWithoutAccess.map(t => ({ ...t, event_title: t.event_id ? eventMap[t.event_id] || null : null, partner_acceptance_status: t.partner_acceptance_status || 'pending' })));
+  };
+
+  const handleAcceptTask = async (taskId: string) => {
+    const { error } = await supabase.from('tasks').update({ partner_acceptance_status: 'accepted' }).eq('id', taskId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(language === 'nl' ? 'Taak aanvaard!' : 'Task accepted!');
+    if (partner) await fetchData(partner.id);
+  };
+
+  const handleRejectTask = async (taskId: string) => {
+    const { error } = await supabase.from('tasks').update({ partner_acceptance_status: 'rejected' }).eq('id', taskId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(language === 'nl' ? 'Taak geweigerd.' : 'Task rejected.');
+    if (partner) await fetchData(partner.id);
   };
 
   const handleAddMember = async () => {
@@ -293,13 +308,37 @@ const PartnerDashboard = () => {
                   {standaloneTasks.map(task => (
                     <Card key={task.id}>
                       <CardContent className="p-3">
-                        <p className="text-sm font-medium">{task.title}</p>
-                        {task.event_title && <p className="text-[11px] text-primary mt-0.5">{task.event_title}</p>}
-                        {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                        <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
-                          {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
-                          {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
-                          <span>{task.spots_available} {language === 'nl' ? 'plaatsen' : 'spots'}</span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{task.title}</p>
+                            {task.event_title && <p className="text-[11px] text-primary mt-0.5">{task.event_title}</p>}
+                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                            <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
+                              {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
+                              {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
+                              <span>{task.spots_available} {language === 'nl' ? 'plaatsen' : 'spots'}</span>
+                            </div>
+                          </div>
+                          <div className="shrink-0">
+                            {task.partner_acceptance_status === 'pending' ? (
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleAcceptTask(task.id)}>
+                                  <Check className="w-3 h-3 mr-1" />
+                                  {language === 'nl' ? 'Aanvaarden' : 'Accept'}
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleRejectTask(task.id)}>
+                                  <X className="w-3 h-3 mr-1" />
+                                  {language === 'nl' ? 'Weigeren' : 'Reject'}
+                                </Button>
+                              </div>
+                            ) : (
+                              <Badge variant={task.partner_acceptance_status === 'accepted' ? 'default' : 'destructive'} className="text-xs">
+                                {task.partner_acceptance_status === 'accepted' 
+                                  ? (language === 'nl' ? '✅ Aanvaard' : '✅ Accepted')
+                                  : (language === 'nl' ? '❌ Geweigerd' : '❌ Rejected')}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -341,12 +380,36 @@ const PartnerDashboard = () => {
                           <div className="space-y-2">
                             {evt.partner_tasks.map(task => (
                               <div key={task.id} className="p-3 rounded-lg border border-border bg-muted/30">
-                                <p className="text-sm font-medium">{task.title}</p>
-                                {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                                <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
-                                  {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
-                                  {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
-                                  <span>{task.spots_available} {language === 'nl' ? 'plaatsen' : 'spots'}</span>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium">{task.title}</p>
+                                    {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                                    <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
+                                      {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
+                                      {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
+                                      <span>{task.spots_available} {language === 'nl' ? 'plaatsen' : 'spots'}</span>
+                                    </div>
+                                  </div>
+                                  <div className="shrink-0">
+                                    {task.partner_acceptance_status === 'pending' ? (
+                                      <div className="flex gap-1">
+                                        <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleAcceptTask(task.id)}>
+                                          <Check className="w-3 h-3 mr-1" />
+                                          {language === 'nl' ? 'Aanvaarden' : 'Accept'}
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleRejectTask(task.id)}>
+                                          <X className="w-3 h-3 mr-1" />
+                                          {language === 'nl' ? 'Weigeren' : 'Reject'}
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Badge variant={task.partner_acceptance_status === 'accepted' ? 'default' : 'destructive'} className="text-xs">
+                                        {task.partner_acceptance_status === 'accepted' 
+                                          ? (language === 'nl' ? '✅ Aanvaard' : '✅ Accepted')
+                                          : (language === 'nl' ? '❌ Geweigerd' : '❌ Rejected')}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             ))}

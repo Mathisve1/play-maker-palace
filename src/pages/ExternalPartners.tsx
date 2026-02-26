@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Users, Mail, Eye, Calendar, Download, Trash2, Loader2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Mail, Eye, Calendar, Download, Trash2, Loader2, Upload, X, Handshake, Check, Clock } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 interface Partner {
@@ -41,6 +41,18 @@ interface EventAccess {
   event_title?: string;
   event_date?: string | null;
   signup_count?: number;
+}
+
+interface PartnerTask {
+  id: string;
+  title: string;
+  description: string | null;
+  task_date: string | null;
+  location: string | null;
+  spots_available: number;
+  partner_acceptance_status: string;
+  event_title?: string | null;
+  signups: { volunteer_name: string; status: string }[];
 }
 
 const categoryLabels: Record<string, Record<string, string>> = {
@@ -73,6 +85,7 @@ const ExternalPartners = () => {
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [members, setMembers] = useState<PartnerMember[]>([]);
   const [eventAccess, setEventAccess] = useState<EventAccess[]>([]);
+  const [partnerTasks, setPartnerTasks] = useState<PartnerTask[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Invite
@@ -198,13 +211,14 @@ const ExternalPartners = () => {
   const handleSelectPartner = async (partner: Partner) => {
     setSelectedPartner(partner);
     setLoadingDetail(true);
-    const [membersRes, accessRes] = await Promise.all([
+    const [membersRes, accessRes, tasksRes] = await Promise.all([
       supabase.from('partner_members').select('id, full_name, email, phone, date_of_birth').eq('partner_id', partner.id),
       supabase.from('partner_event_access').select('id, event_id, max_spots').eq('partner_id', partner.id),
+      supabase.from('tasks').select('id, title, description, task_date, location, spots_available, partner_acceptance_status, event_id').eq('partner_only', true).eq('assigned_partner_id', partner.id),
     ]);
     setMembers(membersRes.data || []);
 
-    // Enrich event access with event info and signup counts
+    // Enrich event access
     const accessData = accessRes.data || [];
     const enriched = await Promise.all(accessData.map(async (a: any) => {
       const evt = events.find(e => e.id === a.event_id);
@@ -212,6 +226,31 @@ const ExternalPartners = () => {
       return { ...a, event_title: evt?.title || '?', event_date: evt?.event_date, signup_count: count || 0 };
     }));
     setEventAccess(enriched);
+
+    // Enrich partner tasks with event titles and member signups
+    const allTasks = tasksRes.data || [];
+    const partnerMembers = membersRes.data || [];
+    const enrichedTasks: PartnerTask[] = await Promise.all(allTasks.map(async (t: any) => {
+      let eventTitle: string | null = null;
+      if (t.event_id) {
+        const evt = events.find(e => e.id === t.event_id);
+        eventTitle = evt?.title || null;
+      }
+      // Get partner member signups for this task's event access
+      const signups: { volunteer_name: string; status: string }[] = [];
+      if (t.event_id) {
+        const access = accessData.find((a: any) => a.event_id === t.event_id);
+        if (access) {
+          const { data: signupData } = await supabase.from('partner_event_signups').select('partner_member_id, status').eq('partner_event_access_id', access.id);
+          (signupData || []).forEach((s: any) => {
+            const member = partnerMembers.find(m => m.id === s.partner_member_id);
+            signups.push({ volunteer_name: member?.full_name || '?', status: s.status });
+          });
+        }
+      }
+      return { ...t, event_title: eventTitle, signups };
+    }));
+    setPartnerTasks(enrichedTasks);
     setLoadingDetail(false);
   };
 
@@ -389,6 +428,65 @@ const ExternalPartners = () => {
                               <p className="text-sm font-medium">{m.full_name}</p>
                               <p className="text-xs text-muted-foreground">{m.email || ''} {m.date_of_birth ? `• ${m.date_of_birth}` : ''}</p>
                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Assigned tasks with acceptance status */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Handshake className="w-4 h-4" />
+                      {language === 'nl' ? `Toegewezen taken (${partnerTasks.length})` : `Assigned tasks (${partnerTasks.length})`}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {partnerTasks.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">{language === 'nl' ? 'Nog geen taken toegewezen.' : 'No tasks assigned yet.'}</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {partnerTasks.map(task => (
+                          <div key={task.id} className="p-3 rounded-lg border border-border bg-muted/30">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium">{task.title}</p>
+                                {task.event_title && <p className="text-[11px] text-primary mt-0.5">{task.event_title}</p>}
+                                {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                                <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">
+                                  {task.task_date && <span>{new Date(task.task_date).toLocaleDateString()}</span>}
+                                  {task.location && <span>{task.location}</span>}
+                                </div>
+                              </div>
+                              <Badge 
+                                variant={task.partner_acceptance_status === 'accepted' ? 'default' : task.partner_acceptance_status === 'rejected' ? 'destructive' : 'secondary'} 
+                                className="text-xs shrink-0"
+                              >
+                                {task.partner_acceptance_status === 'accepted' 
+                                  ? (language === 'nl' ? '✅ Aanvaard' : '✅ Accepted')
+                                  : task.partner_acceptance_status === 'rejected'
+                                  ? (language === 'nl' ? '❌ Geweigerd' : '❌ Rejected')
+                                  : (language === 'nl' ? '⏳ In afwachting' : '⏳ Pending')}
+                              </Badge>
+                            </div>
+                            {/* Show assigned volunteers */}
+                            {task.signups.length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-border">
+                                <p className="text-[11px] font-medium text-muted-foreground mb-1">
+                                  {language === 'nl' ? 'Toegewezen medewerkers:' : 'Assigned members:'}
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {task.signups.map((s, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-[11px]">
+                                      {s.volunteer_name}
+                                      {s.status === 'approved' ? ' ✅' : s.status === 'rejected' ? ' ❌' : ' ⏳'}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
