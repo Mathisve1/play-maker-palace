@@ -1540,6 +1540,130 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ========== ACTION: send_ticket_email_invite ==========
+    if (action === "send_ticket_email_invite") {
+      const { event_id, volunteer_id, task_id, email, volunteer_name } = body;
+
+      try {
+        // 1. Generate internal ticket first
+        const clubPrefix = club_id.substring(0, 3).toUpperCase();
+        const randomPart = Array.from(crypto.getRandomValues(new Uint8Array(4)))
+          .map(b => b.toString(36).toUpperCase())
+          .join("")
+          .substring(0, 6);
+        const barcode = `VT-${clubPrefix}-${randomPart}`;
+
+        const { data: existing } = await supabase
+          .from("volunteer_tickets")
+          .select("id")
+          .eq("club_id", club_id)
+          .eq("volunteer_id", volunteer_id)
+          .eq("task_id", task_id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase.from("volunteer_tickets").update({
+            barcode,
+            status: "sent",
+            error_message: null,
+          }).eq("id", existing.id);
+        } else {
+          await supabase.from("volunteer_tickets").insert({
+            club_id,
+            event_id,
+            volunteer_id,
+            task_id,
+            barcode,
+            status: "sent",
+          });
+        }
+
+        // 2. Get club & event info for the email
+        const { data: club } = await supabase.from("clubs").select("name").eq("id", club_id).maybeSingle();
+        const { data: event } = await supabase.from("events").select("title, event_date, location").eq("id", event_id).maybeSingle();
+        const { data: task } = await supabase.from("tasks").select("title, task_date, start_time, location").eq("id", task_id).maybeSingle();
+
+        const clubName = club?.name || "je club";
+        const eventTitle = event?.title || "het evenement";
+        const eventDate = event?.event_date ? new Date(event.event_date).toLocaleDateString("nl-BE") : "";
+        const eventLocation = task?.location || event?.location || "";
+        const taskTitle = task?.title || "";
+
+        // 3. Send email via Resend with ticket info + account invite
+        const resendKey = Deno.env.get("RESEND_API_KEY");
+        if (!resendKey) {
+          return new Response(JSON.stringify({ success: false, error: "Email service niet geconfigureerd." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const origin = Deno.env.get("SITE_URL") || "https://play-maker-palace.lovable.app";
+        const signupLink = `${origin}/signup`;
+
+        const emailResp = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${resendKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: Deno.env.get("RESEND_FROM_EMAIL") || "De 12e Man <onboarding@resend.dev>",
+            to: [email],
+            subject: `Je ticket voor ${eventTitle} — ${clubName}`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+                <h2>Hallo ${volunteer_name} 👋</h2>
+                <p>Je bent ingepland als vrijwilliger bij <strong>${clubName}</strong> voor:</p>
+                <div style="background: #f4f4f5; border-radius: 12px; padding: 16px; margin: 16px 0;">
+                  <p style="margin: 0 0 4px;"><strong>🎫 ${eventTitle}</strong></p>
+                  ${eventDate ? `<p style="margin: 0 0 4px;">📅 ${eventDate}</p>` : ""}
+                  ${eventLocation ? `<p style="margin: 0 0 4px;">📍 ${eventLocation}</p>` : ""}
+                  ${taskTitle ? `<p style="margin: 0 0 4px;">🔧 Taak: ${taskTitle}</p>` : ""}
+                  <p style="margin: 12px 0 0; font-size: 18px; font-weight: bold; letter-spacing: 2px;">Barcode: ${barcode}</p>
+                </div>
+                
+                <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; margin: 20px 0;">
+                  <p style="margin: 0 0 8px; font-weight: 600; color: #92400e;">⚠️ Account aanmaken is verplicht</p>
+                  <p style="margin: 0 0 12px; color: #78350f; font-size: 14px;">
+                    Om je ticket te kunnen downloaden, in te checken en je uren te registreren heb je een account nodig op De 12e Man. 
+                    Registreer je met <strong>hetzelfde e-mailadres</strong> (${email}) zodat we je automatisch kunnen koppelen.
+                  </p>
+                  <a href="${signupLink}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                    Account aanmaken
+                  </a>
+                </div>
+                
+                <p style="color: #999; font-size: 12px; margin-top: 24px;">— De 12e Man</p>
+              </div>
+            `,
+          }),
+        });
+
+        if (!emailResp.ok) {
+          const errData = await emailResp.json();
+          console.error("Resend error:", errData);
+          return new Response(JSON.stringify({ success: false, error: "E-mail kon niet worden verstuurd." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        await supabase.from("ticketing_logs").insert({
+          club_id,
+          action: "send_ticket_email_invite",
+          request_payload: { volunteer_id, task_id, email },
+          response_payload: { barcode },
+          status: "success",
+        });
+
+        return new Response(JSON.stringify({ success: true, ticket: { barcode } }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (e: any) {
+        await supabase.from("ticketing_logs").insert({
+          club_id,
+          action: "send_ticket_email_invite",
+          request_payload: { volunteer_id, task_id, email },
+          status: "error",
+          error_message: e.message,
+        });
+        return new Response(JSON.stringify({ success: false, error: e.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
