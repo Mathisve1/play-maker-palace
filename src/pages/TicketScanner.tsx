@@ -198,11 +198,11 @@ const TicketScanner = () => {
 
     let html5QrCode: any = null;
     let stopped = false;
+    let isRunning = false;
 
     const start = async () => {
       try {
         const { Html5Qrcode } = await import('html5-qrcode');
-        // Small delay to let the DOM settle
         await new Promise(r => setTimeout(r, 200));
         if (stopped) return;
 
@@ -215,23 +215,21 @@ const TicketScanner = () => {
           { facingMode: 'environment' },
           { fps: 15, qrbox: { width: 280, height: 280 }, aspectRatio: 1, disableFlip: false },
           (decodedText: string) => {
-            // Prevent double scans
             if (busyRef.current || stopped) return;
             busyRef.current = true;
             stopped = true;
+            isRunning = false;
 
             console.log('[Camera] Barcode detected:', decodedText);
 
-            // Do NOT call html5QrCode.stop() here!
-            // Changing phase triggers useEffect cleanup which stops the camera safely.
-            // Use setTimeout to escape the html5-qrcode callback stack.
             setTimeout(() => {
               setPhase('processing');
               processBarcode(decodedText);
             }, 0);
           },
-          () => {} // ignore scan failures
+          () => {}
         );
+        isRunning = true;
       } catch (err) {
         console.error('[Camera] Error:', err);
         if (!stopped) setCameraError(true);
@@ -242,8 +240,16 @@ const TicketScanner = () => {
 
     return () => {
       stopped = true;
-      if (html5QrCode) {
-        html5QrCode.stop().catch(() => {});
+      if (html5QrCode && isRunning) {
+        try {
+          const state = html5QrCode.getState?.();
+          // Only stop if actually running (state 2) or paused (state 3)
+          if (state === undefined || state === 2 || state === 3) {
+            html5QrCode.stop().catch(() => {});
+          }
+        } catch {
+          // scanner not in a stoppable state, ignore
+        }
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
