@@ -803,7 +803,8 @@ const ClubOwnerDashboard = () => {
 
   const handleCreateTask = async (e: React.FormEvent, eventId?: string, groupId?: string) => {
     e.preventDefault();
-    if (!clubId || !newTask.title.trim() || !selectedTemplateId) return;
+    const isExternalPayrollPartner = newTask.partner_only && newTask.assigned_partner_id && externalPartners.find(p => p.id === newTask.assigned_partner_id)?.external_payroll;
+    if (!clubId || !newTask.title.trim() || (!selectedTemplateId && !isExternalPayrollPartner)) return;
     setCreatingTask(true);
 
     const insertData: Record<string, unknown> = {
@@ -820,7 +821,7 @@ const ClubOwnerDashboard = () => {
       notes: newTask.notes.trim() || null,
       expense_reimbursement: newTask.compensation_type === 'fixed' ? newTask.expense_reimbursement : false,
       expense_amount: newTask.compensation_type === 'fixed' && newTask.expense_reimbursement && newTask.expense_amount ? parseFloat(newTask.expense_amount) : null,
-      contract_template_id: selectedTemplateId,
+      contract_template_id: isExternalPayrollPartner ? null : selectedTemplateId,
       event_id: eventId || null,
       event_group_id: groupId || null,
       compensation_type: newTask.compensation_type,
@@ -1236,20 +1237,59 @@ const ClubOwnerDashboard = () => {
       className="bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden"
     >
       <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{dt.newTask}</h2>
-      <div className="mb-4">
-        <label className={labelClass}>{dt.contractTemplate} *</label>
-        {contractTemplates.length === 0 ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-            <span>{dt.noTemplatesYet}</span>
-            <button type="button" onClick={() => setShowTemplates(true)} className="text-primary underline hover:opacity-80">{dt.manageTemplates}</button>
-          </div>
-        ) : (
-          <select required value={selectedTemplateId} onChange={e => setSelectedTemplateId(e.target.value)} className={inputClass}>
-            <option value="">{dt.selectTemplate}</option>
-            {contractTemplates.map(tmpl => <option key={tmpl.id} value={tmpl.id}>{tmpl.name}</option>)}
-          </select>
-        )}
-      </div>
+      {/* Partner-only task - moved to top */}
+      {externalPartners.length > 0 && (
+        <div className="mb-4 bg-muted/50 rounded-xl p-4 border border-border">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={newTask.partner_only} onChange={e => setNewTask(p => ({ ...p, partner_only: e.target.checked, assigned_partner_id: '' }))} className="w-4 h-4 rounded border-input accent-primary" />
+            <span className="text-sm font-medium text-foreground flex items-center gap-1.5">
+              <Handshake className="w-4 h-4 text-primary" />
+              {language === 'nl' ? 'Enkel voor externe partner' : language === 'fr' ? 'Uniquement pour partenaire externe' : 'Partner-only task'}
+            </span>
+          </label>
+          <p className="text-[11px] text-muted-foreground mt-1 ml-6">
+            {language === 'nl' ? 'Alleen de geselecteerde partner kan leden toewijzen aan deze taak.' : language === 'fr' ? 'Seul le partenaire sélectionné peut assigner des membres à cette tâche.' : 'Only the selected partner can assign members to this task.'}
+          </p>
+          {newTask.partner_only && (
+            <div className="mt-3 ml-6">
+              <label className={labelClass}>{language === 'nl' ? 'Selecteer partner' : language === 'fr' ? 'Sélectionner partenaire' : 'Select partner'} *</label>
+              <select required value={newTask.assigned_partner_id} onChange={e => setNewTask(p => ({ ...p, assigned_partner_id: e.target.value }))} className={inputClass}>
+                <option value="">{language === 'nl' ? 'Kies een partner...' : language === 'fr' ? 'Choisir un partenaire...' : 'Choose a partner...'}</option>
+                {externalPartners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              {(() => {
+                const selectedPartner = externalPartners.find(p => p.id === newTask.assigned_partner_id);
+                if (selectedPartner?.external_payroll) {
+                  return (
+                    <div className="mt-3 flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2 text-xs text-accent-foreground">
+                      <Handshake className="w-4 h-4 text-primary shrink-0" />
+                      <span>{language === 'nl' ? 'Deze partner beheert contracten & betalingen zelf. Je hoeft geen contractsjabloon te selecteren.' : language === 'fr' ? 'Ce partenaire gère les contrats et paiements. Aucun modèle requis.' : 'This partner manages contracts & payments. No template needed.'}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Contract template - hidden when partner handles it externally */}
+      {!(newTask.partner_only && newTask.assigned_partner_id && externalPartners.find(p => p.id === newTask.assigned_partner_id)?.external_payroll) && (
+        <div className="mb-4">
+          <label className={labelClass}>{dt.contractTemplate} *</label>
+          {contractTemplates.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+              <span>{dt.noTemplatesYet}</span>
+              <button type="button" onClick={() => setShowTemplates(true)} className="text-primary underline hover:opacity-80">{dt.manageTemplates}</button>
+            </div>
+          ) : (
+            <select required value={selectedTemplateId} onChange={e => setSelectedTemplateId(e.target.value)} className={inputClass}>
+              <option value="">{dt.selectTemplate}</option>
+              {contractTemplates.map(tmpl => <option key={tmpl.id} value={tmpl.id}>{tmpl.name}</option>)}
+            </select>
+          )}
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className={labelClass}>{dt.taskTitle} *</label>
@@ -1359,34 +1399,11 @@ const ClubOwnerDashboard = () => {
             <p className="text-[11px] text-muted-foreground mt-1">{language === 'nl' ? 'Vrijwilligers moeten deze training voltooid hebben om zich in te schrijven.' : language === 'fr' ? 'Les bénévoles doivent avoir terminé cette formation pour s\'inscrire.' : 'Volunteers must have completed this training to sign up.'}</p>
           </div>
         )}
-        {/* Partner-only task */}
-        {externalPartners.length > 0 && (
-          <div className="sm:col-span-2 border-t border-border pt-4 mt-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={newTask.partner_only} onChange={e => setNewTask(p => ({ ...p, partner_only: e.target.checked, assigned_partner_id: '' }))} className="w-4 h-4 rounded border-input accent-primary" />
-              <span className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                <Handshake className="w-4 h-4 text-primary" />
-                {language === 'nl' ? 'Enkel voor externe partner' : language === 'fr' ? 'Uniquement pour partenaire externe' : 'Partner-only task'}
-              </span>
-            </label>
-            <p className="text-[11px] text-muted-foreground mt-1 ml-6">
-              {language === 'nl' ? 'Alleen de geselecteerde partner kan leden toewijzen aan deze taak.' : language === 'fr' ? 'Seul le partenaire sélectionné peut assigner des membres à cette tâche.' : 'Only the selected partner can assign members to this task.'}
-            </p>
-            {newTask.partner_only && (
-              <div className="mt-3 ml-6">
-                <label className={labelClass}>{language === 'nl' ? 'Selecteer partner' : language === 'fr' ? 'Sélectionner partenaire' : 'Select partner'} *</label>
-                <select required value={newTask.assigned_partner_id} onChange={e => setNewTask(p => ({ ...p, assigned_partner_id: e.target.value }))} className={inputClass}>
-                  <option value="">{language === 'nl' ? 'Kies een partner...' : language === 'fr' ? 'Choisir un partenaire...' : 'Choose a partner...'}</option>
-                  {externalPartners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Partner-only section is now at the top of the form */}
       </div>
       <div className="flex justify-end gap-3 mt-6">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
-        <button type="submit" disabled={creatingTask || !newTask.title.trim() || !selectedTemplateId || (newTask.partner_only && !newTask.assigned_partner_id)} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+        <button type="submit" disabled={creatingTask || !newTask.title.trim() || (!selectedTemplateId && !(newTask.partner_only && newTask.assigned_partner_id && externalPartners.find(p => p.id === newTask.assigned_partner_id)?.external_payroll)) || (newTask.partner_only && !newTask.assigned_partner_id)} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
           {creatingTask ? dt.creating : dt.create}
         </button>
       </div>
