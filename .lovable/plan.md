@@ -1,163 +1,94 @@
+# Rapportering Dashboard - Uitbreiding Plan
 
+## Huidige staat
 
-# Extern Partner Portaal -- Implementatieplan
+Het dashboard heeft al: KPI-kaarten, filters (datum/evenement/vrijwilliger/locatie/vergoedingstype/status), tabs (Overzicht/Vrijwilligers/Taken/Evenementen/AI), CSV-export, en een AI assistent.
 
-## Overzicht
+## Nieuwe features toe te voegen
 
-Een nieuw module waarmee clubs (Bestuurders) externe partijen (stewards-vzw's, horeca-uitzendkantoren, supportersfederaties) kunnen uitnodigen om hun eigen medewerkers te beheren en toe te wijzen aan evenementen. Dit vervangt handmatige Excel-lijsten.
+### 1. Financieel tab (nieuw)
 
----
+- **Openstaande vs betaalde betalingen**: tijdlijn
+- **Kostenverdeling per evenement**: hoeveel kost elk evenement in totaal
+- **Budget prognose**: op basis van gemiddelde maandelijkse uitgaven, projectie voor komende maanden
+- **Compliance overzicht**: hoeveel vrijwilligers zitten dicht bij het wettelijk jaarmaximum (3233.91 EUR)
 
-## Fase 1: Database Schema (Migraties)
+### 2. Partners tab (nieuw)
 
-### Nieuwe tabellen
+- **Partner medewerkers ingezet**: hoeveel externe partners leveren medewerkers, hoeveel per partner
+- **Partner vs eigen vrijwilligers**: vergelijking inzet eigen vrijwilligers vs partner medewerkers
+- **Account registratie rate**: hoeveel partner medewerkers hebben al een account aangemaakt
+- **Partner bezettingsgraad**: hoe goed vullen partners hun toegewezen spots
 
-**`external_partners`** -- De partnerorganisatie zelf
-- `id` (uuid, PK)
-- `club_id` (uuid, FK naar clubs)
-- `name` (text) -- bijv. "Stewards VZW Antwerp"
-- `category` (text) -- 'horeca' | 'stewards' | 'supporters'
-- `contact_name` (text, nullable)
-- `contact_email` (text, nullable)
-- `external_payroll` (boolean, default false) -- vinkje: medewerkers hebben al extern contract
-- `created_at`, `updated_at`
+### 3. Contracten en Compliance tab (nieuw)
 
-**`partner_members`** -- Pool van medewerkers per partner
-- `id` (uuid, PK)
-- `partner_id` (uuid, FK naar external_partners)
-- `user_id` (uuid, nullable) -- gekoppeld account (optioneel)
-- `full_name` (text)
-- `email` (text, nullable)
-- `phone` (text, nullable)
-- `date_of_birth` (date, nullable) -- nodig voor voetbalwetgeving
-- `created_at`
+- **Ondertekende vs openstaande contracten**: pie chart
+- **Gemiddelde doorlooptijd ondertekening**: hoe snel tekenen vrijwilligers hun contract
+- **Compliance declaraties**: maandelijkse declaratiestatus per vrijwilliger
+- **Vrijwilligers nabij jaargrens**: lijst van vrijwilligers die >80% van het wettelijk maximum bereikt hebben
 
-**`partner_admins`** -- Wie beheert een partner (link naar user account)
-- `id` (uuid, PK)
-- `partner_id` (uuid, FK naar external_partners)
-- `user_id` (uuid, FK naar profiles)
-- `invited_by` (uuid)
-- `created_at`
+### 4. Uitbreiding bestaande tabs
 
-**`partner_event_access`** -- Welke evenementen zijn opengesteld voor welke partner
-- `id` (uuid, PK)
-- `partner_id` (uuid, FK)
-- `event_id` (uuid, FK naar events)
-- `max_spots` (integer, nullable) -- limiet per partner
-- `created_at`
+- **Overzicht**: heatmap van drukste dagen/maanden, dag-van-de-week analyse (wanneer worden de meeste taken ingepland)
+- **Vrijwilligers**: betrouwbaarheidsscore (check-ins / toewijzingen), gemiddeld verdiend per taak, loyaliteitspunten stand
+- **Taken**: uur-bevestigingen status (pending/approved), gemiddelde werkuren per taak
+- **Evenementen**: vergelijking tussen evenementen (year-over-year als data beschikbaar)
 
-**`partner_event_signups`** -- Inschrijving van partner-medewerkers op evenementen
-- `id` (uuid, PK)
-- `partner_event_access_id` (uuid, FK)
-- `partner_member_id` (uuid, FK)
-- `status` (text, default 'pending') -- pending / approved / rejected
-- `approved_by` (uuid, nullable) -- partner admin die goedkeurt
-- `created_at`
+### 5. Extra KPI-kaarten
 
-### Nieuwe enum waarde
+- Openstaande betalingen
+- Gemiddelde opkomst per vrijwilliger
+- Contracten ondertekend %
+- Partner medewerkers actief
 
-Uitbreiding van `club_role` is niet nodig. Partner admins krijgen een apart mechanisme via `partner_admins` tabel, niet via `club_members`.
+### 6. Extra filters
 
-### RLS Policies
+- Filter op partner (eigen vs extern of specifieke partner)
+- Filter op betalingsstatus (betaald/pending/failed)
+- Filter op contractstatus
 
-- **Bestuurder/Beheerder** van de club: volledige lees- en schrijftoegang op alle partner-tabellen via `has_club_role()`
-- **Partner Admin**: CRUD op eigen `partner_members`, lees op `partner_event_access` waar hun partner_id matcht, CRUD op `partner_event_signups` voor eigen partner
-- Security definer functie `is_partner_admin(user_id, partner_id)` om recursie te voorkomen
+### 7. Verbeterde AI context
+
+- Partner data, contract data, compliance data, en uur-bevestigingen toevoegen aan de data summary die naar de AI wordt gestuurd
+- Extra preset-vragen toevoegen over financien, partners en compliance
+
+### 8. PDF export
+
+- Naast CSV ook een samenvattend PDF-rapport kunnen genereren met de huidige KPI's en grafieken (via jsPDF dat al in het project zit)
 
 ---
 
-## Fase 2: Invite-flow voor Partner Beheerders
+## Technische aanpak
 
-Hergebruik van bestaande `club-invite` edge function met een nieuwe `role` parameter (bijv. `partner_admin`) en extra metadata (`partner_id`).
+### Data loading uitbreiden
 
-- Nieuwe actie in de edge function: `action=partner-invite`
-- Bij acceptatie: account aanmaken (of bestaand account koppelen), record in `partner_admins` invoegen
-- E-mail template volgt bestaand patroon met Resend
+Nieuwe queries toevoegen in de `load` functie:
 
----
+- `signature_requests` - voor contractstatus
+- `compliance_declarations` - voor compliance overzicht
+- `partner_task_assignments` + `partner_members` + `external_partners` - voor partner rapportage
+- `sepa_batches` - voor SEPA batch overzicht (al deels geladen via items)
 
-## Fase 3: Club Owner Dashboard -- Tab "Externe Partners"
+### Nieuwe computed data (useMemo)
 
-### Nieuw component: `ExternalPartnersTab.tsx`
+- `financialReport`: Stripe fees, netto/bruto, maandelijkse prognose
+- `partnerReport`: per-partner inzet, account status
+- `complianceReport`: per-vrijwilliger compliance status, nabij-grens lijst
+- `contractReport`: ondertekend/pending/niet-verzonden verdeling
+- `dayOfWeekChart`: taken per dag van de week
+- `hourConfirmationStats`: goedgekeurd/pending uren
 
-Toevoegen als tab in `ClubOwnerDashboard.tsx`:
+### Nieuwe tabs structuur
 
-- **Partnerlijst**: Overzicht van alle aangemaakte partners met categorie-badge, contactpersoon, en aantal medewerkers
-- **Partner aanmaken**: Dialog met velden: Naam, Categorie (dropdown: Horeca/Stewards/Supporters), Contactpersoon, E-mail, Externe Payroll (checkbox)
-- **Partner Beheerder uitnodigen**: Knop per partner om een beheerder uit te nodigen via e-mail (hergebruik invite-flow)
-- **Evenementen openstellen**: Per partner kunnen evenementen worden geselecteerd + max spots
-- **Oversight**: Bestuurder kan de medewerkerslijst en inschrijvingen per partner bekijken (read-only)
+Tabs worden: Overzicht | Vrijwilligers | Taken | Evenementen | **Financieel** | **Partners** | **Compliance** | AI Assistent
 
-### Export functie
+De TabsList wordt scrollbaar gemaakt voor mobiel.
 
-- Knop "Exporteer aanwezigenlijst" per evenement
-- Genereert CSV/PDF met alle externe medewerkers (naam, geboortedatum, partner-organisatie, check-in status) -- vereist voor voetbalwetgeving
+### Bestanden die gewijzigd worden
 
----
+- `src/pages/ReportingDashboard.tsx` - hoofdbestand, alle uitbreidingen
+- `supabase/functions/reporting-ai/index.ts` - uitgebreidere data summary
 
-## Fase 4: Partner Portaal (Nieuwe pagina)
+### Geen database wijzigingen nodig
 
-### Nieuwe route: `/partner-dashboard`
-
-### Nieuw component: `PartnerDashboard.tsx`
-
-Mobile-first ontwerp, bevat:
-
-1. **Header**: Partnernaam + clubnaam, uitlogknop
-2. **Mijn medewerkers**: Lijst van `partner_members`, met CRUD (toevoegen, bewerken, verwijderen)
-3. **Beschikbare evenementen**: Alleen events uit `partner_event_access` voor hun partner
-4. **Inschrijven**: Per evenement medewerkers selecteren en toewijzen (first-come-first-served op spots). Partner admin moet handmatig goedkeuren (status pending -> approved)
-5. **Status overzicht**: Per evenement zien wie is ingeschreven/goedgekeurd
-
----
-
-## Fase 5: QR-code Tickets voor Partner Medewerkers
-
-- Bij goedkeuring (`status = 'approved'`) wordt automatisch een `volunteer_tickets` record aangemaakt met een unieke barcode
-- Hergebruik bestaande ticket/scanner logica (`/scan` route, `ticketing-scan` edge function)
-- Partner medewerkers zonder user account: ticket wordt gekoppeld via `partner_member_id` in metadata
-- Partner medewerkers met account: standaard `volunteer_id` koppeling
-
----
-
-## Fase 6: Contract-uitzondering
-
-- Als `external_partners.external_payroll = true`, dan wordt het contractondertekeningproces overgeslagen voor medewerkers van die partner
-- Visuele indicator in het dashboard: "Externe Payroll" badge bij de partner
-
----
-
-## Technische Details
-
-### Nieuwe bestanden
-
-| Bestand | Beschrijving |
-|---|---|
-| `supabase/migrations/[ts]_create_partner_tables.sql` | Alle nieuwe tabellen + RLS + functie |
-| `src/pages/PartnerDashboard.tsx` | Hoofdpagina partner portaal |
-| `src/components/ExternalPartnersTab.tsx` | Tab in ClubOwnerDashboard |
-| `src/components/PartnerMembersDialog.tsx` | CRUD voor partner medewerkers |
-| `src/components/PartnerEventSignups.tsx` | Inschrijvingen beheer |
-| `src/components/PartnerInviteDialog.tsx` | Uitnodiging partner admin |
-| `src/components/ExportAttendeesButton.tsx` | CSV/PDF export component |
-
-### Bestaande bestanden die worden aangepast
-
-| Bestand | Wijziging |
-|---|---|
-| `src/App.tsx` | Route `/partner-dashboard` toevoegen |
-| `src/pages/ClubOwnerDashboard.tsx` | Tab "Externe Partners" toevoegen |
-| `supabase/functions/club-invite/index.ts` | Actie `partner-invite` toevoegen |
-| `src/components/BottomTabBar.tsx` | Conditionele navigatie voor partner admins |
-
-### Volgorde van implementatie
-
-1. Database migratie (tabellen + RLS + security definer functie)
-2. ExternalPartnersTab in ClubOwnerDashboard
-3. Partner invite flow (edge function uitbreiding)
-4. PartnerDashboard pagina met medewerkerbeheer
-5. Event-toewijzing en inschrijvingsflow
-6. QR-ticket generatie bij goedkeuring
-7. Export functionaliteit
-8. Verfijning en i18n (NL/FR/EN labels)
-
+Alle data is al beschikbaar in bestaande tabellen.
