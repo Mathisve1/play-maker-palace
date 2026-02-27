@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft, Plus, GripVertical, Trash2, Type, Image, PenLine, BarChart3,
   PieChart, TrendingUp, Download, Bot, Sparkles, Loader2, MoveUp, MoveDown,
-  FileText, LayoutDashboard
+  FileText, LayoutDashboard, Undo2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,8 +64,22 @@ const ReportBuilder = () => {
   const [widgets, setWidgets] = useState<ReportWidget[]>([
     { id: genId(), type: 'title', data: { text: 'Bestuursrapport', subtitle: format(new Date(), 'MMMM yyyy', { locale: nl }) } },
   ]);
+  const [history, setHistory] = useState<ReportWidget[][]>([]);
   const [exporting, setExporting] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  const pushHistory = useCallback(() => {
+    setHistory(prev => [...prev.slice(-30), widgets.map(w => ({ ...w, data: { ...w.data } }))]);
+  }, [widgets]);
+
+  const undo = useCallback(() => {
+    setHistory(prev => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setWidgets(last);
+      return prev.slice(0, -1);
+    });
+  }, []);
 
   // AI state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -272,16 +286,20 @@ const ReportBuilder = () => {
 
   // ── Widget management ─────────────────────────────────────
   const addWidget = (type: WidgetType, data: Record<string, any> = {}) => {
+    pushHistory();
     setWidgets(prev => [...prev, { id: genId(), type, data }]);
     setAddDialogOpen(false);
   };
 
-  const removeWidget = (id: string) => setWidgets(prev => prev.filter(w => w.id !== id));
+  const removeWidget = (id: string) => { pushHistory(); setWidgets(prev => prev.filter(w => w.id !== id)); };
 
-  const updateWidget = (id: string, data: Record<string, any>) =>
+  const updateWidget = (id: string, data: Record<string, any>) => {
+    pushHistory();
     setWidgets(prev => prev.map(w => w.id === id ? { ...w, data: { ...w.data, ...data } } : w));
+  };
 
   const moveWidget = (id: string, direction: 'up' | 'down') => {
+    pushHistory();
     setWidgets(prev => {
       const idx = prev.findIndex(w => w.id === id);
       if (idx < 0) return prev;
@@ -614,27 +632,23 @@ Antwoord ALLEEN met geldig JSON, geen extra tekst.`,
         ];
         const visibleKeys: string[] = w.data.visibleKpis || ALL_KPIS.map(k => k.key);
         const visibleKpis = ALL_KPIS.filter(kpi => visibleKeys.includes(kpi.key));
-        const toggleKpi = (key: string) => {
-          const current: string[] = w.data.visibleKpis || ALL_KPIS.map(k => k.key);
-          const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
+        const removeKpi = (key: string) => {
+          const next = visibleKeys.filter(k => k !== key);
           updateWidget(w.id, { visibleKpis: next });
         };
         return (
           <div className="group relative py-3">
             {controls}
-            {!isExporting && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {ALL_KPIS.map(kpi => (
-                  <Badge key={kpi.key} variant={visibleKeys.includes(kpi.key) ? 'default' : 'outline'}
-                    className="cursor-pointer text-xs select-none" onClick={() => toggleKpi(kpi.key)}>
-                    {kpi.label}
-                  </Badge>
-                ))}
-              </div>
-            )}
             <div className={`grid grid-cols-2 ${visibleKpis.length <= 4 ? 'md:grid-cols-' + Math.min(visibleKpis.length, 4) : 'md:grid-cols-4'} gap-3`}>
               {visibleKpis.map(item => (
-                <Card key={item.key}>
+                <Card key={item.key} className="relative">
+                  {!isExporting && (
+                    <Button variant="ghost" size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                      onClick={() => removeKpi(item.key)}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                   <CardContent className="p-3 text-center">
                     <p className="text-2xl font-bold">{item.value}</p>
                     <p className="text-xs text-muted-foreground">{item.label}</p>
@@ -686,6 +700,9 @@ Antwoord ALLEEN met geldig JSON, geen extra tekst.`,
             </div>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={history.length === 0} onClick={undo}>
+              <Undo2 className="h-4 w-4 mr-1" /> Ongedaan
+            </Button>
             <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-1" /> Widget</Button>
