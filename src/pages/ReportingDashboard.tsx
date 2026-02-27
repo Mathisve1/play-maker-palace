@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft, BarChart3, Download, Filter, Loader2, PieChart, TrendingUp, Users,
   Calendar, Euro, AlertTriangle, CheckCircle2, XCircle, ClipboardCheck, Send,
-  Bot, Sparkles, CreditCard, Hash, Target, Percent, Clock, MapPin
+  Bot, Sparkles, CreditCard, Hash, Target, Percent, Clock, MapPin, FileText,
+  Handshake, Shield, FileDown
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,27 +17,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format, subMonths, isWithinInterval, parseISO, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
+import { format, subMonths, isWithinInterval, parseISO, isSameMonth, getDay } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart as RechartsPie, Pie, Cell, LineChart, Line, Legend, AreaChart, Area
 } from 'recharts';
+import ReportingFinancialTab from '@/components/reporting/ReportingFinancialTab';
+import ReportingPartnersTab from '@/components/reporting/ReportingPartnersTab';
+import ReportingComplianceTab from '@/components/reporting/ReportingComplianceTab';
 
 // ── Types ───────────────────────────────────────────────────────
 interface VolunteerReport {
   id: string; name: string; email: string | null;
   totalSignups: number; totalAssigned: number; totalCheckedIn: number;
   noShows: number; totalEarned: number; tasksWorked: string[]; eventsWorked: string[];
+  reliabilityScore: number; avgEarnedPerTask: number;
 }
 
 interface TaskReport {
   id: string; title: string; eventTitle: string | null; date: string | null;
   totalSlots: number; signups: number; assigned: number; checkedIn: number;
   noShows: number; compensation: string; totalPaid: number; location: string | null;
+  hourConfStatus: string; avgHours: number | null;
 }
 
 interface EventReport {
@@ -53,6 +60,8 @@ const COLORS = [
   'hsl(var(--chart-5, 340 75% 55%))', '#6366f1', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6',
 ];
 
+const DAY_NAMES = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
+
 const ReportingDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -67,6 +76,14 @@ const ReportingDashboard = () => {
   const [tickets, setTickets] = useState<any[]>([]);
   const [hourConfs, setHourConfs] = useState<any[]>([]);
   const [sepaItems, setSepaItems] = useState<any[]>([]);
+  // New data
+  const [signatureRequests, setSignatureRequests] = useState<any[]>([]);
+  const [complianceDeclarations, setComplianceDeclarations] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
+  const [partnerMembers, setPartnerMembers] = useState<any[]>([]);
+  const [partnerTaskAssignments, setPartnerTaskAssignments] = useState<any[]>([]);
+  const [sepaBatches, setSepaBatches] = useState<any[]>([]);
+  const [loyaltyEnrollments, setLoyaltyEnrollments] = useState<any[]>([]);
 
   // Filters
   const [dateFrom, setDateFrom] = useState<Date>(subMonths(new Date(), 3));
@@ -76,6 +93,8 @@ const ReportingDashboard = () => {
   const [selectedCompType, setSelectedCompType] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
+  const [selectedPartnerFilter, setSelectedPartnerFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [chartType, setChartType] = useState<ChartType>('bar');
@@ -107,7 +126,8 @@ const ReportingDashboard = () => {
     if (!clubId) return;
     const load = async () => {
       setLoading(true);
-      const [tasksRes, eventsRes, signupsRes, paymentsRes, ticketsRes, hourConfsRes, sepaRes] = await Promise.all([
+      const [tasksRes, eventsRes, signupsRes, paymentsRes, ticketsRes, hourConfsRes, sepaRes,
+        sigReqRes, complDeclRes, partnersRes, partnerMembersRes, partnerAssignRes, sepaBatchRes, loyaltyRes] = await Promise.all([
         supabase.from('tasks').select('*').eq('club_id', clubId),
         supabase.from('events').select('*').eq('club_id', clubId),
         supabase.from('task_signups').select('*'),
@@ -115,6 +135,13 @@ const ReportingDashboard = () => {
         supabase.from('volunteer_tickets').select('*').eq('club_id', clubId),
         supabase.from('hour_confirmations').select('*'),
         supabase.from('sepa_batch_items').select('*'),
+        supabase.from('signature_requests').select('*'),
+        supabase.from('compliance_declarations').select('*'),
+        supabase.from('external_partners').select('*').eq('club_id', clubId),
+        supabase.from('partner_members').select('*'),
+        supabase.from('partner_task_assignments').select('*'),
+        supabase.from('sepa_batches').select('*').eq('club_id', clubId),
+        supabase.from('loyalty_enrollments').select('*'),
       ]);
 
       const taskData = tasksRes.data || [];
@@ -122,16 +149,26 @@ const ReportingDashboard = () => {
       setEvents(eventsRes.data || []);
       setPayments(paymentsRes.data || []);
       setTickets(ticketsRes.data || []);
+      setPartners(partnersRes.data || []);
+      setSepaBatches(sepaBatchRes.data || []);
 
       const taskIds = new Set(taskData.map((t: any) => t.id));
-      const clubSignups = (signupsRes.data || []).filter((s: any) => taskIds.has(s.task_id));
-      setSignups(clubSignups);
-      const clubHourConfs = (hourConfsRes.data || []).filter((h: any) => taskIds.has(h.task_id));
-      setHourConfs(clubHourConfs);
-      const clubSepa = (sepaRes.data || []).filter((s: any) => taskIds.has(s.task_id));
-      setSepaItems(clubSepa);
+      setSignups((signupsRes.data || []).filter((s: any) => taskIds.has(s.task_id)));
+      setHourConfs((hourConfsRes.data || []).filter((h: any) => taskIds.has(h.task_id)));
+      setSepaItems((sepaRes.data || []).filter((s: any) => taskIds.has(s.task_id)));
+      setSignatureRequests((sigReqRes.data || []).filter((s: any) => taskIds.has(s.task_id)));
+      setPartnerTaskAssignments((partnerAssignRes.data || []).filter((a: any) => taskIds.has(a.task_id)));
 
-      const volIds = [...new Set(clubSignups.map((s: any) => s.volunteer_id))];
+      // Filter partner members to club partners
+      const partnerIds = new Set((partnersRes.data || []).map((p: any) => p.id));
+      setPartnerMembers((partnerMembersRes.data || []).filter((m: any) => partnerIds.has(m.partner_id)));
+
+      // Filter compliance declarations to club volunteers
+      const volIds = [...new Set((signupsRes.data || []).filter((s: any) => taskIds.has(s.task_id)).map((s: any) => s.volunteer_id))];
+      const volIdSet = new Set(volIds);
+      setComplianceDeclarations((complDeclRes.data || []).filter((d: any) => volIdSet.has(d.volunteer_id)));
+      setLoyaltyEnrollments((loyaltyRes.data || []).filter((e: any) => volIdSet.has(e.volunteer_id)));
+
       if (volIds.length > 0) {
         const { data: profs } = await supabase.from('profiles').select('id, full_name, email').in('id', volIds);
         setProfiles(profs || []);
@@ -146,7 +183,6 @@ const ReportingDashboard = () => {
   const eventMap = useMemo(() => Object.fromEntries(events.map((e: any) => [e.id, e])), [events]);
   const profileMap = useMemo(() => Object.fromEntries(profiles.map((p: any) => [p.id, p])), [profiles]);
 
-  // Unique locations for filter
   const uniqueLocations = useMemo(() => {
     const locs = new Set(tasks.map((t: any) => t.location).filter(Boolean));
     return [...locs].sort();
@@ -161,9 +197,12 @@ const ReportingDashboard = () => {
       if (selectedCompType !== 'all' && t.compensation_type !== selectedCompType) return false;
       if (selectedLocation !== 'all' && t.location !== selectedLocation) return false;
       if (selectedStatus !== 'all' && t.status !== selectedStatus) return false;
+      if (selectedPartnerFilter === 'own' && t.partner_only) return false;
+      if (selectedPartnerFilter === 'partner' && !t.partner_only) return false;
+      if (selectedPartnerFilter !== 'all' && selectedPartnerFilter !== 'own' && selectedPartnerFilter !== 'partner' && t.assigned_partner_id !== selectedPartnerFilter) return false;
       return true;
     });
-  }, [tasks, dateFrom, dateTo, selectedEventId, selectedCompType, selectedLocation, selectedStatus]);
+  }, [tasks, dateFrom, dateTo, selectedEventId, selectedCompType, selectedLocation, selectedStatus, selectedPartnerFilter]);
 
   const filteredTaskIds = useMemo(() => new Set(filteredTasks.map((t: any) => t.id)), [filteredTasks]);
 
@@ -175,10 +214,11 @@ const ReportingDashboard = () => {
     });
   }, [signups, filteredTaskIds, selectedVolunteerId]);
 
-  const filteredPayments = useMemo(() =>
-    payments.filter((p: any) => filteredTaskIds.has(p.task_id)),
-    [payments, filteredTaskIds]
-  );
+  const filteredPayments = useMemo(() => {
+    let fp = payments.filter((p: any) => filteredTaskIds.has(p.task_id));
+    if (selectedPaymentStatus !== 'all') fp = fp.filter((p: any) => p.status === selectedPaymentStatus);
+    return fp;
+  }, [payments, filteredTaskIds, selectedPaymentStatus]);
 
   // ── Volunteer reports ──────────────────────────────────────────
   const volunteerReports: VolunteerReport[] = useMemo(() => {
@@ -190,6 +230,7 @@ const ReportingDashboard = () => {
           id: s.volunteer_id, name: p?.full_name || 'Onbekend', email: p?.email || null,
           totalSignups: 0, totalAssigned: 0, totalCheckedIn: 0, noShows: 0,
           totalEarned: 0, tasksWorked: [], eventsWorked: [],
+          reliabilityScore: 0, avgEarnedPerTask: 0,
         });
       }
       const r = map.get(s.volunteer_id)!;
@@ -210,11 +251,13 @@ const ReportingDashboard = () => {
     });
     filteredPayments.forEach((p: any) => {
       const r = map.get(p.volunteer_id);
-      if (r && p.status === 'paid') r.totalEarned += Number(p.amount);
+      if (r && (p.status === 'paid' || p.status === 'succeeded')) r.totalEarned += Number(p.amount);
     });
     map.forEach(r => {
       r.noShows = Math.max(0, r.totalAssigned - r.totalCheckedIn);
       r.eventsWorked = [...new Set(r.eventsWorked)];
+      r.reliabilityScore = r.totalAssigned > 0 ? Math.round((r.totalCheckedIn / r.totalAssigned) * 100) : 0;
+      r.avgEarnedPerTask = r.totalAssigned > 0 ? Math.round((r.totalEarned / r.totalAssigned) * 100) / 100 : 0;
     });
     let results = Array.from(map.values());
     if (searchQuery) {
@@ -231,15 +274,23 @@ const ReportingDashboard = () => {
       const assigned = tSignups.filter((s: any) => s.status === 'assigned');
       const tTickets = tickets.filter((tk: any) => tk.task_id === t.id);
       const checkedIn = tTickets.filter((tk: any) => tk.status === 'checked_in').length;
-      const tPayments = payments.filter((p: any) => p.task_id === t.id && p.status === 'paid');
+      const tPayments = payments.filter((p: any) => p.task_id === t.id && (p.status === 'paid' || p.status === 'succeeded'));
       const event = t.event_id ? eventMap[t.event_id] : null;
+      const tHourConfs = hourConfs.filter((h: any) => h.task_id === t.id);
+      const approvedHours = tHourConfs.filter((h: any) => h.status === 'approved');
+      const avgHours = approvedHours.length > 0
+        ? Math.round(approvedHours.reduce((s: number, h: any) => s + Number(h.final_hours || 0), 0) / approvedHours.length * 10) / 10
+        : null;
+      const pendingConfs = tHourConfs.filter((h: any) => h.status === 'pending').length;
+      const hourConfStatus = tHourConfs.length === 0 ? '—' : pendingConfs > 0 ? `${pendingConfs} pending` : 'Goedgekeurd';
+
       return {
         id: t.id, title: t.title, eventTitle: event?.title || null, date: t.task_date,
         totalSlots: t.spots_available || 0, signups: tSignups.length, assigned: assigned.length,
         checkedIn, noShows: Math.max(0, assigned.length - checkedIn),
         compensation: t.compensation_type === 'hourly' ? `€${t.hourly_rate}/u` : `€${t.expense_amount || 0}`,
         totalPaid: tPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0),
-        location: t.location,
+        location: t.location, hourConfStatus, avgHours,
       };
     }).sort((a, b) => {
       if (!a.date && !b.date) return 0;
@@ -247,7 +298,7 @@ const ReportingDashboard = () => {
       if (!b.date) return -1;
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
-  }, [filteredTasks, signups, tickets, payments, eventMap]);
+  }, [filteredTasks, signups, tickets, payments, eventMap, hourConfs]);
 
   // ── Event reports ──────────────────────────────────────────────
   const eventReports: EventReport[] = useMemo(() => {
@@ -263,59 +314,54 @@ const ReportingDashboard = () => {
       const eSignups = signups.filter((s: any) => eTaskIds.has(s.task_id) && s.status === 'assigned');
       const eTickets = tickets.filter((tk: any) => eTaskIds.has(tk.task_id) && tk.status === 'checked_in');
       const totalSlots = eTasks.reduce((s: number, t: any) => s + (t.spots_available || 0), 0);
-      const ePaid = payments.filter((p: any) => eTaskIds.has(p.task_id) && p.status === 'paid').reduce((s: number, p: any) => s + Number(p.amount), 0);
-      // Most popular task in event
+      const ePaid = payments.filter((p: any) => eTaskIds.has(p.task_id) && (p.status === 'paid' || p.status === 'succeeded'))
+        .reduce((s: number, p: any) => s + Number(p.amount), 0);
       const taskSignupCounts = eTasks.map((t: any) => ({
-        title: t.title,
-        count: signups.filter((s: any) => s.task_id === t.id).length,
+        title: t.title, count: signups.filter((s: any) => s.task_id === t.id).length,
       })).sort((a: any, b: any) => b.count - a.count);
-
       return {
         id: e.id, title: e.title, date: e.event_date,
-        totalTasks: eTasks.length, totalVolunteers: eSignups.length,
-        checkedIn: eTickets.length,
+        totalTasks: eTasks.length, totalVolunteers: eSignups.length, checkedIn: eTickets.length,
         fillRate: totalSlots > 0 ? Math.round((eSignups.length / totalSlots) * 100) : 0,
-        totalPaid: ePaid,
-        topTask: taskSignupCounts[0]?.title || null,
+        totalPaid: ePaid, topTask: taskSignupCounts[0]?.title || null,
       };
     }).sort((a, b) => {
-      if (!a.date && !b.date) return 0;
-      if (!a.date) return 1;
-      if (!b.date) return -1;
+      if (!a.date && !b.date) return 0; if (!a.date) return 1; if (!b.date) return -1;
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
   }, [events, tasks, signups, tickets, payments, dateFrom, dateTo, selectedEventId]);
 
-  // ── KPIs (extended) ───────────────────────────────────────────
+  // ── KPIs ──────────────────────────────────────────────────────
   const kpis = useMemo(() => {
     const totalVolunteers = volunteerReports.length;
     const totalTasks = filteredTasks.length;
     const totalAssigned = volunteerReports.reduce((s, r) => s + r.totalAssigned, 0);
     const totalCheckedIn = volunteerReports.reduce((s, r) => s + r.totalCheckedIn, 0);
     const totalNoShows = volunteerReports.reduce((s, r) => s + r.noShows, 0);
-    const totalPaid = filteredPayments.filter(p => p.status === 'paid').reduce((s: number, p: any) => s + Number(p.amount), 0);
+    const totalPaid = filteredPayments.filter(p => p.status === 'paid' || p.status === 'succeeded').reduce((s: number, p: any) => s + Number(p.amount), 0);
     const totalPending = filteredPayments.filter(p => p.status === 'pending').reduce((s: number, p: any) => s + Number(p.amount), 0);
     const attendanceRate = totalAssigned > 0 ? Math.round((totalCheckedIn / totalAssigned) * 100) : 0;
     const avgPerVolunteer = totalVolunteers > 0 ? Math.round(totalAssigned / totalVolunteers * 10) / 10 : 0;
     const totalSepa = sepaItems.filter(s => filteredTaskIds.has(s.task_id)).reduce((sum: number, s: any) => sum + Number(s.amount), 0);
     const totalSlots = filteredTasks.reduce((s: number, t: any) => s + (t.spots_available || 0), 0);
     const fillRate = totalSlots > 0 ? Math.round((totalAssigned / totalSlots) * 100) : 0;
-
-    // This month spending
     const now = new Date();
     const thisMonthPaid = filteredPayments
-      .filter((p: any) => p.status === 'paid' && p.paid_at && isSameMonth(parseISO(p.paid_at), now))
+      .filter((p: any) => (p.status === 'paid' || p.status === 'succeeded') && p.paid_at && isSameMonth(parseISO(p.paid_at), now))
       .reduce((s: number, p: any) => s + Number(p.amount), 0);
-
-    // Avg cost per task
     const avgCostPerTask = totalTasks > 0 ? Math.round(totalPaid / totalTasks * 100) / 100 : 0;
+    const contractsSigned = signatureRequests.filter(s => s.status === 'completed').length;
+    const contractsTotal = signatureRequests.length;
+    const contractsPercent = contractsTotal > 0 ? Math.round((contractsSigned / contractsTotal) * 100) : 0;
+    const activePartnerMembers = partnerTaskAssignments.filter(a => filteredTaskIds.has(a.task_id)).length;
 
     return {
       totalVolunteers, totalTasks, totalAssigned, totalCheckedIn, totalNoShows,
       totalPaid, totalPending, attendanceRate, avgPerVolunteer, totalSepa,
       fillRate, thisMonthPaid, avgCostPerTask, totalSlots,
+      contractsPercent, activePartnerMembers,
     };
-  }, [volunteerReports, filteredTasks, filteredPayments, sepaItems, filteredTaskIds]);
+  }, [volunteerReports, filteredTasks, filteredPayments, sepaItems, filteredTaskIds, signatureRequests, partnerTaskAssignments]);
 
   // ── Chart data ─────────────────────────────────────────────────
   const signupsPerEventChart = useMemo(() =>
@@ -349,7 +395,7 @@ const ReportingDashboard = () => {
       if (months[m] && t.status === 'checked_in') months[m].checkedIn++;
     });
     filteredPayments.forEach((p: any) => {
-      if (p.status !== 'paid') return;
+      if (p.status !== 'paid' && p.status !== 'succeeded') return;
       const task = taskMap[p.task_id];
       if (!task?.task_date) return;
       const m = format(parseISO(task.task_date), 'yyyy-MM');
@@ -376,7 +422,7 @@ const ReportingDashboard = () => {
 
   const monthlySpendingChart = useMemo(() => {
     const months: Record<string, number> = {};
-    filteredPayments.filter((p: any) => p.status === 'paid' && p.paid_at).forEach((p: any) => {
+    filteredPayments.filter((p: any) => (p.status === 'paid' || p.status === 'succeeded') && p.paid_at).forEach((p: any) => {
       const m = format(parseISO(p.paid_at), 'yyyy-MM');
       months[m] = (months[m] || 0) + Number(p.amount);
     });
@@ -386,46 +432,67 @@ const ReportingDashboard = () => {
   const volunteersByEventChart = useMemo(() => {
     return eventReports.slice(0, 10).map(e => ({
       name: e.title.length > 18 ? e.title.slice(0, 16) + '…' : e.title,
-      Vrijwilligers: e.totalVolunteers,
-      Bezetting: e.fillRate,
+      Vrijwilligers: e.totalVolunteers, Bezetting: e.fillRate,
     }));
   }, [eventReports]);
+
+  // Day of week analysis
+  const dayOfWeekChart = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    filteredTasks.forEach((t: any) => {
+      if (t.task_date) counts[getDay(parseISO(t.task_date))]++;
+    });
+    return DAY_NAMES.map((name, i) => ({ name, Taken: counts[i] }));
+  }, [filteredTasks]);
+
+  // Hour confirmation stats
+  const hourConfStats = useMemo(() => {
+    const filtered = hourConfs.filter(h => filteredTaskIds.has(h.task_id));
+    return {
+      total: filtered.length,
+      approved: filtered.filter(h => h.status === 'approved').length,
+      pending: filtered.filter(h => h.status === 'pending').length,
+      disputed: filtered.filter(h => h.status === 'disputed').length,
+    };
+  }, [hourConfs, filteredTaskIds]);
 
   // ── AI data summary ───────────────────────────────────────────
   const buildDataSummary = () => {
     const lines = [
       `Periode: ${format(dateFrom, 'dd/MM/yyyy')} - ${format(dateTo, 'dd/MM/yyyy')}`,
-      `Totaal taken: ${kpis.totalTasks}`,
-      `Totaal vrijwilligers: ${kpis.totalVolunteers}`,
-      `Totaal toewijzingen: ${kpis.totalAssigned}`,
-      `Totaal ingecheckt: ${kpis.totalCheckedIn}`,
-      `Totaal no-shows: ${kpis.totalNoShows}`,
-      `Opkomstpercentage: ${kpis.attendanceRate}%`,
-      `Totaal uitbetaald: €${kpis.totalPaid.toFixed(2)}`,
-      `Openstaande betalingen: €${kpis.totalPending.toFixed(2)}`,
-      `SEPA uitbetalingen: €${kpis.totalSepa.toFixed(2)}`,
-      `Gemiddeld per taak: €${kpis.avgCostPerTask.toFixed(2)}`,
-      `Bezettingsgraad: ${kpis.fillRate}%`,
-      `Deze maand uitbetaald: €${kpis.thisMonthPaid.toFixed(2)}`,
-      `Totaal beschikbare plaatsen: ${kpis.totalSlots}`,
+      `Totaal taken: ${kpis.totalTasks}`, `Totaal vrijwilligers: ${kpis.totalVolunteers}`,
+      `Totaal toewijzingen: ${kpis.totalAssigned}`, `Totaal ingecheckt: ${kpis.totalCheckedIn}`,
+      `Totaal no-shows: ${kpis.totalNoShows}`, `Opkomstpercentage: ${kpis.attendanceRate}%`,
+      `Totaal uitbetaald: €${kpis.totalPaid.toFixed(2)}`, `Openstaande betalingen: €${kpis.totalPending.toFixed(2)}`,
+      `SEPA uitbetalingen: €${kpis.totalSepa.toFixed(2)}`, `Gem. per taak: €${kpis.avgCostPerTask.toFixed(2)}`,
+      `Bezettingsgraad: ${kpis.fillRate}%`, `Deze maand: €${kpis.thisMonthPaid.toFixed(2)}`,
+      `Contracten ondertekend: ${kpis.contractsPercent}%`, `Partner medewerkers ingezet: ${kpis.activePartnerMembers}`,
       '',
       'TOP 10 VRIJWILLIGERS:',
       ...volunteerReports.slice(0, 10).map(v =>
-        `- ${v.name}: ${v.totalAssigned} taken, ${v.totalCheckedIn} ingecheckt, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)} verdiend, evenementen: ${v.eventsWorked.join(', ') || 'geen'}`
+        `- ${v.name}: ${v.totalAssigned} taken, ${v.totalCheckedIn} ingecheckt, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)} verdiend, betrouwbaarheid ${v.reliabilityScore}%, evenementen: ${v.eventsWorked.join(', ') || 'geen'}`
       ),
-      '',
-      'EVENEMENTEN:',
+      '', 'EVENEMENTEN:',
       ...eventReports.map(e =>
-        `- ${e.title} (${e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : 'geen datum'}): ${e.totalTasks} taken, ${e.totalVolunteers} vrijwilligers, ${e.checkedIn} ingecheckt, bezetting ${e.fillRate}%, €${e.totalPaid.toFixed(2)} uitbetaald, populairste taak: ${e.topTask || 'n.v.t.'}`
+        `- ${e.title} (${e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '?'}): ${e.totalTasks} taken, ${e.totalVolunteers} vrijwilligers, ${e.checkedIn} ingecheckt, bezetting ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`
       ),
-      '',
-      'TAKEN (recent):',
+      '', 'TAKEN (recent):',
       ...taskReports.slice(0, 20).map(t =>
-        `- ${t.title} (${t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '?'}): ${t.assigned}/${t.totalSlots} plaatsen, ${t.checkedIn} ingecheckt, ${t.noShows} no-shows, ${t.compensation}, €${t.totalPaid.toFixed(2)} uitbetaald, locatie: ${t.location || 'onbekend'}`
+        `- ${t.title} (${t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '?'}): ${t.assigned}/${t.totalSlots} pl, ${t.checkedIn} in, ${t.noShows} ns, ${t.compensation}, €${t.totalPaid.toFixed(2)}, uren: ${t.hourConfStatus}`
       ),
-      '',
-      'MAANDELIJKSE UITGAVEN:',
+      '', 'PARTNERS:',
+      ...partners.map((p: any) => {
+        const members = partnerMembers.filter((m: any) => m.partner_id === p.id);
+        const assignments = partnerTaskAssignments.filter((a: any) => members.some((m: any) => m.id === a.partner_member_id));
+        return `- ${p.name} (${p.category}): ${members.length} medewerkers, ${assignments.length} ingezet, ${members.filter((m: any) => m.user_id).length} met account`;
+      }),
+      '', 'COMPLIANCE:',
+      `Uur-bevestigingen: ${hourConfStats.total} totaal, ${hourConfStats.approved} goedgekeurd, ${hourConfStats.pending} in afwachting`,
+      `Contracten: ${signatureRequests.filter(s => s.status === 'completed').length}/${signatureRequests.length} ondertekend`,
+      '', 'MAANDELIJKSE UITGAVEN:',
       ...monthlySpendingChart.map(m => `- ${m.month}: €${m.Bedrag.toFixed(2)}`),
+      '', 'DAG-VAN-DE-WEEK VERDELING:',
+      ...dayOfWeekChart.map(d => `- ${d.name}: ${d.Taken} taken`),
     ];
     return lines.join('\n');
   };
@@ -437,81 +504,103 @@ const ReportingDashboard = () => {
     setAiQuestion('');
     setAiMessages(prev => [...prev, { role: 'user', content: question }]);
     setAiLoading(true);
-
     try {
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reporting-ai`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ question, dataSummary: buildDataSummary() }),
-        }
+        { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ question, dataSummary: buildDataSummary() }) }
       );
-
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: 'Fout' }));
-        toast.error(err.error || 'AI fout');
-        setAiLoading(false);
-        return;
+        toast.error(err.error || 'AI fout'); setAiLoading(false); return;
       }
-
       const reader = resp.body?.getReader();
       if (!reader) throw new Error('No reader');
       const decoder = new TextDecoder();
-      let assistantSoFar = '';
-      let textBuffer = '';
-
+      let assistantSoFar = '', textBuffer = '';
       const upsert = (chunk: string) => {
         assistantSoFar += chunk;
         setAiMessages(prev => {
           const last = prev[prev.length - 1];
-          if (last?.role === 'assistant') {
-            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
-          }
+          if (last?.role === 'assistant') return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
           return [...prev, { role: 'assistant', content: assistantSoFar }];
         });
       };
-
       let done = false;
       while (!done) {
         const { done: readerDone, value } = await reader.read();
         if (readerDone) break;
         textBuffer += decoder.decode(value, { stream: true });
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
+        let ni: number;
+        while ((ni = textBuffer.indexOf('\n')) !== -1) {
+          let line = textBuffer.slice(0, ni); textBuffer = textBuffer.slice(ni + 1);
           if (line.endsWith('\r')) line = line.slice(0, -1);
           if (line.startsWith(':') || line.trim() === '') continue;
           if (!line.startsWith('data: ')) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') { done = true; break; }
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) upsert(content);
-          } catch { textBuffer = line + '\n' + textBuffer; break; }
+          const js = line.slice(6).trim();
+          if (js === '[DONE]') { done = true; break; }
+          try { const p = JSON.parse(js); const c = p.choices?.[0]?.delta?.content; if (c) upsert(c); }
+          catch { textBuffer = line + '\n' + textBuffer; break; }
         }
       }
-    } catch (e) {
-      toast.error('AI assistent fout');
-      console.error(e);
-    }
+    } catch (e) { toast.error('AI assistent fout'); console.error(e); }
     setAiLoading(false);
   };
 
   useEffect(() => { aiEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [aiMessages]);
 
+  // ── PDF export ─────────────────────────────────────────────────
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text('Rapportage Overzicht', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Periode: ${format(dateFrom, 'dd/MM/yyyy')} - ${format(dateTo, 'dd/MM/yyyy')}`, 14, 28);
+    doc.text(`Gegenereerd: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 34);
+
+    let y = 44;
+    doc.setFontSize(12);
+    doc.text('KPI Overzicht', 14, y); y += 8;
+    doc.setFontSize(9);
+    const kpiLines = [
+      `Vrijwilligers: ${kpis.totalVolunteers}`, `Taken: ${kpis.totalTasks}`,
+      `Toewijzingen: ${kpis.totalAssigned}`, `Ingecheckt: ${kpis.totalCheckedIn}`,
+      `No-shows: ${kpis.totalNoShows}`, `Opkomst: ${kpis.attendanceRate}%`,
+      `Bezetting: ${kpis.fillRate}%`, `Uitbetaald: €${kpis.totalPaid.toFixed(2)}`,
+      `Openstaand: €${kpis.totalPending.toFixed(2)}`, `SEPA: €${kpis.totalSepa.toFixed(2)}`,
+      `Contracten: ${kpis.contractsPercent}%`, `Partner mdw: ${kpis.activePartnerMembers}`,
+    ];
+    kpiLines.forEach(l => { doc.text(l, 14, y); y += 5; });
+
+    y += 4; doc.setFontSize(12);
+    doc.text('Top 10 Vrijwilligers', 14, y); y += 7;
+    doc.setFontSize(8);
+    volunteerReports.slice(0, 10).forEach(v => {
+      if (y > 275) { doc.addPage(); y = 20; }
+      doc.text(`${v.name}: ${v.totalAssigned} taken, ${v.totalCheckedIn} ingecheckt, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)}, betrouwbaarheid ${v.reliabilityScore}%`, 14, y);
+      y += 4.5;
+    });
+
+    y += 4; doc.setFontSize(12);
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.text('Evenementen', 14, y); y += 7;
+    doc.setFontSize(8);
+    eventReports.forEach(e => {
+      if (y > 275) { doc.addPage(); y = 20; }
+      doc.text(`${e.title}: ${e.totalTasks} taken, ${e.totalVolunteers} vrw, bezetting ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`, 14, y);
+      y += 4.5;
+    });
+
+    doc.save(`rapportage-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    toast.success('PDF rapport gedownload');
+  };
+
   // ── Date picker ────────────────────────────────────────────────
-  const DatePicker = ({ date, onChange, label }: { date: Date; onChange: (d: Date) => void; label: string }) => (
+  const DatePicker = ({ date, onChange }: { date: Date; onChange: (d: Date) => void; label?: string }) => (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" className={cn("justify-start text-left font-normal gap-2", !date && "text-muted-foreground")}>
-          <Calendar className="w-4 h-4" />
-          {format(date, 'dd MMM yyyy', { locale: nl })}
+          <Calendar className="w-4 h-4" />{format(date, 'dd MMM yyyy', { locale: nl })}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -542,21 +631,24 @@ const ReportingDashboard = () => {
     const csv = [headers.join(';'), ...rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(';'))].join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `${filename}.csv`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `${filename}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
-  // ── Quick presets for AI ───────────────────────────────────────
+  // ── AI presets ─────────────────────────────────────────────────
   const aiPresets = [
     'Hoeveel hebben we deze maand uitgegeven?',
     'Welke vrijwilliger heeft de meeste no-shows?',
     'Op welk evenement zetten we de meeste vrijwilligers in?',
     'Wat is ons gemiddeld opkomstpercentage per evenement?',
-    'Hoeveel taken hadden we deze periode?',
-    'Wie zijn onze meest actieve vrijwilligers?',
+    'Wie zijn onze meest betrouwbare vrijwilligers?',
     'Welke taken zijn het minst bezet?',
     'Geef een overzicht van onze maandelijkse kosten',
+    'Hoeveel contracten zijn al ondertekend?',
+    'Welke partners leveren de meeste medewerkers?',
+    'Hoeveel vrijwilligers zitten dicht bij de jaargrens?',
+    'Op welke dag van de week plannen we de meeste taken?',
+    'Hoeveel uur-bevestigingen staan nog open?',
   ];
 
   if (loading) {
@@ -570,11 +662,15 @@ const ReportingDashboard = () => {
           <button onClick={() => navigate('/club-dashboard')} className="text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="w-5 h-5" /></button>
           <Logo />
           <h1 className="text-lg font-bold text-foreground ml-2">Rapportering</h1>
+          <div className="ml-auto flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={exportPDF}>
+              <FileDown className="w-4 h-4" /> PDF
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-
         {/* ── Filters ─────────────────────────────────────────── */}
         <Card>
           <CardContent className="pt-6">
@@ -583,95 +679,65 @@ const ReportingDashboard = () => {
               <span className="text-sm font-medium text-foreground">Filters</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Van</label>
-                <DatePicker date={dateFrom} onChange={setDateFrom} label="Van" />
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Van</label><DatePicker date={dateFrom} onChange={setDateFrom} /></div>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Tot</label><DatePicker date={dateTo} onChange={setDateTo} /></div>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Evenement</label>
+                <Select value={selectedEventId} onValueChange={setSelectedEventId}><SelectTrigger><SelectValue placeholder="Alle evenementen" /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Alle evenementen</SelectItem>{events.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}</SelectContent></Select>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Tot</label>
-                <DatePicker date={dateTo} onChange={setDateTo} label="Tot" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Evenement</label>
-                <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-                  <SelectTrigger><SelectValue placeholder="Alle evenementen" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle evenementen</SelectItem>
-                    {events.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Vrijwilliger</label>
-                <Select value={selectedVolunteerId} onValueChange={setSelectedVolunteerId}>
-                  <SelectTrigger><SelectValue placeholder="Alle vrijwilligers" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle vrijwilligers</SelectItem>
-                    {profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Vrijwilliger</label>
+                <Select value={selectedVolunteerId} onValueChange={setSelectedVolunteerId}><SelectTrigger><SelectValue placeholder="Alle vrijwilligers" /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Alle vrijwilligers</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>)}</SelectContent></Select>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Vergoedingstype</label>
-                <Select value={selectedCompType} onValueChange={setSelectedCompType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle types</SelectItem>
-                    <SelectItem value="fixed">Vast bedrag</SelectItem>
-                    <SelectItem value="hourly">Uurloon</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Vergoedingstype</label>
+                <Select value={selectedCompType} onValueChange={setSelectedCompType}><SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Alle types</SelectItem><SelectItem value="fixed">Vast bedrag</SelectItem><SelectItem value="hourly">Uurloon</SelectItem></SelectContent></Select>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Locatie</label>
-                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle locaties</SelectItem>
-                    {uniqueLocations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Locatie</label>
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}><SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Alle locaties</SelectItem>{uniqueLocations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent></Select>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Taakstatus</label>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle statussen</SelectItem>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="closed">Gesloten</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Taakstatus</label>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}><SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Alle statussen</SelectItem><SelectItem value="open">Open</SelectItem><SelectItem value="closed">Gesloten</SelectItem></SelectContent></Select>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Grafiektype</label>
-                <Select value={chartType} onValueChange={(v) => setChartType(v as ChartType)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bar">Staafdiagram</SelectItem>
-                    <SelectItem value="line">Lijndiagram</SelectItem>
-                    <SelectItem value="area">Vlakdiagram</SelectItem>
-                    <SelectItem value="pie">Taartdiagram</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Grafiektype</label>
+                <Select value={chartType} onValueChange={(v) => setChartType(v as ChartType)}><SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="bar">Staafdiagram</SelectItem><SelectItem value="line">Lijndiagram</SelectItem><SelectItem value="area">Vlakdiagram</SelectItem><SelectItem value="pie">Taartdiagram</SelectItem></SelectContent></Select>
               </div>
             </div>
-            <div className="mt-3 flex gap-2">
-              <Input placeholder="Zoek op naam of e-mail..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-xs" />
-              <Button variant="outline" size="sm" onClick={() => {
-                setDateFrom(subMonths(new Date(), 3)); setDateTo(new Date());
-                setSelectedEventId('all'); setSelectedVolunteerId('all');
-                setSelectedCompType('all'); setSelectedLocation('all');
-                setSelectedStatus('all'); setSearchQuery('');
-              }}>Reset</Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Betalingsstatus</label>
+                <Select value={selectedPaymentStatus} onValueChange={setSelectedPaymentStatus}><SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Alle statussen</SelectItem><SelectItem value="paid">Betaald</SelectItem><SelectItem value="pending">Openstaand</SelectItem><SelectItem value="failed">Mislukt</SelectItem></SelectContent></Select>
+              </div>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">Partner filter</label>
+                <Select value={selectedPartnerFilter} onValueChange={setSelectedPartnerFilter}><SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle taken</SelectItem>
+                    <SelectItem value="own">Alleen eigen vrijwilligers</SelectItem>
+                    <SelectItem value="partner">Alleen partner taken</SelectItem>
+                    {partners.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent></Select>
+              </div>
+              <div className="space-y-1 col-span-1 sm:col-span-2 flex items-end gap-2">
+                <Input placeholder="Zoek op naam of e-mail..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-xs" />
+                <Button variant="outline" size="sm" onClick={() => {
+                  setDateFrom(subMonths(new Date(), 3)); setDateTo(new Date());
+                  setSelectedEventId('all'); setSelectedVolunteerId('all');
+                  setSelectedCompType('all'); setSelectedLocation('all');
+                  setSelectedStatus('all'); setSearchQuery('');
+                  setSelectedPaymentStatus('all'); setSelectedPartnerFilter('all');
+                }}>Reset</Button>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* ── KPI Cards (extended) ────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {/* ── KPI Cards ──────────────────────────────────────── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {[
             { icon: Users, label: 'Vrijwilligers', value: kpis.totalVolunteers, color: 'text-primary' },
             { icon: Hash, label: 'Taken', value: kpis.totalTasks, color: 'text-primary' },
@@ -681,8 +747,10 @@ const ReportingDashboard = () => {
             { icon: Percent, label: 'Opkomst', value: `${kpis.attendanceRate}%`, color: 'text-primary' },
             { icon: Target, label: 'Bezetting', value: `${kpis.fillRate}%`, color: 'text-primary' },
             { icon: Euro, label: 'Uitbetaald', value: `€${kpis.totalPaid.toFixed(0)}`, color: 'text-primary' },
-            { icon: CreditCard, label: 'Deze maand', value: `€${kpis.thisMonthPaid.toFixed(0)}`, color: 'text-primary' },
+            { icon: CreditCard, label: 'Openstaand', value: `€${kpis.totalPending.toFixed(0)}`, color: 'text-amber-500' },
             { icon: Clock, label: '€/taak gem.', value: `€${kpis.avgCostPerTask.toFixed(0)}`, color: 'text-primary' },
+            { icon: FileText, label: 'Contracten', value: `${kpis.contractsPercent}%`, color: 'text-primary' },
+            { icon: Handshake, label: 'Partner mdw', value: kpis.activePartnerMembers, color: 'text-primary' },
           ].map((kpi, i) => (
             <Card key={i}><CardContent className="pt-4 pb-3 text-center">
               <kpi.icon className={cn("w-5 h-5 mx-auto mb-1", kpi.color)} />
@@ -694,13 +762,18 @@ const ReportingDashboard = () => {
 
         {/* ── Tabs ────────────────────────────────────────────── */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
-            <TabsTrigger value="overview" className="gap-1.5"><BarChart3 className="w-4 h-4" />Overzicht</TabsTrigger>
-            <TabsTrigger value="volunteers" className="gap-1.5"><Users className="w-4 h-4" />Vrijwilligers</TabsTrigger>
-            <TabsTrigger value="tasks" className="gap-1.5"><Calendar className="w-4 h-4" />Taken</TabsTrigger>
-            <TabsTrigger value="events" className="gap-1.5"><PieChart className="w-4 h-4" />Evenementen</TabsTrigger>
-            <TabsTrigger value="ai" className="gap-1.5"><Bot className="w-4 h-4" />AI Assistent</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4">
+            <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
+              <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="w-3.5 h-3.5" />Overzicht</TabsTrigger>
+              <TabsTrigger value="volunteers" className="gap-1.5 text-xs sm:text-sm"><Users className="w-3.5 h-3.5" />Vrijwilligers</TabsTrigger>
+              <TabsTrigger value="tasks" className="gap-1.5 text-xs sm:text-sm"><Calendar className="w-3.5 h-3.5" />Taken</TabsTrigger>
+              <TabsTrigger value="events" className="gap-1.5 text-xs sm:text-sm"><PieChart className="w-3.5 h-3.5" />Evenementen</TabsTrigger>
+              <TabsTrigger value="financial" className="gap-1.5 text-xs sm:text-sm"><Euro className="w-3.5 h-3.5" />Financieel</TabsTrigger>
+              <TabsTrigger value="partners" className="gap-1.5 text-xs sm:text-sm"><Handshake className="w-3.5 h-3.5" />Partners</TabsTrigger>
+              <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><Shield className="w-3.5 h-3.5" />Compliance</TabsTrigger>
+              <TabsTrigger value="ai" className="gap-1.5 text-xs sm:text-sm"><Bot className="w-3.5 h-3.5" />AI</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="space-y-6 mt-4">
@@ -721,15 +794,23 @@ const ReportingDashboard = () => {
                 </CardContent></Card>
               <Card><CardHeader><CardTitle className="text-base">Top vrijwilligers</CardTitle></CardHeader>
                 <CardContent>{renderChart(topVolunteersChart, ['Taken', 'Verdiend'], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Vrijwilligers per evenement</CardTitle></CardHeader>
-                <CardContent>{renderChart(volunteersByEventChart, ['Vrijwilligers', 'Bezetting'], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Vergoedingstype verdeling</CardTitle></CardHeader>
+              <Card><CardHeader><CardTitle className="text-base">Dag van de week</CardTitle></CardHeader>
+                <CardContent>{renderChart(dayOfWeekChart, ['Taken'], 'name')}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">Vergoedingstype</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
                     <RechartsPie><Pie data={compensationPieData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                       {compensationPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie><Tooltip /><Legend /></RechartsPie>
                   </ResponsiveContainer>
+                </CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">Uur-bevestigingen</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div><p className="text-2xl font-bold text-foreground">{hourConfStats.approved}</p><p className="text-xs text-muted-foreground">Goedgekeurd</p></div>
+                    <div><p className="text-2xl font-bold text-amber-500">{hourConfStats.pending}</p><p className="text-xs text-muted-foreground">In afwachting</p></div>
+                    <div><p className="text-2xl font-bold text-destructive">{hourConfStats.disputed}</p><p className="text-xs text-muted-foreground">Betwist</p></div>
+                  </div>
                 </CardContent></Card>
             </div>
           </TabsContent>
@@ -739,7 +820,8 @@ const ReportingDashboard = () => {
             <div className="flex justify-end">
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(volunteerReports.map(v => ({
                 Naam: v.name, Email: v.email || '', Inschrijvingen: v.totalSignups, Toegewezen: v.totalAssigned,
-                Ingecheckt: v.totalCheckedIn, NoShows: v.noShows, Verdiend: `€${v.totalEarned.toFixed(2)}`,
+                Ingecheckt: v.totalCheckedIn, NoShows: v.noShows, Betrouwbaarheid: `${v.reliabilityScore}%`,
+                Verdiend: `€${v.totalEarned.toFixed(2)}`, GemPerTaak: `€${v.avgEarnedPerTask.toFixed(2)}`,
                 Evenementen: v.eventsWorked.join(', '),
               })), 'vrijwilligers-rapport')}>
                 <Download className="w-4 h-4" /> Exporteer CSV
@@ -748,9 +830,10 @@ const ReportingDashboard = () => {
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
               <TableHeader><TableRow>
                 <TableHead>Naam</TableHead><TableHead>E-mail</TableHead>
-                <TableHead className="text-center">Inschrijvingen</TableHead><TableHead className="text-center">Toegewezen</TableHead>
+                <TableHead className="text-center">Toegewezen</TableHead>
                 <TableHead className="text-center">Ingecheckt</TableHead><TableHead className="text-center">No-shows</TableHead>
-                <TableHead className="text-right">Verdiend</TableHead><TableHead>Evenementen</TableHead>
+                <TableHead className="text-center">Betrouwbaarheid</TableHead>
+                <TableHead className="text-right">Verdiend</TableHead><TableHead className="text-right">€/taak</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {volunteerReports.length === 0 ? (
@@ -759,12 +842,16 @@ const ReportingDashboard = () => {
                   <TableRow key={v.id}>
                     <TableCell className="font-medium">{v.name}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{v.email || '—'}</TableCell>
-                    <TableCell className="text-center">{v.totalSignups}</TableCell>
                     <TableCell className="text-center">{v.totalAssigned}</TableCell>
                     <TableCell className="text-center"><Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-300">{v.totalCheckedIn}</Badge></TableCell>
                     <TableCell className="text-center">{v.noShows > 0 ? <Badge variant="destructive">{v.noShows}</Badge> : <span className="text-muted-foreground">0</span>}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={v.reliabilityScore >= 80 ? 'default' : v.reliabilityScore >= 50 ? 'secondary' : 'destructive'}>
+                        {v.reliabilityScore}%
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-right font-medium">€{v.totalEarned.toFixed(2)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{v.eventsWorked.join(', ') || '—'}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">€{v.avgEarnedPerTask.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -776,18 +863,20 @@ const ReportingDashboard = () => {
             <div className="flex justify-end">
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(taskReports.map(t => ({
                 Taak: t.title, Evenement: t.eventTitle || '', Datum: t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '',
-                Locatie: t.location || '', Plaatsen: t.totalSlots, Inschrijvingen: t.signups, Toegewezen: t.assigned,
-                Ingecheckt: t.checkedIn, NoShows: t.noShows, Vergoeding: t.compensation, Uitbetaald: `€${t.totalPaid.toFixed(2)}`,
+                Locatie: t.location || '', Plaatsen: t.totalSlots, Toegewezen: t.assigned,
+                Ingecheckt: t.checkedIn, NoShows: t.noShows, Vergoeding: t.compensation,
+                Uitbetaald: `€${t.totalPaid.toFixed(2)}`, UrenStatus: t.hourConfStatus, GemUren: t.avgHours ?? '',
               })), 'taken-rapport')}>
                 <Download className="w-4 h-4" /> Exporteer CSV
               </Button>
             </div>
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
               <TableHeader><TableRow>
-                <TableHead>Taak</TableHead><TableHead>Evenement</TableHead><TableHead>Datum</TableHead><TableHead>Locatie</TableHead>
-                <TableHead className="text-center">Plaatsen</TableHead><TableHead className="text-center">Inschrijvingen</TableHead>
-                <TableHead className="text-center">Toegewezen</TableHead><TableHead className="text-center">Ingecheckt</TableHead>
-                <TableHead className="text-center">No-shows</TableHead><TableHead>Vergoeding</TableHead><TableHead className="text-right">Uitbetaald</TableHead>
+                <TableHead>Taak</TableHead><TableHead>Evenement</TableHead><TableHead>Datum</TableHead>
+                <TableHead className="text-center">Plaatsen</TableHead><TableHead className="text-center">Toegewezen</TableHead>
+                <TableHead className="text-center">Ingecheckt</TableHead><TableHead className="text-center">No-shows</TableHead>
+                <TableHead>Vergoeding</TableHead><TableHead className="text-right">Uitbetaald</TableHead>
+                <TableHead className="text-center">Uren status</TableHead><TableHead className="text-right">Gem. uren</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {taskReports.length === 0 ? (
@@ -797,14 +886,18 @@ const ReportingDashboard = () => {
                     <TableCell className="font-medium">{t.title}</TableCell>
                     <TableCell className="text-muted-foreground">{t.eventTitle || '—'}</TableCell>
                     <TableCell className="text-sm">{t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{t.location || '—'}</TableCell>
                     <TableCell className="text-center">{t.totalSlots}</TableCell>
-                    <TableCell className="text-center">{t.signups}</TableCell>
                     <TableCell className="text-center">{t.assigned}</TableCell>
                     <TableCell className="text-center"><Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-300">{t.checkedIn}</Badge></TableCell>
                     <TableCell className="text-center">{t.noShows > 0 ? <Badge variant="destructive">{t.noShows}</Badge> : <span className="text-muted-foreground">0</span>}</TableCell>
                     <TableCell className="text-sm">{t.compensation}</TableCell>
                     <TableCell className="text-right font-medium">€{t.totalPaid.toFixed(2)}</TableCell>
+                    <TableCell className="text-center text-sm">
+                      <Badge variant={t.hourConfStatus === 'Goedgekeurd' ? 'default' : t.hourConfStatus === '—' ? 'secondary' : 'outline'}>
+                        {t.hourConfStatus}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">{t.avgHours !== null ? `${t.avgHours}u` : '—'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -849,46 +942,57 @@ const ReportingDashboard = () => {
             </Table></div></CardContent></Card>
           </TabsContent>
 
+          {/* FINANCIAL */}
+          <TabsContent value="financial" className="mt-4">
+            <ReportingFinancialTab
+              payments={payments} sepaItems={sepaItems} tasks={tasks} events={events}
+              signups={signups} profiles={profiles} filteredTaskIds={filteredTaskIds}
+              complianceDeclarations={complianceDeclarations} chartType={chartType}
+            />
+          </TabsContent>
+
+          {/* PARTNERS */}
+          <TabsContent value="partners" className="mt-4">
+            <ReportingPartnersTab
+              partners={partners} partnerMembers={partnerMembers}
+              partnerTaskAssignments={partnerTaskAssignments} signups={signups}
+              tasks={tasks} filteredTaskIds={filteredTaskIds}
+            />
+          </TabsContent>
+
+          {/* COMPLIANCE */}
+          <TabsContent value="compliance" className="mt-4">
+            <ReportingComplianceTab
+              signatureRequests={signatureRequests} complianceDeclarations={complianceDeclarations}
+              payments={payments} profiles={profiles}
+            />
+          </TabsContent>
+
           {/* AI ASSISTANT */}
           <TabsContent value="ai" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  AI Rapportage Assistent
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">Stel een vraag over je club data en de AI filtert en analyseert het voor jou.</p>
+                <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="w-5 h-5 text-primary" />AI Rapportage Assistent</CardTitle>
+                <p className="text-sm text-muted-foreground">Stel een vraag over je club data — inclusief financiën, partners, compliance en meer.</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Quick presets */}
                 <div className="flex flex-wrap gap-2">
                   {aiPresets.map((preset, i) => (
-                    <Button key={i} variant="outline" size="sm" className="text-xs"
-                      onClick={() => { setAiQuestion(preset); }}>
-                      {preset}
-                    </Button>
+                    <Button key={i} variant="outline" size="sm" className="text-xs" onClick={() => setAiQuestion(preset)}>{preset}</Button>
                   ))}
                 </div>
-
-                {/* Chat messages */}
                 <div className="border border-border rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-y-auto bg-muted/30 space-y-3">
                   {aiMessages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
                       <Bot className="w-12 h-12 mb-3 opacity-30" />
                       <p className="text-sm">Stel een vraag om te beginnen...</p>
-                      <p className="text-xs mt-1">Bijv. "Hoeveel hebben we deze maand uitgegeven?"</p>
                     </div>
                   )}
                   {aiMessages.map((msg, i) => (
                     <div key={i} className={cn("flex", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-                      <div className={cn(
-                        "max-w-[80%] rounded-lg px-4 py-2.5 text-sm whitespace-pre-wrap",
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-card border border-border text-foreground'
-                      )}>
-                        {msg.content}
-                      </div>
+                      <div className={cn("max-w-[80%] rounded-lg px-4 py-2.5 text-sm whitespace-pre-wrap",
+                        msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-foreground'
+                      )}>{msg.content}</div>
                     </div>
                   ))}
                   {aiLoading && (
@@ -900,20 +1004,11 @@ const ReportingDashboard = () => {
                   )}
                   <div ref={aiEndRef} />
                 </div>
-
-                {/* Input */}
                 <div className="flex gap-2">
-                  <Textarea
-                    placeholder="Stel je vraag... bijv. 'Welke vrijwilliger werkte het meest?'"
-                    value={aiQuestion}
-                    onChange={e => setAiQuestion(e.target.value)}
+                  <Textarea placeholder="Stel je vraag..." value={aiQuestion} onChange={e => setAiQuestion(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAiQuestion(); } }}
-                    className="min-h-[44px] max-h-[100px] resize-none"
-                    rows={1}
-                  />
-                  <Button onClick={handleAiQuestion} disabled={aiLoading || !aiQuestion.trim()} size="icon" className="shrink-0">
-                    <Send className="w-4 h-4" />
-                  </Button>
+                    className="min-h-[44px] max-h-[100px] resize-none" rows={1} />
+                  <Button onClick={handleAiQuestion} disabled={aiLoading || !aiQuestion.trim()} size="icon" className="shrink-0"><Send className="w-4 h-4" /></Button>
                 </div>
               </CardContent>
             </Card>
