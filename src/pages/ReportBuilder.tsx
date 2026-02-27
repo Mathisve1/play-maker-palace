@@ -600,23 +600,41 @@ Antwoord ALLEEN met geldig JSON, geen extra tekst.`,
           </div>
         );
 
-      case 'kpi-grid':
+      case 'kpi-grid': {
         const k = chartDataSets.kpis;
+        const ALL_KPIS = [
+          { key: 'totalTasks', label: 'Taken', value: k.totalTasks },
+          { key: 'totalVolunteers', label: 'Vrijwilligers', value: k.totalVolunteers },
+          { key: 'attendanceRate', label: 'Opkomst', value: `${k.attendanceRate}%` },
+          { key: 'fillRate', label: 'Bezetting', value: `${k.fillRate}%` },
+          { key: 'totalPaid', label: 'Uitbetaald', value: `€${k.totalPaid.toFixed(0)}` },
+          { key: 'totalPending', label: 'Openstaand', value: `€${k.totalPending.toFixed(0)}` },
+          { key: 'contracts', label: 'Contracten', value: `${k.contractsSigned}/${k.contractsTotal}` },
+          { key: 'partnerMembers', label: 'Partners', value: k.partnerMembers },
+        ];
+        const visibleKeys: string[] = w.data.visibleKpis || ALL_KPIS.map(k => k.key);
+        const visibleKpis = ALL_KPIS.filter(kpi => visibleKeys.includes(kpi.key));
+        const toggleKpi = (key: string) => {
+          const current: string[] = w.data.visibleKpis || ALL_KPIS.map(k => k.key);
+          const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
+          updateWidget(w.id, { visibleKpis: next });
+        };
         return (
           <div className="group relative py-3">
             {controls}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { label: 'Taken', value: k.totalTasks },
-                { label: 'Vrijwilligers', value: k.totalVolunteers },
-                { label: 'Opkomst', value: `${k.attendanceRate}%` },
-                { label: 'Bezetting', value: `${k.fillRate}%` },
-                { label: 'Uitbetaald', value: `€${k.totalPaid.toFixed(0)}` },
-                { label: 'Openstaand', value: `€${k.totalPending.toFixed(0)}` },
-                { label: 'Contracten', value: `${k.contractsSigned}/${k.contractsTotal}` },
-                { label: 'Partners', value: k.partnerMembers },
-              ].map(item => (
-                <Card key={item.label}>
+            {!isExporting && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {ALL_KPIS.map(kpi => (
+                  <Badge key={kpi.key} variant={visibleKeys.includes(kpi.key) ? 'default' : 'outline'}
+                    className="cursor-pointer text-xs select-none" onClick={() => toggleKpi(kpi.key)}>
+                    {kpi.label}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className={`grid grid-cols-2 ${visibleKpis.length <= 4 ? 'md:grid-cols-' + Math.min(visibleKpis.length, 4) : 'md:grid-cols-4'} gap-3`}>
+              {visibleKpis.map(item => (
+                <Card key={item.key}>
                   <CardContent className="p-3 text-center">
                     <p className="text-2xl font-bold">{item.value}</p>
                     <p className="text-xs text-muted-foreground">{item.label}</p>
@@ -626,6 +644,7 @@ Antwoord ALLEEN met geldig JSON, geen extra tekst.`,
             </div>
           </div>
         );
+      }
 
       case 'spacer':
         return (
