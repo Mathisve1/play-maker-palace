@@ -663,6 +663,9 @@ const ReportingDashboard = () => {
           <Logo />
           <h1 className="text-lg font-bold text-foreground ml-2">Rapportering</h1>
           <div className="ml-auto flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/report-builder')}>
+              <FileText className="w-4 h-4" /> Rapport Builder
+            </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={exportPDF}>
               <FileDown className="w-4 h-4" /> PDF
             </Button>
