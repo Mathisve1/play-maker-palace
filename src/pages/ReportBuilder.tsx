@@ -274,15 +274,53 @@ const ReportBuilder = () => {
   // ── Build AI data summary ──────────────────────────────────
   const buildDataSummary = useCallback(() => {
     const k = chartDataSets.kpis;
+    const cd = chartDataSets;
     return [
-      `Club: ${clubName}`, `Totaal taken: ${k.totalTasks}`, `Totaal vrijwilligers: ${k.totalVolunteers}`,
+      `Club: ${clubName}`,
+      `Totaal taken: ${k.totalTasks}`, `Totaal vrijwilligers: ${k.totalVolunteers}`,
       `Totaal uitbetaald: €${k.totalPaid.toFixed(2)}`, `Openstaand: €${k.totalPending.toFixed(2)}`,
       `Opkomst: ${k.attendanceRate}%`, `Bezetting: ${k.fillRate}%`,
-      `Contracten: ${k.contractsSigned}/${k.contractsTotal}`,
-      '', 'EVENEMENTEN:', ...events.map((e: any) => `- ${e.title}`),
-      '', 'MAANDUITGAVEN:', ...chartDataSets.monthlySpending.map(m => `- ${m.month}: €${m.Bedrag}`),
+      `Contracten ondertekend: ${k.contractsSigned}/${k.contractsTotal}`,
+      `Partner medewerkers ingezet: ${k.partnerMembers}`,
+      '',
+      'EVENEMENTEN MET AANMELDINGEN:',
+      ...cd.signupsPerEvent.map(e => `- ${e.name}: ${e.Toegewezen} toegewezen, ${e.Ingecheckt} ingecheckt`),
+      '',
+      'MAANDELIJKSE UITGAVEN:',
+      ...cd.monthlySpending.map(m => `- ${m.month}: €${m.Bedrag}`),
+      '',
+      'TOP VRIJWILLIGERS:',
+      ...cd.topVolunteers.map(v => `- ${v.name}: ${v.Taken} taken, €${v.Verdiend.toFixed(0)} verdiend`),
+      '',
+      'OPKOMST:',
+      ...cd.noShowRate.map(n => `- ${n.name}: ${n.value}`),
+      '',
+      'VERGOEDINGSTYPE:',
+      ...cd.compensationType.map(c => `- ${c.name}: ${c.value} taken`),
+      '',
+      'TAKEN PER DAG VAN DE WEEK:',
+      ...cd.dayOfWeek.map(d => `- ${d.name}: ${d.Taken} taken`),
+      '',
+      'MAANDTREND:',
+      ...cd.monthlyTrend.map(m => `- ${m.month}: ${m.Aanmeldingen} aanmeldingen, ${m.Ingecheckt} ingecheckt`),
+      '',
+      'VRIJWILLIGERS PER EVENEMENT:',
+      ...cd.volunteersPerEvent.map(e => `- ${e.name}: ${e.Vrijwilligers} vrijwilligers, ${e.Bezetting}% bezetting`),
+      '',
+      'TAKEN DETAILS (eerste 30):',
+      ...tasks.slice(0, 30).map((t: any) => `- "${t.title}" | ${t.task_date ? format(parseISO(t.task_date), 'dd/MM/yyyy') : 'geen datum'} | ${t.compensation_type} | ${t.hourly_rate ? '€' + t.hourly_rate + '/u' : t.expense_amount ? '€' + t.expense_amount + ' vast' : 'gratis'} | ${t.spots_available || 0} spots | locatie: ${t.location || '?'}`),
+      '',
+      'BETALINGEN DETAILS (eerste 30):',
+      ...payments.slice(0, 30).map((p: any) => {
+        const vol = profileMap[p.volunteer_id];
+        const task = taskMap[p.task_id];
+        return `- €${Number(p.amount).toFixed(2)} aan ${vol?.full_name || '?'} voor "${task?.title || '?'}" | status: ${p.status} | ${p.paid_at ? format(parseISO(p.paid_at), 'dd/MM/yyyy') : 'niet betaald'}`;
+      }),
+      '',
+      'PARTNERS:',
+      ...partners.map((p: any) => `- ${p.name} (${p.category})`),
     ].join('\n');
-  }, [chartDataSets, clubName, events]);
+  }, [chartDataSets, clubName, tasks, payments, partners, profileMap, taskMap]);
 
   // ── Widget management ─────────────────────────────────────
   const addWidget = (type: WidgetType, data: Record<string, any> = {}) => {
@@ -318,15 +356,17 @@ const ReportBuilder = () => {
     try {
       const response = await supabase.functions.invoke('reporting-ai', {
         body: {
-          question: `Op basis van de volgende data, genereer een JSON object met:
-- "title": korte titel voor de grafiek
-- "chartType": "bar", "pie", "line" of "area"
-- "data": array van objecten met "name" en numerieke waarden
-- "dataKeys": array van de numerieke veldnamen
+          question: `Je MOET de data uit de DATA SAMENVATTING gebruiken om een grafiek te maken. Gebruik de echte cijfers uit de samenvatting, verzin GEEN data.
 
-Vraag: ${aiPrompt}
+Genereer een JSON object met exact deze structuur:
+- "title": korte Nederlandse titel voor de grafiek
+- "chartType": "bar", "pie", "line" of "area"  
+- "data": array van objecten, elk met "name" (string) en minstens één numeriek veld
+- "dataKeys": array van de numerieke veldnamen die in data zitten
 
-Antwoord ALLEEN met geldig JSON, geen extra tekst.`,
+Gebruikersvraag: ${aiPrompt}
+
+BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met geldig JSON, geen markdown, geen uitleg, geen backticks.`,
           dataSummary: buildDataSummary(),
         },
       });
