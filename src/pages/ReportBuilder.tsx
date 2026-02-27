@@ -350,6 +350,96 @@ const ReportBuilder = () => {
   };
 
   // ── AI chart generation ───────────────────────────────────
+  const extractSseContent = (raw: string) => {
+    let content = '';
+    for (const line of raw.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+      const payload = trimmed.replace(/^data:\s*/, '');
+      if (!payload || payload === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(payload);
+        const delta = parsed?.choices?.[0]?.delta?.content;
+        const message = parsed?.choices?.[0]?.message?.content;
+        if (typeof delta === 'string') content += delta;
+        else if (typeof message === 'string') content += message;
+      } catch {
+        // ignore malformed SSE chunks
+      }
+    }
+    return content;
+  };
+
+  const toFiniteNumber = (value: unknown) => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'string') {
+      const normalized = value.replace(',', '.').trim();
+      const n = Number(normalized);
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
+  };
+
+  const normalizeAiChartConfig = (raw: any) => {
+    const rawType = String(raw?.chartType || raw?.chart_type || raw?.type || 'bar').toLowerCase();
+    const chartType = rawType === 'doughnut' ? 'pie' : (['bar', 'pie', 'line', 'area'].includes(rawType) ? rawType : 'bar');
+    const title = String(raw?.title || raw?.name || 'AI Grafiek');
+
+    // Format A: { data: [{ name, ...numbers }], dataKeys: [] }
+    if (Array.isArray(raw?.data) && raw.data.length > 0 && typeof raw.data[0] === 'object') {
+      const data = raw.data.map((row: any) => {
+        const normalizedRow: Record<string, any> = { ...row };
+        Object.keys(normalizedRow).forEach((key) => {
+          if (key !== 'name' && key !== 'month') normalizedRow[key] = toFiniteNumber(normalizedRow[key]);
+        });
+        if (normalizedRow.name === undefined && normalizedRow.month === undefined) {
+          normalizedRow.name = 'Item';
+        }
+        return normalizedRow;
+      });
+      const dataKeys = (Array.isArray(raw?.dataKeys) ? raw.dataKeys : Array.isArray(raw?.data_keys) ? raw.data_keys : [])
+        .map((k: any) => String(k))
+        .filter(Boolean);
+      const fallbackKeys = Object.keys(data[0] || {}).filter(k => k !== 'name' && k !== 'month');
+      return { title, chartType, data, dataKeys: dataKeys.length ? dataKeys : fallbackKeys };
+    }
+
+    // Format B (Chart.js-like): { labels: [], datasets: [{ label, data: [] }] }
+    if (Array.isArray(raw?.labels) && Array.isArray(raw?.datasets) && raw.labels.length > 0 && raw.datasets.length > 0) {
+      const dataKeys = raw.datasets.map((ds: any, i: number) => String(ds?.label || `Waarde ${i + 1}`));
+      const data = raw.labels.map((label: any, idx: number) => {
+        const row: Record<string, any> = { name: String(label) };
+        raw.datasets.forEach((ds: any, i: number) => {
+          row[dataKeys[i]] = toFiniteNumber(ds?.data?.[idx]);
+        });
+        return row;
+      });
+      return { title, chartType, data, dataKeys };
+    }
+
+    // Format C: { labels: [], values: [] }
+    if (Array.isArray(raw?.labels) && Array.isArray(raw?.values) && raw.labels.length === raw.values.length) {
+      const data = raw.labels.map((label: any, i: number) => ({ name: String(label), value: toFiniteNumber(raw.values[i]) }));
+      return { title, chartType, data, dataKeys: ['value'] };
+    }
+
+    return { title, chartType, data: [], dataKeys: [] };
+  };
+
+  const extractJsonObject = (rawText: string) => {
+    const cleaned = rawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+    try {
+      return JSON.parse(cleaned);
+    } catch {
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+        throw new Error('Geen geldig JSON ontvangen');
+      }
+      return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+    }
+  };
+
   const generateAiChart = async () => {
     if (!aiPrompt.trim()) return;
     setAiLoading(true);
@@ -373,7 +463,6 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
 
       if (response.error) throw response.error;
 
-      // Parse streaming response
       let text = '';
       if (response.data instanceof ReadableStream) {
         const reader = response.data.getReader();
@@ -382,34 +471,30 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
         while (!done) {
           const { value, done: d } = await reader.read();
           done = d;
-          if (value) {
-            const chunk = decoder.decode(value, { stream: true });
-            for (const line of chunk.split('\n')) {
-              if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
-              try {
-                const parsed = JSON.parse(line.slice(6));
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) text += content;
-              } catch {}
-            }
-          }
+          if (!value) continue;
+          text += extractSseContent(decoder.decode(value, { stream: true })) || '';
         }
       } else if (typeof response.data === 'string') {
-        text = response.data;
+        text = extractSseContent(response.data) || response.data;
+      } else if (response.data && typeof response.data === 'object') {
+        const message = (response.data as any)?.choices?.[0]?.message?.content;
+        text = typeof message === 'string' ? message : JSON.stringify(response.data);
       } else {
-        text = JSON.stringify(response.data);
+        text = String(response.data || '');
       }
 
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('Geen geldig JSON ontvangen');
-      const chartConfig = JSON.parse(jsonMatch[0]);
+      const rawChartConfig = extractJsonObject(text);
+      const chartConfig = normalizeAiChartConfig(rawChartConfig);
+
+      if (!chartConfig.data.length || !chartConfig.dataKeys.length) {
+        throw new Error('AI gaf geen bruikbare grafiekdata terug');
+      }
 
       addWidget('ai-chart', {
-        title: chartConfig.title || 'AI Grafiek',
-        chartType: chartConfig.chartType || 'bar',
-        data: chartConfig.data || [],
-        dataKeys: chartConfig.dataKeys || ['value'],
+        title: chartConfig.title,
+        chartType: chartConfig.chartType,
+        data: chartConfig.data,
+        dataKeys: chartConfig.dataKeys,
         prompt: aiPrompt,
       });
       setAiPrompt('');
