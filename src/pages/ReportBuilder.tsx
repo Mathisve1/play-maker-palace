@@ -468,12 +468,15 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
         const reader = response.data.getReader();
         const decoder = new TextDecoder();
         let done = false;
+        let rawSse = '';
         while (!done) {
           const { value, done: d } = await reader.read();
           done = d;
           if (!value) continue;
-          text += extractSseContent(decoder.decode(value, { stream: true })) || '';
+          rawSse += decoder.decode(value, { stream: true });
         }
+        rawSse += decoder.decode();
+        text = extractSseContent(rawSse);
       } else if (typeof response.data === 'string') {
         text = extractSseContent(response.data) || response.data;
       } else if (response.data && typeof response.data === 'object') {
