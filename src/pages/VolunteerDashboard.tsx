@@ -671,7 +671,7 @@ const VolunteerDashboard = () => {
           </div>
 
           {/* Compliance badge */}
-          {complianceData && <ComplianceBadge data={complianceData} language={language} />}
+          {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
         </div>
       )}
 
@@ -679,7 +679,7 @@ const VolunteerDashboard = () => {
       {activeTab === 'academy' && (
         <div className="max-w-5xl mx-auto">
           <h1 className="text-2xl font-heading font-bold text-foreground mb-6">Academy</h1>
-          <AcademyTab language={language} userId={currentUserId} />
+          <AcademyTab language={language} navigate={navigate} />
         </div>
       )}
 
