@@ -5,9 +5,8 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, LogOut, Search, CheckCircle, Heart, MessageCircle, FileSignature, User, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Timer, Gift, Ticket, Euro, Banknote, Award } from 'lucide-react';
+import { MapPin, Calendar, Users, Search, CheckCircle, Heart, MessageCircle, FileSignature, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Gift, Ticket, Banknote, Award, TrendingUp, Star } from 'lucide-react';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
-import Logo from '@/components/Logo';
 import LikeButton from '@/components/LikeButton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import EditProfileDialog from '@/components/EditProfileDialog';
@@ -19,6 +18,8 @@ import { useComplianceData } from '@/hooks/useComplianceData';
 import EventDetailDialog from '@/components/EventDetailDialog';
 import TicketDownloadButtons from '@/components/TicketDownloadButtons';
 import AcademyTab from '@/components/AcademyTab';
+import DashboardLayout from '@/components/DashboardLayout';
+import VolunteerSidebar, { VolunteerTab } from '@/components/VolunteerSidebar';
 
 interface Task {
   id: string;
@@ -38,7 +39,7 @@ interface Task {
   end_time?: string | null;
   notes?: string | null;
   required_training_id?: string | null;
-  clubs?: { name: string; sport: string | null; location: string | null };
+  clubs?: { name: string; sport: string | null; location: string | null; logo_url?: string | null };
   event_id?: string | null;
   event_group_id?: string | null;
 }
@@ -121,8 +122,6 @@ interface EventGroup {
   sort_order: number;
 }
 
-const langLabels: Record<Language, string> = { nl: 'NL', fr: 'FR', en: 'EN' };
-
 const VolunteerDashboard = () => {
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
@@ -135,7 +134,7 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy'>('all');
+  const [activeTab, setActiveTab] = useState<VolunteerTab>('dashboard');
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
@@ -144,25 +143,24 @@ const VolunteerDashboard = () => {
   const [myTickets, setMyTickets] = useState<VolunteerTicket[]>([]);
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
   const [sepaPayouts, setSepaPayouts] = useState<SepaPayoutItem[]>([]);
-  
+
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [myLikes, setMyLikes] = useState<Set<string>>(new Set());
   const [myCertifiedTrainingIds, setMyCertifiedTrainingIds] = useState<Set<string>>(new Set());
-  const [followedClubIds, setFollowedClubIds] = useState<Set<string> | null>(null); // null = not loaded yet
+  const [followedClubIds, setFollowedClubIds] = useState<Set<string> | null>(null);
 
-  // Events state
   const [events, setEvents] = useState<EventData[]>([]);
   const [eventGroups, setEventGroups] = useState<EventGroup[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
 
-  // Loyalty state
   const [loyaltyPrograms, setLoyaltyPrograms] = useState<{ id: string; name: string; description: string | null; reward_description: string; required_tasks: number; required_points: number | null; points_based: boolean; club_id: string; club_name?: string }[]>([]);
   const [loyaltyEnrollments, setLoyaltyEnrollments] = useState<Record<string, { id: string; tasks_completed: number; points_earned: number; reward_claimed: boolean }>>({});
   const [enrollingProgram, setEnrollingProgram] = useState<string | null>(null);
 
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
+  // ===== ALL EXISTING DATA FETCHING & HANDLERS =====
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -187,11 +185,10 @@ const VolunteerDashboard = () => {
         .select('*, clubs(name, sport, location)')
         .eq('status', 'open')
         .order('task_date', { ascending: true });
-      
+
       if (tasksError) {
         console.error('Tasks error:', tasksError);
       } else {
-        // Enrich with event_id/event_group_id
         let enrichedTasks = tasksData || [];
         if (enrichedTasks.length > 0) {
           const taskIds = enrichedTasks.map(t => t.id);
@@ -206,7 +203,6 @@ const VolunteerDashboard = () => {
             event_group_id: (extraMap.get(t.id) as any)?.event_group_id || null,
           }));
 
-          // Filter out tasks belonging to training events
           const trainingEventIds = new Set<string>();
           if (enrichedTasks.some(t => t.event_id)) {
             const eventIdsToCheck = [...new Set(enrichedTasks.filter(t => t.event_id).map(t => t.event_id!))] as string[];
@@ -238,14 +234,14 @@ const VolunteerDashboard = () => {
         }
       }
 
-      // Fetch events WITHOUT training_id (regular events like matches, not trainings)
+      // Fetch events
       const { data: allEventsData } = await (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: true });
       if (allEventsData && allEventsData.length > 0) {
         const clubIds = [...new Set(allEventsData.map((e: any) => e.club_id))] as string[];
         const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);
         const clubMap = new Map(clubsData?.map(c => [c.id, c.name]) || []);
         setEvents(allEventsData.map((e: any) => ({ ...e, club_name: clubMap.get(e.club_id) || '' })));
-        
+
         const allEventIds = allEventsData.map((e: any) => e.id);
         const { data: groupsData } = await (supabase as any).from('event_groups').select('*').in('event_id', allEventIds).order('sort_order', { ascending: true });
         setEventGroups(groupsData || []);
@@ -263,7 +259,7 @@ const VolunteerDashboard = () => {
         setMyPayments(paymentsData.map(p => { const t = taskMap.get(p.task_id); return { ...p, task_title: t?.title, club_name: (t as any)?.clubs?.name }; }));
       }
 
-      // Fetch SEPA batch items for this volunteer
+      // Fetch SEPA batch items
       const { data: sepaItems } = await (supabase as any)
         .from('sepa_batch_items')
         .select('id, amount, status, created_at, error_flag, error_message, batch_id, task_id, volunteer_id')
@@ -280,16 +276,10 @@ const VolunteerDashboard = () => {
           const batch = batchMap.get(item.batch_id) as any;
           const task = sepaTaskMap.get(item.task_id);
           return {
-            id: item.id,
-            amount: Number(item.amount),
-            status: item.status,
-            created_at: item.created_at,
-            error_flag: item.error_flag,
-            error_message: item.error_message,
-            batch_status: batch?.status || 'pending',
-            batch_reference: batch?.batch_reference || '',
-            task_title: task?.title,
-            club_name: (task as any)?.clubs?.name,
+            id: item.id, amount: Number(item.amount), status: item.status, created_at: item.created_at,
+            error_flag: item.error_flag, error_message: item.error_message,
+            batch_status: batch?.status || 'pending', batch_reference: batch?.batch_reference || '',
+            task_title: task?.title, club_name: (task as any)?.clubs?.name,
           };
         }));
       }
@@ -322,8 +312,7 @@ const VolunteerDashboard = () => {
           tEvents?.forEach((e: any) => eventMap2.set(e.id, e.title));
         }
         setMyTickets(ticketsData.map((t: any) => ({
-          ...t,
-          club_name: clubMap2.get(t.club_id) || '',
+          ...t, club_name: clubMap2.get(t.club_id) || '',
           task_title: t.task_id ? taskMap2.get(t.task_id) || '' : '',
           event_title: t.event_id ? eventMap2.get(t.event_id) || '' : '',
         })));
@@ -337,7 +326,6 @@ const VolunteerDashboard = () => {
         const clubMap = new Map(clubsData?.map(c => [c.id, c.name]) || []);
         setLoyaltyPrograms(allPrograms.map((p: any) => ({ ...p, club_name: clubMap.get(p.club_id) || '' })));
 
-        // Fetch my enrollments
         const programIds = allPrograms.map((p: any) => p.id);
         const { data: myEnrollments } = await (supabase as any).from('loyalty_enrollments').select('*').eq('volunteer_id', session.user.id).in('program_id', programIds);
         if (myEnrollments) {
@@ -347,14 +335,9 @@ const VolunteerDashboard = () => {
         }
       }
 
-      // Fetch my certificates for training badge
-      const { data: myCerts } = await supabase
-        .from('volunteer_certificates')
-        .select('training_id')
-        .eq('volunteer_id', session.user.id);
-      if (myCerts) {
-        setMyCertifiedTrainingIds(new Set(myCerts.map(c => c.training_id)));
-      }
+      // Fetch my certificates
+      const { data: myCerts } = await supabase.from('volunteer_certificates').select('training_id').eq('volunteer_id', session.user.id);
+      if (myCerts) { setMyCertifiedTrainingIds(new Set(myCerts.map(c => c.training_id))); }
 
       // Fetch followed clubs
       const { data: followsData } = await supabase.from('club_follows').select('club_id').eq('user_id', session.user.id);
@@ -375,6 +358,7 @@ const VolunteerDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // ===== HANDLERS =====
   const handleSignup = async (taskId: string) => {
     setSigningUp(taskId);
     const { data: { session } } = await supabase.auth.getSession();
@@ -435,7 +419,7 @@ const VolunteerDashboard = () => {
       else if (contract.status === 'completed' && contract.document_url) { window.open(contract.document_url, '_blank'); }
       else { setActiveTab('contracts'); }
     } else {
-      toast.info(language === 'nl' ? 'Het contract is nog niet verstuurd door de club. Neem contact op met je club.' : language === 'fr' ? 'Le contrat n\'a pas encore été envoyé par le club. Contactez votre club.' : 'The contract has not been sent by the club yet. Contact your club.');
+      toast.info(language === 'nl' ? 'Het contract is nog niet verstuurd door de club.' : 'The contract has not been sent yet.');
     }
   };
 
@@ -449,15 +433,17 @@ const VolunteerDashboard = () => {
       const data = await resp.json();
       if (resp.ok && data.success) {
         setMyContracts(prev => prev.map(c => c.id === contractId ? { ...c, status: data.status, document_url: data.document_url || c.document_url } : c));
-        if (data.status === 'completed') { toast.success('Contract is ondertekend! Je kunt het nu downloaden.'); } else { toast.info('Contract is nog in afwachting van ondertekening.'); }
+        if (data.status === 'completed') { toast.success('Contract is ondertekend!'); } else { toast.info('Contract is nog in afwachting.'); }
       }
     } catch { toast.error('Kon de status niet ophalen.'); }
     setCheckingContract(null);
   };
 
-  // Derived data — filter by followed clubs when user has follows
+  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
+
+  // ===== DERIVED DATA =====
   const hasFollows = followedClubIds !== null && followedClubIds.size > 0;
-  const feedTasks = hasFollows && activeTab === 'all'
+  const feedTasks = hasFollows && (activeTab === 'all' || activeTab === 'dashboard')
     ? tasks.filter(t => followedClubIds!.has(t.club_id))
     : tasks;
   const looseTasks = feedTasks.filter(t => !t.event_id);
@@ -475,8 +461,7 @@ const VolunteerDashboard = () => {
   });
 
   const filteredEvents = events.filter(event => {
-    // Filter by followed clubs on 'all' tab
-    if (hasFollows && activeTab === 'all' && !followedClubIds!.has(event.club_id)) return false;
+    if (hasFollows && (activeTab === 'all' || activeTab === 'dashboard') && !followedClubIds!.has(event.club_id)) return false;
     if (activeTab === 'mine') {
       const evTasks = tasks.filter(t => t.event_id === event.id);
       return evTasks.some(t => {
@@ -486,16 +471,13 @@ const VolunteerDashboard = () => {
     }
     const q = searchQuery.toLowerCase();
     if (!q) return true;
-    const matchesEvent = event.title.toLowerCase().includes(q) || event.location?.toLowerCase().includes(q) || event.club_name?.toLowerCase().includes(q);
-    const evTasks = tasks.filter(t => t.event_id === event.id);
-    const matchesTask = evTasks.some(t => t.title.toLowerCase().includes(q));
-    return matchesEvent || matchesTask;
+    return event.title.toLowerCase().includes(q) || event.location?.toLowerCase().includes(q) || event.club_name?.toLowerCase().includes(q);
   });
 
   const dashboardT = {
-    nl: { welcome: 'Welkom', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, evenementen, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', assigned: 'Toegekend', cancel: 'Annuleren', spots: 'plaatsen', logout: 'Uitloggen', mySignups: 'Mijn inschrijvingen', allTasks: 'Alle taken', myTasks: 'Mijn taken', noMyTasks: 'Geen taken in deze categorie.', signContract: 'Contract ondertekenen', signing: 'Laden...', ingeschreven: 'Ingeschreven', toegekend: 'Toegekend', payments: 'Vergoedingen', noPayments: 'Je hebt nog geen vergoedingen ontvangen.', paid: 'Betaald', processing: 'Verwerken', pending: 'In afwachting', failed: 'Mislukt', receipt: 'Betaalbewijs', paidOn: 'Betaald op', contracts: 'Contracten', noContracts: 'Je hebt nog geen contracten.', signed: 'Ondertekend', awaitingSignature: 'Wacht op ondertekening', signNow: 'Nu ondertekenen', downloadContract: 'Download contract', checkStatus: 'Status ophalen', sentOn: 'Verstuurd op', events: 'Evenementen', looseTasks: 'Overige taken', viewEvent: 'Bekijk evenement' },
-    fr: { welcome: 'Bienvenue', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, événements, clubs ou lieux...', noTasks: 'Il n\'y a actuellement aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', assigned: 'Attribué', cancel: 'Annuler', spots: 'places', logout: 'Déconnexion', mySignups: 'Mes inscriptions', allTasks: 'Toutes les tâches', myTasks: 'Mes tâches', noMyTasks: 'Aucune tâche dans cette catégorie.', signContract: 'Signer le contrat', signing: 'Chargement...', ingeschreven: 'Inscrits', toegekend: 'Attribués', payments: 'Remboursements', noPayments: 'Aucun remboursement reçu.', paid: 'Payé', processing: 'En cours', pending: 'En attente', failed: 'Échoué', receipt: 'Reçu', paidOn: 'Payé le', contracts: 'Contrats', noContracts: 'Aucun contrat.', signed: 'Signé', awaitingSignature: 'En attente de signature', signNow: 'Signer maintenant', downloadContract: 'Télécharger le contrat', checkStatus: 'Vérifier le statut', sentOn: 'Envoyé le', events: 'Événements', looseTasks: 'Autres tâches', viewEvent: "Voir l'événement" },
-    en: { welcome: 'Welcome', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, events, clubs or locations...', noTasks: 'There are currently no open tasks.', signUp: 'Sign up', signedUp: 'Signed up', assigned: 'Assigned', cancel: 'Cancel', spots: 'spots', logout: 'Log out', mySignups: 'My signups', allTasks: 'All tasks', myTasks: 'My tasks', noMyTasks: 'No tasks in this category.', signContract: 'Sign contract', signing: 'Loading...', ingeschreven: 'Signed up', toegekend: 'Assigned', payments: 'Reimbursements', noPayments: 'No reimbursements received yet.', paid: 'Paid', processing: 'Processing', pending: 'Pending', failed: 'Failed', receipt: 'Receipt', paidOn: 'Paid on', contracts: 'Contracts', noContracts: 'No contracts yet.', signed: 'Signed', awaitingSignature: 'Awaiting signature', signNow: 'Sign now', downloadContract: 'Download contract', checkStatus: 'Check status', sentOn: 'Sent on', events: 'Events', looseTasks: 'Other tasks', viewEvent: 'View event' },
+    nl: { welcome: 'Welkom terug', subtitle: 'Samen maken we sport mogelijk.', availableTasks: 'Beschikbare taken', searchPlaceholder: 'Zoek taken, clubs of locaties...', noTasks: 'Er zijn momenteel geen openstaande taken.', signUp: 'Inschrijven', signedUp: 'Ingeschreven', assigned: 'Toegekend', cancel: 'Annuleren', spots: 'plaatsen', mySignups: 'Mijn inschrijvingen', allTasks: 'Alle taken', myTasks: 'Mijn taken', noMyTasks: 'Geen taken in deze categorie.', signContract: 'Contract ondertekenen', ingeschreven: 'Ingeschreven', toegekend: 'Toegekend', payments: 'Vergoedingen', noPayments: 'Je hebt nog geen vergoedingen ontvangen.', paid: 'Betaald', processing: 'Verwerken', pending: 'In afwachting', failed: 'Mislukt', receipt: 'Betaalbewijs', paidOn: 'Betaald op', contracts: 'Contracten', noContracts: 'Je hebt nog geen contracten.', signed: 'Ondertekend', awaitingSignature: 'Wacht op ondertekening', signNow: 'Nu ondertekenen', downloadContract: 'Download contract', checkStatus: 'Status ophalen', sentOn: 'Verstuurd op', events: 'Evenementen', looseTasks: 'Overige taken', viewEvent: 'Bekijk evenement', upcomingTasks: 'Aankomende taken', quickStats: 'Overzicht', totalEarned: 'Totaal verdiend', tasksCompleted: 'Voltooid', openTasks: 'Open taken', viewAll: 'Bekijk alles', goToMessages: 'Ga naar berichten', recentMessages: 'Berichten' },
+    fr: { welcome: 'Bienvenue', subtitle: 'Ensemble, rendons le sport possible.', availableTasks: 'Tâches disponibles', searchPlaceholder: 'Rechercher des tâches, clubs ou lieux...', noTasks: 'Aucune tâche disponible.', signUp: 'S\'inscrire', signedUp: 'Inscrit', assigned: 'Attribué', cancel: 'Annuler', spots: 'places', mySignups: 'Mes inscriptions', allTasks: 'Toutes les tâches', myTasks: 'Mes tâches', noMyTasks: 'Aucune tâche.', signContract: 'Signer le contrat', ingeschreven: 'Inscrits', toegekend: 'Attribués', payments: 'Remboursements', noPayments: 'Aucun remboursement.', paid: 'Payé', processing: 'En cours', pending: 'En attente', failed: 'Échoué', receipt: 'Reçu', paidOn: 'Payé le', contracts: 'Contrats', noContracts: 'Aucun contrat.', signed: 'Signé', awaitingSignature: 'En attente', signNow: 'Signer', downloadContract: 'Télécharger', checkStatus: 'Vérifier', sentOn: 'Envoyé le', events: 'Événements', looseTasks: 'Autres tâches', viewEvent: 'Voir', upcomingTasks: 'Prochaines tâches', quickStats: 'Aperçu', totalEarned: 'Total gagné', tasksCompleted: 'Terminées', openTasks: 'Tâches ouvertes', viewAll: 'Voir tout', goToMessages: 'Aller aux messages', recentMessages: 'Messages' },
+    en: { welcome: 'Welcome back', subtitle: 'Together we make sports possible.', availableTasks: 'Available tasks', searchPlaceholder: 'Search tasks, clubs or locations...', noTasks: 'No open tasks.', signUp: 'Sign up', signedUp: 'Signed up', assigned: 'Assigned', cancel: 'Cancel', spots: 'spots', mySignups: 'My signups', allTasks: 'All tasks', myTasks: 'My tasks', noMyTasks: 'No tasks in this category.', signContract: 'Sign contract', ingeschreven: 'Signed up', toegekend: 'Assigned', payments: 'Payments', noPayments: 'No payments yet.', paid: 'Paid', processing: 'Processing', pending: 'Pending', failed: 'Failed', receipt: 'Receipt', paidOn: 'Paid on', contracts: 'Contracts', noContracts: 'No contracts.', signed: 'Signed', awaitingSignature: 'Awaiting signature', signNow: 'Sign now', downloadContract: 'Download', checkStatus: 'Check status', sentOn: 'Sent on', events: 'Events', looseTasks: 'Other tasks', viewEvent: 'View event', upcomingTasks: 'Upcoming tasks', quickStats: 'Overview', totalEarned: 'Total earned', tasksCompleted: 'Completed', openTasks: 'Open tasks', viewAll: 'View all', goToMessages: 'Go to messages', recentMessages: 'Messages' },
   };
   const dt = dashboardT[language];
 
@@ -507,7 +489,6 @@ const VolunteerDashboard = () => {
     );
   }
 
-  // Get groups for selected event
   const selectedEventGroups = selectedEvent
     ? eventGroups.filter(g => g.event_id === selectedEvent.id).map(g => ({
         ...g,
@@ -515,452 +496,496 @@ const VolunteerDashboard = () => {
       }))
     : [];
 
+  // ===== STATS =====
+  const totalEarned = myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0)
+    + sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
+
+  // Upcoming assigned tasks (next 5)
+  const myUpcomingTasks = tasks
+    .filter(t => {
+      const status = getSignupStatus(t.id);
+      return status === 'assigned' || status === 'pending';
+    })
+    .sort((a, b) => {
+      const da = a.task_date ? new Date(a.task_date).getTime() : Infinity;
+      const db = b.task_date ? new Date(b.task_date).getTime() : Infinity;
+      return da - db;
+    })
+    .slice(0, 5);
+
+  // ===== RENDER =====
+  const sidebarEl = (
+    <VolunteerSidebar
+      activeTab={activeTab}
+      setActiveTab={(tab) => { setActiveTab(tab); if (tab === 'mine') setMineSubTab('pending'); }}
+      profile={profile}
+      language={language}
+      onLogout={handleLogout}
+      onOpenProfile={() => setShowProfileDialog(true)}
+      counts={{
+        pending: pendingSignups.length,
+        assigned: assignedSignups.length,
+        payments: myPayments.length + sepaPayouts.length,
+        contracts: myContracts.length,
+        tickets: myTickets.length,
+        loyalty: loyaltyPrograms.length,
+      }}
+    />
+  );
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="px-4 h-14 flex items-center justify-between max-w-4xl mx-auto">
-          <Logo size="sm" linkTo="/dashboard" />
-          <div className="flex items-center gap-3">
-            <div className="flex gap-0.5">
-              {(['nl', 'fr', 'en'] as Language[]).map(lang => (
-                <button key={lang} onClick={() => setLanguage(lang)} className={`px-2 py-1 text-xs rounded-md transition-colors touch-target flex items-center justify-center ${language === lang ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:text-foreground'}`}>
-                  {langLabels[lang]}
-                </button>
-              ))}
-            </div>
-            <button onClick={() => navigate('/chat')} className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted transition-colors" title={dt.allTasks}>
-              <MessageCircle className="w-5 h-5 text-muted-foreground" />
-            </button>
-            <button onClick={() => setShowProfileDialog(true)} className="relative group" title="Mijn profiel">
-              <Avatar className="w-8 h-8">
-                {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name || ''} />}
-                <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">{(profile?.full_name || profile?.email || '?')[0].toUpperCase()}</AvatarFallback>
-              </Avatar>
-            </button>
-            <button onClick={async () => { await supabase.auth.signOut(); navigate('/login'); }} className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted transition-colors">
-              <LogOut className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
-        </div>
-      </header>
+    <DashboardLayout sidebar={sidebarEl}>
+      {/* ===== DASHBOARD HOME ===== */}
+      {activeTab === 'dashboard' && (
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* Welcome */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+            <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
+              {dt.welcome}, {profile?.full_name || profile?.email || ''}! 👋
+            </h1>
+            <p className="text-muted-foreground mt-1">{dt.subtitle}</p>
+          </motion.div>
 
-      <main className="px-4 py-6 pb-tab-bar max-w-4xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-heading font-bold text-foreground">{dt.welcome}, {profile?.full_name || profile?.email || ''}! 👋</h1>
-          <p className="text-muted-foreground mt-1">{dt.availableTasks}: {tasks.length}</p>
-        </motion.div>
-
-        {/* Filter bar */}
-        <div className="mt-6 bg-card rounded-2xl shadow-card border border-transparent p-4 space-y-3">
+          {/* Search bar */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input type="text" placeholder={dt.searchPlaceholder} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-xl bg-muted/50 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring border-0" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder={dt.searchPlaceholder}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onFocus={() => setActiveTab('all')}
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring border border-border shadow-sm"
+            />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => setActiveTab('all')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all ${activeTab === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>{dt.allTasks}</button>
-            <button onClick={() => { setActiveTab('mine'); setMineSubTab('pending'); }} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'mine' && mineSubTab === 'pending' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              {dt.ingeschreven} {pendingSignups.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'mine' && mineSubTab === 'pending' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`}>{pendingSignups.length}</span>}
-            </button>
-            <button onClick={() => { setActiveTab('mine'); setMineSubTab('assigned'); }} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'mine' && mineSubTab === 'assigned' ? 'bg-accent text-accent-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              <CheckCircle className="w-3 h-3" /> {dt.toegekend} {assignedSignups.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'mine' && mineSubTab === 'assigned' ? 'bg-accent-foreground/20 text-accent-foreground' : 'bg-accent/10 text-accent'}`}>{assignedSignups.length}</span>}
-            </button>
-            <button onClick={() => setActiveTab('payments')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'payments' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              <CreditCard className="w-3 h-3" /> {dt.payments} {myPayments.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'payments' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`}>{myPayments.length}</span>}
-            </button>
-            <button onClick={() => setActiveTab('contracts')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'contracts' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              <FileSignature className="w-3 h-3" /> {dt.contracts} {myContracts.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'contracts' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`}>{myContracts.length}</span>}
-            </button>
-            <button onClick={() => setActiveTab('briefings')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'briefings' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              <ClipboardList className="w-3 h-3" /> Briefings
-            </button>
-            <button onClick={() => setActiveTab('loyalty')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'loyalty' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              <Gift className="w-3 h-3" /> {language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'} {loyaltyPrograms.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'loyalty' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`}>{loyaltyPrograms.length}</span>}
-            </button>
-            <button onClick={() => setActiveTab('tickets')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'tickets' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              <Ticket className="w-3 h-3" /> Tickets {myTickets.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${activeTab === 'tickets' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`}>{myTickets.length}</span>}
-            </button>
-            <button onClick={() => setActiveTab('academy')} className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${activeTab === 'academy' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              <ClipboardList className="w-3 h-3" /> Academy
-            </button>
-          </div>
-        </div>
 
-        {/* Content */}
-        {activeTab === 'academy' ? (
-          <AcademyTab language={language} navigate={navigate} />
-        ) : activeTab === 'tickets' ? (
-          <div className="mt-6 space-y-4">
-            {myTickets.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Je hebt nog geen tickets.' : language === 'fr' ? 'Vous n\'avez pas encore de tickets.' : 'No tickets yet.'}</p></div>
-            ) : (
-              myTickets.map((ticket, i) => (
-                <motion.div key={ticket.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl overflow-hidden shadow-card border ${ticket.status === 'checked_in' ? 'border-accent/30' : ticket.status === 'sent' ? 'border-primary/30' : 'border-transparent'}`}>
-                  {/* Ticket header */}
-                  <div className="p-5 pb-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{ticket.task_title || ticket.event_title || 'Ticket'}</p>
-                        {ticket.club_name && <p className="text-xs text-muted-foreground mt-0.5">{ticket.club_name}</p>}
-                      </div>
-                      <div className="shrink-0">
-                        {ticket.status === 'checked_in' ? (
-                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-foreground"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Ingecheckt' : language === 'fr' ? 'Enregistré' : 'Checked in'}</span>
-                        ) : ticket.status === 'sent' ? (
-                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><Ticket className="w-3.5 h-3.5" />{language === 'nl' ? 'Geldig' : language === 'fr' ? 'Valide' : 'Valid'}</span>
-                        ) : (
-                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In afwachting' : language === 'fr' ? 'En attente' : 'Pending'}</span>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">{language === 'nl' ? 'Aangemaakt op' : language === 'fr' ? 'Créé le' : 'Created on'}: {new Date(ticket.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                    {ticket.checked_in_at && <p className="text-xs text-accent-foreground mt-1">{language === 'nl' ? 'Ingecheckt op' : language === 'fr' ? 'Enregistré le' : 'Checked in at'}: {new Date(ticket.checked_in_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
-                  </div>
-                  {/* QR code + barcode - always shown */}
-                  {ticket.barcode && (
-                    <>
-                      <div className="border-t border-dashed border-border mx-3" />
-                      <div className="p-5 pt-3 flex flex-col items-center gap-3">
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{language === 'nl' ? 'Scan deze QR-code bij het inchecken' : language === 'fr' ? 'Scannez ce QR code à l\'entrée' : 'Scan this QR code at check-in'}</p>
-                        <div className="bg-white rounded-xl p-3 shadow-sm">
-                          <QRCodeSVG value={ticket.barcode} size={160} level="H" />
-                        </div>
-                        <div className="bg-foreground/5 rounded-xl px-6 py-2 flex flex-col items-center gap-0.5">
-                          <span className="text-xs font-mono font-bold tracking-widest text-foreground">{ticket.barcode}</span>
-                          <span className="text-[10px] text-muted-foreground">ID: {ticket.external_ticket_id?.slice(-12) || ticket.id.slice(0, 8)}</span>
-                        </div>
-                        <TicketDownloadButtons
-                          barcode={ticket.barcode}
-                          ticketTitle={ticket.task_title || 'Ticket'}
-                          clubName={ticket.club_name}
-                          eventTitle={ticket.event_title}
-                          ticketId={ticket.id}
-                          volunteerName={profile?.full_name || undefined}
-                          dateOfBirth={(profile as any)?.date_of_birth || undefined}
-                          language={language}
-                        />
-                      </div>
-                    </>
-                  )}
-                </motion.div>
-              ))
-            )}
-          </div>
-        ) : activeTab === 'loyalty' ? (
-          <div className="mt-6 space-y-4">
-            {loyaltyPrograms.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground"><Gift className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen loyaliteitsprogramma\'s beschikbaar.' : language === 'fr' ? 'Aucun programme de fidélité disponible.' : 'No loyalty programs available.'}</p></div>
-            ) : (
-              loyaltyPrograms.map((program, i) => {
-                const enrollment = loyaltyEnrollments[program.id];
-                const isPointsBased = program.points_based && program.required_points;
-                const progress = enrollment ? (isPointsBased ? Math.min(100, (enrollment.points_earned / (program.required_points || 1)) * 100) : Math.min(100, (enrollment.tasks_completed / program.required_tasks) * 100)) : 0;
-                const goalReached = enrollment ? (isPointsBased ? enrollment.points_earned >= (program.required_points || 0) : enrollment.tasks_completed >= program.required_tasks) : false;
-                return (
-                  <motion.div key={program.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-card rounded-2xl p-5 shadow-card border border-transparent">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Gift className="w-4 h-4 text-primary" />
-                          <h3 className="font-heading font-semibold text-foreground">{program.name}</h3>
-                          {isPointsBased && <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-primary/10 text-primary font-semibold">{language === 'nl' ? 'Punten' : language === 'fr' ? 'Points' : 'Points'}</span>}
-                        </div>
-                        {program.club_name && <p className="text-xs text-muted-foreground mt-0.5">{program.club_name}</p>}
-                        {program.description && <p className="text-sm text-muted-foreground mt-1">{program.description}</p>}
-                        <p className="text-sm mt-2">🎁 {program.reward_description}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {isPointsBased
-                            ? `${program.required_points} ${language === 'nl' ? 'punten vereist' : language === 'fr' ? 'points requis' : 'points required'}`
-                            : `${program.required_tasks} ${language === 'nl' ? 'taken vereist' : language === 'fr' ? 'tâches requises' : 'tasks required'}`}
-                        </p>
-                      </div>
-                      <div className="shrink-0">
-                        {!enrollment ? (
-                          <button onClick={() => handleEnrollLoyalty(program.id)} disabled={enrollingProgram === program.id} className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
-                            {enrollingProgram === program.id ? '...' : language === 'nl' ? 'Deelnemen' : language === 'fr' ? 'Participer' : 'Join'}
-                          </button>
-                        ) : enrollment.reward_claimed ? (
-                          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-accent/20 text-accent-foreground">✅ {language === 'nl' ? 'Beloning ontvangen' : language === 'fr' ? 'Récompense reçue' : 'Reward received'}</span>
-                        ) : (
-                          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-muted text-muted-foreground">
-                            {isPointsBased ? `${enrollment.points_earned}/${program.required_points}` : `${enrollment.tasks_completed}/${program.required_tasks}`}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {enrollment && (
-                      <div className="mt-3">
-                        <div className="bg-muted rounded-full h-2 w-full">
-                          <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${progress}%` }} />
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })
-            )}
-          </div>
-        ) : activeTab === 'briefings' ? (
-          <div className="mt-6"><VolunteerBriefingsList language={language} userId={currentUserId} /></div>
-        ) : activeTab === 'contracts' ? (
-          <div className="mt-6 space-y-4">
-            {myContracts.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground"><FileSignature className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{dt.noContracts}</p></div>
-            ) : (
-              myContracts.map((contract, i) => (
-                <motion.div key={contract.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl p-5 shadow-card border ${contract.status === 'completed' ? 'border-green-200 dark:border-green-800' : 'border-transparent'}`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{contract.task_title || 'Contract'}</p>
-                      {contract.club_name && <p className="text-xs text-muted-foreground">{contract.club_name}</p>}
-                      <div className="flex items-center gap-2 mt-2">
-                        {contract.status === 'completed' ? <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400"><CheckCircle className="w-3.5 h-3.5" />{dt.signed}</span> : <span className="flex items-center gap-1 text-xs font-medium text-yellow-600 dark:text-yellow-400"><Clock className="w-3.5 h-3.5" />{dt.awaitingSignature}</span>}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      {contract.status === 'pending' && contract.signing_url && <a href={contract.signing_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"><FileSignature className="w-3.5 h-3.5" />{dt.signNow}</a>}
-                      {contract.status === 'pending' && <button onClick={() => handleCheckContractStatus(contract.id)} disabled={checkingContract === contract.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50">{checkingContract === contract.id ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" /> : <Clock className="w-3 h-3" />}{dt.checkStatus}</button>}
-                      {contract.status === 'completed' && contract.document_url && <a href={contract.document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"><Download className="w-3.5 h-3.5" />{dt.downloadContract}</a>}
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">{dt.sentOn}: {new Date(contract.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                </motion.div>
-              ))
-            )}
-          </div>
-        ) : activeTab === 'payments' ? (
-          <div className="mt-6 space-y-4">
-            {myPayments.length === 0 && sepaPayouts.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground"><CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{dt.noPayments}</p></div>
-            ) : (
-              <>
-                {/* Summary cards */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-card rounded-2xl shadow-card border border-transparent p-5">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.paid}</p>
-                    <p className="text-2xl font-heading font-bold text-green-600 mt-1">€{(
-                      myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0) +
-                      sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0)
-                    ).toFixed(2)}</p>
-                  </div>
-                  <div className="bg-card rounded-2xl shadow-card border border-transparent p-5">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.processing}</p>
-                    <p className="text-2xl font-heading font-bold text-primary mt-1">€{(
-                      myPayments.filter(p => p.status === 'processing').reduce((s, p) => s + p.amount, 0) +
-                      sepaPayouts.filter(s => ['signed', 'awaiting_signature', 'pending'].includes(s.batch_status) && !s.error_flag).reduce((s, p) => s + p.amount, 0)
-                    ).toFixed(2)}</p>
-                  </div>
+          {/* Bento Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+              className="bg-card rounded-2xl p-5 shadow-sm border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-primary" />
                 </div>
+              </div>
+              <p className="text-2xl font-heading font-bold text-foreground">€{totalEarned.toFixed(0)}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{dt.totalEarned}</p>
+            </motion.div>
 
-                {/* SEPA Payouts Section */}
-                {sepaPayouts.length > 0 && (
-                  <>
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-2">
-                      <Banknote className="w-4 h-4 text-primary" />
-                      {language === 'nl' ? 'Mijn Vergoedingen (SEPA)' : language === 'fr' ? 'Mes Remboursements (SEPA)' : 'My Reimbursements (SEPA)'}
-                    </h3>
-                    {sepaPayouts.map((payout, i) => {
-                      const isExported = ['downloaded', 'signed'].includes(payout.batch_status);
-                      const isPending = ['pending', 'awaiting_signature'].includes(payout.batch_status);
-                      return (
-                        <motion.div key={payout.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                          className={`bg-card rounded-2xl p-5 shadow-card border ${payout.error_flag ? 'border-destructive/30' : isExported ? 'border-primary/20' : 'border-transparent'}`}>
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">{payout.task_title || 'Taak'}</p>
-                              {payout.club_name && <p className="text-xs text-muted-foreground">{payout.club_name}</p>}
-                              <p className="text-lg font-heading font-bold text-foreground mt-1">€{payout.amount.toFixed(2)}</p>
-                            </div>
-                            <div className="flex flex-col items-end gap-1 shrink-0">
-                              {payout.error_flag ? (
-                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive">
-                                  <AlertTriangle className="w-3.5 h-3.5" />
-                                  {payout.error_message || 'Fout'}
-                                </span>
-                              ) : isExported ? (
-                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                  {language === 'nl' ? 'Geëxporteerd' : language === 'fr' ? 'Exporté' : 'Exported'}
-                                </span>
-                              ) : isPending ? (
-                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground">
-                                  <Clock className="w-3.5 h-3.5" />
-                                  {language === 'nl' ? 'In verwerking' : language === 'fr' ? 'En cours' : 'Processing'}
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground">
-                                  <Clock className="w-3.5 h-3.5" />
-                                  {payout.batch_status}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {/* Specific message for exported status */}
-                          {isExported && !payout.error_flag && (
-                            <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
-                              <p className="text-xs text-foreground leading-relaxed">
-                                {language === 'nl' 
-                                  ? 'De club heeft je betaling klaargezet en gedownload voor verwerking. Het kan nu nog tot 7 werkdagen duren voordat het bedrag op je rekening staat.'
-                                  : language === 'fr'
-                                  ? 'Le club a préparé et téléchargé votre paiement pour traitement. Il peut encore falloir jusqu\'à 7 jours ouvrables avant que le montant ne soit crédité sur votre compte.'
-                                  : 'The club has prepared and downloaded your payment for processing. It may take up to 7 business days for the amount to appear in your account.'}
-                              </p>
-                            </div>
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              className="bg-card rounded-2xl p-5 shadow-sm border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-accent" />
+                </div>
+              </div>
+              <p className="text-2xl font-heading font-bold text-foreground">{assignedSignups.length}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{dt.tasksCompleted}</p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+              className="bg-card rounded-2xl p-5 shadow-sm border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center">
+                  <ClipboardList className="w-4 h-4 text-secondary" />
+                </div>
+              </div>
+              <p className="text-2xl font-heading font-bold text-foreground">{pendingSignups.length}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{dt.pending}</p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="bg-card rounded-2xl p-5 shadow-sm border border-border cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/chat')}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-primary" />
+                </div>
+              </div>
+              <p className="text-sm font-semibold text-foreground">{dt.recentMessages}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{dt.goToMessages} →</p>
+            </motion.div>
+          </div>
+
+          {/* Upcoming Tasks */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-heading font-semibold text-foreground">{dt.upcomingTasks}</h2>
+              <button onClick={() => setActiveTab('mine')} className="text-xs font-medium text-primary hover:underline">{dt.viewAll} →</button>
+            </div>
+            {myUpcomingTasks.length === 0 ? (
+              <div className="bg-card rounded-2xl border border-border p-8 text-center">
+                <ClipboardList className="w-10 h-10 mx-auto mb-2 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">{dt.noMyTasks}</p>
+                <button onClick={() => setActiveTab('all')} className="mt-3 px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+                  {dt.allTasks} →
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {myUpcomingTasks.map((task, i) => {
+                  const signupStatus = getSignupStatus(task.id);
+                  const isAssigned = signupStatus === 'assigned';
+                  return (
+                    <motion.div
+                      key={task.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      onClick={() => navigate(`/task/${task.id}`)}
+                      className={`bg-card rounded-2xl p-4 shadow-sm border cursor-pointer hover:shadow-md transition-all flex items-center gap-4 ${isAssigned ? 'border-accent/30' : 'border-border'}`}
+                    >
+                      {/* Club avatar */}
+                      <Avatar className="h-10 w-10 shrink-0 rounded-xl">
+                        <AvatarFallback className="rounded-xl text-xs font-bold bg-secondary/10 text-secondary">
+                          {(task.clubs?.name || '?')[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{task.title}</p>
+                        <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">
+                          {task.clubs?.name && <span>{task.clubs.name}</span>}
+                          {task.task_date && (
+                            <span className="flex items-center gap-0.5">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {language === 'nl' ? 'Ref' : 'Ref'}: {payout.batch_reference} · {new Date(payout.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </p>
-                        </motion.div>
-                      );
-                    })}
+                          {(task.location || task.clubs?.location) && (
+                            <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location || task.clubs?.location}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="shrink-0">
+                        {isAssigned ? (
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-foreground flex items-center gap-1"><CheckCircle className="w-3 h-3" />{dt.assigned}</span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">{dt.pending}</span>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Compliance badge */}
+          {complianceData && <ComplianceBadge data={complianceData} language={language} />}
+        </div>
+      )}
+
+      {/* ===== ACADEMY TAB ===== */}
+      {activeTab === 'academy' && (
+        <div className="max-w-5xl mx-auto">
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-6">Academy</h1>
+          <AcademyTab language={language} userId={currentUserId} />
+        </div>
+      )}
+
+      {/* ===== TICKETS TAB ===== */}
+      {activeTab === 'tickets' && (
+        <div className="max-w-5xl mx-auto space-y-4">
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">Tickets</h1>
+          {myTickets.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen tickets.' : 'No tickets.'}</p></div>
+          ) : (
+            myTickets.map((ticket, i) => (
+              <motion.div key={ticket.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                className={`bg-card rounded-2xl shadow-sm border overflow-hidden ${ticket.status === 'checked_in' ? 'border-accent/30' : 'border-border'}`}>
+                <div className="p-5 pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{ticket.task_title || ticket.event_title || 'Ticket'}</p>
+                      {ticket.club_name && <p className="text-xs text-muted-foreground mt-0.5">{ticket.club_name}</p>}
+                    </div>
+                    <div className="shrink-0">
+                      {ticket.status === 'checked_in' ? (
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-foreground"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Ingecheckt' : 'Checked in'}</span>
+                      ) : ticket.status === 'sent' ? (
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><Ticket className="w-3.5 h-3.5" />{language === 'nl' ? 'Geldig' : 'Valid'}</span>
+                      ) : (
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In afwachting' : 'Pending'}</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">{new Date(ticket.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                </div>
+                {ticket.barcode && (
+                  <>
+                    <div className="border-t border-dashed border-border mx-3" />
+                    <div className="p-5 pt-3 flex flex-col items-center gap-3">
+                      <div className="bg-white rounded-xl p-3 shadow-sm"><QRCodeSVG value={ticket.barcode} size={160} level="H" /></div>
+                      <div className="bg-foreground/5 rounded-xl px-6 py-2 flex flex-col items-center gap-0.5">
+                        <span className="text-xs font-mono font-bold tracking-widest text-foreground">{ticket.barcode}</span>
+                      </div>
+                      <TicketDownloadButtons barcode={ticket.barcode} ticketTitle={ticket.task_title || 'Ticket'} clubName={ticket.club_name} eventTitle={ticket.event_title} ticketId={ticket.id} volunteerName={profile?.full_name || undefined} language={language} />
+                    </div>
                   </>
                 )}
+              </motion.div>
+            ))
+          )}
+        </div>
+      )}
 
-                {/* Stripe Payments Section - temporarily disabled, using SEPA only */}
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="mt-6 space-y-6">
-            {/* Events section */}
-            {filteredEvents.length > 0 && (
-              <div>
-                <h2 className="text-lg font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <CalendarDays className="w-5 h-5 text-primary" /> {dt.events}
-                </h2>
-                <div className="space-y-3">
-                  {filteredEvents.map((event, i) => {
-                    const evTasks = tasks.filter(t => t.event_id === event.id);
-                    const totalSpots = evTasks.reduce((s, t) => s + t.spots_available, 0);
-                    const totalSignups = evTasks.reduce((s, t) => s + (signupCounts[t.id] || 0), 0);
-                    const myEventSignups = evTasks.filter(t => isSignedUp(t.id)).length;
+      {/* ===== LOYALTY TAB ===== */}
+      {activeTab === 'loyalty' && (
+        <div className="max-w-5xl mx-auto space-y-4">
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{language === 'nl' ? 'Loyaliteit' : 'Loyalty'}</h1>
+          {loyaltyPrograms.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground"><Gift className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen programma\'s.' : 'No programs.'}</p></div>
+          ) : (
+            loyaltyPrograms.map((program, i) => {
+              const enrollment = loyaltyEnrollments[program.id];
+              const isPointsBased = program.points_based && program.required_points;
+              const progress = enrollment ? (isPointsBased ? Math.min(100, (enrollment.points_earned / (program.required_points || 1)) * 100) : Math.min(100, (enrollment.tasks_completed / program.required_tasks) * 100)) : 0;
+              return (
+                <motion.div key={program.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-card rounded-2xl p-5 shadow-sm border border-border">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2"><Gift className="w-4 h-4 text-primary" /><h3 className="font-heading font-semibold text-foreground">{program.name}</h3></div>
+                      {program.club_name && <p className="text-xs text-muted-foreground mt-0.5">{program.club_name}</p>}
+                      {program.description && <p className="text-sm text-muted-foreground mt-1">{program.description}</p>}
+                      <p className="text-sm mt-2">🎁 {program.reward_description}</p>
+                    </div>
+                    <div className="shrink-0">
+                      {!enrollment ? (
+                        <button onClick={() => handleEnrollLoyalty(program.id)} disabled={enrollingProgram === program.id} className="px-3 py-1.5 text-xs rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
+                          {language === 'nl' ? 'Deelnemen' : 'Join'}
+                        </button>
+                      ) : (
+                        <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-muted text-muted-foreground">
+                          {isPointsBased ? `${enrollment.points_earned}/${program.required_points}` : `${enrollment.tasks_completed}/${program.required_tasks}`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {enrollment && <div className="mt-3"><div className="bg-muted rounded-full h-2 w-full"><div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${progress}%` }} /></div></div>}
+                </motion.div>
+              );
+            })
+          )}
+        </div>
+      )}
 
+      {/* ===== BRIEFINGS TAB ===== */}
+      {activeTab === 'briefings' && (
+        <div className="max-w-5xl mx-auto">
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-6">Briefings</h1>
+          <VolunteerBriefingsList language={language} userId={currentUserId} />
+        </div>
+      )}
+
+      {/* ===== CONTRACTS TAB ===== */}
+      {activeTab === 'contracts' && (
+        <div className="max-w-5xl mx-auto space-y-4">
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{dt.contracts}</h1>
+          {myContracts.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground"><FileSignature className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{dt.noContracts}</p></div>
+          ) : (
+            myContracts.map((contract, i) => (
+              <motion.div key={contract.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl p-5 shadow-sm border ${contract.status === 'completed' ? 'border-green-200 dark:border-green-800' : 'border-border'}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{contract.task_title || 'Contract'}</p>
+                    {contract.club_name && <p className="text-xs text-muted-foreground">{contract.club_name}</p>}
+                    <div className="flex items-center gap-2 mt-2">
+                      {contract.status === 'completed' ? <span className="flex items-center gap-1 text-xs font-medium text-green-600"><CheckCircle className="w-3.5 h-3.5" />{dt.signed}</span> : <span className="flex items-center gap-1 text-xs font-medium text-yellow-600"><Clock className="w-3.5 h-3.5" />{dt.awaitingSignature}</span>}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    {contract.status === 'pending' && contract.signing_url && <a href={contract.signing_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"><FileSignature className="w-3.5 h-3.5" />{dt.signNow}</a>}
+                    {contract.status === 'pending' && <button onClick={() => handleCheckContractStatus(contract.id)} disabled={checkingContract === contract.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"><Clock className="w-3 h-3" />{dt.checkStatus}</button>}
+                    {contract.status === 'completed' && contract.document_url && <a href={contract.document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-green-200 text-green-700 hover:bg-green-50 transition-colors"><Download className="w-3.5 h-3.5" />{dt.downloadContract}</a>}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">{dt.sentOn}: {new Date(contract.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              </motion.div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* ===== PAYMENTS TAB ===== */}
+      {activeTab === 'payments' && (
+        <div className="max-w-5xl mx-auto space-y-4">
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{dt.payments}</h1>
+          {myPayments.length === 0 && sepaPayouts.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground"><CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{dt.noPayments}</p></div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.paid}</p>
+                  <p className="text-2xl font-heading font-bold text-green-600 mt-1">€{(
+                    myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0) +
+                    sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0)
+                  ).toFixed(2)}</p>
+                </div>
+                <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.processing}</p>
+                  <p className="text-2xl font-heading font-bold text-primary mt-1">€{(
+                    myPayments.filter(p => p.status === 'processing').reduce((s, p) => s + p.amount, 0) +
+                    sepaPayouts.filter(s => ['signed', 'awaiting_signature', 'pending'].includes(s.batch_status) && !s.error_flag).reduce((s, p) => s + p.amount, 0)
+                  ).toFixed(2)}</p>
+                </div>
+              </div>
+
+              {sepaPayouts.length > 0 && (
+                <>
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-2"><Banknote className="w-4 h-4 text-primary" />{language === 'nl' ? 'SEPA Vergoedingen' : 'SEPA Payments'}</h3>
+                  {sepaPayouts.map((payout, i) => {
+                    const isExported = ['downloaded', 'signed'].includes(payout.batch_status);
+                    const isPending = ['pending', 'awaiting_signature'].includes(payout.batch_status);
                     return (
-                      <motion.div
-                        key={event.id}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        onClick={() => setSelectedEvent(event)}
-                        className={`bg-card rounded-2xl p-5 shadow-card border transition-all cursor-pointer hover:shadow-elevated ${
-                          myEventSignups > 0 ? 'border-primary/30 bg-primary/5' : 'border-transparent'
-                        }`}
-                      >
+                      <motion.div key={payout.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                        className={`bg-card rounded-2xl p-5 shadow-sm border ${payout.error_flag ? 'border-destructive/30' : 'border-border'}`}>
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <CalendarDays className="w-4 h-4 text-primary" />
-                              {event.club_name && <span className="text-xs text-muted-foreground">{event.club_name}</span>}
-                            </div>
-                            <h3 className="font-heading font-semibold text-foreground text-lg">{event.title}</h3>
-                            {event.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{event.description}</p>}
-                            <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
-                              {event.event_date && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3.5 h-3.5" />
-                                  {new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              )}
-                              {event.location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>}
-                              <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{totalSignups}/{totalSpots} {dt.spots}</span>
-                            </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{payout.task_title || 'Taak'}</p>
+                            {payout.club_name && <p className="text-xs text-muted-foreground">{payout.club_name}</p>}
+                            <p className="text-lg font-heading font-bold text-foreground mt-1">€{payout.amount.toFixed(2)}</p>
                           </div>
-                          <div className="shrink-0 flex flex-col items-end gap-2">
-                            {myEventSignups > 0 && (
-                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-medium border border-primary/30 text-primary bg-primary/5">
-                                {myEventSignups} {dt.signedUp.toLowerCase()}
-                              </span>
+                          <div className="shrink-0">
+                            {payout.error_flag ? (
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive"><AlertTriangle className="w-3.5 h-3.5" />{payout.error_message || 'Fout'}</span>
+                            ) : isExported ? (
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Geëxporteerd' : 'Exported'}</span>
+                            ) : (
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In verwerking' : 'Processing'}</span>
                             )}
-                            <span className="px-3 py-1.5 rounded-xl text-xs font-medium bg-muted text-muted-foreground">
-                              {dt.viewEvent} →
-                            </span>
                           </div>
                         </div>
+                        <p className="text-xs text-muted-foreground mt-2">Ref: {payout.batch_reference} · {new Date(payout.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                       </motion.div>
                     );
                   })}
-                </div>
-              </div>
-            )}
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
-            {/* Loose tasks */}
-            {(filteredLooseTasks.length > 0 || (filteredEvents.length === 0 && filteredLooseTasks.length === 0)) && (
-              <div>
-                {filteredEvents.length > 0 && (
-                  <h2 className="text-lg font-heading font-semibold text-foreground mb-3">{dt.looseTasks}</h2>
-                )}
-                <div className="space-y-4">
-                  {filteredLooseTasks.length === 0 ? (
-                    <div className="text-center py-16 text-muted-foreground">
-                      <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                      <p>{activeTab === 'mine' ? dt.noMyTasks : dt.noTasks}</p>
-                    </div>
-                  ) : (
-                    filteredLooseTasks.map((task, i) => {
-                      const signed = isSignedUp(task.id);
-                      const signupStatus = getSignupStatus(task.id);
-                      const isAssigned = signupStatus === 'assigned';
-                      return (
-                        <motion.div
-                          key={task.id}
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.05 }}
-                          onClick={() => navigate(`/task/${task.id}`)}
-                          className={`bg-card rounded-2xl p-5 shadow-card border transition-all cursor-pointer ${isAssigned ? 'border-accent/30 bg-accent/5' : signed ? 'border-primary/30 bg-primary/5' : 'border-transparent hover:shadow-elevated'}`}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-secondary/10 text-secondary">{task.clubs?.sport || task.clubs?.name}</span>
-                                {task.clubs?.name && <span className="text-xs text-muted-foreground">{task.clubs.name}</span>}
-                              </div>
-                              <h3 className="font-heading font-semibold text-foreground">{task.title}</h3>
-                              {task.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{task.description}</p>}
-                              <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
-                                {task.task_date && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
-                                {(task.location || task.clubs?.location) && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{task.location || task.clubs?.location}</span>}
-                                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{signupCounts[task.id] || 0}/{task.spots_available} {dt.spots}</span>
-                                {task.required_training_id && (
-                                  myCertifiedTrainingIds.has(task.required_training_id) ? (
-                                    <span className="flex items-center gap-1 text-accent font-medium"><Award className="w-3.5 h-3.5" /> {language === 'nl' ? 'Gecertificeerd' : language === 'fr' ? 'Certifié' : 'Certified'}</span>
-                                  ) : (
-                                    <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-medium"><Award className="w-3.5 h-3.5" /> {language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required'}</span>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                            <div className="shrink-0 flex flex-col items-end gap-2">
-                              <div className="flex items-center gap-2">
-                                <LikeButton taskId={task.id} liked={myLikes.has(task.id)} count={likeCounts[task.id] || 0} onToggle={handleLikeToggle} />
-                                {isAssigned ? (
-                                  <span className="px-3 py-1.5 rounded-xl text-xs font-medium border border-accent/30 text-accent bg-accent/5 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {dt.assigned}</span>
-                                ) : signed ? (
-                                  <span className="px-3 py-1.5 rounded-xl text-xs font-medium border border-primary/30 text-primary bg-primary/5">✓ {dt.signedUp}</span>
-                                ) : (
-                                  <span className="px-3 py-1.5 rounded-xl text-xs font-medium bg-muted text-muted-foreground">{dt.signUp} →</span>
-                                )}
-                              </div>
-                              {isAssigned && (
-                                <button onClick={(e) => { e.stopPropagation(); handleSignContract(task.id); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
-                                  <FileSignature className="w-3.5 h-3.5" />
-                                  {myContracts.some(c => c.task_id === task.id && c.status === 'pending') ? dt.signContract : myContracts.some(c => c.task_id === task.id && c.status === 'completed') ? dt.downloadContract : dt.signContract}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })
-                  )}
-                </div>
+      {/* ===== ALL TASKS / MINE TASKS ===== */}
+      {(activeTab === 'all' || activeTab === 'mine') && (
+        <div className="max-w-5xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-heading font-bold text-foreground">{activeTab === 'all' ? dt.allTasks : dt.myTasks}</h1>
+            {activeTab === 'mine' && (
+              <div className="flex gap-2">
+                <button onClick={() => setMineSubTab('pending')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'pending' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.ingeschreven}</button>
+                <button onClick={() => setMineSubTab('assigned')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'assigned' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.toegekend}</button>
               </div>
             )}
           </div>
-        )}
-      </main>
 
-      {/* Event detail dialog */}
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input type="text" placeholder={dt.searchPlaceholder} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring border border-border" />
+          </div>
+
+          {/* Events */}
+          {filteredEvents.length > 0 && (
+            <div>
+              <h2 className="text-lg font-heading font-semibold text-foreground mb-3 flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary" />{dt.events}</h2>
+              <div className="space-y-3">
+                {filteredEvents.map((event, i) => {
+                  const evTasks = tasks.filter(t => t.event_id === event.id);
+                  const totalSpots = evTasks.reduce((s, t) => s + t.spots_available, 0);
+                  const totalSignups = evTasks.reduce((s, t) => s + (signupCounts[t.id] || 0), 0);
+                  const myEventSignups = evTasks.filter(t => isSignedUp(t.id)).length;
+                  return (
+                    <motion.div key={event.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                      onClick={() => setSelectedEvent(event)}
+                      className={`bg-card rounded-2xl p-5 shadow-sm border transition-all cursor-pointer hover:shadow-md ${myEventSignups > 0 ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1"><CalendarDays className="w-4 h-4 text-primary" />{event.club_name && <span className="text-xs text-muted-foreground">{event.club_name}</span>}</div>
+                          <h3 className="font-heading font-semibold text-foreground text-lg">{event.title}</h3>
+                          <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
+                            {event.event_date && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
+                            {event.location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>}
+                            <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{totalSignups}/{totalSpots}</span>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-medium bg-muted text-muted-foreground">{dt.viewEvent} →</span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Loose tasks */}
+          <div>
+            {filteredEvents.length > 0 && <h2 className="text-lg font-heading font-semibold text-foreground mb-3">{dt.looseTasks}</h2>}
+            <div className="space-y-3">
+              {filteredLooseTasks.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground"><Users className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{activeTab === 'mine' ? dt.noMyTasks : dt.noTasks}</p></div>
+              ) : (
+                filteredLooseTasks.map((task, i) => {
+                  const signed = isSignedUp(task.id);
+                  const signupStatus = getSignupStatus(task.id);
+                  const isAssigned = signupStatus === 'assigned';
+                  return (
+                    <motion.div key={task.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                      onClick={() => navigate(`/task/${task.id}`)}
+                      className={`bg-card rounded-2xl p-5 shadow-sm border transition-all cursor-pointer hover:shadow-md ${isAssigned ? 'border-accent/30' : signed ? 'border-primary/30' : 'border-border'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-secondary/10 text-secondary">{task.clubs?.sport || task.clubs?.name}</span>
+                            {task.clubs?.name && <span className="text-xs text-muted-foreground">{task.clubs.name}</span>}
+                          </div>
+                          <h3 className="font-heading font-semibold text-foreground">{task.title}</h3>
+                          {task.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{task.description}</p>}
+                          <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
+                            {task.task_date && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
+                            {(task.location || task.clubs?.location) && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{task.location || task.clubs?.location}</span>}
+                            <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{signupCounts[task.id] || 0}/{task.spots_available} {dt.spots}</span>
+                            {task.required_training_id && (
+                              myCertifiedTrainingIds.has(task.required_training_id) ? (
+                                <span className="flex items-center gap-1 text-accent font-medium"><Award className="w-3.5 h-3.5" />{language === 'nl' ? 'Gecertificeerd' : 'Certified'}</span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-yellow-600 font-medium"><Award className="w-3.5 h-3.5" />{language === 'nl' ? 'Training vereist' : 'Training required'}</span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                        <div className="shrink-0 flex flex-col items-end gap-2">
+                          <div className="flex items-center gap-2">
+                            <LikeButton taskId={task.id} liked={myLikes.has(task.id)} count={likeCounts[task.id] || 0} onToggle={handleLikeToggle} />
+                            {isAssigned ? (
+                              <span className="px-3 py-1.5 rounded-xl text-xs font-medium border border-accent/30 text-accent bg-accent/5 flex items-center gap-1"><CheckCircle className="w-3 h-3" />{dt.assigned}</span>
+                            ) : signed ? (
+                              <span className="px-3 py-1.5 rounded-xl text-xs font-medium border border-primary/30 text-primary bg-primary/5">✓ {dt.signedUp}</span>
+                            ) : (
+                              <span className="px-3 py-1.5 rounded-xl text-xs font-medium bg-muted text-muted-foreground">{dt.signUp} →</span>
+                            )}
+                          </div>
+                          {isAssigned && (
+                            <button onClick={(e) => { e.stopPropagation(); handleSignContract(task.id); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+                              <FileSignature className="w-3.5 h-3.5" />
+                              {myContracts.some(c => c.task_id === task.id && c.status === 'pending') ? dt.signContract : dt.signContract}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== DIALOGS ===== */}
       <EventDetailDialog
         event={selectedEvent}
         groups={selectedEventGroups}
@@ -987,7 +1012,7 @@ const VolunteerDashboard = () => {
       {currentUserId && (
         <MonthlyComplianceDialog open={showComplianceDialog} onOpenChange={setShowComplianceDialog} userId={currentUserId} language={language} onCompleted={() => setShowComplianceDialog(false)} />
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 
