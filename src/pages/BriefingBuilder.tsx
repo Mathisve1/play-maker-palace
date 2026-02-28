@@ -54,6 +54,7 @@ interface Block {
   media_url?: string;
   materials?: string[];
   zone_mode?: 'full' | 'personalized';
+  zone_visible_depth?: number | null;
 }
 
 interface Group {
@@ -182,17 +183,36 @@ const SortableBlock = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Select value={block.zone_mode || 'full'} onValueChange={(v) => onUpdate(groupId, block.id, { zone_mode: v as 'full' | 'personalized' })}>
-              <SelectTrigger className="bg-background/60 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-background/60 text-sm flex-1"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="full">Volledig zone-overzicht</SelectItem>
                 <SelectItem value="personalized">Gepersonaliseerd per vrijwilliger</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          {block.zone_mode === 'full' && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">Toon tot diepte:</label>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={block.zone_visible_depth ?? ''}
+                onChange={e => onUpdate(groupId, block.id, { zone_visible_depth: e.target.value ? parseInt(e.target.value) : null })}
+                placeholder="Alles"
+                className="bg-background/60 text-sm w-20"
+              />
+              <span className="text-[10px] text-muted-foreground">
+                {block.zone_visible_depth ? `Niveau 1–${block.zone_visible_depth}` : 'Alle niveaus'}
+              </span>
+            </div>
+          )}
           <p className="text-[10px] text-muted-foreground">
             {block.zone_mode === 'personalized'
               ? 'Elke vrijwilliger ziet enkel zijn eigen zone-toewijzing, wristband-kleur en materialen.'
-              : 'Alle zones, subzones, capaciteiten en wristband-info worden getoond.'}
+              : block.zone_visible_depth
+                ? `Zones worden getoond tot niveau ${block.zone_visible_depth} (bv. Zone > Sectie).`
+                : 'Alle zones, subzones, capaciteiten en wristband-info worden getoond.'}
           </p>
         </div>
       )}
@@ -401,6 +421,7 @@ const BriefingBuilder = () => {
         waypoints: type === 'route' ? [] : undefined,
         materials: type === 'materials_checklist' ? [''] : undefined,
         zone_mode: type === 'zone_overview' ? 'full' : undefined,
+        zone_visible_depth: type === 'zone_overview' ? null : undefined,
       };
       return { ...g, blocks: [...g.blocks, newBlock], expanded: true };
     }));
