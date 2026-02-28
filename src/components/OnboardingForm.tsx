@@ -67,6 +67,7 @@ interface OnboardingFormData {
   phone: string;
   avatarFile: File | null;
   avatarPreview: string | null;
+  identityConfirmed: boolean;
   iban: string;
   ibanConfirm: string;
   bankName: string;
@@ -95,6 +96,9 @@ const labels = {
     takePhoto: 'Neem een foto',
     chooseFile: 'Kies een bestand',
     photoRequired: 'Een profielfoto is verplicht',
+    identityWarning: 'Je identiteit kan gecontroleerd worden bij het inchecken op basis van je identiteitskaart. Gebruik daarom je echte naam en een herkenbare foto van jezelf. Bij een mismatch kan je de toegang geweigerd worden.',
+    identityConfirm: 'Ik bevestig dat dit mijn echte naam en een recente foto van mezelf is',
+    identityRequired: 'Je moet bevestigen dat dit je echte gegevens zijn',
     iban: 'IBAN-rekeningnummer',
     ibanPlaceholder: 'BE00 0000 0000 0000',
     ibanConfirm: 'Bevestig IBAN',
@@ -132,6 +136,9 @@ const labels = {
     takePhoto: 'Prendre une photo',
     chooseFile: 'Choisir un fichier',
     photoRequired: 'Une photo de profil est obligatoire',
+    identityWarning: 'Votre identité peut être vérifiée à l\'entrée sur base de votre carte d\'identité. Utilisez donc votre vrai nom et une photo reconnaissable de vous-même. En cas de non-correspondance, l\'accès peut être refusé.',
+    identityConfirm: 'Je confirme qu\'il s\'agit de mon vrai nom et d\'une photo récente de moi-même',
+    identityRequired: 'Vous devez confirmer que ce sont vos vraies données',
     iban: 'Numéro IBAN',
     ibanPlaceholder: 'BE00 0000 0000 0000',
     ibanConfirm: 'Confirmez l\'IBAN',
@@ -169,6 +176,9 @@ const labels = {
     takePhoto: 'Take a photo',
     chooseFile: 'Choose a file',
     photoRequired: 'A profile photo is required',
+    identityWarning: 'Your identity may be verified at check-in based on your ID card. Please use your real name and a recognizable photo of yourself. Access may be denied if there is a mismatch.',
+    identityConfirm: 'I confirm this is my real name and a recent photo of myself',
+    identityRequired: 'You must confirm these are your real details',
     iban: 'IBAN account number',
     ibanPlaceholder: 'BE00 0000 0000 0000',
     ibanConfirm: 'Confirm IBAN',
@@ -210,6 +220,7 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
     phone: '',
     avatarFile: null,
     avatarPreview: null,
+    identityConfirmed: false,
     iban: '',
     ibanConfirm: '',
     bankName: '',
@@ -245,6 +256,7 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
     }
     if (step === 1) {
       if (!formData.avatarFile && !formData.avatarPreview) errs.avatar = l.photoRequired;
+      if (!formData.identityConfirmed) errs.identityConfirmed = (l as any).identityRequired || 'Required';
     }
     if (step === 2) {
       if (!formData.iban.replace(/\s/g, '')) errs.iban = 'Verplicht';
@@ -386,12 +398,20 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
 
         {currentStep === 1 && (
           <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="text-center mb-6">
+            <div className="text-center mb-4">
               <div className="w-12 h-12 rounded-2xl bg-primary/10 mx-auto flex items-center justify-center mb-3">
                 <Camera className="w-6 h-6 text-primary" />
               </div>
               <h2 className="text-lg font-heading font-bold text-foreground">{l.step2}</h2>
               <p className="text-sm text-muted-foreground mt-1">{l.uploadPhoto}</p>
+            </div>
+
+            {/* Identity verification warning */}
+            <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-xl p-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                {(l as any).identityWarning}
+              </p>
             </div>
 
             <div className="flex flex-col items-center gap-4">
@@ -426,6 +446,19 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
 
               {errors.avatar && <p className="text-xs text-destructive">{errors.avatar}</p>}
             </div>
+
+            {/* Identity confirmation checkbox */}
+            <label className={cn("flex items-start gap-3 cursor-pointer group p-3 rounded-xl border transition-colors", formData.identityConfirmed ? "border-primary/30 bg-primary/5" : "border-border", errors.identityConfirmed && "border-destructive")}>
+              <Checkbox
+                checked={formData.identityConfirmed}
+                onCheckedChange={(checked) => update('identityConfirmed', checked === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
+                {(l as any).identityConfirm}
+              </span>
+            </label>
+            {errors.identityConfirmed && <p className="text-xs text-destructive">{errors.identityConfirmed}</p>}
           </div>
         )}
 
