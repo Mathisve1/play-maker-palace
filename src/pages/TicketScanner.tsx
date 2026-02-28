@@ -350,12 +350,12 @@ const TicketScanner = () => {
                   <CheckCircle2 className="text-emerald-500" strokeWidth={2.5} style={{ width: 72, height: 72 }} />
                 </div>
                 <h2 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{t.success}</h2>
-                <Avatar className="w-24 h-24 shadow-lg" style={{
+                <Avatar className="w-32 h-32 shadow-lg" style={{
                   border: result.wristbandColor ? `6px solid ${result.wristbandColor}` : '4px solid hsl(var(--border))',
                   boxShadow: result.wristbandColor ? `0 0 0 3px ${result.wristbandColor}40` : undefined,
                 }}>
-                  <AvatarImage src={result.avatarUrl || undefined} alt={result.volunteerName} />
-                  <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
+                  <AvatarImage src={result.avatarUrl || undefined} alt={result.volunteerName} className="object-cover" />
+                  <AvatarFallback className="text-3xl font-bold bg-primary/10 text-primary">
                     {initials(result.volunteerName)}
                   </AvatarFallback>
                 </Avatar>
