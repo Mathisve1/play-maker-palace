@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2 } from 'lucide-react';
-import Logo from '@/components/Logo';
+import DashboardLayout from '@/components/DashboardLayout';
+import PartnerSidebar from '@/components/PartnerSidebar';
 
 interface ClubInfo { id: string; name: string; logo_url: string | null; }
 interface PartnerInfo { id: string; name: string; category: string; external_payroll: boolean; club_id: string; }
@@ -59,6 +60,7 @@ const PartnerDashboard = () => {
   const [assignMembers, setAssignMembers] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
   const nl = language === 'nl';
+  const [activeTab, setActiveTab] = useState('tasks');
 
   useEffect(() => {
     const init = async () => {
@@ -343,20 +345,20 @@ const PartnerDashboard = () => {
     </Card>
   );
 
-  return (
-    <div className="min-h-screen bg-background pb-8">
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Logo size="sm" />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-heading font-semibold text-foreground truncate">{partner.name}</h1>
-            {selectedClub && <p className="text-xs text-muted-foreground">{selectedClub.name}</p>}
-          </div>
-          <Button variant="ghost" size="icon" onClick={handleLogout}><LogOut className="w-4 h-4" /></Button>
-        </div>
-      </header>
+  const handleLogoutWrapped = async () => { await supabase.auth.signOut(); navigate('/partner-login'); };
 
-      <main className="max-w-2xl mx-auto px-4 mt-4">
+  const sidebarEl = (
+    <PartnerSidebar
+      partnerName={partner.name}
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      onLogout={handleLogoutWrapped}
+    />
+  );
+
+  return (
+    <DashboardLayout sidebar={sidebarEl}>
+      <div className="max-w-2xl mx-auto">
         {/* Club selector */}
         {clubs.length > 1 && (
           <div className="mb-4">
@@ -447,7 +449,7 @@ const PartnerDashboard = () => {
             ))}
           </TabsContent>
         </Tabs>
-      </main>
+      </div>
 
       <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
         <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{nl ? 'Medewerker toevoegen' : 'Add member'}</DialogTitle></DialogHeader>
@@ -507,7 +509,7 @@ const PartnerDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </DashboardLayout>
   );
 };
 

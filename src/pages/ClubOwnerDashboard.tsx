@@ -6,7 +6,9 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3 } from 'lucide-react';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
-import Logo from '@/components/Logo';
+import DashboardLayout from '@/components/DashboardLayout';
+import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
+
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
 import NotificationBell from '@/components/NotificationBell';
@@ -1410,40 +1412,20 @@ const ClubOwnerDashboard = () => {
     </motion.form>
   );
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="px-4 h-14 flex items-center justify-between max-w-4xl mx-auto">
-          <div className="flex items-center gap-3">
-            {clubInfo?.logo_url ? (
-              <img src={clubInfo.logo_url} alt={clubInfo.name} className="w-9 h-9 rounded-xl object-cover border border-border" />
-            ) : (
-              <Logo size="sm" linkTo="/club-dashboard" showText={false} />
-            )}
-            <div className="hidden sm:block">
-              <p className="text-sm font-heading font-semibold text-foreground leading-tight">{clubInfo?.name || dt.title}</p>
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                {clubInfo?.sport && <span>{clubInfo.sport}</span>}
-                {clubInfo?.sport && clubInfo?.location && <span>·</span>}
-                {clubInfo?.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{clubInfo.location}</span>}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowProfileDialog(true)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors" title="Mijn profiel">
-              <User className="w-4 h-4" />
-              <span className="hidden md:block">{profile?.full_name || profile?.email}</span>
-            </button>
-            <button onClick={async () => { await supabase.auth.signOut(); navigate('/login'); }} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <LogOut className="w-4 h-4" />
-              <span className="hidden md:inline">{dt.logout}</span>
-            </button>
-          </div>
-        </div>
-      </header>
+  const sidebarEl = (
+    <ClubOwnerSidebar
+      profile={profile ? { ...profile, avatar_url: null } : null}
+      clubInfo={clubInfo ? { name: clubInfo.name, logo_url: clubInfo.logo_url } : null}
+      onLogout={async () => { await supabase.auth.signOut(); navigate('/login'); }}
+      onOpenProfile={() => setShowProfileDialog(true)}
+      onOpenSettings={isOwner ? () => setShowSettings(true) : undefined}
+      onOpenMembers={() => setShowMembers(true)}
+    />
+  );
 
-      <main className="px-4 py-6 pb-tab-bar max-w-4xl mx-auto">
+  return (
+    <DashboardLayout sidebar={sidebarEl}>
+      <main className="max-w-4xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">{dt.title}</h1>
@@ -1977,7 +1959,7 @@ const ClubOwnerDashboard = () => {
           onOpenChat={() => { setHourConfirmOpen(null); navigate(`/chat?taskId=${hourConfirmOpen.taskId}&clubOwnerId=${currentUserId}&volunteerId=${hourConfirmOpen.volunteerId}`); }}
         />
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 
