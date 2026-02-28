@@ -11,7 +11,7 @@ import {
   Bold, Italic, Palette, Youtube, Upload, ToggleLeft, ToggleRight, CheckSquare, Square,
   Wand2, Bot, MessageSquare, CalendarDays, MapPin, UserCheck, QrCode, Send
 } from 'lucide-react';
-import Logo from '@/components/Logo';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1231,21 +1231,8 @@ const AcademyBuilder = () => {
   const currentTraining = trainings.find(t => t.id === selectedTraining);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="px-4 h-14 flex items-center justify-between max-w-6xl mx-auto">
-          <button onClick={() => selectedTraining ? setSelectedTraining(null) : navigate('/club-dashboard')} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" /> {l.back}
-          </button>
-          <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-primary" />
-            <h1 className="font-heading font-semibold text-foreground">{l.title}</h1>
-          </div>
-          <Logo size="sm" linkTo="/club-dashboard" />
-        </div>
-      </header>
-
-      <main className="px-4 py-6 pb-tab-bar max-w-6xl mx-auto">
+    <ClubPageLayout>
+      <div className="max-w-6xl mx-auto">
         {!selectedTraining ? (
           /* ─── Training List ─── */
           <div>
@@ -1567,7 +1554,8 @@ const AcademyBuilder = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </ClubPageLayout>
   );
 };
 

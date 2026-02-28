@@ -20,7 +20,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, subMonths, isWithinInterval, parseISO, isSameMonth, getDay } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import Logo from '@/components/Logo';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import {
@@ -656,13 +656,11 @@ const ReportingDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 bg-card/80 backdrop-blur border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate('/club-dashboard')} className="text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="w-5 h-5" /></button>
-          <Logo />
-          <h1 className="text-lg font-bold text-foreground ml-2">Rapportering</h1>
-          <div className="ml-auto flex gap-2">
+    <ClubPageLayout>
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold text-foreground">Rapportering</h1>
+          <div className="flex gap-2">
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/report-builder')}>
               <FileText className="w-4 h-4" /> Rapport Builder
             </Button>
@@ -671,9 +669,6 @@ const ReportingDashboard = () => {
             </Button>
           </div>
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* ── Filters ─────────────────────────────────────────── */}
         <Card>
           <CardContent className="pt-6">
@@ -1017,8 +1012,8 @@ const ReportingDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </ClubPageLayout>
   );
 };
 

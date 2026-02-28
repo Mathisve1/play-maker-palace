@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Plus, Users, Mail, Eye, Calendar, Download, Trash2, Loader2, Upload, X, Handshake, Check, Clock, UserCheck, UserX, Ticket, ClipboardList, Send } from 'lucide-react';
-import Logo from '@/components/Logo';
+import ClubPageLayout from '@/components/ClubPageLayout';
 
 interface Partner {
   id: string;
@@ -478,21 +478,16 @@ const ExternalPartners = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="min-h-screen bg-background pb-8">
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate('/club-dashboard')} className="text-muted-foreground hover:text-foreground"><ArrowLeft className="w-5 h-5" /></button>
-          <Logo size="sm" />
-          <h1 className="text-lg font-heading font-semibold text-foreground flex-1">
+    <ClubPageLayout>
+      <div className="max-w-4xl mx-auto space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-heading font-semibold text-foreground">
             {nl ? 'Externe Partners' : language === 'fr' ? 'Partenaires Externes' : 'External Partners'}
           </h1>
           <Button size="sm" onClick={() => setShowCreate(true)}>
             <Plus className="w-4 h-4 mr-1" />{nl ? 'Nieuw' : 'New'}
           </Button>
         </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 mt-6 space-y-4">
         {selectedPartner ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -955,7 +950,8 @@ const ExternalPartners = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </ClubPageLayout>
   );
 };
 

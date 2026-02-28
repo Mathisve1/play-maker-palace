@@ -14,7 +14,7 @@ import { belgianVolunteerArticles, essentialArticleIds, defaultTemplateArticleId
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import Logo from '@/components/Logo';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -551,79 +551,66 @@ const ContractBuilder = () => {
   // ─── Render ────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/club-dashboard')} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <Logo size="sm" showText={false} />
-            <div className="hidden sm:block">
-              <p className="text-sm font-heading font-semibold text-foreground">Contract Builder</p>
-              <p className="text-[11px] text-muted-foreground">Drag & drop contractbouwer</p>
+    <ClubPageLayout>
+      {/* Action bar */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div className="relative">
+          <button
+            onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-input bg-background text-xs font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            {editingTemplateId ? 'Sjabloon laden' : 'Bestaand sjabloon'}
+          </button>
+          {showTemplateSelector && existingTemplates.length > 0 && (
+            <div className="absolute left-0 top-full mt-1 w-64 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+              <div className="p-2 border-b border-border">
+                <p className="text-xs font-semibold text-muted-foreground px-2">Opgeslagen sjablonen</p>
+              </div>
+              <div className="max-h-48 overflow-y-auto p-1">
+                {existingTemplates.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleLoadTemplate(t.id)}
+                    className={`w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors ${editingTemplateId === t.id ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Load existing template */}
-            <div className="relative">
-              <button
-                onClick={() => setShowTemplateSelector(!showTemplateSelector)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-input bg-background text-xs font-medium text-foreground hover:bg-muted transition-colors"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                {editingTemplateId ? 'Sjabloon laden' : 'Bestaand sjabloon'}
-              </button>
-              {showTemplateSelector && existingTemplates.length > 0 && (
-                <div className="absolute right-0 top-full mt-1 w-64 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
-                  <div className="p-2 border-b border-border">
-                    <p className="text-xs font-semibold text-muted-foreground px-2">Opgeslagen sjablonen</p>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto p-1">
-                    {existingTemplates.map(t => (
-                      <button
-                        key={t.id}
-                        onClick={() => handleLoadTemplate(t.id)}
-                        className={`w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors ${editingTemplateId === t.id ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}
-                      >
-                        {t.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {showTemplateSelector && existingTemplates.length === 0 && (
-                <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-xl shadow-lg z-50 p-4">
-                  <p className="text-xs text-muted-foreground text-center">Geen opgeslagen sjablonen.</p>
-                </div>
-              )}
+          )}
+          {showTemplateSelector && existingTemplates.length === 0 && (
+            <div className="absolute left-0 top-full mt-1 w-56 bg-card border border-border rounded-xl shadow-lg z-50 p-4">
+              <p className="text-xs text-muted-foreground text-center">Geen opgeslagen sjablonen.</p>
             </div>
-            <button
-              onClick={handleGenerateSmartDefault}
-              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Standaard Contract
-            </button>
-            <input
-              type="text"
-              value={templateName}
-              onChange={e => setTemplateName(e.target.value)}
-              placeholder="Naam sjabloon..."
-              className="px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm w-48 focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <button
-              onClick={handleSave}
-              disabled={saving || !templateName.trim()}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {saving ? 'Opslaan...' : editingTemplateId ? 'Bijwerken' : 'Opslaan'}
-            </button>
-          </div>
+          )}
         </div>
-      </header>
+        <button
+          onClick={handleGenerateSmartDefault}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          Standaard Contract
+        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <input
+            type="text"
+            value={templateName}
+            onChange={e => setTemplateName(e.target.value)}
+            placeholder="Naam sjabloon..."
+            className="px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm w-48 focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving || !templateName.trim()}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? 'Opslaan...' : editingTemplateId ? 'Bijwerken' : 'Opslaan'}
+          </button>
+        </div>
+      </div>
 
       {/* Compliance warnings banner */}
       {complianceResult && !complianceResult.passed && (
@@ -1022,7 +1009,7 @@ const ContractBuilder = () => {
           </div>
         </div>
       </div>
-    </div>
+    </ClubPageLayout>
   );
 };
 
