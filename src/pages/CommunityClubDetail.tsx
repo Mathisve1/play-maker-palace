@@ -95,7 +95,7 @@ const CommunityClubDetail = () => {
       setPartners(partnersData || []);
 
       // Events
-      const { data: eventsData } = await (supabase as any).from('events').select('id, title, description, event_date, location, status').eq('club_id', clubId).order('event_date', { ascending: false }).limit(10);
+      const { data: eventsData } = await (supabase as any).from('events').select('id, title, description, event_date, location, status').eq('club_id', clubId).neq('status', 'on_hold').order('event_date', { ascending: false }).limit(10);
       setEvents(eventsData || []);
 
       // Stats

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
+  PauseCircle, PlayCircle,
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,7 +24,7 @@ interface EventGroup {
 interface Task {
   id: string; title: string; task_date: string | null; location: string | null;
   spots_available: number; event_id: string | null; event_group_id: string | null;
-  partner_only?: boolean; assigned_partner_id?: string | null;
+  partner_only?: boolean; assigned_partner_id?: string | null; status?: string;
 }
 
 const GROUP_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
@@ -61,6 +62,9 @@ const EventsManager = () => {
   const [editingEvent, setEditingEvent] = useState<EventData | null>(null);
   const [editEventForm, setEditEventForm] = useState({ title: '', description: '', event_date: '', location: '' });
   const [savingEvent, setSavingEvent] = useState(false);
+  const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null);
+  const [deletingTask, setDeletingTask] = useState<string | null>(null);
+  const [togglingHold, setTogglingHold] = useState<string | null>(null);
 
   // Adding task to group
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
@@ -90,7 +94,7 @@ const EventsManager = () => {
 
       const [evRes, taskRes] = await Promise.all([
         (supabase as any).from('events').select('*').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id').eq('club_id', cId).order('task_date', { ascending: true }),
+        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').eq('club_id', cId).order('task_date', { ascending: true }),
       ]);
       setEvents(evRes.data || []);
       setTasks(taskRes.data || []);
@@ -252,6 +256,36 @@ const EventsManager = () => {
   const now = new Date();
   const upcomingEvents = events.filter(e => !e.event_date || new Date(e.event_date) >= now);
   const pastEvents = events.filter(e => e.event_date && new Date(e.event_date) < now);
+  const upcomingLooseTasks = looseTasks.filter(t => !t.task_date || new Date(t.task_date) >= now);
+  const pastLooseTasks = looseTasks.filter(t => t.task_date && new Date(t.task_date) < now);
+
+  const handleDeleteLooseTask = async (taskId: string) => {
+    setDeletingTask(taskId);
+    const { error } = await (supabase as any).from('tasks').delete().eq('id', taskId);
+    if (error) toast.error(error.message);
+    else { toast.success(nl ? 'Taak verwijderd!' : 'Task deleted!'); setTasks(prev => prev.filter(t => t.id !== taskId)); }
+    setDeletingTask(null);
+    setConfirmDeleteTask(null);
+  };
+
+  const handleToggleHoldEvent = async (eventId: string) => {
+    setTogglingHold(eventId);
+    const event = events.find(e => e.id === eventId);
+    const newStatus = event?.status === 'on_hold' ? 'open' : 'on_hold';
+    const { error } = await (supabase as any).from('events').update({ status: newStatus }).eq('id', eventId);
+    if (error) toast.error(error.message);
+    else { setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e)); toast.success(newStatus === 'on_hold' ? (nl ? 'Evenement on hold gezet' : 'Event put on hold') : (nl ? 'Evenement weer actief' : 'Event reactivated')); }
+    setTogglingHold(null);
+  };
+
+  const handleToggleHoldTask = async (taskId: string, currentStatus: string) => {
+    setTogglingHold(taskId);
+    const newStatus = currentStatus === 'on_hold' ? 'open' : 'on_hold';
+    const { error } = await (supabase as any).from('tasks').update({ status: newStatus }).eq('id', taskId);
+    if (error) toast.error(error.message);
+    else { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)); toast.success(newStatus === 'on_hold' ? (nl ? 'Taak on hold gezet' : 'Task put on hold') : (nl ? 'Taak weer actief' : 'Task reactivated')); }
+    setTogglingHold(null);
+  };
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -329,8 +363,8 @@ const EventsManager = () => {
         <Tabs defaultValue="upcoming" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="upcoming">{nl ? 'Aankomend' : 'Upcoming'} ({upcomingEvents.length})</TabsTrigger>
-            <TabsTrigger value="past">{nl ? 'Afgelopen' : 'Past'} ({pastEvents.length})</TabsTrigger>
-            <TabsTrigger value="loose">{nl ? 'Losse taken' : 'Loose tasks'} ({looseTasks.length})</TabsTrigger>
+            <TabsTrigger value="past">{nl ? 'Afgelopen' : 'Past'} ({pastEvents.length + pastLooseTasks.length})</TabsTrigger>
+            <TabsTrigger value="loose">{nl ? 'Losse taken' : 'Loose tasks'} ({upcomingLooseTasks.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upcoming" className="space-y-4">
@@ -343,36 +377,25 @@ const EventsManager = () => {
           </TabsContent>
 
           <TabsContent value="past" className="space-y-4">
-            {pastEvents.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen afgelopen evenementen.' : 'No past events.'}</p></div>
-            ) : pastEvents.map((event, ei) => renderEventCard(event, ei))}
+            {pastEvents.length === 0 && pastLooseTasks.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen afgelopen items.' : 'No past items.'}</p></div>
+            ) : (
+              <>
+                {pastEvents.map((event, ei) => renderEventCard(event, ei))}
+                {pastLooseTasks.length > 0 && (
+                  <>
+                    {pastEvents.length > 0 && <div className="pt-2"><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{nl ? 'Afgelopen losse taken' : 'Past loose tasks'}</p></div>}
+                    {pastLooseTasks.map((task, i) => renderLooseTaskCard(task, i))}
+                  </>
+                )}
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="loose" className="space-y-3">
-            {looseTasks.length === 0 ? (
+            {upcomingLooseTasks.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen losse taken.' : 'No loose tasks.'}</p></div>
-            ) : looseTasks.map((task, i) => (
-              <motion.div key={task.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                className="bg-card rounded-2xl p-4 border border-border flex items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{task.title}</p>
-                  <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-                    {task.task_date && <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" />{new Date(task.task_date).toLocaleDateString(nl ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>}
-                    {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
-                    <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{task.spots_available}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {task.partner_only && <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-accent/20 text-accent-foreground flex items-center gap-0.5"><Handshake className="w-3 h-3" /> Partner</span>}
-                  <button onClick={() => setZoneDialogTask({ id: task.id, title: task.title })} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zones beheren' : 'Manage zones'}>
-                    <Layers className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => navigate(`/planning/${task.id}`)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zone planning' : 'Zone planning'}>
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+            ) : upcomingLooseTasks.map((task, i) => renderLooseTaskCard(task, i))}
           </TabsContent>
         </Tabs>
       </div>
@@ -426,6 +449,27 @@ const EventsManager = () => {
         )}
       </AnimatePresence>
 
+      {/* Delete Task Confirmation */}
+      <AnimatePresence>
+        {confirmDeleteTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setConfirmDeleteTask(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div>
+                <h2 className="text-lg font-heading font-semibold text-foreground">{nl ? 'Taak verwijderen' : 'Delete task'}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">{nl ? 'Weet je zeker dat je deze taak wilt verwijderen?' : 'Are you sure you want to delete this task?'}</p>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => setConfirmDeleteTask(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
+                <button onClick={() => handleDeleteLooseTask(confirmDeleteTask)} disabled={deletingTask === confirmDeleteTask} className="px-5 py-2 text-sm rounded-xl bg-destructive text-destructive-foreground font-medium hover:opacity-90 disabled:opacity-50">
+                  {deletingTask === confirmDeleteTask ? <Loader2 className="w-4 h-4 animate-spin" /> : (nl ? 'Verwijderen' : 'Delete')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Zone Dialog */}
       {zoneDialogTask && (
         <TaskZoneDialog
@@ -439,6 +483,41 @@ const EventsManager = () => {
     </ClubPageLayout>
   );
 
+  function renderLooseTaskCard(task: Task, i: number) {
+    const isOnHold = task.status === 'on_hold';
+    return (
+      <motion.div key={task.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+        className={`bg-card rounded-2xl p-4 border flex items-center gap-4 ${isOnHold ? 'border-yellow-500/30 opacity-70' : 'border-border'}`}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-foreground truncate">{task.title}</p>
+            {isOnHold && <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 shrink-0">On hold</span>}
+          </div>
+          <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
+            {task.task_date && <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" />{new Date(task.task_date).toLocaleDateString(nl ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>}
+            {task.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location}</span>}
+            <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{task.spots_available}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {task.partner_only && <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-accent/20 text-accent-foreground flex items-center gap-0.5"><Handshake className="w-3 h-3" /> Partner</span>}
+          <button onClick={() => handleToggleHoldTask(task.id, task.status || 'open')} disabled={togglingHold === task.id} className="p-1.5 rounded-lg text-muted-foreground hover:text-yellow-600 hover:bg-yellow-500/10 transition-colors" title={isOnHold ? (nl ? 'Heractiveren' : 'Reactivate') : (nl ? 'On hold zetten' : 'Put on hold')}>
+            {isOnHold ? <PlayCircle className="w-3.5 h-3.5" /> : <PauseCircle className="w-3.5 h-3.5" />}
+          </button>
+          <button onClick={() => setZoneDialogTask({ id: task.id, title: task.title })} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zones beheren' : 'Manage zones'}>
+            <Layers className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => navigate(`/planning/${task.id}`)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zone planning' : 'Zone planning'}>
+            <LayoutGrid className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => setConfirmDeleteTask(task.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title={nl ? 'Verwijderen' : 'Delete'}>
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
   function renderEventCard(event: EventData, ei: number) {
     const isExpanded = expandedEvent === event.id;
     const groups = eventGroups.filter(g => g.event_id === event.id);
@@ -446,10 +525,13 @@ const EventsManager = () => {
 
     return (
       <motion.div key={event.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: ei * 0.05 }}
-        className="bg-card rounded-2xl shadow-card border border-primary/10 overflow-hidden">
+        className={`bg-card rounded-2xl shadow-card border overflow-hidden ${event.status === 'on_hold' ? 'border-yellow-500/30 opacity-70' : 'border-primary/10'}`}>
         <button onClick={() => setExpandedEvent(isExpanded ? null : event.id)} className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors">
           <div className="flex-1">
-            <h3 className="font-heading font-semibold text-foreground text-lg">{event.title}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-heading font-semibold text-foreground text-lg">{event.title}</h3>
+              {event.status === 'on_hold' && <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-yellow-500/15 text-yellow-600 dark:text-yellow-400">On hold</span>}
+            </div>
             <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
               {event.event_date && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(event.event_date).toLocaleDateString(nl ? 'nl-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
               {event.location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>}
@@ -474,6 +556,9 @@ const EventsManager = () => {
               </button>
               <button onClick={() => handleDuplicateEvent(event.id)} disabled={duplicatingEvent === event.id} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
                 {duplicatingEvent === event.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />} {nl ? 'Dupliceren' : 'Duplicate'}
+              </button>
+              <button onClick={() => handleToggleHoldEvent(event.id)} disabled={togglingHold === event.id} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10 transition-colors disabled:opacity-50">
+                {event.status === 'on_hold' ? <PlayCircle className="w-3.5 h-3.5" /> : <PauseCircle className="w-3.5 h-3.5" />} {event.status === 'on_hold' ? (nl ? 'Heractiveren' : 'Reactivate') : (nl ? 'On hold' : 'On hold')}
               </button>
               <button onClick={() => setConfirmDeleteEvent(event.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" /> {nl ? 'Verwijderen' : 'Delete'}

@@ -237,7 +237,7 @@ const VolunteerDashboard = () => {
       }
 
       // Fetch events
-      const { data: allEventsData } = await (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: true });
+      const { data: allEventsData } = await (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').neq('status', 'on_hold').order('event_date', { ascending: true });
       if (allEventsData && allEventsData.length > 0) {
         const clubIds = [...new Set(allEventsData.map((e: any) => e.club_id))] as string[];
         const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);
