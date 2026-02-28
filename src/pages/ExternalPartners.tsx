@@ -812,7 +812,7 @@ const ExternalPartners = () => {
             )}
           </>
         )}
-      </main>
+      </div>
 
       {/* Create Partner Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => {
@@ -950,7 +950,8 @@ const ExternalPartners = () => {
           </div>
         </DialogContent>
       </Dialog>
-      </div>
+
+
     </ClubPageLayout>
   );
 };
