@@ -1425,357 +1425,181 @@ const ClubOwnerDashboard = () => {
 
   return (
     <DashboardLayout sidebar={sidebarEl}>
-      <main className="max-w-4xl mx-auto">
+      <main className="max-w-4xl mx-auto space-y-8">
+        {/* Header */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">{dt.title}</h1>
-            <p className="text-muted-foreground mt-1">{dt.events}: {events.length} · {dt.looseTasks}: {looseTasks.length}</p>
+            <p className="text-muted-foreground mt-1">
+              {language === 'nl' ? 'Overzicht van je club' : language === 'fr' ? 'Aperçu de votre club' : 'Your club overview'}
+            </p>
           </div>
-          {clubId && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-                  <Plus className="w-4 h-4" />
-                  {language === 'nl' ? 'Nieuw' : language === 'fr' ? 'Nouveau' : 'New'}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => { setShowCreateEventForm(true); setShowCreateForm(false); }}>
-                  <CalendarDays className="w-4 h-4 mr-2" />
-                  {dt.newEvent}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setShowCreateForm(true); setShowCreateEventForm(false); }}>
-                  <Layers className="w-4 h-4 mr-2" />
-                  {dt.newTask}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <button onClick={() => navigate('/events-manager')} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+            <Plus className="w-4 h-4" />
+            {language === 'nl' ? 'Nieuw' : language === 'fr' ? 'Nouveau' : 'New'}
+          </button>
         </motion.div>
 
-        {/* Quick access cards */}
-        {clubId && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-3 mt-6">
-            <button onClick={() => navigate('/chat')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-              <Bell className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-              <span className="text-xs font-medium text-foreground">Notificaties</span>
-            </button>
-            {(isOwner || myClubRole === 'bestuurder') && (
-              <button onClick={() => setShowSettings(true)} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <Settings className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">Instellingen</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => setShowTemplates(true)} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <FileText className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">Contracten</span>
-              </button>
-            )}
-            {/* Stripe payments temporarily disabled - using SEPA only */}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => navigate('/sepa-payouts')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <FileText className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">SEPA</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => setShowMembers(true)} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <Shield className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">Leden</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => setShowBriefingTaskPicker(true)} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <ClipboardList className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">Briefings</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => setShowProgressTaskPicker(true)} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <Eye className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">{language === 'nl' ? 'Opvolging' : language === 'fr' ? 'Suivi' : 'Follow-up'}</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => navigate('/compliance')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <Shield className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">{language === 'nl' ? 'Compliance' : language === 'fr' ? 'Conformité' : 'Compliance'}</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => navigate('/loyalty')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <Gift className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">{language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'}</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => navigate('/ticketing')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <Ticket className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">{language === 'nl' ? 'Ticketing' : language === 'fr' ? 'Billetterie' : 'Ticketing'}</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => navigate('/academy')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <Star className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">{language === 'nl' ? 'Academy' : language === 'fr' ? 'Académie' : 'Academy'}</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => navigate('/external-partners')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <Handshake className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">{language === 'nl' ? 'Partners' : language === 'fr' ? 'Partenaires' : 'Partners'}</span>
-              </button>
-            )}
-            {(isOwner || myClubRole === 'bestuurder' || myClubRole === 'beheerder') && (
-              <button onClick={() => navigate('/reporting')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all group">
-                <BarChart3 className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium text-foreground">{language === 'nl' ? 'Rapportering' : language === 'fr' ? 'Rapports' : 'Reports'}</span>
-              </button>
-            )}
-          </motion.div>
-        )}
+        {/* KPI Cards */}
+        {(() => {
+          const now = new Date();
+          const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+          const upcomingEventCount = events.filter(e => e.event_date && new Date(e.event_date) >= now && new Date(e.event_date) <= in30).length;
+          const allSignups = Object.values(signups).flat();
+          const pendingSignupCount = allSignups.filter(s => s.status === 'pending').length;
+          const activeVolunteerCount = new Set(allSignups.filter(s => s.status === 'assigned').map(s => s.volunteer_id)).size;
+          const unsignedContractCount = Object.values(signatureStatuses).filter(s => s.status === 'pending').length;
 
-        {/* Create event form */}
-        <AnimatePresence>
-          {showCreateEventForm && (
-            <motion.form
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              onSubmit={handleCreateEvent}
-              className="mt-4 bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden"
-            >
-              <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{dt.newEvent}</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>{dt.eventTitle} *</label>
-                  <input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} />
+          const kpis = [
+            { label: language === 'nl' ? 'Aankomende evenementen' : 'Upcoming events', value: upcomingEventCount, icon: CalendarDays, color: 'text-primary bg-primary/10' },
+            { label: language === 'nl' ? 'Openstaande aanmeldingen' : 'Pending signups', value: pendingSignupCount, icon: Clock, color: 'text-yellow-600 bg-yellow-500/10' },
+            { label: language === 'nl' ? 'Actieve vrijwilligers' : 'Active volunteers', value: activeVolunteerCount, icon: Users, color: 'text-accent-foreground bg-accent/10' },
+            { label: language === 'nl' ? 'Ongetekende contracten' : 'Unsigned contracts', value: unsignedContractCount, icon: FileSignature, color: 'text-destructive bg-destructive/10' },
+          ];
+
+          return (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {kpis.map((kpi, i) => (
+                <div key={i} className="bg-card rounded-2xl border border-border p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${kpi.color}`}>
+                      <kpi.icon className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-heading font-bold text-foreground">{kpi.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
                 </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>{dt.eventDescription}</label>
-                  <textarea rows={2} maxLength={2000} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} />
-                </div>
-                <div>
-                  <label className={labelClass}>{dt.eventDate}</label>
-                  <input type="datetime-local" value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>{dt.eventLocation}</label>
-                  <input type="text" maxLength={300} value={newEvent.location} onChange={e => setNewEvent(p => ({ ...p, location: e.target.value }))} className={inputClass} />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowCreateEventForm(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
-                <button type="submit" disabled={creatingEvent || !newEvent.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {creatingEvent ? dt.creating : dt.create}
+              ))}
+            </motion.div>
+          );
+        })()}
+
+        {/* UPCOMING EVENTS SECTION */}
+        {(() => {
+          const now = new Date();
+          const futureEvents = events.filter(e => !e.event_date || new Date(e.event_date) >= now);
+          if (futureEvents.length === 0 && looseTasks.length === 0) {
+            return (
+              <div className="text-center py-16 text-muted-foreground">
+                <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>{dt.noEvents}</p>
+                <button onClick={() => navigate('/events-manager')} className="mt-3 px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+                  {dt.newEvent} →
                 </button>
               </div>
-            </motion.form>
-          )}
-        </AnimatePresence>
-
-        {/* Create loose task form */}
-        <AnimatePresence>
-          {showCreateForm && (
-            <div className="mt-4">
-              {renderTaskForm((e) => handleCreateTask(e), () => setShowCreateForm(false))}
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* EVENTS SECTION */}
-        {events.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-lg font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
-              <CalendarDays className="w-5 h-5 text-primary" /> {dt.events}
-            </h2>
-            <div className="space-y-4">
-              {events.map((event, ei) => {
-                const isEventExpanded = expandedEvent === event.id;
-                const groups = eventGroups.filter(g => g.event_id === event.id);
-                const eventTaskCount = getEventTasks(event.id).length;
-
-                return (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: ei * 0.05 }}
-                    className="bg-card rounded-2xl shadow-card border border-primary/10 overflow-hidden"
-                  >
-                    <button
-                      onClick={() => setExpandedEvent(isEventExpanded ? null : event.id)}
-                      className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-heading font-semibold text-foreground text-lg">{event.title}</h3>
-                        <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          {event.event_date && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" />
-                              {new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          )}
-                          {event.location && (
-                            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>
-                          )}
-                          <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" />{groups.length} {language === 'nl' ? 'groepen' : language === 'fr' ? 'groupes' : 'groups'}</span>
-                          <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{eventTaskCount} {language === 'nl' ? 'taken' : language === 'fr' ? 'tâches' : 'tasks'}</span>
-                        </div>
-                      </div>
-                      <div className="shrink-0">
-                        {isEventExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
-                      </div>
+            );
+          }
+          return (
+            <>
+              {futureEvents.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
+                      <CalendarDays className="w-5 h-5 text-primary" /> {dt.events}
+                    </h2>
+                    <button onClick={() => navigate('/events-manager')} className="text-xs text-primary hover:underline">
+                      {language === 'nl' ? 'Alles bekijken' : 'View all'} →
                     </button>
+                  </div>
+                  <div className="space-y-4">
+                    {futureEvents.map((event, ei) => {
+                      const isEventExpanded = expandedEvent === event.id;
+                      const groups = eventGroups.filter(g => g.event_id === event.id);
+                      const eventTaskCount = getEventTasks(event.id).length;
 
-                    {isEventExpanded && (
-                      <div className="border-t border-border px-5 pb-5">
-                        {event.description && (
-                          <p className="text-sm text-muted-foreground mt-3 mb-4">{event.description}</p>
-                        )}
-
-                        {/* Event action buttons */}
-                        <div className="flex items-center gap-2 mt-3 mb-4 flex-wrap">
+                      return (
+                        <motion.div
+                          key={event.id}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: ei * 0.05 }}
+                          className="bg-card rounded-2xl shadow-card border border-primary/10 overflow-hidden"
+                        >
                           <button
-                            onClick={() => { setAddingGroupToEvent(event.id); setNewGroupName(''); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                            onClick={() => setExpandedEvent(isEventExpanded ? null : event.id)}
+                            className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors"
                           >
-                            <Plus className="w-3.5 h-3.5" /> {dt.addGroup}
+                            <div className="flex-1">
+                              <h3 className="font-heading font-semibold text-foreground text-lg">{event.title}</h3>
+                              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+                                {event.event_date && (
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    {new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                )}
+                                {event.location && (
+                                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>
+                                )}
+                                <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" />{groups.length} {language === 'nl' ? 'groepen' : 'groups'}</span>
+                                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{eventTaskCount} {language === 'nl' ? 'taken' : 'tasks'}</span>
+                              </div>
+                            </div>
+                            <div className="shrink-0">
+                              {isEventExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                            </div>
                           </button>
-                          <button
-                            onClick={() => handleStartEditEvent(event)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            <Pencil className="w-3.5 h-3.5" /> {dt.editEvent}
-                          </button>
-                          <button
-                            onClick={() => handleDuplicateEvent(event.id)}
-                            disabled={duplicatingEvent === event.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                          >
-                            {duplicatingEvent === event.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />} {duplicatingEvent === event.id ? dt.duplicating : dt.duplicateEvent}
-                          </button>
-                          <button
-                            onClick={() => setConfirmDeleteEvent(event.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> {dt.deleteEvent}
-                          </button>
-                        </div>
 
-                        {/* Add group inline form */}
-                        {addingGroupToEvent === event.id && (
-                          <div className="flex items-center gap-2 mb-4">
-                            <input
-                              type="text"
-                              placeholder={dt.groupName}
-                              value={newGroupName}
-                              onChange={e => setNewGroupName(e.target.value)}
-                              className={inputClass + ' max-w-xs'}
-                              autoFocus
-                            />
-                            <button
-                              onClick={() => handleAddGroup(event.id)}
-                              disabled={!newGroupName.trim()}
-                              className="px-3 py-2 text-xs rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                            >
-                              {dt.create}
-                            </button>
-                            <button onClick={() => setAddingGroupToEvent(null)} className="px-3 py-2 text-xs rounded-lg bg-muted text-muted-foreground">
-                              {dt.cancel}
-                            </button>
-                          </div>
-                        )}
+                          {isEventExpanded && (
+                            <div className="border-t border-border px-5 pb-5">
+                              {event.description && (
+                                <p className="text-sm text-muted-foreground mt-3 mb-4">{event.description}</p>
+                              )}
 
-                        {/* Groups within event */}
-                        {groups.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            {language === 'nl' ? 'Voeg groepen toe om taken te organiseren.' : language === 'fr' ? 'Ajoutez des groupes pour organiser les tâches.' : 'Add groups to organize tasks.'}
-                          </p>
-                        ) : (
-                          <div className="space-y-4">
-                            {groups.sort((a, b) => a.sort_order - b.sort_order).map(group => {
-                              const groupTasks = getGroupTasks(group.id);
-                              return (
-                                <div key={group.id} className="rounded-xl border border-border overflow-hidden">
-                                  <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: group.color + '15' }}>
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color }} />
-                                      <h4 className="font-medium text-foreground text-sm">{group.name}</h4>
-                                      <span className="text-xs text-muted-foreground">({groupTasks.length} {language === 'nl' ? 'taken' : language === 'fr' ? 'tâches' : 'tasks'})</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setNewTask({ title: '', description: '', task_date: '', location: event.location || '', spots_available: 1, briefing_time: '', briefing_location: '', start_time: '', end_time: '', notes: '', expense_reimbursement: false, expense_amount: '', compensation_type: 'fixed', hourly_rate: '', estimated_hours: '', loyalty_eligible: true, loyalty_points: '', required_training_id: '', partner_only: false, assigned_partner_id: '' }); }}
-                                        className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                                        title={dt.addTaskToGroup}
-                                      >
-                                        <Plus className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteGroup(group.id)}
-                                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                        title={dt.delete}
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  {/* Tasks within group */}
-                                  <div className="divide-y divide-border">
-                                    {groupTasks.map((task, ti) => renderTaskCard(task, ti))}
-                                    {groupTasks.length === 0 && (
-                                      <p className="text-xs text-muted-foreground text-center py-3">
-                                        {language === 'nl' ? 'Geen taken in deze groep' : language === 'fr' ? 'Aucune tâche dans ce groupe' : 'No tasks in this group'}
-                                      </p>
-                                    )}
-                                  </div>
-
-                                  {/* Add task to group form */}
-                                  {addingTaskToGroup?.groupId === group.id && (
-                                    <div className="p-4 border-t border-border">
-                                      {renderTaskForm(
-                                        (e) => handleCreateTask(e, event.id, group.id),
-                                        () => setAddingTaskToGroup(null)
-                                      )}
-                                    </div>
-                                  )}
+                              {/* Groups within event */}
+                              {groups.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-4">
+                                  {language === 'nl' ? 'Geen groepen.' : 'No groups.'}
+                                </p>
+                              ) : (
+                                <div className="space-y-4 mt-3">
+                                  {groups.sort((a, b) => a.sort_order - b.sort_order).map(group => {
+                                    const groupTasks = getGroupTasks(group.id);
+                                    return (
+                                      <div key={group.id} className="rounded-xl border border-border overflow-hidden">
+                                        <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: group.color + '15' }}>
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color }} />
+                                            <h4 className="font-medium text-foreground text-sm">{group.name}</h4>
+                                            <span className="text-xs text-muted-foreground">({groupTasks.length} {language === 'nl' ? 'taken' : 'tasks'})</span>
+                                          </div>
+                                        </div>
+                                        <div className="divide-y divide-border">
+                                          {groupTasks.map((task, ti) => renderTaskCard(task, ti))}
+                                          {groupTasks.length === 0 && (
+                                            <p className="text-xs text-muted-foreground text-center py-3">
+                                              {language === 'nl' ? 'Geen taken in deze groep' : 'No tasks in this group'}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                              )}
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-        {/* LOOSE TASKS SECTION */}
-        <div className="mt-8">
-          <h2 className="text-lg font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Layers className="w-5 h-5 text-muted-foreground" /> {dt.looseTasks}
-          </h2>
-          <div className="space-y-4">
-            {looseTasks.length === 0 && !showCreateForm && events.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>{dt.noTasks}</p>
-              </div>
-            ) : looseTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                {language === 'nl' ? 'Geen losse taken.' : language === 'fr' ? 'Aucune tâche libre.' : 'No loose tasks.'}
-              </p>
-            ) : (
-              looseTasks.map((task, i) => renderTaskCard(task, i))
-            )}
-          </div>
-        </div>
+              {/* LOOSE TASKS SECTION */}
+              {looseTasks.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-muted-foreground" /> {dt.looseTasks}
+                  </h2>
+                  <div className="space-y-4">
+                    {looseTasks.map((task, i) => renderTaskCard(task, i))}
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </main>
 
       {/* Dialogs */}
