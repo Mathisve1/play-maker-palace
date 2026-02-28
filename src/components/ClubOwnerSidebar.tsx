@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus,
+  CalendarPlus, LayoutGrid,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
