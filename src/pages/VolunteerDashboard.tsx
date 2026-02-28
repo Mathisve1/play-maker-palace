@@ -135,7 +135,7 @@ const VolunteerDashboard = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<VolunteerTab>('dashboard');
-  const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned'>('pending');
+  const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned' | 'history'>('pending');
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
   const [myContracts, setMyContracts] = useState<SignatureContract[]>([]);
@@ -462,6 +462,11 @@ const VolunteerDashboard = () => {
     if (activeTab === 'mine') {
       const status = getSignupStatus(task.id);
       if (!status) return false;
+      const isPast = task.task_date ? new Date(task.task_date) < new Date() : false;
+      if (mineSubTab === 'history') {
+        return matchesSearch && isPast;
+      }
+      if (isPast) return false;
       return matchesSearch && status === mineSubTab;
     }
     return matchesSearch;
@@ -470,6 +475,9 @@ const VolunteerDashboard = () => {
   const filteredEvents = events.filter(event => {
     if (hasFollows && (activeTab === 'all' || activeTab === 'dashboard') && !followedClubIds!.has(event.club_id)) return false;
     if (activeTab === 'mine') {
+      const isPastEvent = event.event_date ? new Date(event.event_date) < new Date() : false;
+      if (mineSubTab === 'history') return isPastEvent;
+      if (isPastEvent) return false;
       const evTasks = tasks.filter(t => t.event_id === event.id);
       return evTasks.some(t => {
         const status = getSignupStatus(t.id);
@@ -507,11 +515,14 @@ const VolunteerDashboard = () => {
   const totalEarned = myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0)
     + sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
 
-  // Upcoming assigned tasks (next 5)
+  // Upcoming assigned tasks (next 5) – only future tasks
+  const now = new Date();
   const myUpcomingTasks = tasks
     .filter(t => {
       const status = getSignupStatus(t.id);
-      return status === 'assigned' || status === 'pending';
+      if (status !== 'assigned' && status !== 'pending') return false;
+      if (t.task_date && new Date(t.task_date) < now) return false;
+      return true;
     })
     .sort((a, b) => {
       const da = a.task_date ? new Date(a.task_date).getTime() : Infinity;
@@ -881,9 +892,10 @@ const VolunteerDashboard = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-heading font-bold text-foreground">{activeTab === 'all' ? dt.allTasks : dt.myTasks}</h1>
             {activeTab === 'mine' && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <button onClick={() => setMineSubTab('pending')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'pending' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.ingeschreven}</button>
                 <button onClick={() => setMineSubTab('assigned')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'assigned' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.toegekend}</button>
+                <button onClick={() => setMineSubTab('history')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'history' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>{language === 'nl' ? 'Historie' : language === 'fr' ? 'Historique' : 'History'}</button>
               </div>
             )}
           </div>
