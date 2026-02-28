@@ -18,6 +18,7 @@ interface EventData {
 }
 interface EventGroup {
   id: string; event_id: string; name: string; color: string; sort_order: number;
+  wristband_color?: string | null; wristband_label?: string | null; materials_note?: string | null;
 }
 interface Task {
   id: string; title: string; task_date: string | null; location: string | null;
@@ -51,6 +52,9 @@ const EventsManager = () => {
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
   const [addingGroupToEvent, setAddingGroupToEvent] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupWristbandColor, setNewGroupWristbandColor] = useState('');
+  const [newGroupWristbandLabel, setNewGroupWristbandLabel] = useState('');
+  const [newGroupMaterialsNote, setNewGroupMaterialsNote] = useState('');
   const [duplicatingEvent, setDuplicatingEvent] = useState<string | null>(null);
   const [confirmDeleteEvent, setConfirmDeleteEvent] = useState<string | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<string | null>(null);
@@ -133,9 +137,17 @@ const EventsManager = () => {
     const groups = eventGroups.filter(g => g.event_id === eventId);
     const { data, error } = await (supabase as any).from('event_groups').insert({
       event_id: eventId, name: newGroupName.trim(), color: GROUP_COLORS[groups.length % GROUP_COLORS.length], sort_order: groups.length,
+      wristband_color: newGroupWristbandColor.trim() || null,
+      wristband_label: newGroupWristbandLabel.trim() || null,
+      materials_note: newGroupMaterialsNote.trim() || null,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(nl ? 'Groep aangemaakt!' : 'Group created!'); setEventGroups(prev => [...prev, data]); setAddingGroupToEvent(null); }
+    else if (data) {
+      toast.success(nl ? 'Groep aangemaakt!' : 'Group created!');
+      setEventGroups(prev => [...prev, data]);
+      setAddingGroupToEvent(null);
+      setNewGroupWristbandColor(''); setNewGroupWristbandLabel(''); setNewGroupMaterialsNote('');
+    }
   };
 
   const handleAddTaskToGroup = async (e: React.FormEvent) => {
@@ -470,10 +482,29 @@ const EventsManager = () => {
 
             {/* Add group inline */}
             {addingGroupToEvent === event.id && (
-              <div className="flex items-center gap-2 mb-4">
-                <input type="text" placeholder={nl ? 'Groepsnaam' : 'Group name'} value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className={inputClass + ' max-w-xs'} autoFocus />
-                <button onClick={() => handleAddGroup(event.id)} disabled={!newGroupName.trim()} className="px-3 py-2 text-xs rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">{nl ? 'Aanmaken' : 'Create'}</button>
-                <button onClick={() => setAddingGroupToEvent(null)} className="px-3 py-2 text-xs rounded-lg bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
+              <div className="mb-4 p-4 rounded-xl border border-border bg-muted/30 space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label className={labelClass}>{nl ? 'Groepsnaam' : 'Group name'} *</label>
+                    <input type="text" placeholder={nl ? 'bv. Stewards' : 'e.g. Stewards'} value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className={inputClass} autoFocus />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{nl ? 'Kleur bandje / accessoire' : 'Wristband color'}</label>
+                    <input type="text" placeholder={nl ? 'bv. Rood' : 'e.g. Red'} value={newGroupWristbandColor} onChange={e => setNewGroupWristbandColor(e.target.value)} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>{nl ? 'Type accessoire' : 'Accessory type'}</label>
+                    <input type="text" placeholder={nl ? 'bv. Polsbandje, Hesje, Badge' : 'e.g. Wristband, Vest, Badge'} value={newGroupWristbandLabel} onChange={e => setNewGroupWristbandLabel(e.target.value)} className={inputClass} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelClass}>{nl ? 'Extra materiaal / instructies' : 'Extra materials / instructions'}</label>
+                    <textarea rows={2} placeholder={nl ? 'bv. Gele T-shirt maat M, walkietalkie kanaal 3' : 'e.g. Yellow T-shirt size M, walkie channel 3'} value={newGroupMaterialsNote} onChange={e => setNewGroupMaterialsNote(e.target.value)} className={inputClass + ' resize-none'} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleAddGroup(event.id)} disabled={!newGroupName.trim()} className="px-3 py-2 text-xs rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">{nl ? 'Aanmaken' : 'Create'}</button>
+                  <button onClick={() => { setAddingGroupToEvent(null); setNewGroupWristbandColor(''); setNewGroupWristbandLabel(''); setNewGroupMaterialsNote(''); }} className="px-3 py-2 text-xs rounded-lg bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
+                </div>
               </div>
             )}
 
@@ -487,10 +518,18 @@ const EventsManager = () => {
                   return (
                     <div key={group.id} className="rounded-xl border border-border overflow-hidden">
                       <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: group.color + '15' }}>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color }} />
                           <h4 className="font-medium text-foreground text-sm">{group.name}</h4>
                           <span className="text-xs text-muted-foreground">({groupTasks.length})</span>
+                          {group.wristband_color && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border" style={{ borderColor: group.color, color: group.color }}>
+                              {group.wristband_color} {group.wristband_label || (nl ? 'bandje' : 'band')}
+                            </span>
+                          )}
+                          {group.materials_note && (
+                            <span className="text-[10px] text-muted-foreground italic max-w-[200px] truncate" title={group.materials_note}>📋 {group.materials_note}</span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1">
                           <button onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setGroupTaskForm({ title: '', task_date: '', location: event.location || '', spots_available: 1 }); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Taak toevoegen' : 'Add task'}>
