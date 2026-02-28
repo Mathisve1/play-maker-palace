@@ -35,6 +35,7 @@ const ClubOwnerSidebar = ({
   const mainItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
     { label: 'Evenementen & Taken', icon: CalendarPlus, path: '/events-manager' },
+    { label: 'Planning', icon: LayoutGrid, path: '/planning' },
     { label: 'Berichten', icon: MessageCircle, path: '/chat' },
   ];
 
