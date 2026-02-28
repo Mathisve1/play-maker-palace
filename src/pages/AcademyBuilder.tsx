@@ -1463,7 +1463,7 @@ const AcademyBuilder = () => {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {/* Create training event dialog moved to /academy/physical-trainings */}
 
@@ -1554,7 +1554,8 @@ const AcademyBuilder = () => {
           </div>
         </DialogContent>
       </Dialog>
-      </div>
+
+
     </ClubPageLayout>
   );
 };
