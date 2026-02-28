@@ -39,6 +39,7 @@ import ReportingDashboard from "./pages/ReportingDashboard";
 import ReportBuilder from "./pages/ReportBuilder";
 import EventsManager from "./pages/EventsManager";
 import ZonePlanning from "./pages/ZonePlanning";
+import PlanningOverview from "./pages/PlanningOverview";
 import Community from "./pages/Community";
 import CommunityClubDetail from "./pages/CommunityClubDetail";
 import CommunityPartnerDetail from "./pages/CommunityPartnerDetail";
@@ -90,6 +91,7 @@ const App = () => {
             <Route path="/reporting" element={<ReportingDashboard />} />
             <Route path="/report-builder" element={<ReportBuilder />} />
             <Route path="/events-manager" element={<EventsManager />} />
+            <Route path="/planning" element={<PlanningOverview />} />
             <Route path="/planning/:taskId" element={<ZonePlanning />} />
             <Route path="/community" element={<Community />} />
             <Route path="/community/club/:clubId" element={<CommunityClubDetail />} />
