@@ -236,10 +236,39 @@ const BriefingBuilder = () => {
   } | null>(null);
   const [clubData, setClubData] = useState<{ name: string; logo_url: string | null } | null>(null);
   const [allBriefings, setAllBriefings] = useState<{ id: string; title: string }[]>([]);
+  const [availableTasks, setAvailableTasks] = useState<{ id: string; title: string; club_id: string; task_date: string | null }[]>([]);
+  const [taskSelectorLoading, setTaskSelectorLoading] = useState(!taskId || !clubId);
+  const [taskSearch, setTaskSearch] = useState('');
+
+  // If no taskId/clubId, load available tasks for selection
+  useEffect(() => {
+    if (taskId && clubId) return;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { navigate('/club-login'); return; }
+
+      // Find club(s) this user owns or is member of
+      const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
+      const { data: memberClubs } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
+      const clubIds = [
+        ...(ownedClubs || []).map(c => c.id),
+        ...(memberClubs || []).map(c => c.club_id),
+      ];
+      if (clubIds.length === 0) { navigate('/club-dashboard'); return; }
+
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('id, title, club_id, task_date')
+        .in('club_id', clubIds)
+        .order('task_date', { ascending: false });
+      setAvailableTasks(tasks || []);
+      setTaskSelectorLoading(false);
+    })();
+  }, [taskId, clubId, navigate]);
 
   // Load existing briefing or initialize
   useEffect(() => {
-    if (!taskId || !clubId) { navigate('/club-dashboard'); return; }
+    if (!taskId || !clubId) return;
 
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1198,6 +1227,53 @@ const BriefingBuilder = () => {
     };
     return map[type];
   };
+
+  // Task selector when no taskId provided
+  if (!taskId || !clubId) {
+    if (taskSelectorLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+
+    const filtered = availableTasks.filter(t =>
+      t.title.toLowerCase().includes(taskSearch.toLowerCase())
+    );
+
+    return (
+      <ClubPageLayout>
+        <div className="max-w-2xl mx-auto py-4">
+          <h1 className="text-2xl font-bold text-foreground mb-1">{l.briefingBuilder}</h1>
+          <p className="text-muted-foreground text-sm mb-6">Selecteer een taak om de briefing te bewerken of aan te maken.</p>
+          <Input
+            placeholder="Zoek taak..."
+            value={taskSearch}
+            onChange={e => setTaskSearch(e.target.value)}
+            className="mb-4"
+          />
+          <div className="space-y-2">
+            {filtered.length === 0 && (
+              <p className="text-muted-foreground text-sm text-center py-8">Geen taken gevonden.</p>
+            )}
+            {filtered.map(task => (
+              <button
+                key={task.id}
+                onClick={() => navigate(`/briefing-builder?taskId=${task.id}&clubId=${task.club_id}`)}
+                className="w-full text-left p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors"
+              >
+                <p className="font-medium text-foreground">{task.title}</p>
+                {task.task_date && (
+                  <p className="text-xs text-muted-foreground mt-1">{new Date(task.task_date).toLocaleDateString('nl-BE')}</p>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </ClubPageLayout>
+    );
+  }
 
   if (loading) {
     return (
