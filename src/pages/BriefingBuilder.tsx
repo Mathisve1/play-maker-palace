@@ -31,6 +31,7 @@ import SendBriefingDialog from '@/components/SendBriefingDialog';
 import RouteMapEditor, { type Waypoint } from '@/components/RouteMapEditor';
 import BriefingBlockLibrary, { blockTypeConfig, type BlockType } from '@/components/briefing/BriefingBlockLibrary';
 import BriefingPreview from '@/components/briefing/BriefingPreview';
+import MediaBlockEditor from '@/components/briefing/MediaBlockEditor';
 
 // ─── Types ───
 interface ChecklistItem { id: string; label: string; sort_order: number; }
@@ -215,13 +216,11 @@ const SortableBlock = ({
 
       {/* Media */}
       {block.type === 'media' && (
-        <div className="space-y-2">
-          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder="Bijschrift" className="bg-background/60 text-sm" />
-          <Input value={block.media_url || ''} onChange={e => onUpdate(groupId, block.id, { media_url: e.target.value })} placeholder="URL van afbeelding of video" className="bg-background/60 text-sm" />
-          {block.media_url && (
-            <img src={block.media_url} alt="" className="rounded-lg max-h-32 object-cover w-full" />
-          )}
-        </div>
+        <MediaBlockEditor
+          block={block}
+          groupId={groupId}
+          onUpdate={onUpdate}
+        />
       )}
 
       {/* Map Overview */}
