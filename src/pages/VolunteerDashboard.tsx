@@ -345,12 +345,19 @@ const VolunteerDashboard = () => {
 
       setLoading(false);
 
-      // Check compliance
+      // Check compliance – only prompt once per calendar month (first visit)
       const now = new Date();
-      const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
-      const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-      const { data: existingDecls } = await supabase.from('compliance_declarations').select('id').eq('volunteer_id', session.user.id).eq('declaration_year', prevYear).eq('declaration_month', prevMonth).limit(1);
-      if (!existingDecls || existingDecls.length === 0) { setShowComplianceDialog(true); }
+      const complianceKey = `compliance-prompted-${now.getFullYear()}-${now.getMonth() + 1}`;
+      const alreadyPrompted = localStorage.getItem(complianceKey);
+      if (!alreadyPrompted) {
+        const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+        const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        const { data: existingDecls } = await supabase.from('compliance_declarations').select('id').eq('volunteer_id', session.user.id).eq('declaration_year', prevYear).eq('declaration_month', prevMonth).limit(1);
+        if (!existingDecls || existingDecls.length === 0) {
+          setShowComplianceDialog(true);
+          localStorage.setItem(complianceKey, 'true');
+        }
+      }
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => { if (!session) navigate('/login'); });
