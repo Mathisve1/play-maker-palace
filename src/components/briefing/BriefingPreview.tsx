@@ -35,6 +35,7 @@ interface Block {
   media_url?: string;
   materials?: string[];
   zone_mode?: 'full' | 'personalized';
+  zone_visible_depth?: number | null;
 }
 
 interface Group {
@@ -194,7 +195,7 @@ const PreviewBlock = ({ block }: { block: Block }) => {
       {block.type === 'zone_overview' && (
         <div className="text-muted-foreground italic text-[10px]">
           <Layers className="w-3 h-3 inline mr-1" />
-          Zone-overzicht wordt automatisch geladen ({block.zone_mode === 'personalized' ? 'gepersonaliseerd' : 'volledig overzicht'})
+          Zone-overzicht wordt automatisch geladen ({block.zone_mode === 'personalized' ? 'gepersonaliseerd' : block.zone_visible_depth ? `tot niveau ${block.zone_visible_depth}` : 'volledig overzicht'})
         </div>
       )}
 
