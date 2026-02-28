@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
-  HelpCircle,
+  HelpCircle, Building2,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -13,7 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
-export type VolunteerTab = 'dashboard' | 'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy';
+export type VolunteerTab = 'dashboard' | 'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner';
 
 interface VolunteerSidebarProps {
   activeTab: VolunteerTab;
@@ -236,6 +236,12 @@ const VolunteerSidebar = ({
                   <Gift className="w-5 h-5" />
                   <span>{l.loyalty}</span>
                   <Badge count={counts.loyalty} />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'partner'} onClick={() => handleNav('partner')} className="min-h-[48px]">
+                  <Building2 className="w-5 h-5" />
+                  <span>{language === 'nl' ? 'Partner' : language === 'fr' ? 'Partenaire' : 'Partner'}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

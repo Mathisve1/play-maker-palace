@@ -20,6 +20,8 @@ import TicketDownloadButtons from '@/components/TicketDownloadButtons';
 import AcademyTab from '@/components/AcademyTab';
 import DashboardLayout from '@/components/DashboardLayout';
 import VolunteerSidebar, { VolunteerTab } from '@/components/VolunteerSidebar';
+import VolunteerActivitiesSection from '@/components/VolunteerActivitiesSection';
+import VolunteerPartnerTab from '@/components/VolunteerPartnerTab';
 
 interface Task {
   id: string;
@@ -531,7 +533,52 @@ const VolunteerDashboard = () => {
     })
     .slice(0, 5);
 
-  // ===== RENDER =====
+  // ===== ACTIVITY ITEMS =====
+  const activityItems = (() => {
+    const items: { id: string; type: 'contract' | 'briefing' | 'training' | 'partner_invite'; title: string; subtitle?: string; action: () => void; actionLabel: string; urgent?: boolean }[] = [];
+
+    // Unsigned contracts for upcoming tasks
+    myContracts.filter(c => c.status === 'pending' && c.signing_url).forEach(c => {
+      items.push({
+        id: `contract-${c.id}`,
+        type: 'contract',
+        title: language === 'nl' ? 'Contract ondertekenen' : language === 'fr' ? 'Signer le contrat' : 'Sign contract',
+        subtitle: c.task_title ? `${c.task_title}${c.club_name ? ` · ${c.club_name}` : ''}` : c.club_name,
+        action: () => window.open(c.signing_url!, '_blank'),
+        actionLabel: language === 'nl' ? 'Ondertekenen' : 'Sign',
+        urgent: true,
+      });
+    });
+
+    // Required trainings for tasks from followed clubs
+    if (followedClubIds && followedClubIds.size > 0) {
+      const requiredTrainings = new Map<string, { taskTitle: string; clubName: string }>();
+      tasks.forEach(t => {
+        if (t.required_training_id && !myCertifiedTrainingIds.has(t.required_training_id) && followedClubIds!.has(t.club_id)) {
+          if (!requiredTrainings.has(t.required_training_id)) {
+            requiredTrainings.set(t.required_training_id, {
+              taskTitle: t.title,
+              clubName: t.clubs?.name || '',
+            });
+          }
+        }
+      });
+      requiredTrainings.forEach((info, trainingId) => {
+        items.push({
+          id: `training-${trainingId}`,
+          type: 'training',
+          title: language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required',
+          subtitle: `${info.taskTitle} · ${info.clubName}`,
+          action: () => setActiveTab('academy'),
+          actionLabel: language === 'nl' ? 'Bekijken' : 'View',
+        });
+      });
+    }
+
+    return items;
+  })();
+
+
   const sidebarEl = (
     <VolunteerSidebar
       activeTab={activeTab}
@@ -688,6 +735,9 @@ const VolunteerDashboard = () => {
             )}
           </div>
 
+          {/* Activity items */}
+          <VolunteerActivitiesSection items={activityItems} language={language} />
+
           {/* Compliance badge */}
           {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
         </div>
@@ -795,7 +845,12 @@ const VolunteerDashboard = () => {
         </div>
       )}
 
-      {/* ===== CONTRACTS TAB ===== */}
+      {/* ===== PARTNER TAB ===== */}
+      {activeTab === 'partner' && currentUserId && (
+        <VolunteerPartnerTab language={language} userId={currentUserId} navigate={navigate} />
+      )}
+
+
       {activeTab === 'contracts' && (
         <div className="max-w-5xl mx-auto space-y-4">
           <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{dt.contracts}</h1>
