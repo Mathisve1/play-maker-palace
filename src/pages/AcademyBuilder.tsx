@@ -1555,7 +1555,6 @@ const AcademyBuilder = () => {
         </DialogContent>
       </Dialog>
 
-
     </ClubPageLayout>
   );
 };
