@@ -951,7 +951,6 @@ const ExternalPartners = () => {
         </DialogContent>
       </Dialog>
 
-
     </ClubPageLayout>
   );
 };
