@@ -953,7 +953,8 @@ const ClubOwnerDashboard = () => {
   const labelClass = "block text-xs font-medium text-muted-foreground mb-1";
 
   // Derived data
-  const looseTasks = tasks.filter(t => !t.event_id);
+  const now = new Date();
+  const looseTasks = tasks.filter(t => !t.event_id && (!t.task_date || new Date(t.task_date) >= now));
   const getEventTasks = (eventId: string) => tasks.filter(t => t.event_id === eventId);
   const getGroupTasks = (groupId: string) => tasks.filter(t => t.event_group_id === groupId);
 
