@@ -16,6 +16,7 @@ const Navbar = () => {
 
   const isClubsPage = location.pathname === '/clubs';
   const isVolunteerPage = location.pathname === '/';
+  const isCommunityPage = location.pathname.startsWith('/community');
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
@@ -36,6 +37,12 @@ const Navbar = () => {
             className={`text-sm font-medium transition-colors ${isClubsPage ? 'text-secondary' : 'text-muted-foreground hover:text-foreground'}`}
           >
             {t.nav.clubs}
+          </Link>
+          <Link 
+            to="/community" 
+            className={`text-sm font-medium transition-colors ${isCommunityPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Community
           </Link>
 
           {/* Language switcher */}
@@ -103,6 +110,7 @@ const Navbar = () => {
             <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
               <Link to="/" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{t.nav.volunteers}</Link>
               <Link to="/clubs" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{t.nav.clubs}</Link>
+              <Link to="/community" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">Community</Link>
               <div className="flex gap-2 py-2">
                 {(['nl', 'fr', 'en'] as Language[]).map(lang => (
                   <button

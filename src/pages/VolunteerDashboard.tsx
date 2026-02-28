@@ -149,6 +149,7 @@ const VolunteerDashboard = () => {
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [myLikes, setMyLikes] = useState<Set<string>>(new Set());
   const [myCertifiedTrainingIds, setMyCertifiedTrainingIds] = useState<Set<string>>(new Set());
+  const [followedClubIds, setFollowedClubIds] = useState<Set<string> | null>(null); // null = not loaded yet
 
   // Events state
   const [events, setEvents] = useState<EventData[]>([]);
@@ -355,6 +356,10 @@ const VolunteerDashboard = () => {
         setMyCertifiedTrainingIds(new Set(myCerts.map(c => c.training_id)));
       }
 
+      // Fetch followed clubs
+      const { data: followsData } = await supabase.from('club_follows').select('club_id').eq('user_id', session.user.id);
+      setFollowedClubIds(new Set(followsData?.map(f => f.club_id) || []));
+
       setLoading(false);
 
       // Check compliance
@@ -450,9 +455,13 @@ const VolunteerDashboard = () => {
     setCheckingContract(null);
   };
 
-  // Derived data
-  const looseTasks = tasks.filter(t => !t.event_id);
-  const eventTasks = tasks.filter(t => t.event_id);
+  // Derived data — filter by followed clubs when user has follows
+  const hasFollows = followedClubIds !== null && followedClubIds.size > 0;
+  const feedTasks = hasFollows && activeTab === 'all'
+    ? tasks.filter(t => followedClubIds!.has(t.club_id))
+    : tasks;
+  const looseTasks = feedTasks.filter(t => !t.event_id);
+  const eventTasks = feedTasks.filter(t => t.event_id);
 
   const filteredLooseTasks = looseTasks.filter(task => {
     const q = searchQuery.toLowerCase();
@@ -466,8 +475,9 @@ const VolunteerDashboard = () => {
   });
 
   const filteredEvents = events.filter(event => {
+    // Filter by followed clubs on 'all' tab
+    if (hasFollows && activeTab === 'all' && !followedClubIds!.has(event.club_id)) return false;
     if (activeTab === 'mine') {
-      // Show events that have tasks user is signed up for
       const evTasks = tasks.filter(t => t.event_id === event.id);
       return evTasks.some(t => {
         const status = getSignupStatus(t.id);
