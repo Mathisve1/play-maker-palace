@@ -37,6 +37,7 @@ import PartnerLogin from "./pages/PartnerLogin";
 import PartnerDashboard from "./pages/PartnerDashboard";
 import ReportingDashboard from "./pages/ReportingDashboard";
 import ReportBuilder from "./pages/ReportBuilder";
+import EventsManager from "./pages/EventsManager";
 import Community from "./pages/Community";
 import CommunityClubDetail from "./pages/CommunityClubDetail";
 import CommunityPartnerDetail from "./pages/CommunityPartnerDetail";
@@ -87,6 +88,7 @@ const App = () => {
             <Route path="/partner-dashboard" element={<PartnerDashboard />} />
             <Route path="/reporting" element={<ReportingDashboard />} />
             <Route path="/report-builder" element={<ReportBuilder />} />
+            <Route path="/events-manager" element={<EventsManager />} />
             <Route path="/community" element={<Community />} />
             <Route path="/community/club/:clubId" element={<CommunityClubDetail />} />
             <Route path="/community/partner/:partnerId" element={<CommunityPartnerDetail />} />

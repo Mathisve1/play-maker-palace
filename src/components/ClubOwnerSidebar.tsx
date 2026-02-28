@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Calendar, Users, FileText, ClipboardList, CreditCard, Shield,
-  Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote,
+  LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield,
+  Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
+  CalendarPlus,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -31,8 +32,13 @@ const ClubOwnerSidebar = ({
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
 
-  const items = [
+  const mainItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
+    { label: 'Evenementen & Taken', icon: CalendarPlus, path: '/events-manager' },
+    { label: 'Berichten', icon: MessageCircle, path: '/chat' },
+  ];
+
+  const managementItems = [
     { label: 'Betalingen', icon: CreditCard, path: '/payments' },
     { label: 'SEPA Vergoedingen', icon: Banknote, path: '/sepa-payouts' },
     { label: 'Contracten', icon: FileText, path: '/contract-builder' },
@@ -69,10 +75,26 @@ const ClubOwnerSidebar = ({
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigatie</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map(item => (
+              {mainItems.map(item => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[48px]">
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Beheer</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {managementItems.map(item => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[48px]">
                     <item.icon className="w-5 h-5" />
@@ -86,7 +108,7 @@ const ClubOwnerSidebar = ({
 
         {(onOpenSettings || onOpenMembers) && (
           <SidebarGroup>
-            <SidebarGroupLabel>Beheer</SidebarGroupLabel>
+            <SidebarGroupLabel>Instellingen</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {onOpenMembers && (
