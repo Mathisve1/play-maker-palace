@@ -330,7 +330,8 @@ const CommunityClubDetail = () => {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="bg-card rounded-xl border border-border/50 p-4"
+                    onClick={() => navigate('/dashboard')}
+                    className="bg-card rounded-xl border border-border/50 p-4 hover:shadow-card transition-all cursor-pointer group"
                   >
                     <div className="flex items-start justify-between">
                       <div>

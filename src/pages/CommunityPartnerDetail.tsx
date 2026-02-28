@@ -149,7 +149,8 @@ const CommunityPartnerDetail = () => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className="bg-card rounded-xl border border-border/50 p-4"
+                onClick={() => navigate(`/task/${task.id}`)}
+                className="bg-card rounded-xl border border-border/50 p-4 hover:shadow-card transition-all cursor-pointer group"
               >
                 <h3 className="font-semibold">{task.title}</h3>
                 <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
