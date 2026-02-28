@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import Logo from '@/components/Logo';
+import ClubPageLayout from '@/components/ClubPageLayout';
 
 const t = {
   nl: {
@@ -425,24 +425,15 @@ const TicketingDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 bg-card/80 backdrop-blur border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate('/club-dashboard')} className="text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <Logo />
-          <h1 className="text-lg font-bold text-foreground ml-2">{labels.title}</h1>
-          <div className="ml-auto">
-            <Button onClick={() => navigate('/scan')} size="sm" className="gap-2">
-              <QrCode className="w-4 h-4" />
-              QR Scanner
-            </Button>
-          </div>
+    <ClubPageLayout>
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-lg font-bold text-foreground">{labels.title}</h1>
+          <Button onClick={() => navigate('/scan')} size="sm" className="gap-2">
+            <QrCode className="w-4 h-4" />
+            QR Scanner
+          </Button>
         </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 max-w-lg">
             <TabsTrigger value="planning" className="gap-2">
@@ -674,8 +665,8 @@ const TicketingDashboard = () => {
             </div>
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </ClubPageLayout>
   );
 };
 

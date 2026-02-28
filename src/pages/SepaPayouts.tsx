@@ -21,7 +21,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog';
-import Logo from '@/components/Logo';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import NotificationBell from '@/components/NotificationBell';
 import { BELGIAN_BANKS, findBic } from '@/components/OnboardingForm';
 import { DocusealForm } from '@docuseal/react';
@@ -730,25 +730,8 @@ const SepaPayouts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/club-dashboard')} className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <Logo size="sm" linkTo="/club-dashboard" />
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-heading font-bold text-foreground">SEPA Uitbetalingen</h1>
-              <p className="text-xs text-muted-foreground">{clubName}</p>
-            </div>
-          </div>
-          <NotificationBell userId={currentUserId} />
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <ClubPageLayout>
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -1092,7 +1075,7 @@ const SepaPayouts = () => {
             </div>
           )}
         </div>
-      </main>
+      </div>
 
       {/* DocuSeal Signing Dialog */}
       <Dialog open={showSigningDialog} onOpenChange={(open) => {
@@ -1233,7 +1216,7 @@ const SepaPayouts = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </ClubPageLayout>
   );
 };
 

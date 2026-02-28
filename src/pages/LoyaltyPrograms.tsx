@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Gift, Users, Pencil, ArrowLeft, ToggleLeft, ToggleRight, Star, X, Check } from 'lucide-react';
-import Logo from '@/components/Logo';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import { Language } from '@/i18n/translations';
 
 interface LoyaltyProgram {
@@ -412,18 +412,8 @@ const LoyaltyPrograms = () => {
 
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Logo size="sm" linkTo="/club-dashboard" />
-          <button onClick={() => navigate('/club-dashboard')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" /> {dt.back}
-          </button>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8 max-w-3xl">
+    <ClubPageLayout>
+      <div className="max-w-3xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
@@ -614,7 +604,7 @@ const LoyaltyPrograms = () => {
             );
           })}
         </div>
-      </main>
+      </div>
 
       {/* Edit dialog */}
       <AnimatePresence>
@@ -646,7 +636,7 @@ const LoyaltyPrograms = () => {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </ClubPageLayout>
   );
 };
 

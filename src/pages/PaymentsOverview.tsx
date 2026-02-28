@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CreditCard, CheckCircle, Clock, AlertTriangle, Download, Send, ExternalLink, Loader2, RefreshCw, Unlink, Settings, ShieldCheck, ShieldAlert, Info, ClipboardList } from 'lucide-react';
-import Logo from '@/components/Logo';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Language } from '@/i18n/translations';
 import { Badge } from '@/components/ui/badge';
@@ -535,21 +535,8 @@ const PaymentsOverview = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Logo size="sm" linkTo="/club-dashboard" showText={false} />
-          <button
-            onClick={() => navigate('/club-dashboard')}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t.back}
-          </button>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+    <ClubPageLayout>
+      <div className="max-w-4xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
             <CreditCard className="w-6 h-6 text-primary" />
@@ -872,7 +859,7 @@ const PaymentsOverview = () => {
             )}
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Briefing Progress Dialog */}
       {briefingDialogTaskId && (
@@ -883,7 +870,7 @@ const PaymentsOverview = () => {
           language={language}
         />
       )}
-    </div>
+    </ClubPageLayout>
   );
 };
 

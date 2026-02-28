@@ -9,7 +9,7 @@ import {
   Trash2, Save, Users, Loader2, ChevronDown, ChevronUp, Palette, X, Route, PenLine, Send, Copy
 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import Logo from '@/components/Logo';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1208,39 +1208,28 @@ const BriefingBuilder = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/club-dashboard')}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+    <ClubPageLayout>
+      <div className="max-w-4xl mx-auto">
+        {/* Briefing actions bar */}
+        <div className="flex items-center gap-2 mb-6 flex-wrap">
+          {allBriefings.length > 1 && (
+            <select
+              value={briefingId || ''}
+              onChange={e => e.target.value && switchBriefing(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-2 text-xs"
             >
-              <ArrowLeft className="w-4 h-4" />
-              {l.back}
-            </button>
-            <span className="text-muted-foreground/40">|</span>
-            <Logo size="sm" />
-          </div>
-          <div className="flex items-center gap-2">
-            {allBriefings.length > 1 && (
-              <select
-                value={briefingId || ''}
-                onChange={e => e.target.value && switchBriefing(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-2 text-xs"
-              >
-                {allBriefings.map(b => (
-                  <option key={b.id} value={b.id}>{b.title}</option>
-                ))}
-              </select>
-            )}
-            <Button onClick={handleNewBriefing} size="sm" variant="ghost" title={l.newBriefing}>
-              <Plus className="w-4 h-4" />
-            </Button>
-            <Button onClick={handleDuplicate} size="sm" variant="ghost" title={l.duplicate} disabled={groups.length === 0}>
-              <Copy className="w-4 h-4" />
-            </Button>
+              {allBriefings.map(b => (
+                <option key={b.id} value={b.id}>{b.title}</option>
+              ))}
+            </select>
+          )}
+          <Button onClick={handleNewBriefing} size="sm" variant="ghost" title={l.newBriefing}>
+            <Plus className="w-4 h-4" />
+          </Button>
+          <Button onClick={handleDuplicate} size="sm" variant="ghost" title={l.duplicate} disabled={groups.length === 0}>
+            <Copy className="w-4 h-4" />
+          </Button>
+          <div className="ml-auto flex items-center gap-2">
             <Button onClick={handleSave} disabled={saving || sendingBriefing} size="sm" variant="outline">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
               {saving ? l.saving : l.save}
@@ -1251,9 +1240,6 @@ const BriefingBuilder = () => {
             </Button>
           </div>
         </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Title */}
         <div className="mb-6">
           <p className="text-xs text-muted-foreground mb-1">{taskTitle}</p>
@@ -1595,7 +1581,7 @@ const BriefingBuilder = () => {
             {l.addGroup}
           </button>
         </div>
-      </main>
+      </div>
 
       {/* Send Briefing Dialog */}
       <SendBriefingDialog
@@ -1606,7 +1592,7 @@ const BriefingBuilder = () => {
         language={language}
         sending={sendingBriefing}
       />
-    </div>
+    </ClubPageLayout>
   );
 };
 
