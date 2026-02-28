@@ -1678,6 +1678,86 @@ export type Database = {
           },
         ]
       }
+      task_zone_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          id: string
+          volunteer_id: string
+          zone_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          volunteer_id: string
+          zone_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          volunteer_id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_zone_assignments_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "task_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_zones: {
+        Row: {
+          created_at: string
+          id: string
+          is_visible: boolean
+          max_capacity: number | null
+          name: string
+          parent_id: string | null
+          sort_order: number
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          max_capacity?: number | null
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          max_capacity?: number | null
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_zones_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "task_zones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_zones_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_partner_id: string | null
@@ -1709,6 +1789,8 @@ export type Database = {
           status: string
           task_date: string | null
           title: string
+          zone_signup_mode: string
+          zone_visible_depth: number | null
         }
         Insert: {
           assigned_partner_id?: string | null
@@ -1740,6 +1822,8 @@ export type Database = {
           status?: string
           task_date?: string | null
           title: string
+          zone_signup_mode?: string
+          zone_visible_depth?: number | null
         }
         Update: {
           assigned_partner_id?: string | null
@@ -1771,6 +1855,8 @@ export type Database = {
           status?: string
           task_date?: string | null
           title?: string
+          zone_signup_mode?: string
+          zone_visible_depth?: number | null
         }
         Relationships: [
           {

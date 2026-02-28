@@ -6,10 +6,11 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
-  Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake,
+  Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import TaskZoneDialog from '@/components/TaskZoneDialog';
 
 interface EventData {
   id: string; club_id: string; title: string; description: string | null;
@@ -61,6 +62,9 @@ const EventsManager = () => {
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
   const [groupTaskForm, setGroupTaskForm] = useState({ title: '', task_date: '', location: '', spots_available: 1 });
   const [creatingGroupTask, setCreatingGroupTask] = useState(false);
+
+  // Zone dialog
+  const [zoneDialogTask, setZoneDialogTask] = useState<{ id: string; title: string } | null>(null);
 
   const nl = language === 'nl';
   const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -346,7 +350,15 @@ const EventsManager = () => {
                     <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{task.spots_available}</span>
                   </div>
                 </div>
-                {task.partner_only && <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-accent/20 text-accent-foreground flex items-center gap-0.5"><Handshake className="w-3 h-3" /> Partner</span>}
+                <div className="flex items-center gap-1 shrink-0">
+                  {task.partner_only && <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-accent/20 text-accent-foreground flex items-center gap-0.5"><Handshake className="w-3 h-3" /> Partner</span>}
+                  <button onClick={() => setZoneDialogTask({ id: task.id, title: task.title })} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zones beheren' : 'Manage zones'}>
+                    <Layers className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => navigate(`/planning/${task.id}`)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zone planning' : 'Zone planning'}>
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </motion.div>
             ))}
           </TabsContent>
@@ -401,6 +413,17 @@ const EventsManager = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Zone Dialog */}
+      {zoneDialogTask && (
+        <TaskZoneDialog
+          taskId={zoneDialogTask.id}
+          taskTitle={zoneDialogTask.title}
+          language={language}
+          open={!!zoneDialogTask}
+          onClose={() => setZoneDialogTask(null)}
+        />
+      )}
     </ClubPageLayout>
   );
 
@@ -488,6 +511,14 @@ const EventsManager = () => {
                                 {task.location && <span>{task.location}</span>}
                                 <span>{task.spots_available} {nl ? 'plaatsen' : 'spots'}</span>
                               </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button onClick={() => setZoneDialogTask({ id: task.id, title: task.title })} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zones beheren' : 'Manage zones'}>
+                                <Layers className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => navigate(`/planning/${task.id}`)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zone planning' : 'Zone planning'}>
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
                         ))}
