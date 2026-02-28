@@ -67,6 +67,10 @@ type ScanResult = {
   eventTitle?: string;
   checkedInAt?: string;
   error?: string;
+  groupName?: string | null;
+  wristbandColor?: string | null;
+  wristbandLabel?: string | null;
+  materialsNote?: string | null;
 };
 
 // ── Audio helpers (Web Audio API, no files needed) ──────────────────
@@ -168,9 +172,9 @@ const TicketScanner = () => {
       if (error) {
         scanResult = { type: 'error', error: typeof error === 'string' ? error : (error as any)?.message || t.invalidTicket };
       } else if (data?.success === true) {
-        scanResult = { type: 'success', volunteerName: data.volunteer_name, avatarUrl: data.avatar_url, taskTitle: data.task_title, eventTitle: data.event_title, checkedInAt: data.checked_in_at };
+        scanResult = { type: 'success', volunteerName: data.volunteer_name, avatarUrl: data.avatar_url, taskTitle: data.task_title, eventTitle: data.event_title, checkedInAt: data.checked_in_at, groupName: data.group_name, wristbandColor: data.wristband_color, wristbandLabel: data.wristband_label, materialsNote: data.materials_note };
       } else if (data?.status === 'already_checked_in') {
-        scanResult = { type: 'already_checked_in', volunteerName: data.volunteer_name, avatarUrl: data.avatar_url, taskTitle: data.task_title, checkedInAt: data.checked_in_at };
+        scanResult = { type: 'already_checked_in', volunteerName: data.volunteer_name, avatarUrl: data.avatar_url, taskTitle: data.task_title, checkedInAt: data.checked_in_at, groupName: data.group_name, wristbandColor: data.wristband_color, wristbandLabel: data.wristband_label, materialsNote: data.materials_note };
       } else {
         scanResult = { type: 'error', error: data?.error || t.invalidTicket };
       }
@@ -346,13 +350,32 @@ const TicketScanner = () => {
                   <CheckCircle2 className="text-emerald-500" strokeWidth={2.5} style={{ width: 72, height: 72 }} />
                 </div>
                 <h2 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{t.success}</h2>
-                <Avatar className="w-24 h-24 border-4 border-emerald-500/30 shadow-lg">
+                <Avatar className="w-24 h-24 shadow-lg" style={{
+                  border: result.wristbandColor ? `6px solid ${result.wristbandColor}` : '4px solid hsl(var(--border))',
+                  boxShadow: result.wristbandColor ? `0 0 0 3px ${result.wristbandColor}40` : undefined,
+                }}>
                   <AvatarImage src={result.avatarUrl || undefined} alt={result.volunteerName} />
                   <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
                     {initials(result.volunteerName)}
                   </AvatarFallback>
                 </Avatar>
                 <p className="text-3xl font-bold text-foreground">{result.volunteerName}</p>
+
+                {/* Wristband / material info */}
+                {result.wristbandColor && (
+                  <div className="w-full rounded-xl border-2 p-4 text-center space-y-2" style={{ borderColor: result.wristbandColor, backgroundColor: `${result.wristbandColor}15` }}>
+                    <p className="text-lg font-black uppercase tracking-wider" style={{ color: result.wristbandColor }}>
+                      {result.wristbandColor} {result.wristbandLabel || 'BANDJE'}
+                    </p>
+                    {result.groupName && (
+                      <p className="text-sm font-medium text-foreground">{result.groupName}</p>
+                    )}
+                    {result.materialsNote && (
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">📋 {result.materialsNote}</p>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-1 text-center text-sm text-muted-foreground">
                   {result.taskTitle && <p>{t.task}: <span className="font-medium text-foreground">{result.taskTitle}</span></p>}
                   {result.eventTitle && <p>{t.event}: <span className="font-medium text-foreground">{result.eventTitle}</span></p>}
@@ -371,13 +394,26 @@ const TicketScanner = () => {
                 <CardContent className="pt-6 text-center space-y-4">
                   <AlertTriangle className="w-16 h-16 text-amber-500 mx-auto" />
                   <h2 className="text-xl font-bold text-foreground">{t.alreadyCheckedIn}</h2>
-                  <Avatar className="w-16 h-16 border-2 border-amber-400/30 mx-auto">
+                  <Avatar className="w-16 h-16 mx-auto" style={{
+                    border: result.wristbandColor ? `4px solid ${result.wristbandColor}` : '2px solid hsl(var(--border))',
+                  }}>
                     <AvatarImage src={result.avatarUrl || undefined} alt={result.volunteerName} />
                     <AvatarFallback className="text-lg font-bold bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                       {initials(result.volunteerName)}
                     </AvatarFallback>
                   </Avatar>
                   <p className="text-xl font-bold text-foreground">{result.volunteerName}</p>
+
+                  {/* Wristband info on already checked in */}
+                  {result.wristbandColor && (
+                    <div className="rounded-lg border p-3 text-center" style={{ borderColor: result.wristbandColor, backgroundColor: `${result.wristbandColor}10` }}>
+                      <p className="text-sm font-black uppercase tracking-wider" style={{ color: result.wristbandColor }}>
+                        {result.wristbandColor} {result.wristbandLabel || 'BANDJE'}
+                      </p>
+                      {result.materialsNote && <p className="text-xs text-muted-foreground mt-1">📋 {result.materialsNote}</p>}
+                    </div>
+                  )}
+
                   <div className="space-y-1 text-sm text-muted-foreground">
                     {result.taskTitle && <p>{t.task}: <span className="font-medium text-foreground">{result.taskTitle}</span></p>}
                     {result.checkedInAt && <p>{t.checkedInAt}: <span className="font-medium text-foreground">{new Date(result.checkedInAt).toLocaleTimeString()}</span></p>}

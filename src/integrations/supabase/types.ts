@@ -694,24 +694,33 @@ export type Database = {
           created_at: string
           event_id: string
           id: string
+          materials_note: string | null
           name: string
           sort_order: number
+          wristband_color: string | null
+          wristband_label: string | null
         }
         Insert: {
           color?: string
           created_at?: string
           event_id: string
           id?: string
+          materials_note?: string | null
           name: string
           sort_order?: number
+          wristband_color?: string | null
+          wristband_label?: string | null
         }
         Update: {
           color?: string
           created_at?: string
           event_id?: string
           id?: string
+          materials_note?: string | null
           name?: string
           sort_order?: number
+          wristband_color?: string | null
+          wristband_label?: string | null
         }
         Relationships: [
           {

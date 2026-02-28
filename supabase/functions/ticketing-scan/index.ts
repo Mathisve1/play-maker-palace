@@ -35,13 +35,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use service role for faster lookups (no RLS overhead)
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Look up ticket + volunteer + task + event in parallel
+    // Look up ticket
     const { data: ticket, error: ticketError } = await serviceClient
       .from("volunteer_tickets")
       .select("id, volunteer_id, task_id, event_id, status, checked_in_at, barcode")
@@ -60,10 +59,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch profile, task, event in parallel
+    // Fetch profile, task (with event_group_id), event in parallel
     const [profileRes, taskRes, eventRes] = await Promise.all([
       serviceClient.from("profiles").select("full_name, avatar_url").eq("id", ticket.volunteer_id).maybeSingle(),
-      ticket.task_id ? serviceClient.from("tasks").select("title").eq("id", ticket.task_id).maybeSingle() : Promise.resolve({ data: null }),
+      ticket.task_id ? serviceClient.from("tasks").select("title, event_group_id").eq("id", ticket.task_id).maybeSingle() : Promise.resolve({ data: null }),
       ticket.event_id ? serviceClient.from("events").select("title").eq("id", ticket.event_id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
 
@@ -71,6 +70,34 @@ Deno.serve(async (req) => {
     const avatarUrl = profileRes.data?.avatar_url || null;
     const taskTitle = taskRes.data?.title || "";
     const eventTitle = eventRes.data?.title || "";
+
+    // Fetch event_group wristband info if task belongs to a group
+    let wristbandColor: string | null = null;
+    let wristbandLabel: string | null = null;
+    let materialsNote: string | null = null;
+    let groupName: string | null = null;
+
+    const eventGroupId = taskRes.data?.event_group_id;
+    if (eventGroupId) {
+      const { data: groupData } = await serviceClient
+        .from("event_groups")
+        .select("name, wristband_color, wristband_label, materials_note")
+        .eq("id", eventGroupId)
+        .maybeSingle();
+      if (groupData) {
+        groupName = groupData.name || null;
+        wristbandColor = groupData.wristband_color || null;
+        wristbandLabel = groupData.wristband_label || null;
+        materialsNote = groupData.materials_note || null;
+      }
+    }
+
+    const materialPayload = {
+      group_name: groupName,
+      wristband_color: wristbandColor,
+      wristband_label: wristbandLabel,
+      materials_note: materialsNote,
+    };
 
     // Check if already checked in
     if (ticket.status === "checked_in") {
@@ -83,6 +110,7 @@ Deno.serve(async (req) => {
           task_title: taskTitle,
           checked_in_at: ticket.checked_in_at,
           error: "Al ingecheckt",
+          ...materialPayload,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -102,7 +130,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Log the scan (fire-and-forget, don't block response)
+    // Log the scan
     serviceClient.from("ticketing_logs").insert({
       club_id,
       action: "scan_checkin",
@@ -121,6 +149,7 @@ Deno.serve(async (req) => {
         task_title: taskTitle,
         event_title: eventTitle,
         checked_in_at: now,
+        ...materialPayload,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
