@@ -4,8 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, CalendarDays, MapPin, ChevronRight, Loader2, History } from 'lucide-react';
+import { Shield, CalendarDays, MapPin, ChevronRight, Loader2, History, Play, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface EventRow {
   id: string;
@@ -47,6 +49,8 @@ const SafetyOverview = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [clubId, setClubId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -61,6 +65,7 @@ const SafetyOverview = () => {
         .maybeSingle();
 
       if (!membership) { setLoading(false); return; }
+      setClubId(membership.club_id);
 
       const { data } = await supabase
         .from('events')
@@ -78,6 +83,58 @@ const SafetyOverview = () => {
   const upcoming = useMemo(() => events.filter(e => !e.event_date || new Date(e.event_date) >= now), [events]);
   const past = useMemo(() => events.filter(e => e.event_date && new Date(e.event_date) < now), [events]);
 
+  const handleStartDemo = async () => {
+    if (!clubId) return;
+    setDemoLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Niet ingelogd');
+
+      const res = await supabase.functions.invoke('safety-demo', {
+        body: { club_id: clubId },
+      });
+
+      if (res.error) throw res.error;
+      const { event_id } = res.data;
+      toast.success('Demo scenario gestart! Incidenten verschijnen de komende 5 minuten.');
+      navigate(`/safety/${event_id}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Kon demo niet starten');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
+  const handleDeleteDemo = async () => {
+    if (!clubId) return;
+    // Find demo events
+    const { data: demoEvents } = await supabase
+      .from('events')
+      .select('id')
+      .eq('club_id', clubId)
+      .eq('title', 'Demo Veiligheidsdag 2026');
+
+    if (!demoEvents?.length) {
+      toast.info('Geen demo evenementen gevonden.');
+      return;
+    }
+
+    for (const ev of demoEvents) {
+      // Delete related data in order
+      await (supabase as any).from('safety_incidents').delete().eq('event_id', ev.id);
+      await (supabase as any).from('safety_checklist_progress').delete().in(
+        'checklist_item_id',
+        (await (supabase as any).from('safety_checklist_items').select('id').eq('event_id', ev.id)).data?.map((i: any) => i.id) || []
+      );
+      await (supabase as any).from('safety_checklist_items').delete().eq('event_id', ev.id);
+      await (supabase as any).from('safety_zones').delete().eq('event_id', ev.id);
+      await supabase.from('events').delete().eq('id', ev.id);
+    }
+
+    setEvents(prev => prev.filter(e => e.title !== 'Demo Veiligheidsdag 2026'));
+    toast.success('Demo data verwijderd!');
+  };
+
   const renderGrid = (list: EventRow[], emptyMsg: string) =>
     list.length === 0 ? (
       <Card><CardContent className="py-12 text-center text-muted-foreground">{emptyMsg}</CardContent></Card>
@@ -89,14 +146,29 @@ const SafetyOverview = () => {
       </div>
     );
 
+  const hasDemoEvent = events.some(e => e.title === 'Demo Veiligheidsdag 2026');
+
   return (
     <ClubPageLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Shield className="w-7 h-7 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Safety & Security</h1>
-            <p className="text-sm text-muted-foreground">Kies een evenement om de control room te openen</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Shield className="w-7 h-7 text-primary" />
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Safety & Security</h1>
+              <p className="text-sm text-muted-foreground">Kies een evenement om de control room te openen</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {hasDemoEvent && (
+              <Button variant="outline" size="sm" onClick={handleDeleteDemo} className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
+                <Trash2 className="w-4 h-4" /> Demo wissen
+              </Button>
+            )}
+            <Button onClick={handleStartDemo} disabled={demoLoading || !clubId} size="sm" className="gap-1.5">
+              {demoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              Start Demo
+            </Button>
           </div>
         </div>
 
