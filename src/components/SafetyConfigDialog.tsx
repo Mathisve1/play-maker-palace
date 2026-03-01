@@ -282,7 +282,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
             {/* LOCATION LEVELS */}
             <TabsContent value="locatie" className="space-y-3 mt-4">
               <p className="text-xs text-muted-foreground">
-                Maak locatie-niveaus aan die stewards invullen bij een melding. Bijv. "Tribune" → "Vak" → "Rij". Per niveau kan je opties aanmaken en instellen of het verplicht is.
+                Maak locatie-niveaus aan die vrijwilligers invullen bij een melding. Bijv. "Tribune" → "Vak" → "Rij". Per niveau kan je opties aanmaken en instellen of het verplicht is.
               </p>
 
               {/* Add level */}
