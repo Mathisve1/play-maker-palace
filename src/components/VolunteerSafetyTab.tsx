@@ -194,6 +194,10 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
                 navigate(`/safety/${eid}`);
               }
             }
+            // When event is closed (status = 'closed'), remove it from the list
+            if (payload.new.status === 'closed') {
+              setEvents(prev => prev.filter(e => e.id !== eid));
+            }
           })
         .subscribe()
     );
