@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, AlertTriangle, CheckCircle2, Radio, Maximize2, Minimize2,
   Phone, ChevronRight, Clock, MapPin, Volume2, VolumeX, RefreshCw,
-  Rocket, Lock, Camera, Image,
+  Rocket, Lock, Camera, Image, RotateCcw, Trash2, Play,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,7 @@ const SafetyDashboard = () => {
   const [checklistProgress, setChecklistProgress] = useState<ChecklistProgress[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [simLoading, setSimLoading] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [flashRed, setFlashRed] = useState(false);
   const [zoneFullscreen, setZoneFullscreen] = useState(false);
@@ -123,7 +124,7 @@ const SafetyDashboard = () => {
       setClubId(ev.club_id);
       setEventTitle(ev.title);
       setIsLive(ev.is_live ?? false);
-      setIsDemoEvent(ev.title?.includes('Demo') ?? false);
+      setIsDemoEvent(ev.title?.includes('SIMULATIE') ?? false);
 
       const { data: owned } = await supabase.from('clubs').select('id').eq('id', ev.club_id).eq('owner_id', session.user.id);
       const { data: member } = await (supabase as any).from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
@@ -306,6 +307,54 @@ const SafetyDashboard = () => {
     await (supabase as any).from('events').update({ is_live: true }).eq('id', eventId);
     setIsLive(true);
     toast.success('🚀 Event is LIVE! Vrijwilligers kunnen nu incidenten melden.');
+  };
+
+  // ── Simulation controls ──
+  // (simLoading state is declared at top level)
+
+  const handleResetSimulation = async () => {
+    if (!clubId) return;
+    setSimLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await supabase.functions.invoke('simulate-event', {
+        body: { club_id: clubId, action: 'delete' },
+      });
+      if (res.error) throw res.error;
+      toast.success('Simulatie data verwijderd!');
+      // Navigate back to events
+      navigate('/events-manager');
+    } catch (err: any) {
+      toast.error(err.message || 'Fout bij verwijderen');
+    } finally {
+      setSimLoading(false);
+    }
+  };
+
+  const handleRestartSimulation = async () => {
+    if (!clubId) return;
+    setSimLoading(true);
+    try {
+      // First delete
+      await supabase.functions.invoke('simulate-event', {
+        body: { club_id: clubId, action: 'delete' },
+      });
+      // Then create new
+      const res = await supabase.functions.invoke('simulate-event', {
+        body: { club_id: clubId },
+      });
+      if (res.error) throw res.error;
+      const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+      if (data.event_id) {
+        toast.success('Simulatie herstart! Navigeren naar nieuw event...');
+        navigate(`/safety/${data.event_id}`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Fout bij herstarten');
+    } finally {
+      setSimLoading(false);
+    }
   };
 
   // ── Computed values ──
@@ -574,6 +623,16 @@ const SafetyDashboard = () => {
             <Button variant="ghost" size="icon" onClick={() => setAudioEnabled(!audioEnabled)}>
               {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </Button>
+            {isDemoEvent && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleRestartSimulation} disabled={simLoading} className="gap-1.5">
+                  <RotateCcw className="w-3.5 h-3.5" /> Herstart
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleResetSimulation} disabled={simLoading} className="gap-1.5 text-destructive hover:text-destructive">
+                  <Trash2 className="w-3.5 h-3.5" /> Verwijder
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
