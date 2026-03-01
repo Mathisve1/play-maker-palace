@@ -990,6 +990,7 @@ const SafetyDashboard = () => {
             )}
           </AnimatePresence>
         </div>
+        )}
       </div>
     );
   }
