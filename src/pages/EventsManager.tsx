@@ -43,7 +43,7 @@ const EventsManager = () => {
 
   // Create event
   const [showCreateEvent, setShowCreateEvent] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: '', description: '', event_date: '', location: '' });
+  const [newEvent, setNewEvent] = useState({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' });
   const [creatingEvent, setCreatingEvent] = useState(false);
 
   // Create loose task
@@ -158,16 +158,34 @@ const EventsManager = () => {
     init();
   }, [navigate]);
 
+  const buildLocationString = () => {
+    const parts: string[] = [];
+    if (newEvent.street.trim()) {
+      parts.push(newEvent.street.trim() + (newEvent.number.trim() ? ' ' + newEvent.number.trim() : ''));
+    }
+    if (newEvent.postalCode.trim() || newEvent.city.trim()) {
+      parts.push([newEvent.postalCode.trim(), newEvent.city.trim()].filter(Boolean).join(' '));
+    }
+    if (newEvent.country.trim() && newEvent.country.trim() !== 'België') {
+      parts.push(newEvent.country.trim());
+    }
+    if (newEvent.locationNote.trim()) {
+      parts.push('(' + newEvent.locationNote.trim() + ')');
+    }
+    return parts.join(', ') || null;
+  };
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !newEvent.title.trim()) return;
     setCreatingEvent(true);
+    const locationStr = buildLocationString();
     const { data, error } = await (supabase as any).from('events').insert({
       club_id: clubId, title: newEvent.title.trim(), description: newEvent.description.trim() || null,
-      event_date: newEvent.event_date || null, location: newEvent.location.trim() || null,
+      event_date: newEvent.event_date || null, location: locationStr,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(nl ? 'Evenement aangemaakt!' : 'Event created!'); setEvents(prev => [data, ...prev]); setShowCreateEvent(false); setNewEvent({ title: '', description: '', event_date: '', location: '' }); }
+    else if (data) { toast.success(nl ? 'Evenement aangemaakt!' : 'Event created!'); setEvents(prev => [data, ...prev]); setShowCreateEvent(false); setNewEvent({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' }); }
     setCreatingEvent(false);
   };
 
@@ -415,8 +433,30 @@ const EventsManager = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
                 <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Beschrijving' : 'Description'}</label><textarea rows={2} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
-                <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
-                <div><label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label><input type="text" value={newEvent.location} onChange={e => setNewEvent(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
+                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label>
+                  <div className="grid gap-3 sm:grid-cols-4">
+                    <div className="sm:col-span-3">
+                      <input type="text" placeholder={nl ? 'Straat' : 'Street'} maxLength={200} value={newEvent.street} onChange={e => setNewEvent(p => ({ ...p, street: e.target.value }))} className={inputClass} />
+                    </div>
+                    <div>
+                      <input type="text" placeholder={nl ? 'Nr.' : 'No.'} maxLength={20} value={newEvent.number} onChange={e => setNewEvent(p => ({ ...p, number: e.target.value }))} className={inputClass} />
+                    </div>
+                    <div>
+                      <input type="text" placeholder={nl ? 'Postcode' : 'Postal code'} maxLength={10} value={newEvent.postalCode} onChange={e => setNewEvent(p => ({ ...p, postalCode: e.target.value }))} className={inputClass} />
+                    </div>
+                    <div>
+                      <input type="text" placeholder={nl ? 'Stad' : 'City'} maxLength={100} value={newEvent.city} onChange={e => setNewEvent(p => ({ ...p, city: e.target.value }))} className={inputClass} />
+                    </div>
+                    <div>
+                      <input type="text" placeholder={nl ? 'Land' : 'Country'} maxLength={60} value={newEvent.country} onChange={e => setNewEvent(p => ({ ...p, country: e.target.value }))} className={inputClass} />
+                    </div>
+                    <div>
+                      <input type="text" placeholder={nl ? 'Extra info (bv. zaal, ingang...)' : 'Extra info'} maxLength={200} value={newEvent.locationNote} onChange={e => setNewEvent(p => ({ ...p, locationNote: e.target.value }))} className={inputClass} />
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => setShowCreateEvent(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
