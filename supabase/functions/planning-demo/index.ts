@@ -67,8 +67,14 @@ Deno.serve(async (req) => {
         await supabase.from("events").delete().eq("id", ev.id);
       }
 
-      // Delete demo safety roles
-      await supabase.from("safety_roles").delete().eq("club_id", club_id).in("name", ["Hoofdsteward", "Korpssteward", "Steward"]);
+      // Delete demo safety roles (group-specific)
+      const demoRoleNames = [
+        "Hoofdsteward", "Korpssteward", "Steward",
+        "Parkingchef", "Parkingcoördinator", "Parkingmedewerker",
+        "Cateringchef", "Barcoördinator", "Cateringmedewerker",
+        "Ticketingchef", "Scancoördinator", "Onthaalmedewerker",
+      ];
+      await supabase.from("safety_roles").delete().eq("club_id", club_id).in("name", demoRoleNames);
 
       // Delete demo profiles
       const demoNames = [
@@ -336,53 +342,64 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Step 8: Create 3 safety roles with different permissions
-    const roleDefs = [
-      {
-        club_id, name: "Hoofdsteward", color: "#dc2626", level: 1, sort_order: 0,
+    // Step 8: Create group-specific safety roles (3 levels per group)
+    const groupRoleDefs: Record<string, { l1: string; l2: string; l3: string; color1: string; color2: string; color3: string }> = {
+      "Stewards": { l1: "Hoofdsteward", l2: "Korpssteward", l3: "Steward", color1: "#dc2626", color2: "#f59e0b", color3: "#3b82f6" },
+      "Parking": { l1: "Parkingchef", l2: "Parkingcoördinator", l3: "Parkingmedewerker", color1: "#dc2626", color2: "#f59e0b", color3: "#eab308" },
+      "Catering": { l1: "Cateringchef", l2: "Barcoördinator", l3: "Cateringmedewerker", color1: "#dc2626", color2: "#f59e0b", color3: "#10b981" },
+      "Ticketing & Onthaal": { l1: "Ticketingchef", l2: "Scancoördinator", l3: "Onthaalmedewerker", color1: "#dc2626", color2: "#f59e0b", color3: "#8b5cf6" },
+    };
+
+    const allRoleDefs: any[] = [];
+    let sortIdx2 = 0;
+    for (const [_groupName, rd] of Object.entries(groupRoleDefs)) {
+      allRoleDefs.push({
+        club_id, name: rd.l1, color: rd.color1, level: 1, sort_order: sortIdx2++,
         can_complete_checklist: true, can_report_incidents: true, can_resolve_incidents: true,
         can_complete_closing: true, can_view_team: true,
-      },
-      {
-        club_id, name: "Korpssteward", color: "#f59e0b", level: 2, sort_order: 1,
+      });
+      allRoleDefs.push({
+        club_id, name: rd.l2, color: rd.color2, level: 2, sort_order: sortIdx2++,
         can_complete_checklist: true, can_report_incidents: true, can_resolve_incidents: true,
         can_complete_closing: true, can_view_team: true,
-      },
-      {
-        club_id, name: "Steward", color: "#3b82f6", level: 3, sort_order: 2,
+      });
+      allRoleDefs.push({
+        club_id, name: rd.l3, color: rd.color3, level: 3, sort_order: sortIdx2++,
         can_complete_checklist: true, can_report_incidents: true, can_resolve_incidents: false,
         can_complete_closing: false, can_view_team: false,
-      },
-    ];
+      });
+    }
 
-    const { data: roles } = await supabase.from("safety_roles").insert(roleDefs).select("id, name, level");
+    const { data: roles } = await supabase.from("safety_roles").insert(allRoleDefs).select("id, name, level");
     const roleMap: Record<string, string> = {};
     (roles || []).forEach((r: any) => { roleMap[r.name] = r.id; });
 
-    // Step 9: Assign safety roles to volunteers for this event
-    // First few get Hoofdsteward, next batch Korpssteward, rest Steward
-    const assignedVolunteers = new Set<string>();
+    // Step 9: Assign safety roles per group — first volunteer = chef, next = coördinator, rest = medewerker
     const vsrInserts: any[] = [];
+    const assignedGlobal = new Set<string>();
 
-    // Collect all assigned volunteer IDs
-    for (const taskVols of Object.values(taskSignupMap)) {
-      for (const vid of taskVols) assignedVolunteers.add(vid);
-    }
-    const allAssigned = Array.from(assignedVolunteers);
+    for (const task of insertedTasks) {
+      const taskVols = taskSignupMap[task.id] || [];
+      const rd = groupRoleDefs[task.group];
+      if (!rd || !taskVols.length) continue;
 
-    // 1 Hoofdsteward, 3 Korpsstewards, rest Stewards
-    for (let i = 0; i < allAssigned.length; i++) {
-      let roleName = "Steward";
-      if (i === 0) roleName = "Hoofdsteward";
-      else if (i <= 3) roleName = "Korpssteward";
+      for (let i = 0; i < taskVols.length; i++) {
+        const vid = taskVols[i];
+        if (assignedGlobal.has(vid)) continue; // skip if already assigned a role
+        assignedGlobal.add(vid);
 
-      if (roleMap[roleName]) {
-        vsrInserts.push({
-          event_id: eventId,
-          volunteer_id: allAssigned[i],
-          safety_role_id: roleMap[roleName],
-          assigned_by: user.id,
-        });
+        let roleName = rd.l3; // default: medewerker
+        if (i === 0) roleName = rd.l1; // first = chef
+        else if (i === 1) roleName = rd.l2; // second = coördinator
+
+        if (roleMap[roleName]) {
+          vsrInserts.push({
+            event_id: eventId,
+            volunteer_id: vid,
+            safety_role_id: roleMap[roleName],
+            assigned_by: user.id,
+          });
+        }
       }
     }
 
