@@ -650,9 +650,9 @@ const SafetyDashboard = () => {
         {/* Main content: Control Room + optional Phone Mockup */}
         <div className={`grid gap-6 ${isDemoEvent ? 'grid-cols-1 xl:grid-cols-[1fr_1fr_320px]' : 'grid-cols-1 lg:grid-cols-3'}`}>
           {/* Zone Monitor */}
-          <div ref={zoneRef} className={`${incidentFullscreen ? 'hidden' : zoneFullscreen ? 'col-span-full' : isDemoEvent ? 'xl:col-span-1' : 'lg:col-span-2'} ${zoneFullscreen ? 'bg-background' : ''}`}>
-            <Card className="bg-card border-border">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <div ref={zoneRef} className={`${incidentFullscreen ? 'hidden' : zoneFullscreen ? 'col-span-full' : isDemoEvent ? 'xl:col-span-1' : 'lg:col-span-2'} ${zoneFullscreen ? 'bg-background h-screen flex flex-col' : ''}`}>
+            <Card className={`bg-card border-border ${zoneFullscreen ? 'flex-1 flex flex-col border-0 rounded-none' : ''}`}>
+              <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
                   <Radio className="w-5 h-5 text-primary" /> Sectie Monitor
                 </CardTitle>
@@ -660,8 +660,8 @@ const SafetyDashboard = () => {
                   {zoneFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </Button>
               </CardHeader>
-              <CardContent>
-                <div className={`grid gap-3 ${zoneFullscreen ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'}`}>
+              <CardContent className={zoneFullscreen ? 'flex-1 overflow-auto' : ''}>
+                <div className={`grid gap-3 ${zoneFullscreen ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-fr h-full' : 'grid-cols-2 md:grid-cols-3'}`} style={zoneFullscreen ? { minHeight: 'calc(100vh - 80px)' } : undefined}>
                   {zones.map(zone => {
                     const hasIncident = zoneHasActiveIncident(zone.id);
                     const zoneIncidents = activeIncidents.filter(i => i.zone_id === zone.id);
@@ -673,37 +673,37 @@ const SafetyDashboard = () => {
                         key={zone.id}
                         animate={{ backgroundColor: hasIncident ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.02)' }}
                         transition={{ duration: 0.5 }}
-                        className={`relative rounded-xl border-2 p-4 transition-all ${hasIncident ? 'border-destructive shadow-lg shadow-destructive/10' : 'border-border bg-card'}`}
+                        className={`relative rounded-xl border-2 p-4 transition-all flex flex-col ${hasIncident ? 'border-destructive shadow-lg shadow-destructive/10' : 'border-border bg-card'} ${zoneFullscreen ? 'min-h-0' : ''}`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-heading font-semibold text-foreground text-sm">{zone.name}</span>
+                          <span className={`font-heading font-semibold text-foreground ${zoneFullscreen ? 'text-base lg:text-lg' : 'text-sm'}`}>{zone.name}</span>
                           {hasIncident && (
                             <motion.div
                               animate={{ scale: [1, 1.3, 1] }}
                               transition={{ repeat: Infinity, duration: 1.5 }}
-                              className="w-3 h-3 rounded-full bg-destructive"
+                              className={`rounded-full bg-destructive ${zoneFullscreen ? 'w-4 h-4' : 'w-3 h-3'}`}
                             />
                           )}
-                          {!hasIncident && <div className="w-3 h-3 rounded-full bg-emerald-500" />}
+                          {!hasIncident && <div className={`rounded-full bg-emerald-500 ${zoneFullscreen ? 'w-4 h-4' : 'w-3 h-3'}`} />}
                         </div>
                         {zoneIncidents.length > 0 && (
-                          <Badge variant="destructive" className="text-[10px] mb-1">{zoneIncidents.length} incident{zoneIncidents.length > 1 ? 'en' : ''}</Badge>
+                          <Badge variant="destructive" className={`mb-1 ${zoneFullscreen ? 'text-xs' : 'text-[10px]'}`}>{zoneIncidents.length} incident{zoneIncidents.length > 1 ? 'en' : ''}</Badge>
                         )}
                         {!isLive && pct !== null && (
                           <div className="mt-2">
-                            <Progress value={pct} className="h-1.5" />
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{pct}% klaar</p>
+                            <Progress value={pct} className={zoneFullscreen ? 'h-2.5' : 'h-1.5'} />
+                            <p className={`text-muted-foreground mt-0.5 ${zoneFullscreen ? 'text-xs' : 'text-[10px]'}`}>{pct}% klaar</p>
                           </div>
                         )}
 
                         {/* Always show checklist details when not live */}
                         {!isLive && (
-                          <div className="mt-3 space-y-1">
+                          <div className={`mt-3 space-y-1 flex-1 ${zoneFullscreen ? 'space-y-2' : ''}`}>
                             {checklistItems.filter(ci => ci.zone_id === zone.id).map(ci => (
-                              <div key={ci.id} className="flex items-center gap-2 text-xs">
+                              <div key={ci.id} className={`flex items-center gap-2 ${zoneFullscreen ? 'text-sm' : 'text-xs'}`}>
                                 {isItemCompleted(ci.id)
-                                  ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                  : <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/40 shrink-0" />
+                                  ? <CheckCircle2 className={`text-emerald-500 shrink-0 ${zoneFullscreen ? 'w-4 h-4' : 'w-3.5 h-3.5'}`} />
+                                  : <div className={`rounded-full border border-muted-foreground/40 shrink-0 ${zoneFullscreen ? 'w-4 h-4' : 'w-3.5 h-3.5'}`} />
                                 }
                                 <span className={isItemCompleted(ci.id) ? 'text-muted-foreground line-through' : 'text-foreground'}>{ci.description}</span>
                               </div>
@@ -720,9 +720,9 @@ const SafetyDashboard = () => {
           </div>
 
           {/* Live Incident Sidebar - only show ACTIVE incidents */}
-          <div ref={incidentRef} className={`${zoneFullscreen ? 'hidden' : incidentFullscreen ? 'col-span-full' : 'lg:col-span-1'} ${incidentFullscreen ? 'bg-background' : ''}`}>
-            <Card className="bg-card border-border">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <div ref={incidentRef} className={`${zoneFullscreen ? 'hidden' : incidentFullscreen ? 'col-span-full' : 'lg:col-span-1'} ${incidentFullscreen ? 'bg-background h-screen flex flex-col' : ''}`}>
+            <Card className={`bg-card border-border ${incidentFullscreen ? 'flex-1 flex flex-col border-0 rounded-none' : ''}`}>
+              <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-destructive" /> Live Incidents
                 </CardTitle>
@@ -730,65 +730,69 @@ const SafetyDashboard = () => {
                   {incidentFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-3 max-h-[70vh] overflow-y-auto">
+              <CardContent className={`space-y-3 ${incidentFullscreen ? 'flex-1 flex flex-col overflow-hidden' : 'max-h-[70vh] overflow-y-auto'}`}>
                 {/* Overview map with all active incidents */}
                 {activeIncidents.some(i => i.lat && i.lng) && (
-                  <IncidentMap incidents={activeIncidents} getTypeName={getIncidentTypeName} height="220px" />
-                )}
-                <AnimatePresence>
-                  {activeIncidents.map(inc => (
-                    <motion.div
-                      key={inc.id}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="rounded-xl border p-3 space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${statusColor(inc.status)}`} />
-                          <span className="font-medium text-sm text-foreground">{getIncidentTypeName(inc.incident_type_id)}</span>
-                        </div>
-                        <Badge className={`text-[10px] ${priorityColor(inc.priority)}`}>{inc.priority}</Badge>
-                      </div>
-                      {inc.description && <p className="text-xs text-muted-foreground">{inc.description}</p>}
-
-                      {/* Show photo if present */}
-                      {inc.photo_url && (
-                        <img src={inc.photo_url} alt="Incident foto" className="w-full h-24 object-cover rounded-lg border border-border" />
-                      )}
-
-                      {/* Mini map per incident */}
-                      {inc.lat && inc.lng && (
-                        <IncidentMap incidents={[inc]} getTypeName={getIncidentTypeName} height="100px" singleIncident />
-                      )}
-
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                        <MapPin className="w-3 h-3" /> {getZoneName(inc.zone_id)}
-                        {inc.lat && inc.lng && (
-                          <span className="text-[9px]">({inc.lat.toFixed(4)}, {inc.lng.toFixed(4)})</span>
-                        )}
-                        <Clock className="w-3 h-3 ml-2" /> {new Date(inc.created_at).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                      <div className="flex gap-1.5">
-                        {inc.status === 'nieuw' && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleUpdateIncident(inc.id, 'bezig')}>
-                            In behandeling
-                          </Button>
-                        )}
-                        <Button size="sm" variant="outline" className="h-7 text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10" onClick={() => handleUpdateIncident(inc.id, 'opgelost')}>
-                          ✓ Opgelost
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-                {activeIncidents.length === 0 && (
-                  <div className="text-center py-8">
-                    <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
-                    <p className="text-muted-foreground text-sm">{isLive ? 'Geen actieve incidenten' : 'Wacht op GO LIVE'}</p>
+                  <div className={incidentFullscreen ? 'shrink-0' : ''}>
+                    <IncidentMap incidents={activeIncidents} getTypeName={getIncidentTypeName} height={incidentFullscreen ? 'calc(50vh - 60px)' : '220px'} />
                   </div>
                 )}
+                <div className={incidentFullscreen ? 'flex-1 overflow-y-auto space-y-3' : ''}>
+                  <AnimatePresence>
+                    {activeIncidents.map(inc => {
+                      const incidentType = incidentTypes.find(t => t.id === inc.incident_type_id);
+                      return (
+                        <motion.div
+                          key={inc.id}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className={`rounded-xl border space-y-2 ${incidentFullscreen ? 'p-4' : 'p-3'}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${statusColor(inc.status)}`} />
+                              <span className={`font-medium text-foreground ${incidentFullscreen ? 'text-base' : 'text-sm'}`}>{getIncidentTypeName(inc.incident_type_id)}</span>
+                            </div>
+                            {incidentType && (
+                              <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: incidentType.color }} title={incidentType.label} />
+                            )}
+                          </div>
+                          {inc.description && <p className={`text-muted-foreground ${incidentFullscreen ? 'text-sm' : 'text-xs'}`}>{inc.description}</p>}
+
+                          {/* Show photo if present */}
+                          {inc.photo_url && (
+                            <img src={inc.photo_url} alt="Incident foto" className={`w-full object-cover rounded-lg border border-border ${incidentFullscreen ? 'h-40' : 'h-24'}`} />
+                          )}
+
+                          <div className={`flex items-center gap-2 text-muted-foreground ${incidentFullscreen ? 'text-xs' : 'text-[10px]'}`}>
+                            <MapPin className="w-3 h-3" /> {getZoneName(inc.zone_id)}
+                            {inc.lat && inc.lng && (
+                              <span className="text-[9px]">({inc.lat.toFixed(4)}, {inc.lng.toFixed(4)})</span>
+                            )}
+                            <Clock className="w-3 h-3 ml-2" /> {new Date(inc.created_at).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          <div className="flex gap-1.5">
+                            {inc.status === 'nieuw' && (
+                              <Button size="sm" variant="outline" className={`text-xs ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={() => handleUpdateIncident(inc.id, 'bezig')}>
+                                In behandeling
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" className={`text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={() => handleUpdateIncident(inc.id, 'opgelost')}>
+                              ✓ Opgelost
+                            </Button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                  {activeIncidents.length === 0 && (
+                    <div className="text-center py-8">
+                      <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
+                      <p className="text-muted-foreground text-sm">{isLive ? 'Geen actieve incidenten' : 'Wacht op GO LIVE'}</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
