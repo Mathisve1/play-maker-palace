@@ -1110,22 +1110,7 @@ const SafetyDashboard = () => {
                                   : <div className={`rounded-full border border-muted-foreground/40 shrink-0 ${zoneFullscreen ? 'w-4 h-4' : 'w-3.5 h-3.5'}`} />
                                 }
                                 <span className={isItemCompleted(ci.id) ? 'text-muted-foreground line-through' : 'text-foreground'}>{ci.description}</span>
-
-                  {/* Unzoned incidents warning */}
-                  {unzonedActiveIncidents.length > 0 && (
-                    <motion.div
-                      animate={{ backgroundColor: 'rgba(239, 68, 68, 0.15)' }}
-                      className="rounded-xl border-2 border-destructive p-4 flex flex-col shadow-lg shadow-destructive/10"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-heading font-semibold text-foreground text-sm">📍 Zonder zone</span>
-                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-3 h-3 rounded-full bg-destructive" />
-                      </div>
-                      <Badge variant="destructive" className="text-[10px] mb-1">{unzonedActiveIncidents.length} incident{unzonedActiveIncidents.length > 1 ? 'en' : ''}</Badge>
-                      <p className="text-[10px] text-muted-foreground">Incidenten zonder toegewezen zone</p>
-                    </motion.div>
-                  )}
-                </div>
+                              </div>
                             ))}
                           </div>
                         )}
@@ -1133,6 +1118,19 @@ const SafetyDashboard = () => {
                     );
                   })}
                 </div>
+                {unzonedActiveIncidents.length > 0 && (
+                  <motion.div
+                    animate={{ backgroundColor: 'rgba(239, 68, 68, 0.15)' }}
+                    className="mt-3 rounded-xl border-2 border-destructive p-4 flex flex-col shadow-lg shadow-destructive/10"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-heading font-semibold text-foreground text-sm">📍 Zonder zone</span>
+                      <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-3 h-3 rounded-full bg-destructive" />
+                    </div>
+                    <Badge variant="destructive" className="text-[10px] mb-1">{unzonedActiveIncidents.length} incident{unzonedActiveIncidents.length > 1 ? 'en' : ''}</Badge>
+                    <p className="text-[10px] text-muted-foreground">Incidenten zonder toegewezen zone</p>
+                  </motion.div>
+                )}
                 {zones.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">Geen zones geconfigureerd voor dit evenement.</p>}
               </CardContent>
             </Card>
