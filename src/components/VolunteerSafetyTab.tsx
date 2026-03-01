@@ -152,8 +152,15 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
       const clubIds = [...new Set(eventsData.map(e => e.club_id))];
       const { data: clubs } = await supabase.from('clubs').select('id, name').in('id', clubIds);
       const clubMap = new Map(clubs?.map(c => [c.id, c.name]) || []);
-      setEvents(eventsData.map(e => ({ ...e, club_name: clubMap.get(e.club_id) || '' })));
+      const mappedEvents = eventsData.map(e => ({ ...e, club_name: clubMap.get(e.club_id) || '' }));
+      setEvents(mappedEvents);
       setExpandedEvents(new Set(eventsData.map(e => e.id)));
+
+      // If event is already live when this tab loads, redirect immediately
+      const liveEvent = mappedEvents.find(e => e.is_live);
+      if (liveEvent) {
+        navigate(`/safety/${liveEvent.id}`);
+      }
     }
 
     setItems(filteredItems);
@@ -166,7 +173,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
     setProgress(progressData || []);
 
     setLoading(false);
-  }, [userId]);
+  }, [userId, navigate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
