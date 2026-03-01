@@ -6,13 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, AlertTriangle, CheckCircle2, Radio, Maximize2, Minimize2,
   Phone, ChevronRight, Clock, MapPin, Volume2, VolumeX, RefreshCw,
-  Rocket, Lock,
+  Rocket, Lock, Camera, Image,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import VolunteerPhoneMockup from '@/components/safety/VolunteerPhoneMockup';
 
 // Types
 interface SafetyZone {
@@ -26,6 +27,7 @@ interface SafetyIncident {
   zone_id: string | null; reporter_id: string; description: string | null;
   lat: number | null; lng: number | null; status: string; priority: string;
   created_at: string; updated_at: string; resolved_by: string | null; resolved_at: string | null;
+  photo_url: string | null;
 }
 interface ChecklistItem {
   id: string; description: string; zone_id: string | null; event_id: string;
@@ -60,6 +62,7 @@ const SafetyDashboard = () => {
   const [isStaff, setIsStaff] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [isLive, setIsLive] = useState(false);
+  const [isDemoEvent, setIsDemoEvent] = useState(false);
 
   const [zones, setZones] = useState<SafetyZone[]>([]);
   const [incidentTypes, setIncidentTypes] = useState<SafetyIncidentType[]>([]);
@@ -74,6 +77,17 @@ const SafetyDashboard = () => {
   const [incidentFullscreen, setIncidentFullscreen] = useState(false);
   const zoneRef = useRef<HTMLDivElement>(null);
   const incidentRef = useRef<HTMLDivElement>(null);
+
+  // Steward state
+  const [showIncidentGrid, setShowIncidentGrid] = useState(false);
+  const [selectedIncidentType, setSelectedIncidentType] = useState<SafetyIncidentType | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
+  const [incidentDesc, setIncidentDesc] = useState('');
+  const [reporting, setReporting] = useState(false);
+  const [incidentPhoto, setIncidentPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const flashTimeout = useRef<NodeJS.Timeout>();
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
     if (entering && ref.current) {
@@ -94,15 +108,6 @@ const SafetyDashboard = () => {
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  // Steward state
-  const [showIncidentGrid, setShowIncidentGrid] = useState(false);
-  const [selectedIncidentType, setSelectedIncidentType] = useState<SafetyIncidentType | null>(null);
-  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
-  const [incidentDesc, setIncidentDesc] = useState('');
-  const [reporting, setReporting] = useState(false);
-
-  const flashTimeout = useRef<NodeJS.Timeout>();
-
   // ── Load data ──
   useEffect(() => {
     const init = async () => {
@@ -115,6 +120,7 @@ const SafetyDashboard = () => {
       setClubId(ev.club_id);
       setEventTitle(ev.title);
       setIsLive(ev.is_live ?? false);
+      setIsDemoEvent(ev.title?.includes('Demo') ?? false);
 
       const { data: owned } = await supabase.from('clubs').select('id').eq('id', ev.club_id).eq('owner_id', session.user.id);
       const { data: member } = await (supabase as any).from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
@@ -202,20 +208,48 @@ const SafetyDashboard = () => {
     }
   };
 
-  // ── Steward: report incident (2-click) ──
+  // ── Photo handling ──
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIncidentPhoto(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadPhoto = async (): Promise<string | null> => {
+    if (!incidentPhoto || !userId) return null;
+    const ext = incidentPhoto.name.split('.').pop();
+    const path = `${userId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('incident-photos').upload(path, incidentPhoto);
+    if (error) { console.error('Photo upload failed:', error); return null; }
+    const { data: { publicUrl } } = supabase.storage.from('incident-photos').getPublicUrl(path);
+    return publicUrl;
+  };
+
+  // ── Steward: report incident ──
   const handleReportIncident = async () => {
     if (!selectedIncidentType || !eventId || !clubId || !userId) return;
     setReporting(true);
+
+    // GPS is required
     let lat: number | null = null, lng: number | null = null;
     try {
       const pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
       lat = pos.coords.latitude; lng = pos.coords.longitude;
-    } catch { /* GPS unavailable */ }
+    } catch {
+      toast.error('GPS-locatie is vereist om een incident te melden. Sta locatietoegang toe.');
+      setReporting(false);
+      return;
+    }
+
+    // Optional photo
+    const photo_url = await uploadPhoto();
 
     const { error } = await (supabase as any).from('safety_incidents').insert({
       event_id: eventId, club_id: clubId, incident_type_id: selectedIncidentType.id,
       zone_id: selectedZoneId || null, reporter_id: userId, description: incidentDesc.trim() || null,
-      lat, lng, priority: selectedIncidentType.default_priority, status: 'nieuw',
+      lat, lng, priority: selectedIncidentType.default_priority, status: 'nieuw', photo_url,
     });
     if (error) toast.error(error.message);
     else {
@@ -224,6 +258,8 @@ const SafetyDashboard = () => {
       setSelectedIncidentType(null);
       setSelectedZoneId('');
       setIncidentDesc('');
+      setIncidentPhoto(null);
+      setPhotoPreview(null);
     }
     setReporting(false);
   };
@@ -246,21 +282,19 @@ const SafetyDashboard = () => {
 
   // ── Computed values ──
   const isItemCompleted = (itemId: string) => checklistProgress.some(p => p.checklist_item_id === itemId && p.is_completed);
-  const completedCount = checklistItems.filter(i => isItemCompleted(i.id)).length;
-  const activeIncidents = incidents.filter(i => i.status !== 'opgelost');
+  const activeIncidents = useMemo(() => incidents.filter(i => i.status !== 'opgelost'), [incidents]);
   const highPriorityCount = activeIncidents.filter(i => i.priority === 'high').length;
 
   const getIncidentTypeName = (typeId: string | null) => incidentTypes.find(t => t.id === typeId)?.label || 'Onbekend';
   const getZoneName = (zoneId: string | null) => zones.find(z => z.id === zoneId)?.name || '—';
 
-  const priorityColor = (p: string) => p === 'high' ? 'bg-red-500/20 text-red-400 border-red-500/30' : p === 'medium' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-  const statusColor = (s: string) => s === 'nieuw' ? 'bg-red-500' : s === 'bezig' ? 'bg-amber-500' : 'bg-emerald-500';
+  const priorityColor = (p: string) => p === 'high' ? 'bg-destructive/20 text-destructive border-destructive/30' : p === 'medium' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+  const statusColor = (s: string) => s === 'nieuw' ? 'bg-destructive' : s === 'bezig' ? 'bg-amber-500' : 'bg-emerald-500';
 
-  // Zone checklist progress computed
+  // Zone checklist progress
   const zoneProgress = useMemo(() => {
     const map: Record<string, { total: number; done: number }> = {};
     zones.forEach(z => { map[z.id] = { total: 0, done: 0 }; });
-    // Also track items without zone
     map['__general'] = { total: 0, done: 0 };
     checklistItems.forEach(item => {
       const key = item.zone_id || '__general';
@@ -275,7 +309,6 @@ const SafetyDashboard = () => {
   const totalChecklistItems = checklistItems.length;
   const allChecklistComplete = totalChecklistItems > 0 && totalChecklistDone === totalChecklistItems;
 
-  // Zone has active incidents?
   const zoneHasActiveIncident = useCallback((zoneId: string) => {
     return activeIncidents.some(i => i.zone_id === zoneId);
   }, [activeIncidents]);
@@ -308,7 +341,7 @@ const SafetyDashboard = () => {
           </div>
         </div>
 
-        {/* Floating incident button — same as before */}
+        {/* Floating incident button */}
         <div className="fixed bottom-6 left-0 right-0 px-4 z-50">
           <AnimatePresence mode="wait">
             {!showIncidentGrid && !selectedIncidentType && (
@@ -356,7 +389,7 @@ const SafetyDashboard = () => {
                     <AlertTriangle className="w-5 h-5" style={{ color: selectedIncidentType.color }} />
                     <span className="font-heading font-bold text-foreground">{selectedIncidentType.label}</span>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => { setSelectedIncidentType(null); setShowIncidentGrid(true); }}><ChevronRight className="w-4 h-4 rotate-180" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => { setSelectedIncidentType(null); setShowIncidentGrid(true); setIncidentPhoto(null); setPhotoPreview(null); }}><ChevronRight className="w-4 h-4 rotate-180" /></Button>
                 </div>
                 {zones.length > 0 && (
                   <select value={selectedZoneId} onChange={e => setSelectedZoneId(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm">
@@ -365,6 +398,32 @@ const SafetyDashboard = () => {
                   </select>
                 )}
                 <input type="text" placeholder="Korte beschrijving (optioneel)" value={incidentDesc} onChange={e => setIncidentDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm" />
+
+                {/* GPS indicator */}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-500" /> GPS-locatie wordt automatisch meegestuurd
+                </div>
+
+                {/* Photo upload */}
+                <div>
+                  {photoPreview ? (
+                    <div className="relative">
+                      <img src={photoPreview} alt="Preview" className="w-full h-32 object-cover rounded-xl border border-border" />
+                      <Button
+                        variant="destructive" size="icon"
+                        className="absolute top-1 right-1 w-6 h-6"
+                        onClick={() => { setIncidentPhoto(null); setPhotoPreview(null); }}
+                      >×</Button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors">
+                      <Camera className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Foto toevoegen (optioneel)</span>
+                      <input type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
+                    </label>
+                  )}
+                </div>
+
                 <Button onClick={handleReportIncident} disabled={reporting} className="w-full h-12 rounded-xl bg-destructive text-destructive-foreground font-bold text-base">
                   {reporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Verstuur melding'}
                 </Button>
@@ -387,50 +446,61 @@ const SafetyDashboard = () => {
             <Shield className="w-5 h-5 text-primary" />
             <span className="font-heading font-bold text-foreground truncate">{eventTitle}</span>
           </div>
-          <Badge variant="outline" className="text-xs">{completedCount}/{checklistItems.length}</Badge>
+          <Badge variant="outline" className="text-xs">{totalChecklistDone}/{totalChecklistItems}</Badge>
         </header>
 
         <div className="p-4 pb-32 space-y-6">
-          <div>
-            <h2 className="text-lg font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-primary" /> Checklist
-            </h2>
-            <div className="space-y-2">
-              <AnimatePresence>
-                {checklistItems.map(item => {
-                  const done = isItemCompleted(item.id);
-                  return (
-                    <motion.button
-                      key={item.id}
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -100 }}
-                      onClick={() => handleToggleChecklist(item.id)}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all min-h-[56px] ${done ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800' : 'bg-card border-border hover:border-primary/30'}`}
-                    >
-                      <motion.div
-                        animate={{ scale: done ? 1.2 : 1 }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${done ? 'bg-emerald-500 border-emerald-500' : 'border-muted-foreground/40'}`}
-                      >
-                        {done && <CheckCircle2 className="w-4 h-4 text-white" />}
-                      </motion.div>
-                      <span className={`text-sm font-medium ${done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                        {item.description}
-                      </span>
-                      {item.zone_id && (
-                        <Badge variant="outline" className="ml-auto text-[10px] shrink-0">{getZoneName(item.zone_id)}</Badge>
-                      )}
-                    </motion.button>
-                  );
-                })}
-              </AnimatePresence>
-              {checklistItems.length === 0 && (
-                <p className="text-muted-foreground text-sm text-center py-6">Geen checklist items voor dit evenement.</p>
-              )}
+          {/* Progress */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Voortgang</span>
+              <span className="font-semibold text-foreground">{totalChecklistItems > 0 ? Math.round((totalChecklistDone / totalChecklistItems) * 100) : 0}%</span>
             </div>
+            <Progress value={totalChecklistItems > 0 ? (totalChecklistDone / totalChecklistItems) * 100 : 0} className="h-3" />
           </div>
+
+          {/* Items grouped by zone */}
+          {zones.map(zone => {
+            const items = checklistItems.filter(ci => ci.zone_id === zone.id);
+            if (items.length === 0) return null;
+            const prog = zoneProgress[zone.id];
+            const pct = prog ? Math.round((prog.done / prog.total) * 100) : 0;
+            return (
+              <div key={zone.id}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-heading font-semibold text-foreground flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: zone.color }} />
+                    {zone.name}
+                  </h3>
+                  <span className="text-xs text-muted-foreground">{pct}%</span>
+                </div>
+                <div className="space-y-1.5">
+                  {items.map(item => {
+                    const done = isItemCompleted(item.id);
+                    return (
+                      <motion.button
+                        key={item.id}
+                        layout
+                        onClick={() => handleToggleChecklist(item.id)}
+                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all ${done ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800' : 'bg-card border-border hover:border-primary/30'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${done ? 'bg-emerald-500 border-emerald-500' : 'border-muted-foreground/40'}`}>
+                          {done && <CheckCircle2 className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className={`text-sm ${done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                          {item.description}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {checklistItems.length === 0 && (
+            <p className="text-muted-foreground text-sm text-center py-6">Geen checklist items voor dit evenement.</p>
+          )}
         </div>
       </div>
     );
@@ -447,7 +517,7 @@ const SafetyDashboard = () => {
           {flashRed && (
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 0.15 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-red-600 z-50 pointer-events-none"
+              className="fixed inset-0 bg-destructive z-50 pointer-events-none"
             />
           )}
         </AnimatePresence>
@@ -480,7 +550,7 @@ const SafetyDashboard = () => {
           </div>
         </div>
 
-        {/* PRE-EVENT: Show zone checklist progress + GO LIVE button */}
+        {/* PRE-EVENT: Checklist progress + GO LIVE */}
         {!isLive && (
           <div className="mb-6 space-y-4">
             <Card className="bg-card border-border">
@@ -490,7 +560,7 @@ const SafetyDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Overall progress */}
+                {/* Overall */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Totaal</span>
@@ -499,31 +569,41 @@ const SafetyDashboard = () => {
                   <Progress value={totalChecklistItems > 0 ? (totalChecklistDone / totalChecklistItems) * 100 : 0} className="h-3" />
                 </div>
 
-                {/* Per-zone progress */}
-                <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+                {/* Per-zone with items always visible */}
+                <div className="space-y-4">
                   {zones.map(zone => {
                     const prog = zoneProgress[zone.id];
                     if (!prog || prog.total === 0) return null;
                     const pct = Math.round((prog.done / prog.total) * 100);
+                    const zoneItems = checklistItems.filter(ci => ci.zone_id === zone.id);
                     return (
                       <div key={zone.id} className={`rounded-xl border-2 p-4 transition-all ${pct === 100 ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border bg-card'}`}>
-                        <p className="font-semibold text-sm text-foreground mb-1">{zone.name}</p>
-                        <Progress value={pct} className="h-2 mb-1" />
-                        <p className="text-xs text-muted-foreground">{prog.done}/{prog.total} — {pct}%</p>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-semibold text-sm text-foreground flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: zone.color }} />
+                            {zone.name}
+                          </p>
+                          <span className="text-xs text-muted-foreground font-medium">{prog.done}/{prog.total} — {pct}%</span>
+                        </div>
+                        <Progress value={pct} className="h-2 mb-3" />
+                        {/* Individual items */}
+                        <div className="space-y-1">
+                          {zoneItems.map(ci => (
+                            <div key={ci.id} className="flex items-center gap-2 text-xs py-0.5">
+                              {isItemCompleted(ci.id)
+                                ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                : <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/40 shrink-0" />
+                              }
+                              <span className={isItemCompleted(ci.id) ? 'text-muted-foreground line-through' : 'text-foreground'}>{ci.description}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     );
                   })}
-                  {/* General (no zone) items */}
-                  {zoneProgress['__general'] && zoneProgress['__general'].total > 0 && (
-                    <div className={`rounded-xl border-2 p-4 transition-all ${zoneProgress['__general'].done === zoneProgress['__general'].total ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border bg-card'}`}>
-                      <p className="font-semibold text-sm text-foreground mb-1">Algemeen</p>
-                      <Progress value={(zoneProgress['__general'].done / zoneProgress['__general'].total) * 100} className="h-2 mb-1" />
-                      <p className="text-xs text-muted-foreground">{zoneProgress['__general'].done}/{zoneProgress['__general'].total} — {Math.round((zoneProgress['__general'].done / zoneProgress['__general'].total) * 100)}%</p>
-                    </div>
-                  )}
                 </div>
 
-                {/* GO LIVE button */}
+                {/* GO LIVE */}
                 {allChecklistComplete ? (
                   <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                     <Button onClick={handleGoLive} className="w-full h-14 text-lg font-bold gap-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg">
@@ -540,9 +620,10 @@ const SafetyDashboard = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content: Control Room + optional Phone Mockup */}
+        <div className={`grid gap-6 ${isDemoEvent ? 'grid-cols-1 xl:grid-cols-[1fr_1fr_320px]' : 'grid-cols-1 lg:grid-cols-3'}`}>
           {/* Zone Monitor */}
-          <div ref={zoneRef} className={`${incidentFullscreen ? 'hidden' : zoneFullscreen ? 'lg:col-span-3' : 'lg:col-span-2'} ${zoneFullscreen ? 'bg-background' : ''}`}>
+          <div ref={zoneRef} className={`${incidentFullscreen ? 'hidden' : zoneFullscreen ? 'col-span-full' : isDemoEvent ? 'xl:col-span-1' : 'lg:col-span-2'} ${zoneFullscreen ? 'bg-background' : ''}`}>
             <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
@@ -565,7 +646,7 @@ const SafetyDashboard = () => {
                         key={zone.id}
                         animate={{ backgroundColor: hasIncident ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.02)' }}
                         transition={{ duration: 0.5 }}
-                        className={`relative rounded-xl border-2 p-4 transition-all ${hasIncident ? 'border-red-500 shadow-lg shadow-red-500/10' : 'border-border bg-card'}`}
+                        className={`relative rounded-xl border-2 p-4 transition-all ${hasIncident ? 'border-destructive shadow-lg shadow-destructive/10' : 'border-border bg-card'}`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-heading font-semibold text-foreground text-sm">{zone.name}</span>
@@ -573,7 +654,7 @@ const SafetyDashboard = () => {
                             <motion.div
                               animate={{ scale: [1, 1.3, 1] }}
                               transition={{ repeat: Infinity, duration: 1.5 }}
-                              className="w-3 h-3 rounded-full bg-red-500"
+                              className="w-3 h-3 rounded-full bg-destructive"
                             />
                           )}
                           {!hasIncident && <div className="w-3 h-3 rounded-full bg-emerald-500" />}
@@ -588,8 +669,8 @@ const SafetyDashboard = () => {
                           </div>
                         )}
 
-                        {/* Fullscreen: show checklist details */}
-                        {zoneFullscreen && !isLive && (
+                        {/* Always show checklist details when not live */}
+                        {!isLive && (
                           <div className="mt-3 space-y-1">
                             {checklistItems.filter(ci => ci.zone_id === zone.id).map(ci => (
                               <div key={ci.id} className="flex items-center gap-2 text-xs">
@@ -611,8 +692,8 @@ const SafetyDashboard = () => {
             </Card>
           </div>
 
-          {/* Live Incident Sidebar */}
-          <div ref={incidentRef} className={`${zoneFullscreen ? 'hidden' : incidentFullscreen ? 'lg:col-span-3' : 'lg:col-span-1'} ${incidentFullscreen ? 'bg-background' : ''}`}>
+          {/* Live Incident Sidebar - only show ACTIVE incidents */}
+          <div ref={incidentRef} className={`${zoneFullscreen ? 'hidden' : incidentFullscreen ? 'col-span-full' : 'lg:col-span-1'} ${incidentFullscreen ? 'bg-background' : ''}`}>
             <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
@@ -624,13 +705,13 @@ const SafetyDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-3 max-h-[70vh] overflow-y-auto">
                 <AnimatePresence>
-                  {incidents.map(inc => (
+                  {activeIncidents.map(inc => (
                     <motion.div
                       key={inc.id}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className={`rounded-xl border p-3 space-y-2 ${inc.status === 'opgelost' ? 'opacity-50' : ''}`}
+                      className="rounded-xl border p-3 space-y-2"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -640,34 +721,55 @@ const SafetyDashboard = () => {
                         <Badge className={`text-[10px] ${priorityColor(inc.priority)}`}>{inc.priority}</Badge>
                       </div>
                       {inc.description && <p className="text-xs text-muted-foreground">{inc.description}</p>}
+
+                      {/* Show photo if present */}
+                      {inc.photo_url && (
+                        <img src={inc.photo_url} alt="Incident foto" className="w-full h-24 object-cover rounded-lg border border-border" />
+                      )}
+
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                         <MapPin className="w-3 h-3" /> {getZoneName(inc.zone_id)}
+                        {inc.lat && inc.lng && (
+                          <span className="text-[9px]">({inc.lat.toFixed(4)}, {inc.lng.toFixed(4)})</span>
+                        )}
                         <Clock className="w-3 h-3 ml-2" /> {new Date(inc.created_at).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}
                       </div>
-                      {inc.status !== 'opgelost' && (
-                        <div className="flex gap-1.5">
-                          {inc.status === 'nieuw' && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleUpdateIncident(inc.id, 'bezig')}>
-                              In behandeling
-                            </Button>
-                          )}
-                          <Button size="sm" variant="outline" className="h-7 text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10" onClick={() => handleUpdateIncident(inc.id, 'opgelost')}>
-                            ✓ Opgelost
+                      <div className="flex gap-1.5">
+                        {inc.status === 'nieuw' && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleUpdateIncident(inc.id, 'bezig')}>
+                            In behandeling
                           </Button>
-                        </div>
-                      )}
+                        )}
+                        <Button size="sm" variant="outline" className="h-7 text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10" onClick={() => handleUpdateIncident(inc.id, 'opgelost')}>
+                          ✓ Opgelost
+                        </Button>
+                      </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                {incidents.length === 0 && (
+                {activeIncidents.length === 0 && (
                   <div className="text-center py-8">
                     <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
-                    <p className="text-muted-foreground text-sm">Geen incidenten</p>
+                    <p className="text-muted-foreground text-sm">{isLive ? 'Geen actieve incidenten' : 'Wacht op GO LIVE'}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
+
+          {/* Phone Mockup (demo only) */}
+          {isDemoEvent && !zoneFullscreen && !incidentFullscreen && (
+            <div className="hidden xl:block">
+              <VolunteerPhoneMockup
+                zones={zones}
+                incidentTypes={incidentTypes}
+                checklistItems={checklistItems}
+                checklistProgress={checklistProgress}
+                isLive={isLive}
+                eventTitle={eventTitle}
+              />
+            </div>
+          )}
         </div>
       </div>
     </ClubPageLayout>
