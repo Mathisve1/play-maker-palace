@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
-  HelpCircle, Building2,
+  HelpCircle, Building2, Shield,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -13,7 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
-export type VolunteerTab = 'dashboard' | 'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner';
+export type VolunteerTab = 'dashboard' | 'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner' | 'safety';
 
 interface VolunteerSidebarProps {
   activeTab: VolunteerTab;
@@ -29,6 +29,7 @@ interface VolunteerSidebarProps {
     contracts?: number;
     tickets?: number;
     loyalty?: number;
+    safety?: number;
   };
 }
 
@@ -45,6 +46,7 @@ const labels: Record<Language, Record<string, string>> = {
     tickets: 'Tickets',
     academy: 'Academy',
     loyalty: 'Loyaliteit',
+    safety: 'Safety',
     settings: 'Instellingen',
     help: 'Hulp nodig?',
     logout: 'Uitloggen',
@@ -64,6 +66,7 @@ const labels: Record<Language, Record<string, string>> = {
     tickets: 'Tickets',
     academy: 'Académie',
     loyalty: 'Fidélité',
+    safety: 'Sécurité',
     settings: 'Paramètres',
     help: 'Besoin d\'aide?',
     logout: 'Déconnexion',
@@ -83,6 +86,7 @@ const labels: Record<Language, Record<string, string>> = {
     tickets: 'Tickets',
     academy: 'Academy',
     loyalty: 'Loyalty',
+    safety: 'Safety',
     settings: 'Settings',
     help: 'Need help?',
     logout: 'Log out',
@@ -242,6 +246,13 @@ const VolunteerSidebar = ({
                 <SidebarMenuButton isActive={activeTab === 'partner'} onClick={() => handleNav('partner')} className="min-h-[48px]">
                   <Building2 className="w-5 h-5" />
                   <span>{language === 'nl' ? 'Partner' : language === 'fr' ? 'Partenaire' : 'Partner'}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'safety'} onClick={() => handleNav('safety')} className="min-h-[48px]">
+                  <Shield className="w-5 h-5" />
+                  <span>{l.safety}</span>
+                  <Badge count={counts.safety} />
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
