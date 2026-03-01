@@ -207,6 +207,12 @@ const SafetyDashboard = () => {
             setIsLive(payload.new.is_live);
           }
         })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
+        () => {
+          // Event was deleted (e.g. simulation restart) — navigate volunteer away
+          toast.info('Event is beëindigd of herstart.');
+          navigate('/volunteer');
+        })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [eventId, audioEnabled]);
