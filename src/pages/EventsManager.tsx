@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
-  PauseCircle, PlayCircle, Shield, Radio,
+  PauseCircle, PlayCircle, Shield, Radio, Play,
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -66,6 +66,8 @@ const EventsManager = () => {
   const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null);
   const [deletingTask, setDeletingTask] = useState<string | null>(null);
   const [togglingHold, setTogglingHold] = useState<string | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
 
   // Adding task to group
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
@@ -260,6 +262,31 @@ const EventsManager = () => {
   const pastEvents = events.filter(e => e.event_date && new Date(e.event_date) < now);
   const upcomingLooseTasks = looseTasks.filter(t => !t.task_date || new Date(t.task_date) >= now);
   const pastLooseTasks = looseTasks.filter(t => t.task_date && new Date(t.task_date) < now);
+  const hasDemoEvent = events.some(e => e.title === 'Demo Voetbalwedstrijd 2026');
+
+  const handleStartPlanningDemo = async () => {
+    if (!clubId) return;
+    setDemoLoading(true);
+    try {
+      const res = await supabase.functions.invoke('planning-demo', { body: { club_id: clubId, action: 'create' } });
+      if (res.error) throw new Error(res.error.message);
+      toast.success(nl ? 'Demo aangemaakt! Pagina wordt herladen...' : 'Demo created! Reloading...');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err: any) { toast.error(err.message); }
+    setDemoLoading(false);
+  };
+
+  const handleDeletePlanningDemo = async () => {
+    if (!clubId) return;
+    setDemoDeleteLoading(true);
+    try {
+      const res = await supabase.functions.invoke('planning-demo', { body: { club_id: clubId, action: 'delete' } });
+      if (res.error) throw new Error(res.error.message);
+      toast.success(nl ? 'Demo data verwijderd!' : 'Demo data deleted!');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err: any) { toast.error(err.message); }
+    setDemoDeleteLoading(false);
+  };
 
   const handleDeleteLooseTask = async (taskId: string) => {
     setDeletingTask(taskId);
@@ -306,7 +333,20 @@ const EventsManager = () => {
               {events.length} {nl ? 'evenementen' : 'events'} · {looseTasks.length} {nl ? 'losse taken' : 'loose tasks'}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {hasDemoEvent ? (
+              <button onClick={handleDeletePlanningDemo} disabled={demoDeleteLoading}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50">
+                {demoDeleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {nl ? 'Demo wissen' : 'Delete demo'}
+              </button>
+            ) : (
+              <button onClick={handleStartPlanningDemo} disabled={demoLoading}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                {demoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                {nl ? 'Start demo' : 'Start demo'}
+              </button>
+            )}
             <button onClick={() => { setShowCreateEvent(true); setShowCreateTask(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
               <CalendarDays className="w-4 h-4" /> {nl ? 'Nieuw evenement' : 'New event'}
             </button>
