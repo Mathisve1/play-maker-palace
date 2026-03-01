@@ -153,6 +153,24 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Realtime: listen for is_live changes on events
+  useEffect(() => {
+    if (events.length === 0) return;
+    const eventIds = events.map(e => e.id);
+    const channels = eventIds.map(eid =>
+      supabase
+        .channel(`volunteer-safety-event-${eid}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eid}` },
+          (payload: any) => {
+            if (payload.new.is_live !== undefined) {
+              setEvents(prev => prev.map(e => e.id === eid ? { ...e, is_live: payload.new.is_live } : e));
+            }
+          })
+        .subscribe()
+    );
+    return () => { channels.forEach(ch => supabase.removeChannel(ch)); };
+  }, [events.map(e => e.id).join(',')]);
+
   // Report pending count
   useEffect(() => {
     if (!onPendingCountChange) return;
