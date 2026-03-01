@@ -3,7 +3,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ClipboardList, Users, Zap, Heart } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import PublicPageLayout from '@/components/PublicPageLayout';
 import Footer from '@/components/Footer';
 import Logo from '@/components/Logo';
 import { AppStoreButtons, InstallInstructionsDialog } from '@/components/PWAInstallButtons';
@@ -25,11 +25,10 @@ const ClubsLanding = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PublicPageLayout>
 
       {/* Hero */}
-      <section className="pt-24 pb-16 px-4 relative overflow-hidden">
+      <section className="pb-16 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-accent/5" />
         <div className="container mx-auto relative">
           <motion.div className="max-w-2xl mx-auto text-center" initial="hidden" animate="visible">
@@ -111,7 +110,7 @@ const ClubsLanding = () => {
         onClose={() => setInstallPlatform(null)}
         platform={installPlatform || 'ios'}
       />
-    </div>
+    </PublicPageLayout>
   );
 };
 

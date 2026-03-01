@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import Logo from '@/components/Logo';
-import Navbar from '@/components/Navbar';
+import PublicPageLayout from '@/components/PublicPageLayout';
 import Footer from '@/components/Footer';
 
 interface ClubWithStats {
@@ -143,11 +143,10 @@ const Community = () => {
   const otherClubs = filtered.filter(c => !c.is_following);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PublicPageLayout>
       
       {/* Hero Section */}
-      <section className="relative pt-20 pb-12 overflow-hidden">
+      <section className="relative pb-12 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5" />
         <div className="absolute top-20 right-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-10 w-60 h-60 bg-secondary/10 rounded-full blur-3xl" />
@@ -266,7 +265,7 @@ const Community = () => {
       </section>
 
       <Footer />
-    </div>
+    </PublicPageLayout>
   );
 };
 
