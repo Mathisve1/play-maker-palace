@@ -1906,6 +1906,59 @@ export type Database = {
           },
         ]
       }
+      safety_roles: {
+        Row: {
+          can_complete_checklist: boolean
+          can_complete_closing: boolean
+          can_report_incidents: boolean
+          can_resolve_incidents: boolean
+          can_view_team: boolean
+          club_id: string
+          color: string
+          created_at: string
+          id: string
+          level: number
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          can_complete_checklist?: boolean
+          can_complete_closing?: boolean
+          can_report_incidents?: boolean
+          can_resolve_incidents?: boolean
+          can_view_team?: boolean
+          club_id: string
+          color?: string
+          created_at?: string
+          id?: string
+          level?: number
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          can_complete_checklist?: boolean
+          can_complete_closing?: boolean
+          can_report_incidents?: boolean
+          can_resolve_incidents?: boolean
+          can_view_team?: boolean
+          club_id?: string
+          color?: string
+          created_at?: string
+          id?: string
+          level?: number
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_roles_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safety_zones: {
         Row: {
           checklist_active: boolean
@@ -2750,6 +2803,48 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      volunteer_safety_roles: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          event_id: string
+          id: string
+          safety_role_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          safety_role_id: string
+          volunteer_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          safety_role_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_safety_roles_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_safety_roles_safety_role_id_fkey"
+            columns: ["safety_role_id"]
+            isOneToOne: false
+            referencedRelation: "safety_roles"
             referencedColumns: ["id"]
           },
         ]

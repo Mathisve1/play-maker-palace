@@ -8,7 +8,7 @@ import {
   Shield, AlertTriangle, CheckCircle2, Radio, Maximize2, Minimize2,
   Phone, ChevronRight, Clock, MapPin, Volume2, VolumeX, RefreshCw,
   Rocket, Lock, Camera, Image, RotateCcw, Trash2, Play, ToggleLeft, ToggleRight,
-  XCircle, Heart, PartyPopper, FileDown, Settings,
+  XCircle, Heart, PartyPopper, FileDown, Settings, Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -125,6 +125,9 @@ const SafetyDashboard = () => {
   const [pendingIncidentId, setPendingIncidentId] = useState<string | null>(null);
   const [step2Mode, setStep2Mode] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [myRole, setMyRole] = useState<{ can_complete_checklist: boolean; can_report_incidents: boolean; can_resolve_incidents: boolean; can_complete_closing: boolean; can_view_team: boolean; level: number; name: string; color: string } | null>(null);
+  const [teamIncidents, setTeamIncidents] = useState<SafetyIncident[]>([]);
+  const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; avatar_url: string | null; roleName: string }[]>([]);
   const flashTimeout = useRef<NodeJS.Timeout>();
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
@@ -231,6 +234,46 @@ const SafetyDashboard = () => {
         ]);
         setTaskZones(tzRes.data || []);
         setVolunteerZoneAssignments(tzaRes.data || []);
+      }
+
+      // Fetch volunteer's safety role for this event
+      if (!staff) {
+        const { data: vsrData } = await (supabase as any).from('volunteer_safety_roles')
+          .select('safety_role_id').eq('event_id', eventId).eq('volunteer_id', session.user.id).maybeSingle();
+        if (vsrData?.safety_role_id) {
+          const { data: roleData } = await (supabase as any).from('safety_roles')
+            .select('*').eq('id', vsrData.safety_role_id).maybeSingle();
+          if (roleData) {
+            setMyRole(roleData);
+            // If can_view_team, fetch team members (lower level, same event) and their incidents
+            if (roleData.can_view_team) {
+              const { data: allVsr } = await (supabase as any).from('volunteer_safety_roles')
+                .select('volunteer_id, safety_role_id').eq('event_id', eventId);
+              if (allVsr) {
+                const { data: allRoles } = await (supabase as any).from('safety_roles')
+                  .select('id, level, name, color').eq('club_id', ev.club_id);
+                const roleMap = new Map((allRoles || []).map((r: any) => [r.id, r as { id: string; level: number; name: string; color: string }]));
+                const teamVols = allVsr.filter((v: any) => {
+                  if (v.volunteer_id === session.user.id) return false;
+                  const vRole = roleMap.get(v.safety_role_id) as { id: string; level: number; name: string; color: string } | undefined;
+                  return vRole && vRole.level > roleData.level;
+                });
+                if (teamVols.length > 0) {
+                  const teamIds = teamVols.map((v: any) => v.volunteer_id);
+                  const { data: teamProfiles } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', teamIds);
+                  setTeamMembers((teamProfiles || []).map((p: any) => ({
+                    id: p.id, name: p.full_name || 'Onbekend', avatar_url: p.avatar_url,
+                    roleName: (roleMap.get(teamVols.find((v: any) => v.volunteer_id === p.id)?.safety_role_id) as any)?.name || '',
+                  })));
+                  // Fetch incidents reported by team members
+                  const { data: tIncidents } = await (supabase as any).from('safety_incidents')
+                    .select('*').eq('event_id', eventId).in('reporter_id', teamIds).order('created_at', { ascending: false });
+                  setTeamIncidents(tIncidents || []);
+                }
+              }
+            }
+          }
+        }
       }
 
       setLoading(false);
@@ -771,14 +814,66 @@ const SafetyDashboard = () => {
         </header>
 
         <div className="p-4 pb-32 space-y-4">
+          {myRole && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card">
+              <div className="w-3 h-3 rounded-full shrink-0" style={{ background: myRole.color }} />
+              <span className="text-sm font-medium text-foreground">{myRole.name}</span>
+              <Badge variant="outline" className="text-[10px] ml-auto">Niv. {myRole.level}</Badge>
+            </div>
+          )}
+
           <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 text-center">
             <Lock className="w-6 h-6 text-destructive mx-auto mb-2" />
-            <p className="text-sm font-semibold text-foreground">Event is live — Meld incidenten hieronder</p>
-            <p className="text-xs text-muted-foreground mt-1">Andere functies zijn vergrendeld tijdens het evenement.</p>
+            <p className="text-sm font-semibold text-foreground">Event is live{myRole && !myRole.can_report_incidents ? '' : ' — Meld incidenten hieronder'}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {myRole && !myRole.can_report_incidents ? 'Je hebt geen rechten om incidenten te melden.' : 'Andere functies zijn vergrendeld tijdens het evenement.'}
+            </p>
           </div>
+
+          {/* Team overview for higher-ranked volunteers */}
+          {myRole?.can_view_team && teamMembers.length > 0 && (
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <div className="px-4 py-3 border-b border-border bg-muted/30">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Users className="w-4 h-4" /> Mijn Team ({teamMembers.length})
+                </h3>
+              </div>
+              <div className="p-3 space-y-3">
+                {teamMembers.map(member => {
+                  const memberIncidents = teamIncidents.filter(i => i.reporter_id === member.id);
+                  return (
+                    <div key={member.id} className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                          {member.avatar_url ? <img src={member.avatar_url} className="w-7 h-7 rounded-full object-cover" /> : member.name[0]?.toUpperCase()}
+                        </div>
+                        <span className="text-sm font-medium text-foreground flex-1">{member.name}</span>
+                        <Badge variant="outline" className="text-[10px]">{member.roleName}</Badge>
+                      </div>
+                      {memberIncidents.length > 0 ? (
+                        <div className="pl-9 space-y-1">
+                          {memberIncidents.slice(0, 3).map(inc => (
+                            <div key={inc.id} className="flex items-center gap-2 text-xs">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor(inc.status)}`} />
+                              <span className="text-foreground">{getIncidentTypeName(inc.incident_type_id)}</span>
+                              <span className="text-muted-foreground">· {getZoneName(inc.zone_id)}</span>
+                              <span className="text-muted-foreground ml-auto">{new Date(inc.created_at).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="pl-9 text-[11px] text-muted-foreground">Geen meldingen</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Floating incident button — TWO-STEP */}
+        {/* Floating incident button — TWO-STEP (only if role allows or no role assigned) */}
+        {(!myRole || myRole.can_report_incidents) && (
         <div className="fixed bottom-6 left-0 right-0 px-4 z-50">
           <AnimatePresence mode="wait">
             {!showIncidentGrid && !step2Mode && (
