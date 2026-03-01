@@ -1,94 +1,58 @@
-# Rapportering Dashboard - Uitbreiding Plan
 
-## Huidige staat
 
-Het dashboard heeft al: KPI-kaarten, filters (datum/evenement/vrijwilliger/locatie/vergoedingstype/status), tabs (Overzicht/Vrijwilligers/Taken/Evenementen/AI), CSV-export, en een AI assistent.
+# Test Scenario: Safety & Security Simulatie
 
-## Nieuwe features toe te voegen
+## Overzicht
+Een backend functie (`safety-demo`) die een compleet test-scenario opzet en vervolgens over ~5 minuten realistische incidenten simuleert. Je opent de Control Room en ziet live incidenten binnenkomen met flash-red animaties en alarmen.
 
-### 1. Financieel tab (nieuw)
+## Wat wordt aangemaakt
 
-- **Openstaande vs betaalde betalingen**: tijdlijn
-- **Kostenverdeling per evenement**: hoeveel kost elk evenement in totaal
-- **Budget prognose**: op basis van gemiddelde maandelijkse uitgaven, projectie voor komende maanden
-- **Compliance overzicht**: hoeveel vrijwilligers zitten dicht bij het wettelijk jaarmaximum (3233.91 EUR)
+### Stap 1: Seed Data (direct bij start)
+- **Test Event**: "Demo Veiligheidsdag 2026" gekoppeld aan je club
+- **6 Zones**: Hoofdtribune, Bezoekerstribune, Parking, VIP-lounge, Speelveldomgeving, Ingang & Fouillering
+- **6 Incident Types**: Medisch, Brand, Agressie, Diefstal, Evacuatie, Verdacht pakket
+- **8 Checklist Items**: zoals "Nooduitgangen gecontroleerd", "AED-locaties gemarkeerd", "Communicatiekanalen getest"
 
-### 2. Partners tab (nieuw)
+### Stap 2: Incident Simulatie (~5 minuten, 10-12 incidenten)
+De functie plant incidenten in met oplopende timestamps die via `pg_sleep` of scheduling in volgorde worden ge-insert:
 
-- **Partner medewerkers ingezet**: hoeveel externe partners leveren medewerkers, hoeveel per partner
-- **Partner vs eigen vrijwilligers**: vergelijking inzet eigen vrijwilligers vs partner medewerkers
-- **Account registratie rate**: hoeveel partner medewerkers hebben al een account aangemaakt
-- **Partner bezettingsgraad**: hoe goed vullen partners hun toegewezen spots
-
-### 3. Contracten en Compliance tab (nieuw)
-
-- **Ondertekende vs openstaande contracten**: pie chart
-- **Gemiddelde doorlooptijd ondertekening**: hoe snel tekenen vrijwilligers hun contract
-- **Compliance declaraties**: maandelijkse declaratiestatus per vrijwilliger
-- **Vrijwilligers nabij jaargrens**: lijst van vrijwilligers die >80% van het wettelijk maximum bereikt hebben
-
-### 4. Uitbreiding bestaande tabs
-
-- **Overzicht**: heatmap van drukste dagen/maanden, dag-van-de-week analyse (wanneer worden de meeste taken ingepland)
-- **Vrijwilligers**: betrouwbaarheidsscore (check-ins / toewijzingen), gemiddeld verdiend per taak, loyaliteitspunten stand
-- **Taken**: uur-bevestigingen status (pending/approved), gemiddelde werkuren per taak
-- **Evenementen**: vergelijking tussen evenementen (year-over-year als data beschikbaar)
-
-### 5. Extra KPI-kaarten
-
-- Openstaande betalingen
-- Gemiddelde opkomst per vrijwilliger
-- Contracten ondertekend %
-- Partner medewerkers actief
-
-### 6. Extra filters
-
-- Filter op partner (eigen vs extern of specifieke partner)
-- Filter op betalingsstatus (betaald/pending/failed)
-- Filter op contractstatus
-
-### 7. Verbeterde AI context
-
-- Partner data, contract data, compliance data, en uur-bevestigingen toevoegen aan de data summary die naar de AI wordt gestuurd
-- Extra preset-vragen toevoegen over financien, partners en compliance
-
-### 8. PDF export
-
-- Naast CSV ook een samenvattend PDF-rapport kunnen genereren met de huidige KPI's en grafieken (via jsPDF dat al in het project zit)
-
----
+| Minuut | Incident | Zone | Prioriteit |
+|--------|----------|------|------------|
+| 0:00 | Start - seed data klaar | - | - |
+| 0:30 | Medisch: "Bezoeker flauwgevallen" | Hoofdtribune | medium |
+| 1:00 | Diefstal: "Gestolen rugzak gemeld" | Parking | low |
+| 1:30 | Agressie: "Vechtpartij bij ingang" | Ingang & Fouillering | high |
+| 2:00 | Medisch: "Snijwond bij steward" | Speelveldomgeving | medium |
+| 2:30 | Verdacht pakket: "Onbeheerde tas" | VIP-lounge | high |
+| 3:00 | Brand: "Rookontwikkeling foodtruck" | Parking | high |
+| 3:30 | Agressie: "Verbale escalatie" | Bezoekerstribune | medium |
+| 4:00 | Medisch: "Allergische reactie" | VIP-lounge | high |
+| 4:30 | Evacuatie: "Gedeeltelijke evacuatie zone" | Bezoekerstribune | high |
+| 5:00 | Diefstal: "Poging tot zakkenrollerij" | Hoofdtribune | low |
 
 ## Technische aanpak
 
-### Data loading uitbreiden
+### Edge Function: `safety-demo`
+- **POST** `/safety-demo` met `club_id` in de body
+- Maakt event + zones + incident types + checklist items aan
+- Start een loop die elke ~30 seconden een incident insert
+- Gebruikt `Deno.sleep()` (niet `pg_sleep`) voor de timing tussen inserts
+- Retourneert direct de `event_id` zodat de frontend kan navigeren naar `/safety/{eventId}`
 
-Nieuwe queries toevoegen in de `load` functie:
+### Frontend: "Start Demo" knop
+- Toevoegen aan de Safety Overview pagina
+- Knop roept de edge function aan
+- Na response: automatisch navigeren naar de Control Room van het demo-event
+- Realtime subscriptions pikken de incidenten automatisch op
 
-- `signature_requests` - voor contractstatus
-- `compliance_declarations` - voor compliance overzicht
-- `partner_task_assignments` + `partner_members` + `external_partners` - voor partner rapportage
-- `sepa_batches` - voor SEPA batch overzicht (al deels geladen via items)
+### Opruiming
+- Een "Verwijder Demo" knop die het demo-event en alle gekoppelde data opruimt via cascade of manuele deletes
 
-### Nieuwe computed data (useMemo)
+## Flow voor de gebruiker
+1. Ga naar `/safety`
+2. Klik "Start Demo Scenario"
+3. Je wordt doorgestuurd naar de Control Room
+4. Gedurende 5 minuten verschijnen er live incidenten met visuele en audio-alerts
+5. Je kunt incidenten in behandeling nemen en oplossen
+6. Na afloop kun je het demo-event verwijderen
 
-- `financialReport`: Stripe fees, netto/bruto, maandelijkse prognose
-- `partnerReport`: per-partner inzet, account status
-- `complianceReport`: per-vrijwilliger compliance status, nabij-grens lijst
-- `contractReport`: ondertekend/pending/niet-verzonden verdeling
-- `dayOfWeekChart`: taken per dag van de week
-- `hourConfirmationStats`: goedgekeurd/pending uren
-
-### Nieuwe tabs structuur
-
-Tabs worden: Overzicht | Vrijwilligers | Taken | Evenementen | **Financieel** | **Partners** | **Compliance** | AI Assistent
-
-De TabsList wordt scrollbaar gemaakt voor mobiel.
-
-### Bestanden die gewijzigd worden
-
-- `src/pages/ReportingDashboard.tsx` - hoofdbestand, alle uitbreidingen
-- `supabase/functions/reporting-ai/index.ts` - uitgebreidere data summary
-
-### Geen database wijzigingen nodig
-
-Alle data is al beschikbaar in bestaande tabellen.
