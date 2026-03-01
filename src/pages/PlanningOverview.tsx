@@ -152,10 +152,11 @@ const PlanningOverview = () => {
     return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
   }
 
-  const TaskRow = ({ task }: { task: TaskWithZones }) => {
+  const TaskRow = ({ task, isFirst }: { task: TaskWithZones; isFirst?: boolean }) => {
     const hasZones = task.zone_count > 0;
     return (
       <button
+        data-tour={isFirst ? 'planning-task-first' : undefined}
         onClick={() => hasZones ? navigate(`/planning/${task.id}`) : null}
         disabled={!hasZones}
         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${hasZones ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
@@ -264,8 +265,8 @@ const PlanningOverview = () => {
                 {eventTasks.length === 0 && (
                   <p className="text-xs text-muted-foreground text-center py-4">{nl ? 'Geen taken' : 'No tasks'}</p>
                 )}
-                {eventTasks.map(task => (
-                  <TaskRow key={task.id} task={task} />
+                {eventTasks.map((task, ti) => (
+                  <TaskRow key={task.id} task={task} isFirst={ti === 0 && task.zone_count > 0} />
                 ))}
               </div>
             </div>
