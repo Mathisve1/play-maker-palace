@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import PublicPageLayout from '@/components/PublicPageLayout';
+import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 interface ClubDetail {
@@ -135,21 +135,23 @@ const CommunityClubDetail = () => {
 
   if (loading || !club) {
     return (
-      <PublicPageLayout>
-        <div className="container mx-auto px-4">
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-20">
           <div className="h-48 rounded-2xl bg-muted animate-pulse mb-6" />
           <div className="h-8 w-48 bg-muted animate-pulse rounded mb-4" />
           <div className="h-4 w-96 bg-muted animate-pulse rounded" />
         </div>
-      </PublicPageLayout>
+      </div>
     );
   }
 
   return (
-    <PublicPageLayout>
+    <div className="min-h-screen bg-background">
+      <Navbar />
 
       {/* Hero */}
-      <section className="relative">
+      <section className="relative pt-14">
         <div className="h-48 md:h-56 bg-gradient-to-br from-secondary/30 via-primary/15 to-accent/10 relative">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,hsl(var(--secondary)/0.15),transparent_70%)]" />
         </div>
@@ -362,7 +364,7 @@ const CommunityClubDetail = () => {
       </section>
 
       <Footer />
-    </PublicPageLayout>
+    </div>
   );
 };
 
