@@ -69,6 +69,8 @@ const SafetyDashboard = () => {
   const [eventTitle, setEventTitle] = useState('');
   const [isLive, setIsLive] = useState(false);
   const [isDemoEvent, setIsDemoEvent] = useState(false);
+  const [clubName, setClubName] = useState('');
+  const [clubLogoUrl, setClubLogoUrl] = useState<string | null>(null);
 
   const [zones, setZones] = useState<SafetyZone[]>([]);
   const [incidentTypes, setIncidentTypes] = useState<SafetyIncidentType[]>([]);
@@ -135,6 +137,13 @@ const SafetyDashboard = () => {
       setIsLive(ev.is_live ?? false);
       if (ev.status === 'closed') setEventClosed(true);
       setIsDemoEvent(ev.title?.includes('SIMULATIE') || ev.title?.includes('Harelbeke') || ev.title?.includes('Demo') || false);
+
+      // Fetch club info for thank-you screen
+      const { data: clubData } = await supabase.from('clubs').select('name, logo_url').eq('id', ev.club_id).single();
+      if (clubData) {
+        setClubName(clubData.name);
+        setClubLogoUrl(clubData.logo_url);
+      }
 
       const { data: owned } = await supabase.from('clubs').select('id').eq('id', ev.club_id).eq('owner_id', session.user.id);
       const { data: member } = await (supabase as any).from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
@@ -554,12 +563,7 @@ const SafetyDashboard = () => {
     });
   }, [eventClosed, userId, eventId]);
 
-  useEffect(() => {
-    if (!isStaff && eventClosed && !hasClosingTasks) {
-      const timer = setTimeout(() => navigate('/volunteer'), 8000);
-      return () => clearTimeout(timer);
-    }
-  }, [isStaff, eventClosed, hasClosingTasks, navigate]);
+  // No more auto-redirect — volunteer clicks OK to go back
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -577,17 +581,39 @@ const SafetyDashboard = () => {
           transition={{ type: 'spring', duration: 0.6 }}
           className="max-w-md mx-auto space-y-6 pt-8"
         >
-          <div className="text-center">
+          <div className="text-center space-y-4">
+            {/* Club logo */}
+            {clubLogoUrl && (
+              <motion.img
+                src={clubLogoUrl}
+                alt={clubName}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.1, type: 'spring' }}
+                className="w-20 h-20 rounded-2xl object-contain mx-auto border border-border shadow-md bg-card"
+              />
+            )}
+
             <motion.div
               initial={{ y: -20 }}
               animate={{ y: 0 }}
               transition={{ delay: 0.2, type: 'spring' }}
             >
-              <PartyPopper className="w-16 h-16 mx-auto text-primary mb-2" />
+              <PartyPopper className="w-12 h-12 mx-auto text-primary mb-1" />
             </motion.div>
+
             <h1 className="text-3xl font-heading font-bold text-foreground">Bedankt!</h1>
-            <p className="text-muted-foreground text-lg mt-2">
+
+            {clubName && (
+              <p className="text-lg font-semibold text-foreground">{clubName}</p>
+            )}
+
+            <p className="text-muted-foreground text-base mt-1">
               Het evenement <span className="font-semibold text-foreground">{eventTitle}</span> is afgelopen.
+            </p>
+
+            <p className="text-muted-foreground text-sm">
+              Hartelijk dank voor je geweldige inzet als vrijwilliger. Jouw hulp maakt het verschil! 💪
             </p>
           </div>
 
@@ -600,9 +626,6 @@ const SafetyDashboard = () => {
             />
           )}
 
-          <p className="text-muted-foreground text-sm text-center">
-            Bedankt voor je inzet als vrijwilliger!
-          </p>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -612,7 +635,7 @@ const SafetyDashboard = () => {
               onClick={() => navigate('/volunteer')}
               className="w-full h-12 rounded-xl text-base font-semibold gap-2"
             >
-              <Heart className="w-5 h-5" /> Terug naar dashboard
+              <Heart className="w-5 h-5" /> Oké, terug naar dashboard
             </Button>
           </motion.div>
         </motion.div>
