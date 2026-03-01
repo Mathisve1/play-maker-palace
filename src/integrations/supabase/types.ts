@@ -423,6 +423,152 @@ export type Database = {
           },
         ]
       }
+      closing_tasks: {
+        Row: {
+          assigned_volunteer_id: string | null
+          club_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string
+          event_id: string
+          id: string
+          note: string | null
+          photo_url: string | null
+          requires_note: boolean
+          requires_photo: boolean
+          sort_order: number
+          status: string
+          template_item_id: string | null
+        }
+        Insert: {
+          assigned_volunteer_id?: string | null
+          club_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description: string
+          event_id: string
+          id?: string
+          note?: string | null
+          photo_url?: string | null
+          requires_note?: boolean
+          requires_photo?: boolean
+          sort_order?: number
+          status?: string
+          template_item_id?: string | null
+        }
+        Update: {
+          assigned_volunteer_id?: string | null
+          club_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string
+          event_id?: string
+          id?: string
+          note?: string | null
+          photo_url?: string | null
+          requires_note?: boolean
+          requires_photo?: boolean
+          sort_order?: number
+          status?: string
+          template_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closing_tasks_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closing_tasks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closing_tasks_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "closing_template_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closing_template_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          requires_note: boolean
+          requires_photo: boolean
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          requires_note?: boolean
+          requires_photo?: boolean
+          sort_order?: number
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          requires_note?: boolean
+          requires_photo?: boolean
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closing_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "closing_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closing_templates: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closing_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_follows: {
         Row: {
           club_id: string
@@ -735,6 +881,7 @@ export type Database = {
       events: {
         Row: {
           certificate_design_id: string | null
+          closing_template_id: string | null
           club_id: string
           created_at: string
           description: string | null
@@ -751,6 +898,7 @@ export type Database = {
         }
         Insert: {
           certificate_design_id?: string | null
+          closing_template_id?: string | null
           club_id: string
           created_at?: string
           description?: string | null
@@ -767,6 +915,7 @@ export type Database = {
         }
         Update: {
           certificate_design_id?: string | null
+          closing_template_id?: string | null
           club_id?: string
           created_at?: string
           description?: string | null
@@ -787,6 +936,13 @@ export type Database = {
             columns: ["certificate_design_id"]
             isOneToOne: false
             referencedRelation: "certificate_designs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_closing_template_id_fkey"
+            columns: ["closing_template_id"]
+            isOneToOne: false
+            referencedRelation: "closing_templates"
             referencedColumns: ["id"]
           },
           {

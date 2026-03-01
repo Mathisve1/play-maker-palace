@@ -16,6 +16,8 @@ import { Progress } from '@/components/ui/progress';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import VolunteerPhoneMockup from '@/components/safety/VolunteerPhoneMockup';
 import IncidentMap from '@/components/safety/IncidentMap';
+import ClosingProcedureManager from '@/components/safety/ClosingProcedureManager';
+import VolunteerClosingView from '@/components/safety/VolunteerClosingView';
 
 // Types
 interface SafetyZone {
@@ -471,13 +473,21 @@ const SafetyDashboard = () => {
     return activeIncidents.some(i => i.zone_id === zoneId);
   }, [activeIncidents]);
 
-  // Auto-redirect volunteers after event closes (5s delay)
+  // Auto-redirect volunteers after event closes (only if no closing tasks assigned)
+  const [hasClosingTasks, setHasClosingTasks] = useState(false);
   useEffect(() => {
-    if (!isStaff && eventClosed) {
-      const timer = setTimeout(() => navigate('/volunteer'), 5000);
+    if (!eventClosed || !userId) return;
+    (supabase as any).from('closing_tasks').select('id').eq('event_id', eventId).eq('assigned_volunteer_id', userId).limit(1).then(({ data }: any) => {
+      setHasClosingTasks((data?.length || 0) > 0);
+    });
+  }, [eventClosed, userId, eventId]);
+
+  useEffect(() => {
+    if (!isStaff && eventClosed && !hasClosingTasks) {
+      const timer = setTimeout(() => navigate('/volunteer'), 8000);
       return () => clearTimeout(timer);
     }
-  }, [isStaff, eventClosed, navigate]);
+  }, [isStaff, eventClosed, hasClosingTasks, navigate]);
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -488,26 +498,38 @@ const SafetyDashboard = () => {
   // ━━━━━━━━━━━━━━━━━━━━━━
   if (!isStaff && eventClosed) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-background p-6">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', duration: 0.6 }}
-          className="max-w-md w-full text-center space-y-6"
+          className="max-w-md mx-auto space-y-6 pt-8"
         >
-          <motion.div
-            initial={{ y: -20 }}
-            animate={{ y: 0 }}
-            transition={{ delay: 0.2, type: 'spring' }}
-          >
-            <PartyPopper className="w-16 h-16 mx-auto text-primary mb-2" />
-          </motion.div>
-          <h1 className="text-3xl font-heading font-bold text-foreground">Bedankt!</h1>
-          <p className="text-muted-foreground text-lg">
-            Het evenement <span className="font-semibold text-foreground">{eventTitle}</span> is afgelopen.
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Bedankt voor je inzet als vrijwilliger! Je wordt zo doorgestuurd naar je dashboard.
+          <div className="text-center">
+            <motion.div
+              initial={{ y: -20 }}
+              animate={{ y: 0 }}
+              transition={{ delay: 0.2, type: 'spring' }}
+            >
+              <PartyPopper className="w-16 h-16 mx-auto text-primary mb-2" />
+            </motion.div>
+            <h1 className="text-3xl font-heading font-bold text-foreground">Bedankt!</h1>
+            <p className="text-muted-foreground text-lg mt-2">
+              Het evenement <span className="font-semibold text-foreground">{eventTitle}</span> is afgelopen.
+            </p>
+          </div>
+
+          {/* Closing tasks for this volunteer */}
+          {userId && (
+            <VolunteerClosingView
+              eventId={eventId || ''}
+              userId={userId}
+              eventTitle={eventTitle}
+            />
+          )}
+
+          <p className="text-muted-foreground text-sm text-center">
+            Bedankt voor je inzet als vrijwilliger!
           </p>
           <motion.div
             initial={{ opacity: 0 }}
@@ -881,6 +903,18 @@ const SafetyDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Closing Procedure - always visible for staff */}
+        {clubId && (
+          <div className="mb-6">
+            <ClosingProcedureManager
+              clubId={clubId}
+              eventId={eventId || ''}
+              isLive={isLive}
+              eventClosed={eventClosed}
+            />
           </div>
         )}
 
