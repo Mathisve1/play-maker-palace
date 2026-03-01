@@ -8,13 +8,14 @@ import {
   Shield, AlertTriangle, CheckCircle2, Radio, Maximize2, Minimize2,
   Phone, ChevronRight, Clock, MapPin, Volume2, VolumeX, RefreshCw,
   Rocket, Lock, Camera, Image, RotateCcw, Trash2, Play, ToggleLeft, ToggleRight,
-  XCircle, Heart, PartyPopper, FileDown,
+  XCircle, Heart, PartyPopper, FileDown, Settings,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import VolunteerPhoneMockup from '@/components/safety/VolunteerPhoneMockup';
 import IncidentMap from '@/components/safety/IncidentMap';
 import ClosingProcedureManager from '@/components/safety/ClosingProcedureManager';
@@ -123,7 +124,7 @@ const SafetyDashboard = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [pendingIncidentId, setPendingIncidentId] = useState<string | null>(null);
   const [step2Mode, setStep2Mode] = useState(false);
-
+  const [showConfig, setShowConfig] = useState(false);
   const flashTimeout = useRef<NodeJS.Timeout>();
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
@@ -1041,6 +1042,9 @@ const SafetyDashboard = () => {
             <Button variant="ghost" size="icon" onClick={() => setAudioEnabled(!audioEnabled)}>
               {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="gap-1.5">
+              <Settings className="w-3.5 h-3.5" /> Configuratie
+            </Button>
             {isDemoEvent && (
               <>
                 <Button variant="outline" size="sm" onClick={handleRestartSimulation} disabled={simLoading} className="gap-1.5">
@@ -1508,6 +1512,15 @@ const SafetyDashboard = () => {
           document.fullscreenElement || document.body
         )}
       </div>
+
+      {showConfig && clubId && eventId && (
+        <SafetyConfigDialog
+          open={showConfig}
+          onClose={() => setShowConfig(false)}
+          eventId={eventId}
+          clubId={clubId}
+        />
+      )}
     </ClubPageLayout>
   );
 };
