@@ -59,10 +59,11 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
     if (!open) return;
     const load = async () => {
       setLoading(true);
+      const hasEvent = !!eventId;
       const [zRes, itRes, clRes, llRes, loRes] = await Promise.all([
-        (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
+        hasEvent ? (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order') : Promise.resolve({ data: [] }),
         (supabase as any).from('safety_incident_types').select('*').eq('club_id', clubId).order('sort_order'),
-        (supabase as any).from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order'),
+        hasEvent ? (supabase as any).from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order') : Promise.resolve({ data: [] }),
         (supabase as any).from('safety_location_levels').select('*').eq('club_id', clubId).order('sort_order'),
         (supabase as any).from('safety_location_options').select('*').order('sort_order'),
       ]);
@@ -188,12 +189,12 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
         {loading ? (
           <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : (
-          <Tabs defaultValue="zones" className="mt-2">
+          <Tabs defaultValue={eventId ? "zones" : "types"} className="mt-2">
             <TabsList className="w-full">
-              <TabsTrigger value="zones" className="flex-1 text-xs">Zones ({zones.length})</TabsTrigger>
+              {!!eventId && <TabsTrigger value="zones" className="flex-1 text-xs">Zones ({zones.length})</TabsTrigger>}
               <TabsTrigger value="types" className="flex-1 text-xs">Meldingen ({incidentTypes.length})</TabsTrigger>
               <TabsTrigger value="locatie" className="flex-1 text-xs">Locatie ({locationLevels.length})</TabsTrigger>
-              <TabsTrigger value="checklist" className="flex-1 text-xs">Checklist ({checklistItems.length})</TabsTrigger>
+              {!!eventId && <TabsTrigger value="checklist" className="flex-1 text-xs">Checklist ({checklistItems.length})</TabsTrigger>}
             </TabsList>
 
             {/* ZONES */}
