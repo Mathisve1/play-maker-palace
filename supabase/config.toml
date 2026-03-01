@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.reporting-ai]
 verify_jwt = false
+
+[functions.safety-demo]
+verify_jwt = false
