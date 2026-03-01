@@ -369,6 +369,87 @@ const VolunteerDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Auto-redirect volunteer to live safety event from any tab (realtime + fallback polling)
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    let mounted = true;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let channels: any[] = [];
+
+    const fetchMyEventIds = async (): Promise<string[]> => {
+      const { data: mySignups } = await supabase
+        .from('task_signups')
+        .select('task_id')
+        .eq('volunteer_id', currentUserId);
+
+      const taskIds = [...new Set((mySignups || []).map(s => s.task_id))];
+      if (taskIds.length === 0) return [];
+
+      const { data: myTasks } = await supabase
+        .from('tasks')
+        .select('event_id')
+        .in('id', taskIds)
+        .not('event_id', 'is', null);
+
+      return [...new Set((myTasks || []).map(t => t.event_id).filter(Boolean) as string[])];
+    };
+
+    const checkForLiveEvent = async (eventIds: string[]) => {
+      if (!mounted || eventIds.length === 0) return;
+
+      const { data: liveEvents } = await supabase
+        .from('events')
+        .select('id')
+        .in('id', eventIds)
+        .eq('is_live', true)
+        .limit(1);
+
+      if (!mounted) return;
+      const liveEventId = liveEvents?.[0]?.id;
+      if (liveEventId) {
+        navigate(`/safety/${liveEventId}`);
+      }
+    };
+
+    const setupLiveListeners = async () => {
+      const eventIds = await fetchMyEventIds();
+      if (!mounted) return;
+
+      await checkForLiveEvent(eventIds);
+
+      if (eventIds.length > 0) {
+        channels = eventIds.map((eventId) =>
+          supabase
+            .channel(`volunteer-live-${currentUserId}-${eventId}`)
+            .on(
+              'postgres_changes',
+              { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
+              (payload: any) => {
+                if (payload.new?.is_live === true) {
+                  navigate(`/safety/${eventId}`);
+                }
+              }
+            )
+            .subscribe()
+        );
+      }
+
+      intervalId = setInterval(async () => {
+        const refreshedEventIds = await fetchMyEventIds();
+        await checkForLiveEvent(refreshedEventIds);
+      }, 3000);
+    };
+
+    setupLiveListeners();
+
+    return () => {
+      mounted = false;
+      if (intervalId) clearInterval(intervalId);
+      channels.forEach(ch => supabase.removeChannel(ch));
+    };
+  }, [currentUserId, navigate]);
+
   // ===== HANDLERS =====
   const handleSignup = async (taskId: string) => {
     setSigningUp(taskId);
