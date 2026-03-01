@@ -31,6 +31,7 @@ interface SafetyZone {
   name: string;
   color: string;
   sort_order: number;
+  event_group_id: string | null;
 }
 
 interface ChecklistProgress {
@@ -85,7 +86,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
 
   const fetchData = useCallback(async () => {
-    // 1. Get event IDs from user's task signups
+    // 1. Get event IDs and group IDs from user's task signups
     const { data: signups } = await supabase
       .from('task_signups')
       .select('task_id')
@@ -94,26 +95,52 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
     if (!signups || signups.length === 0) { setLoading(false); return; }
 
     const taskIds = signups.map(s => s.task_id);
-    const { data: taskEvents } = await supabase
+    const { data: userTasks } = await supabase
       .from('tasks')
-      .select('event_id')
+      .select('event_id, event_group_id')
       .in('id', taskIds)
       .not('event_id', 'is', null);
 
-    const eventIds = [...new Set((taskEvents || []).map(t => t.event_id!).filter(Boolean))];
+    const eventIds = [...new Set((userTasks || []).map(t => t.event_id!).filter(Boolean))];
     if (eventIds.length === 0) { setLoading(false); return; }
 
-    // 2. Get checklist items for those events
+    // Collect the user's assigned group IDs per event
+    const userGroupIds = new Set(
+      (userTasks || []).map(t => t.event_group_id).filter(Boolean)
+    );
+
+    // 2. Get all zones for those events (with event_group_id)
+    const { data: zonesData } = await (supabase as any)
+      .from('safety_zones')
+      .select('id, event_id, name, color, sort_order, event_group_id')
+      .in('event_id', eventIds)
+      .order('sort_order', { ascending: true });
+    
+    const allZones: SafetyZone[] = zonesData || [];
+    
+    // Filter zones to only those linked to the user's assigned groups (or unlinked zones)
+    const myZones = allZones.filter(z => 
+      !z.event_group_id || userGroupIds.has(z.event_group_id)
+    );
+    const myZoneIds = new Set(myZones.map(z => z.id));
+    setZones(myZones);
+
+    // 3. Get checklist items for those events, filtered to user's zones
     const { data: checklistItems } = await supabase
       .from('safety_checklist_items')
       .select('id, event_id, zone_id, description, sort_order')
       .in('event_id', eventIds)
       .order('sort_order', { ascending: true });
 
-    if (!checklistItems || checklistItems.length === 0) { setLoading(false); return; }
+    // Only keep items that belong to the user's zones (or have no zone)
+    const filteredItems = (checklistItems || []).filter(i => 
+      !i.zone_id || myZoneIds.has(i.zone_id)
+    );
 
-    // 3. Get events with checklist items
-    const eventsWithChecklist = [...new Set(checklistItems.map(i => i.event_id))];
+    if (filteredItems.length === 0) { setLoading(false); return; }
+
+    // 4. Get events with checklist items
+    const eventsWithChecklist = [...new Set(filteredItems.map(i => i.event_id))];
     const { data: eventsData } = await supabase
       .from('events')
       .select('id, title, event_date, is_live, club_id')
@@ -128,18 +155,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
       setExpandedEvents(new Set(eventsData.map(e => e.id)));
     }
 
-    // 4. Get zones
-    const zoneEventIds = [...new Set(checklistItems.filter(i => i.zone_id).map(i => i.event_id))];
-    if (zoneEventIds.length > 0) {
-      const { data: zonesData } = await supabase
-        .from('safety_zones')
-        .select('id, event_id, name, color, sort_order')
-        .in('event_id', zoneEventIds)
-        .order('sort_order', { ascending: true });
-      setZones(zonesData || []);
-    }
-
-    setItems(checklistItems);
+    setItems(filteredItems);
 
     // 5. Get progress
     const { data: progressData } = await supabase

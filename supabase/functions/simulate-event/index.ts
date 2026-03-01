@@ -242,7 +242,16 @@ Deno.serve(async (req) => {
       taskVolunteerMap[task.id] = vols;
     }
 
-    // Safety zones
+    // Safety zones — linked to event groups
+    const zoneGroupMap: Record<string, string> = {
+      "Hoofdtribune": "Stewards",
+      "Bezoekersvak": "Stewards",
+      "Parking": "Parking",
+      "Esplanade": "Catering",
+      "Ingang Noord": "Security",
+      "Ingang Zuid": "Security",
+    };
+
     const zoneNames = [
       { name: "Hoofdtribune", color: "#22c55e" },
       { name: "Bezoekersvak", color: "#3b82f6" },
@@ -254,7 +263,10 @@ Deno.serve(async (req) => {
 
     const { data: zones } = await supabase
       .from("safety_zones")
-      .insert(zoneNames.map((z, i) => ({ event_id: eventId, club_id, name: z.name, color: z.color, sort_order: i, status: "normal" })))
+      .insert(zoneNames.map((z, i) => ({
+        event_id: eventId, club_id, name: z.name, color: z.color, sort_order: i, status: "normal",
+        event_group_id: groupMap[zoneGroupMap[z.name]] || null,
+      })))
       .select("id, name");
 
     const zoneMap: Record<string, string> = {};
@@ -324,13 +336,26 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════
     (async () => {
       const allChecklistIds = (insertedChecklist || []).map((ci: any) => ci.id);
-      const allDummyVols = dummyIds.slice(0, 15); // Use up to 15 dummies for simulation
+      const allDummyVols = dummyIds.slice(0, 15);
       const randomDummy = () => allDummyVols[Math.floor(Math.random() * allDummyVols.length)] || user.id;
 
-      // ── Phase 1 (0-60s): Complete checklists gradually ──
-      if (allChecklistIds.length > 0) {
-        const delay = Math.floor(60000 / allChecklistIds.length);
-        for (const cid of allChecklistIds) {
+      // Determine which checklist items belong to the user's zones vs dummy zones
+      // User is assigned to Stewards + Catering → zones: Hoofdtribune, Bezoekersvak, Esplanade
+      const userGroupNames = ["Stewards", "Catering"];
+      const userZoneNames = Object.entries(zoneGroupMap)
+        .filter(([_, grp]) => userGroupNames.includes(grp))
+        .map(([zoneName]) => zoneName);
+      const userZoneIds = new Set(userZoneNames.map(n => zoneMap[n]).filter(Boolean));
+
+      // Split checklist items: user's zones vs dummy zones
+      const dummyChecklistIds = (insertedChecklist || [])
+        .filter((ci: any) => !userZoneIds.has(ci.zone_id))
+        .map((ci: any) => ci.id);
+
+      // ── Phase 1 (0-60s): Complete ONLY dummy zone checklists gradually ──
+      if (dummyChecklistIds.length > 0) {
+        const delay = Math.floor(60000 / dummyChecklistIds.length);
+        for (const cid of dummyChecklistIds) {
           await new Promise(r => setTimeout(r, delay));
           try {
             await supabase.from("safety_checklist_progress").insert({

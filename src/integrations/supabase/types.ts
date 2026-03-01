@@ -1682,6 +1682,7 @@ export type Database = {
           club_id: string
           color: string
           created_at: string
+          event_group_id: string | null
           event_id: string
           id: string
           name: string
@@ -1692,6 +1693,7 @@ export type Database = {
           club_id: string
           color?: string
           created_at?: string
+          event_group_id?: string | null
           event_id: string
           id?: string
           name: string
@@ -1702,6 +1704,7 @@ export type Database = {
           club_id?: string
           color?: string
           created_at?: string
+          event_group_id?: string | null
           event_id?: string
           id?: string
           name?: string
@@ -1714,6 +1717,13 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_zones_event_group_id_fkey"
+            columns: ["event_group_id"]
+            isOneToOne: false
+            referencedRelation: "event_groups"
             referencedColumns: ["id"]
           },
           {
