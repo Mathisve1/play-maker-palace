@@ -1712,6 +1712,7 @@ export type Database = {
           color: string
           created_at: string
           default_priority: string
+          emoji: string | null
           icon: string
           id: string
           label: string
@@ -1722,6 +1723,7 @@ export type Database = {
           color?: string
           created_at?: string
           default_priority?: string
+          emoji?: string | null
           icon?: string
           id?: string
           label: string
@@ -1732,6 +1734,7 @@ export type Database = {
           color?: string
           created_at?: string
           default_priority?: string
+          emoji?: string | null
           icon?: string
           id?: string
           label?: string
@@ -1757,6 +1760,7 @@ export type Database = {
           incident_type_id: string | null
           lat: number | null
           lng: number | null
+          location_data: Json | null
           photo_url: string | null
           priority: string
           reporter_id: string
@@ -1775,6 +1779,7 @@ export type Database = {
           incident_type_id?: string | null
           lat?: number | null
           lng?: number | null
+          location_data?: Json | null
           photo_url?: string | null
           priority?: string
           reporter_id: string
@@ -1793,6 +1798,7 @@ export type Database = {
           incident_type_id?: string | null
           lat?: number | null
           lng?: number | null
+          location_data?: Json | null
           photo_url?: string | null
           priority?: string
           reporter_id?: string
@@ -1829,6 +1835,73 @@ export type Database = {
             columns: ["zone_id"]
             isOneToOne: false
             referencedRelation: "safety_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_location_levels: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          is_required: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_location_levels_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_location_options: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          level_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          level_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          level_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_location_options_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "safety_location_levels"
             referencedColumns: ["id"]
           },
         ]

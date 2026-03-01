@@ -26,8 +26,10 @@ interface SafetyZone {
   id: string; name: string; status: string; color: string; event_id: string; club_id: string; checklist_active: boolean;
 }
 interface SafetyIncidentType {
-  id: string; label: string; icon: string; color: string; default_priority: string; club_id: string;
+  id: string; label: string; icon: string; color: string; default_priority: string; club_id: string; emoji: string | null;
 }
+interface LocationLevel { id: string; club_id: string; name: string; sort_order: number; is_required: boolean; }
+interface LocationOption { id: string; level_id: string; label: string; sort_order: number; }
 interface SafetyIncident {
   id: string; event_id: string; club_id: string; incident_type_id: string | null;
   zone_id: string | null; reporter_id: string; description: string | null;
@@ -108,6 +110,9 @@ const SafetyDashboard = () => {
   const [incidentDesc, setIncidentDesc] = useState('');
   const [reporting, setReporting] = useState(false);
   const [incidentPhoto, setIncidentPhoto] = useState<File | null>(null);
+  const [locationLevels, setLocationLevels] = useState<LocationLevel[]>([]);
+  const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
+  const [selectedLocationValues, setSelectedLocationValues] = useState<Record<string, string>>({});
 
   // Reporter profiles & zone assignments for Control Room
   const [reporterProfiles, setReporterProfiles] = useState<Record<string, ReporterProfile>>({});
@@ -183,18 +188,24 @@ const SafetyDashboard = () => {
         setUserGroupIds(new Set((userTasks || []).map(t => t.event_group_id).filter(Boolean) as string[]));
       }
 
-      const [zRes, itRes, incRes, clRes, cpRes] = await Promise.all([
+      const [zRes, itRes, incRes, clRes, cpRes, llRes, loRes] = await Promise.all([
         (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
         (supabase as any).from('safety_incident_types').select('*').eq('club_id', ev.club_id).order('sort_order'),
         (supabase as any).from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
         (supabase as any).from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order'),
         (supabase as any).from('safety_checklist_progress').select('*'),
+        (supabase as any).from('safety_location_levels').select('*').eq('club_id', ev.club_id).order('sort_order'),
+        (supabase as any).from('safety_location_options').select('*').order('sort_order'),
       ]);
       setZones(zRes.data || []);
       setIncidentTypes(itRes.data || []);
       setIncidents(incRes.data || []);
       setChecklistItems(clRes.data || []);
       setChecklistProgress(cpRes.data || []);
+      const levels = llRes.data || [];
+      setLocationLevels(levels);
+      const levelIds = new Set(levels.map((l: any) => l.id));
+      setLocationOptions((loRes.data || []).filter((o: any) => levelIds.has(o.level_id)));
 
       // Fetch reporter profiles for incident cards
       const incidentData = incRes.data || [];
@@ -375,6 +386,16 @@ const SafetyDashboard = () => {
     if (incidentDesc.trim()) updates.description = incidentDesc.trim();
     if (selectedZoneId) updates.zone_id = selectedZoneId;
     if (photo_url) updates.photo_url = photo_url;
+    // Add location data if any levels were filled
+    const locData = Object.entries(selectedLocationValues).filter(([, v]) => v);
+    if (locData.length > 0) {
+      const locationData = locData.map(([levelId, optionId]) => {
+        const level = locationLevels.find(l => l.id === levelId);
+        const option = locationOptions.find(o => o.id === optionId);
+        return { level_id: levelId, level_name: level?.name || '', option_id: optionId, option_label: option?.label || '' };
+      });
+      updates.location_data = locationData;
+    }
 
     if (Object.keys(updates).length > 0) {
       await (supabase as any).from('safety_incidents').update(updates).eq('id', pendingIncidentId);
@@ -394,6 +415,7 @@ const SafetyDashboard = () => {
     setPhotoPreview(null);
     setPendingIncidentId(null);
     setStep2Mode(false);
+    setSelectedLocationValues({});
   };
 
   // ── Control room: update incident ──
@@ -786,7 +808,11 @@ const SafetyDashboard = () => {
                       onClick={() => handleInstantReport(type)}
                       className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:border-destructive/50 bg-background transition-all active:scale-95 min-h-[80px]"
                     >
-                      <AlertTriangle className="w-6 h-6" style={{ color: type.color }} />
+                      {type.emoji ? (
+                        <span className="text-2xl">{type.emoji}</span>
+                      ) : (
+                        <AlertTriangle className="w-6 h-6" style={{ color: type.color }} />
+                      )}
                       <span className="text-xs font-medium text-foreground text-center leading-tight">{type.label}</span>
                     </button>
                   ))}
@@ -805,7 +831,11 @@ const SafetyDashboard = () => {
                   <p className="text-[10px] text-muted-foreground">Voeg hieronder extra details toe</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" style={{ color: selectedIncidentType.color }} />
+                  {selectedIncidentType.emoji ? (
+                    <span className="text-xl">{selectedIncidentType.emoji}</span>
+                  ) : (
+                    <AlertTriangle className="w-5 h-5" style={{ color: selectedIncidentType.color }} />
+                  )}
                   <span className="font-heading font-bold text-foreground">{selectedIncidentType.label}</span>
                 </div>
                 {zones.length > 0 && (
@@ -813,6 +843,26 @@ const SafetyDashboard = () => {
                     <option value="">Zone (optioneel)</option>
                     {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                   </select>
+                )}
+                {/* Location level dropdowns */}
+                {locationLevels.length > 0 && (
+                  <div className="space-y-2">
+                    {locationLevels.map(level => {
+                      const opts = locationOptions.filter(o => o.level_id === level.id);
+                      if (opts.length === 0) return null;
+                      return (
+                        <select
+                          key={level.id}
+                          value={selectedLocationValues[level.id] || ''}
+                          onChange={e => setSelectedLocationValues(prev => ({ ...prev, [level.id]: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm"
+                        >
+                          <option value="">{level.name} {level.is_required ? '*' : '(optioneel)'}</option>
+                          {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                        </select>
+                      );
+                    })}
+                  </div>
                 )}
                 <input type="text" placeholder="Korte beschrijving (optioneel)" value={incidentDesc} onChange={e => setIncidentDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm" />
 
@@ -1257,12 +1307,21 @@ const SafetyDashboard = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <div className={`w-2 h-2 rounded-full ${statusColor(inc.status)}`} />
+                              {incidentType?.emoji && <span className="text-base">{incidentType.emoji}</span>}
                               <span className={`font-medium text-foreground ${incidentFullscreen ? 'text-base' : 'text-sm'}`}>{getIncidentTypeName(inc.incident_type_id)}</span>
                             </div>
                             {incidentType && (
                               <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: incidentType.color }} title={incidentType.label} />
                             )}
                           </div>
+                          {/* Location data */}
+                          {(inc as any).location_data && Array.isArray((inc as any).location_data) && (inc as any).location_data.length > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {(inc as any).location_data.map((loc: any, i: number) => (
+                                <span key={i} className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-foreground">{loc.level_name}: {loc.option_label}</span>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Reporter info inline */}
                           {reporter && (
