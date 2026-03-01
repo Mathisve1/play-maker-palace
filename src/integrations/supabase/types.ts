@@ -742,6 +742,7 @@ export type Database = {
           event_type: string
           external_event_id: string | null
           id: string
+          is_live: boolean
           location: string | null
           status: string
           title: string
@@ -757,6 +758,7 @@ export type Database = {
           event_type?: string
           external_event_id?: string | null
           id?: string
+          is_live?: boolean
           location?: string | null
           status?: string
           title: string
@@ -772,6 +774,7 @@ export type Database = {
           event_type?: string
           external_event_id?: string | null
           id?: string
+          is_live?: boolean
           location?: string | null
           status?: string
           title?: string
