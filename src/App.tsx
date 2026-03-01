@@ -42,6 +42,8 @@ import ZonePlanning from "./pages/ZonePlanning";
 import PlanningOverview from "./pages/PlanningOverview";
 import SafetyDashboard from "./pages/SafetyDashboard";
 import SafetyOverview from "./pages/SafetyOverview";
+import SafetyEventHub from "./pages/SafetyEventHub";
+import SafetyClosing from "./pages/SafetyClosing";
 import Community from "./pages/Community";
 import CommunityClubDetail from "./pages/CommunityClubDetail";
 import CommunityPartnerDetail from "./pages/CommunityPartnerDetail";
@@ -96,7 +98,9 @@ const App = () => {
             <Route path="/planning" element={<PlanningOverview />} />
             <Route path="/planning/:taskId" element={<ZonePlanning />} />
             <Route path="/safety" element={<SafetyOverview />} />
-            <Route path="/safety/:eventId" element={<SafetyDashboard />} />
+            <Route path="/safety/:eventId" element={<SafetyEventHub />} />
+            <Route path="/safety/:eventId/control-room" element={<SafetyDashboard />} />
+            <Route path="/safety/:eventId/closing" element={<SafetyClosing />} />
             <Route path="/community" element={<Community />} />
             <Route path="/community/club/:clubId" element={<CommunityClubDetail />} />
             <Route path="/community/partner/:partnerId" element={<CommunityPartnerDetail />} />
