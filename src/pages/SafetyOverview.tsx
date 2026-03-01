@@ -158,7 +158,7 @@ const SafetyOverview = () => {
             <Shield className="w-7 h-7 text-primary" />
             <div>
               <h1 className="text-2xl font-bold text-foreground">Safety & Security</h1>
-              <p className="text-sm text-muted-foreground">Kies een evenement om de control room te openen</p>
+              <p className="text-sm text-muted-foreground">Kies een evenement</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

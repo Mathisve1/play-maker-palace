@@ -1143,17 +1143,7 @@ const SafetyDashboard = () => {
           </div>
         )}
 
-        {/* Closing Procedure - always visible for staff */}
-        {clubId && (
-          <div className="mb-6">
-            <ClosingProcedureManager
-              clubId={clubId}
-              eventId={eventId || ''}
-              isLive={isLive}
-              eventClosed={eventClosed}
-            />
-          </div>
-        )}
+        {/* Closing Procedure moved to /safety/:eventId/closing */}
 
         {/* Safety Report Download — visible after event closed */}
         {eventClosed && clubId && (
