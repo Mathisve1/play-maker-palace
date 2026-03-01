@@ -42,6 +42,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   const [loading, setLoading] = useState(true);
 
   const [newZoneName, setNewZoneName] = useState('');
+  const [newZoneColor, setNewZoneColor] = useState('#3b82f6');
   const [newTypeName, setNewTypeName] = useState('');
   const [newTypeColor, setNewTypeColor] = useState('#ef4444');
   const [newTypePriority, setNewTypePriority] = useState('medium');
@@ -85,10 +86,10 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   const addZone = async () => {
     if (!newZoneName.trim()) return;
     const { data, error } = await (supabase as any).from('safety_zones').insert({
-      event_id: eventId, club_id: clubId, name: newZoneName.trim(), sort_order: zones.length,
+      event_id: eventId, club_id: clubId, name: newZoneName.trim(), color: newZoneColor, sort_order: zones.length,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { setZones(prev => [...prev, data]); setNewZoneName(''); toast.success('Zone toegevoegd'); }
+    else if (data) { setZones(prev => [...prev, data]); setNewZoneName(''); setNewZoneColor('#3b82f6'); toast.success('Zone toegevoegd'); }
   };
 
   const deleteZone = async (id: string) => {
@@ -200,7 +201,8 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
             {/* ZONES */}
             <TabsContent value="zones" className="space-y-3 mt-4">
               <div className="flex gap-2">
-                <input type="text" placeholder="Zone naam" value={newZoneName} onChange={e => setNewZoneName(e.target.value)} className={inputClass} onKeyDown={e => e.key === 'Enter' && addZone()} />
+                <input type="color" value={newZoneColor} onChange={e => setNewZoneColor(e.target.value)} className="w-10 h-10 rounded-lg border border-input cursor-pointer" />
+                <input type="text" placeholder="Zone naam" value={newZoneName} onChange={e => setNewZoneName(e.target.value)} className={inputClass + ' flex-1'} onKeyDown={e => e.key === 'Enter' && addZone()} />
                 <Button onClick={addZone} size="sm"><Plus className="w-4 h-4" /></Button>
               </div>
               {zones.map(zone => (
