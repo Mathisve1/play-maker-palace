@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Handshake, Smile, Trophy, Users, UserPlus, Search, CheckCircle, Heart } from 'lucide-react';
 import { Component as TestimonialCards } from '@/components/ui/twitter-testimonial-cards';
-import Navbar from '@/components/Navbar';
+import PublicPageLayout from '@/components/PublicPageLayout';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import { AppStoreButtons, InstallInstructionsDialog } from '@/components/PWAInstallButtons';
@@ -33,11 +33,10 @@ const VolunteerLanding = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PublicPageLayout>
 
       {/* Hero */}
-      <section className="pt-24 pb-16 px-4 relative overflow-hidden">
+      <section className="pb-16 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
         <div className="container mx-auto relative">
           <motion.div 
@@ -166,7 +165,7 @@ const VolunteerLanding = () => {
         onClose={() => setInstallPlatform(null)}
         platform={installPlatform || 'ios'}
       />
-    </div>
+    </PublicPageLayout>
   );
 };
 

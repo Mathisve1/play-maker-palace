@@ -6,7 +6,7 @@ import { ArrowLeft, MapPin, Users, Mail, User, Building2, Briefcase, Calendar, S
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import Navbar from '@/components/Navbar';
+import PublicPageLayout from '@/components/PublicPageLayout';
 import Footer from '@/components/Footer';
 
 interface PartnerDetail {
@@ -63,21 +63,19 @@ const CommunityPartnerDetail = () => {
 
   if (loading || !partner) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="pt-20 container mx-auto px-4">
+      <PublicPageLayout>
+        <div className="container mx-auto px-4">
           <div className="h-40 rounded-2xl bg-muted animate-pulse mb-6" />
         </div>
-      </div>
+      </PublicPageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PublicPageLayout>
 
       {/* Hero */}
-      <section className="relative pt-16">
+      <section className="relative">
         <div className="h-40 md:h-48 bg-gradient-to-br from-accent/20 via-secondary/15 to-primary/10 relative">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_40%,hsl(var(--accent)/0.15),transparent_70%)]" />
         </div>
@@ -174,7 +172,7 @@ const CommunityPartnerDetail = () => {
       </section>
 
       <Footer />
-    </div>
+    </PublicPageLayout>
   );
 };
 
