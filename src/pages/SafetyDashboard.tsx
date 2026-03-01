@@ -69,6 +69,27 @@ const SafetyDashboard = () => {
   const [flashRed, setFlashRed] = useState(false);
   const [zoneFullscreen, setZoneFullscreen] = useState(false);
   const [incidentFullscreen, setIncidentFullscreen] = useState(false);
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const incidentRef = useRef<HTMLDivElement>(null);
+
+  const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
+    if (entering && ref.current) {
+      ref.current.requestFullscreen?.().catch(() => {});
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    const handler = () => {
+      if (!document.fullscreenElement) {
+        setZoneFullscreen(false);
+        setIncidentFullscreen(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
 
   // Steward state
   const [showIncidentGrid, setShowIncidentGrid] = useState(false);
@@ -412,13 +433,13 @@ const SafetyDashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Zone Monitor */}
-          <div className={`${incidentFullscreen ? 'hidden' : zoneFullscreen ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
+          <div ref={zoneRef} className={`${incidentFullscreen ? 'hidden' : zoneFullscreen ? 'lg:col-span-3' : 'lg:col-span-2'} ${zoneFullscreen ? 'bg-background' : ''}`}>
             <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
                   <Radio className="w-5 h-5 text-primary" /> Sectie Monitor
                 </CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => { setZoneFullscreen(!zoneFullscreen); setIncidentFullscreen(false); }}>
+                <Button variant="ghost" size="icon" onClick={() => { const next = !zoneFullscreen; setZoneFullscreen(next); setIncidentFullscreen(false); toggleBrowserFullscreen(zoneRef, next); }}>
                   {zoneFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </Button>
               </CardHeader>
@@ -461,13 +482,13 @@ const SafetyDashboard = () => {
           </div>
 
           {/* Live Incident Sidebar */}
-          <div className={`${zoneFullscreen ? 'hidden' : incidentFullscreen ? 'lg:col-span-3' : 'lg:col-span-1'}`}>
+          <div ref={incidentRef} className={`${zoneFullscreen ? 'hidden' : incidentFullscreen ? 'lg:col-span-3' : 'lg:col-span-1'} ${incidentFullscreen ? 'bg-background' : ''}`}>
             <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-destructive" /> Live Incidents
                 </CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => { setIncidentFullscreen(!incidentFullscreen); setZoneFullscreen(false); }}>
+                <Button variant="ghost" size="icon" onClick={() => { const next = !incidentFullscreen; setIncidentFullscreen(next); setZoneFullscreen(false); toggleBrowserFullscreen(incidentRef, next); }}>
                   {incidentFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </Button>
               </CardHeader>
