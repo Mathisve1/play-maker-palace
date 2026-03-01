@@ -84,6 +84,49 @@ const EventsManager = () => {
   const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
   const labelClass = "block text-xs font-medium text-muted-foreground mb-1";
 
+  // Tour action listener
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const action = (e as CustomEvent).detail?.action;
+      if (action === 'open-create-event') {
+        setShowCreateEvent(true);
+        setShowCreateTask(false);
+      } else if (action === 'close-forms') {
+        setShowCreateEvent(false);
+        setShowCreateTask(false);
+        setAddingGroupToEvent(null);
+        setAddingTaskToGroup(null);
+      } else if (action === 'expand-first-event') {
+        setShowCreateEvent(false);
+        setShowCreateTask(false);
+        if (events.length > 0) setExpandedEvent(events[0].id);
+      } else if (action === 'open-add-group') {
+        if (events.length > 0) {
+          setExpandedEvent(events[0].id);
+          setAddingGroupToEvent(events[0].id);
+          setNewGroupName('');
+        }
+      } else if (action === 'close-add-group') {
+        setAddingGroupToEvent(null);
+        setAddingTaskToGroup(null);
+      } else if (action === 'open-add-task-group') {
+        setAddingGroupToEvent(null);
+        if (events.length > 0) {
+          setExpandedEvent(events[0].id);
+          const firstGroup = eventGroups.find(g => g.event_id === events[0].id);
+          if (firstGroup) {
+            setAddingTaskToGroup({ eventId: events[0].id, groupId: firstGroup.id });
+            setGroupTaskForm({ title: '', task_date: '', location: events[0].location || '', spots_available: 1 });
+          }
+        }
+      } else if (action === 'close-add-task-group') {
+        setAddingTaskToGroup(null);
+      }
+    };
+    window.addEventListener('tour-action', handler);
+    return () => window.removeEventListener('tour-action', handler);
+  }, [events, eventGroups]);
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -354,7 +397,7 @@ const EventsManager = () => {
                 {nl ? 'Start demo' : 'Start demo'}
               </button>
             )}
-            <button onClick={() => { setShowCreateEvent(true); setShowCreateTask(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+            <button data-tour="btn-new-event" onClick={() => { setShowCreateEvent(true); setShowCreateTask(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
               <CalendarDays className="w-4 h-4" /> {nl ? 'Nieuw evenement' : 'New event'}
             </button>
             <button onClick={() => { setShowCreateTask(true); setShowCreateEvent(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
@@ -366,7 +409,7 @@ const EventsManager = () => {
         {/* Create Event Form */}
         <AnimatePresence>
           {showCreateEvent && (
-            <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            <motion.form data-tour="form-new-event" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               onSubmit={handleCreateEvent} className="bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden">
               <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{nl ? 'Nieuw evenement' : 'New event'}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -586,7 +629,7 @@ const EventsManager = () => {
     return (
       <motion.div key={event.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: ei * 0.05 }}
         className={`bg-card rounded-2xl shadow-card border overflow-hidden ${event.status === 'on_hold' ? 'border-yellow-500/30 opacity-70' : 'border-primary/10'}`}>
-        <button onClick={() => setExpandedEvent(isExpanded ? null : event.id)} className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors">
+        <button onClick={() => setExpandedEvent(isExpanded ? null : event.id)} data-tour={ei === 0 ? 'event-card-first' : undefined} className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors">
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="font-heading font-semibold text-foreground text-lg">{event.title}</h3>
@@ -608,7 +651,7 @@ const EventsManager = () => {
 
             {/* Action buttons */}
             <div className="flex items-center gap-2 mt-3 mb-4 flex-wrap">
-              <button onClick={() => { setAddingGroupToEvent(event.id); setNewGroupName(''); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+              <button data-tour={ei === 0 ? 'btn-add-group' : undefined} onClick={() => { setAddingGroupToEvent(event.id); setNewGroupName(''); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
                 <Plus className="w-3.5 h-3.5" /> {nl ? 'Groep toevoegen' : 'Add group'}
               </button>
               <button onClick={() => handleStartEditEvent(event)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors">
@@ -633,7 +676,7 @@ const EventsManager = () => {
 
             {/* Add group inline */}
             {addingGroupToEvent === event.id && (
-              <div className="mb-4 p-4 rounded-xl border border-border bg-muted/30 space-y-3">
+            <div data-tour={addingGroupToEvent === event.id && ei === 0 ? 'form-add-group' : undefined} className="mb-4 p-4 rounded-xl border border-border bg-muted/30 space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="sm:col-span-2">
                     <label className={labelClass}>{nl ? 'Groepsnaam' : 'Group name'} *</label>
@@ -664,7 +707,7 @@ const EventsManager = () => {
               <p className="text-sm text-muted-foreground text-center py-4">{nl ? 'Voeg groepen toe om taken te organiseren.' : 'Add groups to organize tasks.'}</p>
             ) : (
               <div className="space-y-4">
-                {groups.sort((a, b) => a.sort_order - b.sort_order).map(group => {
+                {groups.sort((a, b) => a.sort_order - b.sort_order).map((group, gi) => {
                   const groupTasks = getGroupTasks(group.id);
                   return (
                     <div key={group.id} className="rounded-xl border border-border overflow-hidden">
@@ -683,7 +726,7 @@ const EventsManager = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-1">
-                          <button onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setGroupTaskForm({ title: '', task_date: '', location: event.location || '', spots_available: 1 }); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Taak toevoegen' : 'Add task'}>
+                          <button data-tour={ei === 0 && gi === 0 ? 'btn-add-task-group' : undefined} onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setGroupTaskForm({ title: '', task_date: '', location: event.location || '', spots_available: 1 }); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Taak toevoegen' : 'Add task'}>
                             <Plus className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={() => handleDeleteGroup(group.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
@@ -703,7 +746,7 @@ const EventsManager = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                              <button onClick={() => setZoneDialogTask({ id: task.id, title: task.title })} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zones beheren' : 'Manage zones'}>
+                              <button data-tour={ei === 0 && gi === 0 ? 'btn-zones-first' : undefined} onClick={() => setZoneDialogTask({ id: task.id, title: task.title })} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zones beheren' : 'Manage zones'}>
                                 <Layers className="w-3.5 h-3.5" />
                               </button>
                               <button onClick={() => navigate(`/planning/${task.id}`)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zone planning' : 'Zone planning'}>
@@ -717,7 +760,7 @@ const EventsManager = () => {
 
                       {/* Add task to group form */}
                       {addingTaskToGroup?.groupId === group.id && (
-                        <form onSubmit={handleAddTaskToGroup} className="p-4 border-t border-border space-y-3">
+                        <form data-tour={ei === 0 && gi === 0 ? 'form-add-task-group' : undefined} onSubmit={handleAddTaskToGroup} className="p-4 border-t border-border space-y-3">
                           <div><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required value={groupTaskForm.title} onChange={e => setGroupTaskForm(p => ({ ...p, title: e.target.value }))} className={inputClass} autoFocus /></div>
                           <div className="grid grid-cols-3 gap-3">
                             <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={groupTaskForm.task_date} onChange={e => setGroupTaskForm(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
