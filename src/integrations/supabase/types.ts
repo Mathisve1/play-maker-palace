@@ -1601,6 +1601,7 @@ export type Database = {
           incident_type_id: string | null
           lat: number | null
           lng: number | null
+          photo_url: string | null
           priority: string
           reporter_id: string
           resolved_at: string | null
@@ -1618,6 +1619,7 @@ export type Database = {
           incident_type_id?: string | null
           lat?: number | null
           lng?: number | null
+          photo_url?: string | null
           priority?: string
           reporter_id: string
           resolved_at?: string | null
@@ -1635,6 +1637,7 @@ export type Database = {
           incident_type_id?: string | null
           lat?: number | null
           lng?: number | null
+          photo_url?: string | null
           priority?: string
           reporter_id?: string
           resolved_at?: string | null

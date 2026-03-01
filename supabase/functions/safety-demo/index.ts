@@ -167,16 +167,16 @@ Deno.serve(async (req) => {
 
       // Phase 3: Simulate incidents over ~3 minutes
       const incidents = [
-        { delay: 10, type: "Medisch", zone: "Hoofdtribune", priority: "medium", desc: "Bezoeker flauwgevallen bij rij 12" },
-        { delay: 25, type: "Diefstal", zone: "Parking", priority: "low", desc: "Gestolen rugzak gemeld bij parking P2" },
-        { delay: 40, type: "Agressie", zone: "Ingang & Fouillering", priority: "high", desc: "Vechtpartij bij ingang Noord" },
-        { delay: 55, type: "Medisch", zone: "Speelveldomgeving", priority: "medium", desc: "Snijwond bij steward tijdens opbouw" },
-        { delay: 70, type: "Verdacht pakket", zone: "VIP-lounge", priority: "high", desc: "Onbeheerde tas naast bar VIP" },
-        { delay: 90, type: "Brand", zone: "Parking", priority: "high", desc: "Rookontwikkeling bij foodtruck zone C" },
-        { delay: 110, type: "Agressie", zone: "Bezoekerstribune", priority: "medium", desc: "Verbale escalatie tussen supporters" },
-        { delay: 130, type: "Medisch", zone: "VIP-lounge", priority: "high", desc: "Allergische reactie - epinefrine nodig" },
-        { delay: 150, type: "Evacuatie", zone: "Bezoekerstribune", priority: "high", desc: "Gedeeltelijke evacuatie zone B vereist" },
-        { delay: 170, type: "Diefstal", zone: "Hoofdtribune", priority: "low", desc: "Poging tot zakkenrollerij gemeld" },
+        { delay: 10, type: "Medisch", zone: "Hoofdtribune", priority: "medium", desc: "Bezoeker flauwgevallen bij rij 12", lat: 51.0259, lng: 3.7252 },
+        { delay: 25, type: "Diefstal", zone: "Parking", priority: "low", desc: "Gestolen rugzak gemeld bij parking P2", lat: 51.0245, lng: 3.7238 },
+        { delay: 40, type: "Agressie", zone: "Ingang & Fouillering", priority: "high", desc: "Vechtpartij bij ingang Noord", lat: 51.0263, lng: 3.7261 },
+        { delay: 55, type: "Medisch", zone: "Speelveldomgeving", priority: "medium", desc: "Snijwond bij steward tijdens opbouw", lat: 51.0255, lng: 3.7248 },
+        { delay: 70, type: "Verdacht pakket", zone: "VIP-lounge", priority: "high", desc: "Onbeheerde tas naast bar VIP", lat: 51.0261, lng: 3.7256 },
+        { delay: 90, type: "Brand", zone: "Parking", priority: "high", desc: "Rookontwikkeling bij foodtruck zone C", lat: 51.0242, lng: 3.7234 },
+        { delay: 110, type: "Agressie", zone: "Bezoekerstribune", priority: "medium", desc: "Verbale escalatie tussen supporters", lat: 51.0258, lng: 3.7264 },
+        { delay: 130, type: "Medisch", zone: "VIP-lounge", priority: "high", desc: "Allergische reactie - epinefrine nodig", lat: 51.0260, lng: 3.7253 },
+        { delay: 150, type: "Evacuatie", zone: "Bezoekerstribune", priority: "high", desc: "Gedeeltelijke evacuatie zone B vereist", lat: 51.0257, lng: 3.7266 },
+        { delay: 170, type: "Diefstal", zone: "Hoofdtribune", priority: "low", desc: "Poging tot zakkenrollerij gemeld", lat: 51.0259, lng: 3.7250 },
       ];
 
       for (const inc of incidents) {
@@ -191,6 +191,8 @@ Deno.serve(async (req) => {
             description: inc.desc,
             priority: inc.priority,
             status: "nieuw",
+            lat: inc.lat,
+            lng: inc.lng,
           });
         } catch (e) {
           console.error("Failed to insert incident:", e);
