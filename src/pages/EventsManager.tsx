@@ -7,12 +7,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
-  PauseCircle, PlayCircle, Shield, Radio, Play,
+  PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen,
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskZoneDialog from '@/components/TaskZoneDialog';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
+import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
 
 interface EventData {
   id: string; club_id: string; title: string; description: string | null;
@@ -68,6 +69,7 @@ const EventsManager = () => {
   const [togglingHold, setTogglingHold] = useState<string | null>(null);
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
+  const [showTour, setShowTour] = useState(false);
 
   // Adding task to group
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
@@ -321,6 +323,7 @@ const EventsManager = () => {
   }
 
   return (
+    <>
     <ClubPageLayout>
       <div className="space-y-6">
         {/* Header */}
@@ -334,6 +337,10 @@ const EventsManager = () => {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setShowTour(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
+              <BookOpen className="w-4 h-4" /> {nl ? 'Hoe werkt het?' : 'How does it work?'}
+            </button>
             {hasDemoEvent ? (
               <button onClick={handleDeletePlanningDemo} disabled={demoDeleteLoading}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50">
@@ -532,6 +539,8 @@ const EventsManager = () => {
         />
       )}
     </ClubPageLayout>
+    <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
+    </>
   );
 
   function renderLooseTaskCard(task: Task, i: number) {

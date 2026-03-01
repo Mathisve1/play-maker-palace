@@ -69,6 +69,8 @@ Deno.serve(async (req) => {
         "Jan Peeters", "Marie Janssens", "Pieter De Smet", "An Willems",
         "Tom Claes", "Eva Martens", "Koen Jacobs", "Lisa Vermeersch",
         "Bart Wouters", "Sara Maes", "Nico Van Damme", "Julie Hermans",
+        "Kevin Mertens", "Sofie De Wolf", "Jens Vandenberghe", "Laura Peeters",
+        "Wout Stevens", "Eline Bogaert", "Robbe Lenaerts", "Charlotte Devos",
       ];
       for (const name of demoNames) {
         const { data: profile } = await supabase.from("profiles").select("id").eq("full_name", name).maybeSingle();
@@ -246,7 +248,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Step 5: Create 12 fake volunteer profiles
+    // Step 5: Create 20 fake volunteer profiles
     const volunteerDefs = [
       { name: "Jan Peeters", email: "demo-jan@playmaker.test" },
       { name: "Marie Janssens", email: "demo-marie@playmaker.test" },
@@ -260,18 +262,24 @@ Deno.serve(async (req) => {
       { name: "Sara Maes", email: "demo-sara@playmaker.test" },
       { name: "Nico Van Damme", email: "demo-nico@playmaker.test" },
       { name: "Julie Hermans", email: "demo-julie@playmaker.test" },
+      { name: "Kevin Mertens", email: "demo-kevin@playmaker.test" },
+      { name: "Sofie De Wolf", email: "demo-sofie@playmaker.test" },
+      { name: "Jens Vandenberghe", email: "demo-jens@playmaker.test" },
+      { name: "Laura Peeters", email: "demo-laura@playmaker.test" },
+      { name: "Wout Stevens", email: "demo-wout@playmaker.test" },
+      { name: "Eline Bogaert", email: "demo-eline@playmaker.test" },
+      { name: "Robbe Lenaerts", email: "demo-robbe@playmaker.test" },
+      { name: "Charlotte Devos", email: "demo-charlotte@playmaker.test" },
     ];
 
     const volunteerIds: string[] = [];
     for (const v of volunteerDefs) {
-      // Check if profile already exists
       const { data: existing } = await supabase.from("profiles").select("id").eq("full_name", v.name).maybeSingle();
       if (existing) {
         volunteerIds.push(existing.id);
         continue;
       }
 
-      // Create auth user (auto-confirms)
       const password = `Demo2026!${Math.random().toString(36).slice(2, 8)}`;
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: v.email,
@@ -281,7 +289,6 @@ Deno.serve(async (req) => {
       });
 
       if (authError) {
-        // Might already exist in auth
         const { data: profiles } = await supabase.from("profiles").select("id").eq("email", v.email).maybeSingle();
         if (profiles) volunteerIds.push(profiles.id);
         continue;
@@ -289,27 +296,32 @@ Deno.serve(async (req) => {
       if (authData.user) volunteerIds.push(authData.user.id);
     }
 
-    // Step 6: Create task_signups (distribute volunteers across tasks)
+    // Step 6: Create task_signups — fill most spots per task
+    const taskSignupMap: Record<string, string[]> = {};
     let volIdx = 0;
     for (const task of insertedTasks) {
-      const count = Math.min(task.spots, 3); // Sign up 2-3 volunteers per task
+      const count = Math.min(task.spots, Math.max(3, task.spots - 1)); // Fill almost all spots
+      const signedUp: string[] = [];
       for (let i = 0; i < count; i++) {
         const vid = volunteerIds[volIdx % volunteerIds.length];
         volIdx++;
-        await supabase.from("task_signups").insert({
+        const { error } = await supabase.from("task_signups").insert({
           task_id: task.id,
           volunteer_id: vid,
           status: "assigned",
-        }).maybeSingle();
+        });
+        if (!error) signedUp.push(vid);
       }
+      taskSignupMap[task.id] = signedUp;
     }
 
-    // Step 7: Assign some volunteers to zones (partial, so Kanban shows both assigned & unassigned)
+    // Step 7: Assign volunteers to zones — ~75% filled, using only volunteers signed up to that task
     let assignIdx = 0;
     for (const zone of allLeafZones) {
-      // Fill ~60% of leaf zones
-      if (Math.random() > 0.6) continue;
-      const vid = volunteerIds[assignIdx % volunteerIds.length];
+      if (Math.random() > 0.75) continue; // skip ~25% for realism
+      const taskVolunteers = taskSignupMap[zone.taskId] || [];
+      if (!taskVolunteers.length) continue;
+      const vid = taskVolunteers[assignIdx % taskVolunteers.length];
       assignIdx++;
       await supabase.from("task_zone_assignments").insert({
         zone_id: zone.id,

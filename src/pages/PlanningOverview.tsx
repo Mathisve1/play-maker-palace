@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2 } from 'lucide-react';
+import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
 
 interface EventData {
   id: string;
@@ -37,6 +38,8 @@ const PlanningOverview = () => {
   const [clubId, setClubId] = useState<string | null>(null);
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const [showPostDemoCta, setShowPostDemoCta] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -121,7 +124,8 @@ const PlanningOverview = () => {
       });
       if (res.error) throw new Error(res.error.message);
       toast.success(nl ? 'Demo aangemaakt! Pagina wordt herladen...' : 'Demo created! Reloading...');
-      setTimeout(() => window.location.reload(), 1000);
+      setShowPostDemoCta(true);
+      setTimeout(() => window.location.reload(), 2500);
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -179,6 +183,7 @@ const PlanningOverview = () => {
   };
 
   return (
+    <>
     <ClubPageLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -190,7 +195,11 @@ const PlanningOverview = () => {
               {nl ? 'Selecteer een evenement of taak om vrijwilligers toe te wijzen aan zones' : 'Select an event or task to assign volunteers to zones'}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setShowTour(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
+              <BookOpen className="w-4 h-4" /> {nl ? 'Hoe werkt het?' : 'How does it work?'}
+            </button>
             {hasDemoEvent ? (
               <button onClick={handleDeleteDemo} disabled={demoDeleteLoading}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50">
@@ -206,6 +215,20 @@ const PlanningOverview = () => {
             )}
           </div>
         </div>
+
+        {/* Post-demo CTA */}
+        {showPostDemoCta && (
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-foreground">{nl ? '🎉 Demo is aangemaakt!' : '🎉 Demo created!'}</p>
+              <p className="text-xs text-muted-foreground mt-1">{nl ? 'Wil je leren hoe je dit zelf kunt opzetten?' : 'Want to learn how to set this up yourself?'}</p>
+            </div>
+            <button onClick={() => { setShowPostDemoCta(false); setShowTour(true); }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+              <BookOpen className="w-4 h-4" /> {nl ? 'Maak nu zelf' : 'Create your own'}
+            </button>
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative">
@@ -271,6 +294,8 @@ const PlanningOverview = () => {
         )}
       </div>
     </ClubPageLayout>
+    <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
+    </>
   );
 };
 
