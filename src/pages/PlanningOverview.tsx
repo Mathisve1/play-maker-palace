@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search } from 'lucide-react';
+import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
 
 interface EventData {
@@ -33,6 +34,9 @@ const PlanningOverview = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [tasks, setTasks] = useState<TaskWithZones[]>([]);
   const [search, setSearch] = useState('');
+  const [clubId, setClubId] = useState<string | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -40,17 +44,18 @@ const PlanningOverview = () => {
       if (!session) { navigate('/login'); return; }
 
       const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
-      let clubId = ownedClubs?.[0]?.id || null;
-      if (!clubId) {
+      let cId = ownedClubs?.[0]?.id || null;
+      if (!cId) {
         const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
-        clubId = memberships?.[0]?.club_id || null;
+        cId = memberships?.[0]?.club_id || null;
       }
-      if (!clubId) { setLoading(false); return; }
+      if (!cId) { setLoading(false); return; }
+      setClubId(cId);
 
       // Fetch events & tasks
       const [evRes, taskRes] = await Promise.all([
-        (supabase as any).from('events').select('id, title, event_date, location').eq('club_id', clubId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', clubId).order('task_date', { ascending: true }),
+        (supabase as any).from('events').select('id, title, event_date, location').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
+        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', cId).order('task_date', { ascending: true }),
       ]);
 
       setEvents(evRes.data || []);
@@ -93,6 +98,8 @@ const PlanningOverview = () => {
     init();
   }, [navigate]);
 
+  const hasDemoEvent = events.some(e => e.title === 'Demo Voetbalwedstrijd 2026');
+
   const looseTasks = tasks.filter(t => !t.event_id);
   const getEventTasks = (eventId: string) => tasks.filter(t => t.event_id === eventId);
 
@@ -103,6 +110,39 @@ const PlanningOverview = () => {
     return getEventTasks(e.id).some(t => t.title.toLowerCase().includes(s));
   });
   const filteredLooseTasks = looseTasks.filter(t => !search || t.title.toLowerCase().includes(search.toLowerCase()));
+
+  const handleStartDemo = async () => {
+    if (!clubId) return;
+    setDemoLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('planning-demo', {
+        body: { club_id: clubId, action: 'create' },
+      });
+      if (res.error) throw new Error(res.error.message);
+      toast.success(nl ? 'Demo aangemaakt! Pagina wordt herladen...' : 'Demo created! Reloading...');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setDemoLoading(false);
+  };
+
+  const handleDeleteDemo = async () => {
+    if (!clubId) return;
+    setDemoDeleteLoading(true);
+    try {
+      const res = await supabase.functions.invoke('planning-demo', {
+        body: { club_id: clubId, action: 'delete' },
+      });
+      if (res.error) throw new Error(res.error.message);
+      toast.success(nl ? 'Demo data verwijderd!' : 'Demo data deleted!');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setDemoDeleteLoading(false);
+  };
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
@@ -141,13 +181,30 @@ const PlanningOverview = () => {
   return (
     <ClubPageLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-heading font-bold text-foreground">
-            {nl ? 'Planning' : 'Planning'}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {nl ? 'Selecteer een evenement of taak om vrijwilligers toe te wijzen aan zones' : 'Select an event or task to assign volunteers to zones'}
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-heading font-bold text-foreground">
+              {nl ? 'Planning' : 'Planning'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {nl ? 'Selecteer een evenement of taak om vrijwilligers toe te wijzen aan zones' : 'Select an event or task to assign volunteers to zones'}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {hasDemoEvent ? (
+              <button onClick={handleDeleteDemo} disabled={demoDeleteLoading}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50">
+                {demoDeleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {nl ? 'Demo wissen' : 'Delete demo'}
+              </button>
+            ) : (
+              <button onClick={handleStartDemo} disabled={demoLoading}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                {demoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                {nl ? 'Start demo' : 'Start demo'}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search */}
