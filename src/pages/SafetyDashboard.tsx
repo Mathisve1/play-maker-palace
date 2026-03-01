@@ -377,7 +377,8 @@ const SafetyDashboard = () => {
   // ── Computed values ──
   // Filter zones/items for volunteer view based on assigned groups
   const myZones = useMemo(() => {
-    if (isStaff || userGroupIds.size === 0) return zones;
+    if (isStaff) return zones;
+    // Volunteers only see zones linked to their assigned groups (or unlinked zones)
     return zones.filter((z: any) => !z.event_group_id || userGroupIds.has(z.event_group_id));
   }, [zones, userGroupIds, isStaff]);
   
@@ -385,8 +386,10 @@ const SafetyDashboard = () => {
   
   const myChecklistItems = useMemo(() => {
     if (isStaff) return checklistItems;
+    // Volunteers only see items in their zones; items without zone are hidden if user has group assignments
+    if (userGroupIds.size === 0) return checklistItems.filter(i => !i.zone_id);
     return checklistItems.filter(i => !i.zone_id || myZoneIds.has(i.zone_id));
-  }, [checklistItems, myZoneIds, isStaff]);
+  }, [checklistItems, myZoneIds, isStaff, userGroupIds]);
 
   const isItemCompleted = (itemId: string) => checklistProgress.some(p => p.checklist_item_id === itemId && p.is_completed);
   const activeIncidents = useMemo(() => incidents.filter(i => i.status !== 'opgelost'), [incidents]);

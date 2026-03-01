@@ -122,6 +122,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
     const myZones = allZones.filter(z => 
       !z.event_group_id || userGroupIds.has(z.event_group_id)
     );
+    // If no groups assigned, only show unlinked zones/items
     const myZoneIds = new Set(myZones.map(z => z.id));
     setZones(myZones);
 
