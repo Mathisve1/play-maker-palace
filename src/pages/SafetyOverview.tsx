@@ -2,11 +2,12 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, CalendarDays, MapPin, ChevronRight, Loader2, History, Play, Trash2 } from 'lucide-react';
+import { Shield, CalendarDays, MapPin, ChevronRight, Loader2, History, Play, Trash2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EventRow {
@@ -51,6 +52,7 @@ const SafetyOverview = () => {
   const [loading, setLoading] = useState(true);
   const [demoLoading, setDemoLoading] = useState(false);
   const [clubId, setClubId] = useState<string | null>(null);
+  const [showConfig, setShowConfig] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -160,6 +162,9 @@ const SafetyOverview = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} disabled={!clubId} className="gap-1.5">
+              <Settings className="w-4 h-4" /> Configuratie
+            </Button>
             {hasDemoEvent && (
               <Button variant="outline" size="sm" onClick={handleDeleteDemo} className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
                 <Trash2 className="w-4 h-4" /> Demo wissen
@@ -197,6 +202,15 @@ const SafetyOverview = () => {
           </Tabs>
         )}
       </div>
+
+      {showConfig && clubId && (
+        <SafetyConfigDialog
+          open={showConfig}
+          onClose={() => setShowConfig(false)}
+          eventId=""
+          clubId={clubId}
+        />
+      )}
     </ClubPageLayout>
   );
 };
