@@ -641,7 +641,7 @@ const SafetyDashboard = () => {
             transition={{ delay: 0.5 }}
           >
             <Button
-              onClick={() => navigate('/volunteer')}
+              onClick={() => navigate('/dashboard')}
               className="w-full h-12 rounded-xl text-base font-semibold gap-2"
             >
               <Heart className="w-5 h-5" /> Oké, terug naar dashboard
