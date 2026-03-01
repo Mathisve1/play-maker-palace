@@ -124,7 +124,7 @@ const SafetyDashboard = () => {
       setClubId(ev.club_id);
       setEventTitle(ev.title);
       setIsLive(ev.is_live ?? false);
-      setIsDemoEvent(ev.title?.includes('SIMULATIE') ?? false);
+      setIsDemoEvent(ev.title?.includes('SIMULATIE') || ev.title?.includes('Harelbeke') || ev.title?.includes('Demo') || false);
 
       const { data: owned } = await supabase.from('clubs').select('id').eq('id', ev.club_id).eq('owner_id', session.user.id);
       const { data: member } = await (supabase as any).from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
