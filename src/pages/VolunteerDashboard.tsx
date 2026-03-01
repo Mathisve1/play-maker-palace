@@ -22,6 +22,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import VolunteerSidebar, { VolunteerTab } from '@/components/VolunteerSidebar';
 import VolunteerActivitiesSection from '@/components/VolunteerActivitiesSection';
 import VolunteerPartnerTab from '@/components/VolunteerPartnerTab';
+import VolunteerSafetyTab from '@/components/VolunteerSafetyTab';
 
 interface Task {
   id: string;
@@ -145,6 +146,7 @@ const VolunteerDashboard = () => {
   const [myTickets, setMyTickets] = useState<VolunteerTicket[]>([]);
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
   const [sepaPayouts, setSepaPayouts] = useState<SepaPayoutItem[]>([]);
+  const [safetyPendingCount, setSafetyPendingCount] = useState(0);
 
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -594,6 +596,7 @@ const VolunteerDashboard = () => {
         contracts: myContracts.length,
         tickets: myTickets.length,
         loyalty: loyaltyPrograms.length,
+        safety: safetyPendingCount,
       }}
     />
   );
@@ -848,6 +851,11 @@ const VolunteerDashboard = () => {
       {/* ===== PARTNER TAB ===== */}
       {activeTab === 'partner' && currentUserId && (
         <VolunteerPartnerTab language={language} userId={currentUserId} navigate={navigate} />
+      )}
+
+      {/* ===== SAFETY TAB ===== */}
+      {activeTab === 'safety' && currentUserId && (
+        <VolunteerSafetyTab language={language} userId={currentUserId} onPendingCountChange={setSafetyPendingCount} />
       )}
 
 
