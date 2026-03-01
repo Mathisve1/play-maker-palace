@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, ChevronDown, ChevronRight, ExternalLink, CheckCircle2, Circle } from 'lucide-react';
+import { Shield, ChevronDown, ChevronRight, ExternalLink, CheckCircle2, Circle, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
@@ -32,6 +32,7 @@ interface SafetyZone {
   color: string;
   sort_order: number;
   event_group_id: string | null;
+  checklist_active: boolean;
 }
 
 interface ChecklistProgress {
@@ -112,7 +113,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
     // 2. Get all zones for those events (with event_group_id)
     const { data: zonesData } = await (supabase as any)
       .from('safety_zones')
-      .select('id, event_id, name, color, sort_order, event_group_id')
+      .select('id, event_id, name, color, sort_order, event_group_id, checklist_active')
       .in('event_id', eventIds)
       .order('sort_order', { ascending: true });
     
@@ -198,6 +199,22 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
     );
     return () => { channels.forEach(ch => supabase.removeChannel(ch)); };
   }, [events.map(e => e.id).join(','), navigate]);
+
+  // Realtime: listen for zone checklist_active changes
+  useEffect(() => {
+    if (zones.length === 0) return;
+    const eventIds = [...new Set(zones.map(z => z.event_id))];
+    const channels = eventIds.map(eid =>
+      supabase
+        .channel(`volunteer-safety-zones-${eid}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'safety_zones', filter: `event_id=eq.${eid}` },
+          (payload: any) => {
+            setZones(prev => prev.map(z => z.id === payload.new.id ? { ...z, ...payload.new } : z));
+          })
+        .subscribe()
+    );
+    return () => { channels.forEach(ch => supabase.removeChannel(ch)); };
+  }, [zones.map(z => z.event_id).join(',')]);
 
   // Report pending count
   useEffect(() => {
@@ -351,6 +368,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
                     isCompleted={isCompleted}
                     toggleItem={toggleItem}
                     completedLabel={l.completed}
+                    isActive={zone.checklist_active}
                   />
                 ))}
               </div>
@@ -364,7 +382,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
 
 // Sub-component: zone group with progress + checklist items
 const ZoneChecklistGroup = ({
-  label, color, items, isCompleted, toggleItem, completedLabel,
+  label, color, items, isCompleted, toggleItem, completedLabel, isActive = true,
 }: {
   label: string;
   color: string;
@@ -372,6 +390,7 @@ const ZoneChecklistGroup = ({
   isCompleted: (id: string) => boolean;
   toggleItem: (id: string) => void;
   completedLabel: string;
+  isActive?: boolean;
 }) => {
   const done = items.filter(i => isCompleted(i.id)).length;
   const pct = items.length > 0 ? Math.round((done / items.length) * 100) : 0;
@@ -381,10 +400,16 @@ const ZoneChecklistGroup = ({
       <div className="flex items-center gap-2">
         <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
         <span className="text-sm font-medium text-foreground flex-1">{label}</span>
-        <span className="text-[11px] text-muted-foreground">{done}/{items.length} {completedLabel}</span>
+        {isActive ? (
+          <span className="text-[11px] text-muted-foreground">{done}/{items.length} {completedLabel}</span>
+        ) : (
+          <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
+            <Lock className="w-3 h-3" /> Wacht op activatie
+          </Badge>
+        )}
       </div>
-      <Progress value={pct} className="h-1.5" />
-      <div className="space-y-1 pl-5">
+      {isActive && <Progress value={pct} className="h-1.5" />}
+      <div className={`space-y-1 pl-5 ${!isActive ? 'opacity-50 pointer-events-none' : ''}`}>
         {items.map(item => (
           <label
             key={item.id}
@@ -394,6 +419,7 @@ const ZoneChecklistGroup = ({
               checked={isCompleted(item.id)}
               onCheckedChange={() => toggleItem(item.id)}
               className="mt-0.5"
+              disabled={!isActive}
             />
             <span className={`text-sm ${isCompleted(item.id) ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
               {item.description}

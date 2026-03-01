@@ -266,6 +266,7 @@ Deno.serve(async (req) => {
       .insert(zoneNames.map((z, i) => ({
         event_id: eventId, club_id, name: z.name, color: z.color, sort_order: i, status: "normal",
         event_group_id: groupMap[zoneGroupMap[z.name]] || null,
+        checklist_active: true,
       })))
       .select("id, name");
 
