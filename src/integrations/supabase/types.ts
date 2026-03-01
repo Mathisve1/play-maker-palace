@@ -1460,6 +1460,265 @@ export type Database = {
           },
         ]
       }
+      safety_checklist_items: {
+        Row: {
+          club_id: string
+          created_at: string
+          description: string
+          event_id: string
+          id: string
+          sort_order: number
+          zone_id: string | null
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          description: string
+          event_id: string
+          id?: string
+          sort_order?: number
+          zone_id?: string | null
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          description?: string
+          event_id?: string
+          id?: string
+          sort_order?: number
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_checklist_items_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_checklist_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_checklist_items_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "safety_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_checklist_progress: {
+        Row: {
+          checklist_item_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_completed: boolean
+          volunteer_id: string
+        }
+        Insert: {
+          checklist_item_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          volunteer_id: string
+        }
+        Update: {
+          checklist_item_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_checklist_progress_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "safety_checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_incident_types: {
+        Row: {
+          club_id: string
+          color: string
+          created_at: string
+          default_priority: string
+          icon: string
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          club_id: string
+          color?: string
+          created_at?: string
+          default_priority?: string
+          icon?: string
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          club_id?: string
+          color?: string
+          created_at?: string
+          default_priority?: string
+          icon?: string
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_incident_types_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_incidents: {
+        Row: {
+          club_id: string
+          created_at: string
+          description: string | null
+          event_id: string
+          id: string
+          incident_type_id: string | null
+          lat: number | null
+          lng: number | null
+          priority: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          description?: string | null
+          event_id: string
+          id?: string
+          incident_type_id?: string | null
+          lat?: number | null
+          lng?: number | null
+          priority?: string
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          description?: string | null
+          event_id?: string
+          id?: string
+          incident_type_id?: string | null
+          lat?: number | null
+          lng?: number | null
+          priority?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_incidents_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_incidents_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_incidents_incident_type_id_fkey"
+            columns: ["incident_type_id"]
+            isOneToOne: false
+            referencedRelation: "safety_incident_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_incidents_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "safety_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_zones: {
+        Row: {
+          club_id: string
+          color: string
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          sort_order: number
+          status: string
+        }
+        Insert: {
+          club_id: string
+          color?: string
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          sort_order?: number
+          status?: string
+        }
+        Update: {
+          club_id?: string
+          color?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_zones_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_zones_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sepa_batch_items: {
         Row: {
           amount: number

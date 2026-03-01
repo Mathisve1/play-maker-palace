@@ -7,11 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
-  PauseCircle, PlayCircle,
+  PauseCircle, PlayCircle, Shield, Radio,
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskZoneDialog from '@/components/TaskZoneDialog';
+import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 
 interface EventData {
   id: string; club_id: string; title: string; description: string | null;
@@ -73,6 +74,7 @@ const EventsManager = () => {
 
   // Zone dialog
   const [zoneDialogTask, setZoneDialogTask] = useState<{ id: string; title: string } | null>(null);
+  const [safetyConfigEvent, setSafetyConfigEvent] = useState<{ eventId: string; clubId: string } | null>(null);
 
   const nl = language === 'nl';
   const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -480,6 +482,15 @@ const EventsManager = () => {
           onClose={() => setZoneDialogTask(null)}
         />
       )}
+
+      {safetyConfigEvent && (
+        <SafetyConfigDialog
+          open={!!safetyConfigEvent}
+          onClose={() => setSafetyConfigEvent(null)}
+          eventId={safetyConfigEvent.eventId}
+          clubId={safetyConfigEvent.clubId}
+        />
+      )}
     </ClubPageLayout>
   );
 
@@ -562,6 +573,12 @@ const EventsManager = () => {
               </button>
               <button onClick={() => setConfirmDeleteEvent(event.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" /> {nl ? 'Verwijderen' : 'Delete'}
+              </button>
+              <button onClick={() => setSafetyConfigEvent({ eventId: event.id, clubId: event.club_id })} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-foreground hover:bg-primary/10 hover:text-primary transition-colors">
+                <Shield className="w-3.5 h-3.5" /> Safety
+              </button>
+              <button onClick={() => navigate(`/safety/${event.id}`)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                <Radio className="w-3.5 h-3.5" /> Control Room
               </button>
             </div>
 

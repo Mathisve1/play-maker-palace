@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield,
+  LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
   CalendarPlus, LayoutGrid,
 } from 'lucide-react';
