@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     const { club_id } = await req.json();
     if (!club_id) throw new Error("club_id required");
 
-    // Step 1: Create demo event
+    // Step 1: Create demo event (is_live = false, pre-event mode)
     const { data: event, error: evErr } = await supabase
       .from("events")
       .insert({
@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
         location: "Demo Stadion",
         status: "open",
         event_type: "event",
+        is_live: false,
       })
       .select("id")
       .single();
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
     const zoneMap: Record<string, string> = {};
     zones?.forEach((z: any) => { zoneMap[z.name] = z.id; });
 
-    // Step 3: Create 6 incident types
+    // Step 3: Create 6 incident types (idempotent)
     const typesDef = [
       { label: "Medisch", icon: "Heart", color: "#ef4444", default_priority: "medium" },
       { label: "Brand", icon: "Flame", color: "#f97316", default_priority: "high" },
@@ -72,7 +73,6 @@ Deno.serve(async (req) => {
       { label: "Verdacht pakket", icon: "Package", color: "#7c3aed", default_priority: "high" },
     ];
 
-    // Check existing types for this club and skip if they already exist
     const { data: existingTypes } = await supabase
       .from("safety_incident_types")
       .select("label")
@@ -80,16 +80,12 @@ Deno.serve(async (req) => {
     const existingLabels = new Set((existingTypes || []).map((t: any) => t.label));
     const newTypes = typesDef.filter(t => !existingLabels.has(t.label));
 
-    let allTypes: any[] = existingTypes || [];
     if (newTypes.length > 0) {
-      const { data: inserted } = await supabase
+      await supabase
         .from("safety_incident_types")
-        .insert(newTypes.map((t, i) => ({ club_id, ...t, sort_order: (existingTypes?.length || 0) + i })))
-        .select("id, label");
-      allTypes = [...allTypes, ...(inserted || [])];
+        .insert(newTypes.map((t, i) => ({ club_id, ...t, sort_order: (existingTypes?.length || 0) + i })));
     }
 
-    // Refresh all types with IDs
     const { data: finalTypes } = await supabase
       .from("safety_incident_types")
       .select("id, label")
@@ -97,43 +93,92 @@ Deno.serve(async (req) => {
     const typeMap: Record<string, string> = {};
     finalTypes?.forEach((t: any) => { typeMap[t.label] = t.id; });
 
-    // Step 4: Create 8 checklist items
-    const checklistDescs = [
-      "Nooduitgangen gecontroleerd",
-      "AED-locaties gemarkeerd",
-      "Communicatiekanalen getest",
-      "Stewards gebrieft",
-      "EHBO-post bemand",
-      "Brandblussers geïnspecteerd",
-      "Camerabeelden operationeel",
-      "Evacuatieplan gedeeld",
-    ];
-    await supabase
-      .from("safety_checklist_items")
-      .insert(checklistDescs.map((desc, i) => ({ event_id: eventId, club_id, description: desc, sort_order: i })));
+    // Step 4: Create checklist items PER ZONE (2-3 per zone)
+    const checklistPerZone: Record<string, string[]> = {
+      "Hoofdtribune": ["Zitjes gecontroleerd op schade", "Nooduitgangen vrij en gemarkeerd", "Camerasysteem operationeel"],
+      "Bezoekerstribune": ["Hekwerk geïnspecteerd", "Nooduitgangen vrij", "Stewards op positie"],
+      "Parking": ["Verkeersroutes gemarkeerd", "Brandblussers geïnspecteerd", "Parkeerplaatsen aangeduid"],
+      "VIP-lounge": ["AED-locatie gemarkeerd", "Bar & catering klaar", "Beveiligingspersoneel gebrieft"],
+      "Speelveldomgeving": ["Veld gecontroleerd op obstakels", "Eerste hulppost bemand"],
+      "Ingang & Fouillering": ["Fouilleerteam gebrieft", "Detectiepoorten getest", "Wachtlijnen opgesteld"],
+    };
 
-    // Return event_id immediately – incidents will be inserted in the background
+    const checklistInserts: any[] = [];
+    let sortIdx = 0;
+    for (const [zoneName, items] of Object.entries(checklistPerZone)) {
+      const zoneId = zoneMap[zoneName];
+      if (!zoneId) continue;
+      for (const desc of items) {
+        checklistInserts.push({ event_id: eventId, club_id, description: desc, zone_id: zoneId, sort_order: sortIdx++ });
+      }
+    }
+    const { data: insertedChecklist } = await supabase
+      .from("safety_checklist_items")
+      .insert(checklistInserts)
+      .select("id, zone_id");
+
+    // Return event_id immediately — background simulation starts
     const response = new Response(
-      JSON.stringify({ event_id: eventId, message: "Demo gestart! Incidenten verschijnen de komende 5 minuten." }),
+      JSON.stringify({ event_id: eventId, message: "Demo gestart! Checklist voortgang verschijnt de komende 2 minuten." }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-    // Step 5: Background incident simulation (~5 minutes)
-    const incidents = [
-      { delay: 30, type: "Medisch", zone: "Hoofdtribune", priority: "medium", desc: "Bezoeker flauwgevallen bij rij 12" },
-      { delay: 60, type: "Diefstal", zone: "Parking", priority: "low", desc: "Gestolen rugzak gemeld bij parking P2" },
-      { delay: 90, type: "Agressie", zone: "Ingang & Fouillering", priority: "high", desc: "Vechtpartij bij ingang Noord" },
-      { delay: 120, type: "Medisch", zone: "Speelveldomgeving", priority: "medium", desc: "Snijwond bij steward tijdens opbouw" },
-      { delay: 150, type: "Verdacht pakket", zone: "VIP-lounge", priority: "high", desc: "Onbeheerde tas naast bar VIP" },
-      { delay: 180, type: "Brand", zone: "Parking", priority: "high", desc: "Rookontwikkeling bij foodtruck zone C" },
-      { delay: 210, type: "Agressie", zone: "Bezoekerstribune", priority: "medium", desc: "Verbale escalatie tussen supporters" },
-      { delay: 240, type: "Medisch", zone: "VIP-lounge", priority: "high", desc: "Allergische reactie - epinefrine nodig" },
-      { delay: 270, type: "Evacuatie", zone: "Bezoekerstribune", priority: "high", desc: "Gedeeltelijke evacuatie zone B vereist" },
-      { delay: 300, type: "Diefstal", zone: "Hoofdtribune", priority: "low", desc: "Poging tot zakkenrollerij gemeld" },
-    ];
-
-    // Fire and forget - run in background
+    // Step 5: Background simulation
+    // Phase 1 (~2 min): Progressively complete checklist items
+    // Phase 2: User clicks GO LIVE manually
+    // Phase 3 (~3 min after GO LIVE): Incidents come in
     (async () => {
+      const allChecklistIds = (insertedChecklist || []).map((ci: any) => ci.id);
+      const totalItems = allChecklistIds.length;
+
+      // Phase 1: Complete checklist items one by one over ~2 minutes
+      if (totalItems > 0) {
+        const delayPerItem = Math.floor(120 / totalItems); // ~120 seconds / items
+        for (let i = 0; i < totalItems; i++) {
+          await new Promise(r => setTimeout(r, delayPerItem * 1000));
+          try {
+            await supabase.from("safety_checklist_progress").insert({
+              checklist_item_id: allChecklistIds[i],
+              volunteer_id: user.id,
+              is_completed: true,
+              completed_at: new Date().toISOString(),
+            });
+          } catch (e) {
+            console.error("Failed to insert checklist progress:", e);
+          }
+        }
+      }
+
+      // Phase 2: Wait for GO LIVE — poll every 5 seconds for up to 5 minutes
+      let liveDetected = false;
+      for (let i = 0; i < 60; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        const { data: ev } = await supabase.from("events").select("is_live").eq("id", eventId).single();
+        if (ev?.is_live) {
+          liveDetected = true;
+          break;
+        }
+      }
+
+      if (!liveDetected) {
+        console.log("GO LIVE not detected within 5 minutes, skipping incident simulation.");
+        return;
+      }
+
+      // Phase 3: Simulate incidents over ~3 minutes
+      const incidents = [
+        { delay: 10, type: "Medisch", zone: "Hoofdtribune", priority: "medium", desc: "Bezoeker flauwgevallen bij rij 12" },
+        { delay: 25, type: "Diefstal", zone: "Parking", priority: "low", desc: "Gestolen rugzak gemeld bij parking P2" },
+        { delay: 40, type: "Agressie", zone: "Ingang & Fouillering", priority: "high", desc: "Vechtpartij bij ingang Noord" },
+        { delay: 55, type: "Medisch", zone: "Speelveldomgeving", priority: "medium", desc: "Snijwond bij steward tijdens opbouw" },
+        { delay: 70, type: "Verdacht pakket", zone: "VIP-lounge", priority: "high", desc: "Onbeheerde tas naast bar VIP" },
+        { delay: 90, type: "Brand", zone: "Parking", priority: "high", desc: "Rookontwikkeling bij foodtruck zone C" },
+        { delay: 110, type: "Agressie", zone: "Bezoekerstribune", priority: "medium", desc: "Verbale escalatie tussen supporters" },
+        { delay: 130, type: "Medisch", zone: "VIP-lounge", priority: "high", desc: "Allergische reactie - epinefrine nodig" },
+        { delay: 150, type: "Evacuatie", zone: "Bezoekerstribune", priority: "high", desc: "Gedeeltelijke evacuatie zone B vereist" },
+        { delay: 170, type: "Diefstal", zone: "Hoofdtribune", priority: "low", desc: "Poging tot zakkenrollerij gemeld" },
+      ];
+
       for (const inc of incidents) {
         await new Promise(r => setTimeout(r, inc.delay * 1000));
         try {
