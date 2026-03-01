@@ -36,6 +36,15 @@ interface TaskInfo {
   title: string;
   task_date: string | null;
   location: string | null;
+  event_id: string | null;
+}
+
+interface SafetyRole {
+  id: string; name: string; color: string; level: number;
+}
+
+interface VolunteerSafetyRole {
+  id: string; event_id: string; volunteer_id: string; safety_role_id: string;
 }
 
 const ZonePlanning = () => {
@@ -51,6 +60,9 @@ const ZonePlanning = () => {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [userId, setUserId] = useState<string | null>(null);
+  const [safetyRoles, setSafetyRoles] = useState<SafetyRole[]>([]);
+  const [volunteerSafetyRoles, setVolunteerSafetyRoles] = useState<VolunteerSafetyRole[]>([]);
+  const [eventId, setEventId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!taskId) return;
@@ -59,13 +71,31 @@ const ZonePlanning = () => {
     setUserId(session.user.id);
 
     const [taskRes, zoneRes, signupRes] = await Promise.all([
-      (supabase as any).from('tasks').select('id, title, task_date, location').eq('id', taskId).maybeSingle(),
+      (supabase as any).from('tasks').select('id, title, task_date, location, event_id').eq('id', taskId).maybeSingle(),
       (supabase as any).from('task_zones').select('*').eq('task_id', taskId).order('sort_order'),
       (supabase as any).from('task_signups').select('volunteer_id').eq('task_id', taskId).eq('status', 'assigned'),
     ]);
 
-    setTask(taskRes.data);
+    const taskData = taskRes.data;
+    setTask(taskData);
     setZones(zoneRes.data || []);
+
+    // Get event_id from task to fetch safety roles
+    const taskEventId = taskData?.event_id || null;
+    setEventId(taskEventId);
+
+    // Fetch club_id via event to get safety roles
+    if (taskEventId) {
+      const { data: ev } = await (supabase as any).from('events').select('club_id').eq('id', taskEventId).maybeSingle();
+      if (ev?.club_id) {
+        const [srRes, vsrRes] = await Promise.all([
+          (supabase as any).from('safety_roles').select('id, name, color, level').eq('club_id', ev.club_id).order('level').order('sort_order'),
+          (supabase as any).from('volunteer_safety_roles').select('*').eq('event_id', taskEventId),
+        ]);
+        setSafetyRoles(srRes.data || []);
+        setVolunteerSafetyRoles(vsrRes.data || []);
+      }
+    }
 
     // Fetch assignments for all zones
     if (zoneRes.data?.length) {
@@ -95,10 +125,39 @@ const ZonePlanning = () => {
   const getChildren = (parentId: string | null) => zones.filter(z => z.parent_id === parentId).sort((a, b) => a.sort_order - b.sort_order);
   const getAssignments = (zoneId: string) => assignments.filter(a => a.zone_id === zoneId);
   const getVolunteer = (volId: string) => volunteers.find(v => v.id === volId);
+  const getVolunteerRole = (volId: string) => {
+    const vsr = volunteerSafetyRoles.find(r => r.volunteer_id === volId);
+    return vsr ? safetyRoles.find(r => r.id === vsr.safety_role_id) : null;
+  };
 
   const isAssignedAnywhere = (volId: string) => assignments.some(a => a.volunteer_id === volId);
 
   const unassignedVolunteers = volunteers.filter(v => !isAssignedAnywhere(v.id));
+
+  const handleAssignRole = async (volunteerId: string, roleId: string) => {
+    if (!eventId || !userId) return;
+    if (!roleId) {
+      // Remove role assignment
+      const existing = volunteerSafetyRoles.find(r => r.volunteer_id === volunteerId && r.event_id === eventId);
+      if (existing) {
+        await (supabase as any).from('volunteer_safety_roles').delete().eq('id', existing.id);
+        setVolunteerSafetyRoles(prev => prev.filter(r => r.id !== existing.id));
+      }
+      return;
+    }
+    const existing = volunteerSafetyRoles.find(r => r.volunteer_id === volunteerId && r.event_id === eventId);
+    if (existing) {
+      await (supabase as any).from('volunteer_safety_roles').update({ safety_role_id: roleId }).eq('id', existing.id);
+      setVolunteerSafetyRoles(prev => prev.map(r => r.id === existing.id ? { ...r, safety_role_id: roleId } : r));
+    } else {
+      const { data, error } = await (supabase as any).from('volunteer_safety_roles').insert({
+        event_id: eventId, volunteer_id: volunteerId, safety_role_id: roleId, assigned_by: userId,
+      }).select('*').maybeSingle();
+      if (error) { toast.error(error.message); return; }
+      if (data) setVolunteerSafetyRoles(prev => [...prev, data]);
+    }
+    toast.success(nl ? 'Rol toegewezen!' : 'Role assigned!');
+  };
 
   const handleAssign = async (zoneId: string, volunteerId: string) => {
     if (!userId) return;
@@ -187,15 +246,34 @@ const ZonePlanning = () => {
             )}
             {zoneAssignments.map(a => {
               const vol = getVolunteer(a.volunteer_id);
+              const role = getVolunteerRole(a.volunteer_id);
+              const currentRoleId = volunteerSafetyRoles.find(r => r.volunteer_id === a.volunteer_id && r.event_id === eventId)?.safety_role_id || '';
               return (
-                <div key={a.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 group">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                    {vol?.full_name?.[0]?.toUpperCase() || '?'}
+                <div key={a.id} className="px-3 py-2 rounded-xl bg-muted/50 group space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                      {vol?.full_name?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <span className="text-sm text-foreground flex-1 truncate">{vol?.full_name || vol?.email || 'Onbekend'}</span>
+                    {role && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-medium text-white shrink-0" style={{ background: role.color }}>
+                        {role.name}
+                      </span>
+                    )}
+                    <button onClick={() => handleUnassign(a.id)} className="p-1 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" title={nl ? 'Verwijderen' : 'Remove'}>
+                      <UserMinus className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <span className="text-sm text-foreground flex-1 truncate">{vol?.full_name || vol?.email || 'Onbekend'}</span>
-                  <button onClick={() => handleUnassign(a.id)} className="p-1 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" title={nl ? 'Verwijderen' : 'Remove'}>
-                    <UserMinus className="w-3.5 h-3.5" />
-                  </button>
+                  {safetyRoles.length > 0 && eventId && (
+                    <select
+                      value={currentRoleId}
+                      onChange={e => handleAssignRole(a.volunteer_id, e.target.value)}
+                      className="w-full text-[11px] px-2 py-1 rounded-lg border border-input bg-background text-foreground opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+                    >
+                      <option value="">{nl ? '— Geen rol —' : '— No role —'}</option>
+                      {safetyRoles.map(r => <option key={r.id} value={r.id}>{r.name} (Niv.{r.level})</option>)}
+                    </select>
+                  )}
                 </div>
               );
             })}

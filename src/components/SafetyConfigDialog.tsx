@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, Shield, CheckCircle2, GripVertical, MapPin } from 'lucide-react';
+import { Plus, Trash2, Shield, CheckCircle2, GripVertical, MapPin, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +20,11 @@ interface IncidentType { id: string; label: string; icon: string; color: string;
 interface ChecklistItem { id: string; description: string; zone_id: string | null; sort_order: number; }
 interface LocationLevel { id: string; club_id: string; name: string; sort_order: number; is_required: boolean; }
 interface LocationOption { id: string; level_id: string; label: string; sort_order: number; }
+interface SafetyRole {
+  id: string; club_id: string; name: string; color: string; sort_order: number; level: number;
+  can_complete_checklist: boolean; can_report_incidents: boolean; can_resolve_incidents: boolean;
+  can_complete_closing: boolean; can_view_team: boolean;
+}
 
 const PRIORITY_OPTIONS = [
   { value: 'low', label: 'Laag', color: '#22c55e' },
@@ -39,6 +44,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [locationLevels, setLocationLevels] = useState<LocationLevel[]>([]);
   const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
+  const [safetyRoles, setSafetyRoles] = useState<SafetyRole[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [newZoneName, setNewZoneName] = useState('');
@@ -53,6 +59,9 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   const [newLevelName, setNewLevelName] = useState('');
   const [newOptionLabel, setNewOptionLabel] = useState('');
   const [selectedLevelId, setSelectedLevelId] = useState<string | null>(null);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleColor, setNewRoleColor] = useState('#3b82f6');
+  const [newRoleLevel, setNewRoleLevel] = useState(1);
 
   const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
@@ -61,22 +70,23 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
     const load = async () => {
       setLoading(true);
       const hasEvent = !!eventId;
-      const [zRes, itRes, clRes, llRes, loRes] = await Promise.all([
+      const [zRes, itRes, clRes, llRes, loRes, srRes] = await Promise.all([
         hasEvent ? (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order') : Promise.resolve({ data: [] }),
         (supabase as any).from('safety_incident_types').select('*').eq('club_id', clubId).order('sort_order'),
         hasEvent ? (supabase as any).from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order') : Promise.resolve({ data: [] }),
         (supabase as any).from('safety_location_levels').select('*').eq('club_id', clubId).order('sort_order'),
         (supabase as any).from('safety_location_options').select('*').order('sort_order'),
+        (supabase as any).from('safety_roles').select('*').eq('club_id', clubId).order('sort_order'),
       ]);
       setZones(zRes.data || []);
       setIncidentTypes(itRes.data || []);
       setChecklistItems(clRes.data || []);
       const levels = llRes.data || [];
       setLocationLevels(levels);
-      // Filter options to only those belonging to club levels
       const levelIds = new Set(levels.map((l: LocationLevel) => l.id));
       setLocationOptions((loRes.data || []).filter((o: LocationOption) => levelIds.has(o.level_id)));
       if (levels.length > 0 && !selectedLevelId) setSelectedLevelId(levels[0].id);
+      setSafetyRoles(srRes.data || []);
       setLoading(false);
     };
     load();
@@ -178,6 +188,32 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
     toast.success('Optie verwijderd');
   };
 
+  // ── Safety Roles ──
+  const addSafetyRole = async () => {
+    if (!newRoleName.trim()) return;
+    const { data, error } = await (supabase as any).from('safety_roles').insert({
+      club_id: clubId, name: newRoleName.trim(), color: newRoleColor,
+      level: newRoleLevel, sort_order: safetyRoles.length,
+    }).select('*').maybeSingle();
+    if (error) toast.error(error.message);
+    else if (data) {
+      setSafetyRoles(prev => [...prev, data]);
+      setNewRoleName(''); setNewRoleColor('#3b82f6'); setNewRoleLevel(1);
+      toast.success('Rol toegevoegd');
+    }
+  };
+
+  const deleteSafetyRole = async (id: string) => {
+    await (supabase as any).from('safety_roles').delete().eq('id', id);
+    setSafetyRoles(prev => prev.filter(r => r.id !== id));
+    toast.success('Rol verwijderd');
+  };
+
+  const toggleRolePermission = async (roleId: string, field: keyof SafetyRole, current: boolean) => {
+    await (supabase as any).from('safety_roles').update({ [field]: !current }).eq('id', roleId);
+    setSafetyRoles(prev => prev.map(r => r.id === roleId ? { ...r, [field]: !current } : r));
+  };
+
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -194,6 +230,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
             <TabsList className="w-full">
               {!!eventId && <TabsTrigger value="zones" className="flex-1 text-xs">Zones ({zones.length})</TabsTrigger>}
               <TabsTrigger value="types" className="flex-1 text-xs">Meldingen ({incidentTypes.length})</TabsTrigger>
+              <TabsTrigger value="rollen" className="flex-1 text-xs">Rollen ({safetyRoles.length})</TabsTrigger>
               <TabsTrigger value="locatie" className="flex-1 text-xs">Locatie ({locationLevels.length})</TabsTrigger>
               {!!eventId && <TabsTrigger value="checklist" className="flex-1 text-xs">Checklist ({checklistItems.length})</TabsTrigger>}
             </TabsList>
@@ -277,6 +314,64 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                 </div>
               ))}
               {incidentTypes.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Voeg sneltoetsen toe die stewards gebruiken om snel te melden.</p>}
+            </TabsContent>
+
+            {/* SAFETY ROLES */}
+            <TabsContent value="rollen" className="space-y-3 mt-4">
+              <p className="text-xs text-muted-foreground">
+                Maak safety-rollen aan (bijv. Hoofdsteward, Korpssteward, Steward). Per rol bepaal je welke rechten ze hebben tijdens een evenement. Niveau 1 = hoogste rang.
+              </p>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-10 h-10 rounded-lg border border-input cursor-pointer" />
+                  <input type="text" placeholder="Rol naam (bijv. Korpssteward)" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className={inputClass + ' flex-1'} onKeyDown={e => e.key === 'Enter' && addSafetyRole()} />
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">Niveau:</span>
+                  <select value={newRoleLevel} onChange={e => setNewRoleLevel(Number(e.target.value))} className={inputClass + ' w-20'}>
+                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                  <Button onClick={addSafetyRole} size="sm" className="ml-auto"><Plus className="w-4 h-4" /></Button>
+                </div>
+              </div>
+              {safetyRoles.sort((a,b) => a.level - b.level || a.sort_order - b.sort_order).map(role => (
+                <div key={role.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                  <div className="flex items-center justify-between p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: role.color }} />
+                      <span className="text-sm font-medium text-foreground">{role.name}</span>
+                      <Badge variant="outline" className="text-[10px]">Niv. {role.level}</Badge>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => deleteSafetyRole(role.id)} className="text-destructive h-8 w-8">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="border-t border-border px-3 py-2 space-y-1.5 bg-muted/10">
+                    {([
+                      { key: 'can_complete_checklist' as const, label: 'Checklist afstrepen' },
+                      { key: 'can_report_incidents' as const, label: 'Incidenten melden' },
+                      { key: 'can_resolve_incidents' as const, label: 'Incidenten afhandelen' },
+                      { key: 'can_complete_closing' as const, label: 'Sluitingstaken uitvoeren' },
+                      { key: 'can_view_team' as const, label: 'Teamoverzicht zien' },
+                    ]).map(perm => (
+                      <div key={perm.key} className="flex items-center justify-between">
+                        <span className="text-xs text-foreground">{perm.label}</span>
+                        <Switch
+                          checked={role[perm.key] as boolean}
+                          onCheckedChange={() => toggleRolePermission(role.id, perm.key, role[perm.key] as boolean)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {safetyRoles.length === 0 && (
+                <div className="text-center py-6">
+                  <Users className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground text-sm">Geen rollen ingesteld.</p>
+                  <p className="text-muted-foreground text-xs">Voeg rollen toe om rechten per vrijwilliger te bepalen.</p>
+                </div>
+              )}
             </TabsContent>
 
             {/* LOCATION LEVELS */}
