@@ -1145,34 +1145,7 @@ const SafetyDashboard = () => {
 
         {/* Closing Procedure moved to /safety/:eventId/closing */}
 
-        {/* Safety Report Download — visible after event closed */}
-        {eventClosed && clubId && (
-          <div className="mb-6">
-            <Card className="bg-card border-border">
-              <CardContent className="flex items-center justify-between py-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <FileDown className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-heading font-semibold text-foreground text-sm">Veiligheidsrapport</p>
-                    <p className="text-xs text-muted-foreground">
-                      Automatisch rapport met incidenten, checklist status en sluitingstaken.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleDownloadReport}
-                  disabled={generatingReport}
-                  className="gap-2"
-                >
-                  {generatingReport ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                  Download PDF
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Safety Report moved to /safety/:eventId hub page */}
 
         {/* Main content: Control Room + optional Phone Mockup */}
         <div className={`grid gap-6 ${isDemoEvent ? 'grid-cols-1 xl:grid-cols-[1fr_1fr_320px]' : 'grid-cols-1 lg:grid-cols-3'}`}>
