@@ -1679,6 +1679,7 @@ export type Database = {
       }
       safety_zones: {
         Row: {
+          checklist_active: boolean
           club_id: string
           color: string
           created_at: string
@@ -1690,6 +1691,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          checklist_active?: boolean
           club_id: string
           color?: string
           created_at?: string
@@ -1701,6 +1703,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          checklist_active?: boolean
           club_id?: string
           color?: string
           created_at?: string

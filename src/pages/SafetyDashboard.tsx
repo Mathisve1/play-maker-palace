@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, AlertTriangle, CheckCircle2, Radio, Maximize2, Minimize2,
   Phone, ChevronRight, Clock, MapPin, Volume2, VolumeX, RefreshCw,
-  Rocket, Lock, Camera, Image, RotateCcw, Trash2, Play,
+  Rocket, Lock, Camera, Image, RotateCcw, Trash2, Play, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import IncidentMap from '@/components/safety/IncidentMap';
 
 // Types
 interface SafetyZone {
-  id: string; name: string; status: string; color: string; event_id: string; club_id: string;
+  id: string; name: string; status: string; color: string; event_id: string; club_id: string; checklist_active: boolean;
 }
 interface SafetyIncidentType {
   id: string; label: string; icon: string; color: string; default_priority: string; club_id: string;
@@ -332,6 +332,20 @@ const SafetyDashboard = () => {
     toast.success('🚀 Event is LIVE! Vrijwilligers kunnen nu incidenten melden.');
   };
 
+  // ── Toggle zone checklist activation ──
+  const handleToggleZoneActive = async (zoneId: string, currentValue: boolean) => {
+    const newValue = !currentValue;
+    // Optimistic update
+    setZones(prev => prev.map(z => z.id === zoneId ? { ...z, checklist_active: newValue } : z));
+    const { error } = await (supabase as any).from('safety_zones').update({ checklist_active: newValue }).eq('id', zoneId);
+    if (error) {
+      toast.error(error.message);
+      setZones(prev => prev.map(z => z.id === zoneId ? { ...z, checklist_active: currentValue } : z));
+    } else {
+      toast.success(newValue ? `✅ Zone "${zones.find(z => z.id === zoneId)?.name}" geactiveerd` : `Zone "${zones.find(z => z.id === zoneId)?.name}" gedeactiveerd`);
+    }
+  };
+
   // ── Simulation controls ──
   // (simLoading state is declared at top level)
 
@@ -584,6 +598,7 @@ const SafetyDashboard = () => {
             if (items.length === 0) return null;
             const prog = zoneProgress[zone.id];
             const pct = prog ? Math.round((prog.done / prog.total) * 100) : 0;
+            const isActive = (zone as any).checklist_active;
             return (
               <div key={zone.id}>
                 <div className="flex items-center justify-between mb-2">
@@ -591,28 +606,48 @@ const SafetyDashboard = () => {
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: zone.color }} />
                     {zone.name}
                   </h3>
-                  <span className="text-xs text-muted-foreground">{pct}%</span>
+                  {isActive ? (
+                    <span className="text-xs text-muted-foreground">{pct}%</span>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
+                      <Lock className="w-3 h-3" /> Wacht op activatie
+                    </Badge>
+                  )}
                 </div>
-                <div className="space-y-1.5">
-                  {items.map(item => {
-                    const done = isItemCompleted(item.id);
-                    return (
-                      <motion.button
+                {isActive ? (
+                  <div className="space-y-1.5">
+                    {items.map(item => {
+                      const done = isItemCompleted(item.id);
+                      return (
+                        <motion.button
+                          key={item.id}
+                          layout
+                          onClick={() => handleToggleChecklist(item.id)}
+                          className={`w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all ${done ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800' : 'bg-card border-border hover:border-primary/30'}`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${done ? 'bg-emerald-500 border-emerald-500' : 'border-muted-foreground/40'}`}>
+                            {done && <CheckCircle2 className="w-3 h-3 text-white" />}
+                          </div>
+                          <span className={`text-sm ${done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                            {item.description}
+                          </span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 opacity-50 pointer-events-none">
+                    {items.map(item => (
+                      <div
                         key={item.id}
-                        layout
-                        onClick={() => handleToggleChecklist(item.id)}
-                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all ${done ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800' : 'bg-card border-border hover:border-primary/30'}`}
+                        className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-border bg-muted/30"
                       >
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${done ? 'bg-emerald-500 border-emerald-500' : 'border-muted-foreground/40'}`}>
-                          {done && <CheckCircle2 className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className={`text-sm ${done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                          {item.description}
-                        </span>
-                      </motion.button>
-                    );
-                  })}
-                </div>
+                        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/20 shrink-0" />
+                        <span className="text-sm text-muted-foreground">{item.description}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -712,19 +747,34 @@ const SafetyDashboard = () => {
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: zone.color }} />
                             {zone.name}
                           </p>
-                          <span className="text-xs text-muted-foreground font-medium">{prog.done}/{prog.total} — {pct}%</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground font-medium">{prog.done}/{prog.total} — {pct}%</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`h-7 px-2 gap-1 text-xs ${(zone as any).checklist_active ? 'text-emerald-500' : 'text-muted-foreground'}`}
+                              onClick={() => handleToggleZoneActive(zone.id, (zone as any).checklist_active)}
+                            >
+                              {(zone as any).checklist_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                              {(zone as any).checklist_active ? 'Actief' : 'Uit'}
+                            </Button>
+                          </div>
                         </div>
                         <Progress value={pct} className="h-2 mb-3" />
-                        {/* Individual items */}
+                        {/* Individual items — club can also check them */}
                         <div className="space-y-1">
                           {zoneItems.map(ci => (
-                            <div key={ci.id} className="flex items-center gap-2 text-xs py-0.5">
+                            <button
+                              key={ci.id}
+                              onClick={() => handleToggleChecklist(ci.id)}
+                              className="flex items-center gap-2 text-xs py-1 w-full text-left hover:bg-muted/50 rounded px-1 transition-colors"
+                            >
                               {isItemCompleted(ci.id)
                                 ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                 : <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/40 shrink-0" />
                               }
                               <span className={isItemCompleted(ci.id) ? 'text-muted-foreground line-through' : 'text-foreground'}>{ci.description}</span>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>

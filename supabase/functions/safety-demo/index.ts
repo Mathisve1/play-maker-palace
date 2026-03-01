@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     ];
     const { data: zones } = await supabase
       .from("safety_zones")
-      .insert(zoneNames.map((z, i) => ({ event_id: eventId, club_id, name: z.name, color: z.color, sort_order: i, status: "normal" })))
+      .insert(zoneNames.map((z, i) => ({ event_id: eventId, club_id, name: z.name, color: z.color, sort_order: i, status: "normal", checklist_active: true })))
       .select("id, name");
 
     const zoneMap: Record<string, string> = {};

@@ -1,0 +1,2 @@
+-- Add checklist_active boolean to safety_zones (club must activate per zone before volunteers can check items)
+ALTER TABLE public.safety_zones ADD COLUMN checklist_active boolean NOT NULL DEFAULT false;
