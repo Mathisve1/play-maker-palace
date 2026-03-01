@@ -196,8 +196,8 @@ Deno.serve(async (req) => {
       { group: "Security", title: "Toegangscontrole Zuid", location: "Ingang Zuid", spots: 2, startH: -1, endH: 2 },
     ];
 
-    // Tasks assigned to Mathis (the current user)
-    const mathisTasks = ["Parking A begeleiding", "Drankbar hoofdtribune", "Toegangscontrole Noord", "EHBO-post standby", "Thuisvak bewaking"];
+    // Tasks assigned to the current user (only tribune/steward + catering)
+    const mathisTasks = ["Thuisvak bewaking", "Drankbar hoofdtribune"];
 
     const insertedTasks: any[] = [];
     for (const td of taskDefs) {
