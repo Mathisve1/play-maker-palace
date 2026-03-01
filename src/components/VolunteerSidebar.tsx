@@ -46,7 +46,7 @@ const labels: Record<Language, Record<string, string>> = {
     tickets: 'Tickets',
     academy: 'Academy',
     loyalty: 'Loyaliteit',
-    safety: 'Safety',
+    safety: 'Veiligheidscontrole',
     settings: 'Instellingen',
     help: 'Hulp nodig?',
     logout: 'Uitloggen',
@@ -66,7 +66,7 @@ const labels: Record<Language, Record<string, string>> = {
     tickets: 'Tickets',
     academy: 'Académie',
     loyalty: 'Fidélité',
-    safety: 'Sécurité',
+    safety: 'Contrôle de sécurité',
     settings: 'Paramètres',
     help: 'Besoin d\'aide?',
     logout: 'Déconnexion',
@@ -86,7 +86,7 @@ const labels: Record<Language, Record<string, string>> = {
     tickets: 'Tickets',
     academy: 'Academy',
     loyalty: 'Loyalty',
-    safety: 'Safety',
+    safety: 'Safety Check',
     settings: 'Settings',
     help: 'Need help?',
     logout: 'Log out',
@@ -172,6 +172,13 @@ const VolunteerSidebar = ({
                   <Badge count={(counts.pending || 0) + (counts.assigned || 0)} />
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'safety'} onClick={() => handleNav('safety')} className="min-h-[48px]">
+                  <Shield className="w-5 h-5" />
+                  <span>{l.safety}</span>
+                  <Badge count={counts.safety} />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -246,13 +253,6 @@ const VolunteerSidebar = ({
                 <SidebarMenuButton isActive={activeTab === 'partner'} onClick={() => handleNav('partner')} className="min-h-[48px]">
                   <Building2 className="w-5 h-5" />
                   <span>{language === 'nl' ? 'Partner' : language === 'fr' ? 'Partenaire' : 'Partner'}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'safety'} onClick={() => handleNav('safety')} className="min-h-[48px]">
-                  <Shield className="w-5 h-5" />
-                  <span>{l.safety}</span>
-                  <Badge count={counts.safety} />
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
