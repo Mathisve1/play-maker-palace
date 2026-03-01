@@ -455,8 +455,8 @@ const EventsManager = () => {
         <Tabs defaultValue="upcoming" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="upcoming">{nl ? 'Aankomend' : 'Upcoming'} ({upcomingEvents.length})</TabsTrigger>
-            <TabsTrigger value="past">{nl ? 'Afgelopen' : 'Past'} ({pastEvents.length + pastLooseTasks.length})</TabsTrigger>
             <TabsTrigger value="loose">{nl ? 'Losse taken' : 'Loose tasks'} ({upcomingLooseTasks.length})</TabsTrigger>
+            <TabsTrigger value="past">{nl ? 'Afgelopen' : 'Past'} ({pastEvents.length + pastLooseTasks.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upcoming" className="space-y-4">
@@ -465,7 +465,17 @@ const EventsManager = () => {
                 <CalendarDays className="w-10 h-10 mx-auto mb-2 opacity-30" />
                 <p>{nl ? 'Geen aankomende evenementen.' : 'No upcoming events.'}</p>
               </div>
-            ) : upcomingEvents.map((event, ei) => renderEventCard(event, ei))}
+            ) : [...upcomingEvents].sort((a, b) => {
+              if (!a.event_date) return 1;
+              if (!b.event_date) return -1;
+              return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+            }).map((event, ei) => renderEventCard(event, ei))}
+          </TabsContent>
+
+          <TabsContent value="loose" className="space-y-3">
+            {upcomingLooseTasks.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen losse taken.' : 'No loose tasks.'}</p></div>
+            ) : upcomingLooseTasks.map((task, i) => renderLooseTaskCard(task, i))}
           </TabsContent>
 
           <TabsContent value="past" className="space-y-4">
@@ -473,7 +483,10 @@ const EventsManager = () => {
               <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen afgelopen items.' : 'No past items.'}</p></div>
             ) : (
               <>
-                {pastEvents.map((event, ei) => renderEventCard(event, ei))}
+                {[...pastEvents].sort((a, b) => {
+                  if (!a.event_date || !b.event_date) return 0;
+                  return new Date(b.event_date).getTime() - new Date(a.event_date).getTime();
+                }).map((event, ei) => renderEventCard(event, ei))}
                 {pastLooseTasks.length > 0 && (
                   <>
                     {pastEvents.length > 0 && <div className="pt-2"><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{nl ? 'Afgelopen losse taken' : 'Past loose tasks'}</p></div>}
@@ -482,12 +495,6 @@ const EventsManager = () => {
                 )}
               </>
             )}
-          </TabsContent>
-
-          <TabsContent value="loose" className="space-y-3">
-            {upcomingLooseTasks.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen losse taken.' : 'No loose tasks.'}</p></div>
-            ) : upcomingLooseTasks.map((task, i) => renderLooseTaskCard(task, i))}
           </TabsContent>
         </Tabs>
       </div>
