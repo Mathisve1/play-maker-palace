@@ -60,6 +60,7 @@ const SafetyDashboard = () => {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [clubId, setClubId] = useState<string | null>(null);
+  const [userGroupIds, setUserGroupIds] = useState<Set<string>>(new Set());
   const [isStaff, setIsStaff] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [isLive, setIsLive] = useState(false);
@@ -130,6 +131,22 @@ const SafetyDashboard = () => {
       const { data: member } = await (supabase as any).from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
       const staff = !!(owned?.length) || ['bestuurder', 'beheerder'].includes(member?.role || '');
       setIsStaff(staff);
+
+      // Fetch user's assigned group IDs for this event
+      const { data: userSignups } = await supabase
+        .from('task_signups')
+        .select('task_id')
+        .eq('volunteer_id', session.user.id);
+      
+      if (userSignups?.length) {
+        const uTaskIds = userSignups.map(s => s.task_id);
+        const { data: userTasks } = await supabase
+          .from('tasks')
+          .select('event_group_id')
+          .in('id', uTaskIds)
+          .eq('event_id', eventId);
+        setUserGroupIds(new Set((userTasks || []).map(t => t.event_group_id).filter(Boolean) as string[]));
+      }
 
       const [zRes, itRes, incRes, clRes, cpRes] = await Promise.all([
         (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
@@ -358,6 +375,19 @@ const SafetyDashboard = () => {
   };
 
   // ── Computed values ──
+  // Filter zones/items for volunteer view based on assigned groups
+  const myZones = useMemo(() => {
+    if (isStaff || userGroupIds.size === 0) return zones;
+    return zones.filter((z: any) => !z.event_group_id || userGroupIds.has(z.event_group_id));
+  }, [zones, userGroupIds, isStaff]);
+  
+  const myZoneIds = useMemo(() => new Set(myZones.map(z => z.id)), [myZones]);
+  
+  const myChecklistItems = useMemo(() => {
+    if (isStaff) return checklistItems;
+    return checklistItems.filter(i => !i.zone_id || myZoneIds.has(i.zone_id));
+  }, [checklistItems, myZoneIds, isStaff]);
+
   const isItemCompleted = (itemId: string) => checklistProgress.some(p => p.checklist_item_id === itemId && p.is_completed);
   const activeIncidents = useMemo(() => incidents.filter(i => i.status !== 'opgelost'), [incidents]);
   const highPriorityCount = activeIncidents.filter(i => i.priority === 'high').length;
@@ -382,6 +412,10 @@ const SafetyDashboard = () => {
     return map;
   }, [zones, checklistItems, checklistProgress]);
 
+  // For staff: use all items. For volunteers: use filtered items.
+  const volChecklistDone = myChecklistItems.filter(i => isItemCompleted(i.id)).length;
+  const volChecklistTotal = myChecklistItems.length;
+  // Staff always sees all items for GO LIVE decision
   const totalChecklistDone = checklistItems.filter(i => isItemCompleted(i.id)).length;
   const totalChecklistItems = checklistItems.length;
   const allChecklistComplete = totalChecklistItems > 0 && totalChecklistDone === totalChecklistItems;
@@ -522,7 +556,7 @@ const SafetyDashboard = () => {
             <Shield className="w-5 h-5 text-primary" />
             <span className="font-heading font-bold text-foreground truncate">{eventTitle}</span>
           </div>
-          <Badge variant="outline" className="text-xs">{totalChecklistDone}/{totalChecklistItems}</Badge>
+          <Badge variant="outline" className="text-xs">{volChecklistDone}/{volChecklistTotal}</Badge>
         </header>
 
         <div className="p-4 pb-32 space-y-6">
@@ -530,14 +564,14 @@ const SafetyDashboard = () => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Voortgang</span>
-              <span className="font-semibold text-foreground">{totalChecklistItems > 0 ? Math.round((totalChecklistDone / totalChecklistItems) * 100) : 0}%</span>
+              <span className="font-semibold text-foreground">{volChecklistTotal > 0 ? Math.round((volChecklistDone / volChecklistTotal) * 100) : 0}%</span>
             </div>
-            <Progress value={totalChecklistItems > 0 ? (totalChecklistDone / totalChecklistItems) * 100 : 0} className="h-3" />
+            <Progress value={volChecklistTotal > 0 ? (volChecklistDone / volChecklistTotal) * 100 : 0} className="h-3" />
           </div>
 
-          {/* Items grouped by zone */}
-          {zones.map(zone => {
-            const items = checklistItems.filter(ci => ci.zone_id === zone.id);
+          {/* Items grouped by zone — only user's assigned zones */}
+          {myZones.map(zone => {
+            const items = myChecklistItems.filter(ci => ci.zone_id === zone.id);
             if (items.length === 0) return null;
             const prog = zoneProgress[zone.id];
             const pct = prog ? Math.round((prog.done / prog.total) * 100) : 0;
@@ -574,8 +608,8 @@ const SafetyDashboard = () => {
             );
           })}
 
-          {checklistItems.length === 0 && (
-            <p className="text-muted-foreground text-sm text-center py-6">Geen checklist items voor dit evenement.</p>
+          {myChecklistItems.length === 0 && (
+            <p className="text-muted-foreground text-sm text-center py-6">Geen checklist items voor jouw toegewezen zones.</p>
           )}
         </div>
       </div>
