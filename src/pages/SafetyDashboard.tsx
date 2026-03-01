@@ -7,6 +7,7 @@ import {
   Shield, AlertTriangle, CheckCircle2, Radio, Maximize2, Minimize2,
   Phone, ChevronRight, Clock, MapPin, Volume2, VolumeX, RefreshCw,
   Rocket, Lock, Camera, Image, RotateCcw, Trash2, Play, ToggleLeft, ToggleRight,
+  XCircle, Heart, PartyPopper,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -75,6 +76,9 @@ const SafetyDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [simLoading, setSimLoading] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [eventClosed, setEventClosed] = useState(false);
+  const [closingEvent, setClosingEvent] = useState(false);
   const [flashRed, setFlashRed] = useState(false);
   const [zoneFullscreen, setZoneFullscreen] = useState(false);
   const [incidentFullscreen, setIncidentFullscreen] = useState(false);
@@ -120,11 +124,12 @@ const SafetyDashboard = () => {
       if (!session || !eventId) { navigate('/login'); return; }
       setUserId(session.user.id);
 
-      const { data: ev } = await (supabase as any).from('events').select('id, club_id, title, is_live').eq('id', eventId).maybeSingle();
+      const { data: ev } = await (supabase as any).from('events').select('id, club_id, title, is_live, status').eq('id', eventId).maybeSingle();
       if (!ev) { navigate('/events-manager'); return; }
       setClubId(ev.club_id);
       setEventTitle(ev.title);
       setIsLive(ev.is_live ?? false);
+      if (ev.status === 'closed') setEventClosed(true);
       setIsDemoEvent(ev.title?.includes('SIMULATIE') || ev.title?.includes('Harelbeke') || ev.title?.includes('Demo') || false);
 
       const { data: owned } = await supabase.from('clubs').select('id').eq('id', ev.club_id).eq('owner_id', session.user.id);
@@ -205,6 +210,9 @@ const SafetyDashboard = () => {
         (payload: any) => {
           if (payload.new.is_live !== undefined) {
             setIsLive(payload.new.is_live);
+          }
+          if (payload.new.status === 'closed') {
+            setEventClosed(true);
           }
         })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
@@ -332,6 +340,22 @@ const SafetyDashboard = () => {
     toast.success('🚀 Event is LIVE! Vrijwilligers kunnen nu incidenten melden.');
   };
 
+  // ── CLOSE EVENT ──
+  const handleCloseEvent = async () => {
+    if (!eventId) return;
+    setClosingEvent(true);
+    const { error } = await (supabase as any).from('events').update({ is_live: false, status: 'closed' }).eq('id', eventId);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setIsLive(false);
+      setEventClosed(true);
+      toast.success('Event is afgesloten. Alle vrijwilligers worden doorgestuurd.');
+    }
+    setClosingEvent(false);
+    setShowCloseConfirm(false);
+  };
+
   // ── Toggle zone checklist activation ──
   const handleToggleZoneActive = async (zoneId: string, currentValue: boolean) => {
     const newValue = !currentValue;
@@ -447,8 +471,59 @@ const SafetyDashboard = () => {
     return activeIncidents.some(i => i.zone_id === zoneId);
   }, [activeIncidents]);
 
+  // Auto-redirect volunteers after event closes (5s delay)
+  useEffect(() => {
+    if (!isStaff && eventClosed) {
+      const timer = setTimeout(() => navigate('/volunteer'), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isStaff, eventClosed, navigate]);
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━
+  // VOLUNTEER: Thank-you screen after event closes
+  // ━━━━━━━━━━━━━━━━━━━━━━
+  if (!isStaff && eventClosed) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', duration: 0.6 }}
+          className="max-w-md w-full text-center space-y-6"
+        >
+          <motion.div
+            initial={{ y: -20 }}
+            animate={{ y: 0 }}
+            transition={{ delay: 0.2, type: 'spring' }}
+          >
+            <PartyPopper className="w-16 h-16 mx-auto text-primary mb-2" />
+          </motion.div>
+          <h1 className="text-3xl font-heading font-bold text-foreground">Bedankt!</h1>
+          <p className="text-muted-foreground text-lg">
+            Het evenement <span className="font-semibold text-foreground">{eventTitle}</span> is afgelopen.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Bedankt voor je inzet als vrijwilliger! Je wordt zo doorgestuurd naar je dashboard.
+          </p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Button
+              onClick={() => navigate('/volunteer')}
+              className="w-full h-12 rounded-xl text-base font-semibold gap-2"
+            >
+              <Heart className="w-5 h-5" /> Terug naar dashboard
+            </Button>
+          </motion.div>
+        </motion.div>
+      </div>
+    );
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━
@@ -697,6 +772,16 @@ const SafetyDashboard = () => {
               <Badge variant={highPriorityCount > 0 ? 'destructive' : 'secondary'}>
                 {activeIncidents.length} actief{highPriorityCount > 0 && ` · ${highPriorityCount} hoog`}
               </Badge>
+            )}
+            {isLive && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={() => setShowCloseConfirm(true)}
+              >
+                <XCircle className="w-3.5 h-3.5" /> Sluit Event
+              </Button>
             )}
             <Button variant="ghost" size="icon" onClick={() => setAudioEnabled(!audioEnabled)}>
               {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -965,6 +1050,59 @@ const SafetyDashboard = () => {
             </div>
           )}
         </div>
+
+        {/* Close Event Confirmation Dialog */}
+        <AnimatePresence>
+          {showCloseConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+              onClick={() => setShowCloseConfirm(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
+              >
+                <div className="text-center">
+                  <XCircle className="w-12 h-12 text-destructive mx-auto mb-3" />
+                  <h2 className="text-xl font-heading font-bold text-foreground">Event afsluiten?</h2>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    Dit zet GO LIVE uit voor alle vrijwilligers. Ze krijgen een bedankscherm te zien en worden teruggestuurd naar hun dashboard.
+                  </p>
+                  {activeIncidents.length > 0 && (
+                    <div className="mt-3 bg-destructive/10 border border-destructive/30 rounded-xl p-3">
+                      <p className="text-sm font-medium text-destructive">
+                        ⚠️ Er zijn nog {activeIncidents.length} actieve incident{activeIncidents.length > 1 ? 'en' : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-11 rounded-xl"
+                    onClick={() => setShowCloseConfirm(false)}
+                  >
+                    Annuleren
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1 h-11 rounded-xl font-bold"
+                    disabled={closingEvent}
+                    onClick={handleCloseEvent}
+                  >
+                    {closingEvent ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Ja, sluit event'}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </ClubPageLayout>
   );
