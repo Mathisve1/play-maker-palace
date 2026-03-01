@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -113,6 +113,7 @@ const SafetyDashboard = () => {
   const [volunteerZoneAssignments, setVolunteerZoneAssignments] = useState<VolunteerZoneAssignment[]>([]);
   const [taskZones, setTaskZones] = useState<TaskZoneInfo[]>([]);
   const [highlightedIncidentId, setHighlightedIncidentId] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [pendingIncidentId, setPendingIncidentId] = useState<string | null>(null);
   const [step2Mode, setStep2Mode] = useState(false);
@@ -1231,7 +1232,8 @@ const SafetyDashboard = () => {
                     <IncidentMap incidents={activeIncidents} getTypeName={getIncidentTypeName} height={incidentFullscreen ? 'calc(50vh - 60px)' : '220px'} highlightedIncidentId={highlightedIncidentId} />
                   </div>
                 )}
-                <div className={incidentFullscreen ? 'flex-1 overflow-y-auto space-y-3' : ''}>
+                <div className={incidentFullscreen ? 'flex-1 overflow-y-auto' : ''}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                   <AnimatePresence>
                     {activeIncidents.map(inc => {
                       const incidentType = incidentTypes.find(t => t.id === inc.incident_type_id);
@@ -1280,9 +1282,14 @@ const SafetyDashboard = () => {
 
                           {inc.description && <p className={`text-muted-foreground ${incidentFullscreen ? 'text-sm' : 'text-xs'}`}>{inc.description}</p>}
 
-                          {/* Show photo if present */}
+                          {/* Show photo if present — clickable to zoom */}
                           {inc.photo_url && (
-                            <img src={inc.photo_url} alt="Incident foto" className={`w-full object-cover rounded-lg border border-border ${incidentFullscreen ? 'h-40' : 'h-24'}`} />
+                            <img
+                              src={inc.photo_url}
+                              alt="Incident foto"
+                              className={`w-full object-cover rounded-lg border border-border cursor-zoom-in hover:opacity-90 transition ${incidentFullscreen ? 'h-48' : 'h-36'}`}
+                              onClick={(e) => { e.stopPropagation(); setLightboxUrl(inc.photo_url!); }}
+                            />
                           )}
 
                           <div className={`flex items-center gap-2 text-muted-foreground ${incidentFullscreen ? 'text-xs' : 'text-[10px]'}`}>
@@ -1306,6 +1313,7 @@ const SafetyDashboard = () => {
                       );
                     })}
                   </AnimatePresence>
+                  </div>
                   {activeIncidents.length === 0 && (
                     <div className="text-center py-8">
                       <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
@@ -1383,6 +1391,37 @@ const SafetyDashboard = () => {
                   </Button>
                 </div>
               </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Photo Lightbox */}
+        <AnimatePresence>
+          {lightboxUrl && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-background/90 backdrop-blur-md p-4"
+              onClick={() => setLightboxUrl(null)}
+            >
+              <motion.img
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                src={lightboxUrl}
+                alt="Incident foto vergroot"
+                className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-elevated"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 text-foreground bg-background/50 rounded-full"
+                onClick={() => setLightboxUrl(null)}
+              >
+                <XCircle className="w-6 h-6" />
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>
