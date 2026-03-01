@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import VolunteerPhoneMockup from '@/components/safety/VolunteerPhoneMockup';
+import IncidentMap from '@/components/safety/IncidentMap';
 
 // Types
 interface SafetyZone {
@@ -78,7 +79,7 @@ const SafetyDashboard = () => {
   const zoneRef = useRef<HTMLDivElement>(null);
   const incidentRef = useRef<HTMLDivElement>(null);
 
-  // Steward state
+  // Steward state - two-step reporting
   const [showIncidentGrid, setShowIncidentGrid] = useState(false);
   const [selectedIncidentType, setSelectedIncidentType] = useState<SafetyIncidentType | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
@@ -86,6 +87,8 @@ const SafetyDashboard = () => {
   const [reporting, setReporting] = useState(false);
   const [incidentPhoto, setIncidentPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [pendingIncidentId, setPendingIncidentId] = useState<string | null>(null);
+  const [step2Mode, setStep2Mode] = useState(false);
 
   const flashTimeout = useRef<NodeJS.Timeout>();
 
@@ -227,12 +230,12 @@ const SafetyDashboard = () => {
     return publicUrl;
   };
 
-  // ── Steward: report incident ──
-  const handleReportIncident = async () => {
-    if (!selectedIncidentType || !eventId || !clubId || !userId) return;
+  // ── Steward: Step 1 — instant report (type + GPS) ──
+  const handleInstantReport = async (type: SafetyIncidentType) => {
+    if (!eventId || !clubId || !userId) return;
+    setSelectedIncidentType(type);
     setReporting(true);
 
-    // GPS is required
     let lat: number | null = null, lng: number | null = null;
     try {
       const pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
@@ -243,25 +246,50 @@ const SafetyDashboard = () => {
       return;
     }
 
-    // Optional photo
-    const photo_url = await uploadPhoto();
+    const { data: inc, error } = await (supabase as any).from('safety_incidents').insert({
+      event_id: eventId, club_id: clubId, incident_type_id: type.id,
+      reporter_id: userId, priority: type.default_priority, status: 'nieuw',
+      lat, lng,
+    }).select('id').single();
 
-    const { error } = await (supabase as any).from('safety_incidents').insert({
-      event_id: eventId, club_id: clubId, incident_type_id: selectedIncidentType.id,
-      zone_id: selectedZoneId || null, reporter_id: userId, description: incidentDesc.trim() || null,
-      lat, lng, priority: selectedIncidentType.default_priority, status: 'nieuw', photo_url,
-    });
-    if (error) toast.error(error.message);
-    else {
-      toast.success('Incident gemeld!');
-      setShowIncidentGrid(false);
-      setSelectedIncidentType(null);
-      setSelectedZoneId('');
-      setIncidentDesc('');
-      setIncidentPhoto(null);
-      setPhotoPreview(null);
-    }
+    if (error) { toast.error(error.message); setReporting(false); return; }
+
+    setPendingIncidentId(inc.id);
+    setStep2Mode(true);
+    setShowIncidentGrid(false);
+    toast.success('⚡ Melding direct verstuurd met GPS!');
     setReporting(false);
+  };
+
+  // ── Steward: Step 2 — update with details ──
+  const handleUpdateReport = async () => {
+    if (!pendingIncidentId) return;
+    setReporting(true);
+
+    const photo_url = await uploadPhoto();
+    const updates: any = {};
+    if (incidentDesc.trim()) updates.description = incidentDesc.trim();
+    if (selectedZoneId) updates.zone_id = selectedZoneId;
+    if (photo_url) updates.photo_url = photo_url;
+
+    if (Object.keys(updates).length > 0) {
+      await (supabase as any).from('safety_incidents').update(updates).eq('id', pendingIncidentId);
+    }
+
+    toast.success('Details toegevoegd aan melding');
+    resetReportFlow();
+    setReporting(false);
+  };
+
+  const resetReportFlow = () => {
+    setShowIncidentGrid(false);
+    setSelectedIncidentType(null);
+    setSelectedZoneId('');
+    setIncidentDesc('');
+    setIncidentPhoto(null);
+    setPhotoPreview(null);
+    setPendingIncidentId(null);
+    setStep2Mode(false);
   };
 
   // ── Control room: update incident ──
@@ -341,10 +369,10 @@ const SafetyDashboard = () => {
           </div>
         </div>
 
-        {/* Floating incident button */}
+        {/* Floating incident button — TWO-STEP */}
         <div className="fixed bottom-6 left-0 right-0 px-4 z-50">
           <AnimatePresence mode="wait">
-            {!showIncidentGrid && !selectedIncidentType && (
+            {!showIncidentGrid && !step2Mode && (
               <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
                 <Button
                   onClick={() => setShowIncidentGrid(true)}
@@ -355,41 +383,44 @@ const SafetyDashboard = () => {
               </motion.div>
             )}
 
-            {showIncidentGrid && !selectedIncidentType && (
+            {showIncidentGrid && !step2Mode && (
               <motion.div
                 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
                 className="bg-card rounded-2xl border border-border shadow-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-heading font-bold text-foreground">Kies type</h3>
+                  <h3 className="font-heading font-bold text-foreground">Tik = direct melden!</h3>
                   <Button variant="ghost" size="icon" onClick={() => setShowIncidentGrid(false)}><Minimize2 className="w-4 h-4" /></Button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {incidentTypes.map(type => (
                     <button
                       key={type.id}
-                      onClick={() => setSelectedIncidentType(type)}
-                      className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:border-primary/50 bg-background transition-all active:scale-95 min-h-[80px]"
+                      disabled={reporting}
+                      onClick={() => handleInstantReport(type)}
+                      className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:border-destructive/50 bg-background transition-all active:scale-95 min-h-[80px]"
                     >
                       <AlertTriangle className="w-6 h-6" style={{ color: type.color }} />
                       <span className="text-xs font-medium text-foreground text-center leading-tight">{type.label}</span>
                     </button>
                   ))}
                 </div>
+                <p className="text-[10px] text-muted-foreground text-center mt-2">GPS wordt automatisch meegestuurd bij klik</p>
               </motion.div>
             )}
 
-            {selectedIncidentType && (
+            {step2Mode && selectedIncidentType && (
               <motion.div
                 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
                 className="bg-card rounded-2xl border border-border shadow-2xl p-4 space-y-3"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5" style={{ color: selectedIncidentType.color }} />
-                    <span className="font-heading font-bold text-foreground">{selectedIncidentType.label}</span>
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={() => { setSelectedIncidentType(null); setShowIncidentGrid(true); setIncidentPhoto(null); setPhotoPreview(null); }}><ChevronRight className="w-4 h-4 rotate-180" /></Button>
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-2 text-center">
+                  <p className="text-xs font-semibold text-emerald-600">✓ Melding verstuurd met GPS!</p>
+                  <p className="text-[10px] text-muted-foreground">Voeg hieronder extra details toe</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" style={{ color: selectedIncidentType.color }} />
+                  <span className="font-heading font-bold text-foreground">{selectedIncidentType.label}</span>
                 </div>
                 {zones.length > 0 && (
                   <select value={selectedZoneId} onChange={e => setSelectedZoneId(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm">
@@ -399,21 +430,12 @@ const SafetyDashboard = () => {
                 )}
                 <input type="text" placeholder="Korte beschrijving (optioneel)" value={incidentDesc} onChange={e => setIncidentDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm" />
 
-                {/* GPS indicator */}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-500" /> GPS-locatie wordt automatisch meegestuurd
-                </div>
-
                 {/* Photo upload */}
                 <div>
                   {photoPreview ? (
                     <div className="relative">
                       <img src={photoPreview} alt="Preview" className="w-full h-32 object-cover rounded-xl border border-border" />
-                      <Button
-                        variant="destructive" size="icon"
-                        className="absolute top-1 right-1 w-6 h-6"
-                        onClick={() => { setIncidentPhoto(null); setPhotoPreview(null); }}
-                      >×</Button>
+                      <Button variant="destructive" size="icon" className="absolute top-1 right-1 w-6 h-6" onClick={() => { setIncidentPhoto(null); setPhotoPreview(null); }}>×</Button>
                     </div>
                   ) : (
                     <label className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors">
@@ -424,9 +446,14 @@ const SafetyDashboard = () => {
                   )}
                 </div>
 
-                <Button onClick={handleReportIncident} disabled={reporting} className="w-full h-12 rounded-xl bg-destructive text-destructive-foreground font-bold text-base">
-                  {reporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Verstuur melding'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={resetReportFlow} className="flex-1 h-12 rounded-xl text-sm">
+                    Overslaan
+                  </Button>
+                  <Button onClick={handleUpdateReport} disabled={reporting} className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm">
+                    {reporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Details toevoegen'}
+                  </Button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -704,6 +731,10 @@ const SafetyDashboard = () => {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-3 max-h-[70vh] overflow-y-auto">
+                {/* Overview map with all active incidents */}
+                {activeIncidents.some(i => i.lat && i.lng) && (
+                  <IncidentMap incidents={activeIncidents} getTypeName={getIncidentTypeName} height="220px" />
+                )}
                 <AnimatePresence>
                   {activeIncidents.map(inc => (
                     <motion.div
@@ -725,6 +756,11 @@ const SafetyDashboard = () => {
                       {/* Show photo if present */}
                       {inc.photo_url && (
                         <img src={inc.photo_url} alt="Incident foto" className="w-full h-24 object-cover rounded-lg border border-border" />
+                      )}
+
+                      {/* Mini map per incident */}
+                      {inc.lat && inc.lng && (
+                        <IncidentMap incidents={[inc]} getTypeName={getIncidentTypeName} height="100px" singleIncident />
                       )}
 
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
@@ -767,6 +803,8 @@ const SafetyDashboard = () => {
                 checklistProgress={checklistProgress}
                 isLive={isLive}
                 eventTitle={eventTitle}
+                eventId={eventId || ''}
+                clubId={clubId || ''}
               />
             </div>
           )}
