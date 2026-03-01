@@ -454,7 +454,7 @@ const EventsManager = () => {
         {/* Events Tabs */}
         <Tabs defaultValue="upcoming" className="w-full">
           <TabsList className="mb-4">
-            <TabsTrigger value="upcoming">{nl ? 'Aankomend' : 'Upcoming'} ({upcomingEvents.length})</TabsTrigger>
+            <TabsTrigger value="upcoming">{nl ? 'Aankomende Evenementen' : 'Upcoming Events'} ({upcomingEvents.length})</TabsTrigger>
             <TabsTrigger value="loose">{nl ? 'Losse taken' : 'Loose tasks'} ({upcomingLooseTasks.length})</TabsTrigger>
             <TabsTrigger value="past">{nl ? 'Afgelopen' : 'Past'} ({pastEvents.length + pastLooseTasks.length})</TabsTrigger>
           </TabsList>
