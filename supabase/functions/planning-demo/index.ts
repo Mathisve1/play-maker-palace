@@ -42,6 +42,9 @@ Deno.serve(async (req) => {
       }
 
       for (const ev of demoEvents) {
+        // Delete safety role assignments for this event
+        await supabase.from("volunteer_safety_roles").delete().eq("event_id", ev.id);
+
         // Delete zone assignments & zones for tasks in this event
         const { data: eventTasks } = await supabase.from("tasks").select("id").eq("event_id", ev.id);
         const taskIds = (eventTasks || []).map((t: any) => t.id);
@@ -63,6 +66,9 @@ Deno.serve(async (req) => {
         // Delete event
         await supabase.from("events").delete().eq("id", ev.id);
       }
+
+      // Delete demo safety roles
+      await supabase.from("safety_roles").delete().eq("club_id", club_id).in("name", ["Hoofdsteward", "Korpssteward", "Steward"]);
 
       // Delete demo profiles
       const demoNames = [
@@ -330,13 +336,68 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Step 8: Create 3 safety roles with different permissions
+    const roleDefs = [
+      {
+        club_id, name: "Hoofdsteward", color: "#dc2626", level: 1, sort_order: 0,
+        can_complete_checklist: true, can_report_incidents: true, can_resolve_incidents: true,
+        can_complete_closing: true, can_view_team: true,
+      },
+      {
+        club_id, name: "Korpssteward", color: "#f59e0b", level: 2, sort_order: 1,
+        can_complete_checklist: true, can_report_incidents: true, can_resolve_incidents: true,
+        can_complete_closing: true, can_view_team: true,
+      },
+      {
+        club_id, name: "Steward", color: "#3b82f6", level: 3, sort_order: 2,
+        can_complete_checklist: true, can_report_incidents: true, can_resolve_incidents: false,
+        can_complete_closing: false, can_view_team: false,
+      },
+    ];
+
+    const { data: roles } = await supabase.from("safety_roles").insert(roleDefs).select("id, name, level");
+    const roleMap: Record<string, string> = {};
+    (roles || []).forEach((r: any) => { roleMap[r.name] = r.id; });
+
+    // Step 9: Assign safety roles to volunteers for this event
+    // First few get Hoofdsteward, next batch Korpssteward, rest Steward
+    const assignedVolunteers = new Set<string>();
+    const vsrInserts: any[] = [];
+
+    // Collect all assigned volunteer IDs
+    for (const taskVols of Object.values(taskSignupMap)) {
+      for (const vid of taskVols) assignedVolunteers.add(vid);
+    }
+    const allAssigned = Array.from(assignedVolunteers);
+
+    // 1 Hoofdsteward, 3 Korpsstewards, rest Stewards
+    for (let i = 0; i < allAssigned.length; i++) {
+      let roleName = "Steward";
+      if (i === 0) roleName = "Hoofdsteward";
+      else if (i <= 3) roleName = "Korpssteward";
+
+      if (roleMap[roleName]) {
+        vsrInserts.push({
+          event_id: eventId,
+          volunteer_id: allAssigned[i],
+          safety_role_id: roleMap[roleName],
+          assigned_by: user.id,
+        });
+      }
+    }
+
+    if (vsrInserts.length) {
+      await supabase.from("volunteer_safety_roles").insert(vsrInserts);
+    }
+
     return new Response(
       JSON.stringify({
         event_id: eventId,
         tasks_created: insertedTasks.length,
         zones_created: allLeafZones.length,
         volunteers_created: volunteerIds.length,
-        message: "Demo voetbalwedstrijd aangemaakt! Verken de planning, zones en toewijzingen.",
+        safety_roles_created: roles?.length || 0,
+        message: "Demo voetbalwedstrijd aangemaakt met safety-rollen! Verken de planning, zones en toewijzingen.",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

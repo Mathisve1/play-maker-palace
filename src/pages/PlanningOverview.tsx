@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2, BookOpen } from 'lucide-react';
+import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2, BookOpen, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
+import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 
 interface EventData {
   id: string;
@@ -40,6 +41,7 @@ const PlanningOverview = () => {
   const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [showPostDemoCta, setShowPostDemoCta] = useState(false);
+  const [showSafetyRoles, setShowSafetyRoles] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -197,6 +199,10 @@ const PlanningOverview = () => {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setShowSafetyRoles(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
+              <Shield className="w-4 h-4" /> {nl ? 'Safety Rollen' : 'Safety Roles'}
+            </button>
             <button onClick={() => setShowTour(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
               <BookOpen className="w-4 h-4" /> {nl ? 'Hoe werkt het?' : 'How does it work?'}
@@ -296,6 +302,14 @@ const PlanningOverview = () => {
       </div>
     </ClubPageLayout>
     <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
+    {showSafetyRoles && clubId && (
+      <SafetyConfigDialog
+        open={showSafetyRoles}
+        onClose={() => setShowSafetyRoles(false)}
+        eventId=""
+        clubId={clubId}
+      />
+    )}
     </>
   );
 };
