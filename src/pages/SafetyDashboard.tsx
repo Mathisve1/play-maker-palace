@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -1395,53 +1396,58 @@ const SafetyDashboard = () => {
           )}
         </AnimatePresence>
 
-        {/* Photo Lightbox — z-[200] to appear above fullscreen map & everything */}
-        <AnimatePresence>
-          {lightboxUrl && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md"
-              onClick={() => setLightboxUrl(null)}
-            >
-              <div
-                className="overflow-auto max-w-[95vw] max-h-[92vh] flex items-center justify-center touch-pinch-zoom"
-                onClick={(e) => e.stopPropagation()}
-                style={{ cursor: 'zoom-in' }}
-              >
-                <motion.img
-                  initial={{ scale: 0.85, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.85, opacity: 0 }}
-                  src={lightboxUrl}
-                  alt="Incident foto vergroot"
-                  className="max-w-none select-none"
-                  style={{ maxHeight: '90vh', objectFit: 'contain' }}
-                  draggable={false}
-                  onClick={(e) => {
-                    const img = e.currentTarget;
-                    if (img.style.transform === 'scale(2)') {
-                      img.style.transform = 'scale(1)';
-                      img.style.cursor = 'zoom-in';
-                    } else {
-                      img.style.transform = 'scale(2)';
-                      img.style.cursor = 'zoom-out';
-                    }
-                  }}
-                />
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 rounded-full z-[201]"
+        {/* Photo Lightbox — portaled into fullscreen element when active */}
+        {createPortal(
+          <AnimatePresence>
+            {lightboxUrl && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-md"
+                style={{ zIndex: 2147483647 }}
                 onClick={() => setLightboxUrl(null)}
               >
-                <XCircle className="w-6 h-6" />
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <div
+                  className="overflow-auto max-w-[95vw] max-h-[92vh] flex items-center justify-center touch-pinch-zoom"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ cursor: 'zoom-in' }}
+                >
+                  <motion.img
+                    initial={{ scale: 0.85, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.85, opacity: 0 }}
+                    src={lightboxUrl}
+                    alt="Incident foto vergroot"
+                    className="max-w-none select-none"
+                    style={{ maxHeight: '90vh', objectFit: 'contain' }}
+                    draggable={false}
+                    onClick={(e) => {
+                      const img = e.currentTarget;
+                      if (img.style.transform === 'scale(2)') {
+                        img.style.transform = 'scale(1)';
+                        img.style.cursor = 'zoom-in';
+                      } else {
+                        img.style.transform = 'scale(2)';
+                        img.style.cursor = 'zoom-out';
+                      }
+                    }}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 rounded-full"
+                  style={{ zIndex: 2147483647 }}
+                  onClick={() => setLightboxUrl(null)}
+                >
+                  <XCircle className="w-6 h-6" />
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.fullscreenElement || document.body
+        )}
       </div>
     </ClubPageLayout>
   );
