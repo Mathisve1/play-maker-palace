@@ -253,10 +253,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                 </div>
                 <div className="flex gap-2">
                   <input type="color" value={newTypeColor} onChange={e => setNewTypeColor(e.target.value)} className="w-10 h-10 rounded-lg border border-input cursor-pointer" />
-                  <select value={newTypePriority} onChange={e => setNewTypePriority(e.target.value)} className={inputClass + ' flex-1'}>
-                    {PRIORITY_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                  </select>
-                  <Button onClick={addIncidentType} size="sm"><Plus className="w-4 h-4" /></Button>
+                  <Button onClick={addIncidentType} size="sm" className="ml-auto"><Plus className="w-4 h-4" /></Button>
                 </div>
               </div>
               {incidentTypes.map(type => (
