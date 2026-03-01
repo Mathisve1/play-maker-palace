@@ -7,7 +7,7 @@ import {
   Shield, AlertTriangle, CheckCircle2, Radio, Maximize2, Minimize2,
   Phone, ChevronRight, Clock, MapPin, Volume2, VolumeX, RefreshCw,
   Rocket, Lock, Camera, Image, RotateCcw, Trash2, Play, ToggleLeft, ToggleRight,
-  XCircle, Heart, PartyPopper,
+  XCircle, Heart, PartyPopper, FileDown,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import VolunteerPhoneMockup from '@/components/safety/VolunteerPhoneMockup';
 import IncidentMap from '@/components/safety/IncidentMap';
 import ClosingProcedureManager from '@/components/safety/ClosingProcedureManager';
 import VolunteerClosingView from '@/components/safety/VolunteerClosingView';
+import { generateSafetyReportPdf, type SafetyIncidentForPdf, type SafetyZoneForPdf, type ClosingTaskForPdf } from '@/lib/generateSafetyReportPdf';
 
 // Types
 interface SafetyZone {
@@ -82,6 +83,7 @@ const SafetyDashboard = () => {
   const [eventClosed, setEventClosed] = useState(false);
   const [closingEvent, setClosingEvent] = useState(false);
   const [flashRed, setFlashRed] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
   const [zoneFullscreen, setZoneFullscreen] = useState(false);
   const [incidentFullscreen, setIncidentFullscreen] = useState(false);
   const zoneRef = useRef<HTMLDivElement>(null);
@@ -356,6 +358,76 @@ const SafetyDashboard = () => {
     }
     setClosingEvent(false);
     setShowCloseConfirm(false);
+  };
+
+  // ── GENERATE SAFETY REPORT PDF ──
+  const handleDownloadReport = async () => {
+    if (!clubId || !eventId) return;
+    setGeneratingReport(true);
+    try {
+      // Fetch club name
+      const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).single();
+      // Fetch event date
+      const { data: ev } = await (supabase as any).from('events').select('event_date').eq('id', eventId).single();
+      // Fetch user name
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId!).single();
+      // Fetch closing tasks with volunteer names
+      const { data: cTasks } = await (supabase as any).from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order');
+      const volIds = [...new Set((cTasks || []).map((t: any) => t.assigned_volunteer_id).filter(Boolean))] as string[];
+      let volMap: Record<string, string> = {};
+      if (volIds.length > 0) {
+        const { data: vols } = await supabase.from('profiles').select('id, full_name').in('id', volIds);
+        (vols || []).forEach(v => { volMap[v.id] = v.full_name || 'Onbekend'; });
+      }
+
+      const pdfZones: SafetyZoneForPdf[] = zones.map(z => {
+        const prog = zoneProgress[z.id];
+        return { name: z.name, color: z.color, checklist_total: prog?.total || 0, checklist_done: prog?.done || 0 };
+      });
+
+      const pdfIncidents: SafetyIncidentForPdf[] = incidents.map(inc => ({
+        id: inc.id,
+        incident_type_label: getIncidentTypeName(inc.incident_type_id),
+        incident_type_color: incidentTypes.find(t => t.id === inc.incident_type_id)?.color || '#888',
+        zone_name: getZoneName(inc.zone_id),
+        description: inc.description,
+        priority: inc.priority,
+        status: inc.status,
+        created_at: inc.created_at,
+        resolved_at: inc.resolved_at,
+        photo_url: inc.photo_url,
+      }));
+
+      const pdfClosingTasks: ClosingTaskForPdf[] = (cTasks || []).map((t: any) => ({
+        description: t.description,
+        status: t.status,
+        assigned_volunteer: t.assigned_volunteer_id ? volMap[t.assigned_volunteer_id] || null : null,
+        requires_photo: t.requires_photo,
+        requires_note: t.requires_note,
+        photo_url: t.photo_url,
+        note: t.note,
+        completed_at: t.completed_at,
+      }));
+
+      const doc = generateSafetyReportPdf({
+        eventTitle,
+        eventDate: ev?.event_date || null,
+        clubName: club?.name || 'Onbekend',
+        generatedBy: profile?.full_name || 'Onbekend',
+        zones: pdfZones,
+        incidents: pdfIncidents,
+        closingTasks: pdfClosingTasks,
+        totalChecklistItems,
+        totalChecklistDone,
+      });
+
+      doc.save(`veiligheidsrapport-${eventTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+      toast.success('Veiligheidsrapport gedownload!');
+    } catch (err: any) {
+      toast.error(err.message || 'Fout bij rapport generatie');
+    } finally {
+      setGeneratingReport(false);
+    }
   };
 
   // ── Toggle zone checklist activation ──
@@ -915,6 +987,35 @@ const SafetyDashboard = () => {
               isLive={isLive}
               eventClosed={eventClosed}
             />
+          </div>
+        )}
+
+        {/* Safety Report Download — visible after event closed */}
+        {eventClosed && clubId && (
+          <div className="mb-6">
+            <Card className="bg-card border-border">
+              <CardContent className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <FileDown className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-heading font-semibold text-foreground text-sm">Veiligheidsrapport</p>
+                    <p className="text-xs text-muted-foreground">
+                      Automatisch rapport met incidenten, checklist status en sluitingstaken.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleDownloadReport}
+                  disabled={generatingReport}
+                  className="gap-2"
+                >
+                  {generatingReport ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                  Download PDF
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 
