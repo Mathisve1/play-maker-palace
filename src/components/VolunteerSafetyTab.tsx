@@ -170,7 +170,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Realtime: listen for is_live changes on events
+  // Realtime: listen for is_live changes on events — auto-navigate when live
   useEffect(() => {
     if (events.length === 0) return;
     const eventIds = events.map(e => e.id);
@@ -181,12 +181,16 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
           (payload: any) => {
             if (payload.new.is_live !== undefined) {
               setEvents(prev => prev.map(e => e.id === eid ? { ...e, is_live: payload.new.is_live } : e));
+              // Auto-navigate to live safety dashboard when event goes live
+              if (payload.new.is_live === true) {
+                navigate(`/safety/${eid}`);
+              }
             }
           })
         .subscribe()
     );
     return () => { channels.forEach(ch => supabase.removeChannel(ch)); };
-  }, [events.map(e => e.id).join(',')]);
+  }, [events.map(e => e.id).join(','), navigate]);
 
   // Report pending count
   useEffect(() => {
