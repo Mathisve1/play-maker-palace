@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 interface Incident {
@@ -23,15 +22,8 @@ interface IncidentMapProps {
   singleIncident?: boolean;
 }
 
-const createIcon = (priority: string) => {
-  const color = priority === 'high' ? '#ef4444' : priority === 'medium' ? '#f59e0b' : '#22c55e';
-  return L.divIcon({
-    className: 'custom-incident-marker',
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 6px ${color}80;"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  });
-};
+const getColor = (priority: string) =>
+  priority === 'high' ? '#ef4444' : priority === 'medium' ? '#f59e0b' : '#22c55e';
 
 const IncidentMap = ({ incidents, getTypeName, height = '200px', center, zoom = 15, singleIncident }: IncidentMapProps) => {
   const geoIncidents = useMemo(() => incidents.filter(i => i.lat && i.lng), [incidents]);
@@ -44,19 +36,27 @@ const IncidentMap = ({ incidents, getTypeName, height = '200px', center, zoom = 
     <div style={{ height }} className="rounded-xl overflow-hidden border border-border">
       <MapContainer center={mapCenter} zoom={singleIncident ? 17 : zoom} style={{ height: '100%', width: '100%' }} zoomControl={false} attributionControl={false}>
         <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-        {geoIncidents.map(inc => (
-          <Marker key={inc.id} position={[inc.lat!, inc.lng!]} icon={createIcon(inc.priority)}>
-            <Popup>
-              <div className="text-xs">
-                <strong>{getTypeName(inc.incident_type_id)}</strong>
-                {inc.description && <p className="mt-1">{inc.description}</p>}
-                <p className="text-muted-foreground mt-1">
-                  {new Date(inc.created_at).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {geoIncidents.map(inc => {
+          const color = getColor(inc.priority);
+          return (
+            <CircleMarker
+              key={inc.id}
+              center={[inc.lat!, inc.lng!]}
+              radius={singleIncident ? 10 : 7}
+              pathOptions={{ color: 'white', weight: 2, fillColor: color, fillOpacity: 0.9 }}
+            >
+              <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
+                <div style={{ fontSize: '11px' }}>
+                  <strong>{getTypeName(inc.incident_type_id)}</strong>
+                  {inc.description && <p style={{ margin: '4px 0 0' }}>{inc.description}</p>}
+                  <p style={{ margin: '4px 0 0', color: '#888' }}>
+                    {new Date(inc.created_at).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </Tooltip>
+            </CircleMarker>
+          );
+        })}
       </MapContainer>
     </div>
   );
