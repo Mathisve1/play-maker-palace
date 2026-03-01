@@ -291,14 +291,20 @@ const SafetyDashboard = () => {
       return;
     }
 
+    // Auto-assign zone if volunteer has exactly one assigned zone
+    const myZoneArray = Array.from(myZoneIds);
+    const autoZoneId = myZoneArray.length === 1 ? myZoneArray[0] : (myZoneArray.length > 0 ? myZoneArray[0] : null);
+
     const { data: inc, error } = await (supabase as any).from('safety_incidents').insert({
       event_id: eventId, club_id: clubId, incident_type_id: type.id,
       reporter_id: userId, priority: type.default_priority, status: 'nieuw',
       lat, lng,
+      zone_id: autoZoneId,
     }).select('id').single();
 
     if (error) { toast.error(error.message); setReporting(false); return; }
 
+    if (autoZoneId) setSelectedZoneId(autoZoneId);
     setPendingIncidentId(inc.id);
     setStep2Mode(true);
     setShowIncidentGrid(false);
@@ -553,6 +559,9 @@ const SafetyDashboard = () => {
   const zoneHasActiveIncident = useCallback((zoneId: string) => {
     return activeIncidents.some(i => i.zone_id === zoneId);
   }, [activeIncidents]);
+
+  // Incidents without a zone assigned
+  const unzonedActiveIncidents = useMemo(() => activeIncidents.filter(i => !i.zone_id), [activeIncidents]);
 
   // Auto-redirect volunteers after event closes (only if no closing tasks assigned)
   const [hasClosingTasks, setHasClosingTasks] = useState(false);
@@ -1101,7 +1110,22 @@ const SafetyDashboard = () => {
                                   : <div className={`rounded-full border border-muted-foreground/40 shrink-0 ${zoneFullscreen ? 'w-4 h-4' : 'w-3.5 h-3.5'}`} />
                                 }
                                 <span className={isItemCompleted(ci.id) ? 'text-muted-foreground line-through' : 'text-foreground'}>{ci.description}</span>
-                              </div>
+
+                  {/* Unzoned incidents warning */}
+                  {unzonedActiveIncidents.length > 0 && (
+                    <motion.div
+                      animate={{ backgroundColor: 'rgba(239, 68, 68, 0.15)' }}
+                      className="rounded-xl border-2 border-destructive p-4 flex flex-col shadow-lg shadow-destructive/10"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-heading font-semibold text-foreground text-sm">📍 Zonder zone</span>
+                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-3 h-3 rounded-full bg-destructive" />
+                      </div>
+                      <Badge variant="destructive" className="text-[10px] mb-1">{unzonedActiveIncidents.length} incident{unzonedActiveIncidents.length > 1 ? 'en' : ''}</Badge>
+                      <p className="text-[10px] text-muted-foreground">Incidenten zonder toegewezen zone</p>
+                    </motion.div>
+                  )}
+                </div>
                             ))}
                           </div>
                         )}
