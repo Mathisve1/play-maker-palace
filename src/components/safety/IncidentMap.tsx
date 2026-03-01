@@ -20,15 +20,17 @@ interface IncidentMapProps {
   center?: [number, number];
   zoom?: number;
   singleIncident?: boolean;
+  highlightedIncidentId?: string | null;
 }
 
 const getColor = (priority: string) =>
   priority === 'high' ? '#ef4444' : priority === 'medium' ? '#f59e0b' : '#22c55e';
 
-const IncidentMap = ({ incidents, getTypeName, height = '200px', center, zoom = 15, singleIncident }: IncidentMapProps) => {
+const IncidentMap = ({ incidents, getTypeName, height = '200px', center, zoom = 15, singleIncident, highlightedIncidentId }: IncidentMapProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.CircleMarker[]>([]);
+  const highlightRef = useRef<L.CircleMarker | null>(null);
 
   const geoIncidents = useMemo(() => incidents.filter(i => i.lat && i.lng), [incidents]);
 
@@ -75,6 +77,36 @@ const IncidentMap = ({ incidents, getTypeName, height = '200px', center, zoom = 
       mapRef.current.fitBounds(bounds, { padding: [20, 20] });
     }
   }, [geoIncidents, getTypeName, center, zoom, singleIncident]);
+
+  // Highlight effect
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Remove old highlight
+    if (highlightRef.current) {
+      highlightRef.current.remove();
+      highlightRef.current = null;
+    }
+
+    if (highlightedIncidentId) {
+      const inc = geoIncidents.find(i => i.id === highlightedIncidentId);
+      if (inc && inc.lat && inc.lng) {
+        // Pan to incident
+        mapRef.current.setView([inc.lat, inc.lng], 17, { animate: true });
+
+        // Add pulsing highlight ring
+        const color = getColor(inc.priority);
+        highlightRef.current = L.circleMarker([inc.lat, inc.lng], {
+          radius: 16,
+          color: color,
+          weight: 3,
+          fillColor: color,
+          fillOpacity: 0.25,
+          className: 'animate-ping',
+        }).addTo(mapRef.current);
+      }
+    }
+  }, [highlightedIncidentId, geoIncidents]);
 
   // Cleanup
   useEffect(() => {

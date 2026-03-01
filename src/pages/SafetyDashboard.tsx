@@ -40,6 +40,15 @@ interface ChecklistItem {
 interface ChecklistProgress {
   id: string; checklist_item_id: string; volunteer_id: string; is_completed: boolean;
 }
+interface ReporterProfile {
+  id: string; full_name: string | null; avatar_url: string | null;
+}
+interface TaskZoneInfo {
+  id: string; name: string; parent_id: string | null;
+}
+interface VolunteerZoneAssignment {
+  volunteer_id: string; zone_id: string;
+}
 
 // ── Alarm sound helper ──
 const playAlarm = () => {
@@ -98,6 +107,12 @@ const SafetyDashboard = () => {
   const [incidentDesc, setIncidentDesc] = useState('');
   const [reporting, setReporting] = useState(false);
   const [incidentPhoto, setIncidentPhoto] = useState<File | null>(null);
+
+  // Reporter profiles & zone assignments for Control Room
+  const [reporterProfiles, setReporterProfiles] = useState<Record<string, ReporterProfile>>({});
+  const [volunteerZoneAssignments, setVolunteerZoneAssignments] = useState<VolunteerZoneAssignment[]>([]);
+  const [taskZones, setTaskZones] = useState<TaskZoneInfo[]>([]);
+  const [highlightedIncidentId, setHighlightedIncidentId] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [pendingIncidentId, setPendingIncidentId] = useState<string | null>(null);
   const [step2Mode, setStep2Mode] = useState(false);
@@ -178,6 +193,32 @@ const SafetyDashboard = () => {
       setIncidents(incRes.data || []);
       setChecklistItems(clRes.data || []);
       setChecklistProgress(cpRes.data || []);
+
+      // Fetch reporter profiles for incident cards
+      const incidentData = incRes.data || [];
+      const reporterIds = [...new Set(incidentData.map((i: any) => i.reporter_id).filter(Boolean))] as string[];
+      if (reporterIds.length > 0) {
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', reporterIds);
+        const profileMap: Record<string, ReporterProfile> = {};
+        (profiles || []).forEach(p => { profileMap[p.id] = p; });
+        setReporterProfiles(profileMap);
+      }
+
+      // Fetch task zones (hierarchy) for this event's tasks
+      const { data: eventTasks } = await (supabase as any).from('tasks').select('id').eq('event_id', eventId);
+      const taskIds = (eventTasks || []).map((t: any) => t.id);
+      if (taskIds.length > 0) {
+        const [tzRes, tzaRes] = await Promise.all([
+          (supabase as any).from('task_zones').select('id, name, parent_id').in('task_id', taskIds),
+          (supabase as any).from('task_zone_assignments').select('volunteer_id, zone_id').in('zone_id',
+            // We need zone IDs first - fetch all
+            (await (supabase as any).from('task_zones').select('id').in('task_id', taskIds)).data?.map((z: any) => z.id) || []
+          ),
+        ]);
+        setTaskZones(tzRes.data || []);
+        setVolunteerZoneAssignments(tzaRes.data || []);
+      }
+
       setLoading(false);
     };
     init();
@@ -193,6 +234,16 @@ const SafetyDashboard = () => {
           if (payload.eventType === 'INSERT') {
             const inc = payload.new as SafetyIncident;
             setIncidents(prev => [inc, ...prev]);
+            // Fetch reporter profile if not already known
+            if (inc.reporter_id) {
+              setReporterProfiles(prev => {
+                if (prev[inc.reporter_id]) return prev;
+                supabase.from('profiles').select('id, full_name, avatar_url').eq('id', inc.reporter_id).single().then(({ data }) => {
+                  if (data) setReporterProfiles(p => ({ ...p, [data.id]: data }));
+                });
+                return prev;
+              });
+            }
             if (inc.priority === 'high') {
               if (audioEnabled) playAlarm();
               setFlashRed(true);
@@ -530,6 +581,32 @@ const SafetyDashboard = () => {
 
   const getIncidentTypeName = (typeId: string | null) => incidentTypes.find(t => t.id === typeId)?.label || 'Onbekend';
   const getZoneName = (zoneId: string | null) => zones.find(z => z.id === zoneId)?.name || '—';
+
+  // Build full zone hierarchy path for a volunteer (e.g. "Hoofdtribune > Rij A > Stoel 12")
+  const getVolunteerZonePath = useCallback((volunteerId: string): string | null => {
+    const assignments = volunteerZoneAssignments.filter(a => a.volunteer_id === volunteerId);
+    if (assignments.length === 0) return null;
+    
+    // Build path for the deepest assigned zone
+    const buildPath = (zoneId: string): string[] => {
+      const zone = taskZones.find(z => z.id === zoneId);
+      if (!zone) return [];
+      if (zone.parent_id) {
+        return [...buildPath(zone.parent_id), zone.name];
+      }
+      return [zone.name];
+    };
+
+    // Find the deepest zone (most parents)
+    let deepestPath: string[] = [];
+    for (const a of assignments) {
+      const path = buildPath(a.zone_id);
+      if (path.length > deepestPath.length) deepestPath = path;
+    }
+    return deepestPath.length > 0 ? deepestPath.join(' › ') : null;
+  }, [volunteerZoneAssignments, taskZones]);
+
+  const getReporterInfo = useCallback((reporterId: string) => reporterProfiles[reporterId] || null, [reporterProfiles]);
 
   const priorityColor = (p: string) => p === 'high' ? 'bg-destructive/20 text-destructive border-destructive/30' : p === 'medium' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
   const statusColor = (s: string) => s === 'nieuw' ? 'bg-destructive' : s === 'bezig' ? 'bg-amber-500' : 'bg-emerald-500';
@@ -1151,20 +1228,28 @@ const SafetyDashboard = () => {
                 {/* Overview map with all active incidents */}
                 {activeIncidents.some(i => i.lat && i.lng) && (
                   <div className={incidentFullscreen ? 'shrink-0' : ''}>
-                    <IncidentMap incidents={activeIncidents} getTypeName={getIncidentTypeName} height={incidentFullscreen ? 'calc(50vh - 60px)' : '220px'} />
+                    <IncidentMap incidents={activeIncidents} getTypeName={getIncidentTypeName} height={incidentFullscreen ? 'calc(50vh - 60px)' : '220px'} highlightedIncidentId={highlightedIncidentId} />
                   </div>
                 )}
                 <div className={incidentFullscreen ? 'flex-1 overflow-y-auto space-y-3' : ''}>
                   <AnimatePresence>
                     {activeIncidents.map(inc => {
                       const incidentType = incidentTypes.find(t => t.id === inc.incident_type_id);
+                      const reporter = getReporterInfo(inc.reporter_id);
+                      const zonePath = getVolunteerZonePath(inc.reporter_id);
+                      const isHighlighted = highlightedIncidentId === inc.id;
                       return (
                         <motion.div
                           key={inc.id}
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -20 }}
-                          className={`rounded-xl border space-y-2 ${incidentFullscreen ? 'p-4' : 'p-3'}`}
+                          onClick={() => {
+                            if (inc.lat && inc.lng) {
+                              setHighlightedIncidentId(prev => prev === inc.id ? null : inc.id);
+                            }
+                          }}
+                          className={`rounded-xl border space-y-2 cursor-pointer transition-all ${incidentFullscreen ? 'p-4' : 'p-3'} ${isHighlighted ? 'ring-2 ring-primary border-primary bg-primary/5' : 'hover:border-primary/30'}`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -1175,6 +1260,24 @@ const SafetyDashboard = () => {
                               <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: incidentType.color }} title={incidentType.label} />
                             )}
                           </div>
+
+                          {/* Reporter info inline */}
+                          {reporter && (
+                            <div className="flex items-center gap-2">
+                              {reporter.avatar_url ? (
+                                <img src={reporter.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
+                              ) : (
+                                <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-bold text-primary shrink-0">
+                                  {reporter.full_name?.[0]?.toUpperCase() || '?'}
+                                </div>
+                              )}
+                              <span className="text-xs font-medium text-foreground">{reporter.full_name || 'Onbekend'}</span>
+                              {zonePath && (
+                                <span className="text-[10px] text-muted-foreground truncate ml-1" title={zonePath}>📍 {zonePath}</span>
+                              )}
+                            </div>
+                          )}
+
                           {inc.description && <p className={`text-muted-foreground ${incidentFullscreen ? 'text-sm' : 'text-xs'}`}>{inc.description}</p>}
 
                           {/* Show photo if present */}
@@ -1191,11 +1294,11 @@ const SafetyDashboard = () => {
                           </div>
                           <div className="flex gap-1.5">
                             {inc.status === 'nieuw' && (
-                              <Button size="sm" variant="outline" className={`text-xs ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={() => handleUpdateIncident(inc.id, 'bezig')}>
+                              <Button size="sm" variant="outline" className={`text-xs ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'bezig'); }}>
                                 In behandeling
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" className={`text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={() => handleUpdateIncident(inc.id, 'opgelost')}>
+                            <Button size="sm" variant="outline" className={`text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'opgelost'); }}>
                               ✓ Opgelost
                             </Button>
                           </div>
