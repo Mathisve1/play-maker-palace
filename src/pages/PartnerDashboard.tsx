@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2 } from 'lucide-react';
@@ -374,18 +374,8 @@ const PartnerDashboard = () => {
           </div>
         )}
 
-        <Tabs defaultValue="tasks">
-          <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="tasks" className="gap-1">
-              <Calendar className="w-4 h-4" />{nl ? 'Taken' : 'Tasks'}
-              {pendingTasks.length > 0 && <Badge variant="destructive" className="ml-1 h-4 px-1 text-[10px]">{pendingTasks.length}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="members" className="gap-1">
-              <Users className="w-4 h-4" />{nl ? 'Medewerkers' : 'Members'} ({members.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="tasks" className="space-y-4 mt-4">
+        {activeTab === 'tasks' && (
+          <div className="space-y-4">
             {clubTasks.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">{nl ? 'Nog geen taken voor deze club.' : 'No tasks for this club yet.'}</p>
             ) : (
@@ -410,9 +400,11 @@ const PartnerDashboard = () => {
                 )}
               </>
             )}
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="members" className="space-y-3 mt-4">
+        {activeTab === 'members' && (
+          <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={() => setShowAddMember(true)}><UserPlus className="w-4 h-4 mr-1" />{nl ? 'Toevoegen' : 'Add'}</Button>
               <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}><FileSpreadsheet className="w-4 h-4 mr-1" />Import CSV</Button>
@@ -447,8 +439,8 @@ const PartnerDashboard = () => {
                 </CardContent>
               </Card>
             ))}
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
 
       <Dialog open={showAddMember} onOpenChange={setShowAddMember}>

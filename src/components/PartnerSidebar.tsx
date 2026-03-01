@@ -52,7 +52,7 @@ const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout }: Part
               <SidebarMenuItem>
                 <SidebarMenuButton isActive={activeTab === 'members'} onClick={() => handleNav('members')} className="min-h-[48px]">
                   <Users className="w-5 h-5" />
-                  <span>Leden</span>
+                  <span>Medewerkers</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
