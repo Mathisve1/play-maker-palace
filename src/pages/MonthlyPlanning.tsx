@@ -14,7 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Euro,
   Users, FileText, Trash2, Edit, Eye, Send, CalendarDays, CheckCircle,
+  Copy, FileSignature, Loader2, Banknote,
 } from 'lucide-react';
+import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 
 const MONTH_NAMES_NL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
 const WEEKDAY_NAMES_NL = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
@@ -88,6 +90,9 @@ const MonthlyPlanning = () => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<PlanTask | null>(null);
   const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [copyingTasks, setCopyingTasks] = useState(false);
+  const [generatingPayout, setGeneratingPayout] = useState(false);
+  const [contractVolunteer, setContractVolunteer] = useState<Enrollment | null>(null);
 
   // Task form state
   const [taskForm, setTaskForm] = useState({
@@ -234,6 +239,131 @@ const MonthlyPlanning = () => {
       start_time: '09:00', end_time: '17:00', compensation_type: 'daily',
       daily_rate: '25', hourly_rate: '5', estimated_hours: '8', spots_available: '3',
     });
+  };
+
+  // Feature 1: Copy tasks from previous month
+  const copyPreviousMonth = async () => {
+    if (!plan || !clubId) return;
+    setCopyingTasks(true);
+    try {
+      // Determine previous month
+      const prevM = viewMonth === 1 ? 12 : viewMonth - 1;
+      const prevY = viewMonth === 1 ? viewYear - 1 : viewYear;
+
+      // Find previous month's plan
+      const { data: prevPlan } = await supabase
+        .from('monthly_plans')
+        .select('id')
+        .eq('club_id', clubId)
+        .eq('year', prevY)
+        .eq('month', prevM)
+        .maybeSingle();
+
+      if (!prevPlan) {
+        toast.error('Geen plan gevonden voor de vorige maand');
+        setCopyingTasks(false);
+        return;
+      }
+
+      // Get previous month's tasks
+      const { data: prevTasks } = await supabase
+        .from('monthly_plan_tasks')
+        .select('*')
+        .eq('plan_id', prevPlan.id);
+
+      if (!prevTasks || prevTasks.length === 0) {
+        toast.error('Geen taken gevonden in de vorige maand');
+        setCopyingTasks(false);
+        return;
+      }
+
+      const newDaysInMonth = getDaysInMonth(viewYear, viewMonth);
+      const newTasks = prevTasks
+        .map((t: any) => {
+          const oldDate = new Date(t.task_date);
+          const dayNum = oldDate.getDate();
+          if (dayNum > newDaysInMonth) return null; // Skip days that don't exist
+          const newDate = `${viewYear}-${String(viewMonth).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+          const { id, created_at, plan_id, ...rest } = t;
+          return { ...rest, plan_id: plan.id, task_date: newDate };
+        })
+        .filter(Boolean);
+
+      if (newTasks.length === 0) {
+        toast.error('Geen taken konden worden gekopieerd');
+        setCopyingTasks(false);
+        return;
+      }
+
+      const { data: inserted, error } = await supabase.from('monthly_plan_tasks').insert(newTasks).select();
+      if (error) throw error;
+      setTasks(prev => [...prev, ...(inserted as unknown as PlanTask[])]);
+      toast.success(`${inserted!.length} taken gekopieerd van ${MONTH_NAMES_NL[prevM - 1]}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Kopiëren mislukt');
+    }
+    setCopyingTasks(false);
+  };
+
+  // Feature 2: Generate monthly payout
+  const generateMonthlyPayout = async () => {
+    if (!plan || !clubId) return;
+    setGeneratingPayout(true);
+    try {
+      const confirmedSignups = daySignups.filter(ds => ds.hour_status === 'confirmed');
+      if (confirmedSignups.length === 0) {
+        toast.error('Geen bevestigde uren gevonden');
+        setGeneratingPayout(false);
+        return;
+      }
+
+      // Group by volunteer
+      const byVolunteer: Record<string, { enrollment_id: string; total_days: number; total_hours: number; total_amount: number }> = {};
+      for (const ds of confirmedSignups) {
+        const enr = enrollments.find(e => e.id === ds.enrollment_id);
+        if (!enr) continue;
+        if (!byVolunteer[ds.volunteer_id]) {
+          byVolunteer[ds.volunteer_id] = { enrollment_id: enr.id, total_days: 0, total_hours: 0, total_amount: 0 };
+        }
+        byVolunteer[ds.volunteer_id].total_days += 1;
+        byVolunteer[ds.volunteer_id].total_hours += ds.final_hours || 0;
+        byVolunteer[ds.volunteer_id].total_amount += ds.final_amount || 0;
+      }
+
+      // Check if payouts already exist for this plan
+      const { data: existing } = await supabase
+        .from('monthly_payouts')
+        .select('id')
+        .eq('plan_id', plan.id);
+
+      if (existing && existing.length > 0) {
+        toast.error('Maandafrekening bestaat al voor dit plan');
+        setGeneratingPayout(false);
+        return;
+      }
+
+      const payoutRows = Object.entries(byVolunteer).map(([volunteerId, data]) => ({
+        club_id: clubId,
+        plan_id: plan.id,
+        enrollment_id: data.enrollment_id,
+        volunteer_id: volunteerId,
+        total_days: data.total_days,
+        total_hours: data.total_hours,
+        total_amount: data.total_amount,
+        status: 'pending',
+      }));
+
+      const { error } = await supabase.from('monthly_payouts').insert(payoutRows);
+      if (error) throw error;
+      toast.success(`Maandafrekening gegenereerd voor ${payoutRows.length} vrijwilliger(s)`);
+    } catch (err: any) {
+      toast.error(err.message || 'Genereren mislukt');
+    }
+    setGeneratingPayout(false);
+  };
+
+  const exportToSepa = () => {
+    navigate('/sepa-payouts');
   };
 
   const openEditTask = (task: PlanTask) => {
@@ -418,6 +548,11 @@ const MonthlyPlanning = () => {
             <div className="flex flex-wrap gap-3 items-center">
               {plan.status === 'draft' && (
                 <div className="flex items-center gap-3 flex-wrap">
+                  {/* Copy previous month */}
+                  <Button variant="outline" onClick={copyPreviousMonth} disabled={copyingTasks}>
+                    {copyingTasks ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />}
+                    Kopieer vorige maand
+                  </Button>
                   <div className="flex items-center gap-2">
                     <Label className="text-sm whitespace-nowrap">Contractsjabloon:</Label>
                     <Select
@@ -509,6 +644,17 @@ const MonthlyPlanning = () => {
                         <Badge variant={e.contract_status === 'signed' ? 'default' : 'secondary'}>
                           {e.contract_status === 'signed' ? 'Contract getekend' : e.contract_status === 'sent' ? 'Verstuurd' : 'Wacht op contract'}
                         </Badge>
+                        {/* Feature 3: Send contract button */}
+                        {plan?.contract_template_id && e.contract_status !== 'signed' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setContractVolunteer(e)}
+                          >
+                            <FileSignature className="w-3.5 h-3.5 mr-1" />
+                            {e.contract_status === 'sent' ? 'Opnieuw' : 'Contract'}
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -566,10 +712,23 @@ const MonthlyPlanning = () => {
               </Card>
             )}
 
-            {/* Confirmed hours summary */}
+            {/* Confirmed hours summary + payout */}
             {daySignups.filter(ds => ds.hour_status === 'confirmed').length > 0 && (
               <Card>
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Euro className="w-4 h-4 text-primary" /> Bevestigde vergoedingen</CardTitle></CardHeader>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2"><Euro className="w-4 h-4 text-primary" /> Maandafrekening</CardTitle>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={generateMonthlyPayout} disabled={generatingPayout}>
+                        {generatingPayout ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Banknote className="w-3.5 h-3.5 mr-1" />}
+                        Genereer afrekening
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={exportToSepa}>
+                        <Euro className="w-3.5 h-3.5 mr-1" /> SEPA export
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
                 <CardContent>
                   <div className="space-y-1">
                     {daySignups.filter(ds => ds.hour_status === 'confirmed').map(ds => {
@@ -674,6 +833,38 @@ const MonthlyPlanning = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Contract send dialog */}
+      {contractVolunteer && plan?.contract_template_id && (
+        <SendContractConfirmDialog
+          open={!!contractVolunteer}
+          onOpenChange={(open) => { if (!open) setContractVolunteer(null); }}
+          volunteer={{
+            id: contractVolunteer.volunteer_id,
+            full_name: (contractVolunteer.profiles as any)?.full_name || null,
+            email: (contractVolunteer.profiles as any)?.email || null,
+          }}
+          task={{
+            id: plan.id,
+            title: plan.title,
+            task_date: `${plan.year}-${String(plan.month).padStart(2, '0')}-01`,
+            location: null,
+            contract_template_id: plan.contract_template_id,
+          }}
+          clubId={clubId || undefined}
+          language="nl"
+          onSent={async () => {
+            // Update enrollment contract_status to 'sent'
+            await supabase.from('monthly_enrollments')
+              .update({ contract_status: 'sent' })
+              .eq('id', contractVolunteer.id);
+            setEnrollments(prev => prev.map(e =>
+              e.id === contractVolunteer.id ? { ...e, contract_status: 'sent' } : e
+            ));
+            setContractVolunteer(null);
+          }}
+        />
+      )}
     </ClubPageLayout>
   );
 };
