@@ -60,6 +60,8 @@ const PlanningOverview = () => {
   const [showTour, setShowTour] = useState(false);
   const [showPostDemoCta, setShowPostDemoCta] = useState(false);
   const [showSafetyRoles, setShowSafetyRoles] = useState(false);
+  const [monthlyDemoLoading, setMonthlyDemoLoading] = useState(false);
+  const [monthlyDemoDeleteLoading, setMonthlyDemoDeleteLoading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -179,6 +181,40 @@ const PlanningOverview = () => {
       toast.error(err.message);
     }
     setDemoDeleteLoading(false);
+  };
+
+  const hasMonthlyDemo = monthlyPlans.some(p => p.title.includes('Demo Maandplan'));
+
+  const handleStartMonthlyDemo = async () => {
+    if (!clubId) return;
+    setMonthlyDemoLoading(true);
+    try {
+      const res = await supabase.functions.invoke('monthly-planning-demo', {
+        body: { club_id: clubId, action: 'create' },
+      });
+      if (res.error) throw new Error(res.error.message);
+      toast.success(nl ? 'Maandplanning demo aangemaakt! Pagina wordt herladen...' : 'Monthly demo created! Reloading...');
+      setTimeout(() => window.location.reload(), 2500);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setMonthlyDemoLoading(false);
+  };
+
+  const handleDeleteMonthlyDemo = async () => {
+    if (!clubId) return;
+    setMonthlyDemoDeleteLoading(true);
+    try {
+      const res = await supabase.functions.invoke('monthly-planning-demo', {
+        body: { club_id: clubId, action: 'delete' },
+      });
+      if (res.error) throw new Error(res.error.message);
+      toast.success(nl ? 'Maandplanning demo verwijderd!' : 'Monthly demo deleted!');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setMonthlyDemoDeleteLoading(false);
   };
 
   if (loading) {
@@ -376,7 +412,23 @@ const PlanningOverview = () => {
               </div>
             </div>
 
-            {/* Monthly plans list */}
+            {/* Demo buttons */}
+            <div className="flex gap-2">
+              {hasMonthlyDemo ? (
+                <button onClick={handleDeleteMonthlyDemo} disabled={monthlyDemoDeleteLoading}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50">
+                  {monthlyDemoDeleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {nl ? 'Demo wissen' : 'Delete demo'}
+                </button>
+              ) : (
+                <button onClick={handleStartMonthlyDemo} disabled={monthlyDemoLoading}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                  {monthlyDemoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                  {nl ? 'Start maandplanning demo' : 'Start monthly demo'}
+                </button>
+              )}
+            </div>
+
             {monthlyPlans.length > 0 ? (
               <div className="space-y-3">
                 {monthlyPlans.map(plan => (
