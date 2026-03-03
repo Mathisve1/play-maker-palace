@@ -460,7 +460,22 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
               {/* Available tasks by date */}
               {enrollment && (
                 <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-base">{l.availableTasks}</CardTitle></CardHeader>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">{l.availableTasks}</CardTitle>
+                    {/* Feature 4: Contract blocking message */}
+                    {enrollment.contract_status !== 'signed' && (
+                      <div className="mt-2 p-2.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 text-sm flex items-center gap-2">
+                        <FileSignature className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span className="text-amber-800 dark:text-amber-200">
+                          {language === 'nl'
+                            ? 'Je contract is nog niet getekend. Wacht tot de club je contract verstuurt en onderteken het voordat je je kunt aanmelden voor dagen.'
+                            : language === 'fr'
+                            ? "Votre contrat n'est pas encore signé. Attendez que le club vous envoie votre contrat."
+                            : 'Your contract is not yet signed. Wait for the club to send your contract before signing up for days.'}
+                        </span>
+                      </div>
+                    )}
+                  </CardHeader>
                   <CardContent className="space-y-4">
                     {Object.entries(tasksByDate)
                       .filter(([_, ts]) => ts.some(t => t.plan_id === plan.id))
@@ -468,6 +483,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                       .map(([date, dateTasks]) => {
                         const d = new Date(date);
                         const isPast = d < new Date(new Date().toISOString().split('T')[0]);
+                        const contractNotSigned = enrollment.contract_status !== 'signed';
                         return (
                           <div key={date} className={isPast ? 'opacity-50' : ''}>
                             <p className="text-xs font-semibold text-muted-foreground mb-2 capitalize">
@@ -492,8 +508,14 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                                     </div>
                                     {signedUp ? (
                                       <Badge variant="default" className="shrink-0">{l.signedUp}</Badge>
-                                    ) : !isPast ? (
+                                    ) : !isPast && !contractNotSigned ? (
                                       <Button size="sm" variant="outline" className="shrink-0" onClick={() => signUpForDay(enrollment.id, t.id)}>
+                                        {l.signUp}
+                                      </Button>
+                                    ) : !isPast && contractNotSigned ? (
+                                      <Button size="sm" variant="outline" className="shrink-0 opacity-50 cursor-not-allowed" disabled title={
+                                        language === 'nl' ? 'Je moet eerst je contract tekenen' : 'Sign your contract first'
+                                      }>
                                         {l.signUp}
                                       </Button>
                                     ) : null}
