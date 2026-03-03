@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,12 @@ import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, Chevr
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import DashboardLayout from '@/components/DashboardLayout';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
+import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
+import { useDashboardLayout } from '@/components/dashboard/useDashboardLayout';
+import { WidgetInstance } from '@/components/dashboard/widgetRegistry';
+import { KpiWidget } from '@/components/dashboard/KpiWidget';
+import { ShortcutsWidget } from '@/components/dashboard/ShortcutsWidget';
+import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget';
 
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -366,6 +372,9 @@ const ClubOwnerDashboard = () => {
   });
   const [externalPartners, setExternalPartners] = useState<{ id: string; name: string; external_payroll: boolean }[]>([]);
   const [academyTrainings, setAcademyTrainings] = useState<{ id: string; title: string }[]>([]);
+
+  // Dashboard layout customization
+  const { layout: dashboardLayout, saveLayout, resetLayout, loaded: layoutLoaded } = useDashboardLayout(clubId, currentUserId);
 
   useEffect(() => {
     const init = async () => {
@@ -1442,169 +1451,99 @@ const ClubOwnerDashboard = () => {
           </button>
         </motion.div>
 
-        {/* KPI Cards */}
-        <MonthlyPlanningKPIs clubId={clubId} language={language} navigate={navigate} />
+        {/* Customizable Widget Grid */}
+        {layoutLoaded && (
+          <DashboardGrid
+            layout={dashboardLayout}
+            onLayoutChange={saveLayout}
+            onReset={resetLayout}
+            language={language}
+            renderWidget={(widget: WidgetInstance) => {
+              // Compute KPI values
+              const now = new Date();
+              const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+              const upcomingEventCount = events.filter(e => e.event_date && new Date(e.event_date) >= now && new Date(e.event_date) <= in30).length;
+              const allSignups = Object.values(signups).flat();
+              const pendingSignupCount = allSignups.filter(s => s.status === 'pending').length;
+              const activeVolunteerCount = new Set(allSignups.filter(s => s.status === 'assigned').map(s => s.volunteer_id)).size;
+              const unsignedContractCount = Object.values(signatureStatuses).filter(s => s.status === 'pending').length;
 
-        {/* Standard KPI Cards */}
-        {(() => {
-          const now = new Date();
-          const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-          const upcomingEventCount = events.filter(e => e.event_date && new Date(e.event_date) >= now && new Date(e.event_date) <= in30).length;
-          const allSignups = Object.values(signups).flat();
-          const pendingSignupCount = allSignups.filter(s => s.status === 'pending').length;
-          const activeVolunteerCount = new Set(allSignups.filter(s => s.status === 'assigned').map(s => s.volunteer_id)).size;
-          const unsignedContractCount = Object.values(signatureStatuses).filter(s => s.status === 'pending').length;
-
-          const kpis = [
-            { label: language === 'nl' ? 'Aankomende evenementen' : 'Upcoming events', value: upcomingEventCount, icon: CalendarDays, color: 'text-primary bg-primary/10' },
-            { label: language === 'nl' ? 'Openstaande aanmeldingen' : 'Pending signups', value: pendingSignupCount, icon: Clock, color: 'text-yellow-600 bg-yellow-500/10' },
-            { label: language === 'nl' ? 'Actieve vrijwilligers' : 'Active volunteers', value: activeVolunteerCount, icon: Users, color: 'text-accent-foreground bg-accent/10' },
-            { label: language === 'nl' ? 'Ongetekende contracten' : 'Unsigned contracts', value: unsignedContractCount, icon: FileSignature, color: 'text-destructive bg-destructive/10' },
-          ];
-
-          return (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {kpis.map((kpi, i) => (
-                <div key={i} className="bg-card rounded-2xl border border-border p-5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${kpi.color}`}>
-                      <kpi.icon className="w-5 h-5" />
+              switch (widget.type) {
+                case 'kpi_upcoming_events':
+                  return <KpiWidget type={widget.type} value={upcomingEventCount} language={language} onClick={() => navigate('/events-manager')} />;
+                case 'kpi_pending_signups':
+                  return <KpiWidget type={widget.type} value={pendingSignupCount} language={language} />;
+                case 'kpi_active_volunteers':
+                  return <KpiWidget type={widget.type} value={activeVolunteerCount} language={language} />;
+                case 'kpi_unsigned_contracts':
+                  return <KpiWidget type={widget.type} value={unsignedContractCount} language={language} />;
+                case 'monthly_planning':
+                  return (
+                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 overflow-auto">
+                      <MonthlyPlanningKPIs clubId={clubId} language={language} navigate={navigate} />
                     </div>
-                  </div>
-                  <p className="text-2xl font-heading font-bold text-foreground">{kpi.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
-                </div>
-              ))}
-            </motion.div>
-          );
-        })()}
-
-        {/* UPCOMING EVENTS SECTION */}
-        {(() => {
-          const now = new Date();
-          const futureEvents = events.filter(e => !e.event_date || new Date(e.event_date) >= now);
-          if (futureEvents.length === 0 && looseTasks.length === 0) {
-            return (
-              <div className="text-center py-16 text-muted-foreground">
-                <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>{dt.noEvents}</p>
-                <button onClick={() => navigate('/events-manager')} className="mt-3 px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
-                  {dt.newEvent} →
-                </button>
-              </div>
-            );
-          }
-          return (
-            <>
-              {futureEvents.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
-                      <CalendarDays className="w-5 h-5 text-primary" /> {dt.events}
-                    </h2>
-                    <button onClick={() => navigate('/events-manager')} className="text-xs text-primary hover:underline">
-                      {language === 'nl' ? 'Alles bekijken' : 'View all'} →
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    {futureEvents.map((event, ei) => {
-                      const isEventExpanded = expandedEvent === event.id;
-                      const groups = eventGroups.filter(g => g.event_id === event.id);
-                      const eventTaskCount = getEventTasks(event.id).length;
-
-                      return (
-                        <motion.div
-                          key={event.id}
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: ei * 0.05 }}
-                          className="bg-card rounded-2xl shadow-card border border-primary/10 overflow-hidden"
-                        >
-                          <button
-                            onClick={() => setExpandedEvent(isEventExpanded ? null : event.id)}
-                            className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors"
-                          >
-                            <div className="flex-1">
-                              <h3 className="font-heading font-semibold text-foreground text-lg">{event.title}</h3>
-                              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
-                                {event.event_date && (
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="w-3.5 h-3.5" />
-                                    {new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                )}
-                                {event.location && (
-                                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>
-                                )}
-                                <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" />{groups.length} {language === 'nl' ? 'groepen' : 'groups'}</span>
-                                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{eventTaskCount} {language === 'nl' ? 'taken' : 'tasks'}</span>
+                  );
+                case 'shortcuts':
+                  return <ShortcutsWidget language={language} />;
+                case 'recent_activity':
+                  return <RecentActivityWidget clubId={clubId} language={language} />;
+                case 'upcoming_events': {
+                  const futureEvents = events.filter(e => !e.event_date || new Date(e.event_date) >= now);
+                  return (
+                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 overflow-auto">
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <CalendarDays className="w-4 h-4 text-primary" />
+                        {language === 'nl' ? 'Evenementen' : 'Events'}
+                        <button onClick={() => navigate('/events-manager')} className="ml-auto text-xs text-primary hover:underline">
+                          {language === 'nl' ? 'Alles bekijken' : 'View all'} →
+                        </button>
+                      </h3>
+                      {futureEvents.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          {language === 'nl' ? 'Geen evenementen.' : 'No events.'}
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {futureEvents.slice(0, 5).map(event => (
+                            <button key={event.id} onClick={() => navigate('/events-manager')} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/30 transition-colors text-left">
+                              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <Calendar className="w-4 h-4 text-primary" />
                               </div>
-                            </div>
-                            <div className="shrink-0">
-                              {isEventExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
-                            </div>
-                          </button>
-
-                          {isEventExpanded && (
-                            <div className="border-t border-border px-5 pb-5">
-                              {event.description && (
-                                <p className="text-sm text-muted-foreground mt-3 mb-4">{event.description}</p>
-                              )}
-
-                              {/* Groups within event */}
-                              {groups.length === 0 ? (
-                                <p className="text-sm text-muted-foreground text-center py-4">
-                                  {language === 'nl' ? 'Geen groepen.' : 'No groups.'}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{event.title}</p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {event.event_date ? new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
+                                  {event.location ? ` · ${event.location}` : ''}
                                 </p>
-                              ) : (
-                                <div className="space-y-4 mt-3">
-                                  {groups.sort((a, b) => a.sort_order - b.sort_order).map(group => {
-                                    const groupTasks = getGroupTasks(group.id);
-                                    return (
-                                      <div key={group.id} className="rounded-xl border border-border overflow-hidden">
-                                        <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: group.color + '15' }}>
-                                          <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color }} />
-                                            <h4 className="font-medium text-foreground text-sm">{group.name}</h4>
-                                            <span className="text-xs text-muted-foreground">({groupTasks.length} {language === 'nl' ? 'taken' : 'tasks'})</span>
-                                          </div>
-                                        </div>
-                                        <div className="divide-y divide-border">
-                                          {groupTasks.map((task, ti) => renderTaskCard(task, ti))}
-                                          {groupTasks.length === 0 && (
-                                            <p className="text-xs text-muted-foreground text-center py-3">
-                                              {language === 'nl' ? 'Geen taken in deze groep' : 'No tasks in this group'}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* LOOSE TASKS SECTION */}
-              {looseTasks.length > 0 && (
-                <div>
-                  <h2 className="text-lg font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-muted-foreground" /> {dt.looseTasks}
-                  </h2>
-                  <div className="space-y-4">
-                    {looseTasks.map((task, i) => renderTaskCard(task, i))}
-                  </div>
-                </div>
-              )}
-            </>
-          );
-        })()}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                case 'pending_tickets':
+                  return (
+                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center">
+                      <Ticket className="w-8 h-8 text-purple-600 mb-2" />
+                      <p className="text-lg font-bold text-foreground">0</p>
+                      <p className="text-xs text-muted-foreground">{language === 'nl' ? 'Tickets te genereren' : 'Tickets to generate'}</p>
+                      <button onClick={() => navigate('/ticketing')} className="mt-2 text-xs text-primary hover:underline">
+                        {language === 'nl' ? 'Naar ticketing' : 'Go to ticketing'} →
+                      </button>
+                    </div>
+                  );
+                default:
+                  return (
+                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex items-center justify-center">
+                      <p className="text-xs text-muted-foreground">Widget: {widget.type}</p>
+                    </div>
+                  );
+              }
+            }}
+          />
+        )}
       </main>
 
       {/* Dialogs */}
