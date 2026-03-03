@@ -1476,7 +1476,7 @@ const ClubOwnerDashboard = () => {
                 case 'kpi_active_volunteers':
                   return <KpiWidget type={widget.type} value={activeVolunteerCount} language={language} onClick={() => navigate('/reporting')} />;
                 case 'kpi_unsigned_contracts':
-                  return <KpiWidget type={widget.type} value={unsignedContractCount} language={language} onClick={() => navigate('/contract-builder')} />;
+                  return <KpiWidget type={widget.type} value={unsignedContractCount} language={language} onClick={() => navigate('/reporting?tab=compliance')} />;
                 case 'kpi_pending_enrollments':
                   return <KpiWidget type={widget.type} value={0} language={language} onClick={() => navigate('/planning?tab=monthly')} />;
                 case 'kpi_day_signups_pending':
