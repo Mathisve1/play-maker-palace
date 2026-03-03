@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
-  HelpCircle, Building2, Shield,
+  HelpCircle, Building2, Shield, CalendarDays,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -13,7 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
-export type VolunteerTab = 'dashboard' | 'all' | 'mine' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner' | 'safety';
+export type VolunteerTab = 'dashboard' | 'all' | 'mine' | 'monthly' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner' | 'safety';
 
 interface VolunteerSidebarProps {
   activeTab: VolunteerTab;
@@ -38,6 +38,7 @@ const labels: Record<Language, Record<string, string>> = {
     dashboard: 'Dashboard',
     allTasks: 'Alle Taken',
     myTasks: 'Mijn Taken',
+    monthly: 'Maandplanning',
     messages: 'Berichten',
     clubSearch: 'Club Zoeken',
     payments: 'Vergoedingen',
@@ -58,6 +59,7 @@ const labels: Record<Language, Record<string, string>> = {
     dashboard: 'Tableau de bord',
     allTasks: 'Toutes les tâches',
     myTasks: 'Mes tâches',
+    monthly: 'Planning mensuel',
     messages: 'Messages',
     clubSearch: 'Chercher un club',
     payments: 'Remboursements',
@@ -78,6 +80,7 @@ const labels: Record<Language, Record<string, string>> = {
     dashboard: 'Dashboard',
     allTasks: 'All Tasks',
     myTasks: 'My Tasks',
+    monthly: 'Monthly Planning',
     messages: 'Messages',
     clubSearch: 'Find Clubs',
     payments: 'Payments',
@@ -170,6 +173,12 @@ const VolunteerSidebar = ({
                   <ClipboardList className="w-5 h-5" />
                   <span>{l.myTasks}</span>
                   <Badge count={(counts.pending || 0) + (counts.assigned || 0)} />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'monthly'} onClick={() => handleNav('monthly')} className="min-h-[48px]">
+                  <CalendarDays className="w-5 h-5" />
+                  <span>{l.monthly}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

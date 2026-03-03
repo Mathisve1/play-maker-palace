@@ -1235,6 +1235,305 @@ export type Database = {
           },
         ]
       }
+      monthly_day_signups: {
+        Row: {
+          checked_in_at: string | null
+          checked_out_at: string | null
+          club_approved: boolean
+          club_reported_hours: number | null
+          created_at: string
+          enrollment_id: string
+          final_amount: number | null
+          final_hours: number | null
+          hour_status: string
+          id: string
+          plan_task_id: string
+          status: string
+          ticket_barcode: string | null
+          volunteer_approved: boolean
+          volunteer_id: string
+          volunteer_reported_hours: number | null
+        }
+        Insert: {
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          club_approved?: boolean
+          club_reported_hours?: number | null
+          created_at?: string
+          enrollment_id: string
+          final_amount?: number | null
+          final_hours?: number | null
+          hour_status?: string
+          id?: string
+          plan_task_id: string
+          status?: string
+          ticket_barcode?: string | null
+          volunteer_approved?: boolean
+          volunteer_id: string
+          volunteer_reported_hours?: number | null
+        }
+        Update: {
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          club_approved?: boolean
+          club_reported_hours?: number | null
+          created_at?: string
+          enrollment_id?: string
+          final_amount?: number | null
+          final_hours?: number | null
+          hour_status?: string
+          id?: string
+          plan_task_id?: string
+          status?: string
+          ticket_barcode?: string | null
+          volunteer_approved?: boolean
+          volunteer_id?: string
+          volunteer_reported_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_day_signups_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_day_signups_plan_task_id_fkey"
+            columns: ["plan_task_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_plan_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_enrollments: {
+        Row: {
+          contract_status: string
+          created_at: string
+          document_url: string | null
+          docuseal_submission_id: number | null
+          id: string
+          plan_id: string
+          signed_at: string | null
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          contract_status?: string
+          created_at?: string
+          document_url?: string | null
+          docuseal_submission_id?: number | null
+          id?: string
+          plan_id: string
+          signed_at?: string | null
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          contract_status?: string
+          created_at?: string
+          document_url?: string | null
+          docuseal_submission_id?: number | null
+          id?: string
+          plan_id?: string
+          signed_at?: string | null
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_enrollments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_payouts: {
+        Row: {
+          club_id: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          paid_at: string | null
+          plan_id: string
+          status: string
+          total_amount: number
+          total_days: number
+          total_hours: number
+          volunteer_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          paid_at?: string | null
+          plan_id: string
+          status?: string
+          total_amount?: number
+          total_days?: number
+          total_hours?: number
+          volunteer_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          paid_at?: string | null
+          plan_id?: string
+          status?: string
+          total_amount?: number
+          total_days?: number
+          total_hours?: number
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_payouts_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_payouts_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_payouts_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_plan_tasks: {
+        Row: {
+          category: string
+          compensation_type: string
+          created_at: string
+          daily_rate: number | null
+          description: string | null
+          end_time: string | null
+          estimated_hours: number | null
+          hourly_rate: number | null
+          id: string
+          location: string | null
+          plan_id: string
+          spots_available: number
+          start_time: string | null
+          task_date: string
+          title: string
+        }
+        Insert: {
+          category?: string
+          compensation_type?: string
+          created_at?: string
+          daily_rate?: number | null
+          description?: string | null
+          end_time?: string | null
+          estimated_hours?: number | null
+          hourly_rate?: number | null
+          id?: string
+          location?: string | null
+          plan_id: string
+          spots_available?: number
+          start_time?: string | null
+          task_date: string
+          title: string
+        }
+        Update: {
+          category?: string
+          compensation_type?: string
+          created_at?: string
+          daily_rate?: number | null
+          description?: string | null
+          end_time?: string | null
+          estimated_hours?: number | null
+          hourly_rate?: number | null
+          id?: string
+          location?: string | null
+          plan_id?: string
+          spots_available?: number
+          start_time?: string | null
+          task_date?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_plan_tasks_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_plans: {
+        Row: {
+          club_id: string
+          contract_template_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          month: number
+          status: string
+          title: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          club_id: string
+          contract_template_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          month: number
+          status?: string
+          title?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          club_id?: string
+          contract_template_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          month?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_plans_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_plans_contract_template_id_fkey"
+            columns: ["contract_template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
