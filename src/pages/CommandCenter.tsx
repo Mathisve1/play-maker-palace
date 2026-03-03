@@ -33,6 +33,9 @@ interface ActionItem {
   enrollment_id?: string;
   contract_template_id?: string | null;
   has_monthly_contract?: boolean;
+  // Rich data for contract dialog
+  _volunteer?: any;
+  _task?: any;
 }
 
 const typeConfig = {
@@ -99,10 +102,10 @@ const CommandCenter = () => {
 
     const actionItems: ActionItem[] = [];
 
-    // 1. Pending task signups
+    // 1. Pending task signups + assigned signups needing contracts
     const { data: tasks } = await supabase
       .from('tasks')
-      .select('id, title, task_date, contract_template_id')
+      .select('id, title, task_date, location, start_time, end_time, expense_amount, expense_reimbursement, contract_template_id')
       .eq('club_id', club.id)
       .eq('status', 'open');
 
@@ -112,25 +115,63 @@ const CommandCenter = () => {
         .from('task_signups')
         .select('id, task_id, volunteer_id, status')
         .in('task_id', taskIds)
-        .eq('status', 'pending');
+        .in('status', ['pending', 'assigned']);
+
+      // Also fetch existing tickets to know which assigned signups still need one
+      const { data: existingTickets } = await supabase
+        .from('volunteer_tickets')
+        .select('volunteer_id, task_id')
+        .eq('club_id', club.id)
+        .in('task_id', taskIds);
+      const ticketSet = new Set((existingTickets || []).map(t => `${t.volunteer_id}_${t.task_id}`));
 
       if (signups && signups.length > 0) {
         const volIds = [...new Set(signups.map(s => s.volunteer_id))];
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', volIds);
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email, phone, bank_iban, bank_holder_name').in('id', volIds);
         const pMap = new Map(profiles?.map(p => [p.id, p]) || []);
         const tMap = new Map(tasks.map(t => [t.id, t]));
 
         signups.forEach(s => {
           const vol = pMap.get(s.volunteer_id);
           const task = tMap.get(s.task_id);
-          actionItems.push({
-            id: `ts-${s.id}`, type: 'task_signup', volunteer_id: s.volunteer_id,
-            volunteer_name: vol?.full_name || vol?.email || '?',
-            volunteer_email: vol?.email || null,
-            context_label: task?.title || '?', context_date: task?.task_date || null,
-            source_id: s.id, task_id: s.task_id,
-            contract_template_id: task?.contract_template_id,
-          });
+
+          if (s.status === 'pending') {
+            actionItems.push({
+              id: `ts-${s.id}`, type: 'task_signup', volunteer_id: s.volunteer_id,
+              volunteer_name: vol?.full_name || vol?.email || '?',
+              volunteer_email: vol?.email || null,
+              context_label: task?.title || '?', context_date: task?.task_date || null,
+              source_id: s.id, task_id: s.task_id,
+              contract_template_id: task?.contract_template_id,
+              _volunteer: vol, _task: task,
+            });
+          }
+
+          if (s.status === 'assigned') {
+            // Contract needed?
+            if (task?.contract_template_id) {
+              actionItems.push({
+                id: `tctr-${s.id}`, type: 'contract', volunteer_id: s.volunteer_id,
+                volunteer_name: vol?.full_name || vol?.email || '?',
+                volunteer_email: vol?.email || null,
+                context_label: task?.title || '?', context_date: task?.task_date || null,
+                source_id: s.id, task_id: s.task_id,
+                contract_template_id: task?.contract_template_id,
+                _volunteer: vol, _task: task,
+              });
+            }
+
+            // Ticket needed? (assigned but no ticket generated yet)
+            if (task?.id && !ticketSet.has(`${s.volunteer_id}_${s.task_id}`)) {
+              actionItems.push({
+                id: `ttkt-${s.id}`, type: 'ticket', volunteer_id: s.volunteer_id,
+                volunteer_name: vol?.full_name || vol?.email || '?',
+                volunteer_email: vol?.email || null,
+                context_label: task?.title || '?', context_date: task?.task_date || null,
+                source_id: s.id, task_id: s.task_id,
+              });
+            }
+          }
         });
       }
     }
@@ -148,15 +189,16 @@ const CommandCenter = () => {
 
       const { data: enrollments } = await supabase
         .from('monthly_enrollments')
-        .select('id, plan_id, volunteer_id, approval_status, contract_status, profiles:volunteer_id(full_name, email)')
+        .select('id, plan_id, volunteer_id, approval_status, contract_status, profiles:volunteer_id(full_name, email, phone, bank_iban, bank_holder_name)')
         .in('plan_id', planIds);
 
       const enrs = (enrollments || []) as any[];
 
       enrs.forEach(e => {
         const plan = planMap.get(e.plan_id);
-        const name = e.profiles?.full_name || e.profiles?.email || '?';
-        const email = e.profiles?.email || null;
+        const vol = e.profiles || {};
+        const name = vol.full_name || vol.email || '?';
+        const email = vol.email || null;
         const planLabel = plan?.title || `${plan?.month}/${plan?.year}`;
 
         if (e.approval_status === 'pending') {
@@ -168,13 +210,15 @@ const CommandCenter = () => {
             contract_template_id: plan?.contract_template_id,
           });
         }
-        if (e.approval_status === 'approved' && e.contract_status === 'pending') {
+        if (e.approval_status === 'approved' && e.contract_status === 'pending' && plan?.contract_template_id) {
           actionItems.push({
             id: `ctr-${e.id}`, type: 'contract', volunteer_id: e.volunteer_id,
             volunteer_name: name, volunteer_email: email,
             context_label: planLabel, context_date: null,
             source_id: e.id, plan_id: e.plan_id,
             contract_template_id: plan?.contract_template_id,
+            _volunteer: { id: e.volunteer_id, full_name: vol.full_name, email: vol.email, phone: vol.phone, bank_iban: vol.bank_iban, bank_holder_name: vol.bank_holder_name },
+            _task: { id: e.plan_id, title: planLabel, contract_template_id: plan?.contract_template_id, task_date: null, location: null },
           });
         }
       });
@@ -285,8 +329,21 @@ const CommandCenter = () => {
         await supabase.from('monthly_day_signups').update({ status: 'assigned' }).eq('id', item.source_id);
         toast.success(language === 'nl' ? 'Toegekend!' : 'Assigned!');
       } else if (item.type === 'ticket') {
-        const barcode = `MP-${item.source_id.slice(0, 8).toUpperCase()}`;
-        await supabase.from('monthly_day_signups').update({ ticket_barcode: barcode }).eq('id', item.source_id);
+        if (item.id.startsWith('tkt-')) {
+          // Monthly day signup ticket
+          const barcode = `MP-${item.source_id.slice(0, 8).toUpperCase()}`;
+          await supabase.from('monthly_day_signups').update({ ticket_barcode: barcode }).eq('id', item.source_id);
+        } else if (item.task_id && clubId) {
+          // Task-level ticket
+          const barcode = `VT-${item.source_id.slice(0, 8).toUpperCase()}`;
+          await supabase.from('volunteer_tickets').insert({
+            club_id: clubId,
+            volunteer_id: item.volunteer_id,
+            task_id: item.task_id,
+            barcode,
+            status: 'generated' as any,
+          });
+        }
         toast.success(language === 'nl' ? 'Ticket gegenereerd!' : 'Ticket generated!');
       }
       await loadData();
@@ -339,8 +396,18 @@ const CommandCenter = () => {
     } else if (item.type === 'day_signup') {
       await supabase.from('monthly_day_signups').update({ status: 'assigned' }).eq('id', item.source_id);
     } else if (item.type === 'ticket') {
-      const barcode = `MP-${item.source_id.slice(0, 8).toUpperCase()}`;
-      await supabase.from('monthly_day_signups').update({ ticket_barcode: barcode }).eq('id', item.source_id);
+      if (item.id.startsWith('tkt-')) {
+        const barcode = `MP-${item.source_id.slice(0, 8).toUpperCase()}`;
+        await supabase.from('monthly_day_signups').update({ ticket_barcode: barcode }).eq('id', item.source_id);
+      } else if (item.task_id && clubId) {
+        const barcode = `VT-${item.source_id.slice(0, 8).toUpperCase()}`;
+        await supabase.from('volunteer_tickets').insert({
+          club_id: clubId, volunteer_id: item.volunteer_id, task_id: item.task_id,
+          barcode, status: 'generated' as any,
+        });
+      }
+    } else if (item.type === 'contract') {
+      // Skip in bulk - contracts need manual review via dialog
     }
   };
 
@@ -507,7 +574,11 @@ const CommandCenter = () => {
 
                       <div className="flex gap-1.5 shrink-0">
                         {item.type === 'contract' ? (
-                          <Button size="sm" variant="outline" className="gap-1 h-8" onClick={() => navigate(`/monthly-planning?y=${new Date().getFullYear()}&m=${new Date().getMonth() + 1}`)}>
+                          <Button size="sm" variant="outline" className="gap-1 h-8" onClick={() => {
+                            const vol = item._volunteer || { id: item.volunteer_id, full_name: item.volunteer_name, email: item.volunteer_email };
+                            const task = item._task || { id: item.task_id || item.source_id, title: item.context_label, contract_template_id: item.contract_template_id, task_date: item.context_date };
+                            setContractConfirm({ volunteer: vol, task: { ...task, contract_template_id: item.contract_template_id } });
+                          }}>
                             <FileSignature className="w-3.5 h-3.5" />
                             <span className="hidden sm:inline">{actionLabel(item)}</span>
                           </Button>
