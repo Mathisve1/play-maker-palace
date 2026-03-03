@@ -30,6 +30,7 @@ import {
 import ReportingFinancialTab from '@/components/reporting/ReportingFinancialTab';
 import ReportingPartnersTab from '@/components/reporting/ReportingPartnersTab';
 import ReportingComplianceTab from '@/components/reporting/ReportingComplianceTab';
+import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
 
 // ── Types ───────────────────────────────────────────────────────
 interface VolunteerReport {
@@ -107,6 +108,7 @@ const ReportingDashboard = () => {
   const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const aiEndRef = useRef<HTMLDivElement>(null);
+  const [selectedVolunteerProfile, setSelectedVolunteerProfile] = useState<VolunteerReport | null>(null);
 
   // ── Init ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -837,11 +839,11 @@ const ReportingDashboard = () => {
                 <TableHead className="text-right">Verdiend</TableHead><TableHead className="text-right">€/taak</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {volunteerReports.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Geen data gevonden</TableCell></TableRow>
-                ) : volunteerReports.map(v => (
-                  <TableRow key={v.id}>
-                    <TableCell className="font-medium">{v.name}</TableCell>
+                 {volunteerReports.length === 0 ? (
+                   <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Geen data gevonden</TableCell></TableRow>
+                 ) : volunteerReports.map(v => (
+                   <TableRow key={v.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedVolunteerProfile(v)}>
+                     <TableCell className="font-medium">{v.name}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{v.email || '—'}</TableCell>
                     <TableCell className="text-center">{v.totalAssigned}</TableCell>
                     <TableCell className="text-center"><Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-300">{v.totalCheckedIn}</Badge></TableCell>
@@ -1016,6 +1018,20 @@ const ReportingDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {selectedVolunteerProfile && (
+        <VolunteerProfileDialog
+          volunteer={{
+            id: selectedVolunteerProfile.id,
+            full_name: selectedVolunteerProfile.name,
+            email: selectedVolunteerProfile.email,
+            avatar_url: null,
+          }}
+          open={!!selectedVolunteerProfile}
+          onOpenChange={(open) => { if (!open) setSelectedVolunteerProfile(null); }}
+          language="nl"
+        />
+      )}
     </ClubPageLayout>
   );
 };

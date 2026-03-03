@@ -382,6 +382,43 @@ const ClubOwnerDashboard = () => {
   // Dashboard layout customization
   const { layout: dashboardLayout, saveLayout, resetLayout, loaded: layoutLoaded } = useDashboardLayout(clubId, currentUserId);
 
+  // Extracted KPI refresh function
+  const refreshKPIs = useCallback(async (cid: string) => {
+    const { data: publishedPlans } = await supabase
+      .from('monthly_plans')
+      .select('id, contract_template_id')
+      .eq('club_id', cid)
+      .eq('status', 'published');
+
+    if (publishedPlans && publishedPlans.length > 0) {
+      const planIds = publishedPlans.map(p => p.id);
+      const { data: enrollments } = await supabase
+        .from('monthly_enrollments')
+        .select('id, plan_id, approval_status')
+        .in('plan_id', planIds);
+      const enrs = enrollments || [];
+      setPendingEnrollmentCount(enrs.filter(e => e.approval_status === 'pending').length);
+
+      const approvedEnrIds = enrs.filter(e => e.approval_status === 'approved').map(e => e.id);
+      if (approvedEnrIds.length > 0) {
+        const { data: daySignups } = await supabase
+          .from('monthly_day_signups')
+          .select('id, status, ticket_barcode')
+          .in('enrollment_id', approvedEnrIds);
+        const ds = daySignups || [];
+        setPendingDaySignupCount(ds.filter(d => d.status === 'pending').length);
+        setPendingTicketCount(ds.filter(d => d.status === 'assigned' && !d.ticket_barcode).length);
+      } else {
+        setPendingDaySignupCount(0);
+        setPendingTicketCount(0);
+      }
+    } else {
+      setPendingEnrollmentCount(0);
+      setPendingDaySignupCount(0);
+      setPendingTicketCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -559,32 +596,7 @@ const ClubOwnerDashboard = () => {
       }
 
       // Fetch monthly planning KPI counts
-      const { data: publishedPlans } = await supabase
-        .from('monthly_plans')
-        .select('id, contract_template_id')
-        .eq('club_id', activeClub.id)
-        .eq('status', 'published');
-
-      if (publishedPlans && publishedPlans.length > 0) {
-        const planIds = publishedPlans.map(p => p.id);
-        const { data: enrollments } = await supabase
-          .from('monthly_enrollments')
-          .select('id, plan_id, approval_status')
-          .in('plan_id', planIds);
-        const enrs = enrollments || [];
-        setPendingEnrollmentCount(enrs.filter(e => e.approval_status === 'pending').length);
-
-        const approvedEnrIds = enrs.filter(e => e.approval_status === 'approved').map(e => e.id);
-        if (approvedEnrIds.length > 0) {
-          const { data: daySignups } = await supabase
-            .from('monthly_day_signups')
-            .select('id, status, ticket_barcode')
-            .in('enrollment_id', approvedEnrIds);
-          const ds = daySignups || [];
-          setPendingDaySignupCount(ds.filter(d => d.status === 'pending').length);
-          setPendingTicketCount(ds.filter(d => d.status === 'assigned' && !d.ticket_barcode).length);
-        }
-      }
+      await refreshKPIs(activeClub.id);
 
       setLoading(false);
     };
@@ -595,7 +607,7 @@ const ClubOwnerDashboard = () => {
 
     init();
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, refreshKPIs]);
 
   // --- Handlers ---
 
@@ -621,6 +633,8 @@ const ClubOwnerDashboard = () => {
           setContractConfirm({ volunteer, task });
         }
       }
+      // Refresh KPIs after status change
+      if (clubId) refreshKPIs(clubId);
     }
     setUpdatingSignup(null);
   };
@@ -1582,7 +1596,7 @@ const ClubOwnerDashboard = () => {
                       <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                         <Shield className="w-6 h-6 text-green-600" />
                       </div>
-                      <p className="text-2xl font-bold text-foreground">{complianceMap.size}</p>
+                      <p className="text-2xl font-bold text-foreground">{Array.from(complianceMap.values()).filter(c => c.hasCurrentMonthDeclaration).length}</p>
                       <p className="text-xs text-muted-foreground mt-1">{language === 'nl' ? 'Vrijwilligers met verklaring' : 'Volunteers with declaration'}</p>
                       <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {language === 'nl' ? 'Compliance bekijken →' : 'View compliance →'}
