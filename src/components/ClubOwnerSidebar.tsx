@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus, LayoutGrid,
+  CalendarPlus, LayoutGrid, Inbox,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -34,6 +34,7 @@ const ClubOwnerSidebar = ({
 
   const mainItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
+    { label: 'Command Center', icon: Inbox, path: '/command-center' },
     { label: 'Evenementen & Taken', icon: CalendarPlus, path: '/events-manager' },
     { label: 'Planning', icon: LayoutGrid, path: '/planning' },
     { label: 'Safety & Security', icon: ShieldAlert, path: '/safety' },
