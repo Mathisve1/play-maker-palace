@@ -52,6 +52,46 @@ const VOLUNTEER_NAMES = [
   { name: "Julie Hermans", email: "demo-julie@playmaker.test" },
 ];
 
+const assertNoError = (error: any, context: string) => {
+  if (error) throw new Error(`${context}: ${error.message}`);
+};
+
+const cleanupPlanData = async (supabase: any, planId: string) => {
+  const { data: enrollments, error: enrollErr } = await supabase
+    .from("monthly_enrollments")
+    .select("id")
+    .eq("plan_id", planId);
+  assertNoError(enrollErr, "Failed to load enrollments");
+
+  const { data: tasks, error: tasksErr } = await supabase
+    .from("monthly_plan_tasks")
+    .select("id")
+    .eq("plan_id", planId);
+  assertNoError(tasksErr, "Failed to load plan tasks");
+
+  const enrollIds = (enrollments || []).map((e: any) => e.id);
+  const taskIds = (tasks || []).map((t: any) => t.id);
+
+  if (enrollIds.length) {
+    const { error } = await supabase.from("monthly_day_signups").delete().in("enrollment_id", enrollIds);
+    assertNoError(error, "Failed to delete day signups by enrollment");
+  }
+
+  if (taskIds.length) {
+    const { error } = await supabase.from("monthly_day_signups").delete().in("plan_task_id", taskIds);
+    assertNoError(error, "Failed to delete day signups by task");
+  }
+
+  const { error: payoutsErr } = await supabase.from("monthly_payouts").delete().eq("plan_id", planId);
+  assertNoError(payoutsErr, "Failed to delete payouts");
+
+  const { error: enrollDeleteErr } = await supabase.from("monthly_enrollments").delete().eq("plan_id", planId);
+  assertNoError(enrollDeleteErr, "Failed to delete enrollments");
+
+  const { error: tasksDeleteErr } = await supabase.from("monthly_plan_tasks").delete().eq("plan_id", planId);
+  assertNoError(tasksDeleteErr, "Failed to delete tasks");
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -77,11 +117,12 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════
     if (action === "delete") {
       // Find demo plans
-      const { data: demoPlans } = await supabase
+      const { data: demoPlans, error: demoPlansErr } = await supabase
         .from("monthly_plans")
         .select("id")
         .eq("club_id", club_id)
         .like("title", `${DEMO_PLAN_TITLE}%`);
+      assertNoError(demoPlansErr, "Failed to load demo plans");
 
       if (!demoPlans?.length) {
         return new Response(JSON.stringify({ message: "Geen demo maandplan gevonden" }), {
@@ -90,33 +131,16 @@ Deno.serve(async (req) => {
       }
 
       for (const plan of demoPlans) {
-        // Delete day signups via enrollments
-        const { data: enrollments } = await supabase
-          .from("monthly_enrollments")
-          .select("id")
-          .eq("plan_id", plan.id);
-        const enrollIds = (enrollments || []).map((e: any) => e.id);
-        if (enrollIds.length) {
-          await supabase.from("monthly_day_signups").delete().in("enrollment_id", enrollIds);
-        }
-
-        // Delete payouts
-        await supabase.from("monthly_payouts").delete().eq("plan_id", plan.id);
-
-        // Delete enrollments
-        await supabase.from("monthly_enrollments").delete().eq("plan_id", plan.id);
-
-        // Delete tasks
-        await supabase.from("monthly_plan_tasks").delete().eq("plan_id", plan.id);
-
-        // Delete plan
-        await supabase.from("monthly_plans").delete().eq("id", plan.id);
+        await cleanupPlanData(supabase, plan.id);
+        const { error: deletePlanErr } = await supabase.from("monthly_plans").delete().eq("id", plan.id);
+        assertNoError(deletePlanErr, "Failed to delete demo plan");
       }
 
       // Delete demo contract template
-      await supabase.from("contract_templates").delete()
+      const { error: templateDeleteErr } = await supabase.from("contract_templates").delete()
         .eq("club_id", club_id)
         .eq("name", "Demo Maandcontract Vrijwilliger");
+      assertNoError(templateDeleteErr, "Failed to delete demo contract template");
 
       return new Response(JSON.stringify({ message: "Demo maandplan verwijderd!" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -207,39 +231,53 @@ Deno.serve(async (req) => {
       templateId = newTemplate.id;
     }
 
-    // Step 2: Create the monthly plan (delete ALL existing plans for same club/year/month first)
-    const { data: existingPlans } = await supabase
+    // Step 2: Create or reuse monthly plan for current month
+    const { data: existingPlan, error: existingPlanErr } = await supabase
       .from("monthly_plans")
       .select("id")
       .eq("club_id", club_id)
       .eq("year", planYear)
-      .eq("month", planMonth);
+      .eq("month", planMonth)
+      .maybeSingle();
+    assertNoError(existingPlanErr, "Failed to check existing monthly plan");
 
-    for (const ep of (existingPlans || [])) {
-      const { data: oldEnrollments } = await supabase.from("monthly_enrollments").select("id").eq("plan_id", ep.id);
-      const oldEnrIds = (oldEnrollments || []).map((e: any) => e.id);
-      if (oldEnrIds.length) await supabase.from("monthly_day_signups").delete().in("enrollment_id", oldEnrIds);
-      await supabase.from("monthly_payouts").delete().eq("plan_id", ep.id);
-      await supabase.from("monthly_enrollments").delete().eq("plan_id", ep.id);
-      await supabase.from("monthly_plan_tasks").delete().eq("plan_id", ep.id);
-      await supabase.from("monthly_plans").delete().eq("id", ep.id);
+    let plan: { id: string };
+
+    if (existingPlan) {
+      await cleanupPlanData(supabase, existingPlan.id);
+
+      const { data: updatedPlan, error: updatePlanErr } = await supabase
+        .from("monthly_plans")
+        .update({
+          title: `${DEMO_PLAN_TITLE} – ${planMonth}/${planYear}`,
+          description: "Automatisch gegenereerd demo-maandplan met taken, contracten en vrijwilligers.",
+          created_by: user.id,
+          status: "published",
+          contract_template_id: templateId,
+        })
+        .eq("id", existingPlan.id)
+        .select("id")
+        .single();
+      assertNoError(updatePlanErr, "Failed to update existing monthly plan");
+      plan = updatedPlan;
+    } else {
+      const { data: newPlan, error: planErr } = await supabase
+        .from("monthly_plans")
+        .insert({
+          club_id,
+          year: planYear,
+          month: planMonth,
+          title: `${DEMO_PLAN_TITLE} – ${planMonth}/${planYear}`,
+          description: "Automatisch gegenereerd demo-maandplan met taken, contracten en vrijwilligers.",
+          created_by: user.id,
+          status: "published",
+          contract_template_id: templateId,
+        })
+        .select("id")
+        .single();
+      assertNoError(planErr, "Failed to create monthly plan");
+      plan = newPlan;
     }
-
-    const { data: plan, error: planErr } = await supabase
-      .from("monthly_plans")
-      .insert({
-        club_id,
-        year: planYear,
-        month: planMonth,
-        title: `${DEMO_PLAN_TITLE} – ${planMonth}/${planYear}`,
-        description: "Automatisch gegenereerd demo-maandplan met taken, contracten en vrijwilligers.",
-        created_by: user.id,
-        status: "published",
-        contract_template_id: templateId,
-      })
-      .select("id")
-      .single();
-    if (planErr) throw planErr;
 
     // Step 3: Generate tasks for every matching weekday in the month
     const daysInMonth = new Date(planYear, planMonth, 0).getDate();
