@@ -60,7 +60,7 @@ const CommandCenter = () => {
   const [contractConfirm, setContractConfirm] = useState<{ volunteer: any; task: any } | null>(null);
 
   const t = language === 'nl' ? {
-    title: 'Acties & Taken',
+    title: 'Actielijst',
     subtitle: 'Alle openstaande acties op één plek',
     empty: 'Alles is afgehandeld! 🎉',
     selectAll: 'Selecteer alles',
@@ -69,7 +69,7 @@ const CommandCenter = () => {
     selected: 'geselecteerd',
     all: 'Alles',
   } : {
-    title: 'Actions & Tasks',
+    title: 'Action List',
     subtitle: 'All pending actions in one place',
     empty: 'All caught up! 🎉',
     selectAll: 'Select all',
