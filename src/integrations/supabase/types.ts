@@ -1309,6 +1309,7 @@ export type Database = {
       }
       monthly_enrollments: {
         Row: {
+          approval_status: string
           contract_status: string
           created_at: string
           document_url: string | null
@@ -1320,6 +1321,7 @@ export type Database = {
           volunteer_id: string
         }
         Insert: {
+          approval_status?: string
           contract_status?: string
           created_at?: string
           document_url?: string | null
@@ -1331,6 +1333,7 @@ export type Database = {
           volunteer_id: string
         }
         Update: {
+          approval_status?: string
           contract_status?: string
           created_at?: string
           document_url?: string | null

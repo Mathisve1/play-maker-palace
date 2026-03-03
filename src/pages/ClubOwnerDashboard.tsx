@@ -4,6 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import MonthlyPlanningKPIs from '@/components/MonthlyPlanningKPIs';
 import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3 } from 'lucide-react';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -1442,6 +1443,9 @@ const ClubOwnerDashboard = () => {
         </motion.div>
 
         {/* KPI Cards */}
+        <MonthlyPlanningKPIs clubId={clubId} language={language} navigate={navigate} />
+
+        {/* Standard KPI Cards */}
         {(() => {
           const now = new Date();
           const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
