@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus, LayoutGrid, CalendarDays,
+  CalendarPlus, LayoutGrid,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -38,10 +38,6 @@ const ClubOwnerSidebar = ({
     { label: 'Planning', icon: LayoutGrid, path: '/planning' },
     { label: 'Safety & Security', icon: ShieldAlert, path: '/safety' },
     { label: 'Berichten', icon: MessageCircle, path: '/chat' },
-  ];
-
-  const planningSubItems = [
-    { label: 'Maandplanning', icon: CalendarDays, path: '/monthly-planning', hint: 'Maandcontracten' },
   ];
 
   const managementItems = [
@@ -90,21 +86,6 @@ const ClubOwnerSidebar = ({
                     <item.icon className="w-5 h-5" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
-                  {item.path === '/planning' && (
-                    <SidebarMenu className="ml-4 mt-0.5 border-l border-border/50 pl-2">
-                      {planningSubItems.map(sub => (
-                        <SidebarMenuItem key={sub.path}>
-                          <SidebarMenuButton isActive={isActive(sub.path)} onClick={() => nav(sub.path)} className="min-h-[40px]">
-                            <sub.icon className="w-4 h-4" />
-                            <div className="flex flex-col">
-                              <span className="text-sm">{sub.label}</span>
-                              <span className="text-[10px] text-muted-foreground leading-tight">{sub.hint}</span>
-                            </div>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
