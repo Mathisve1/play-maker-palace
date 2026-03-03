@@ -41,7 +41,7 @@ const ClubOwnerSidebar = ({
   ];
 
   const managementItems = [
-    { label: 'Betalingen', icon: CreditCard, path: '/payments' },
+    // { label: 'Betalingen', icon: CreditCard, path: '/payments' }, // hidden
     { label: 'SEPA Vergoedingen', icon: Banknote, path: '/sepa-payouts' },
     { label: 'Contracten', icon: FileText, path: '/contract-builder' },
     { label: 'Briefings', icon: ClipboardList, path: '/briefing-builder' },
