@@ -1,118 +1,38 @@
 
 
-# Safety Rollen & Rechten Systeem
+## Plan: Maandplanning uitbreiden met 4 features
 
-## Wat gaan we bouwen?
+### 1. Taken kopiëren van vorige maand
+**Club-side (`MonthlyPlanning.tsx`)**:
+- Knop "Kopieer vorige maand" tonen wanneer een nieuw maandplan wordt aangemaakt en er taken bestaan voor de vorige maand.
+- Haalt `monthly_plan_tasks` op voor `month-1`, dupliceert alle rijen met aangepaste `task_date` (zelfde dagnummer, nieuwe maand) en nieuw `plan_id`.
+- Dagen die niet bestaan in de nieuwe maand (bv. 31 maart → februari) worden overgeslagen.
 
-Een systeem waarbij clubs hun eigen safety-rollen kunnen aanmaken (bv. Hoofdsteward, Korpssteward, Steward) met specifieke rechten per rol. Bij het toewijzen van vrijwilligers aan zones in de Kanban-planning kan de club ook een safety-rol kiezen. Tijdens een live evenement bepaalt de rol wat een vrijwilliger mag doen, en hogere rollen krijgen een mini-overzicht van hun teamleden en hun meldingen.
+### 2. Maandelijkse bundel-uitbetaling
+**Database**: Nieuw veld `monthly_payout_id` op `monthly_day_signups` is niet nodig — de bestaande `monthly_payouts` tabel is al aanwezig met `enrollment_id`, `total_days`, `total_hours`, `total_amount`, `status`.
 
----
+**Club-side (`MonthlyPlanning.tsx`)**:
+- Nieuwe sectie "Maandafrekening" onderaan, zichtbaar als er bevestigde uren zijn (`hour_status = 'confirmed'`).
+- Groepeert per vrijwilliger: totaal uren, totaal bedrag, aantal dagen.
+- Knop "Genereer maandafrekening" maakt een `monthly_payouts` rij aan per vrijwilliger.
+- Integratie met bestaande SEPA-engine: knop "Exporteer naar SEPA" maakt `sepa_batch_items` aan op basis van de `monthly_payouts` data, zodat het in de bestaande `/sepa-payouts` flow terechtkomt.
 
-## Overzicht van de veranderingen
+### 3. Club stuurt maandcontract handmatig
+**Club-side (`MonthlyPlanning.tsx`)**:
+- Bij iedere ingeschreven vrijwilliger in de enrollment-lijst: knop "Contract versturen" (icoon FileSignature).
+- Hergebruikt de bestaande `SendContractConfirmDialog` logica maar met het gekoppelde `contract_template_id` van het maandplan.
+- Na verzending wordt `contract_status` op de enrollment bijgewerkt naar `'sent'`, na ondertekening naar `'signed'`.
 
-### 1. Nieuwe database tabellen
+### 4. Dagaanmelding geblokkeerd tot contract getekend
+**Volunteer-side (`VolunteerMonthlyTab.tsx`)**:
+- Check `enrollment.contract_status !== 'signed'` → "Aanmelden" knop disabled met tooltip "Je moet eerst je contract tekenen".
+- Toon duidelijke melding bovenaan: "Je contract is nog niet getekend. Wacht tot de club je contract verstuurt."
 
-**`safety_roles`** - De rollen die een club definieert
-- `id`, `club_id`, `name` (bv. "Korpssteward"), `color`, `sort_order`
-- `can_complete_checklist` (boolean) - Mag checklist afstrepen
-- `can_report_incidents` (boolean) - Mag incidenten melden  
-- `can_resolve_incidents` (boolean) - Mag incidenten afhandelen
-- `can_complete_closing` (boolean) - Mag sluitingstaken uitvoeren
-- `can_view_team` (boolean) - Mag teamoverzicht zien
-- `level` (integer) - Hierarchieniveau (1 = hoogste, 3 = laagste)
+### Technische details
 
-**`volunteer_safety_roles`** - Koppeling: welke vrijwilliger heeft welke rol voor welk evenement
-- `id`, `event_id`, `volunteer_id`, `safety_role_id`, `assigned_by`, `created_at`
-
-### 2. Safety Configuratie uitbreiden
-
-In het bestaande `SafetyConfigDialog` komt een nieuw tabblad **"Rollen"** waar de club:
-- Rollen aanmaakt met naam, kleur en hierarchieniveau
-- Per rol de rechten aan/uit zet met toggles
-- Rollen kan verwijderen
-
-### 3. Zone Planning (Kanban) aanpassen
-
-Bij het toewijzen van een vrijwilliger aan een zone verschijnt een dropdown om de safety-rol te kiezen. De rol wordt opgeslagen in `volunteer_safety_roles` voor dat evenement.
-
-### 4. Vrijwilliger Safety Dashboard aanpassen
-
-Tijdens een live evenement:
-- **Checklist**: Alleen zichtbaar/bewerkbaar als `can_complete_checklist = true`
-- **Incidenten melden**: Alleen als `can_report_incidents = true`
-- **Sluitingstaken**: Alleen als `can_complete_closing = true`
-- **Teamoverzicht**: Als `can_view_team = true`, ziet de vrijwilliger onder de meld-knop een sectie "Mijn Team" met:
-  - Lijst van teamleden (vrijwilligers met een lagere `level` in dezelfde zone/event)
-  - Hun recente meldingen (naam, foto, type incident, locatie)
-  - Checklist-voortgang per teamlid
-
-### 5. Control Room aanpassen
-
-- Incidenten die afgehandeld worden door vrijwilligers met `can_resolve_incidents` worden gemarkeerd in de control room
-- De control room toont de safety-rol naast de naam van de melder
-
----
-
-## Technische details
-
-### Database migratie
-
-```text
-safety_roles
-  id (uuid PK)
-  club_id (uuid FK -> clubs.id)
-  name (text)
-  color (text, default '#3b82f6')
-  sort_order (int, default 0)
-  level (int, default 1)           -- 1=highest rank
-  can_complete_checklist (bool, default true)
-  can_report_incidents (bool, default true)
-  can_resolve_incidents (bool, default false)
-  can_complete_closing (bool, default true)
-  can_view_team (bool, default false)
-  created_at (timestamptz)
-
-volunteer_safety_roles
-  id (uuid PK)
-  event_id (uuid FK -> events.id)
-  volunteer_id (uuid)
-  safety_role_id (uuid FK -> safety_roles.id)
-  assigned_by (uuid)
-  created_at (timestamptz)
-  UNIQUE(event_id, volunteer_id)
-```
-
-RLS policies: club staff (bestuurder/beheerder) kan CRUD, vrijwilligers kunnen eigen rol lezen, en geauthenticeerde gebruikers kunnen rollen lezen.
-
-### Bestanden die worden aangepast
-
-1. **`src/components/SafetyConfigDialog.tsx`** - Nieuw "Rollen" tabblad met CRUD voor safety_roles
-2. **`src/pages/ZonePlanning.tsx`** - Rol-dropdown bij toewijzing, event_id doorgeven via taak-lookup
-3. **`src/pages/SafetyDashboard.tsx`** - Rechten-check voor vrijwilligers, teamoverzicht sectie
-4. **`src/components/safety/VolunteerClosingView.tsx`** - Rechten-check voor sluitingstaken
-5. **`src/components/VolunteerSafetyTab.tsx`** - Rol-informatie tonen
-
-### Flow
-
-```text
-Club maakt rollen aan in Safety Config
-         |
-         v
-Club wijst vrijwilliger + rol toe in Zone Planning
-         |
-         v
-Evenement gaat LIVE
-         |
-         v
-Vrijwilliger opent Safety Dashboard
-         |
-         v
-Systeem checkt volunteer_safety_roles voor dit event
-         |
-         v
-UI toont/verbergt features op basis van rol-rechten
-         |
-         v
-Hogere rollen zien teamoverzicht met meldingen
-```
+**Bestanden die wijzigen:**
+- `src/pages/MonthlyPlanning.tsx` — kopieer-functie, contractversturing, SEPA-export
+- `src/components/VolunteerMonthlyTab.tsx` — contract-blokkering op dagaanmelding
+- Geen nieuwe tabellen nodig; `monthly_payouts` bestaat al
+- Geen nieuwe edge functions nodig; bestaande DocuSeal + SEPA flows worden hergebruikt
 
