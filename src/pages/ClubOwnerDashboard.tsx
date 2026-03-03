@@ -15,6 +15,7 @@ import { WidgetInstance } from '@/components/dashboard/widgetRegistry';
 import { KpiWidget } from '@/components/dashboard/KpiWidget';
 import { ShortcutsWidget } from '@/components/dashboard/ShortcutsWidget';
 import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget';
+import { ActionListWidget } from '@/components/dashboard/ActionListWidget';
 
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -1490,6 +1491,8 @@ const ClubOwnerDashboard = () => {
                   return <ShortcutsWidget language={language} />;
                 case 'recent_activity':
                   return <RecentActivityWidget clubId={clubId} language={language} />;
+                case 'action_list':
+                  return <ActionListWidget clubId={clubId} language={language} />;
                 case 'upcoming_events': {
                   const futureEvents = events.filter(e => !e.event_date || new Date(e.event_date) >= now);
                   return (

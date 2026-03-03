@@ -125,6 +125,14 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
   },
 
   // === Activity ===
+  action_list: {
+    type: 'action_list',
+    label: { nl: 'Actielijst', en: 'Action List', fr: 'Liste d\'actions' },
+    description: { nl: 'Overzicht van alle openstaande acties (aanmeldingen, contracten, tickets)', en: 'Overview of all pending actions (signups, contracts, tickets)', fr: 'Aperçu de toutes les actions en attente' },
+    icon: 'Inbox',
+    defaultW: 2, defaultH: 2, minW: 1, maxW: 4, minH: 1, maxH: 2,
+    category: 'activity',
+  },
   recent_activity: {
     type: 'recent_activity',
     label: { nl: 'Recente activiteit', en: 'Recent activity', fr: 'Activité récente' },
