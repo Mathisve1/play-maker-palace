@@ -4,11 +4,16 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Language } from '@/i18n/translations';
+import { useComplianceData } from '@/hooks/useComplianceData';
 import {
   Calendar, CalendarDays, Clock, MapPin, Euro, CheckCircle,
-  ChevronLeft, ChevronRight, FileSignature, Users,
+  ChevronLeft, ChevronRight, FileSignature, Users, AlertTriangle,
+  Loader2, QrCode,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { QRCodeSVG } from 'qrcode.react';
 
 const MONTH_NL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
 
@@ -45,6 +50,13 @@ interface DaySignup {
   status: string;
   checked_in_at: string | null;
   hour_status: string;
+  volunteer_reported_hours: number | null;
+  club_reported_hours: number | null;
+  volunteer_approved: boolean;
+  club_approved: boolean;
+  final_hours: number | null;
+  final_amount: number | null;
+  ticket_barcode: string | null;
 }
 
 interface Enrollment {
@@ -69,6 +81,15 @@ const labels: Record<Language, Record<string, string>> = {
     hour: 'uur',
     checkedIn: 'Ingecheckt',
     pending: 'Wacht op check-in',
+    confirmHours: 'Uren bevestigen',
+    hoursConfirmed: 'Uren bevestigd',
+    reportHours: 'Hoeveel uur heb je gewerkt?',
+    submit: 'Bevestigen',
+    notCheckedIn: 'Niet ingecheckt — geen vergoeding mogelijk',
+    complianceWarning: '⚠️ Let op: je nadert het jaarlijkse plafond van €3.233,91',
+    complianceBlocked: '🚫 Je hebt het jaarlijks maximum bereikt. Inschrijven is geblokkeerd.',
+    ticket: 'Dagticket',
+    monthTotal: 'Geschat maandtotaal',
   },
   fr: {
     title: 'Planning mensuel',
@@ -85,6 +106,15 @@ const labels: Record<Language, Record<string, string>> = {
     hour: 'heure',
     checkedIn: 'Enregistré',
     pending: "En attente d'enregistrement",
+    confirmHours: 'Confirmer les heures',
+    hoursConfirmed: 'Heures confirmées',
+    reportHours: "Combien d'heures avez-vous travaillé ?",
+    submit: 'Confirmer',
+    notCheckedIn: 'Non enregistré — pas de remboursement possible',
+    complianceWarning: '⚠️ Attention: vous approchez du plafond annuel de €3.233,91',
+    complianceBlocked: '🚫 Vous avez atteint le maximum annuel. Inscription bloquée.',
+    ticket: 'Ticket journalier',
+    monthTotal: 'Total mensuel estimé',
   },
   en: {
     title: 'Monthly Planning',
@@ -101,6 +131,15 @@ const labels: Record<Language, Record<string, string>> = {
     hour: 'hour',
     checkedIn: 'Checked in',
     pending: 'Awaiting check-in',
+    confirmHours: 'Confirm hours',
+    hoursConfirmed: 'Hours confirmed',
+    reportHours: 'How many hours did you work?',
+    submit: 'Confirm',
+    notCheckedIn: 'Not checked in — no reimbursement possible',
+    complianceWarning: '⚠️ Warning: you are approaching the annual cap of €3,233.91',
+    complianceBlocked: '🚫 You have reached the annual maximum. Enrollment blocked.',
+    ticket: 'Day ticket',
+    monthTotal: 'Estimated monthly total',
   },
 };
 
@@ -108,6 +147,8 @@ interface VolunteerMonthlyTabProps {
   language: Language;
   userId: string;
 }
+
+const YEARLY_CAP = 3233.91;
 
 const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => {
   const l = labels[language];
@@ -119,6 +160,18 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [daySignups, setDaySignups] = useState<DaySignup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showHoursDialog, setShowHoursDialog] = useState(false);
+  const [selectedSignup, setSelectedSignup] = useState<DaySignup | null>(null);
+  const [selectedTask, setSelectedTask] = useState<PlanTask | null>(null);
+  const [hoursInput, setHoursInput] = useState('');
+  const [showTicket, setShowTicket] = useState<string | null>(null);
+
+  // Compliance data
+  const { data: complianceData } = useComplianceData(userId);
+  const totalEarned = complianceData.totalIncome;
+  const compliancePercentage = (totalEarned / YEARLY_CAP) * 100;
+  const isBlocked = totalEarned >= YEARLY_CAP;
+  const isWarning = compliancePercentage >= 80 && !isBlocked;
 
   useEffect(() => {
     loadData();
@@ -127,7 +180,6 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   const loadData = async () => {
     setLoading(true);
 
-    // Get published plans for this month
     const { data: plansData } = await supabase
       .from('monthly_plans')
       .select('*, clubs(name, logo_url)')
@@ -170,14 +222,15 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   };
 
   const enrollInPlan = async (planId: string) => {
+    if (isBlocked) {
+      toast.error(l.complianceBlocked);
+      return;
+    }
     const { error } = await supabase.from('monthly_enrollments').insert({
       plan_id: planId,
       volunteer_id: userId,
     });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Ingeschreven!' : 'Enrolled!');
     loadData();
   };
@@ -190,11 +243,25 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
       volunteer_id: userId,
       ticket_barcode: barcode,
     });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Aangemeld voor deze dag!' : 'Signed up!');
+    loadData();
+  };
+
+  const submitHours = async () => {
+    if (!selectedSignup || !hoursInput) return;
+    const hours = Number(hoursInput);
+    if (isNaN(hours) || hours <= 0) return;
+
+    const { error } = await supabase.from('monthly_day_signups')
+      .update({ volunteer_reported_hours: hours, volunteer_approved: true, hour_status: 'volunteer_reported' })
+      .eq('id', selectedSignup.id);
+
+    if (error) { toast.error(error.message); return; }
+    toast.success(language === 'nl' ? 'Uren gerapporteerd!' : 'Hours reported!');
+    setShowHoursDialog(false);
+    setSelectedSignup(null);
+    setHoursInput('');
     loadData();
   };
 
@@ -220,7 +287,6 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   const isSignedUp = (taskId: string) => daySignups.some(ds => ds.plan_task_id === taskId);
   const getSignup = (taskId: string) => daySignups.find(ds => ds.plan_task_id === taskId);
 
-  // Group tasks by day
   const tasksByDate = tasks.reduce<Record<string, PlanTask[]>>((acc, t) => {
     if (!acc[t.task_date]) acc[t.task_date] = [];
     acc[t.task_date].push(t);
@@ -228,6 +294,13 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   }, {});
 
   const mySignedUpTasks = tasks.filter(t => isSignedUp(t.id));
+
+  // Estimate monthly total for this plan
+  const estimatedMonthTotal = mySignedUpTasks.reduce((sum, t) => {
+    if (t.compensation_type === 'daily' && t.daily_rate) return sum + t.daily_rate;
+    if (t.compensation_type === 'hourly' && t.hourly_rate && t.estimated_hours) return sum + t.hourly_rate * t.estimated_hours;
+    return sum;
+  }, 0);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -239,6 +312,24 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
         <p className="text-sm text-muted-foreground mt-1">{l.subtitle}</p>
       </div>
 
+      {/* Compliance warning */}
+      {isWarning && (
+        <Card className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-900/20">
+          <CardContent className="p-3 flex items-center gap-2 text-sm">
+            <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0" />
+            <span className="text-yellow-800 dark:text-yellow-200">{l.complianceWarning} ({compliancePercentage.toFixed(0)}% — €{totalEarned.toFixed(2)} / €{YEARLY_CAP})</span>
+          </CardContent>
+        </Card>
+      )}
+      {isBlocked && (
+        <Card className="border-destructive/50 bg-destructive/10">
+          <CardContent className="p-3 flex items-center gap-2 text-sm">
+            <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+            <span className="text-destructive">{l.complianceBlocked}</span>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Month nav */}
       <div className="flex items-center justify-between">
         <Button variant="outline" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
@@ -247,7 +338,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-muted-foreground">Laden...</div>
+        <div className="text-center py-16 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />Laden...</div>
       ) : plans.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -280,7 +371,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                     {enrollment ? (
                       <Badge variant="default" className="bg-green-600">{l.enrolled}</Badge>
                     ) : (
-                      <Button size="sm" onClick={() => enrollInPlan(plan.id)}>
+                      <Button size="sm" onClick={() => enrollInPlan(plan.id)} disabled={isBlocked}>
                         <FileSignature className="w-4 h-4 mr-1" /> {l.enroll}
                       </Button>
                     )}
@@ -291,18 +382,27 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
               {/* My schedule (if enrolled) */}
               {enrollment && mySignedUpTasks.filter(t => t.plan_id === plan.id).length > 0 && (
                 <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-base">{l.yourSchedule}</CardTitle></CardHeader>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{l.yourSchedule}</CardTitle>
+                      <span className="text-xs text-muted-foreground">{l.monthTotal}: <strong className="text-foreground">€{estimatedMonthTotal.toFixed(2)}</strong></span>
+                    </div>
+                  </CardHeader>
                   <CardContent className="space-y-2">
                     {mySignedUpTasks.filter(t => t.plan_id === plan.id).map(t => {
                       const d = new Date(t.task_date);
                       const signup = getSignup(t.id);
+                      const isPast = d < new Date(new Date().toISOString().split('T')[0]);
+                      const needsHourReport = isPast && signup?.checked_in_at && !signup.volunteer_approved;
+                      const notCheckedIn = isPast && !signup?.checked_in_at;
+
                       return (
-                        <div key={t.id} className="flex items-center gap-3 p-3 rounded-lg border bg-primary/5">
+                        <div key={t.id} className={`flex items-center gap-3 p-3 rounded-lg border ${notCheckedIn ? 'bg-destructive/5 border-destructive/20' : 'bg-primary/5'}`}>
                           <div className="text-center min-w-[40px]">
                             <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(language === 'nl' ? 'nl-BE' : 'fr-BE', { weekday: 'short' })}</p>
                             <p className="text-lg font-bold">{d.getDate()}</p>
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-sm">{t.title}</span>
                               <Badge variant="outline" className={`text-[10px] ${categoryColor(t.category)}`}>{t.category}</Badge>
@@ -315,12 +415,41 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                                 {t.compensation_type === 'daily' ? `€${t.daily_rate}/${l.day}` : `€${t.hourly_rate}/${l.hour}`}
                               </span>
                             </div>
+                            {notCheckedIn && (
+                              <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" /> {l.notCheckedIn}
+                              </p>
+                            )}
                           </div>
-                          {signup?.checked_in_at ? (
-                            <Badge variant="default" className="bg-green-600"><CheckCircle className="w-3 h-3 mr-1" />{l.checkedIn}</Badge>
-                          ) : (
-                            <Badge variant="secondary">{l.pending}</Badge>
-                          )}
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {signup?.checked_in_at ? (
+                              <Badge variant="default" className="bg-green-600 text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" />{l.checkedIn}</Badge>
+                            ) : !isPast ? (
+                              <>
+                                <Badge variant="secondary" className="text-[10px]">{l.pending}</Badge>
+                                {signup?.ticket_barcode && (
+                                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowTicket(signup.ticket_barcode)}>
+                                    <QrCode className="w-3 h-3 mr-1" /> {l.ticket}
+                                  </Button>
+                                )}
+                              </>
+                            ) : null}
+                            {needsHourReport && (
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
+                                setSelectedSignup(signup!);
+                                setSelectedTask(t);
+                                setHoursInput(String(t.estimated_hours || ''));
+                                setShowHoursDialog(true);
+                              }}>
+                                <Clock className="w-3 h-3 mr-1" /> {l.confirmHours}
+                              </Button>
+                            )}
+                            {signup?.volunteer_approved && (
+                              <Badge variant="outline" className="text-[10px] text-green-600 border-green-200">
+                                <CheckCircle className="w-3 h-3 mr-0.5" /> {signup.final_hours ? `${signup.final_hours}u ✓` : l.hoursConfirmed}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -382,6 +511,43 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
           );
         })
       )}
+
+      {/* Hours confirmation dialog */}
+      <Dialog open={showHoursDialog} onOpenChange={setShowHoursDialog}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> {l.confirmHours}</DialogTitle>
+            <DialogDescription>
+              {selectedTask?.title} — {selectedTask && new Date(selectedTask.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'fr-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm text-muted-foreground">{l.reportHours}</label>
+              <Input type="number" step="0.5" min="0.5" max="24" value={hoursInput} onChange={e => setHoursInput(e.target.value)} className="mt-1" />
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowHoursDialog(false)}>Annuleren</Button>
+              <Button className="flex-1" onClick={submitHours} disabled={!hoursInput || Number(hoursInput) <= 0}>{l.submit}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ticket QR dialog */}
+      <Dialog open={!!showTicket} onOpenChange={() => setShowTicket(null)}>
+        <DialogContent className="sm:max-w-xs text-center">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-center gap-2"><QrCode className="w-5 h-5 text-primary" /> {l.ticket}</DialogTitle>
+          </DialogHeader>
+          {showTicket && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <QRCodeSVG value={showTicket} size={200} />
+              <p className="text-xs font-mono text-muted-foreground">{showTicket}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

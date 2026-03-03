@@ -40,7 +40,81 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Look up ticket
+    // ── Check if this is a monthly planning barcode (MP- prefix) ──
+    if (barcode.startsWith("MP-")) {
+      const { data: daySignup, error: dsError } = await serviceClient
+        .from("monthly_day_signups")
+        .select("id, volunteer_id, plan_task_id, checked_in_at, enrollment_id, status")
+        .eq("ticket_barcode", barcode)
+        .maybeSingle();
+
+      if (dsError || !daySignup) {
+        return new Response(
+          JSON.stringify({ success: false, status: "unknown", error: "Ongeldig maandticket - barcode niet gevonden" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Already checked in?
+      if (daySignup.checked_in_at) {
+        const { data: profile } = await serviceClient.from("profiles").select("full_name, avatar_url").eq("id", daySignup.volunteer_id).maybeSingle();
+        const { data: planTask } = await serviceClient.from("monthly_plan_tasks").select("title, category, task_date").eq("id", daySignup.plan_task_id).maybeSingle();
+        return new Response(
+          JSON.stringify({
+            success: false,
+            status: "already_checked_in",
+            volunteer_name: profile?.full_name || "Onbekend",
+            avatar_url: profile?.avatar_url || null,
+            task_title: planTask?.title || "",
+            event_title: `Maandplanning - ${planTask?.category || ""}`,
+            checked_in_at: daySignup.checked_in_at,
+            group_name: planTask?.category || null,
+            wristband_color: null,
+            wristband_label: null,
+            materials_note: null,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check in
+      const now = new Date().toISOString();
+      const { error: updateError } = await serviceClient
+        .from("monthly_day_signups")
+        .update({ checked_in_at: now })
+        .eq("id", daySignup.id);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Kon niet inchecken: " + updateError.message }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const [profileRes, taskRes] = await Promise.all([
+        serviceClient.from("profiles").select("full_name, avatar_url").eq("id", daySignup.volunteer_id).maybeSingle(),
+        serviceClient.from("monthly_plan_tasks").select("title, category, task_date").eq("id", daySignup.plan_task_id).maybeSingle(),
+      ]);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: "checked_in",
+          volunteer_name: profileRes.data?.full_name || "Onbekend",
+          avatar_url: profileRes.data?.avatar_url || null,
+          task_title: taskRes.data?.title || "",
+          event_title: `Maandplanning - ${taskRes.data?.category || ""}`,
+          checked_in_at: now,
+          group_name: taskRes.data?.category || null,
+          wristband_color: null,
+          wristband_label: null,
+          materials_note: `Datum: ${taskRes.data?.task_date || ""}`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Standard VT- ticket flow ──
     const { data: ticket, error: ticketError } = await serviceClient
       .from("volunteer_tickets")
       .select("id, volunteer_id, task_id, event_id, status, checked_in_at, barcode")
