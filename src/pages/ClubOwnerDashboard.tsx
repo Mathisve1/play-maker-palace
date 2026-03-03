@@ -1459,7 +1459,6 @@ const ClubOwnerDashboard = () => {
             onReset={resetLayout}
             language={language}
             renderWidget={(widget: WidgetInstance) => {
-              // Compute KPI values
               const now = new Date();
               const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
               const upcomingEventCount = events.filter(e => e.event_date && new Date(e.event_date) >= now && new Date(e.event_date) <= in30).length;
@@ -1472,11 +1471,15 @@ const ClubOwnerDashboard = () => {
                 case 'kpi_upcoming_events':
                   return <KpiWidget type={widget.type} value={upcomingEventCount} language={language} onClick={() => navigate('/events-manager')} />;
                 case 'kpi_pending_signups':
-                  return <KpiWidget type={widget.type} value={pendingSignupCount} language={language} />;
+                  return <KpiWidget type={widget.type} value={pendingSignupCount} language={language} onClick={() => navigate('/planning?tab=overview')} />;
                 case 'kpi_active_volunteers':
                   return <KpiWidget type={widget.type} value={activeVolunteerCount} language={language} />;
                 case 'kpi_unsigned_contracts':
-                  return <KpiWidget type={widget.type} value={unsignedContractCount} language={language} />;
+                  return <KpiWidget type={widget.type} value={unsignedContractCount} language={language} onClick={() => navigate('/contract-builder')} />;
+                case 'kpi_pending_enrollments':
+                  return <KpiWidget type={widget.type} value={0} language={language} onClick={() => navigate('/planning?tab=monthly')} />;
+                case 'kpi_day_signups_pending':
+                  return <KpiWidget type={widget.type} value={0} language={language} onClick={() => navigate('/planning?tab=monthly')} />;
                 case 'monthly_planning':
                   return (
                     <div className="w-full h-full bg-card rounded-2xl border border-border p-4 overflow-auto">
@@ -1525,18 +1528,48 @@ const ClubOwnerDashboard = () => {
                 }
                 case 'pending_tickets':
                   return (
-                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center">
-                      <Ticket className="w-8 h-8 text-purple-600 mb-2" />
-                      <p className="text-lg font-bold text-foreground">0</p>
-                      <p className="text-xs text-muted-foreground">{language === 'nl' ? 'Tickets te genereren' : 'Tickets to generate'}</p>
-                      <button onClick={() => navigate('/ticketing')} className="mt-2 text-xs text-primary hover:underline">
-                        {language === 'nl' ? 'Naar ticketing' : 'Go to ticketing'} →
-                      </button>
+                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/ticketing')}>
+                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <Ticket className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">0</p>
+                      <p className="text-xs text-muted-foreground mt-1">{language === 'nl' ? 'Tickets te genereren' : 'Tickets to generate'}</p>
+                      <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {language === 'nl' ? 'Naar ticketing →' : 'Go to ticketing →'}
+                      </p>
+                    </div>
+                  );
+                case 'compliance_overview':
+                  return (
+                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/compliance')}>
+                      <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <Shield className="w-6 h-6 text-green-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">{complianceMap.size}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{language === 'nl' ? 'Vrijwilligers met verklaring' : 'Volunteers with declaration'}</p>
+                      <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {language === 'nl' ? 'Compliance bekijken →' : 'View compliance →'}
+                      </p>
+                    </div>
+                  );
+                case 'payments_summary':
+                  return (
+                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/payments')}>
+                      <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <CreditCard className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">
+                        {Object.values(volunteerPayments).filter(p => p.status === 'pending').length}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{language === 'nl' ? 'Openstaande betalingen' : 'Pending payments'}</p>
+                      <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {language === 'nl' ? 'Betalingen bekijken →' : 'View payments →'}
+                      </p>
                     </div>
                   );
                 default:
                   return (
-                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex items-center justify-center">
+                    <div className="w-full h-full bg-card rounded-2xl border border-dashed border-border p-4 flex items-center justify-center">
                       <p className="text-xs text-muted-foreground">Widget: {widget.type}</p>
                     </div>
                   );
