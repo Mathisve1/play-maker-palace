@@ -349,55 +349,97 @@ Deno.serve(async (req) => {
       if (authData.user) volunteerIds.push(authData.user.id);
     }
 
-    // Step 5: Create enrollments — mix of contract statuses
+    // Step 5: Create enrollments — mix of approval + contract statuses
     const enrollInserts: any[] = [];
-    const contractStatuses = ["signed", "signed", "signed", "signed", "signed", "signed", "signed", "signed", "sent", "sent", "pending", "pending"];
+    // Realistic mix: some pending approval, some approved with various contract states, some rejected
+    const enrollScenarios = [
+      { approval: "approved", contract: "signed" },
+      { approval: "approved", contract: "signed" },
+      { approval: "approved", contract: "signed" },
+      { approval: "approved", contract: "signed" },
+      { approval: "approved", contract: "signed" },
+      { approval: "approved", contract: "signed" },
+      { approval: "approved", contract: "sent" },
+      { approval: "approved", contract: "pending" },
+      { approval: "pending", contract: "pending" },
+      { approval: "pending", contract: "pending" },
+      { approval: "pending", contract: "pending" },
+      { approval: "rejected", contract: "pending" },
+    ];
 
     for (let i = 0; i < volunteerIds.length; i++) {
+      const scenario = enrollScenarios[i % enrollScenarios.length];
       enrollInserts.push({
         plan_id: plan.id,
         volunteer_id: volunteerIds[i],
-        contract_status: contractStatuses[i % contractStatuses.length],
+        approval_status: scenario.approval,
+        contract_status: scenario.contract,
       });
     }
 
     const { data: enrollments } = await supabase
       .from("monthly_enrollments")
       .insert(enrollInserts)
-      .select("id, volunteer_id, contract_status");
+      .select("id, volunteer_id, contract_status, approval_status");
 
     // Step 6: Create day signups for volunteers with signed contracts
-    const signedEnrollments = (enrollments || []).filter((e: any) => e.contract_status === "signed");
+    const signedEnrollments = (enrollments || []).filter((e: any) => e.approval_status === "approved" && e.contract_status === "signed");
     const allTasks = insertedTasks || [];
     const daySignupInserts: any[] = [];
 
-    // Each signed volunteer signs up for ~60% of tasks in the first 2 weeks
+    // Each signed volunteer signs up for ~15% of tasks
     for (const enr of signedEnrollments) {
-      // Pick tasks spread across the month
       const shuffled = [...allTasks].sort(() => Math.random() - 0.5);
-      const count = Math.floor(shuffled.length * 0.15); // ~15% of all tasks
+      const count = Math.floor(shuffled.length * 0.15);
       const picked = shuffled.slice(0, Math.min(count, 12));
 
       for (const task of picked) {
         const taskDate = new Date(task.task_date);
         const isPast = taskDate < now;
+        // Mix of statuses: some pending (awaiting club confirmation), some assigned, some with tickets
+        const rand = Math.random();
+        const signupStatus = isPast ? "assigned" : (rand < 0.3 ? "pending" : "assigned");
 
         daySignupInserts.push({
           enrollment_id: enr.id,
           plan_task_id: task.id,
           volunteer_id: enr.volunteer_id,
-          status: "registered",
+          status: signupStatus,
           // Past tasks: simulate check-in & hour reporting
           checked_in_at: isPast ? new Date(taskDate.getTime() + 8 * 3600000).toISOString() : null,
           checked_out_at: isPast ? new Date(taskDate.getTime() + 16 * 3600000).toISOString() : null,
           volunteer_reported_hours: isPast ? Math.floor(Math.random() * 4) + 4 : null,
           volunteer_approved: isPast,
-          club_approved: isPast && Math.random() > 0.3, // 70% confirmed by club
+          club_approved: isPast && Math.random() > 0.3,
           club_reported_hours: isPast && Math.random() > 0.3 ? Math.floor(Math.random() * 4) + 4 : null,
           hour_status: isPast ? (Math.random() > 0.3 ? "confirmed" : "pending_club") : "none",
           final_hours: isPast && Math.random() > 0.3 ? Math.floor(Math.random() * 4) + 4 : null,
           final_amount: isPast && Math.random() > 0.3 ? Math.floor(Math.random() * 15) + 15 : null,
+          // Assigned future tasks get a ticket barcode (simulating generated tickets)
+          ticket_barcode: (!isPast && signupStatus === "assigned" && Math.random() > 0.4) ? `VT-MP-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}` : null,
         });
+      }
+    }
+
+    // Also add some pending day signups from approved+signed volunteers for upcoming tasks
+    // to show the "dag-aanmeldingen te bevestigen" KPI
+    const approvedSentEnrollments = (enrollments || []).filter((e: any) => e.approval_status === "approved" && e.contract_status === "signed");
+    const futureTasks = allTasks.filter((t: any) => new Date(t.task_date) >= now);
+    for (let i = 0; i < Math.min(approvedSentEnrollments.length, 4); i++) {
+      const enr = approvedSentEnrollments[i];
+      const randomFutureTasks = futureTasks.sort(() => Math.random() - 0.5).slice(0, 2);
+      for (const task of randomFutureTasks) {
+        // Check if already added
+        const exists = daySignupInserts.some(d => d.enrollment_id === enr.id && d.plan_task_id === task.id);
+        if (!exists) {
+          daySignupInserts.push({
+            enrollment_id: enr.id,
+            plan_task_id: task.id,
+            volunteer_id: enr.volunteer_id,
+            status: "pending",
+            hour_status: "none",
+          });
+        }
       }
     }
 
