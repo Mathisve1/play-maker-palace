@@ -96,7 +96,10 @@ const ReportingDashboard = () => {
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
   const [selectedPartnerFilter, setSelectedPartnerFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || 'overview';
+  });
   const [chartType, setChartType] = useState<ChartType>('bar');
 
   // AI
