@@ -207,25 +207,22 @@ Deno.serve(async (req) => {
       templateId = newTemplate.id;
     }
 
-    // Step 2: Create the monthly plan (delete existing demo for same month first)
-    const { data: existingPlan } = await supabase
+    // Step 2: Create the monthly plan (delete ALL existing plans for same club/year/month first)
+    const { data: existingPlans } = await supabase
       .from("monthly_plans")
       .select("id")
       .eq("club_id", club_id)
       .eq("year", planYear)
-      .eq("month", planMonth)
-      .like("title", `${DEMO_PLAN_TITLE}%`)
-      .maybeSingle();
+      .eq("month", planMonth);
 
-    if (existingPlan) {
-      // Clean up existing demo plan data
-      const { data: oldEnrollments } = await supabase.from("monthly_enrollments").select("id").eq("plan_id", existingPlan.id);
+    for (const ep of (existingPlans || [])) {
+      const { data: oldEnrollments } = await supabase.from("monthly_enrollments").select("id").eq("plan_id", ep.id);
       const oldEnrIds = (oldEnrollments || []).map((e: any) => e.id);
       if (oldEnrIds.length) await supabase.from("monthly_day_signups").delete().in("enrollment_id", oldEnrIds);
-      await supabase.from("monthly_payouts").delete().eq("plan_id", existingPlan.id);
-      await supabase.from("monthly_enrollments").delete().eq("plan_id", existingPlan.id);
-      await supabase.from("monthly_plan_tasks").delete().eq("plan_id", existingPlan.id);
-      await supabase.from("monthly_plans").delete().eq("id", existingPlan.id);
+      await supabase.from("monthly_payouts").delete().eq("plan_id", ep.id);
+      await supabase.from("monthly_enrollments").delete().eq("plan_id", ep.id);
+      await supabase.from("monthly_plan_tasks").delete().eq("plan_id", ep.id);
+      await supabase.from("monthly_plans").delete().eq("id", ep.id);
     }
 
     const { data: plan, error: planErr } = await supabase
