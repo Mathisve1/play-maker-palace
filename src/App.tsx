@@ -40,6 +40,7 @@ import ReportBuilder from "./pages/ReportBuilder";
 import EventsManager from "./pages/EventsManager";
 import ZonePlanning from "./pages/ZonePlanning";
 import PlanningOverview from "./pages/PlanningOverview";
+import MonthlyPlanning from "./pages/MonthlyPlanning";
 import SafetyDashboard from "./pages/SafetyDashboard";
 import SafetyOverview from "./pages/SafetyOverview";
 import SafetyEventHub from "./pages/SafetyEventHub";
@@ -96,6 +97,7 @@ const App = () => {
             <Route path="/report-builder" element={<ReportBuilder />} />
             <Route path="/events-manager" element={<EventsManager />} />
             <Route path="/planning" element={<PlanningOverview />} />
+            <Route path="/monthly-planning" element={<MonthlyPlanning />} />
             <Route path="/planning/:taskId" element={<ZonePlanning />} />
             <Route path="/safety" element={<SafetyOverview />} />
             <Route path="/safety/:eventId" element={<SafetyEventHub />} />

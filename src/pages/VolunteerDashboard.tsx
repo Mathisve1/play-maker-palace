@@ -23,6 +23,7 @@ import VolunteerSidebar, { VolunteerTab } from '@/components/VolunteerSidebar';
 import VolunteerActivitiesSection from '@/components/VolunteerActivitiesSection';
 import VolunteerPartnerTab from '@/components/VolunteerPartnerTab';
 import VolunteerSafetyTab from '@/components/VolunteerSafetyTab';
+import VolunteerMonthlyTab from '@/components/VolunteerMonthlyTab';
 
 interface Task {
   id: string;
@@ -937,6 +938,11 @@ const VolunteerDashboard = () => {
       {/* ===== SAFETY TAB ===== */}
       {activeTab === 'safety' && currentUserId && (
         <VolunteerSafetyTab language={language} userId={currentUserId} onPendingCountChange={setSafetyPendingCount} />
+      )}
+
+      {/* ===== MONTHLY TAB ===== */}
+      {activeTab === 'monthly' && currentUserId && (
+        <VolunteerMonthlyTab language={language} userId={currentUserId} />
       )}
 
 
