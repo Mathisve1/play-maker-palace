@@ -112,7 +112,9 @@ const TicketingDashboard = () => {
 
   // Planning state
   const [events, setEvents] = useState<{ id: string; title: string; event_date: string | null }[]>([]);
+  const [monthlyPlans, setMonthlyPlans] = useState<{ id: string; title: string; month: number; year: number }[]>([]);
   const [selectedEventId, setSelectedEventId] = useState('');
+  const [isMonthlyPlan, setIsMonthlyPlan] = useState(false);
   const [volunteers, setVolunteers] = useState<VolunteerTicketRow[]>([]);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const [generatingAll, setGeneratingAll] = useState(false);
@@ -120,7 +122,7 @@ const TicketingDashboard = () => {
   const [liveSearch, setLiveSearch] = useState('');
   const [manualCheckingIds, setManualCheckingIds] = useState<Set<string>>(new Set());
 
-  // Load club & events
+  // Load club & events & monthly plans
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -135,17 +137,92 @@ const TicketingDashboard = () => {
       if (!cid) { navigate('/club-dashboard'); return; }
       setClubId(cid);
 
-      const { data: evts } = await supabase.from('events').select('id, title, event_date').eq('club_id', cid).order('event_date', { ascending: false });
-      setEvents(evts || []);
+      const [evtsRes, plansRes] = await Promise.all([
+        supabase.from('events').select('id, title, event_date').eq('club_id', cid).order('event_date', { ascending: false }),
+        supabase.from('monthly_plans').select('id, title, month, year').eq('club_id', cid).eq('status', 'published').order('year', { ascending: false }).order('month', { ascending: false }),
+      ]);
+      setEvents(evtsRes.data || []);
+      setMonthlyPlans((plansRes.data || []) as any);
 
       setLoading(false);
     };
     init();
   }, [navigate]);
 
-  // Load volunteers + tickets when event changes
+  // Handle selection change - detect if monthly plan
+  const handleSelectChange = (value: string) => {
+    if (value.startsWith('mp_')) {
+      setSelectedEventId(value.replace('mp_', ''));
+      setIsMonthlyPlan(true);
+    } else {
+      setSelectedEventId(value);
+      setIsMonthlyPlan(false);
+    }
+  };
+
+  // Load volunteers + tickets when event/plan changes
   useEffect(() => {
     if (!clubId || !selectedEventId) { setVolunteers([]); return; }
+
+    if (isMonthlyPlan) {
+      // Load monthly plan assigned day signups
+      const loadMonthlyVolunteers = async () => {
+        const planId = selectedEventId;
+        const { data: enrollments } = await supabase
+          .from('monthly_enrollments')
+          .select('id, volunteer_id')
+          .eq('plan_id', planId);
+        if (!enrollments?.length) { setVolunteers([]); return; }
+
+        const enrollmentIds = enrollments.map(e => e.id);
+        const volIdMap = Object.fromEntries(enrollments.map(e => [e.id, e.volunteer_id]));
+
+        const { data: signups } = await supabase
+          .from('monthly_day_signups')
+          .select('id, enrollment_id, plan_task_id, volunteer_id, status, ticket_barcode')
+          .in('enrollment_id', enrollmentIds)
+          .eq('status', 'assigned');
+
+        if (!signups?.length) { setVolunteers([]); return; }
+
+        const taskIds = [...new Set(signups.map(s => s.plan_task_id))];
+        const volIds = [...new Set(signups.map(s => s.volunteer_id))];
+
+        const [tasksRes, profilesRes, ticketsRes] = await Promise.all([
+          supabase.from('monthly_plan_tasks').select('id, title, task_date').in('id', taskIds),
+          supabase.from('profiles').select('id, full_name').in('id', volIds),
+          supabase.from('volunteer_tickets').select('*').eq('club_id', clubId).eq('event_id', planId),
+        ]);
+
+        const taskMap = Object.fromEntries((tasksRes.data || []).map(t => [t.id, t]));
+        const profileMap = Object.fromEntries((profilesRes.data || []).map(p => [p.id, p.full_name || 'Onbekend']));
+        const ticketMap = Object.fromEntries((ticketsRes.data || []).map(t => [t.volunteer_id + '_' + t.task_id, t]));
+
+        const rows: VolunteerTicketRow[] = signups.map(s => {
+          const task = taskMap[s.plan_task_id];
+          const ticket = ticketMap[s.volunteer_id + '_' + s.plan_task_id];
+          return {
+            id: ticket?.id || s.id,
+            volunteer_id: s.volunteer_id,
+            task_id: s.plan_task_id,
+            status: ticket?.status || 'none',
+            checked_in_at: ticket?.checked_in_at || null,
+            external_ticket_id: ticket?.external_ticket_id || null,
+            error_message: ticket?.error_message || null,
+            volunteer_name: profileMap[s.volunteer_id] || 'Onbekend',
+            task_title: task ? `${task.title} (${new Date(task.task_date).toLocaleDateString()})` : '',
+            is_partner: false,
+            has_account: true,
+            partner_email: null,
+          };
+        });
+        setVolunteers(rows);
+      };
+      loadMonthlyVolunteers();
+      return;
+    }
+
+    // Regular event loading
     const loadVolunteers = async () => {
       const { data: tasks } = await supabase.from('tasks').select('id, title').eq('event_id', selectedEventId).eq('club_id', clubId);
       if (!tasks?.length) { setVolunteers([]); return; }
@@ -225,7 +302,7 @@ const TicketingDashboard = () => {
       setVolunteers(rows);
     };
     loadVolunteers();
-  }, [clubId, selectedEventId]);
+  }, [clubId, selectedEventId, isMonthlyPlan]);
 
   // Realtime subscription + polling
   useEffect(() => {
@@ -454,18 +531,30 @@ const TicketingDashboard = () => {
           <TabsContent value="planning">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+                <Select value={isMonthlyPlan ? `mp_${selectedEventId}` : selectedEventId} onValueChange={handleSelectChange}>
                   <SelectTrigger className="w-full sm:w-80">
                     <SelectValue placeholder={labels.selectEvent} />
                   </SelectTrigger>
                   <SelectContent>
-                    {events.length === 0 ? (
+                    {events.length === 0 && monthlyPlans.length === 0 ? (
                       <SelectItem value="__none" disabled>{labels.noEvents}</SelectItem>
-                    ) : events.map(e => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.title} {e.event_date ? `(${new Date(e.event_date).toLocaleDateString()})` : ''}
-                      </SelectItem>
-                    ))}
+                    ) : (
+                      <>
+                        {events.map(e => (
+                          <SelectItem key={e.id} value={e.id}>
+                            {e.title} {e.event_date ? `(${new Date(e.event_date).toLocaleDateString()})` : ''}
+                          </SelectItem>
+                        ))}
+                        {monthlyPlans.length > 0 && events.length > 0 && (
+                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Maandplannen</div>
+                        )}
+                        {monthlyPlans.map(mp => (
+                          <SelectItem key={`mp_${mp.id}`} value={`mp_${mp.id}`}>
+                            📅 {mp.title || `Maandplan ${mp.month}/${mp.year}`}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 {selectedEventId && volunteers.some(v => v.status === 'none') && (
@@ -561,7 +650,7 @@ const TicketingDashboard = () => {
           {/* LIVE TAB */}
           <TabsContent value="live">
             <div className="space-y-4">
-              <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+              <Select value={isMonthlyPlan ? `mp_${selectedEventId}` : selectedEventId} onValueChange={handleSelectChange}>
                 <SelectTrigger className="w-full sm:w-80">
                   <SelectValue placeholder={labels.selectEvent} />
                 </SelectTrigger>
@@ -569,6 +658,14 @@ const TicketingDashboard = () => {
                   {events.map(e => (
                     <SelectItem key={e.id} value={e.id}>
                       {e.title} {e.event_date ? `(${new Date(e.event_date).toLocaleDateString()})` : ''}
+                    </SelectItem>
+                  ))}
+                  {monthlyPlans.length > 0 && events.length > 0 && (
+                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Maandplannen</div>
+                  )}
+                  {monthlyPlans.map(mp => (
+                    <SelectItem key={`mp_${mp.id}`} value={`mp_${mp.id}`}>
+                      📅 {mp.title || `Maandplan ${mp.month}/${mp.year}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
