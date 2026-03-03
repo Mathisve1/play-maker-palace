@@ -1,64 +1,60 @@
 
 
-# Analyse: Losse eindjes en upgrade-mogelijkheden
+# Resterende losse eindjes en upgrade-mogelijkheden
 
-Na een grondige review van de codebase zijn dit de gebieden die het meest baat hebben bij een upgrade:
-
----
-
-## 1. Dashboard KPIs tonen hardcoded "0" waarden
-
-**Probleem:** De KPIs `kpi_pending_enrollments` en `kpi_day_signups_pending` tonen altijd `value={0}` (hardcoded op regel 1481-1483). Ze fetchen geen echte data uit de maandplanning-tabellen.
-
-**Oplossing:** Echte counts ophalen uit `monthly_enrollments` (pending) en `monthly_day_signups` (pending) bij het laden van het dashboard, net zoals de andere KPIs dat doen.
+Na de eerdere 7 fixes heb ik de codebase opnieuw doorgelicht. Dit zijn de resterende punten:
 
 ---
 
-## 2. Pending Tickets widget toont ook altijd "0"
+## 1. ClubOwnerDashboard.tsx is nog steeds 1804 regels -- niet gerefactord
 
-**Probleem:** De `pending_tickets` widget (regel 1538) toont hardcoded `0`. Er wordt geen telling gemaakt van vrijwilligers die wel assigned zijn maar nog geen barcode/ticket hebben.
+**Probleem:** Het bestand bevat data-loading, 60+ state variabelen, event CRUD, task CRUD, 5 inline modal dialogs (edit task, delete task, edit event, delete event, create event), en de volledige widget rendering -- allemaal in 1 component.
 
-**Oplossing:** Bij data-loading de assigned signups zonder `volunteer_tickets` barcode tellen en die waarde tonen.
-
----
-
-## 3. ClubOwnerDashboard.tsx is 1770 regels -- te groot
-
-**Probleem:** Het bestand bevat data-loading, business logic, dialogs, form handling, en rendering allemaal in één component. Dit maakt onderhoud lastig en verhoogt de kans op bugs.
-
-**Oplossing:** Extractie van widget rendering naar een apart `WidgetRenderer` component, en de edit/delete task dialogs naar eigen bestanden. Dit is een refactor die stabiliteit verhoogt.
+**Oplossing:** 
+- Widget rendering extraheren naar `src/components/dashboard/WidgetRenderer.tsx`
+- Edit/delete task dialogs naar `src/components/dashboard/EditTaskDialog.tsx` en `DeleteTaskDialog.tsx`
+- Edit/delete event dialogs naar `src/components/dashboard/EditEventDialog.tsx` en `DeleteEventDialog.tsx`
+- Het dashboard wordt dan ~800 regels.
 
 ---
 
-## 4. Reporting: geen "Vrijwilligers" overzichtstab
+## 2. Reporting "Vrijwilligers" tab mist doorklik-functionaliteit
 
-**Probleem:** Reporting heeft tabs voor Financieel, Partners, en Compliance, maar geen dedicated tab waar je per vrijwilliger kunt zien: hoeveel taken, uren, betrouwbaarheid, verdiensten. De data (`volunteerReports`) wordt wel berekend maar zit verstopt in het overview-tab.
+**Probleem:** De Vrijwilligers-tab in Reporting (lijn 819-860) toont een tabel, maar rijen zijn niet klikbaar. Je kunt niet doorklikken naar het profiel van een vrijwilliger om meer details te zien (taken, contracten, betalingen).
 
-**Oplossing:** Een eigen `ReportingVolunteersTab` component maken met een doorzoekbare tabel van alle vrijwilligers, hun statistieken, en doorklik naar hun profiel.
-
----
-
-## 5. Payments widget linkt naar `/payments` maar die pagina is verborgen
-
-**Probleem:** De `payments_summary` widget navigeert naar `/payments` (regel 1560), maar in de sidebar is "Betalingen" uitgecommentarieerd. Dit is een dood einde.
-
-**Oplossing:** Link aanpassen naar `/reporting?tab=financial` of `/sepa-payouts`, afhankelijk van de context.
+**Oplossing:** Elke rij klikbaar maken met `onClick` die een `VolunteerProfileDialog` opent, of navigeert naar een detail-view met die vrijwilliger's volledige historie.
 
 ---
 
-## 6. Actielijst (CommandCenter) mist realtime updates
+## 3. CommandCenter "contract" acties checken geen bestaande signatures
 
-**Probleem:** De Actielijst laadt data eenmalig. Als een andere clubbeheerder een actie afhandelt, zie je dat pas na een refresh.
+**Probleem:** De Actielijst toont "Contract versturen" voor elke assigned signup met een `contract_template_id`, maar controleert niet of er al een `signature_request` bestaat. Als het contract al verstuurd is, verschijnt het onterecht als openstaande actie.
 
-**Oplossing:** Supabase Realtime subscription toevoegen op `task_signups`, `monthly_enrollments`, en `monthly_day_signups` zodat de lijst live bijwerkt.
+**Oplossing:** Bij data-loading in `CommandCenter.tsx` ook `signature_requests` ophalen en assigned signups die al een signature hebben uitfilteren.
 
 ---
 
-## 7. Geen notificatie/badge op sidebar voor openstaande acties
+## 4. Dashboard data herlaadt niet na acties
 
-**Probleem:** De sidebar toont geen visuele indicator (badge/dot) bij "Actielijst" als er openstaande acties zijn. De gebruiker moet de pagina openen om te zien of er werk is.
+**Probleem:** Na het toekennen van een vrijwilliger, het bewerken van een taak, of het verwijderen van een evenement, worden de KPI-waarden (pending enrollments, day signups, tickets) niet opnieuw berekend. Ze worden alleen bij initial load gezet.
 
-**Oplossing:** Een count-badge toevoegen aan het "Actielijst" item in `ClubOwnerSidebar`, vergelijkbaar met hoe de `VolunteerSidebar` al counts toont.
+**Oplossing:** Een `refreshKPIs()` functie extraheren uit de `init()` en aanroepen na elke mutatie.
+
+---
+
+## 5. Volunteer Reporting tab mist zoek/filter functionaliteit
+
+**Probleem:** De overview-tab filtert op `searchQuery` maar de Vrijwilligers-tab (lijn 819-860) toont altijd alle vrijwilligers ongeacht de search-query of geselecteerde filters.
+
+**Oplossing:** De `volunteerReports` in de volunteers tab filteren op `searchQuery` (naam/email) zodat de zoekbalk consistent werkt over alle tabs.
+
+---
+
+## 6. Compliance widget toont "vrijwilligers met verklaring" maar dat is misleidend
+
+**Probleem:** De `compliance_overview` widget (lijn 1579-1591) toont `complianceMap.size` met als label "Vrijwilligers met verklaring". Maar `complianceMap` wordt gevuld via `fetchBatchComplianceData` die ALLE vrijwilligers bevat die een signup hebben -- niet alleen degenen met een actuele verklaring.
+
+**Oplossing:** Tellen hoeveel entries in `complianceMap` daadwerkelijk `hasCurrentMonthDeclaration === true` hebben, of het aantal met status 'green' tonen.
 
 ---
 
@@ -66,13 +62,12 @@ Na een grondige review van de codebase zijn dit de gebieden die het meest baat h
 
 | # | Upgrade | Impact | Moeite |
 |---|---------|--------|--------|
-| 1 | KPIs met echte data (enrollments/day signups/tickets) | Hoog | Klein |
-| 5 | Payments link fixen | Hoog | Minimaal |
-| 7 | Badge op sidebar Actielijst | Hoog | Klein |
-| 4 | Vrijwilligers-tab in Reporting | Hoog | Medium |
-| 6 | Realtime updates Actielijst | Medium | Medium |
-| 3 | Dashboard refactor (1770 regels) | Medium | Medium |
-| 2 | Pending tickets echte data | Medium | Klein |
+| 3 | Contract-acties filteren op bestaande signatures | Hoog | Klein |
+| 4 | Dashboard KPIs refreshen na acties | Hoog | Klein |
+| 6 | Compliance widget juiste telling | Hoog | Klein |
+| 5 | Zoek/filter in Vrijwilligers reporting tab | Medium | Klein |
+| 2 | Doorklik op vrijwilliger in Reporting | Medium | Medium |
+| 1 | Dashboard refactor (1804 regels opsplitsen) | Medium | Groot |
 
-Geef aan welke upgrades je wilt doorvoeren -- ik kan ze allemaal tegelijk aanpakken of stap voor stap.
+Geef aan welke je wilt aanpakken.
 
