@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
@@ -10,11 +11,14 @@ import {
   SidebarSeparator, useSidebar,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import { useLocation } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClubOwnerSidebarProps {
   profile: { full_name: string; email: string; avatar_url?: string | null } | null;
+  clubId?: string | null;
   clubInfo?: { name: string; logo_url: string | null } | null;
   onLogout: () => void;
   onOpenProfile?: () => void;
@@ -23,18 +27,61 @@ interface ClubOwnerSidebarProps {
 }
 
 const ClubOwnerSidebar = ({
-  profile, clubInfo, onLogout, onOpenProfile, onOpenSettings, onOpenMembers,
+  profile, clubId, clubInfo, onLogout, onOpenProfile, onOpenSettings, onOpenMembers,
 }: ClubOwnerSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { setOpenMobile } = useSidebar();
+  const [actionCount, setActionCount] = useState(0);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
 
+  // Fetch pending action count for badge
+  useEffect(() => {
+    if (!clubId) return;
+    const fetchCount = async () => {
+      let total = 0;
+
+      const { data: tasks } = await supabase.from('tasks').select('id, contract_template_id').eq('club_id', clubId).eq('status', 'open');
+      if (tasks && tasks.length > 0) {
+        const taskIds = tasks.map(t => t.id);
+        const { count: pendingSignups } = await supabase.from('task_signups').select('id', { count: 'exact', head: true }).in('task_id', taskIds).eq('status', 'pending');
+        total += pendingSignups || 0;
+      }
+
+      const { data: plans } = await supabase.from('monthly_plans').select('id').eq('club_id', clubId).eq('status', 'published');
+      if (plans && plans.length > 0) {
+        const planIds = plans.map(p => p.id);
+        const { count: pendingEnrollments } = await supabase.from('monthly_enrollments').select('id', { count: 'exact', head: true }).in('plan_id', planIds).eq('approval_status', 'pending');
+        total += pendingEnrollments || 0;
+
+        const { data: approvedEnrollments } = await supabase.from('monthly_enrollments').select('id').in('plan_id', planIds).eq('approval_status', 'approved');
+        if (approvedEnrollments && approvedEnrollments.length > 0) {
+          const enrIds = approvedEnrollments.map(e => e.id);
+          const { count: pendingDays } = await supabase.from('monthly_day_signups').select('id', { count: 'exact', head: true }).in('enrollment_id', enrIds).eq('status', 'pending');
+          total += pendingDays || 0;
+        }
+      }
+
+      setActionCount(total);
+    };
+    fetchCount();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('sidebar-action-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_signups' }, fetchCount)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_enrollments' }, fetchCount)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_day_signups' }, fetchCount)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [clubId]);
+
   const mainItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
-    { label: 'Actielijst', icon: Inbox, path: '/command-center' },
+    { label: 'Actielijst', icon: Inbox, path: '/command-center', badge: actionCount },
     { label: 'Evenementen & Taken', icon: CalendarPlus, path: '/events-manager' },
     { label: 'Planning', icon: LayoutGrid, path: '/planning' },
     { label: 'Safety & Security', icon: ShieldAlert, path: '/safety' },
@@ -42,7 +89,6 @@ const ClubOwnerSidebar = ({
   ];
 
   const managementItems = [
-    // { label: 'Betalingen', icon: CreditCard, path: '/payments' }, // hidden
     { label: 'SEPA Vergoedingen', icon: Banknote, path: '/sepa-payouts' },
     { label: 'Contracten', icon: FileText, path: '/contract-builder' },
     { label: 'Briefings', icon: ClipboardList, path: '/briefing-builder' },
@@ -85,7 +131,12 @@ const ClubOwnerSidebar = ({
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[48px]">
                     <item.icon className="w-5 h-5" />
-                    <span>{item.label}</span>
+                    <span className="flex-1">{item.label}</span>
+                    {'badge' in item && (item as any).badge > 0 && (
+                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center ml-auto">
+                        {(item as any).badge}
+                      </Badge>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

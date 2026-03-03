@@ -272,6 +272,18 @@ const CommandCenter = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Realtime subscriptions for live updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('command-center-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_signups' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_enrollments' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_day_signups' }, () => loadData())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [loadData]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/login');
@@ -447,6 +459,7 @@ const CommandCenter = () => {
       sidebar={
         <ClubOwnerSidebar
           profile={profile}
+          clubId={clubId}
           clubInfo={clubInfo}
           onLogout={handleLogout}
         />
