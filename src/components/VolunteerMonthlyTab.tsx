@@ -10,7 +10,7 @@ import { useComplianceData } from '@/hooks/useComplianceData';
 import {
   Calendar, CalendarDays, Clock, MapPin, Euro, CheckCircle,
   ChevronLeft, ChevronRight, FileSignature, Users, AlertTriangle,
-  Loader2, QrCode,
+  Loader2, QrCode, ShieldCheck, XCircle, Hourglass,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
@@ -63,6 +63,7 @@ interface Enrollment {
   id: string;
   plan_id: string;
   contract_status: string;
+  approval_status: string;
 }
 
 const labels: Record<Language, Record<string, string>> = {
@@ -90,6 +91,13 @@ const labels: Record<Language, Record<string, string>> = {
     complianceBlocked: '🚫 Je hebt het jaarlijks maximum bereikt. Inschrijven is geblokkeerd.',
     ticket: 'Dagticket',
     monthTotal: 'Geschat maandtotaal',
+    waitingApproval: 'Wacht op goedkeuring van de club',
+    approved: 'Goedgekeurd',
+    rejected: 'Afgewezen',
+    waitingAssignment: 'Wacht op bevestiging van de club',
+    assigned: 'Toegekend',
+    contractRequired: 'Je contract moet eerst getekend zijn voordat je je kunt aanmelden voor dagen.',
+    approvalRequired: 'Je inschrijving moet eerst goedgekeurd worden door de club.',
   },
   fr: {
     title: 'Planning mensuel',
@@ -115,6 +123,13 @@ const labels: Record<Language, Record<string, string>> = {
     complianceBlocked: '🚫 Vous avez atteint le maximum annuel. Inscription bloquée.',
     ticket: 'Ticket journalier',
     monthTotal: 'Total mensuel estimé',
+    waitingApproval: "En attente d'approbation du club",
+    approved: 'Approuvé',
+    rejected: 'Rejeté',
+    waitingAssignment: 'En attente de confirmation du club',
+    assigned: 'Attribué',
+    contractRequired: "Votre contrat doit d'abord être signé avant de pouvoir vous inscrire.",
+    approvalRequired: "Votre inscription doit d'abord être approuvée par le club.",
   },
   en: {
     title: 'Monthly Planning',
@@ -140,6 +155,13 @@ const labels: Record<Language, Record<string, string>> = {
     complianceBlocked: '🚫 You have reached the annual maximum. Enrollment blocked.',
     ticket: 'Day ticket',
     monthTotal: 'Estimated monthly total',
+    waitingApproval: 'Waiting for club approval',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    waitingAssignment: 'Waiting for club confirmation',
+    assigned: 'Assigned',
+    contractRequired: 'Your contract must be signed before you can sign up for days.',
+    approvalRequired: 'Your enrollment must be approved by the club first.',
   },
 };
 
@@ -166,85 +188,58 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   const [hoursInput, setHoursInput] = useState('');
   const [showTicket, setShowTicket] = useState<string | null>(null);
 
-  // Compliance data
   const { data: complianceData } = useComplianceData(userId);
   const totalEarned = complianceData.totalIncome;
   const compliancePercentage = (totalEarned / YEARLY_CAP) * 100;
   const isBlocked = totalEarned >= YEARLY_CAP;
   const isWarning = compliancePercentage >= 80 && !isBlocked;
 
-  useEffect(() => {
-    loadData();
-  }, [viewYear, viewMonth, userId]);
+  useEffect(() => { loadData(); }, [viewYear, viewMonth, userId]);
 
   const loadData = async () => {
     setLoading(true);
-
     const { data: plansData } = await supabase
-      .from('monthly_plans')
-      .select('*, clubs(name, logo_url)')
-      .eq('year', viewYear)
-      .eq('month', viewMonth)
-      .eq('status', 'published');
+      .from('monthly_plans').select('*, clubs(name, logo_url)')
+      .eq('year', viewYear).eq('month', viewMonth).eq('status', 'published');
 
     const plansList = (plansData || []) as unknown as MonthlyPlan[];
     setPlans(plansList);
 
     if (plansList.length > 0) {
       const planIds = plansList.map(p => p.id);
-
       const [tasksRes, enrollRes] = await Promise.all([
         supabase.from('monthly_plan_tasks').select('*').in('plan_id', planIds).order('task_date').order('start_time'),
         supabase.from('monthly_enrollments').select('*').in('plan_id', planIds).eq('volunteer_id', userId),
       ]);
-
       setTasks((tasksRes.data || []) as unknown as PlanTask[]);
       const enrs = (enrollRes.data || []) as unknown as Enrollment[];
       setEnrollments(enrs);
 
       if (enrs.length > 0) {
-        const { data: signups } = await supabase
-          .from('monthly_day_signups')
-          .select('*')
-          .in('enrollment_id', enrs.map(e => e.id))
-          .eq('volunteer_id', userId);
+        const { data: signups } = await supabase.from('monthly_day_signups').select('*').in('enrollment_id', enrs.map(e => e.id)).eq('volunteer_id', userId);
         setDaySignups((signups || []) as unknown as DaySignup[]);
-      } else {
-        setDaySignups([]);
-      }
-    } else {
-      setTasks([]);
-      setEnrollments([]);
-      setDaySignups([]);
-    }
-
+      } else { setDaySignups([]); }
+    } else { setTasks([]); setEnrollments([]); setDaySignups([]); }
     setLoading(false);
   };
 
   const enrollInPlan = async (planId: string) => {
-    if (isBlocked) {
-      toast.error(l.complianceBlocked);
-      return;
-    }
-    const { error } = await supabase.from('monthly_enrollments').insert({
-      plan_id: planId,
-      volunteer_id: userId,
-    });
+    if (isBlocked) { toast.error(l.complianceBlocked); return; }
+    const { error } = await supabase.from('monthly_enrollments').insert({ plan_id: planId, volunteer_id: userId });
     if (error) { toast.error(error.message); return; }
-    toast.success(language === 'nl' ? 'Ingeschreven!' : 'Enrolled!');
+    toast.success(language === 'nl' ? 'Ingeschreven! Wacht op goedkeuring van de club.' : 'Enrolled! Waiting for club approval.');
     loadData();
   };
 
   const signUpForDay = async (enrollmentId: string, planTaskId: string) => {
-    const barcode = `MP-${Date.now().toString(36).toUpperCase()}`;
+    // No longer generate barcode client-side - club will generate ticket after assignment
     const { error } = await supabase.from('monthly_day_signups').insert({
       enrollment_id: enrollmentId,
       plan_task_id: planTaskId,
       volunteer_id: userId,
-      ticket_barcode: barcode,
     });
     if (error) { toast.error(error.message); return; }
-    toast.success(language === 'nl' ? 'Aangemeld voor deze dag!' : 'Signed up!');
+    toast.success(language === 'nl' ? 'Aangemeld! Wacht op bevestiging van de club.' : 'Signed up! Waiting for club confirmation.');
     loadData();
   };
 
@@ -252,27 +247,17 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
     if (!selectedSignup || !hoursInput) return;
     const hours = Number(hoursInput);
     if (isNaN(hours) || hours <= 0) return;
-
     const { error } = await supabase.from('monthly_day_signups')
       .update({ volunteer_reported_hours: hours, volunteer_approved: true, hour_status: 'volunteer_reported' })
       .eq('id', selectedSignup.id);
-
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Uren gerapporteerd!' : 'Hours reported!');
-    setShowHoursDialog(false);
-    setSelectedSignup(null);
-    setHoursInput('');
+    setShowHoursDialog(false); setSelectedSignup(null); setHoursInput('');
     loadData();
   };
 
-  const prevMonth = () => {
-    if (viewMonth === 1) { setViewMonth(12); setViewYear(y => y - 1); }
-    else setViewMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (viewMonth === 12) { setViewMonth(1); setViewYear(y => y + 1); }
-    else setViewMonth(m => m + 1);
-  };
+  const prevMonth = () => { if (viewMonth === 1) { setViewMonth(12); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
+  const nextMonth = () => { if (viewMonth === 12) { setViewMonth(1); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
 
   const categoryColor = (cat: string) => {
     const map: Record<string, string> = {
@@ -286,21 +271,31 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
 
   const isSignedUp = (taskId: string) => daySignups.some(ds => ds.plan_task_id === taskId);
   const getSignup = (taskId: string) => daySignups.find(ds => ds.plan_task_id === taskId);
-
-  const tasksByDate = tasks.reduce<Record<string, PlanTask[]>>((acc, t) => {
-    if (!acc[t.task_date]) acc[t.task_date] = [];
-    acc[t.task_date].push(t);
-    return acc;
-  }, {});
-
+  const tasksByDate = tasks.reduce<Record<string, PlanTask[]>>((acc, t) => { if (!acc[t.task_date]) acc[t.task_date] = []; acc[t.task_date].push(t); return acc; }, {});
   const mySignedUpTasks = tasks.filter(t => isSignedUp(t.id));
-
-  // Estimate monthly total for this plan
   const estimatedMonthTotal = mySignedUpTasks.reduce((sum, t) => {
     if (t.compensation_type === 'daily' && t.daily_rate) return sum + t.daily_rate;
     if (t.compensation_type === 'hourly' && t.hourly_rate && t.estimated_hours) return sum + t.hourly_rate * t.estimated_hours;
     return sum;
   }, 0);
+
+  // Helper: can volunteer sign up for days?
+  const canSignUpForDays = (enrollment: Enrollment) => {
+    return enrollment.approval_status === 'approved' && enrollment.contract_status === 'signed';
+  };
+
+  const enrollmentStatusMessage = (enrollment: Enrollment) => {
+    if (enrollment.approval_status === 'pending') return { icon: Hourglass, text: l.waitingApproval, color: 'border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' };
+    if (enrollment.approval_status === 'rejected') return { icon: XCircle, text: l.rejected, color: 'border-destructive/50 bg-destructive/10 text-destructive' };
+    if (enrollment.approval_status === 'approved' && enrollment.contract_status !== 'signed') return { icon: FileSignature, text: l.contractRequired, color: 'border-amber-300 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200' };
+    return null;
+  };
+
+  const signupStatusBadge = (signup: DaySignup) => {
+    if (signup.status === 'assigned') return <Badge className="bg-green-600 text-[10px]">{l.assigned}</Badge>;
+    if (signup.status === 'rejected') return <Badge variant="destructive" className="text-[10px]">{l.rejected}</Badge>;
+    return <Badge variant="secondary" className="text-[10px]">{l.waitingAssignment}</Badge>;
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -312,7 +307,6 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
         <p className="text-sm text-muted-foreground mt-1">{l.subtitle}</p>
       </div>
 
-      {/* Compliance warning */}
       {isWarning && (
         <Card className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-900/20">
           <CardContent className="p-3 flex items-center gap-2 text-sm">
@@ -330,7 +324,6 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
         </Card>
       )}
 
-      {/* Month nav */}
       <div className="flex items-center justify-between">
         <Button variant="outline" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
         <h2 className="text-lg font-bold">{MONTH_NL[viewMonth - 1]} {viewYear}</h2>
@@ -348,6 +341,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
         plans.map(plan => {
           const enrollment = enrollments.find(e => e.plan_id === plan.id);
           const planTasks = tasks.filter(t => t.plan_id === plan.id);
+          const statusMsg = enrollment ? enrollmentStatusMessage(enrollment) : null;
 
           return (
             <div key={plan.id} className="space-y-4">
@@ -369,7 +363,15 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                       </div>
                     </div>
                     {enrollment ? (
-                      <Badge variant="default" className="bg-green-600">{l.enrolled}</Badge>
+                      <div className="flex items-center gap-2">
+                        {enrollment.approval_status === 'approved' ? (
+                          <Badge variant="default" className="bg-green-600">{l.approved}</Badge>
+                        ) : enrollment.approval_status === 'rejected' ? (
+                          <Badge variant="destructive">{l.rejected}</Badge>
+                        ) : (
+                          <Badge variant="secondary">{l.waitingApproval}</Badge>
+                        )}
+                      </div>
                     ) : (
                       <Button size="sm" onClick={() => enrollInPlan(plan.id)} disabled={isBlocked}>
                         <FileSignature className="w-4 h-4 mr-1" /> {l.enroll}
@@ -379,7 +381,17 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                 </CardContent>
               </Card>
 
-              {/* My schedule (if enrolled) */}
+              {/* Status message */}
+              {statusMsg && (
+                <Card className={`${statusMsg.color}`}>
+                  <CardContent className="p-3 flex items-center gap-2 text-sm">
+                    <statusMsg.icon className="w-4 h-4 shrink-0" />
+                    <span>{statusMsg.text}</span>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* My schedule (if enrolled and can see signups) */}
               {enrollment && mySignedUpTasks.filter(t => t.plan_id === plan.id).length > 0 && (
                 <Card>
                   <CardHeader className="pb-2">
@@ -410,23 +422,19 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                             <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                               {t.start_time && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t.start_time}–{t.end_time}</span>}
                               {t.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{t.location}</span>}
-                              <span className="flex items-center gap-1">
-                                <Euro className="w-3 h-3" />
-                                {t.compensation_type === 'daily' ? `€${t.daily_rate}/${l.day}` : `€${t.hourly_rate}/${l.hour}`}
-                              </span>
+                              <span className="flex items-center gap-1"><Euro className="w-3 h-3" />{t.compensation_type === 'daily' ? `€${t.daily_rate}/${l.day}` : `€${t.hourly_rate}/${l.hour}`}</span>
                             </div>
                             {notCheckedIn && (
-                              <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                                <AlertTriangle className="w-3 h-3" /> {l.notCheckedIn}
-                              </p>
+                              <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {l.notCheckedIn}</p>
                             )}
                           </div>
                           <div className="flex flex-col items-end gap-1 shrink-0">
+                            {/* Signup status badge */}
+                            {signup && signupStatusBadge(signup)}
                             {signup?.checked_in_at ? (
                               <Badge variant="default" className="bg-green-600 text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" />{l.checkedIn}</Badge>
-                            ) : !isPast ? (
+                            ) : !isPast && signup?.status === 'assigned' ? (
                               <>
-                                <Badge variant="secondary" className="text-[10px]">{l.pending}</Badge>
                                 {signup?.ticket_barcode && (
                                   <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowTicket(signup.ticket_barcode)}>
                                     <QrCode className="w-3 h-3 mr-1" /> {l.ticket}
@@ -436,10 +444,8 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                             ) : null}
                             {needsHourReport && (
                               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
-                                setSelectedSignup(signup!);
-                                setSelectedTask(t);
-                                setHoursInput(String(t.estimated_hours || ''));
-                                setShowHoursDialog(true);
+                                setSelectedSignup(signup!); setSelectedTask(t);
+                                setHoursInput(String(t.estimated_hours || '')); setShowHoursDialog(true);
                               }}>
                                 <Clock className="w-3 h-3 mr-1" /> {l.confirmHours}
                               </Button>
@@ -462,28 +468,30 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">{l.availableTasks}</CardTitle>
-                    {/* Feature 4: Contract blocking message */}
-                    {enrollment.contract_status !== 'signed' && (
-                      <div className="mt-2 p-2.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 text-sm flex items-center gap-2">
-                        <FileSignature className="w-4 h-4 text-amber-600 shrink-0" />
-                        <span className="text-amber-800 dark:text-amber-200">
-                          {language === 'nl'
-                            ? 'Je contract is nog niet getekend. Wacht tot de club je contract verstuurt en onderteken het voordat je je kunt aanmelden voor dagen.'
-                            : language === 'fr'
-                            ? "Votre contrat n'est pas encore signé. Attendez que le club vous envoie votre contrat."
-                            : 'Your contract is not yet signed. Wait for the club to send your contract before signing up for days.'}
-                        </span>
-                      </div>
-                    )}
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {!canSignUpForDays(enrollment) && (
+                      <div className="p-2.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 text-sm flex items-center gap-2">
+                        {enrollment.approval_status !== 'approved' ? (
+                          <>
+                            <Hourglass className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span className="text-amber-800 dark:text-amber-200">{l.approvalRequired}</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileSignature className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span className="text-amber-800 dark:text-amber-200">{l.contractRequired}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                     {Object.entries(tasksByDate)
                       .filter(([_, ts]) => ts.some(t => t.plan_id === plan.id))
                       .sort(([a], [b]) => a.localeCompare(b))
                       .map(([date, dateTasks]) => {
                         const d = new Date(date);
                         const isPast = d < new Date(new Date().toISOString().split('T')[0]);
-                        const contractNotSigned = enrollment.contract_status !== 'signed';
+                        const blocked = !canSignUpForDays(enrollment);
                         return (
                           <div key={date} className={isPast ? 'opacity-50' : ''}>
                             <p className="text-xs font-semibold text-muted-foreground mb-2 capitalize">
@@ -492,6 +500,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                             <div className="space-y-1.5">
                               {dateTasks.filter(t => t.plan_id === plan.id).map(t => {
                                 const signedUp = isSignedUp(t.id);
+                                const signup = getSignup(t.id);
                                 return (
                                   <div key={t.id} className="flex items-center gap-3 p-2.5 rounded-lg border hover:bg-muted/30 transition-colors">
                                     <div className="flex-1 min-w-0">
@@ -507,15 +516,15 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                                       </div>
                                     </div>
                                     {signedUp ? (
-                                      <Badge variant="default" className="shrink-0">{l.signedUp}</Badge>
-                                    ) : !isPast && !contractNotSigned ? (
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        {signup && signupStatusBadge(signup)}
+                                      </div>
+                                    ) : !isPast && !blocked ? (
                                       <Button size="sm" variant="outline" className="shrink-0" onClick={() => signUpForDay(enrollment.id, t.id)}>
                                         {l.signUp}
                                       </Button>
-                                    ) : !isPast && contractNotSigned ? (
-                                      <Button size="sm" variant="outline" className="shrink-0 opacity-50 cursor-not-allowed" disabled title={
-                                        language === 'nl' ? 'Je moet eerst je contract tekenen' : 'Sign your contract first'
-                                      }>
+                                    ) : !isPast && blocked ? (
+                                      <Button size="sm" variant="outline" className="shrink-0 opacity-50 cursor-not-allowed" disabled>
                                         {l.signUp}
                                       </Button>
                                     ) : null}

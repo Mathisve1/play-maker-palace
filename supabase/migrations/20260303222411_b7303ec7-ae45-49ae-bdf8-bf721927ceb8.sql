@@ -1,0 +1,1 @@
+ALTER TABLE public.monthly_enrollments ADD COLUMN IF NOT EXISTS approval_status TEXT NOT NULL DEFAULT 'pending';
