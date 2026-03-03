@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Euro,
   Users, FileText, Trash2, Edit, Eye, Send, CalendarDays, CheckCircle,
-  Copy, FileSignature, Loader2, Banknote,
+  Copy, FileSignature, Loader2, Banknote, Play,
 } from 'lucide-react';
 import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 
@@ -93,7 +93,8 @@ const MonthlyPlanning = () => {
   const [copyingTasks, setCopyingTasks] = useState(false);
   const [generatingPayout, setGeneratingPayout] = useState(false);
   const [contractVolunteer, setContractVolunteer] = useState<Enrollment | null>(null);
-
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
   // Task form state
   const [taskForm, setTaskForm] = useState({
     title: '', category: 'Algemeen', description: '', location: '',
@@ -442,6 +443,37 @@ const MonthlyPlanning = () => {
             <p className="text-sm text-muted-foreground mt-1">
               Plan dagelijkse taken en vergoed vrijwilligers met één maandcontract
             </p>
+          </div>
+          <div className="flex gap-2">
+            {plan && plan.title.includes('Demo Maandplan') ? (
+              <Button variant="destructive" size="sm" disabled={demoDeleteLoading} onClick={async () => {
+                setDemoDeleteLoading(true);
+                try {
+                  const res = await supabase.functions.invoke('monthly-planning-demo', { body: { club_id: clubId, action: 'delete' } });
+                  if (res.error) throw new Error(res.error.message);
+                  toast.success('Demo data verwijderd!');
+                  setTimeout(() => window.location.reload(), 1000);
+                } catch (err: any) { toast.error(err.message); }
+                setDemoDeleteLoading(false);
+              }}>
+                {demoDeleteLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Trash2 className="w-4 h-4 mr-1" />}
+                Demo wissen
+              </Button>
+            ) : !plan ? (
+              <Button variant="outline" size="sm" disabled={demoLoading} onClick={async () => {
+                setDemoLoading(true);
+                try {
+                  const res = await supabase.functions.invoke('monthly-planning-demo', { body: { club_id: clubId, action: 'create' } });
+                  if (res.error) throw new Error(res.error.message);
+                  toast.success('Demo maandplan aangemaakt! Pagina wordt herladen...');
+                  setTimeout(() => window.location.reload(), 2000);
+                } catch (err: any) { toast.error(err.message); }
+                setDemoLoading(false);
+              }}>
+                {demoLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
+                Start demo
+              </Button>
+            ) : null}
           </div>
         </div>
 
