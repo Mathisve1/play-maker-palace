@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-// @ts-ignore
-import { Responsive, WidthProvider } from 'react-grid-layout';
+import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,8 +7,6 @@ import { Pencil, Plus, RotateCcw, Check, X, Trash2, GripVertical } from 'lucide-
 import { Language } from '@/i18n/translations';
 import { WidgetInstance, WIDGET_REGISTRY, generateWidgetId } from './widgetRegistry';
 import { Button } from '@/components/ui/button';
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
 
 interface DashboardGridProps {
   layout: WidgetInstance[];
@@ -22,6 +19,7 @@ interface DashboardGridProps {
 export const DashboardGrid = ({ layout, onLayoutChange, onReset, language, renderWidget }: DashboardGridProps) => {
   const [editMode, setEditMode] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
+  const { containerRef, width } = useContainerWidth({ initialWidth: 1280 });
 
   // Convert WidgetInstance[] to react-grid-layout Layout[]
   const gridLayout = useMemo(() => layout.map(w => {
@@ -40,10 +38,10 @@ export const DashboardGrid = ({ layout, onLayoutChange, onReset, language, rende
     };
   }), [layout, editMode]);
 
-  const handleLayoutUpdate = useCallback((newGridLayout: any[]) => {
+  const handleLayoutUpdate = useCallback((newGridLayout: readonly any[]) => {
     if (!editMode) return;
     const updated = layout.map(widget => {
-      const gl = newGridLayout.find(g => g.i === widget.i);
+      const gl = newGridLayout.find((g: any) => g.i === widget.i);
       if (gl) {
         return { ...widget, x: gl.x, y: gl.y, w: gl.w, h: gl.h };
       }
@@ -59,7 +57,7 @@ export const DashboardGrid = ({ layout, onLayoutChange, onReset, language, rende
       i: generateWidgetId(),
       type,
       x: 0,
-      y: Infinity, // will be placed at bottom
+      y: Infinity,
       w: def.defaultW,
       h: def.defaultH,
     };
@@ -87,7 +85,7 @@ export const DashboardGrid = ({ layout, onLayoutChange, onReset, language, rende
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       {/* Edit mode toolbar */}
       <div className="flex items-center justify-end gap-2 mb-4">
         {editMode ? (
@@ -173,15 +171,15 @@ export const DashboardGrid = ({ layout, onLayoutChange, onReset, language, rende
       {/* Grid */}
       <ResponsiveGridLayout
         className="layout"
+        width={width}
         layouts={{ lg: gridLayout, md: gridLayout, sm: gridLayout.map(l => ({ ...l, w: Math.min(l.w, 2), x: l.x % 2 })) }}
         breakpoints={{ lg: 1024, md: 768, sm: 0 }}
         cols={{ lg: 4, md: 2, sm: 1 }}
         rowHeight={140}
         margin={[16, 16]}
-        isDraggable={editMode}
-        isResizable={editMode}
+        dragConfig={{ enabled: editMode, handle: '.widget-drag-handle' }}
+        resizeConfig={{ enabled: editMode }}
         onLayoutChange={(currentLayout) => handleLayoutUpdate(currentLayout)}
-        draggableHandle=".widget-drag-handle"
       >
         {layout.map(widget => (
           <div key={widget.i} className="relative group">
