@@ -359,6 +359,11 @@ const ClubOwnerDashboard = () => {
   const [savingEvent, setSavingEvent] = useState(false);
   const [duplicatingEvent, setDuplicatingEvent] = useState<string | null>(null);
 
+  // KPI counts for monthly planning
+  const [pendingEnrollmentCount, setPendingEnrollmentCount] = useState(0);
+  const [pendingDaySignupCount, setPendingDaySignupCount] = useState(0);
+  const [pendingTicketCount, setPendingTicketCount] = useState(0);
+
   // Create loose task form
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
@@ -550,6 +555,34 @@ const ClubOwnerDashboard = () => {
           const sigMap: Record<string, { status: string; document_url?: string | null; id?: string }> = {};
           sigsData.forEach(s => { sigMap[`${s.task_id}-${s.volunteer_id}`] = { status: s.status, document_url: s.document_url, id: s.id }; });
           setSignatureStatuses(sigMap);
+        }
+      }
+
+      // Fetch monthly planning KPI counts
+      const { data: publishedPlans } = await supabase
+        .from('monthly_plans')
+        .select('id, contract_template_id')
+        .eq('club_id', activeClub.id)
+        .eq('status', 'published');
+
+      if (publishedPlans && publishedPlans.length > 0) {
+        const planIds = publishedPlans.map(p => p.id);
+        const { data: enrollments } = await supabase
+          .from('monthly_enrollments')
+          .select('id, plan_id, approval_status')
+          .in('plan_id', planIds);
+        const enrs = enrollments || [];
+        setPendingEnrollmentCount(enrs.filter(e => e.approval_status === 'pending').length);
+
+        const approvedEnrIds = enrs.filter(e => e.approval_status === 'approved').map(e => e.id);
+        if (approvedEnrIds.length > 0) {
+          const { data: daySignups } = await supabase
+            .from('monthly_day_signups')
+            .select('id, status, ticket_barcode')
+            .in('enrollment_id', approvedEnrIds);
+          const ds = daySignups || [];
+          setPendingDaySignupCount(ds.filter(d => d.status === 'pending').length);
+          setPendingTicketCount(ds.filter(d => d.status === 'assigned' && !d.ticket_barcode).length);
         }
       }
 
@@ -1427,6 +1460,7 @@ const ClubOwnerDashboard = () => {
   const sidebarEl = (
     <ClubOwnerSidebar
       profile={profile ? { ...profile, avatar_url: null } : null}
+      clubId={clubId}
       clubInfo={clubInfo ? { name: clubInfo.name, logo_url: clubInfo.logo_url } : null}
       onLogout={async () => { await supabase.auth.signOut(); navigate('/login'); }}
       onOpenProfile={() => setShowProfileDialog(true)}
@@ -1478,9 +1512,9 @@ const ClubOwnerDashboard = () => {
                 case 'kpi_unsigned_contracts':
                   return <KpiWidget type={widget.type} value={unsignedContractCount} language={language} onClick={() => navigate('/reporting?tab=compliance')} />;
                 case 'kpi_pending_enrollments':
-                  return <KpiWidget type={widget.type} value={0} language={language} onClick={() => navigate('/planning?tab=monthly')} />;
+                  return <KpiWidget type={widget.type} value={pendingEnrollmentCount} language={language} onClick={() => navigate('/command-center')} />;
                 case 'kpi_day_signups_pending':
-                  return <KpiWidget type={widget.type} value={0} language={language} onClick={() => navigate('/planning?tab=monthly')} />;
+                  return <KpiWidget type={widget.type} value={pendingDaySignupCount} language={language} onClick={() => navigate('/command-center')} />;
                 case 'monthly_planning':
                   return (
                     <div className="w-full h-full bg-card rounded-2xl border border-border p-4 overflow-auto">
@@ -1535,7 +1569,7 @@ const ClubOwnerDashboard = () => {
                       <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                         <Ticket className="w-6 h-6 text-purple-600" />
                       </div>
-                      <p className="text-2xl font-bold text-foreground">0</p>
+                      <p className="text-2xl font-bold text-foreground">{pendingTicketCount}</p>
                       <p className="text-xs text-muted-foreground mt-1">{language === 'nl' ? 'Tickets te genereren' : 'Tickets to generate'}</p>
                       <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {language === 'nl' ? 'Naar ticketing →' : 'Go to ticketing →'}
@@ -1557,7 +1591,7 @@ const ClubOwnerDashboard = () => {
                   );
                 case 'payments_summary':
                   return (
-                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/payments')}>
+                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/sepa-payouts')}>
                       <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                         <CreditCard className="w-6 h-6 text-emerald-600" />
                       </div>

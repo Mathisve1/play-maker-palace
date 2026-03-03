@@ -17,6 +17,7 @@ const ClubPageLayout = ({ children }: ClubPageLayoutProps) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
+  const [clubId, setClubId] = useState<string | null>(null);
   const [clubInfo, setClubInfo] = useState<{ name: string; logo_url: string | null } | null>(null);
 
   useEffect(() => {
@@ -33,11 +34,12 @@ const ClubPageLayout = ({ children }: ClubPageLayoutProps) => {
 
       const { data: club } = await supabase
         .from('clubs')
-        .select('name, logo_url')
+        .select('id, name, logo_url')
         .eq('owner_id', session.user.id)
         .maybeSingle();
 
       if (club) {
+        setClubId(club.id);
         setClubInfo({ name: club.name, logo_url: club.logo_url });
       } else {
         // Check membership
@@ -49,10 +51,13 @@ const ClubPageLayout = ({ children }: ClubPageLayoutProps) => {
         if (membership?.club_id) {
           const { data: c } = await supabase
             .from('clubs')
-            .select('name, logo_url')
+            .select('id, name, logo_url')
             .eq('id', membership.club_id)
             .maybeSingle();
-          if (c) setClubInfo({ name: c.name, logo_url: c.logo_url });
+          if (c) {
+            setClubId(c.id);
+            setClubInfo({ name: c.name, logo_url: c.logo_url });
+          }
         }
       }
       setLoading(false);
@@ -70,6 +75,7 @@ const ClubPageLayout = ({ children }: ClubPageLayoutProps) => {
   const sidebarEl = (
     <ClubOwnerSidebar
       profile={profile ? { ...profile, avatar_url: null } : null}
+      clubId={clubId}
       clubInfo={clubInfo}
       onLogout={async () => { await supabase.auth.signOut(); navigate('/club-login'); }}
     />
