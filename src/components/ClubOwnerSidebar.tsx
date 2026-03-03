@@ -34,7 +34,7 @@ const ClubOwnerSidebar = ({
 
   const mainItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
-    { label: 'Command Center', icon: Inbox, path: '/command-center' },
+    { label: 'Acties & Taken', icon: Inbox, path: '/command-center' },
     { label: 'Evenementen & Taken', icon: CalendarPlus, path: '/events-manager' },
     { label: 'Planning', icon: LayoutGrid, path: '/planning' },
     { label: 'Safety & Security', icon: ShieldAlert, path: '/safety' },
