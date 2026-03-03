@@ -293,6 +293,110 @@ export const belgianVolunteerArticles: LawArticle[] = [
       'Geschillen worden bij voorkeur minnelijk opgelost. Indien geen oplossing wordt bereikt, zijn de rechtbanken van {{bevoegde_rechtbank}} bevoegd.\n' +
       'Deze overeenkomst is opgemaakt in twee exemplaren, waarbij elke partij erkent een exemplaar te hebben ontvangen.',
   },
+
+  // ─── MAANDCONTRACT-SPECIFIEKE CLAUSULES ───────────────
+  {
+    id: 'clausule_maand_duur',
+    articleNumber: 'Clausule M1',
+    title: 'Looptijd maandovereenkomst',
+    category: 'clausule',
+    summary: 'Specifieke duur en geldigheid van het maandcontract.',
+    content:
+      'Deze overeenkomst wordt aangegaan voor de periode van {{Startdatum}} tot en met {{Einddatum}} ({{Maandperiode}}).\n' +
+      'De vrijwilliger kan zich aanmelden voor dagelijks ingeplande taken binnen deze periode via het digitale platform van de organisatie.\n' +
+      'De overeenkomst eindigt van rechtswege op de einddatum. Vroegtijdige beëindiging door beide partijen is mogelijk mits schriftelijke kennisgeving.',
+  },
+  {
+    id: 'clausule_maand_rooster',
+    articleNumber: 'Clausule M2',
+    title: 'Dagelijks rooster en aanmelding',
+    category: 'clausule',
+    summary: 'Regeling rond het dagelijks aanmeldingssysteem.',
+    content:
+      'De organisatie plant dagelijkse taken in via een maandrooster. De vrijwilliger kan zich per dag aanmelden voor beschikbare taken.\n' +
+      'Aanmelding geldt als bevestiging van beschikbaarheid. De vrijwilliger meldt zich aan op de afgesproken locatie ({{Locatie}}) en tijdstip.\n' +
+      'Check-in en check-out worden digitaal geregistreerd. De geregistreerde uren vormen de basis voor de berekening van de kostenvergoeding.\n' +
+      'Bij verhindering verwittigt de vrijwilliger de organisatie zo snel mogelijk, bij voorkeur 24 uur op voorhand.',
+  },
+  {
+    id: 'clausule_maand_vergoeding',
+    articleNumber: 'Clausule M3',
+    title: 'Maandelijkse kostenvergoeding',
+    category: 'clausule',
+    summary: 'Berekening en uitbetaling van de maandelijkse vergoeding.',
+    content:
+      'De vrijwilliger ontvangt een kostenvergoeding op basis van {{Compensatietype}}:\n' +
+      '• Dagvergoeding: {{Dagvergoeding}} per gewerkte dag\n' +
+      '• Uurvergoeding: {{Uurvergoeding}} per gepresteerd uur\n\n' +
+      'De vergoeding wordt maandelijks afgerekend na bevestiging van de gepresteerde uren door beide partijen.\n' +
+      'Uitbetaling geschiedt via overschrijving op rekeningnummer {{IBAN}} t.n.v. {{Rekeninghouder}}.\n\n' +
+      'Conform artikel 10 van het KB van 21 december 2018 mag de forfaitaire kostenvergoeding de wettelijke maxima niet overschrijden:\n' +
+      '• Dagplafond: {{MaxDagPlafond}}\n' +
+      '• Jaarplafond: {{MaxJaarPlafond}}\n' +
+      'Bij overschrijding van deze bedragen worden de vergoedingen als beroepsinkomsten beschouwd en zijn ze onderworpen aan belastingen en sociale bijdragen.',
+  },
+  {
+    id: 'clausule_maand_afrekening',
+    articleNumber: 'Clausule M4',
+    title: 'Maandafrekening en urenbevestiging',
+    category: 'clausule',
+    summary: 'Procedure voor de maandelijkse afrekening van uren en vergoedingen.',
+    content:
+      'Aan het einde van de maandperiode stelt de organisatie een maandafrekening op.\n' +
+      'Deze afrekening bevat per vrijwilliger:\n' +
+      '• het totaal aantal gewerkte dagen;\n' +
+      '• het totaal aantal gepresteerde uren;\n' +
+      '• het verschuldigde vergoedingsbedrag.\n\n' +
+      'De vrijwilliger bevestigt de gepresteerde uren via het digitale platform. De organisatie controleert en keurt de uren goed.\n' +
+      'Na wederzijdse goedkeuring wordt de vergoeding overgemaakt binnen 30 kalenderdagen.',
+  },
+  {
+    id: 'clausule_maand_cumul',
+    articleNumber: 'Clausule M5',
+    title: 'Cumulatie en fiscale verplichtingen',
+    category: 'clausule',
+    summary: 'Informatie over cumulatie met uitkeringen en fiscale gevolgen.',
+    content:
+      'De vrijwilliger verklaart op de hoogte te zijn van de volgende verplichtingen:\n\n' +
+      '1. Werkzoekenden (Art. 11): Het vrijwilligerswerk moet vooraf schriftelijk worden aangegeven bij de RVA/ONEM.\n' +
+      '2. Uitkeringsgerechtigden (Art. 12): De vrijwilliger informeert het bevoegde uitkeringsorgaan vóór aanvang van het vrijwilligerswerk.\n' +
+      '3. Overschrijding vergoedingsplafond: Bij overschrijding van de wettelijke maxima ({{MaxJaarPlafond}}/jaar) worden alle vergoedingen in dat kalenderjaar als belastbaar inkomen beschouwd.\n\n' +
+      'De organisatie houdt een register bij van alle uitbetaalde vergoedingen per vrijwilliger per kalenderjaar en stelt dit ter beschikking bij controle.',
+  },
+  {
+    id: 'clausule_maand_gdpr',
+    articleNumber: 'Clausule M6',
+    title: 'Gegevensbescherming (AVG/GDPR)',
+    category: 'clausule',
+    summary: 'Privacyverklaring en gegevensverwerking conform GDPR.',
+    content:
+      'De organisatie verwerkt persoonsgegevens van de vrijwilliger (naam, contactgegevens, rijksregisternummer, bankgegevens, werkuren) uitsluitend voor:\n' +
+      '• de administratie van het vrijwilligerswerk;\n' +
+      '• de berekening en uitbetaling van kostenvergoedingen;\n' +
+      '• het naleven van wettelijke verplichtingen (fiscaal, sociaal).\n\n' +
+      'Rechtsgrond: uitvoering van deze overeenkomst (art. 6.1.b AVG) en wettelijke verplichting (art. 6.1.c AVG).\n' +
+      'Bewaartermijn: 7 jaar na het einde van het kalenderjaar (boekhoudkundige verplichting).\n\n' +
+      'De vrijwilliger heeft recht op inzage, rectificatie, wissing en overdraagbaarheid van zijn/haar gegevens. Verzoeken kunnen worden gericht aan {{contactpersoon_email}}.\n' +
+      'Verwerkingsverantwoordelijke: {{club_vzw_naam}}, {{club_adres}}.',
+  },
+  {
+    id: 'clausule_maand_identificatie',
+    articleNumber: 'Clausule M7',
+    title: 'Identificatie vrijwilliger',
+    category: 'clausule',
+    summary: 'Persoonsgegevens van de vrijwilliger voor de maandovereenkomst.',
+    content:
+      'De vrijwilliger identificeert zich als volgt:\n' +
+      'Naam: {{Naam}}\n' +
+      'Geboortedatum: {{Geboortedatum}}\n' +
+      'Rijksregisternummer: {{Rijksregisternummer}}\n' +
+      'Adres: {{Adres}}\n' +
+      'E-mail: {{E-mail}}\n' +
+      'Telefoon: {{Telefoon}}\n' +
+      'IBAN: {{IBAN}}\n' +
+      'Rekeninghouder: {{Rekeninghouder}}\n\n' +
+      'De vrijwilliger bevestigt dat bovenstaande gegevens correct en actueel zijn en verbindt zich ertoe wijzigingen onmiddellijk door te geven aan de organisatie.',
+  },
 ];
 
 // Helper: get essential articles

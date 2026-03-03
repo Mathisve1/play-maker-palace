@@ -8,7 +8,7 @@ import {
   Bold, Italic, Underline, AlignCenter, AlignRight, AlignJustify,
   Palette, GripVertical, Trash2, Plus, Scale, FileText, Loader2,
   ChevronDown, ChevronRight, BookOpen, Hash, Edit3, Sparkles,
-  ShieldCheck, AlertTriangle, CheckCircle2, Gavel, X
+  ShieldCheck, AlertTriangle, CheckCircle2, Gavel, X, CalendarDays
 } from 'lucide-react';
 import { belgianVolunteerArticles, essentialArticleIds, defaultTemplateArticleIds, LawArticle } from '@/data/belgianVolunteerLaw';
 import { Badge } from '@/components/ui/badge';
@@ -33,17 +33,33 @@ const paletteBlocks = [
 ];
 
 const mergeFields = [
-  { name: 'Naam', label: 'Naam vrijwilliger' },
-  { name: 'E-mail', label: 'E-mailadres' },
-  { name: 'Telefoon', label: 'Telefoonnummer' },
-  { name: 'IBAN', label: 'IBAN rekeningnummer' },
-  { name: 'Rekeninghouder', label: 'Naam rekeninghouder' },
-  { name: 'Clubnaam', label: 'Naam organisatie' },
-  { name: 'Taak', label: 'Naam taak/opdracht' },
-  { name: 'Datum', label: 'Datum' },
-  { name: 'Locatie', label: 'Locatie' },
-  { name: 'Uren', label: 'Werkuren' },
-  { name: 'Onkostenvergoeding', label: 'Bedrag vergoeding' },
+  { name: 'Naam', label: 'Naam vrijwilliger', group: 'basic' },
+  { name: 'E-mail', label: 'E-mailadres', group: 'basic' },
+  { name: 'Telefoon', label: 'Telefoonnummer', group: 'basic' },
+  { name: 'IBAN', label: 'IBAN rekeningnummer', group: 'basic' },
+  { name: 'Rekeninghouder', label: 'Naam rekeninghouder', group: 'basic' },
+  { name: 'Clubnaam', label: 'Naam organisatie', group: 'basic' },
+  { name: 'Taak', label: 'Naam taak/opdracht', group: 'basic' },
+  { name: 'Datum', label: 'Datum', group: 'basic' },
+  { name: 'Locatie', label: 'Locatie', group: 'basic' },
+  { name: 'Uren', label: 'Werkuren', group: 'basic' },
+  { name: 'Onkostenvergoeding', label: 'Bedrag vergoeding', group: 'basic' },
+  // Monthly-specific
+  { name: 'Maandperiode', label: 'Maand + jaar', group: 'monthly' },
+  { name: 'Startdatum', label: 'Startdatum maandcontract', group: 'monthly' },
+  { name: 'Einddatum', label: 'Einddatum maandcontract', group: 'monthly' },
+  { name: 'Compensatietype', label: 'Type vergoeding (dag/uur)', group: 'monthly' },
+  { name: 'Dagvergoeding', label: 'Dagvergoeding bedrag', group: 'monthly' },
+  { name: 'Uurvergoeding', label: 'Uurvergoeding bedrag', group: 'monthly' },
+  { name: 'MaxDagPlafond', label: 'Max. dagvergoeding (wettelijk)', group: 'monthly' },
+  { name: 'MaxJaarPlafond', label: 'Max. jaarvergoeding (wettelijk)', group: 'monthly' },
+  // Identification
+  { name: 'Geboortedatum', label: 'Geboortedatum', group: 'identity' },
+  { name: 'Rijksregisternummer', label: 'Rijksregisternummer', group: 'identity' },
+  { name: 'Adres', label: 'Adres vrijwilliger', group: 'identity' },
+  { name: 'Ondernemingsnummer', label: 'Ondernemingsnummer organisatie', group: 'identity' },
+  { name: 'VerzekeringPolis', label: 'Polisnummer BA-verzekering', group: 'identity' },
+  { name: 'Verzekeraar', label: 'Naam verzekeringsmaatschappij', group: 'identity' },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────
@@ -127,6 +143,89 @@ const getSmartDefaultBlocks = (): ContractBlock[] => {
   ];
 };
 
+// ─── Monthly Contract Smart Template ─────────────────────
+
+const getMonthlyContractBlocks = (): ContractBlock[] => {
+  const monthlyClausules = ['clausule_maand_duur', 'clausule_maand_rooster', 'clausule_maand_vergoeding', 'clausule_maand_afrekening', 'clausule_maand_cumul', 'clausule_maand_gdpr', 'clausule_maand_identificatie'];
+  const essentialArticles = ['art3', 'art4', 'art6', 'art10', 'art8']
+    .map(id => belgianVolunteerArticles.find(a => a.id === id))
+    .filter(Boolean) as LawArticle[];
+  const monthlyArticles = monthlyClausules
+    .map(id => belgianVolunteerArticles.find(a => a.id === id))
+    .filter(Boolean) as LawArticle[];
+
+  return [
+    createBlock('heading', { content: 'Maandelijkse Vrijwilligersovereenkomst' }),
+    createBlock('text', { content: 'Conform de Wet van 3 juli 2005 betreffende de rechten van vrijwilligers', style: { fontSize: 11, color: '#6b7280', textAlign: 'center', bold: false, italic: true, underline: false } }),
+    createBlock('divider'),
+    createBlock('spacer'),
+
+    // Section 1: Parties
+    createBlock('heading', { content: '1. Partijen', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    createBlock('text', { content: 'Tussen de ondergetekenden:' }),
+    createFieldBlock('Clubnaam'),
+    createFieldBlock('Ondernemingsnummer'),
+    createBlock('text', { content: 'hierna genoemd "de organisatie", enerzijds,' }),
+    createBlock('text', { content: 'en' }),
+    // Identification clausule
+    ...monthlyArticles.filter(a => a.id === 'clausule_maand_identificatie').map(a => createArticleBlock(a)),
+    createBlock('text', { content: 'hierna genoemd "de vrijwilliger", anderzijds,' }),
+    createBlock('divider'),
+
+    // Section 2: Duration
+    createBlock('heading', { content: '2. Looptijd', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...monthlyArticles.filter(a => a.id === 'clausule_maand_duur').map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+
+    // Section 3: Tasks & schedule
+    createBlock('heading', { content: '3. Taken en rooster', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...monthlyArticles.filter(a => a.id === 'clausule_maand_rooster').map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+
+    // Section 4: Legal framework
+    createBlock('heading', { content: '4. Wettelijk kader', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...essentialArticles.map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+
+    // Section 5: Compensation
+    createBlock('heading', { content: '5. Kostenvergoeding', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...monthlyArticles.filter(a => a.id === 'clausule_maand_vergoeding').map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+
+    // Section 6: Monthly settlement
+    createBlock('heading', { content: '6. Maandafrekening', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...monthlyArticles.filter(a => a.id === 'clausule_maand_afrekening').map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+
+    // Section 7: Cumulation & fiscal
+    createBlock('heading', { content: '7. Cumulatie en fiscale verplichtingen', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...monthlyArticles.filter(a => a.id === 'clausule_maand_cumul').map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+
+    // Section 8: Privacy
+    createBlock('heading', { content: '8. Gegevensbescherming (AVG/GDPR)', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...monthlyArticles.filter(a => a.id === 'clausule_maand_gdpr').map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+
+    // Insurance
+    createBlock('heading', { content: '9. Verzekering', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...belgianVolunteerArticles.filter(a => a.id === 'clausule_verzekering').map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+
+    // Final provisions
+    createBlock('heading', { content: '10. Slotbepalingen', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    ...belgianVolunteerArticles.filter(a => a.id === 'clausule_slotbepalingen').map(a => createArticleBlock(a)),
+    createBlock('spacer'),
+
+    // Signatures
+    createBlock('heading', { content: '11. Handtekeningen', style: { fontSize: 18, color: '#1a1a1a', textAlign: 'left', bold: true, italic: false, underline: false } }),
+    createBlock('text', { content: 'Opgemaakt te ........................, op {{Datum}}' }),
+    createBlock('divider'),
+    createBlock('signature'),
+    createFieldBlock('Datum'),
+  ];
+};
+
 const getDefaultBlocks = (): ContractBlock[] => [
   createBlock('heading', { content: 'Vrijwilligersovereenkomst' }),
   createBlock('divider'),
@@ -162,11 +261,13 @@ const runComplianceCheck = (blocks: ContractBlock[]): ComplianceResult => {
   const warnings: string[] = [];
   const allContent = blocks.map(b => b.content + (b.note || '')).join(' ').toLowerCase();
   const articleIds = blocks.filter(b => b.type === 'article').map(b => b.articleId);
+  const fieldNames = blocks.filter(b => b.type === 'field').map(b => b.fieldName);
+  const isMonthly = articleIds.some(id => id?.startsWith('clausule_maand')) || allContent.includes('maandelijks');
 
   // Check if Art. 4 info is present
   const hasArt4 = articleIds.includes('art4');
-  const hasOndernemingsnummer = allContent.includes('ondernemingsnummer') || allContent.includes('{{ondernemingsnummer}}');
-  const hasVerzekering = allContent.includes('verzekering') || allContent.includes('{{verzekering_polis}}');
+  const hasOndernemingsnummer = allContent.includes('ondernemingsnummer') || allContent.includes('{{ondernemingsnummer}}') || fieldNames.includes('Ondernemingsnummer');
+  const hasVerzekering = allContent.includes('verzekering') || allContent.includes('{{verzekering_polis}}') || fieldNames.includes('VerzekeringPolis');
 
   if (!hasArt4 && !hasOndernemingsnummer) {
     warnings.push('Wettelijke check: Vergeet niet de verplichte informatie uit Art. 4 toe te voegen om aan de informatieplicht te voldoen. Het ondernemingsnummer van de club ontbreekt.');
@@ -188,6 +289,25 @@ const runComplianceCheck = (blocks: ContractBlock[]): ComplianceResult => {
   // Check for signature block
   if (!blocks.some(b => b.type === 'signature')) {
     warnings.push('Er is geen handtekeningblok toegevoegd.');
+  }
+
+  // Monthly-specific checks
+  if (isMonthly) {
+    if (!articleIds.includes('clausule_maand_vergoeding') && !allContent.includes('maandafrekening')) {
+      warnings.push('Maandcontract: De clausule over maandelijkse kostenvergoeding (M3) ontbreekt. Dit is essentieel voor de afrekening.');
+    }
+    if (!articleIds.includes('clausule_maand_cumul') && !allContent.includes('cumulatie')) {
+      warnings.push('Maandcontract: De clausule over cumulatie met uitkeringen en fiscale verplichtingen (M5) ontbreekt. Dit is wettelijk vereist (Art. 11 & 12).');
+    }
+    if (!articleIds.includes('clausule_maand_gdpr') && !allContent.includes('avg') && !allContent.includes('gdpr')) {
+      warnings.push('Maandcontract: De GDPR/AVG-clausule (M6) ontbreekt. Gegevensbescherming is verplicht bij het verwerken van persoonsgegevens.');
+    }
+    if (!fieldNames.includes('Startdatum') && !fieldNames.includes('Einddatum') && !fieldNames.includes('Maandperiode')) {
+      warnings.push('Maandcontract: De looptijd (startdatum/einddatum) is niet gespecificeerd. Voeg de velden Startdatum, Einddatum of Maandperiode toe.');
+    }
+    if (!fieldNames.includes('IBAN') && !fieldNames.includes('Rekeninghouder')) {
+      warnings.push('Maandcontract: Bankgegevens (IBAN/rekeninghouder) ontbreken. Deze zijn nodig voor de maandelijkse uitbetaling.');
+    }
   }
 
   return { passed: warnings.length === 0, warnings };
@@ -295,7 +415,8 @@ const ContractBuilder = () => {
   const selectedBlock = blocks.find(b => b.id === selectedBlockId) || null;
 
   const lawArticles = belgianVolunteerArticles.filter(a => a.category === 'wet');
-  const clausules = belgianVolunteerArticles.filter(a => a.category === 'clausule');
+  const clausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && !a.id.startsWith('clausule_maand'));
+  const monthlyClausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && a.id.startsWith('clausule_maand'));
 
   // ─── Block Operations ──────────────────────────────────
 
@@ -339,6 +460,15 @@ const ContractBuilder = () => {
     setBlocks(getSmartDefaultBlocks());
     setTemplateName(prev => prev || 'Standaard Vrijwilligerscontract');
     toast.success('Standaard vrijwilligerscontract gegenereerd met alle essentiële clausules.');
+  };
+
+  const handleGenerateMonthlyContract = () => {
+    if (blocks.length > 3) {
+      if (!confirm('Dit vervangt alle huidige blokken met een maandcontract. Doorgaan?')) return;
+    }
+    setBlocks(getMonthlyContractBlocks());
+    setTemplateName(prev => prev || 'Maandelijkse Vrijwilligersovereenkomst');
+    toast.success('Maandcontract gegenereerd met alle vereiste clausules (looptijd, rooster, afrekening, GDPR, cumulatie).');
   };
 
   const handleLoadTemplate = async (templateId: string) => {
@@ -593,6 +723,13 @@ const ContractBuilder = () => {
           <Sparkles className="w-3.5 h-3.5" />
           Standaard Contract
         </button>
+        <button
+          onClick={handleGenerateMonthlyContract}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
+        >
+          <CalendarDays className="w-3.5 h-3.5" />
+          Maandcontract
+        </button>
         <div className="ml-auto flex items-center gap-2">
           <input
             type="text"
@@ -629,14 +766,21 @@ const ContractBuilder = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* ─── Left Sidebar ─── */}
         <aside className="w-80 border-r border-border bg-card overflow-hidden shrink-0 hidden md:flex md:flex-col">
-          {/* Smart default button (mobile too) */}
-          <div className="p-3 border-b border-border">
+          {/* Smart default buttons */}
+          <div className="p-3 border-b border-border space-y-1.5">
             <button
               onClick={handleGenerateSmartDefault}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors sm:hidden"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
               Standaard Contract
+            </button>
+            <button
+              onClick={handleGenerateMonthlyContract}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              Maandcontract (compleet)
             </button>
           </div>
 
@@ -691,8 +835,50 @@ const ContractBuilder = () => {
               </button>
               <AnimatePresence>
                 {fieldsOpen && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-1 overflow-hidden">
-                    {mergeFields.map(field => (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-0.5 overflow-hidden">
+                    {/* Basic fields */}
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-2 pb-1">Basis</p>
+                    {mergeFields.filter(f => f.group === 'basic').map(field => (
+                      <div
+                        key={field.name}
+                        draggable
+                        onDragStart={e => handleDragStart(e, { type: 'field', payload: field.name })}
+                        onClick={() => addFieldBlock(field.name)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-grab active:cursor-grabbing hover:bg-muted/60 transition-colors border border-transparent hover:border-border group"
+                      >
+                        <div className="p-1.5 rounded-lg bg-accent/10 text-accent-foreground group-hover:text-primary transition-colors">
+                          <Hash className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{field.label}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono">{`{{${field.name}}}`}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Monthly fields */}
+                    <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider px-3 pt-3 pb-1 flex items-center gap-1">
+                      <CalendarDays className="w-3 h-3" /> Maandcontract
+                    </p>
+                    {mergeFields.filter(f => f.group === 'monthly').map(field => (
+                      <div
+                        key={field.name}
+                        draggable
+                        onDragStart={e => handleDragStart(e, { type: 'field', payload: field.name })}
+                        onClick={() => addFieldBlock(field.name)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-grab active:cursor-grabbing hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border border-transparent hover:border-blue-200 dark:hover:border-blue-800 group"
+                      >
+                        <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors">
+                          <Hash className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{field.label}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono">{`{{${field.name}}}`}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Identity fields */}
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">Identificatie & juridisch</p>
+                    {mergeFields.filter(f => f.group === 'identity').map(field => (
                       <div
                         key={field.name}
                         draggable
@@ -755,6 +941,21 @@ const ContractBuilder = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Maandcontract clausules */}
+              {monthlyClausules.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mt-3">
+                    <CalendarDays className="w-3 h-3" />
+                    Maandcontract clausules
+                  </div>
+                  <div className="space-y-1">
+                    {monthlyClausules.map(article => (
+                      <ArticleItem key={article.id} article={article} />
+                    ))}
+                  </div>
+                </>
+              )}
             </TabsContent>
           </Tabs>
         </aside>
