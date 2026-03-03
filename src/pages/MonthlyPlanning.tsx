@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Euro,
-  Users, FileText, Trash2, Edit, Eye, Send, CalendarDays,
+  Users, FileText, Trash2, Edit, Eye, Send, CalendarDays, CheckCircle,
 } from 'lucide-react';
 
 const MONTH_NAMES_NL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
@@ -56,6 +56,23 @@ interface Enrollment {
   profiles?: { full_name: string | null; email: string | null; avatar_url: string | null } | null;
 }
 
+interface DaySignupClub {
+  id: string;
+  enrollment_id: string;
+  plan_task_id: string;
+  volunteer_id: string;
+  status: string;
+  checked_in_at: string | null;
+  hour_status: string;
+  volunteer_reported_hours: number | null;
+  club_reported_hours: number | null;
+  volunteer_approved: boolean;
+  club_approved: boolean;
+  final_hours: number | null;
+  final_amount: number | null;
+  volunteer_name?: string;
+}
+
 const MonthlyPlanning = () => {
   const navigate = useNavigate();
   const now = new Date();
@@ -65,6 +82,7 @@ const MonthlyPlanning = () => {
   const [plan, setPlan] = useState<MonthlyPlan | null>(null);
   const [tasks, setTasks] = useState<PlanTask[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [daySignups, setDaySignups] = useState<DaySignupClub[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -114,11 +132,30 @@ const MonthlyPlanning = () => {
           supabase.from('monthly_enrollments').select('id, volunteer_id, contract_status, profiles:volunteer_id(full_name, email, avatar_url)').eq('plan_id', p.id),
         ]);
         setTasks((tasksRes.data || []) as unknown as PlanTask[]);
-        setEnrollments((enrollRes.data || []) as unknown as Enrollment[]);
+        const enrs = (enrollRes.data || []) as unknown as Enrollment[];
+        setEnrollments(enrs);
+
+        // Load day signups for club-side hour management
+        if (enrs.length > 0) {
+          const { data: signupsData } = await supabase
+            .from('monthly_day_signups')
+            .select('*')
+            .in('enrollment_id', enrs.map(e => e.id));
+          
+          // Enrich with volunteer names
+          const enriched = (signupsData || []).map((s: any) => {
+            const enr = enrs.find(e => e.id === s.enrollment_id);
+            return { ...s, volunteer_name: (enr?.profiles as any)?.full_name || 'Onbekend' };
+          });
+          setDaySignups(enriched as DaySignupClub[]);
+        } else {
+          setDaySignups([]);
+        }
       } else {
         setPlan(null);
         setTasks([]);
         setEnrollments([]);
+        setDaySignups([]);
       }
       setLoading(false);
     };
@@ -378,9 +415,31 @@ const MonthlyPlanning = () => {
             </Card>
 
             {/* Action buttons */}
-            <div className="flex flex-wrap gap-3">
-              {plan.status === 'draft' && tasks.length > 0 && (
-                <Button onClick={publishPlan}><Send className="w-4 h-4 mr-2" /> Publiceer maandplan</Button>
+            <div className="flex flex-wrap gap-3 items-center">
+              {plan.status === 'draft' && (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm whitespace-nowrap">Contractsjabloon:</Label>
+                    <Select
+                      value={plan.contract_template_id || ''}
+                      onValueChange={async (v) => {
+                        await supabase.from('monthly_plans').update({ contract_template_id: v || null }).eq('id', plan.id);
+                        setPlan(prev => prev ? { ...prev, contract_template_id: v || null } : null);
+                        toast.success('Sjabloon gekoppeld');
+                      }}
+                    >
+                      <SelectTrigger className="w-[200px]"><SelectValue placeholder="Kies sjabloon..." /></SelectTrigger>
+                      <SelectContent>
+                        {contractTemplates.map(ct => (
+                          <SelectItem key={ct.id} value={ct.id}>{ct.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {tasks.length > 0 && (
+                    <Button onClick={publishPlan}><Send className="w-4 h-4 mr-2" /> Publiceer maandplan</Button>
+                  )}
+                </div>
               )}
               {plan.status === 'published' && (
                 <Badge variant="outline" className="text-sm py-2 px-4">
@@ -452,6 +511,80 @@ const MonthlyPlanning = () => {
                         </Badge>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Hour confirmations - club side */}
+            {daySignups.filter(ds => ds.checked_in_at && ds.volunteer_approved && !ds.club_approved).length > 0 && (
+              <Card>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> Uren bevestigen</CardTitle></CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground mb-3">Deze vrijwilligers hebben hun uren gerapporteerd. Bevestig of pas aan.</p>
+                  <div className="space-y-2">
+                    {daySignups.filter(ds => ds.checked_in_at && ds.volunteer_approved && !ds.club_approved).map(ds => {
+                      const task = tasks.find(t => t.id === ds.plan_task_id);
+                      if (!task) return null;
+                      const d = new Date(task.task_date);
+                      return (
+                        <div key={ds.id} className="flex items-center gap-3 p-3 rounded-lg border bg-amber-50 dark:bg-amber-900/10">
+                          <div className="text-center min-w-[40px]">
+                            <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString('nl-BE', { weekday: 'short' })}</p>
+                            <p className="text-lg font-bold">{d.getDate()}</p>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
+                            <p className="text-xs text-muted-foreground">Gerapporteerd: <strong>{ds.volunteer_reported_hours}u</strong></p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={async () => {
+                              const finalHours = ds.volunteer_reported_hours!;
+                              let finalAmount = 0;
+                              if (task.compensation_type === 'daily') finalAmount = task.daily_rate || 0;
+                              else finalAmount = finalHours * (task.hourly_rate || 0);
+                              
+                              await supabase.from('monthly_day_signups').update({
+                                club_reported_hours: finalHours,
+                                club_approved: true,
+                                final_hours: finalHours,
+                                final_amount: finalAmount,
+                                hour_status: 'confirmed',
+                              }).eq('id', ds.id);
+                              toast.success(`${ds.volunteer_name}: ${finalHours}u bevestigd (€${finalAmount.toFixed(2)})`);
+                              // Reload
+                              setDaySignups(prev => prev.map(s => s.id === ds.id ? { ...s, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' } : s));
+                            }}>
+                              <CheckCircle className="w-3.5 h-3.5 mr-1" /> Akkoord ({ds.volunteer_reported_hours}u)
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Confirmed hours summary */}
+            {daySignups.filter(ds => ds.hour_status === 'confirmed').length > 0 && (
+              <Card>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Euro className="w-4 h-4 text-primary" /> Bevestigde vergoedingen</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="space-y-1">
+                    {daySignups.filter(ds => ds.hour_status === 'confirmed').map(ds => {
+                      const task = tasks.find(t => t.id === ds.plan_task_id);
+                      return (
+                        <div key={ds.id} className="flex items-center justify-between p-2 rounded border text-sm">
+                          <span>{ds.volunteer_name} — {task?.title || '?'}</span>
+                          <span className="font-medium text-green-600">{ds.final_hours}u · €{(ds.final_amount || 0).toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="flex items-center justify-between p-2 mt-2 rounded bg-muted font-semibold text-sm">
+                      <span>Totaal</span>
+                      <span>€{daySignups.filter(ds => ds.hour_status === 'confirmed').reduce((s, ds) => s + (ds.final_amount || 0), 0).toFixed(2)}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
