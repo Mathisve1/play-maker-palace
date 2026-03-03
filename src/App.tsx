@@ -48,6 +48,7 @@ import SafetyClosing from "./pages/SafetyClosing";
 import Community from "./pages/Community";
 import CommunityClubDetail from "./pages/CommunityClubDetail";
 import CommunityPartnerDetail from "./pages/CommunityPartnerDetail";
+import CommandCenter from "./pages/CommandCenter";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,7 @@ const App = () => {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/task/:id" element={<TaskDetail />} />
             <Route path="/club-dashboard" element={<ClubOwnerDashboard />} />
+            <Route path="/command-center" element={<CommandCenter />} />
             <Route path="/club-invite/:token" element={<ClubInviteAccept />} />
             <Route path="/payments" element={<PaymentsOverview />} />
             <Route path="/contract-builder" element={<ContractBuilder />} />
