@@ -125,6 +125,13 @@ const CommandCenter = () => {
         .in('task_id', taskIds);
       const ticketSet = new Set((existingTickets || []).map(t => `${t.volunteer_id}_${t.task_id}`));
 
+      // Fetch existing signature requests to avoid duplicate contract actions
+      const { data: existingSignatures } = await supabase
+        .from('signature_requests')
+        .select('task_id, volunteer_id')
+        .in('task_id', taskIds);
+      const signatureSet = new Set((existingSignatures || []).map(s => `${s.volunteer_id}_${s.task_id}`));
+
       if (signups && signups.length > 0) {
         const volIds = [...new Set(signups.map(s => s.volunteer_id))];
         const { data: profiles } = await supabase.from('profiles').select('id, full_name, email, phone, bank_iban, bank_holder_name').in('id', volIds);
@@ -148,8 +155,8 @@ const CommandCenter = () => {
           }
 
           if (s.status === 'assigned') {
-            // Contract needed?
-            if (task?.contract_template_id) {
+            // Contract needed? Only if no signature request exists yet
+            if (task?.contract_template_id && !signatureSet.has(`${s.volunteer_id}_${s.task_id}`)) {
               actionItems.push({
                 id: `tctr-${s.id}`, type: 'contract', volunteer_id: s.volunteer_id,
                 volunteer_name: vol?.full_name || vol?.email || '?',
