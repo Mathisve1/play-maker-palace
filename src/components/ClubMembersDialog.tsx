@@ -43,6 +43,9 @@ const roleColors: Record<ClubRole, string> = {
 };
 
 const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, onClose }: Props) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+  const roleLabels = roleLabelsI18n[language] || roleLabelsI18n.nl;
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
