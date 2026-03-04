@@ -567,7 +567,7 @@ const ReportingDashboard = () => {
       const m = format(parseISO(p.paid_at), 'yyyy-MM');
       months[m] = (months[m] || 0) + Number(p.amount);
     });
-    return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, bedrag]) => ({ month, Bedrag: Math.round(bedrag * 100) / 100 }));
+    return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, bedrag]) => ({ month, [L.paidOut]: Math.round(bedrag * 100) / 100 }));
   }, [filteredPayments]);
 
   const volunteersByEventChart = useMemo(() => {
