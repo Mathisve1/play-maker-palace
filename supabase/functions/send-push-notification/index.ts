@@ -33,7 +33,8 @@ serve(async (req) => {
   try {
     const { type, user_id, title, message, url, data, broadcast } = await req.json();
 
-    const onesignalAppId = Deno.env.get('ONESIGNAL_APP_ID');
+    // App ID is a public identifier, safe to hardcode as fallback
+    const onesignalAppId = Deno.env.get('ONESIGNAL_APP_ID') || 'e0d35921-dd83-4e98-a289-f9d1bb1694cc';
     const onesignalApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY');
 
     if (!onesignalAppId || !onesignalApiKey) {
