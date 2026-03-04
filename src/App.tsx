@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import IOSInstallOverlay from "@/components/IOSInstallOverlay";
-import { initOneSignal } from "@/lib/onesignal";
+
 import RequireAuth from "./components/RequireAuth";
 import { Loader2 } from "lucide-react";
 
