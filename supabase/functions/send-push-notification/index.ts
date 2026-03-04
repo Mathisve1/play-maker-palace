@@ -75,8 +75,8 @@ serve(async (req) => {
         if (pushSubscriptionIds.length > 0) {
           pushPayload.include_subscription_ids = pushSubscriptionIds;
         } else {
-          pushPayload.include_external_user_ids = pushExternalUserIds;
-          pushPayload.channel_for_external_user_ids = 'push';
+          pushPayload.include_aliases = { external_id: pushExternalUserIds };
+          pushPayload.target_channel = 'push';
         }
 
         if (url) pushPayload.url = url;
@@ -168,8 +168,8 @@ serve(async (req) => {
       if (profile.onesignal_player_id) {
         pushPayload.include_subscription_ids = [profile.onesignal_player_id];
       } else {
-        pushPayload.include_external_user_ids = [user_id];
-        pushPayload.channel_for_external_user_ids = 'push';
+        pushPayload.include_aliases = { external_id: [user_id] };
+        pushPayload.target_channel = 'push';
       }
 
       if (url) pushPayload.url = url;

@@ -11,13 +11,28 @@ async function getOneSignalModule() {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function getSubscriptionIdWithRetry(OneSignalModule: any, retries = 10, delayMs = 300): Promise<string | null> {
+async function getCurrentSubscriptionId(OneSignalModule: any): Promise<string | null> {
+  const directId = OneSignalModule?.User?.PushSubscription?.id;
+  if (directId) return directId;
+
+  const asyncId = await OneSignalModule?.User?.PushSubscription?.getIdAsync?.().catch(() => null);
+  if (asyncId) return asyncId;
+
+  return null;
+}
+
+async function getSubscriptionIdWithRetry(OneSignalModule: any, retries = 20, delayMs = 500): Promise<string | null> {
   for (let i = 0; i < retries; i++) {
-    const id = OneSignalModule?.User?.PushSubscription?.id;
+    const id = await getCurrentSubscriptionId(OneSignalModule);
     if (id) return id;
     await wait(delayMs);
   }
   return null;
+}
+
+async function attachOneSignalUser(OneSignalModule: any, userId: string) {
+  await OneSignalModule?.login?.(userId).catch(() => null);
+  await OneSignalModule?.User?.addAlias?.('external_id', userId).catch(() => null);
 }
 
 export async function initOneSignal() {
@@ -55,17 +70,20 @@ export async function initOneSignal() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id) {
-        await OneSignalModule.login(user.id).catch(() => null);
+        await attachOneSignalUser(OneSignalModule, user.id);
       }
 
       OneSignalModule.User.PushSubscription.addEventListener('change', async (event: any) => {
-        const playerId = event?.current?.id || event?.current?.subscriptionId || OneSignalModule.User.PushSubscription.id;
+        let playerId = event?.current?.id || event?.current?.subscriptionId || event?.current?.token;
+        if (!playerId) {
+          playerId = await getCurrentSubscriptionId(OneSignalModule);
+        }
         if (playerId) {
           await linkPlayerIdToProfile(playerId);
         }
       });
 
-      const currentId = await getSubscriptionIdWithRetry(OneSignalModule);
+      const currentId = await getSubscriptionIdWithRetry(OneSignalModule, 20, 500);
       if (currentId) {
         await linkPlayerIdToProfile(currentId);
       }
@@ -87,8 +105,8 @@ export async function syncOneSignalUser(userIdOverride?: string) {
   const userId = userIdOverride || (await supabase.auth.getUser()).data.user?.id;
   if (!userId) return;
 
-  await OneSignalModule.login(userId).catch(() => null);
-  const currentId = await getSubscriptionIdWithRetry(OneSignalModule);
+  await attachOneSignalUser(OneSignalModule, userId);
+  const currentId = await getSubscriptionIdWithRetry(OneSignalModule, 20, 500);
   if (currentId) {
     await linkPlayerIdToProfile(currentId);
   }
