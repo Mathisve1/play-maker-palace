@@ -796,7 +796,7 @@ const SafetyDashboard = () => {
               onClick={() => navigate('/dashboard')}
               className="w-full h-12 rounded-xl text-base font-semibold gap-2"
             >
-              <Heart className="w-5 h-5" /> Oké, terug naar dashboard
+              <Heart className="w-5 h-5" /> {t3('Oké, terug naar dashboard', 'OK, retour au tableau de bord', 'OK, back to dashboard')}
             </Button>
           </motion.div>
         </motion.div>
