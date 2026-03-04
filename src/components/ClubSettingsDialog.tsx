@@ -19,6 +19,8 @@ interface Props {
 }
 
 const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [name, setName] = useState(clubInfo.name);
   const [sport, setSport] = useState(clubInfo.sport || '');
   const [location, setLocation] = useState(clubInfo.location || '');
