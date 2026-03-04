@@ -519,8 +519,18 @@ const PartnerDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {userId && (
+        <EditProfileDialog
+          open={showProfileDialog}
+          onOpenChange={setShowProfileDialog}
+          userId={userId}
+          language={language as Language}
+          onProfileUpdated={(updated) => {
+            setProfile(prev => prev ? { ...prev, full_name: updated.full_name || prev.full_name, avatar_url: updated.avatar_url } : prev);
+          }}
+        />
+      )}
     </DashboardLayout>
-  );
 };
 
 export default PartnerDashboard;
