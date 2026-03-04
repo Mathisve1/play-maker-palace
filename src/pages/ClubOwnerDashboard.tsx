@@ -677,9 +677,9 @@ const ClubOwnerDashboard = () => {
           });
           if (ebError) {
             console.error('Eventbrite sync error:', ebError);
-            toast.error(language === 'nl' ? 'Eventbrite-sync mislukt: ' + ebError.message : 'Eventbrite sync failed: ' + ebError.message);
+            toast.error(t3('Eventbrite-sync mislukt: ', 'Échec sync Eventbrite : ', 'Eventbrite sync failed: ') + ebError.message);
           } else if (ebResult?.success) {
-            toast.success(language === 'nl' ? 'Evenement automatisch aangemaakt in Eventbrite!' : 'Event automatically created in Eventbrite!');
+            toast.success(t3('Evenement automatisch aangemaakt in Eventbrite!', 'Événement créé automatiquement dans Eventbrite !', 'Event automatically created in Eventbrite!'));
           } else if (ebResult?.error) {
             toast.error('Eventbrite: ' + ebResult.error);
           }
