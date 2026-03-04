@@ -890,13 +890,13 @@ const ReportingDashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="overflow-x-auto -mx-4 px-4">
             <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
-              <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="w-3.5 h-3.5" />Overzicht</TabsTrigger>
-              <TabsTrigger value="volunteers" className="gap-1.5 text-xs sm:text-sm"><Users className="w-3.5 h-3.5" />Vrijwilligers</TabsTrigger>
-              <TabsTrigger value="tasks" className="gap-1.5 text-xs sm:text-sm"><Calendar className="w-3.5 h-3.5" />Taken</TabsTrigger>
-              <TabsTrigger value="events" className="gap-1.5 text-xs sm:text-sm"><PieChart className="w-3.5 h-3.5" />Evenementen</TabsTrigger>
-              <TabsTrigger value="financial" className="gap-1.5 text-xs sm:text-sm"><Euro className="w-3.5 h-3.5" />Financieel</TabsTrigger>
-              <TabsTrigger value="partners" className="gap-1.5 text-xs sm:text-sm"><Handshake className="w-3.5 h-3.5" />Partners</TabsTrigger>
-              <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><Shield className="w-3.5 h-3.5" />Compliance</TabsTrigger>
+              <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="w-3.5 h-3.5" />{L.overview}</TabsTrigger>
+              <TabsTrigger value="volunteers" className="gap-1.5 text-xs sm:text-sm"><Users className="w-3.5 h-3.5" />{L.volunteers}</TabsTrigger>
+              <TabsTrigger value="tasks" className="gap-1.5 text-xs sm:text-sm"><Calendar className="w-3.5 h-3.5" />{L.tasks}</TabsTrigger>
+              <TabsTrigger value="events" className="gap-1.5 text-xs sm:text-sm"><PieChart className="w-3.5 h-3.5" />{L.events}</TabsTrigger>
+              <TabsTrigger value="financial" className="gap-1.5 text-xs sm:text-sm"><Euro className="w-3.5 h-3.5" />{L.financial}</TabsTrigger>
+              <TabsTrigger value="partners" className="gap-1.5 text-xs sm:text-sm"><Handshake className="w-3.5 h-3.5" />{L.partners}</TabsTrigger>
+              <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><Shield className="w-3.5 h-3.5" />{L.compliance}</TabsTrigger>
               <TabsTrigger value="ai" className="gap-1.5 text-xs sm:text-sm"><Bot className="w-3.5 h-3.5" />AI</TabsTrigger>
             </TabsList>
           </div>
