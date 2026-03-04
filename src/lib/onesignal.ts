@@ -124,46 +124,50 @@ export async function setPushPreference(enabled: boolean) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.id) return { enabled: false, reason: 'not_authenticated' as const };
 
-  await initOneSignal();
-  const OneSignalModule = await getOneSignalModule();
-  if (!OneSignalModule) return { enabled: false, reason: 'sdk_unavailable' as const };
+  // Update DB FIRST for instant UI feedback
+  await supabase
+    .from('profiles')
+    .update({ push_notifications_enabled: enabled, push_prompt_seen: true } as any)
+    .eq('id', user.id);
 
   if (!enabled) {
-    await OneSignalModule.User.PushSubscription.optOut().catch(() => null);
-    await supabase
-      .from('profiles')
-      .update({ push_notifications_enabled: false, push_prompt_seen: true } as any)
-      .eq('id', user.id);
+    // Fire-and-forget SDK optOut
+    getOneSignalModule().then(mod => mod?.User?.PushSubscription?.optOut?.()).catch(() => null);
     return { enabled: false, reason: 'disabled' as const };
   }
 
   if (typeof Notification === 'undefined') {
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false, push_prompt_seen: true } as any)
+      .update({ push_notifications_enabled: false } as any)
       .eq('id', user.id);
     return { enabled: false, reason: 'unsupported' as const };
   }
 
   if (Notification.permission !== 'granted') {
-    await OneSignalModule.Notifications.requestPermission().catch(() => false);
+    const OneSignalModule = await getOneSignalModule();
+    if (OneSignalModule) {
+      await initOneSignal();
+      await OneSignalModule.Notifications.requestPermission().catch(() => false);
+    }
   }
 
   if (Notification.permission !== 'granted') {
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false, push_prompt_seen: true } as any)
+      .update({ push_notifications_enabled: false } as any)
       .eq('id', user.id);
     return { enabled: false, reason: 'denied' as const };
   }
 
-  await OneSignalModule.User.PushSubscription.optIn().catch(() => null);
-  await syncOneSignalUser(user.id);
-
-  await supabase
-    .from('profiles')
-    .update({ push_notifications_enabled: true, push_prompt_seen: true } as any)
-    .eq('id', user.id);
+  // Fire-and-forget SDK optIn + sync
+  initOneSignal().then(async () => {
+    const mod = await getOneSignalModule();
+    if (mod) {
+      await mod.User.PushSubscription.optIn().catch(() => null);
+      await syncOneSignalUser(user.id);
+    }
+  }).catch(() => null);
 
   return { enabled: true, reason: 'enabled' as const };
 }
