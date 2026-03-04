@@ -321,7 +321,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                 disabled={inviting || !inviteEmail.trim()}
                 className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                Verstuur
+                {t3('Verstuur', 'Envoyer', 'Send')}
               </button>
             </div>
 
