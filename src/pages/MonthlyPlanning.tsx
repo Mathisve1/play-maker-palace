@@ -902,9 +902,9 @@ const MonthlyPlanning = () => {
       <Dialog open={showAddTask} onOpenChange={setShowAddTask}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingTask ? 'Taak bewerken' : 'Taak toevoegen'}</DialogTitle>
-            <DialogDescription>
-              {selectedDate && new Date(selectedDate).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
+             <DialogTitle>{editingTask ? t3('Taak bewerken', 'Modifier la tâche', 'Edit task') : t3('Taak toevoegen', 'Ajouter une tâche', 'Add task')}</DialogTitle>
+             <DialogDescription>
+               {selectedDate && new Date(selectedDate).toLocaleDateString(language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
