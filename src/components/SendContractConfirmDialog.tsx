@@ -207,7 +207,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
     if (volunteer.bank_holder_name) vals['Rekeninghouder'] = volunteer.bank_holder_name;
     if (clubData?.name || clubName) vals['Clubnaam'] = clubData?.name || clubName || '';
     if (t.title) vals['Taak'] = t.title;
-    if (t.task_date) vals['Datum'] = formatDateLong(t.task_date) || '';
+    if (t.task_date) vals['Datum'] = formatDateLong(t.task_date, language) || '';
     if (t.location) vals['Locatie'] = t.location;
 
     // Time range
