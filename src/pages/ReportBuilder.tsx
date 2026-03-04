@@ -929,9 +929,9 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
         {widgets.length === 0 ? (
           <div className="text-center py-20">
             <LayoutDashboard className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">Voeg widgets toe om je rapport samen te stellen</p>
+              <p className="text-muted-foreground">{t3('Voeg widgets toe om je rapport samen te stellen', 'Ajoutez des widgets pour composer votre rapport', 'Add widgets to build your report')}</p>
             <Button variant="outline" className="mt-4" onClick={() => setAddDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Eerste widget toevoegen
+              <Plus className="h-4 w-4 mr-1" /> {t3('Eerste widget toevoegen', 'Ajouter le premier widget', 'Add first widget')}
             </Button>
           </div>
         ) : (
