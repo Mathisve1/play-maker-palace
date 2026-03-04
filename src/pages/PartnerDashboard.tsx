@@ -531,6 +531,7 @@ const PartnerDashboard = () => {
         />
       )}
     </DashboardLayout>
+  );
 };
 
 export default PartnerDashboard;
