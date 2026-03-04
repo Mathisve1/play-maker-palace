@@ -413,8 +413,8 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="px-4 h-14 flex items-center justify-between max-w-4xl mx-auto">
+      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40 pt-safe-top">
+        <div className="px-4 min-h-14 flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
             <button
               onClick={() => activeConversation ? setActiveConversation(null) : navigate(userRole === 'club_owner' ? '/club-dashboard' : '/dashboard')}
