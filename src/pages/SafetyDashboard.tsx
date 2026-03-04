@@ -842,7 +842,7 @@ const SafetyDashboard = () => {
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="px-4 py-3 border-b border-border bg-muted/30">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Users className="w-4 h-4" /> Mijn Team ({teamMembers.length})
+                  <Users className="w-4 h-4" /> {t3('Mijn Team', 'Mon Équipe', 'My Team')} ({teamMembers.length})
                 </h3>
               </div>
               <div className="p-3 space-y-3">
