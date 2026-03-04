@@ -222,7 +222,7 @@ export async function autoResubscribeIfNeeded(): Promise<void> {
     // Subscribe with new VAPID key
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey,
+      applicationServerKey: new Uint8Array(applicationServerKey) as BufferSource,
     });
 
     const subJson = subscription.toJSON();
