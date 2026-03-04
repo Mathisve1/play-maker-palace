@@ -68,7 +68,7 @@ const PushPermissionBanner = () => {
   const dismissForUser = async () => {
     const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
     const uid = user?.id || 'anon';
-    localStorage.setItem(`push_banner_dismissed_${uid}`, '1');
+    localStorage.setItem(`push_banner_v2_${uid}`, '1');
   };
 
   const handleEnable = async () => {
