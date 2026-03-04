@@ -25,6 +25,10 @@ import VolunteerActivitiesSection from '@/components/VolunteerActivitiesSection'
 import VolunteerPartnerTab from '@/components/VolunteerPartnerTab';
 import VolunteerSafetyTab from '@/components/VolunteerSafetyTab';
 import VolunteerMonthlyTab from '@/components/VolunteerMonthlyTab';
+import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
+import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab';
+import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
+import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
 
 interface Task {
   id: string;
