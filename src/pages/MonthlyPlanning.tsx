@@ -538,7 +538,7 @@ const MonthlyPlanning = () => {
         <div className="flex items-center justify-between">
           <Button variant="outline" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
           <div className="text-center">
-            <h2 className="text-xl font-bold">{MONTH_NAMES_NL[viewMonth - 1]} {viewYear}</h2>
+            <h2 className="text-xl font-bold">{MONTH_NAMES[language]?.[viewMonth - 1] || MONTH_NAMES.nl[viewMonth - 1]} {viewYear}</h2>
             {plan && (
               <Badge variant={plan.status === 'published' ? 'default' : 'secondary'} className="mt-1">
                 {plan.status === 'published' ? 'Gepubliceerd' : 'Concept'}
