@@ -400,7 +400,7 @@ const ContractBuilder = () => {
       if (error) throw error;
       const { data } = supabase.storage.from('club-signatures').getPublicUrl(sigPath);
       setClubSignatureUrl(`${data.publicUrl}?t=${Date.now()}`);
-      toast.success('Handtekening opgeslagen! Deze wordt hergebruikt voor alle contracten.');
+      toast.success(t3('Handtekening opgeslagen! Deze wordt hergebruikt voor alle contracten.', 'Signature enregistrée! Elle sera réutilisée pour tous les contrats.', 'Signature saved! It will be reused for all contracts.'));
     } catch (err: any) {
       toast.error(err.message || 'Handtekening uploaden mislukt');
     }
