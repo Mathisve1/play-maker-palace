@@ -694,7 +694,7 @@ const ReportingDashboard = () => {
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
-    doc.text('Rapportage Overzicht', 14, 20);
+    doc.text(L.pdfTitle, 14, 20);
     doc.setFontSize(10);
     doc.text(`Periode: ${format(dateFrom, 'dd/MM/yyyy')} - ${format(dateTo, 'dd/MM/yyyy')}`, 14, 28);
     doc.text(`Gegenereerd: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 34);
