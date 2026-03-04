@@ -146,7 +146,7 @@ const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
                         <div style={{ marginBottom: 40 }} />
                         <div style={{ borderBottom: `2px solid ${colors.primary}`, width: '80%' }} />
                         <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                          {clubName || 'Naam'} + datum
+                          {clubName || t3('Naam', 'Nom', 'Name')} + {t3('datum', 'date', 'date')}
                         </p>
                       </>
                     )}
