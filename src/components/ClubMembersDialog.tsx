@@ -30,10 +30,10 @@ interface Props {
   onClose: () => void;
 }
 
-const roleLabels: Record<ClubRole, string> = {
-  bestuurder: 'Bestuurder',
-  beheerder: 'Beheerder',
-  medewerker: 'Medewerker',
+const roleLabelsI18n: Record<string, Record<ClubRole, string>> = {
+  nl: { bestuurder: 'Bestuurder', beheerder: 'Beheerder', medewerker: 'Medewerker' },
+  fr: { bestuurder: 'Administrateur', beheerder: 'Gestionnaire', medewerker: 'Collaborateur' },
+  en: { bestuurder: 'Board member', beheerder: 'Manager', medewerker: 'Staff' },
 };
 
 const roleColors: Record<ClubRole, string> = {
