@@ -261,28 +261,28 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
               <div>
                 <p className="font-semibold text-foreground flex items-center gap-2">
                   <span className={`inline-block w-2 h-2 rounded-full bg-primary`} />
-                  Bestuurder
+                  {roleLabels.bestuurder}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  Volledige toegang: rollen toewijzen &amp; wijzigen, Stripe koppelen/ontkoppelen, betalingen uitvoeren, contracten aanmaken, uitsturen &amp; toekennen, taken beheren, en andere leden tot medebestuurder benoemen.
+                  {t3('Volledige toegang: rollen toewijzen & wijzigen, Stripe koppelen/ontkoppelen, betalingen uitvoeren, contracten aanmaken, uitsturen & toekennen, taken beheren, en andere leden tot medebestuurder benoemen.', 'Accès complet: attribuer et modifier les rôles, connecter/déconnecter Stripe, effectuer des paiements, créer et envoyer des contrats, gérer les tâches.', 'Full access: assign & change roles, connect/disconnect Stripe, process payments, create & send contracts, manage tasks, and appoint other board members.')}
                 </p>
               </div>
               <div>
                 <p className="font-semibold text-foreground flex items-center gap-2">
                   <span className={`inline-block w-2 h-2 rounded-full bg-accent-foreground`} />
-                  Beheerder
+                  {roleLabels.beheerder}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  Kan bijna alles: taken beheren, contracten aanmaken &amp; uitsturen, betalingen uitvoeren, en leden uitnodigen. Kan <strong>geen</strong> rollen wijzigen en <strong>geen</strong> Stripe-gegevens aanpassen of ontkoppelen.
+                  {t3('Kan bijna alles: taken beheren, contracten aanmaken & uitsturen, betalingen uitvoeren, en leden uitnodigen. Kan geen rollen wijzigen en geen Stripe-gegevens aanpassen of ontkoppelen.', 'Peut presque tout faire: gérer les tâches, créer et envoyer des contrats, effectuer des paiements et inviter des membres. Ne peut pas modifier les rôles ni les paramètres Stripe.', 'Can do almost everything: manage tasks, create & send contracts, process payments, and invite members. Cannot change roles or modify Stripe settings.')}
                 </p>
               </div>
               <div>
                 <p className="font-semibold text-foreground flex items-center gap-2">
                   <span className={`inline-block w-2 h-2 rounded-full bg-muted-foreground`} />
-                  Medewerker
+                  {roleLabels.medewerker}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  Kan taken bekijken &amp; beheren, contracten aanmaken &amp; uitsturen, en het dagelijkse werk uitvoeren. Kan <strong>geen</strong> rollen wijzigen en <strong>geen</strong> betalingen uitvoeren.
+                  {t3('Kan taken bekijken & beheren, contracten aanmaken & uitsturen, en het dagelijkse werk uitvoeren. Kan geen rollen wijzigen en geen betalingen uitvoeren.', 'Peut consulter et gérer les tâches, créer et envoyer des contrats, et effectuer le travail quotidien. Ne peut pas modifier les rôles ni effectuer des paiements.', 'Can view & manage tasks, create & send contracts, and perform daily work. Cannot change roles or process payments.')}
                 </p>
               </div>
             </div>
