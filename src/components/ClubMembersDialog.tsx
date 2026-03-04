@@ -149,7 +149,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
       } catch (e) {
         console.error('Email sending failed:', e);
       }
-      toast.success(`Uitnodiging verstuurd naar ${inviteEmail}`);
+      toast.success(t3(`Uitnodiging verstuurd naar ${inviteEmail}`, `Invitation envoyée à ${inviteEmail}`, `Invitation sent to ${inviteEmail}`));
       setInviteEmail('');
       fetchData();
     }
