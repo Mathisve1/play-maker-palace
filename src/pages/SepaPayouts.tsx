@@ -265,7 +265,7 @@ const SepaPayouts = () => {
   const handleGenerateSepa = async () => {
     if (selected.size === 0) return;
     if (!clubIban.trim()) {
-      toast.error('Vul het IBAN van de club in');
+      toast.error(t3('Vul het IBAN van de club in', 'Veuillez saisir l\'IBAN du club', 'Please enter the club IBAN'));
       return;
     }
     if (!batchMessage.trim()) {
