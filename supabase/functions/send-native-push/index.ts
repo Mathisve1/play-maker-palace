@@ -175,6 +175,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'VAPID keys not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    const privateJwk = JSON.parse(vapidPrivJwkStr);
     const vapidSubject = 'mailto:info@de12eman.be';
     const sbUrl = Deno.env.get('SUPABASE_URL')!;
     const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
