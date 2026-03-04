@@ -908,7 +908,7 @@ const MonthlyPlanning = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div><Label>Titel *</Label><Input value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} placeholder="bv. Bar openen, Materiaal opruimen..." /></div>
+            <div><Label>{t3('Titel', 'Titre', 'Title')} *</Label><Input value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} placeholder={t3('bv. Bar openen, Materiaal opruimen...', 'ex. Ouvrir le bar, Ranger le matériel...', 'e.g. Open bar, Clean up materials...')} /></div>
             <div>
               <Label>Categorie</Label>
               <Select value={taskForm.category} onValueChange={v => setTaskForm(f => ({ ...f, category: v }))}>
