@@ -1295,7 +1295,7 @@ const SafetyDashboard = () => {
                         {!isLive && pct !== null && (
                           <div className="mt-2">
                             <Progress value={pct} className={zoneFullscreen ? 'h-2.5' : 'h-1.5'} />
-                            <p className={`text-muted-foreground mt-0.5 ${zoneFullscreen ? 'text-xs' : 'text-[10px]'}`}>{pct}% klaar</p>
+                            <p className={`text-muted-foreground mt-0.5 ${zoneFullscreen ? 'text-xs' : 'text-[10px]'}`}>{pct}% {t3('klaar', 'terminé', 'done')}</p>
                           </div>
                         )}
 
