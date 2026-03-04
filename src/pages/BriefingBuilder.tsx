@@ -662,8 +662,8 @@ const BriefingBuilder = () => {
 
         const briefingLink = `${window.location.origin}/training/${briefingId}`;
         const msgContent = personalMessage.trim()
-          ? `📋 ${briefingTitle || 'Briefing'}\n\n${personalMessage.trim()}\n\n🔗 Bekijk je briefing: ${briefingLink}`
-          : `📋 ${briefingTitle || 'Briefing'}\n\n🔗 Bekijk je briefing: ${briefingLink}`;
+          ? `📋 ${briefingTitle || 'Briefing'}\n\n${personalMessage.trim()}\n\n🔗 ${t3('Bekijk je briefing', 'Consultez votre briefing', 'View your briefing')}: ${briefingLink}`
+          : `📋 ${briefingTitle || 'Briefing'}\n\n🔗 ${t3('Bekijk je briefing', 'Consultez votre briefing', 'View your briefing')}: ${briefingLink}`;
 
         const { error: msgErr } = await supabase.from('messages').insert({ conversation_id: convoId, sender_id: userId, content: msgContent });
         if (msgErr) throw msgErr;
