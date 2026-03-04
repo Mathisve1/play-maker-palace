@@ -275,12 +275,18 @@ serve(async (req) => {
       const { data: subs } = await supabase.from('push_subscriptions').select('endpoint, p256dh, auth').eq('user_id', user_id);
       if (subs && subs.length > 0) {
         let ok = false;
+        const pushDetails: any[] = [];
         for (const sub of subs) {
-          const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard' }, vapidPub, vapidKey, vapidSubject);
-          if (r.ok) ok = true;
-          else if (r.status === 410 || r.status === 404) await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+          try {
+            const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard' }, vapidPub, vapidKey, vapidSubject);
+            pushDetails.push({ endpoint: sub.endpoint.slice(0, 60), status: r.status, body: r.body?.slice(0, 200) });
+            if (r.ok) ok = true;
+            else if (r.status === 410 || r.status === 404) await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+          } catch (pushErr: any) {
+            pushDetails.push({ endpoint: sub.endpoint.slice(0, 60), error: pushErr.message });
+          }
         }
-        pushResult = { sent: ok, subscriptions: subs.length };
+        pushResult = { sent: ok, subscriptions: subs.length, details: pushDetails };
       }
     }
 
