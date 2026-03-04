@@ -10,6 +10,7 @@ interface ContractPreviewProps {
   clubSignatureUrl?: string | null;
   volunteerName?: string;
   contractColors?: { primary: string; accent: string; bg: string };
+  language?: 'nl' | 'fr' | 'en';
 }
 
 const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
