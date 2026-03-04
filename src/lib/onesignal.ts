@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'e0d35921-dd83-4e98-a289-f9d1bb1694cc';
+const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'd1373810-d2ca-4689-8858-178e45d144c4';
 
 let oneSignalInitPromise: Promise<void> | null = null;
 let oneSignalInitialized = false;
