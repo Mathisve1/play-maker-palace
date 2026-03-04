@@ -181,7 +181,7 @@ const PlanningOverview = () => {
         body: { club_id: clubId, action: 'delete' },
       });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Demo data verwijderd!' : 'Demo data deleted!');
+      toast.success(t3('Demo data verwijderd!', 'Données démo supprimées!', 'Demo data deleted!'));
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
       toast.error(err.message);
