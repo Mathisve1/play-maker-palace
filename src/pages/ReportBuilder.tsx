@@ -507,7 +507,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
       toast.success(t3('AI grafiek toegevoegd!', 'Graphique IA ajouté !', 'AI chart added!'));
     } catch (e: any) {
       console.error('AI chart error:', e);
-      toast.error('Kon geen grafiek genereren. Probeer een andere vraag.');
+      toast.error(t3('Kon geen grafiek genereren. Probeer een andere vraag.', 'Impossible de générer le graphique. Essayez une autre question.', 'Could not generate chart. Try a different question.'));
     } finally {
       setAiLoading(false);
     }
