@@ -122,6 +122,7 @@ const App = () => {
             <Route path="/help" element={<RequireAuth><VolunteerHelp /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           <IOSInstallOverlay />
         </BrowserRouter>
       </TooltipProvider>
