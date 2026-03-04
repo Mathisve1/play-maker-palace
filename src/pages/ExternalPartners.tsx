@@ -931,7 +931,7 @@ const ExternalPartners = () => {
                 <>
                   <p className="text-sm">{t3('Ticket aanmaken voor', 'Créer un ticket pour', 'Create ticket for')} <strong>{member.full_name}</strong></p>
                   <div>
-                    <Label>{nl ? 'Taak' : 'Task'}</Label>
+                    <Label>{t3('Taak', 'Tâche', 'Task')}</Label>
                     <Select value={ticketTaskId} onValueChange={setTicketTaskId}>
                       <SelectTrigger><SelectValue placeholder={nl ? 'Selecteer taak...' : 'Select task...'} /></SelectTrigger>
                       <SelectContent>
