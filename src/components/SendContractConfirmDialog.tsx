@@ -226,7 +226,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
 
     // Always set Datum if not set
     if (!vals['Datum']) {
-      vals['Datum'] = new Date().toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+      vals['Datum'] = new Date().toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
     return vals;
