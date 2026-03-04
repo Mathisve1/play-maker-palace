@@ -1167,7 +1167,7 @@ const SafetyDashboard = () => {
             <Card className="bg-card border-border">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-primary" /> Pre-event Checklist Voortgang
+                  <CheckCircle2 className="w-5 h-5 text-primary" /> {t3('Pre-event Checklist Voortgang', 'Progression Checklist Pré-événement', 'Pre-event Checklist Progress')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
