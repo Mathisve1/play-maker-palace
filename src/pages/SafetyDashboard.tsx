@@ -967,7 +967,7 @@ const SafetyDashboard = () => {
                     })}
                   </div>
                 )}
-                <input type="text" placeholder="Korte beschrijving (optioneel)" value={incidentDesc} onChange={e => setIncidentDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm" />
+                <input type="text" placeholder={t3('Korte beschrijving (optioneel)', 'Description courte (optionnel)', 'Short description (optional)')} value={incidentDesc} onChange={e => setIncidentDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm" />
 
                 {/* Photo upload */}
                 <div>
