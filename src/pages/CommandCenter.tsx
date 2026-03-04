@@ -422,7 +422,7 @@ const CommandCenter = () => {
       } catch {}
     }
 
-    toast.success(`${selected.size} ${language === 'nl' ? 'acties verwerkt' : 'actions processed'}`);
+    toast.success(`${selected.size} ${t3('acties verwerkt', 'actions traitées', 'actions processed')}`);
     await loadData();
     setProcessing(false);
   };
