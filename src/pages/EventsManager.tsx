@@ -418,10 +418,10 @@ const EventsManager = () => {
               </button>
             )}
             <button data-tour="btn-new-event" onClick={() => { setShowCreateEvent(true); setShowCreateTask(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-              <CalendarDays className="w-4 h-4" /> {nl ? 'Nieuw evenement' : 'New event'}
-            </button>
-            <button onClick={() => { setShowCreateTask(true); setShowCreateEvent(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
-              <Plus className="w-4 h-4" /> {nl ? 'Losse taak' : 'Loose task'}
+               <CalendarDays className="w-4 h-4" /> {t3('Nieuw evenement', 'Nouvel événement', 'New event')}
+             </button>
+             <button onClick={() => { setShowCreateTask(true); setShowCreateEvent(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
+               <Plus className="w-4 h-4" /> {t3('Losse taak', 'Tâche libre', 'Loose task')}
             </button>
           </div>
         </div>
