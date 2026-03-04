@@ -69,6 +69,15 @@ const CommandCenter = () => {
     bulkAssign: 'Toekennen',
     selected: 'geselecteerd',
     all: 'Alles',
+  } : language === 'fr' ? {
+    title: 'Liste d\'actions',
+    subtitle: 'Toutes les actions en attente en un seul endroit',
+    empty: 'Tout est traité! 🎉',
+    selectAll: 'Tout sélectionner',
+    bulkApprove: 'Approuver',
+    bulkAssign: 'Attribuer',
+    selected: 'sélectionnés',
+    all: 'Tout',
   } : {
     title: 'Action List',
     subtitle: 'All pending actions in one place',

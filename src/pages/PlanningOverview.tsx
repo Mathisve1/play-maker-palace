@@ -450,11 +450,11 @@ const PlanningOverview = () => {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-foreground">
-                            {MONTH_NAMES_NL[plan.month - 1]} {plan.year}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                            <span>{plan.task_count} {nl ? 'taken' : 'tasks'}</span>
-                            <span>{plan.enrollment_count} {nl ? 'vrijwilligers' : 'volunteers'}</span>
+                             {(MONTH_NAMES[language] || MONTH_NAMES.en)[plan.month - 1]} {plan.year}
+                           </p>
+                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                             <span>{plan.task_count} {t3('taken', 'tâches', 'tasks')}</span>
+                             <span>{plan.enrollment_count} {t3('vrijwilligers', 'bénévoles', 'volunteers')}</span>
                           </div>
                         </div>
                       </div>
