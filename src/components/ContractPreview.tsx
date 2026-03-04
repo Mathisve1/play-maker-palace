@@ -153,7 +153,7 @@ const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                      De vrijwilliger:
+                      {t3('De vrijwilliger', 'Le bénévole', 'The volunteer')}:
                     </p>
                     {/* DocuSeal embedded text tag - detected as interactive signature field */}
                     <p data-signature-field="true" style={{ fontSize: 8, color: '#d1d5db', marginBottom: 4, fontFamily: 'monospace' }}>
