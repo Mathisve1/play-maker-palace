@@ -595,7 +595,7 @@ const ExternalPartners = () => {
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />{nl ? 'Opengestelde evenementen' : 'Event access'}
+                          <Calendar className="w-4 h-4" />{t3('Opengestelde evenementen', 'Événements ouverts', 'Event access')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
