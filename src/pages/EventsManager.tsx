@@ -392,8 +392,8 @@ const EventsManager = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-heading font-bold text-foreground">
-              {nl ? 'Evenementen & Taken' : 'Events & Tasks'}
+             <h1 className="text-2xl font-heading font-bold text-foreground">
+               {t3('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks')}
             </h1>
             <p className="text-muted-foreground mt-1">
               {events.length} {nl ? 'evenementen' : 'events'} · {looseTasks.length} {nl ? 'losse taken' : 'loose tasks'}
