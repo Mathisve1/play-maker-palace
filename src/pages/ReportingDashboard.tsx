@@ -368,7 +368,7 @@ const ReportingDashboard = () => {
       const p = profileMap[s.volunteer_id];
       if (!map.has(s.volunteer_id)) {
         map.set(s.volunteer_id, {
-          id: s.volunteer_id, name: p?.full_name || 'Onbekend', email: p?.email || null,
+          id: s.volunteer_id, name: p?.full_name || L.unknown, email: p?.email || null,
           totalSignups: 0, totalAssigned: 0, totalCheckedIn: 0, noShows: 0,
           totalEarned: 0, tasksWorked: [], eventsWorked: [],
           reliabilityScore: 0, avgEarnedPerTask: 0,
