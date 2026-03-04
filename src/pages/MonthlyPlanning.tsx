@@ -344,9 +344,9 @@ const MonthlyPlanning = () => {
 
   const deleteTask = async (taskId: string) => {
     const { error } = await supabase.from('monthly_plan_tasks').delete().eq('id', taskId);
-    if (error) { toast.error('Verwijderen mislukt'); return; }
+    if (error) { toast.error(t3('Verwijderen mislukt', 'Suppression échouée', 'Delete failed')); return; }
     setTasks(prev => prev.filter(t => t.id !== taskId));
-    toast.success('Taak verwijderd');
+    toast.success(t3('Taak verwijderd', 'Tâche supprimée', 'Task deleted'));
   };
 
   const publishPlan = async () => {
