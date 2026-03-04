@@ -1087,7 +1087,7 @@ const SafetyDashboard = () => {
           })}
 
           {myChecklistItems.length === 0 && (
-            <p className="text-muted-foreground text-sm text-center py-6">Geen checklist items voor jouw toegewezen zones.</p>
+            <p className="text-muted-foreground text-sm text-center py-6">{t3('Geen checklist items voor jouw toegewezen zones.', 'Aucun élément de checklist pour vos zones.', 'No checklist items for your assigned zones.')}</p>
           )}
         </div>
       </div>
