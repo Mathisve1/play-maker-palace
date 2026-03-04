@@ -495,10 +495,10 @@ const MonthlyPlanning = () => {
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <CalendarDays className="w-7 h-7 text-primary" />
-              Maandplanning
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Plan dagelijkse taken en vergoed vrijwilligers met één maandcontract
+               {t3('Maandplanning', 'Planning mensuel', 'Monthly planning')}
+             </h1>
+             <p className="text-sm text-muted-foreground mt-1">
+               {t3('Plan dagelijkse taken en vergoed vrijwilligers met één maandcontract', 'Planifiez les tâches quotidiennes et rémunérez les bénévoles avec un contrat mensuel', 'Plan daily tasks and compensate volunteers with one monthly contract')}
             </p>
           </div>
           <div className="flex gap-2">
