@@ -372,7 +372,7 @@ const PlanningOverview = () => {
             {filteredEvents.length === 0 && (
               <div className="text-center py-12">
                 <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">{nl ? 'Geen evenementen gevonden' : 'No events found'}</p>
+                <p className="text-muted-foreground">{t3('Geen evenementen gevonden', 'Aucun événement trouvé', 'No events found')}</p>
               </div>
             )}
           </TabsContent>
