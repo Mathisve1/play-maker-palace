@@ -825,7 +825,7 @@ const SafetyDashboard = () => {
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card">
               <div className="w-3 h-3 rounded-full shrink-0" style={{ background: myRole.color }} />
               <span className="text-sm font-medium text-foreground">{myRole.name}</span>
-              <Badge variant="outline" className="text-[10px] ml-auto">Niv. {myRole.level}</Badge>
+              <Badge variant="outline" className="text-[10px] ml-auto">{t3('Niv.', 'Niv.', 'Lvl.')} {myRole.level}</Badge>
             </div>
           )}
 
