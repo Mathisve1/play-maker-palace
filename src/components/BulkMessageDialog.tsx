@@ -252,7 +252,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />
-            Bericht versturen
+            {t3('Bericht versturen', 'Envoyer un message', 'Send message')}
           </h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
