@@ -804,7 +804,7 @@ const SepaPayouts = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Batch Mededeling *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{t3('Batch Mededeling *', 'Message du lot *', 'Batch Message *')}</label>
               <Input
                 value={batchMessage}
                 onChange={e => setBatchMessage(e.target.value)}
