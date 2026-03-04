@@ -1,3 +1,4 @@
+// Native Web Push v2 - cache bust
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SignJWT, importJWK } from "https://deno.land/x/jose@v5.2.0/index.ts";
