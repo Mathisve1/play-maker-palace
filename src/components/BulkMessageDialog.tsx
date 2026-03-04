@@ -404,7 +404,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
             {showPreview && previewVolunteer && (
               <div className="mt-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
                 <p className="text-[10px] text-muted-foreground mb-1">
-                  Voorbeeld voor: {previewVolunteer.full_name || previewVolunteer.email}
+                  {t3('Voorbeeld voor:', 'Aperçu pour:', 'Preview for:')} {previewVolunteer.full_name || previewVolunteer.email}
                 </p>
                 <p className="text-sm text-foreground whitespace-pre-wrap">
                   {resolveTemplate(message, previewVolunteer)}
