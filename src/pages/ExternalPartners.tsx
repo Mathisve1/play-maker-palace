@@ -876,7 +876,7 @@ const ExternalPartners = () => {
             </div>
             <Button onClick={handleCreatePartner} disabled={creating || !newPartner.name.trim()} className="w-full">
               {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {nl ? 'Aanmaken & uitnodigen' : 'Create & invite'}
+              {t3('Aanmaken & uitnodigen', 'Créer & inviter', 'Create & invite')}
             </Button>
           </div>
         </DialogContent>
