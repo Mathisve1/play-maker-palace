@@ -475,36 +475,52 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
 
           {pushPermission === 'unsupported' ? (
             <p className="text-xs text-muted-foreground">{l.pushUnavailable}</p>
-          ) : pushPermission === 'denied' ? (
+          ) : pushPermission === 'denied' && !pushEnabled ? (
             <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
               <BellOff className="w-4 h-4 text-destructive flex-shrink-0" />
               <p className="text-xs text-destructive">{l.pushDenied}</p>
             </div>
-          ) : pushPermission === 'granted' ? (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
-              <Bell className="w-4 h-4 text-primary flex-shrink-0" />
-              <p className="text-xs text-foreground flex-1">{l.pushEnabled}</p>
-            </div>
           ) : (
-            <button
-              type="button"
-              onClick={async () => {
-                const { promptPushPermission } = await import('@/lib/onesignal');
-                await promptPushPermission();
-                if (typeof Notification !== 'undefined') {
-                  setPushPermission(Notification.permission as any);
-                }
-              }}
-              className="w-full flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
-            >
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Bell className="w-4 h-4 text-primary" />
+            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-card">
+              <div className="flex items-center gap-3">
+                {pushEnabled ? (
+                  <Bell className="w-4 h-4 text-primary flex-shrink-0" />
+                ) : (
+                  <BellOff className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                )}
+                <p className="text-sm text-foreground">
+                  {pushEnabled ? l.pushEnabled : l.pushDisabled}
+                </p>
               </div>
-              <div className="text-left flex-1">
-                <p className="text-sm font-medium text-foreground">{l.pushEnable}</p>
-                <p className="text-[11px] text-muted-foreground">{l.pushDisabled}</p>
-              </div>
-            </button>
+              <button
+                type="button"
+                disabled={pushToggling}
+                onClick={async () => {
+                  setPushToggling(true);
+                  try {
+                    const { setPushPreference } = await import('@/lib/onesignal');
+                    const result = await setPushPreference(!pushEnabled);
+                    setPushEnabled(result.enabled);
+                    if (typeof Notification !== 'undefined') {
+                      setPushPermission(Notification.permission as any);
+                    }
+                    const { toast } = await import('sonner');
+                    toast.success(result.enabled ? l.pushEnabled : l.pushDisabled);
+                  } catch (e) {
+                    console.error('Push toggle error:', e);
+                  } finally {
+                    setPushToggling(false);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  pushEnabled
+                    ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+                    : 'bg-primary text-primary-foreground hover:opacity-90'
+                } disabled:opacity-50`}
+              >
+                {pushToggling ? '...' : pushEnabled ? l.pushDisable : l.pushEnable}
+              </button>
+            </div>
           )}
         </div>
 
