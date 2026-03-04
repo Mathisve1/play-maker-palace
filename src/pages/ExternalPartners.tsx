@@ -902,7 +902,7 @@ const ExternalPartners = () => {
           <DialogHeader><DialogTitle>{nl ? 'Evenement openstellen' : 'Add event access'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{nl ? 'Evenement' : 'Event'}</Label>
+              <Label>{t3('Evenement', 'Événement', 'Event')}</Label>
               <Select value={selectedEventId} onValueChange={setSelectedEventId}>
                 <SelectTrigger><SelectValue placeholder={nl ? 'Selecteer...' : 'Select...'} /></SelectTrigger>
                 <SelectContent>
