@@ -885,7 +885,7 @@ const ExternalPartners = () => {
       {/* Invite Admin Dialog */}
       <Dialog open={showInvite} onOpenChange={setShowInvite}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{nl ? 'Partner beheerder uitnodigen' : 'Invite partner admin'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t3('Partner beheerder uitnodigen', 'Inviter un administrateur partenaire', 'Invite partner admin')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>E-mail</Label><Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="beheerder@partner.be" /></div>
             <Button onClick={handleInviteAdmin} disabled={inviting || !inviteEmail.trim()} className="w-full">
