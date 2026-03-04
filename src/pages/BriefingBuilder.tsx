@@ -617,7 +617,7 @@ const BriefingBuilder = () => {
 
   const handleDuplicate = () => {
     setBriefingId(null);
-    setBriefingTitle(`${briefingTitle} (kopie)`);
+    setBriefingTitle(`${briefingTitle} (${t3('kopie', 'copie', 'copy')})`);
     setGroups(groups.map(g => ({
       ...g, id: uid(),
       blocks: g.blocks.map(b => ({
