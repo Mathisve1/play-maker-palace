@@ -900,7 +900,7 @@ const SafetyDashboard = () => {
                 className="bg-card rounded-2xl border border-border shadow-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-heading font-bold text-foreground">Tik = direct melden!</h3>
+                  <h3 className="font-heading font-bold text-foreground">{t3('Tik = direct melden!', 'Appuyez = signaler !', 'Tap = instant report!')}</h3>
                   <Button variant="ghost" size="icon" onClick={() => setShowIncidentGrid(false)}><Minimize2 className="w-4 h-4" /></Button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
