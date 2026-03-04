@@ -252,7 +252,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <Info className="w-4 h-4" />
-            Wat kunnen de verschillende rollen?
+            {t3('Wat kunnen de verschillende rollen?', 'Que peuvent faire les différents rôles?', 'What can the different roles do?')}
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showRolesInfo ? 'rotate-180' : ''}`} />
           </button>
 
