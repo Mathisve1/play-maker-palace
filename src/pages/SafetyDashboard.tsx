@@ -1202,8 +1202,8 @@ const SafetyDashboard = () => {
                               className={`h-7 px-2 gap-1 text-xs ${(zone as any).checklist_active ? 'text-emerald-500' : 'text-muted-foreground'}`}
                               onClick={() => handleToggleZoneActive(zone.id, (zone as any).checklist_active)}
                             >
-                              {(zone as any).checklist_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                              {(zone as any).checklist_active ? 'Actief' : 'Uit'}
+                               {(zone as any).checklist_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                               {(zone as any).checklist_active ? t3('Actief', 'Actif', 'Active') : t3('Uit', 'Désactivé', 'Off')}
                             </Button>
                           </div>
                         </div>
