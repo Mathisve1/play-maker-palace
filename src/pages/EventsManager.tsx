@@ -505,7 +505,7 @@ const EventsManager = () => {
             {upcomingEvents.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <CalendarDays className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                <p>{nl ? 'Geen aankomende evenementen.' : 'No upcoming events.'}</p>
+                <p>{t3('Geen aankomende evenementen.', 'Aucun événement à venir.', 'No upcoming events.')}</p>
               </div>
             ) : [...upcomingEvents].sort((a, b) => {
               if (!a.event_date) return 1;
