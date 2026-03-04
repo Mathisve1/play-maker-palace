@@ -1144,10 +1144,10 @@ const ClubOwnerDashboard = () => {
                                       });
                                       const result = await resp.json();
                                       if (resp.ok && result.success) {
-                                        toast.success('Contract verstuurd naar vrijwilliger!');
+                                        toast.success(t3('Contract verstuurd naar vrijwilliger!', 'Contrat envoyé au bénévole !', 'Contract sent to volunteer!'));
                                         setSignatureStatuses(prev => ({ ...prev, [contractKey]: { status: 'pending' } }));
-                                      } else { toast.error(result.error || 'Er ging iets mis bij het versturen.'); }
-                                    } catch (err: any) { toast.error(err.message || 'Er ging iets mis.'); }
+                                      } else { toast.error(result.error || t3('Er ging iets mis bij het versturen.', 'Échec de l\'envoi.', 'Something went wrong sending.')); }
+                                    } catch (err: any) { toast.error(err.message || t3('Er ging iets mis.', 'Une erreur est survenue.', 'Something went wrong.')); }
                                     setSendingContract(null);
                                   }}
                                   disabled={isSending}
