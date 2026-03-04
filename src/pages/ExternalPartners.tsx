@@ -483,10 +483,10 @@ const ExternalPartners = () => {
       <div className="max-w-4xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-heading font-semibold text-foreground">
-            {nl ? 'Externe Partners' : language === 'fr' ? 'Partenaires Externes' : 'External Partners'}
+            {t3('Externe Partners', 'Partenaires Externes', 'External Partners')}
           </h1>
           <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="w-4 h-4 mr-1" />{nl ? 'Nieuw' : 'New'}
+            <Plus className="w-4 h-4 mr-1" />{t3('Nieuw', 'Nouveau', 'New')}
           </Button>
         </div>
         {selectedPartner ? (
