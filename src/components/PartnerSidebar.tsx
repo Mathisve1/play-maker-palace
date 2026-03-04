@@ -70,7 +70,7 @@ const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout }: Part
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onLogout} className="min-h-[48px] text-destructive hover:text-destructive">
               <LogOut className="w-5 h-5" />
-              <span>Uitloggen</span>
+              <span>{t3('Uitloggen', 'Déconnexion', 'Log out')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
