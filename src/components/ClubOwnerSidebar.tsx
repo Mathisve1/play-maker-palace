@@ -127,7 +127,7 @@ const ClubOwnerSidebar = ({
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigatie</SidebarGroupLabel>
+          <SidebarGroupLabel>{t3('Navigatie', 'Navigation', 'Navigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map(item => (
