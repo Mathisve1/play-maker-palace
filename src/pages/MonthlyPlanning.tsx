@@ -867,7 +867,7 @@ const MonthlyPlanning = () => {
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={generateMonthlyPayout} disabled={generatingPayout}>
                         {generatingPayout ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Banknote className="w-3.5 h-3.5 mr-1" />}
-                        Genereer afrekening
+                        {t3('Genereer afrekening', 'Générer le décompte', 'Generate settlement')}
                       </Button>
                       <Button size="sm" variant="outline" onClick={exportToSepa}>
                         <Euro className="w-3.5 h-3.5 mr-1" /> SEPA export
