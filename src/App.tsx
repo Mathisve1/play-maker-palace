@@ -64,9 +64,7 @@ const PageLoader = () => (
 const queryClient = new QueryClient();
 
 const App = () => {
-  useEffect(() => {
-    initOneSignal();
-  }, []);
+  // Push service worker registered on-demand via PushPermissionBanner / profile toggle
 
   return (
   <QueryClientProvider client={queryClient}>

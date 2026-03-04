@@ -498,7 +498,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
                 onClick={async () => {
                   setPushToggling(true);
                   try {
-                    const { setPushPreference } = await import('@/lib/onesignal');
+                    const { setPushPreference } = await import('@/lib/pushNotifications');
                     const result = await setPushPreference(!pushEnabled);
                     setPushEnabled(result.enabled);
                     if (typeof Notification !== 'undefined') {
