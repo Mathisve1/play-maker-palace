@@ -187,7 +187,11 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
     } else {
       setPushPermission(Notification.permission as any);
     }
-  }, [open]);
+    // Load DB push preference
+    supabase.from('profiles').select('push_notifications_enabled').eq('id', userId).maybeSingle().then(({ data }) => {
+      if (data) setPushEnabled(!!(data as any).push_notifications_enabled);
+    });
+  }, [open, userId]);
 
   useEffect(() => {
     if (!open) return;
