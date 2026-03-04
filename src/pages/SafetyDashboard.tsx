@@ -831,9 +831,9 @@ const SafetyDashboard = () => {
 
           <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 text-center">
             <Lock className="w-6 h-6 text-destructive mx-auto mb-2" />
-            <p className="text-sm font-semibold text-foreground">Event is live{myRole && !myRole.can_report_incidents ? '' : ' — Meld incidenten hieronder'}</p>
+            <p className="text-sm font-semibold text-foreground">{t3('Event is live', 'L\'événement est en direct', 'Event is live')}{myRole && !myRole.can_report_incidents ? '' : t3(' — Meld incidenten hieronder', ' — Signalez les incidents ci-dessous', ' — Report incidents below')}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {myRole && !myRole.can_report_incidents ? 'Je hebt geen rechten om incidenten te melden.' : 'Andere functies zijn vergrendeld tijdens het evenement.'}
+              {myRole && !myRole.can_report_incidents ? t3('Je hebt geen rechten om incidenten te melden.', 'Vous n\'avez pas les droits pour signaler.', 'You don\'t have permission to report incidents.') : t3('Andere functies zijn vergrendeld tijdens het evenement.', 'Les autres fonctions sont verrouillées.', 'Other features are locked during the event.')}
             </p>
           </div>
 
