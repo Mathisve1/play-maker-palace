@@ -33,25 +33,16 @@ serve(async (req) => {
   try {
     const { type, user_id, title, message, url, data, broadcast } = await req.json();
 
-    const onesignalAppId = Deno.env.get('ONESIGNAL_APP_ID');
+    // App ID is a public identifier, safe to hardcode as fallback
+    const onesignalAppId = Deno.env.get('ONESIGNAL_APP_ID') || 'e0d35921-dd83-4e98-a289-f9d1bb1694cc';
     const onesignalApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY');
 
     if (!onesignalAppId || !onesignalApiKey) {
-      console.error('OneSignal not configured', { appIdLength: onesignalAppId?.length, apiKeyLength: onesignalApiKey?.length });
       return new Response(
         JSON.stringify({ error: 'OneSignal not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Debug: log first/last chars of app_id to verify formatting
-    console.log('OneSignal app_id debug:', {
-      length: onesignalAppId.length,
-      first4: onesignalAppId.substring(0, 4),
-      last4: onesignalAppId.substring(onesignalAppId.length - 4),
-      hasQuotes: onesignalAppId.includes('"') || onesignalAppId.includes("'"),
-      hasSpaces: onesignalAppId.includes(' '),
-    });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
