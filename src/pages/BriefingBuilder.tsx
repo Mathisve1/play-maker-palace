@@ -172,8 +172,8 @@ const SortableBlock = ({
       {/* Route */}
       {block.type === 'route' && (
         <div className="space-y-2">
-          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder="Titel" className="bg-background/60 text-sm font-medium" />
-          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder="Beschrijving" className="bg-background/60 text-sm min-h-[40px]" rows={2} />
+          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder={language === 'fr' ? 'Titre' : language === 'en' ? 'Title' : 'Titel'} className="bg-background/60 text-sm font-medium" />
+          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder={language === 'fr' ? 'Description' : language === 'en' ? 'Description' : 'Beschrijving'} className="bg-background/60 text-sm min-h-[40px]" rows={2} />
           <RouteMapEditor waypoints={block.waypoints || []} onChange={wps => onUpdate(groupId, block.id, { waypoints: wps })} language={language as Language} />
         </div>
       )}
