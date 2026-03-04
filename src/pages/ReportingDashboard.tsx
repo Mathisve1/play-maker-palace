@@ -573,7 +573,7 @@ const ReportingDashboard = () => {
   const volunteersByEventChart = useMemo(() => {
     return eventReports.slice(0, 10).map(e => ({
       name: e.title.length > 18 ? e.title.slice(0, 16) + '…' : e.title,
-      Vrijwilligers: e.totalVolunteers, Bezetting: e.fillRate,
+      [L.volunteers]: e.totalVolunteers, [L.occupancy]: e.fillRate,
     }));
   }, [eventReports]);
 
