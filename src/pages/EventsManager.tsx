@@ -81,6 +81,8 @@ const EventsManager = () => {
   const [safetyConfigEvent, setSafetyConfigEvent] = useState<{ eventId: string; clubId: string } | null>(null);
 
   const nl = language === 'nl';
+  const fr = language === 'fr';
+  const t3 = (nlS: string, frS: string, enS: string) => nl ? nlS : fr ? frS : enS;
   const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
   const labelClass = "block text-xs font-medium text-muted-foreground mb-1";
 
