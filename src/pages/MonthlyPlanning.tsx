@@ -528,7 +528,7 @@ const MonthlyPlanning = () => {
                 setDemoLoading(false);
               }}>
                 {demoLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
-                Start demo
+                {t3('Start demo', 'Lancer démo', 'Start demo')}
               </Button>
             ) : null}
           </div>
