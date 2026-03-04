@@ -68,6 +68,11 @@ export async function initOneSignal() {
       oneSignalInitialized = true;
       console.log('OneSignal initialized');
 
+      // Set default URL for notification clicks (PWA)
+      if (OneSignalModule.Notifications?.setDefaultUrl) {
+        OneSignalModule.Notifications.setDefaultUrl('https://play-maker-palace.lovable.app');
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id) {
         await attachOneSignalUser(OneSignalModule, user.id);
