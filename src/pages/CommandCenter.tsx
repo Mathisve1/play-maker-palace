@@ -16,6 +16,7 @@ import {
   Users, UserCheck, UserX, FileSignature, Ticket, Clock, CheckCircle2,
   ChevronDown, ChevronUp, Inbox, Loader2, Filter,
 } from 'lucide-react';
+import { ActionListSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 interface ActionItem {
   id: string;
@@ -279,16 +280,25 @@ const CommandCenter = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Realtime subscriptions for live updates
+  // Realtime subscriptions for live updates (debounced)
   useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedLoad = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadData(), 1500);
+    };
+
     const channel = supabase
       .channel('command-center-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_signups' }, () => loadData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_enrollments' }, () => loadData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_day_signups' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_signups' }, debouncedLoad)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_enrollments' }, debouncedLoad)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_day_signups' }, debouncedLoad)
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
   }, [loadData]);
 
   const handleLogout = async () => {
@@ -529,11 +539,7 @@ const CommandCenter = () => {
         )}
 
         {/* Loading */}
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        )}
+        {loading && <ActionListSkeleton />}
 
         {/* Empty state */}
         {!loading && items.length === 0 && (

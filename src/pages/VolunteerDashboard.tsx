@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, Users, Search, CheckCircle, Heart, MessageCircle, FileSignature, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Gift, Ticket, Banknote, Award, TrendingUp, Star } from 'lucide-react';
+import { VolunteerCardsSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import LikeButton from '@/components/LikeButton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -172,36 +173,46 @@ const VolunteerDashboard = () => {
       if (!session) { navigate('/login'); return; }
       setCurrentUserId(session.user.id);
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name, email, avatar_url, phone, bio, date_of_birth')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      setProfile(profileData);
+      // Parallel batch 1: profile, tasks, events, signups, payments, sepa, contracts, tickets, loyalty, certs, follows
+      const uid = session.user.id;
+      const [
+        profileRes, tasksRes, eventsRes, signupsRes,
+        paymentsRes, sepaRes, contractsRes, ticketsRes,
+        loyaltyRes, certsRes, followsRes,
+      ] = await Promise.all([
+        supabase.from('profiles').select('full_name, email, avatar_url, phone, bio, date_of_birth').eq('id', uid).maybeSingle(),
+        supabase.from('tasks').select('*, clubs(name, sport, location)').eq('status', 'open').order('task_date', { ascending: true }),
+        (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').neq('status', 'on_hold').order('event_date', { ascending: true }),
+        supabase.from('task_signups').select('task_id, status').eq('volunteer_id', uid),
+        supabase.from('volunteer_payments').select('id, task_id, amount, currency, status, paid_at, created_at, stripe_receipt_url').eq('volunteer_id', uid).order('created_at', { ascending: false }),
+        (supabase as any).from('sepa_batch_items').select('id, amount, status, created_at, error_flag, error_message, batch_id, task_id, volunteer_id').eq('volunteer_id', uid).order('created_at', { ascending: false }),
+        supabase.from('signature_requests').select('id, task_id, status, signing_url, document_url, created_at, updated_at').eq('volunteer_id', uid).order('created_at', { ascending: false }),
+        (supabase as any).from('volunteer_tickets').select('id, task_id, event_id, club_id, status, ticket_url, barcode, external_ticket_id, created_at, checked_in_at').eq('volunteer_id', uid).order('created_at', { ascending: false }),
+        (supabase as any).from('loyalty_programs').select('*').eq('is_active', true),
+        supabase.from('volunteer_certificates').select('training_id').eq('volunteer_id', uid),
+        supabase.from('club_follows').select('club_id').eq('user_id', uid),
+      ]);
 
+      const profileData = profileRes.data;
+      setProfile(profileData);
       if (profileData && !profileData.full_name && !profileData.phone && !profileData.bio) {
         setIsFirstLogin(true);
         setShowProfileDialog(true);
       }
 
-      // Fetch tasks with club info
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*, clubs(name, sport, location)')
-        .eq('status', 'open')
-        .order('task_date', { ascending: true });
-
-      if (tasksError) {
-        console.error('Tasks error:', tasksError);
-      } else {
-        let enrichedTasks = tasksData || [];
+      // Process tasks
+      if (!tasksRes.error) {
+        let enrichedTasks = tasksRes.data || [];
         if (enrichedTasks.length > 0) {
           const taskIds = enrichedTasks.map(t => t.id);
-          const { data: taskExtras } = await (supabase as any)
-            .from('tasks')
-            .select('id, event_id, event_group_id')
-            .in('id', taskIds);
-          const extraMap = new Map((taskExtras || []).map((t: any) => [t.id, t]));
+          const [taskExtrasRes, signupCountRes, likeCountRes, myLikeRes] = await Promise.all([
+            (supabase as any).from('tasks').select('id, event_id, event_group_id').in('id', taskIds),
+            supabase.from('task_signups').select('task_id').in('task_id', taskIds),
+            supabase.from('task_likes').select('task_id').in('task_id', taskIds),
+            supabase.from('task_likes').select('task_id').eq('user_id', uid),
+          ]);
+
+          const extraMap = new Map((taskExtrasRes.data || []).map((t: any) => [t.id, t]));
           enrichedTasks = enrichedTasks.map(t => ({
             ...t,
             event_id: (extraMap.get(t.id) as any)?.event_id || null,
@@ -209,144 +220,147 @@ const VolunteerDashboard = () => {
           }));
 
           const trainingEventIds = new Set<string>();
-          if (enrichedTasks.some(t => t.event_id)) {
-            const eventIdsToCheck = [...new Set(enrichedTasks.filter(t => t.event_id).map(t => t.event_id!))] as string[];
-            if (eventIdsToCheck.length > 0) {
-              const { data: trainingEvents } = await (supabase as any).from('events').select('id').eq('event_type', 'training').in('id', eventIdsToCheck);
-              (trainingEvents || []).forEach((e: any) => trainingEventIds.add(e.id));
-            }
+          const eventIdsToCheck = [...new Set(enrichedTasks.filter(t => t.event_id).map(t => t.event_id!))] as string[];
+          if (eventIdsToCheck.length > 0) {
+            const { data: trainingEvents } = await (supabase as any).from('events').select('id').eq('event_type', 'training').in('id', eventIdsToCheck);
+            (trainingEvents || []).forEach((e: any) => trainingEventIds.add(e.id));
           }
           enrichedTasks = enrichedTasks.filter(t => !t.event_id || !trainingEventIds.has(t.event_id));
-        }
-        setTasks(enrichedTasks);
 
-        if (enrichedTasks.length > 0) {
-          const taskIds = enrichedTasks.map(t => t.id);
-          const { data: countData } = await supabase.from('task_signups').select('task_id').in('task_id', taskIds);
-          if (countData) {
+          if (signupCountRes.data) {
             const counts: Record<string, number> = {};
-            countData.forEach(s => { counts[s.task_id] = (counts[s.task_id] || 0) + 1; });
+            signupCountRes.data.forEach(s => { counts[s.task_id] = (counts[s.task_id] || 0) + 1; });
             setSignupCounts(counts);
           }
-          const { data: likeData } = await supabase.from('task_likes').select('task_id').in('task_id', taskIds);
-          if (likeData) {
+          if (likeCountRes.data) {
             const lCounts: Record<string, number> = {};
-            likeData.forEach(l => { lCounts[l.task_id] = (lCounts[l.task_id] || 0) + 1; });
+            likeCountRes.data.forEach(l => { lCounts[l.task_id] = (lCounts[l.task_id] || 0) + 1; });
             setLikeCounts(lCounts);
           }
-          const { data: myLikeData } = await supabase.from('task_likes').select('task_id').eq('user_id', session.user.id);
-          if (myLikeData) { setMyLikes(new Set(myLikeData.map(l => l.task_id))); }
+          if (myLikeRes.data) { setMyLikes(new Set(myLikeRes.data.map(l => l.task_id))); }
         }
+        setTasks(enrichedTasks);
       }
 
-      // Fetch events
-      const { data: allEventsData } = await (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').neq('status', 'on_hold').order('event_date', { ascending: true });
+      // Process events
+      const allEventsData = eventsRes.data;
       if (allEventsData && allEventsData.length > 0) {
         const clubIds = [...new Set(allEventsData.map((e: any) => e.club_id))] as string[];
-        const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);
-        const clubMap = new Map(clubsData?.map(c => [c.id, c.name]) || []);
-        setEvents(allEventsData.map((e: any) => ({ ...e, club_name: clubMap.get(e.club_id) || '' })));
-
         const allEventIds = allEventsData.map((e: any) => e.id);
-        const { data: groupsData } = await (supabase as any).from('event_groups').select('*').in('event_id', allEventIds).order('sort_order', { ascending: true });
-        setEventGroups(groupsData || []);
+        const [clubsRes, groupsRes] = await Promise.all([
+          supabase.from('clubs').select('id, name').in('id', clubIds),
+          (supabase as any).from('event_groups').select('*').in('event_id', allEventIds).order('sort_order', { ascending: true }),
+        ]);
+        const clubMap = new Map(clubsRes.data?.map(c => [c.id, c.name]) || []);
+        setEvents(allEventsData.map((e: any) => ({ ...e, club_name: clubMap.get(e.club_id) || '' })));
+        setEventGroups(groupsRes.data || []);
       }
 
-      const { data: signupsData } = await supabase.from('task_signups').select('task_id, status').eq('volunteer_id', session.user.id);
-      setSignups(signupsData || []);
+      setSignups(signupsRes.data || []);
 
-      // Fetch payments
-      const { data: paymentsData } = await supabase.from('volunteer_payments').select('id, task_id, amount, currency, status, paid_at, created_at, stripe_receipt_url').eq('volunteer_id', session.user.id).order('created_at', { ascending: false });
+      // Process payments, sepa, contracts, tickets, loyalty, certs, follows — all already fetched in parallel
+      const paymentsData = paymentsRes.data;
+      const sepaItems = sepaRes.data;
+      const contractsData = contractsRes.data;
+      const ticketsData = ticketsRes.data;
+      const allPrograms = loyaltyRes.data;
+
+      // Collect all task IDs we need to enrich in one batch
+      const enrichTaskIds = new Set<string>();
+      paymentsData?.forEach((p: any) => enrichTaskIds.add(p.task_id));
+      sepaItems?.forEach((s: any) => enrichTaskIds.add(s.task_id));
+      contractsData?.forEach((c: any) => enrichTaskIds.add(c.task_id));
+      ticketsData?.filter((t: any) => t.task_id).forEach((t: any) => enrichTaskIds.add(t.task_id));
+
+      const enrichClubIds = new Set<string>();
+      ticketsData?.forEach((t: any) => enrichClubIds.add(t.club_id));
+      allPrograms?.forEach((p: any) => enrichClubIds.add(p.club_id));
+
+      const enrichEventIds = new Set<string>();
+      ticketsData?.filter((t: any) => t.event_id).forEach((t: any) => enrichEventIds.add(t.event_id));
+
+      const batchIds = new Set<string>();
+      sepaItems?.forEach((s: any) => batchIds.add(s.batch_id));
+
+      const programIds = allPrograms?.map((p: any) => p.id) || [];
+
+      // Parallel batch 2: enrich all related data
+      const [enrichTasksRes, enrichClubsRes, enrichEventsRes, batchesRes, loyaltyEnrRes] = await Promise.all([
+        enrichTaskIds.size > 0
+          ? supabase.from('tasks').select('id, title, club_id, clubs(name)').in('id', Array.from(enrichTaskIds))
+          : Promise.resolve({ data: [] as any[] }),
+        enrichClubIds.size > 0
+          ? supabase.from('clubs').select('id, name').in('id', Array.from(enrichClubIds))
+          : Promise.resolve({ data: [] as any[] }),
+        enrichEventIds.size > 0
+          ? (supabase as any).from('events').select('id, title').in('id', Array.from(enrichEventIds))
+          : Promise.resolve({ data: [] as any[] }),
+        batchIds.size > 0
+          ? (supabase as any).from('sepa_batches').select('id, status, batch_reference, club_id').in('id', Array.from(batchIds))
+          : Promise.resolve({ data: [] as any[] }),
+        programIds.length > 0
+          ? (supabase as any).from('loyalty_enrollments').select('*').eq('volunteer_id', uid).in('program_id', programIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const taskEnrichMap = new Map((enrichTasksRes.data || []).map((t: any) => [t.id, t]));
+      const clubEnrichMap = new Map((enrichClubsRes.data || []).map((c: any) => [c.id, c.name]));
+      const eventEnrichMap = new Map((enrichEventsRes.data || []).map((e: any) => [e.id, e.title]));
+      const batchMap = new Map((batchesRes.data || []).map((b: any) => [b.id, b]));
+
+      // Set payments
       if (paymentsData && paymentsData.length > 0) {
-        const paymentTaskIds = [...new Set(paymentsData.map(p => p.task_id))];
-        const { data: paymentTasks } = await supabase.from('tasks').select('id, title, club_id, clubs(name)').in('id', paymentTaskIds);
-        const taskMap = new Map(paymentTasks?.map(t => [t.id, t]) || []);
-        setMyPayments(paymentsData.map(p => { const t = taskMap.get(p.task_id); return { ...p, task_title: t?.title, club_name: (t as any)?.clubs?.name }; }));
+        setMyPayments(paymentsData.map((p: any) => {
+          const t = taskEnrichMap.get(p.task_id);
+          return { ...p, task_title: t?.title, club_name: t?.clubs?.name };
+        }));
       }
 
-      // Fetch SEPA batch items
-      const { data: sepaItems } = await (supabase as any)
-        .from('sepa_batch_items')
-        .select('id, amount, status, created_at, error_flag, error_message, batch_id, task_id, volunteer_id')
-        .eq('volunteer_id', session.user.id)
-        .order('created_at', { ascending: false });
+      // Set SEPA
       if (sepaItems && sepaItems.length > 0) {
-        const batchIds = [...new Set(sepaItems.map((s: any) => s.batch_id))] as string[];
-        const sepaTaskIds = [...new Set(sepaItems.map((s: any) => s.task_id))] as string[];
-        const { data: batchesData } = await (supabase as any).from('sepa_batches').select('id, status, batch_reference, club_id').in('id', batchIds);
-        const batchMap = new Map((batchesData || []).map((b: any) => [b.id, b]));
-        const { data: sepaTasks } = await supabase.from('tasks').select('id, title, club_id, clubs(name)').in('id', sepaTaskIds);
-        const sepaTaskMap = new Map(sepaTasks?.map(t => [t.id, t]) || []);
         setSepaPayouts(sepaItems.map((item: any) => {
           const batch = batchMap.get(item.batch_id) as any;
-          const task = sepaTaskMap.get(item.task_id);
+          const task = taskEnrichMap.get(item.task_id);
           return {
             id: item.id, amount: Number(item.amount), status: item.status, created_at: item.created_at,
             error_flag: item.error_flag, error_message: item.error_message,
             batch_status: batch?.status || 'pending', batch_reference: batch?.batch_reference || '',
-            task_title: task?.title, club_name: (task as any)?.clubs?.name,
+            task_title: task?.title, club_name: task?.clubs?.name,
           };
         }));
       }
 
-      // Fetch contracts
-      const { data: contractsData } = await supabase.from('signature_requests').select('id, task_id, status, signing_url, document_url, created_at, updated_at').eq('volunteer_id', session.user.id).order('created_at', { ascending: false });
+      // Set contracts
       if (contractsData && contractsData.length > 0) {
-        const contractTaskIds = [...new Set(contractsData.map(c => c.task_id))];
-        const { data: contractTasks } = await supabase.from('tasks').select('id, title, clubs(name)').in('id', contractTaskIds);
-        const ctMap = new Map(contractTasks?.map(t => [t.id, t]) || []);
-        setMyContracts(contractsData.map(c => { const t = ctMap.get(c.task_id); return { ...c, task_title: t?.title, club_name: (t as any)?.clubs?.name }; }));
+        setMyContracts(contractsData.map((c: any) => {
+          const t = taskEnrichMap.get(c.task_id);
+          return { ...c, task_title: t?.title, club_name: t?.clubs?.name };
+        }));
       }
 
-      // Fetch tickets
-      const { data: ticketsData } = await (supabase as any).from('volunteer_tickets').select('id, task_id, event_id, club_id, status, ticket_url, barcode, external_ticket_id, created_at, checked_in_at').eq('volunteer_id', session.user.id).order('created_at', { ascending: false });
+      // Set tickets
       if (ticketsData && ticketsData.length > 0) {
-        const ticketClubIds = [...new Set(ticketsData.map((t: any) => t.club_id))] as string[];
-        const ticketTaskIds = [...new Set(ticketsData.filter((t: any) => t.task_id).map((t: any) => t.task_id))] as string[];
-        const ticketEventIds = [...new Set(ticketsData.filter((t: any) => t.event_id).map((t: any) => t.event_id))] as string[];
-        const { data: tClubs } = await supabase.from('clubs').select('id, name').in('id', ticketClubIds);
-        const clubMap2 = new Map(tClubs?.map(c => [c.id, c.name]) || []);
-        const taskMap2 = new Map<string, string>();
-        if (ticketTaskIds.length > 0) {
-          const { data: tTasks } = await supabase.from('tasks').select('id, title').in('id', ticketTaskIds);
-          tTasks?.forEach(t => taskMap2.set(t.id, t.title));
-        }
-        const eventMap2 = new Map<string, string>();
-        if (ticketEventIds.length > 0) {
-          const { data: tEvents } = await (supabase as any).from('events').select('id, title').in('id', ticketEventIds);
-          tEvents?.forEach((e: any) => eventMap2.set(e.id, e.title));
-        }
         setMyTickets(ticketsData.map((t: any) => ({
-          ...t, club_name: clubMap2.get(t.club_id) || '',
-          task_title: t.task_id ? taskMap2.get(t.task_id) || '' : '',
-          event_title: t.event_id ? eventMap2.get(t.event_id) || '' : '',
+          ...t,
+          club_name: clubEnrichMap.get(t.club_id) || '',
+          task_title: t.task_id ? taskEnrichMap.get(t.task_id)?.title || '' : '',
+          event_title: t.event_id ? eventEnrichMap.get(t.event_id) || '' : '',
         })));
       }
 
-      // Fetch loyalty programs
-      const { data: allPrograms } = await (supabase as any).from('loyalty_programs').select('*').eq('is_active', true);
+      // Set loyalty
       if (allPrograms && allPrograms.length > 0) {
-        const clubIds = [...new Set(allPrograms.map((p: any) => p.club_id))] as string[];
-        const { data: clubsData } = await supabase.from('clubs').select('id, name').in('id', clubIds);
-        const clubMap = new Map(clubsData?.map(c => [c.id, c.name]) || []);
-        setLoyaltyPrograms(allPrograms.map((p: any) => ({ ...p, club_name: clubMap.get(p.club_id) || '' })));
-
-        const programIds = allPrograms.map((p: any) => p.id);
-        const { data: myEnrollments } = await (supabase as any).from('loyalty_enrollments').select('*').eq('volunteer_id', session.user.id).in('program_id', programIds);
-        if (myEnrollments) {
+        setLoyaltyPrograms(allPrograms.map((p: any) => ({ ...p, club_name: clubEnrichMap.get(p.club_id) || '' })));
+        if (loyaltyEnrRes.data) {
           const enrollMap: Record<string, { id: string; tasks_completed: number; points_earned: number; reward_claimed: boolean }> = {};
-          myEnrollments.forEach((e: any) => { enrollMap[e.program_id] = { id: e.id, tasks_completed: e.tasks_completed, points_earned: e.points_earned || 0, reward_claimed: e.reward_claimed }; });
+          loyaltyEnrRes.data.forEach((e: any) => { enrollMap[e.program_id] = { id: e.id, tasks_completed: e.tasks_completed, points_earned: e.points_earned || 0, reward_claimed: e.reward_claimed }; });
           setLoyaltyEnrollments(enrollMap);
         }
       }
 
-      // Fetch my certificates
-      const { data: myCerts } = await supabase.from('volunteer_certificates').select('training_id').eq('volunteer_id', session.user.id);
-      if (myCerts) { setMyCertifiedTrainingIds(new Set(myCerts.map(c => c.training_id))); }
-
-      // Fetch followed clubs
-      const { data: followsData } = await supabase.from('club_follows').select('club_id').eq('user_id', session.user.id);
-      setFollowedClubIds(new Set(followsData?.map(f => f.club_id) || []));
+      // Certs & follows (already fetched)
+      if (certsRes.data) { setMyCertifiedTrainingIds(new Set(certsRes.data.map((c: any) => c.training_id))); }
+      setFollowedClubIds(new Set(followsRes.data?.map((f: any) => f.club_id) || []));
 
       setLoading(false);
 
@@ -585,7 +599,7 @@ const VolunteerDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <VolunteerCardsSkeleton />
       </div>
     );
   }

@@ -15,8 +15,7 @@ const DashboardLayout = ({ sidebar, children }: DashboardLayoutProps) => {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile header with hamburger trigger */}
           <header
-            className="h-14 flex items-center gap-3 border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40 px-4 md:hidden"
-            style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+            className="min-h-14 flex items-center gap-3 border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40 px-4 pt-safe-top md:hidden"
           >
             <SidebarTrigger />
             <Logo size="sm" linkTo="/dashboard" />
