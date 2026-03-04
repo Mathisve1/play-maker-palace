@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 // BottomTabBar removed - replaced by sidebar navigation
 import IOSInstallOverlay from "@/components/IOSInstallOverlay";
 import { initOneSignal } from "@/lib/onesignal";
+import RequireAuth from "./components/RequireAuth";
 import VolunteerLanding from "./pages/VolunteerLanding";
 import ClubsLanding from "./pages/ClubsLanding";
 import Login from "./pages/Login";
