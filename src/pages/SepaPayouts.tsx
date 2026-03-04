@@ -781,7 +781,7 @@ const SepaPayouts = () => {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Club IBAN *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{t3('Club IBAN *', 'IBAN du club *', 'Club IBAN *')}</label>
               <Input
                 value={clubIban}
                 onChange={e => {
