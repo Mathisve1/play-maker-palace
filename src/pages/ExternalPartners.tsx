@@ -393,7 +393,7 @@ const ExternalPartners = () => {
         body: { email: member.email, invite_token: inv.invite_token, role: 'medewerker', club_name: clubName },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      toast.success(nl ? `Uitnodiging verstuurd naar ${member.full_name}!` : `Invitation sent to ${member.full_name}!`);
+      toast.success(t3(`Uitnodiging verstuurd naar ${member.full_name}!`, `Invitation envoyée à ${member.full_name}!`, `Invitation sent to ${member.full_name}!`));
     } catch (err: any) { toast.error(err.message); }
     setInvitingMemberId(null);
   };
