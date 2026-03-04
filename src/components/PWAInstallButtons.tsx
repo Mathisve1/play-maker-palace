@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Share, MoreVertical, Download, Smartphone, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -32,10 +33,11 @@ export const AppStoreBadge = ({
   variant?: 'primary' | 'secondary';
   onClick: () => void;
 }) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const platform = detectPlatform();
   const standalone = isStandalone();
 
-  // Don't show if already installed
   if (standalone) return null;
 
   const isApple = platform === 'ios';
@@ -65,7 +67,9 @@ export const AppStoreBadge = ({
           'text-[10px] font-medium leading-tight uppercase tracking-wide',
           variant === 'primary' ? 'text-background/70' : 'text-muted-foreground'
         )}>
-          {isApple ? 'Beschikbaar op' : 'Download op'}
+          {isApple
+            ? t3('Beschikbaar op', 'Disponible sur', 'Available on')
+            : t3('Download op', 'Télécharger sur', 'Download on')}
         </div>
         <div className="text-[15px] font-semibold leading-tight mt-0.5">
           {isApple ? 'iPhone & iPad' : 'Android'}
@@ -85,9 +89,10 @@ export const AppStoreButtons = ({
   onClickIOS: () => void;
   onClickAndroid: () => void;
 }) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const platform = detectPlatform();
 
-  // On mobile, only show relevant button
   if (platform === 'ios') {
     return <AppStoreBadge variant={variant} onClick={onClickIOS} />;
   }
@@ -113,7 +118,7 @@ export const AppStoreButtons = ({
         </svg>
         <div className="text-left">
           <div className={cn('text-[10px] font-medium leading-tight uppercase tracking-wide', variant === 'primary' ? 'text-background/70' : 'text-muted-foreground')}>
-            Beschikbaar op
+            {t3('Beschikbaar op', 'Disponible sur', 'Available on')}
           </div>
           <div className="text-[15px] font-semibold leading-tight mt-0.5">iPhone & iPad</div>
         </div>
@@ -133,7 +138,7 @@ export const AppStoreButtons = ({
         </svg>
         <div className="text-left">
           <div className={cn('text-[10px] font-medium leading-tight uppercase tracking-wide', variant === 'primary' ? 'text-background/70' : 'text-muted-foreground')}>
-            Download op
+            {t3('Download op', 'Télécharger sur', 'Download on')}
           </div>
           <div className="text-[15px] font-semibold leading-tight mt-0.5">Android</div>
         </div>
@@ -152,6 +157,8 @@ export const InstallInstructionsDialog = ({
   onClose: () => void;
   platform: 'ios' | 'android';
 }) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -176,14 +183,22 @@ export const InstallInstructionsDialog = ({
     {
       number: 1,
       icon: <Smartphone className="w-5 h-5" />,
-      title: 'Open in Safari',
-      description: 'Zorg dat je deze pagina in Safari hebt geopend (niet in Chrome of een andere browser).',
+      title: t3('Open in Safari', 'Ouvrir dans Safari', 'Open in Safari'),
+      description: t3(
+        'Zorg dat je deze pagina in Safari hebt geopend (niet in Chrome of een andere browser).',
+        'Assurez-vous d\'avoir ouvert cette page dans Safari (pas dans Chrome ou un autre navigateur).',
+        'Make sure you have this page open in Safari (not Chrome or another browser).'
+      ),
     },
     {
       number: 2,
       icon: <Share className="w-5 h-5" />,
-      title: 'Tik op "Deel"',
-      description: 'Tik op het deel-icoon (vierkantje met pijl omhoog) onderaan het scherm.',
+      title: t3('Tik op "Deel"', 'Appuyez sur "Partager"', 'Tap "Share"'),
+      description: t3(
+        'Tik op het deel-icoon (vierkantje met pijl omhoog) onderaan het scherm.',
+        'Appuyez sur l\'icône de partage (carré avec une flèche vers le haut) en bas de l\'écran.',
+        'Tap the share icon (square with arrow pointing up) at the bottom of the screen.'
+      ),
     },
     {
       number: 3,
@@ -192,14 +207,22 @@ export const InstallInstructionsDialog = ({
           <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
         </svg>
       ),
-      title: 'Kies "Zet op beginscherm"',
-      description: 'Scroll naar beneden in het menu en tik op "Zet op beginscherm".',
+      title: t3('Kies "Zet op beginscherm"', 'Choisissez "Sur l\'écran d\'accueil"', 'Choose "Add to Home Screen"'),
+      description: t3(
+        'Scroll naar beneden in het menu en tik op "Zet op beginscherm".',
+        'Faites défiler le menu et appuyez sur "Sur l\'écran d\'accueil".',
+        'Scroll down in the menu and tap "Add to Home Screen".'
+      ),
     },
     {
       number: 4,
       icon: <ChevronRight className="w-5 h-5" />,
-      title: 'Bevestig met "Voeg toe"',
-      description: 'Tik rechtsboven op "Voeg toe". De app staat nu op je beginscherm!',
+      title: t3('Bevestig met "Voeg toe"', 'Confirmez avec "Ajouter"', 'Confirm with "Add"'),
+      description: t3(
+        'Tik rechtsboven op "Voeg toe". De app staat nu op je beginscherm!',
+        'Appuyez en haut à droite sur "Ajouter". L\'app est maintenant sur votre écran d\'accueil !',
+        'Tap "Add" in the top right. The app is now on your home screen!'
+      ),
     },
   ];
 
@@ -207,26 +230,42 @@ export const InstallInstructionsDialog = ({
     {
       number: 1,
       icon: <Smartphone className="w-5 h-5" />,
-      title: 'Open in Chrome',
-      description: 'Zorg dat je deze pagina in Google Chrome hebt geopend.',
+      title: t3('Open in Chrome', 'Ouvrir dans Chrome', 'Open in Chrome'),
+      description: t3(
+        'Zorg dat je deze pagina in Google Chrome hebt geopend.',
+        'Assurez-vous d\'avoir ouvert cette page dans Google Chrome.',
+        'Make sure you have this page open in Google Chrome.'
+      ),
     },
     {
       number: 2,
       icon: <MoreVertical className="w-5 h-5" />,
-      title: 'Tik op het menu (⋮)',
-      description: 'Tik op de drie puntjes rechtsboven in Chrome.',
+      title: t3('Tik op het menu (⋮)', 'Appuyez sur le menu (⋮)', 'Tap the menu (⋮)'),
+      description: t3(
+        'Tik op de drie puntjes rechtsboven in Chrome.',
+        'Appuyez sur les trois points en haut à droite dans Chrome.',
+        'Tap the three dots in the top right of Chrome.'
+      ),
     },
     {
       number: 3,
       icon: <Download className="w-5 h-5" />,
-      title: '"App installeren" of "Toevoegen aan startscherm"',
-      description: 'Tik op "App installeren" als die optie er staat, of anders op "Toevoegen aan startscherm".',
+      title: t3('"App installeren" of "Toevoegen aan startscherm"', '"Installer l\'application" ou "Ajouter à l\'écran d\'accueil"', '"Install app" or "Add to Home screen"'),
+      description: t3(
+        'Tik op "App installeren" als die optie er staat, of anders op "Toevoegen aan startscherm".',
+        'Appuyez sur "Installer l\'application" si l\'option est disponible, sinon sur "Ajouter à l\'écran d\'accueil".',
+        'Tap "Install app" if available, otherwise tap "Add to Home screen".'
+      ),
     },
     {
       number: 4,
       icon: <ChevronRight className="w-5 h-5" />,
-      title: 'Bevestig de installatie',
-      description: 'Tik op "Installeren" of "Toevoegen". De app verschijnt op je startscherm!',
+      title: t3('Bevestig de installatie', 'Confirmez l\'installation', 'Confirm the installation'),
+      description: t3(
+        'Tik op "Installeren" of "Toevoegen". De app verschijnt op je startscherm!',
+        'Appuyez sur "Installer" ou "Ajouter". L\'app apparaîtra sur votre écran d\'accueil !',
+        'Tap "Install" or "Add". The app will appear on your home screen!'
+      ),
     },
   ];
 
@@ -236,7 +275,6 @@ export const InstallInstructionsDialog = ({
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -245,7 +283,6 @@ export const InstallInstructionsDialog = ({
             className="fixed inset-0 bg-foreground/40 backdrop-blur-sm z-[200]"
           />
 
-          {/* Dialog */}
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -254,7 +291,6 @@ export const InstallInstructionsDialog = ({
             className="fixed inset-x-4 top-[10vh] z-[201] max-w-lg mx-auto"
           >
             <div className="bg-card rounded-3xl shadow-elevated border border-border overflow-hidden">
-              {/* Header */}
               <div className={cn(
                 'px-6 pt-6 pb-5 relative',
                 platform === 'ios'
@@ -282,16 +318,17 @@ export const InstallInstructionsDialog = ({
                   </div>
                   <div>
                     <h2 className="text-lg font-heading font-bold text-background">
-                      Installeer De 12e Man
+                      {t3('Installeer De 12e Man', 'Installer De 12e Man', 'Install De 12e Man')}
                     </h2>
                     <p className="text-sm text-background/70">
-                      {platform === 'ios' ? 'voor iPhone & iPad' : 'voor Android'}
+                      {platform === 'ios'
+                        ? t3('voor iPhone & iPad', 'pour iPhone & iPad', 'for iPhone & iPad')
+                        : t3('voor Android', 'pour Android', 'for Android')}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Steps */}
               <div className="px-6 py-5 space-y-4 max-h-[55vh] overflow-y-auto">
                 {platform === 'android' && deferredPrompt.current && (
                   <motion.button
@@ -301,14 +338,18 @@ export const InstallInstructionsDialog = ({
                     className="w-full py-3.5 rounded-2xl bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
                   >
                     <Download className="w-5 h-5" />
-                    Direct installeren
+                    {t3('Direct installeren', 'Installer maintenant', 'Install now')}
                   </motion.button>
                 )}
 
                 {(platform === 'ios' || !deferredPrompt.current) && (
                   <>
                     <p className="text-sm text-muted-foreground">
-                      Volg deze {steps.length} eenvoudige stappen:
+                      {t3(
+                        `Volg deze ${steps.length} eenvoudige stappen:`,
+                        `Suivez ces ${steps.length} étapes simples :`,
+                        `Follow these ${steps.length} simple steps:`
+                      )}
                     </p>
                     {steps.map((step, i) => (
                       <motion.div
@@ -338,13 +379,12 @@ export const InstallInstructionsDialog = ({
                 )}
               </div>
 
-              {/* Footer */}
               <div className="px-6 pb-6 pt-2">
                 <button
                   onClick={onClose}
                   className="w-full py-3 rounded-xl bg-muted text-foreground font-medium hover:bg-muted/80 transition-colors text-sm"
                 >
-                  Begrepen, sluit dit venster
+                  {t3('Begrepen, sluit dit venster', 'Compris, fermer cette fenêtre', 'Got it, close this window')}
                 </button>
               </div>
             </div>
