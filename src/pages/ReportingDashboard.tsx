@@ -548,7 +548,7 @@ const ReportingDashboard = () => {
   const topVolunteersChart = useMemo(() =>
     volunteerReports.slice(0, 10).map(v => ({
       name: v.name.length > 15 ? v.name.slice(0, 13) + '…' : v.name,
-      Taken: v.totalAssigned, Verdiend: v.totalEarned,
+      [L.tasks]: v.totalAssigned, [L.earned]: v.totalEarned,
     })), [volunteerReports]);
 
   const noShowRateChart = useMemo(() => {
