@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { autoPromptPushPermission } from '@/lib/onesignal';
 import { Loader2 } from 'lucide-react';
 
 interface RequireAuthProps {
