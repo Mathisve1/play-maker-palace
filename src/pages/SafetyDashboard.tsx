@@ -759,18 +759,22 @@ const SafetyDashboard = () => {
               <PartyPopper className="w-12 h-12 mx-auto text-primary mb-1" />
             </motion.div>
 
-            <h1 className="text-3xl font-heading font-bold text-foreground">Bedankt!</h1>
+            <h1 className="text-3xl font-heading font-bold text-foreground">{t3('Bedankt!', 'Merci !', 'Thank you!')}</h1>
 
             {clubName && (
               <p className="text-lg font-semibold text-foreground">{clubName}</p>
             )}
 
             <p className="text-muted-foreground text-base mt-1">
-              Het evenement <span className="font-semibold text-foreground">{eventTitle}</span> is afgelopen.
+              {t3(
+                `Het evenement ${eventTitle} is afgelopen.`,
+                `L'événement ${eventTitle} est terminé.`,
+                `The event ${eventTitle} has ended.`
+              )}
             </p>
 
             <p className="text-muted-foreground text-sm">
-              Hartelijk dank voor je geweldige inzet als vrijwilliger. Jouw hulp maakt het verschil! 💪
+              {t3('Hartelijk dank voor je geweldige inzet als vrijwilliger. Jouw hulp maakt het verschil! 💪', 'Merci pour votre engagement en tant que bénévole. Votre aide fait la différence ! 💪', 'Thank you for your amazing effort as a volunteer. Your help makes the difference! 💪')}
             </p>
           </div>
 
