@@ -265,7 +265,7 @@ const EventsManager = () => {
       }
     }
     setEvents(prev => [newEv, ...prev]);
-    toast.success(nl ? 'Evenement gedupliceerd!' : 'Event duplicated!');
+    toast.success(t3('Evenement gedupliceerd!', 'Événement dupliqué!', 'Event duplicated!'));
     setDuplicatingEvent(null);
   };
 
