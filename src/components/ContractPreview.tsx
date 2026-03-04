@@ -13,7 +13,8 @@ interface ContractPreviewProps {
 }
 
 const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
-  ({ blocks, fieldValues, clubName, clubLogoUrl, clubOwnerName, clubSignatureUrl, volunteerName, contractColors }, ref) => {
+  ({ blocks, fieldValues, clubName, clubLogoUrl, clubOwnerName, clubSignatureUrl, volunteerName, contractColors, language }, ref) => {
+    const t3 = (nl: string, fr: string, en: string) => language === 'fr' ? fr : language === 'en' ? en : nl;
     const colors = contractColors || { primary: '#1a5632', accent: '#e8742e', bg: '#ffffff' };
 
     return (
