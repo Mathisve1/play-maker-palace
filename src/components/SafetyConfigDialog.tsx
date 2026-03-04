@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Trash2, Shield, CheckCircle2, GripVertical, MapPin, Users } from 'lucide-react';
@@ -26,12 +27,6 @@ interface SafetyRole {
   can_complete_closing: boolean; can_view_team: boolean;
 }
 
-const PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Laag', color: '#22c55e' },
-  { value: 'medium', label: 'Gemiddeld', color: '#f59e0b' },
-  { value: 'high', label: 'Hoog', color: '#ef4444' },
-];
-
 const POPULAR_EMOJIS = [
   '🚑', '🔥', '⚠️', '🚨', '🩹', '💊', '🚓', '🛡️', '👊', '🍺',
   '🚪', '🔑', '📢', '🎯', '⛑️', '🧯', '💧', '⚡', '🚷', '🚫',
@@ -39,6 +34,15 @@ const POPULAR_EMOJIS = [
 ];
 
 const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDialogProps) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+
+  const PRIORITY_OPTIONS = [
+    { value: 'low', label: t3('Laag', 'Bas', 'Low'), color: '#22c55e' },
+    { value: 'medium', label: t3('Gemiddeld', 'Moyen', 'Medium'), color: '#f59e0b' },
+    { value: 'high', label: t3('Hoog', 'Élevé', 'High'), color: '#ef4444' },
+  ];
+
   const [zones, setZones] = useState<Zone[]>([]);
   const [incidentTypes, setIncidentTypes] = useState<IncidentType[]>([]);
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
@@ -99,16 +103,16 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
       event_id: eventId, club_id: clubId, name: newZoneName.trim(), color: newZoneColor, sort_order: zones.length,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { setZones(prev => [...prev, data]); setNewZoneName(''); setNewZoneColor('#3b82f6'); toast.success('Zone toegevoegd'); }
+    else if (data) { setZones(prev => [...prev, data]); setNewZoneName(''); setNewZoneColor('#3b82f6'); toast.success(t3('Zone toegevoegd', 'Zone ajoutée', 'Zone added')); }
   };
 
   const deleteZone = async (id: string) => {
     await (supabase as any).from('safety_zones').delete().eq('id', id);
     setZones(prev => prev.filter(z => z.id !== id));
-    toast.success('Zone verwijderd');
+    toast.success(t3('Zone verwijderd', 'Zone supprimée', 'Zone deleted'));
   };
 
-  // ── Incident Types (club-wide) ──
+  // ── Incident Types ──
   const addIncidentType = async () => {
     if (!newTypeName.trim()) return;
     const { data, error } = await (supabase as any).from('safety_incident_types').insert({
@@ -117,13 +121,13 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
       emoji: newTypeEmoji || null,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { setIncidentTypes(prev => [...prev, data]); setNewTypeName(''); setNewTypeEmoji(''); toast.success('Incident type toegevoegd'); }
+    else if (data) { setIncidentTypes(prev => [...prev, data]); setNewTypeName(''); setNewTypeEmoji(''); toast.success(t3('Incident type toegevoegd', 'Type d\'incident ajouté', 'Incident type added')); }
   };
 
   const deleteIncidentType = async (id: string) => {
     await (supabase as any).from('safety_incident_types').delete().eq('id', id);
     setIncidentTypes(prev => prev.filter(t => t.id !== id));
-    toast.success('Incident type verwijderd');
+    toast.success(t3('Incident type verwijderd', 'Type d\'incident supprimé', 'Incident type deleted'));
   };
 
   // ── Checklist Items ──
@@ -134,13 +138,13 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
       zone_id: newChecklistZone || null, sort_order: checklistItems.length,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { setChecklistItems(prev => [...prev, data]); setNewChecklistDesc(''); setNewChecklistZone(''); toast.success('Checklist item toegevoegd'); }
+    else if (data) { setChecklistItems(prev => [...prev, data]); setNewChecklistDesc(''); setNewChecklistZone(''); toast.success(t3('Checklist item toegevoegd', 'Élément ajouté', 'Checklist item added')); }
   };
 
   const deleteChecklistItem = async (id: string) => {
     await (supabase as any).from('safety_checklist_items').delete().eq('id', id);
     setChecklistItems(prev => prev.filter(i => i.id !== id));
-    toast.success('Item verwijderd');
+    toast.success(t3('Item verwijderd', 'Élément supprimé', 'Item deleted'));
   };
 
   // ── Location Levels ──
@@ -154,7 +158,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
       setLocationLevels(prev => [...prev, data]);
       setNewLevelName('');
       if (!selectedLevelId) setSelectedLevelId(data.id);
-      toast.success('Locatie niveau toegevoegd');
+      toast.success(t3('Locatie niveau toegevoegd', 'Niveau de localisation ajouté', 'Location level added'));
     }
   };
 
@@ -163,7 +167,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
     setLocationLevels(prev => prev.filter(l => l.id !== id));
     setLocationOptions(prev => prev.filter(o => o.level_id !== id));
     if (selectedLevelId === id) setSelectedLevelId(locationLevels.find(l => l.id !== id)?.id || null);
-    toast.success('Niveau verwijderd');
+    toast.success(t3('Niveau verwijderd', 'Niveau supprimé', 'Level deleted'));
   };
 
   const toggleLevelRequired = async (id: string, current: boolean) => {
@@ -179,13 +183,13 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
       sort_order: locationOptions.filter(o => o.level_id === selectedLevelId).length,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { setLocationOptions(prev => [...prev, data]); setNewOptionLabel(''); toast.success('Optie toegevoegd'); }
+    else if (data) { setLocationOptions(prev => [...prev, data]); setNewOptionLabel(''); toast.success(t3('Optie toegevoegd', 'Option ajoutée', 'Option added')); }
   };
 
   const deleteLocationOption = async (id: string) => {
     await (supabase as any).from('safety_location_options').delete().eq('id', id);
     setLocationOptions(prev => prev.filter(o => o.id !== id));
-    toast.success('Optie verwijderd');
+    toast.success(t3('Optie verwijderd', 'Option supprimée', 'Option deleted'));
   };
 
   // ── Safety Roles ──
@@ -199,14 +203,14 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
     else if (data) {
       setSafetyRoles(prev => [...prev, data]);
       setNewRoleName(''); setNewRoleColor('#3b82f6'); setNewRoleLevel(1);
-      toast.success('Rol toegevoegd');
+      toast.success(t3('Rol toegevoegd', 'Rôle ajouté', 'Role added'));
     }
   };
 
   const deleteSafetyRole = async (id: string) => {
     await (supabase as any).from('safety_roles').delete().eq('id', id);
     setSafetyRoles(prev => prev.filter(r => r.id !== id));
-    toast.success('Rol verwijderd');
+    toast.success(t3('Rol verwijderd', 'Rôle supprimé', 'Role deleted'));
   };
 
   const toggleRolePermission = async (roleId: string, field: keyof SafetyRole, current: boolean) => {
@@ -214,12 +218,20 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
     setSafetyRoles(prev => prev.map(r => r.id === roleId ? { ...r, [field]: !current } : r));
   };
 
+  const permLabels: { key: keyof SafetyRole; nl: string; fr: string; en: string }[] = [
+    { key: 'can_complete_checklist', nl: 'Checklist afstrepen', fr: 'Compléter checklist', en: 'Complete checklist' },
+    { key: 'can_report_incidents', nl: 'Incidenten melden', fr: 'Signaler incidents', en: 'Report incidents' },
+    { key: 'can_resolve_incidents', nl: 'Incidenten afhandelen', fr: 'Résoudre incidents', en: 'Resolve incidents' },
+    { key: 'can_complete_closing', nl: 'Sluitingstaken uitvoeren', fr: 'Exécuter tâches de clôture', en: 'Complete closing tasks' },
+    { key: 'can_view_team', nl: 'Teamoverzicht zien', fr: 'Voir l\'équipe', en: 'View team overview' },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" /> Safety & Security Configuratie
+            <Shield className="w-5 h-5 text-primary" /> {t3('Safety & Security Configuratie', 'Configuration Safety & Security', 'Safety & Security Configuration')}
           </DialogTitle>
         </DialogHeader>
 
@@ -229,9 +241,9 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
           <Tabs defaultValue={eventId ? "zones" : "types"} className="mt-2">
             <TabsList className="w-full">
               {!!eventId && <TabsTrigger value="zones" className="flex-1 text-xs">Zones ({zones.length})</TabsTrigger>}
-              <TabsTrigger value="types" className="flex-1 text-xs">Meldingen ({incidentTypes.length})</TabsTrigger>
-              <TabsTrigger value="rollen" className="flex-1 text-xs">Rollen ({safetyRoles.length})</TabsTrigger>
-              <TabsTrigger value="locatie" className="flex-1 text-xs">Locatie ({locationLevels.length})</TabsTrigger>
+              <TabsTrigger value="types" className="flex-1 text-xs">{t3('Meldingen', 'Signalements', 'Reports')} ({incidentTypes.length})</TabsTrigger>
+              <TabsTrigger value="rollen" className="flex-1 text-xs">{t3('Rollen', 'Rôles', 'Roles')} ({safetyRoles.length})</TabsTrigger>
+              <TabsTrigger value="locatie" className="flex-1 text-xs">{t3('Locatie', 'Localisation', 'Location')} ({locationLevels.length})</TabsTrigger>
               {!!eventId && <TabsTrigger value="checklist" className="flex-1 text-xs">Checklist ({checklistItems.length})</TabsTrigger>}
             </TabsList>
 
@@ -239,7 +251,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
             <TabsContent value="zones" className="space-y-3 mt-4">
               <div className="flex gap-2">
                 <input type="color" value={newZoneColor} onChange={e => setNewZoneColor(e.target.value)} className="w-10 h-10 rounded-lg border border-input cursor-pointer" />
-                <input type="text" placeholder="Zone naam" value={newZoneName} onChange={e => setNewZoneName(e.target.value)} className={inputClass + ' flex-1'} onKeyDown={e => e.key === 'Enter' && addZone()} />
+                <input type="text" placeholder={t3('Zone naam', 'Nom de zone', 'Zone name')} value={newZoneName} onChange={e => setNewZoneName(e.target.value)} className={inputClass + ' flex-1'} onKeyDown={e => e.key === 'Enter' && addZone()} />
                 <Button onClick={addZone} size="sm"><Plus className="w-4 h-4" /></Button>
               </div>
               {zones.map(zone => (
@@ -253,12 +265,12 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                   </Button>
                 </div>
               ))}
-              {zones.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Voeg zones toe die het evenementterrein indelen.</p>}
+              {zones.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">{t3('Voeg zones toe die het evenementterrein indelen.', 'Ajoutez des zones pour diviser le site de l\'événement.', 'Add zones to divide the event grounds.')}</p>}
             </TabsContent>
 
-            {/* INCIDENT TYPES (sneltoetsen) */}
+            {/* INCIDENT TYPES */}
             <TabsContent value="types" className="space-y-3 mt-4">
-              <p className="text-xs text-muted-foreground">Stel hier de sneltoetsen in die stewards zien om incidenten te melden. Kies zelf wat relevant is voor jullie club.</p>
+              <p className="text-xs text-muted-foreground">{t3('Stel hier de sneltoetsen in die stewards zien om incidenten te melden. Kies zelf wat relevant is voor jullie club.', 'Configurez les raccourcis que les stewards utilisent pour signaler des incidents.', 'Configure the shortcuts stewards use to report incidents.')}</p>
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <div className="relative">
@@ -266,16 +278,16 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                       type="button"
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                       className="w-10 h-10 rounded-xl border border-input bg-background flex items-center justify-center text-lg hover:bg-muted/50 transition-colors"
-                      title="Emoji kiezen (optioneel)"
+                      title={t3('Emoji kiezen (optioneel)', 'Choisir emoji (optionnel)', 'Choose emoji (optional)')}
                     >
                       {newTypeEmoji || '😀'}
                     </button>
                     {showEmojiPicker && (
                       <div className="absolute top-12 left-0 z-50 bg-card border border-border rounded-xl shadow-lg p-3 w-[280px]">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-muted-foreground">Kies een emoji (optioneel)</span>
+                          <span className="text-xs font-medium text-muted-foreground">{t3('Kies een emoji (optioneel)', 'Choisissez un emoji (optionnel)', 'Choose an emoji (optional)')}</span>
                           {newTypeEmoji && (
-                            <button onClick={() => { setNewTypeEmoji(''); setShowEmojiPicker(false); }} className="text-xs text-destructive hover:underline">Verwijder</button>
+                            <button onClick={() => { setNewTypeEmoji(''); setShowEmojiPicker(false); }} className="text-xs text-destructive hover:underline">{t3('Verwijder', 'Supprimer', 'Remove')}</button>
                           )}
                         </div>
                         <div className="grid grid-cols-10 gap-1">
@@ -288,7 +300,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                       </div>
                     )}
                   </div>
-                  <input type="text" placeholder="Type naam (bijv. Medisch)" value={newTypeName} onChange={e => setNewTypeName(e.target.value)} className={inputClass + ' flex-1'} />
+                  <input type="text" placeholder={t3('Type naam (bijv. Medisch)', 'Nom du type (ex. Médical)', 'Type name (e.g. Medical)')} value={newTypeName} onChange={e => setNewTypeName(e.target.value)} className={inputClass + ' flex-1'} />
                 </div>
                 <div className="flex gap-2">
                   <input type="color" value={newTypeColor} onChange={e => setNewTypeColor(e.target.value)} className="w-10 h-10 rounded-lg border border-input cursor-pointer" />
@@ -313,21 +325,25 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                   </Button>
                 </div>
               ))}
-              {incidentTypes.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Voeg sneltoetsen toe die stewards gebruiken om snel te melden.</p>}
+              {incidentTypes.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">{t3('Voeg sneltoetsen toe die stewards gebruiken om snel te melden.', 'Ajoutez des raccourcis pour les stewards.', 'Add shortcuts for stewards to quickly report.')}</p>}
             </TabsContent>
 
             {/* SAFETY ROLES */}
             <TabsContent value="rollen" className="space-y-3 mt-4">
               <p className="text-xs text-muted-foreground">
-                Maak safety-rollen aan (bijv. Hoofdsteward, Korpssteward, Steward). Per rol bepaal je welke rechten ze hebben tijdens een evenement. Niveau 1 = hoogste rang.
+                {t3(
+                  'Maak safety-rollen aan (bijv. Hoofdsteward, Korpssteward, Steward). Per rol bepaal je welke rechten ze hebben tijdens een evenement. Niveau 1 = hoogste rang.',
+                  'Créez des rôles de sécurité (ex. Chef steward, Steward). Par rôle, définissez les permissions. Niveau 1 = rang le plus élevé.',
+                  'Create safety roles (e.g. Head Steward, Corps Steward, Steward). Define permissions per role. Level 1 = highest rank.'
+                )}
               </p>
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-10 h-10 rounded-lg border border-input cursor-pointer" />
-                  <input type="text" placeholder="Rol naam (bijv. Korpssteward)" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className={inputClass + ' flex-1'} onKeyDown={e => e.key === 'Enter' && addSafetyRole()} />
+                  <input type="text" placeholder={t3('Rol naam (bijv. Korpssteward)', 'Nom du rôle (ex. Steward)', 'Role name (e.g. Corps Steward)')} value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className={inputClass + ' flex-1'} onKeyDown={e => e.key === 'Enter' && addSafetyRole()} />
                 </div>
                 <div className="flex gap-2 items-center">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">Niveau:</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{t3('Niveau:', 'Niveau:', 'Level:')}</span>
                   <select value={newRoleLevel} onChange={e => setNewRoleLevel(Number(e.target.value))} className={inputClass + ' w-20'}>
                     {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
@@ -340,22 +356,16 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ background: role.color }} />
                       <span className="text-sm font-medium text-foreground">{role.name}</span>
-                      <Badge variant="outline" className="text-[10px]">Niv. {role.level}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{t3('Niv.', 'Niv.', 'Lvl.')} {role.level}</Badge>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => deleteSafetyRole(role.id)} className="text-destructive h-8 w-8">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                   <div className="border-t border-border px-3 py-2 space-y-1.5 bg-muted/10">
-                    {([
-                      { key: 'can_complete_checklist' as const, label: 'Checklist afstrepen' },
-                      { key: 'can_report_incidents' as const, label: 'Incidenten melden' },
-                      { key: 'can_resolve_incidents' as const, label: 'Incidenten afhandelen' },
-                      { key: 'can_complete_closing' as const, label: 'Sluitingstaken uitvoeren' },
-                      { key: 'can_view_team' as const, label: 'Teamoverzicht zien' },
-                    ]).map(perm => (
+                    {permLabels.map(perm => (
                       <div key={perm.key} className="flex items-center justify-between">
-                        <span className="text-xs text-foreground">{perm.label}</span>
+                        <span className="text-xs text-foreground">{t3(perm.nl, perm.fr, perm.en)}</span>
                         <Switch
                           checked={role[perm.key] as boolean}
                           onCheckedChange={() => toggleRolePermission(role.id, perm.key, role[perm.key] as boolean)}
@@ -368,8 +378,8 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
               {safetyRoles.length === 0 && (
                 <div className="text-center py-6">
                   <Users className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground text-sm">Geen rollen ingesteld.</p>
-                  <p className="text-muted-foreground text-xs">Voeg rollen toe om rechten per vrijwilliger te bepalen.</p>
+                  <p className="text-muted-foreground text-sm">{t3('Geen rollen ingesteld.', 'Aucun rôle configuré.', 'No roles configured.')}</p>
+                  <p className="text-muted-foreground text-xs">{t3('Voeg rollen toe om rechten per vrijwilliger te bepalen.', 'Ajoutez des rôles pour définir les permissions.', 'Add roles to define permissions per volunteer.')}</p>
                 </div>
               )}
             </TabsContent>
@@ -377,16 +387,18 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
             {/* LOCATION LEVELS */}
             <TabsContent value="locatie" className="space-y-3 mt-4">
               <p className="text-xs text-muted-foreground">
-                Maak locatie-niveaus aan die vrijwilligers invullen bij een melding. Bijv. "Tribune" → "Vak" → "Rij". Per niveau kan je opties aanmaken en instellen of het verplicht is.
+                {t3(
+                  'Maak locatie-niveaus aan die vrijwilligers invullen bij een melding. Bijv. "Tribune" → "Vak" → "Rij". Per niveau kan je opties aanmaken en instellen of het verplicht is.',
+                  'Créez des niveaux de localisation que les bénévoles remplissent lors d\'un signalement. Ex. "Tribune" → "Bloc" → "Rang".',
+                  'Create location levels that volunteers fill in when reporting. E.g. "Stand" → "Section" → "Row".'
+                )}
               </p>
 
-              {/* Add level */}
               <div className="flex gap-2">
-                <input type="text" placeholder="Niveau naam (bijv. Tribune)" value={newLevelName} onChange={e => setNewLevelName(e.target.value)} className={inputClass} onKeyDown={e => e.key === 'Enter' && addLocationLevel()} />
+                <input type="text" placeholder={t3('Niveau naam (bijv. Tribune)', 'Nom du niveau (ex. Tribune)', 'Level name (e.g. Stand)')} value={newLevelName} onChange={e => setNewLevelName(e.target.value)} className={inputClass} onKeyDown={e => e.key === 'Enter' && addLocationLevel()} />
                 <Button onClick={addLocationLevel} size="sm"><Plus className="w-4 h-4" /></Button>
               </div>
 
-              {/* Levels list */}
               {locationLevels.map((level, idx) => (
                 <div key={level.id} className={`rounded-xl border bg-card overflow-hidden ${selectedLevelId === level.id ? 'border-primary' : 'border-border'}`}>
                   <div
@@ -398,12 +410,12 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                       <MapPin className="w-4 h-4 text-primary" />
                       <span className="text-sm font-medium text-foreground">{level.name}</span>
                       <Badge variant={level.is_required ? 'default' : 'outline'} className="text-[10px]">
-                        {level.is_required ? 'Verplicht' : 'Optioneel'}
+                        {level.is_required ? t3('Verplicht', 'Obligatoire', 'Required') : t3('Optioneel', 'Optionnel', 'Optional')}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
-                        <span className="text-[10px] text-muted-foreground">Verplicht</span>
+                        <span className="text-[10px] text-muted-foreground">{t3('Verplicht', 'Obligatoire', 'Required')}</span>
                         <Switch checked={level.is_required} onCheckedChange={() => toggleLevelRequired(level.id, level.is_required)} />
                       </div>
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteLocationLevel(level.id); }} className="text-destructive h-7 w-7">
@@ -412,11 +424,10 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                     </div>
                   </div>
 
-                  {/* Options panel */}
                   {selectedLevelId === level.id && (
                     <div className="border-t border-border p-3 bg-muted/10 space-y-2">
                       <div className="flex gap-2">
-                        <input type="text" placeholder={`Optie voor "${level.name}" (bijv. Hoofdtribune)`} value={newOptionLabel} onChange={e => setNewOptionLabel(e.target.value)} className={inputClass + ' text-xs'} onKeyDown={e => e.key === 'Enter' && addLocationOption()} />
+                        <input type="text" placeholder={t3(`Optie voor "${level.name}" (bijv. Hoofdtribune)`, `Option pour "${level.name}" (ex. Tribune principale)`, `Option for "${level.name}" (e.g. Main Stand)`)} value={newOptionLabel} onChange={e => setNewOptionLabel(e.target.value)} className={inputClass + ' text-xs'} onKeyDown={e => e.key === 'Enter' && addLocationOption()} />
                         <Button onClick={addLocationOption} size="sm" variant="outline"><Plus className="w-3.5 h-3.5" /></Button>
                       </div>
                       {locationOptions.filter(o => o.level_id === level.id).map(opt => (
@@ -428,7 +439,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                         </div>
                       ))}
                       {locationOptions.filter(o => o.level_id === level.id).length === 0 && (
-                        <p className="text-[10px] text-muted-foreground text-center py-2">Voeg opties toe voor dit niveau.</p>
+                        <p className="text-[10px] text-muted-foreground text-center py-2">{t3('Voeg opties toe voor dit niveau.', 'Ajoutez des options pour ce niveau.', 'Add options for this level.')}</p>
                       )}
                     </div>
                   )}
@@ -438,8 +449,8 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
               {locationLevels.length === 0 && (
                 <div className="text-center py-6">
                   <MapPin className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground text-sm">Geen locatie-niveaus ingesteld.</p>
-                  <p className="text-muted-foreground text-xs">Stewards melden dan alleen met GPS en zone.</p>
+                  <p className="text-muted-foreground text-sm">{t3('Geen locatie-niveaus ingesteld.', 'Aucun niveau de localisation.', 'No location levels configured.')}</p>
+                  <p className="text-muted-foreground text-xs">{t3('Stewards melden dan alleen met GPS en zone.', 'Les stewards ne rapporteront qu\'avec GPS et zone.', 'Stewards will only report with GPS and zone.')}</p>
                 </div>
               )}
             </TabsContent>
@@ -447,10 +458,10 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
             {/* CHECKLIST */}
             <TabsContent value="checklist" className="space-y-3 mt-4">
               <div className="space-y-2">
-                <input type="text" placeholder="Checklist item beschrijving" value={newChecklistDesc} onChange={e => setNewChecklistDesc(e.target.value)} className={inputClass} />
+                <input type="text" placeholder={t3('Checklist item beschrijving', 'Description de l\'élément', 'Checklist item description')} value={newChecklistDesc} onChange={e => setNewChecklistDesc(e.target.value)} className={inputClass} />
                 <div className="flex gap-2">
                   <select value={newChecklistZone} onChange={e => setNewChecklistZone(e.target.value)} className={inputClass + ' flex-1'}>
-                    <option value="">Geen zone</option>
+                    <option value="">{t3('Geen zone', 'Pas de zone', 'No zone')}</option>
                     {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                   </select>
                   <Button onClick={addChecklistItem} size="sm"><Plus className="w-4 h-4" /></Button>
@@ -468,7 +479,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
                   </Button>
                 </div>
               ))}
-              {checklistItems.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Voeg checklist items toe die stewards moeten afvinken.</p>}
+              {checklistItems.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">{t3('Voeg checklist items toe die stewards moeten afvinken.', 'Ajoutez des éléments que les stewards doivent cocher.', 'Add checklist items stewards must check off.')}</p>}
             </TabsContent>
           </Tabs>
         )}

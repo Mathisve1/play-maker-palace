@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +12,8 @@ import { generateSafetyReportPdf, type SafetyIncidentForPdf, type SafetyZoneForP
 const SafetyEventHub = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [loading, setLoading] = useState(true);
   const [generatingReport, setGeneratingReport] = useState(false);
   const [event, setEvent] = useState<{ title: string; event_date: string | null; location: string | null; status: string; is_live: boolean; club_id: string } | null>(null);
@@ -53,15 +56,13 @@ const SafetyEventHub = () => {
       const checklistProgress = cpRes.data || [];
       const cTasks = cTasksRes.data || [];
 
-      // Volunteer names for closing tasks
       const volIds = [...new Set(cTasks.map((t: any) => t.assigned_volunteer_id).filter(Boolean))] as string[];
       let volMap: Record<string, string> = {};
       if (volIds.length > 0) {
         const { data: vols } = await supabase.from('profiles').select('id, full_name').in('id', volIds);
-        (vols || []).forEach(v => { volMap[v.id] = v.full_name || 'Onbekend'; });
+        (vols || []).forEach(v => { volMap[v.id] = v.full_name || t3('Onbekend', 'Inconnu', 'Unknown'); });
       }
 
-      // Zone progress
       const zoneProgress: Record<string, { total: number; done: number }> = {};
       zones.forEach((z: any) => {
         const items = checklistItems.filter((ci: any) => ci.zone_id === z.id);
@@ -79,9 +80,10 @@ const SafetyEventHub = () => {
         return { name: z.name, color: z.color, checklist_total: prog?.total || 0, checklist_done: prog?.done || 0 };
       });
 
+      const unknownLabel = t3('Onbekend', 'Inconnu', 'Unknown');
       const pdfIncidents: SafetyIncidentForPdf[] = incidents.map((inc: any) => ({
         id: inc.id,
-        incident_type_label: incidentTypes.find((t: any) => t.id === inc.incident_type_id)?.label || 'Onbekend',
+        incident_type_label: incidentTypes.find((t: any) => t.id === inc.incident_type_id)?.label || unknownLabel,
         incident_type_color: incidentTypes.find((t: any) => t.id === inc.incident_type_id)?.color || '#888',
         zone_name: zones.find((z: any) => z.id === inc.zone_id)?.name || '—',
         description: inc.description,
@@ -106,8 +108,8 @@ const SafetyEventHub = () => {
       const doc = generateSafetyReportPdf({
         eventTitle: event.title,
         eventDate: event.event_date,
-        clubName: clubRes.data?.name || 'Onbekend',
-        generatedBy: profileRes.data?.full_name || 'Onbekend',
+        clubName: clubRes.data?.name || unknownLabel,
+        generatedBy: profileRes.data?.full_name || unknownLabel,
         zones: pdfZones,
         incidents: pdfIncidents,
         closingTasks: pdfClosingTasks,
@@ -115,10 +117,10 @@ const SafetyEventHub = () => {
         totalChecklistDone,
       });
 
-      doc.save(`veiligheidsrapport-${event.title.replace(/\s+/g, '-').toLowerCase()}.pdf`);
-      toast.success('Veiligheidsrapport gedownload!');
+      doc.save(`${t3('veiligheidsrapport', 'rapport-securite', 'safety-report')}-${event.title.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+      toast.success(t3('Veiligheidsrapport gedownload!', 'Rapport de sécurité téléchargé!', 'Safety report downloaded!'));
     } catch (err: any) {
-      toast.error(err.message || 'Fout bij rapport generatie');
+      toast.error(err.message || t3('Fout bij rapport generatie', 'Erreur lors de la génération', 'Error generating report'));
     } finally {
       setGeneratingReport(false);
     }
@@ -137,7 +139,7 @@ const SafetyEventHub = () => {
   if (!event) {
     return (
       <ClubPageLayout>
-        <div className="text-center py-24 text-muted-foreground">Evenement niet gevonden.</div>
+        <div className="text-center py-24 text-muted-foreground">{t3('Evenement niet gevonden.', 'Événement introuvable.', 'Event not found.')}</div>
       </ClubPageLayout>
     );
   }
@@ -147,10 +149,9 @@ const SafetyEventHub = () => {
   return (
     <ClubPageLayout>
       <div className="space-y-6 max-w-2xl mx-auto">
-        {/* Header */}
         <div className="space-y-1">
           <Button variant="ghost" size="sm" className="gap-1.5 -ml-2 mb-2 text-muted-foreground" onClick={() => navigate('/safety')}>
-            <ArrowLeft className="w-4 h-4" /> Terug naar overzicht
+            <ArrowLeft className="w-4 h-4" /> {t3('Terug naar overzicht', 'Retour à l\'aperçu', 'Back to overview')}
           </Button>
           <div className="flex items-center gap-3">
             <Shield className="w-7 h-7 text-primary" />
@@ -160,7 +161,7 @@ const SafetyEventHub = () => {
                 {event.event_date && (
                   <span className="flex items-center gap-1">
                     <CalendarDays className="w-3.5 h-3.5" />
-                    {new Date(event.event_date).toLocaleDateString('nl-BE')}
+                    {new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB')}
                   </span>
                 )}
                 {event.location && (
@@ -174,9 +175,7 @@ const SafetyEventHub = () => {
           </div>
         </div>
 
-        {/* Option cards */}
         <div className="grid gap-4 sm:grid-cols-2">
-          {/* Control Room */}
           <Card
             className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all group"
             onClick={() => navigate(`/safety/${eventId}/control-room`)}
@@ -188,13 +187,16 @@ const SafetyEventHub = () => {
               <div>
                 <h2 className="text-lg font-bold text-foreground">Control Room</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Live incidentenbeheer, zones monitoren, checklist en meldingen opvolgen in real-time.
+                  {t3(
+                    'Live incidentenbeheer, zones monitoren, checklist en meldingen opvolgen in real-time.',
+                    'Gestion des incidents en direct, surveillance des zones et suivi en temps réel.',
+                    'Live incident management, zone monitoring, checklist and real-time reporting.'
+                  )}
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Closing Procedure */}
           <Card
             className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all group"
             onClick={() => navigate(`/safety/${eventId}/closing`)}
@@ -204,16 +206,19 @@ const SafetyEventHub = () => {
                 <ClipboardList className="w-7 h-7 text-orange-500" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-foreground">Sluitingsprocedure</h2>
+                <h2 className="text-lg font-bold text-foreground">{t3('Sluitingsprocedure', 'Procédure de clôture', 'Closing Procedure')}</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Terrein of stadion afsluiten met checklists, foto-verificatie en taakverdeling.
+                  {t3(
+                    'Terrein of stadion afsluiten met checklists, foto-verificatie en taakverdeling.',
+                    'Fermer le site avec des checklists, vérification photo et répartition des tâches.',
+                    'Close the venue with checklists, photo verification and task assignment.'
+                  )}
                 </p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Safety Report - always visible */}
         <Card className="bg-card border-border">
           <CardContent className="flex items-center justify-between py-4">
             <div className="flex items-center gap-3">
@@ -221,11 +226,11 @@ const SafetyEventHub = () => {
                 <FileDown className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="font-heading font-semibold text-foreground text-sm">Veiligheidsrapport</p>
+                <p className="font-heading font-semibold text-foreground text-sm">{t3('Veiligheidsrapport', 'Rapport de sécurité', 'Safety Report')}</p>
                 <p className="text-xs text-muted-foreground">
                   {isClosed
-                    ? 'Download het volledige rapport met incidenten, checklist status en sluitingstaken.'
-                    : 'Genereer een tussentijds rapport van het huidige evenement.'}
+                    ? t3('Download het volledige rapport met incidenten, checklist status en sluitingstaken.', 'Téléchargez le rapport complet avec incidents et tâches de clôture.', 'Download the full report with incidents, checklist status and closing tasks.')
+                    : t3('Genereer een tussentijds rapport van het huidige evenement.', 'Générez un rapport intermédiaire de l\'événement en cours.', 'Generate an interim report of the current event.')}
                 </p>
               </div>
             </div>
@@ -235,7 +240,7 @@ const SafetyEventHub = () => {
               className="gap-2"
             >
               {generatingReport ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-              Download PDF
+              {t3('Download PDF', 'Télécharger PDF', 'Download PDF')}
             </Button>
           </CardContent>
         </Card>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -28,6 +29,9 @@ interface Props {
 }
 
 const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+
   const [tasks, setTasks] = useState<ClosingTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -84,11 +88,11 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
 
     // Validate
     if (task.requires_photo && !taskPhoto && !task.photo_url) {
-      toast.error('Een foto is verplicht voor deze taak');
+      toast.error(t3('Een foto is verplicht voor deze taak', 'Une photo est obligatoire pour cette tâche', 'A photo is required for this task'));
       return;
     }
     if (task.requires_note && !taskNote.trim() && !task.note) {
-      toast.error('Een notitie is verplicht voor deze taak');
+      toast.error(t3('Een notitie is verplicht voor deze taak', 'Une note est obligatoire pour cette tâche', 'A note is required for this task'));
       return;
     }
 
@@ -100,7 +104,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
       const path = `closing/${userId}/${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from('incident-photos').upload(path, taskPhoto);
       if (uploadErr) {
-        toast.error('Foto upload mislukt');
+        toast.error(t3('Foto upload mislukt', 'Échec du téléchargement de la photo', 'Photo upload failed'));
         setSubmitting(false);
         return;
       }
@@ -120,7 +124,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
       toast.error(error.message);
     } else {
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
-      toast.success('Taak afgerond! ✓');
+      toast.success(t3('Taak afgerond! ✓', 'Tâche terminée! ✓', 'Task completed! ✓'));
     }
 
     setActiveTaskId(null);
@@ -148,7 +152,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <ClipboardCheck className="w-5 h-5 text-primary" />
-        <h2 className="text-lg font-heading font-bold text-foreground">Sluitingstaken</h2>
+        <h2 className="text-lg font-heading font-bold text-foreground">{t3('Sluitingstaken', 'Tâches de clôture', 'Closing Tasks')}</h2>
         <Badge variant={allDone ? 'default' : 'secondary'} className="ml-auto text-xs">
           {completedCount}/{tasks.length}
         </Badge>
@@ -190,19 +194,19 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {task.requires_photo && (
                       <Badge variant="outline" className="text-[10px] gap-1">
-                        <Camera className="w-3 h-3" /> Foto {isDone && task.photo_url ? '✓' : 'verplicht'}
+                        <Camera className="w-3 h-3" /> {t3('Foto', 'Photo', 'Photo')} {isDone && task.photo_url ? '✓' : t3('verplicht', 'obligatoire', 'required')}
                       </Badge>
                     )}
                     {task.requires_note && (
                       <Badge variant="outline" className="text-[10px] gap-1">
-                        <FileText className="w-3 h-3" /> Notitie {isDone && task.note ? '✓' : 'verplicht'}
+                        <FileText className="w-3 h-3" /> {t3('Notitie', 'Note', 'Note')} {isDone && task.note ? '✓' : t3('verplicht', 'obligatoire', 'required')}
                       </Badge>
                     )}
                   </div>
 
                   {/* Completed details */}
                   {isDone && task.photo_url && (
-                    <img src={task.photo_url} alt="Foto" className="w-full h-28 object-cover rounded-lg mt-2 border border-border" />
+                    <img src={task.photo_url} alt={t3('Foto', 'Photo', 'Photo')} className="w-full h-28 object-cover rounded-lg mt-2 border border-border" />
                   )}
                   {isDone && task.note && (
                     <p className="text-xs text-muted-foreground italic mt-1">"{task.note}"</p>
@@ -216,7 +220,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
                       className="mt-2 gap-1.5 text-xs"
                       onClick={() => setActiveTaskId(task.id)}
                     >
-                      <Upload className="w-3 h-3" /> Uitvoeren
+                      <Upload className="w-3 h-3" /> {t3('Uitvoeren', 'Exécuter', 'Execute')}
                     </Button>
                   )}
 
@@ -237,7 +241,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
                           ) : (
                             <label className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors">
                               <Camera className="w-5 h-5 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">Maak een foto</span>
+                              <span className="text-xs text-muted-foreground">{t3('Maak een foto', 'Prendre une photo', 'Take a photo')}</span>
                               <input type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
                             </label>
                           )}
@@ -247,7 +251,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
                         <Textarea
                           value={taskNote}
                           onChange={e => setTaskNote(e.target.value)}
-                          placeholder="Beschrijf de situatie..."
+                          placeholder={t3('Beschrijf de situatie...', 'Décrivez la situation...', 'Describe the situation...')}
                           className="text-sm min-h-[60px]"
                         />
                       )}
@@ -258,7 +262,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
                           className="flex-1"
                           onClick={() => { setActiveTaskId(null); setTaskNote(''); setTaskPhoto(null); setPhotoPreview(null); }}
                         >
-                          Annuleer
+                          {t3('Annuleer', 'Annuler', 'Cancel')}
                         </Button>
                         <Button
                           size="sm"
@@ -267,7 +271,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
                           onClick={() => handleCompleteTask(task.id)}
                         >
                           {submitting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-                          Afronden
+                          {t3('Afronden', 'Terminer', 'Complete')}
                         </Button>
                       </div>
                     </motion.div>
@@ -286,8 +290,8 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
           className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center"
         >
           <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-          <p className="text-sm font-semibold text-foreground">Alle sluitingstaken afgerond!</p>
-          <p className="text-xs text-muted-foreground mt-1">Bedankt voor je hulp bij het afsluiten van {eventTitle}.</p>
+          <p className="text-sm font-semibold text-foreground">{t3('Alle sluitingstaken afgerond!', 'Toutes les tâches de clôture terminées!', 'All closing tasks completed!')}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t3(`Bedankt voor je hulp bij het afsluiten van ${eventTitle}.`, `Merci pour votre aide à la clôture de ${eventTitle}.`, `Thank you for your help closing ${eventTitle}.`)}</p>
         </motion.div>
       )}
     </div>

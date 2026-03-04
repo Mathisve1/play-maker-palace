@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +26,9 @@ interface Props {
 export default function ReportingPartnersTab({
   partners, partnerMembers, partnerTaskAssignments, signups, tasks, filteredTaskIds,
 }: Props) {
-  // Partner report
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+
   const partnerReport = useMemo(() => {
     return partners.map((p: any) => {
       const members = partnerMembers.filter((m: any) => m.partner_id === p.id);
@@ -33,16 +36,12 @@ export default function ReportingPartnersTab({
         members.some((m: any) => m.id === a.partner_member_id) && filteredTaskIds.has(a.task_id)
       );
       const withAccount = members.filter((m: any) => m.user_id).length;
-      // Partner tasks (assigned to this partner)
       const partnerTasks = tasks.filter((t: any) => t.assigned_partner_id === p.id && filteredTaskIds.has(t.id));
       const totalSpots = partnerTasks.reduce((s: number, t: any) => s + (t.spots_available || 0), 0);
 
       return {
-        id: p.id,
-        name: p.name,
-        category: p.category,
-        totalMembers: members.length,
-        withAccount,
+        id: p.id, name: p.name, category: p.category,
+        totalMembers: members.length, withAccount,
         accountRate: members.length > 0 ? Math.round((withAccount / members.length) * 100) : 0,
         totalAssignments: assignments.length,
         totalTasks: partnerTasks.length,
@@ -51,27 +50,28 @@ export default function ReportingPartnersTab({
     }).sort((a, b) => b.totalAssignments - a.totalAssignments);
   }, [partners, partnerMembers, partnerTaskAssignments, tasks, filteredTaskIds]);
 
-  // Own vs partner volunteers
   const ownVsPartner = useMemo(() => {
     const ownAssigned = signups.filter((s: any) => filteredTaskIds.has(s.task_id) && s.status === 'assigned').length;
     const partnerAssigned = partnerTaskAssignments.filter((a: any) => filteredTaskIds.has(a.task_id)).length;
     return [
-      { name: 'Eigen vrijwilligers', value: ownAssigned },
-      { name: 'Partner medewerkers', value: partnerAssigned },
+      { name: t3('Eigen vrijwilligers', 'Bénévoles propres', 'Own volunteers'), value: ownAssigned },
+      { name: t3('Partner medewerkers', 'Employés partenaires', 'Partner staff'), value: partnerAssigned },
     ].filter(d => d.value > 0);
-  }, [signups, partnerTaskAssignments, filteredTaskIds]);
+  }, [signups, partnerTaskAssignments, filteredTaskIds, language]);
 
-  // Per partner bar chart
   const perPartnerChart = useMemo(() => {
     return partnerReport.slice(0, 10).map(p => ({
       name: p.name.length > 15 ? p.name.slice(0, 13) + '…' : p.name,
-      Medewerkers: p.totalMembers,
-      Ingezet: p.totalAssignments,
+      [t3('Medewerkers', 'Employés', 'Staff')]: p.totalMembers,
+      [t3('Ingezet', 'Déployés', 'Deployed')]: p.totalAssignments,
     }));
-  }, [partnerReport]);
+  }, [partnerReport, language]);
 
   const totalPartnerMembers = partnerMembers.length;
   const totalWithAccount = partnerMembers.filter((m: any) => m.user_id).length;
+
+  const staffKey = t3('Medewerkers', 'Employés', 'Staff');
+  const deployedKey = t3('Ingezet', 'Déployés', 'Deployed');
 
   return (
     <div className="space-y-6">
@@ -82,22 +82,22 @@ export default function ReportingPartnersTab({
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3 text-center">
           <p className="text-2xl font-bold text-foreground">{totalPartnerMembers}</p>
-          <p className="text-xs text-muted-foreground">Totaal medewerkers</p>
+          <p className="text-xs text-muted-foreground">{t3('Totaal medewerkers', 'Total employés', 'Total staff')}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3 text-center">
           <p className="text-2xl font-bold text-foreground">{totalWithAccount}</p>
-          <p className="text-xs text-muted-foreground">Met account</p>
+          <p className="text-xs text-muted-foreground">{t3('Met account', 'Avec compte', 'With account')}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3 text-center">
           <p className="text-2xl font-bold text-foreground">
             {totalPartnerMembers > 0 ? Math.round((totalWithAccount / totalPartnerMembers) * 100) : 0}%
           </p>
-          <p className="text-xs text-muted-foreground">Registratie rate</p>
+          <p className="text-xs text-muted-foreground">{t3('Registratie rate', 'Taux d\'inscription', 'Registration rate')}</p>
         </CardContent></Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card><CardHeader><CardTitle className="text-base">Eigen vs partner inzet</CardTitle></CardHeader>
+        <Card><CardHeader><CardTitle className="text-base">{t3('Eigen vs partner inzet', 'Propres vs partenaires', 'Own vs partner deployment')}</CardTitle></CardHeader>
           <CardContent>
             {ownVsPartner.length > 0 ? (
               <ResponsiveContainer width="100%" height={280}>
@@ -108,10 +108,10 @@ export default function ReportingPartnersTab({
                   </Pie><Tooltip /><Legend />
                 </PieChart>
               </ResponsiveContainer>
-            ) : <p className="text-sm text-muted-foreground text-center py-8">Geen data</p>}
+            ) : <p className="text-sm text-muted-foreground text-center py-8">{t3('Geen data', 'Pas de données', 'No data')}</p>}
           </CardContent></Card>
 
-        <Card><CardHeader><CardTitle className="text-base">Medewerkers per partner</CardTitle></CardHeader>
+        <Card><CardHeader><CardTitle className="text-base">{t3('Medewerkers per partner', 'Employés par partenaire', 'Staff per partner')}</CardTitle></CardHeader>
           <CardContent>
             {perPartnerChart.length > 0 ? (
               <ResponsiveContainer width="100%" height={280}>
@@ -119,30 +119,29 @@ export default function ReportingPartnersTab({
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                   <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip /><Legend />
-                  <Bar dataKey="Medewerkers" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Ingezet" fill={COLORS[1]} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey={staffKey} fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey={deployedKey} fill={COLORS[1]} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            ) : <p className="text-sm text-muted-foreground text-center py-8">Geen data</p>}
+            ) : <p className="text-sm text-muted-foreground text-center py-8">{t3('Geen data', 'Pas de données', 'No data')}</p>}
           </CardContent></Card>
       </div>
 
-      {/* Partner detail table */}
-      <Card><CardHeader><CardTitle className="text-base">Partner overzicht</CardTitle></CardHeader>
+      <Card><CardHeader><CardTitle className="text-base">{t3('Partner overzicht', 'Aperçu partenaires', 'Partner overview')}</CardTitle></CardHeader>
         <CardContent className="p-0"><div className="overflow-x-auto"><Table>
           <TableHeader><TableRow>
             <TableHead>Partner</TableHead>
-            <TableHead>Categorie</TableHead>
-            <TableHead className="text-center">Medewerkers</TableHead>
-            <TableHead className="text-center">Met account</TableHead>
-            <TableHead className="text-center">Registratie %</TableHead>
-            <TableHead className="text-center">Ingezet</TableHead>
-            <TableHead className="text-center">Taken</TableHead>
-            <TableHead className="text-center">Bezetting</TableHead>
+            <TableHead>{t3('Categorie', 'Catégorie', 'Category')}</TableHead>
+            <TableHead className="text-center">{t3('Medewerkers', 'Employés', 'Staff')}</TableHead>
+            <TableHead className="text-center">{t3('Met account', 'Avec compte', 'With account')}</TableHead>
+            <TableHead className="text-center">{t3('Registratie %', 'Inscription %', 'Registration %')}</TableHead>
+            <TableHead className="text-center">{t3('Ingezet', 'Déployés', 'Deployed')}</TableHead>
+            <TableHead className="text-center">{t3('Taken', 'Tâches', 'Tasks')}</TableHead>
+            <TableHead className="text-center">{t3('Bezetting', 'Occupation', 'Occupancy')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {partnerReport.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Geen partners gevonden</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t3('Geen partners gevonden', 'Aucun partenaire trouvé', 'No partners found')}</TableCell></TableRow>
             ) : partnerReport.map(p => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.name}</TableCell>

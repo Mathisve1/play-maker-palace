@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -54,6 +55,9 @@ interface Props {
 }
 
 const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+
   const [templates, setTemplates] = useState<ClosingTemplate[]>([]);
   const [templateItems, setTemplateItems] = useState<ClosingTemplateItem[]>([]);
   const [closingTasks, setClosingTasks] = useState<ClosingTask[]>([]);
@@ -70,7 +74,6 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
       const [tRes, ctRes, vRes] = await Promise.all([
         (supabase as any).from('closing_templates').select('*').eq('club_id', clubId).order('created_at'),
         (supabase as any).from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order'),
-        // Get volunteers signed up for this event's tasks
         supabase.from('task_signups').select('volunteer_id').in('task_id',
           (await supabase.from('tasks').select('id').eq('event_id', eventId)).data?.map(t => t.id) || []
         ),
@@ -79,14 +82,12 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
       setTemplates(tRes.data || []);
       setClosingTasks(ctRes.data || []);
 
-      // Fetch volunteer profiles
       const volIds = [...new Set((vRes.data || []).map((s: any) => s.volunteer_id))];
       if (volIds.length > 0) {
         const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', volIds);
-        setVolunteers((profiles || []).map(p => ({ id: p.id, full_name: p.full_name || 'Onbekend' })));
+        setVolunteers((profiles || []).map(p => ({ id: p.id, full_name: p.full_name || t3('Onbekend', 'Inconnu', 'Unknown') })));
       }
 
-      // Load template items for all templates
       if (tRes.data?.length) {
         const tIds = tRes.data.map((t: any) => t.id);
         const { data: items } = await (supabase as any).from('closing_template_items').select('*').in('template_id', tIds).order('sort_order');
@@ -98,7 +99,6 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
     load();
   }, [clubId, eventId]);
 
-  // Realtime for closing tasks
   useEffect(() => {
     const ch = supabase
       .channel(`closing-tasks-${eventId}`)
@@ -117,11 +117,11 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   }, [eventId]);
 
   const handleCreateTemplate = () => {
-    setEditTemplateName('Nieuwe Afsluitingstemplate');
+    setEditTemplateName(t3('Nieuwe Afsluitingstemplate', 'Nouveau modèle de clôture', 'New Closing Template'));
     setEditItems([
-      { description: 'Controleer of alle uitgangen vrij zijn', requires_photo: false, requires_note: false },
-      { description: 'Foto van de staat van het terrein', requires_photo: true, requires_note: false },
-      { description: 'Meld eventuele schade', requires_photo: true, requires_note: true },
+      { description: t3('Controleer of alle uitgangen vrij zijn', 'Vérifiez que toutes les sorties sont libres', 'Check all exits are clear'), requires_photo: false, requires_note: false },
+      { description: t3('Foto van de staat van het terrein', 'Photo de l\'état du terrain', 'Photo of the grounds condition'), requires_photo: true, requires_note: false },
+      { description: t3('Meld eventuele schade', 'Signalez les dégâts éventuels', 'Report any damage'), requires_photo: true, requires_note: true },
     ]);
     setShowTemplateEditor(true);
   };
@@ -132,7 +132,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
     const { data: tmpl, error } = await (supabase as any).from('closing_templates').insert({
       club_id: clubId, name: editTemplateName.trim(),
     }).select('*').single();
-    if (error || !tmpl) { toast.error(error?.message || 'Fout'); return; }
+    if (error || !tmpl) { toast.error(error?.message || 'Error'); return; }
 
     const itemInserts = editItems.map((item, i) => ({
       template_id: tmpl.id, description: item.description, requires_photo: item.requires_photo, requires_note: item.requires_note, sort_order: i,
@@ -142,14 +142,13 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
     setTemplates(prev => [...prev, tmpl]);
     setTemplateItems(prev => [...prev, ...(items || [])]);
     setShowTemplateEditor(false);
-    toast.success('Template opgeslagen!');
+    toast.success(t3('Template opgeslagen!', 'Modèle enregistré!', 'Template saved!'));
   };
 
   const handleApplyTemplate = async (templateId: string) => {
     const items = templateItems.filter(i => i.template_id === templateId);
-    if (items.length === 0) { toast.error('Geen items in deze template'); return; }
+    if (items.length === 0) { toast.error(t3('Geen items in deze template', 'Pas d\'éléments dans ce modèle', 'No items in this template')); return; }
 
-    // Remove existing closing tasks for this event
     await (supabase as any).from('closing_tasks').delete().eq('event_id', eventId);
 
     const inserts = items.map((item, i) => ({
@@ -159,7 +158,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
     const { data, error } = await (supabase as any).from('closing_tasks').insert(inserts).select('*');
     if (error) { toast.error(error.message); return; }
     setClosingTasks(data || []);
-    toast.success(`${items.length} sluitingstaken aangemaakt`);
+    toast.success(t3(`${items.length} sluitingstaken aangemaakt`, `${items.length} tâches de clôture créées`, `${items.length} closing tasks created`));
   };
 
   const handleAssignVolunteer = async (taskId: string, volunteerId: string | null) => {
@@ -189,7 +188,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
           className="flex items-center justify-between w-full text-left"
         >
           <CardTitle className="text-lg font-heading flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-primary" /> Sluitingsprocedure
+            <ClipboardList className="w-5 h-5 text-primary" /> {t3('Sluitingsprocedure', 'Procédure de clôture', 'Closing Procedure')}
           </CardTitle>
           <div className="flex items-center gap-2">
             {closingTasks.length > 0 && (
@@ -204,41 +203,39 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
 
       {expanded && (
         <CardContent className="space-y-4">
-          {/* Template selection or creation */}
           {closingTasks.length === 0 && !showTemplateEditor && (
             <div className="space-y-3">
               {templates.length > 0 && (
                 <div className="flex gap-2">
                   <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Kies een template..." />
+                      <SelectValue placeholder={t3('Kies een template...', 'Choisissez un modèle...', 'Choose a template...')} />
                     </SelectTrigger>
                     <SelectContent>
                       {templates.map(t => (
                         <SelectItem key={t.id} value={t.id}>
-                          {t.name} ({templateItems.filter(i => i.template_id === t.id).length} taken)
+                          {t.name} ({templateItems.filter(i => i.template_id === t.id).length} {t3('taken', 'tâches', 'tasks')})
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <Button onClick={() => handleApplyTemplate(selectedTemplateId)} disabled={!selectedTemplateId} className="gap-1.5">
-                    <Copy className="w-4 h-4" /> Toepassen
+                    <Copy className="w-4 h-4" /> {t3('Toepassen', 'Appliquer', 'Apply')}
                   </Button>
                 </div>
               )}
               <Button variant="outline" onClick={handleCreateTemplate} className="w-full gap-1.5">
-                <Plus className="w-4 h-4" /> Nieuwe template aanmaken
+                <Plus className="w-4 h-4" /> {t3('Nieuwe template aanmaken', 'Créer un nouveau modèle', 'Create new template')}
               </Button>
             </div>
           )}
 
-          {/* Template editor */}
           {showTemplateEditor && (
             <div className="border border-border rounded-xl p-4 space-y-3 bg-muted/30">
               <Input
                 value={editTemplateName}
                 onChange={e => setEditTemplateName(e.target.value)}
-                placeholder="Template naam"
+                placeholder={t3('Template naam', 'Nom du modèle', 'Template name')}
                 className="font-semibold"
               />
               <div className="space-y-2">
@@ -249,7 +246,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
                       <Input
                         value={item.description}
                         onChange={e => setEditItems(prev => prev.map((it, j) => j === i ? { ...it, description: e.target.value } : it))}
-                        placeholder="Taakomschrijving"
+                        placeholder={t3('Taakomschrijving', 'Description de la tâche', 'Task description')}
                         className="text-sm"
                       />
                       <div className="flex items-center gap-4">
@@ -258,14 +255,14 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
                             checked={item.requires_photo}
                             onCheckedChange={v => setEditItems(prev => prev.map((it, j) => j === i ? { ...it, requires_photo: !!v } : it))}
                           />
-                          <Camera className="w-3 h-3" /> Foto verplicht
+                          <Camera className="w-3 h-3" /> {t3('Foto verplicht', 'Photo obligatoire', 'Photo required')}
                         </label>
                         <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                           <Checkbox
                             checked={item.requires_note}
                             onCheckedChange={v => setEditItems(prev => prev.map((it, j) => j === i ? { ...it, requires_note: !!v } : it))}
                           />
-                          <FileText className="w-3 h-3" /> Notitie verplicht
+                          <FileText className="w-3 h-3" /> {t3('Notitie verplicht', 'Note obligatoire', 'Note required')}
                         </label>
                       </div>
                     </div>
@@ -276,18 +273,17 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
                 ))}
               </div>
               <Button variant="ghost" size="sm" onClick={() => setEditItems(prev => [...prev, { description: '', requires_photo: false, requires_note: false }])} className="gap-1 text-xs">
-                <Plus className="w-3 h-3" /> Item toevoegen
+                <Plus className="w-3 h-3" /> {t3('Item toevoegen', 'Ajouter un élément', 'Add item')}
               </Button>
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" onClick={() => setShowTemplateEditor(false)} className="flex-1">Annuleren</Button>
+                <Button variant="outline" onClick={() => setShowTemplateEditor(false)} className="flex-1">{t3('Annuleren', 'Annuler', 'Cancel')}</Button>
                 <Button onClick={handleSaveTemplate} className="flex-1 gap-1.5">
-                  <Save className="w-4 h-4" /> Opslaan & Toepassen
+                  <Save className="w-4 h-4" /> {t3('Opslaan & Toepassen', 'Enregistrer & Appliquer', 'Save & Apply')}
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Active closing tasks */}
           {closingTasks.length > 0 && (
             <div className="space-y-2">
               {closingTasks.map(task => {
@@ -315,22 +311,21 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
                       <div className="flex items-center gap-2 flex-wrap">
                         {task.requires_photo && (
                           <Badge variant="outline" className="text-[10px] gap-1">
-                            <Camera className="w-3 h-3" /> Foto
+                            <Camera className="w-3 h-3" /> {t3('Foto', 'Photo', 'Photo')}
                           </Badge>
                         )}
                         {task.requires_note && (
                           <Badge variant="outline" className="text-[10px] gap-1">
-                            <FileText className="w-3 h-3" /> Notitie
+                            <FileText className="w-3 h-3" /> {t3('Notitie', 'Note', 'Note')}
                           </Badge>
                         )}
                         {task.status === 'completed' && task.photo_url && (
-                          <a href={task.photo_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary underline">Foto bekijken</a>
+                          <a href={task.photo_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary underline">{t3('Foto bekijken', 'Voir la photo', 'View photo')}</a>
                         )}
                         {task.status === 'completed' && task.note && (
                           <span className="text-[10px] text-muted-foreground italic">"{task.note}"</span>
                         )}
                       </div>
-                      {/* Assignment */}
                       <div className="flex items-center gap-2">
                         <Users className="w-3 h-3 text-muted-foreground" />
                         <Select
@@ -338,10 +333,10 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
                           onValueChange={v => handleAssignVolunteer(task.id, v === '__none' ? null : v)}
                         >
                           <SelectTrigger className="h-7 text-xs w-48">
-                            <SelectValue placeholder="Niet toegewezen" />
+                            <SelectValue placeholder={t3('Niet toegewezen', 'Non assigné', 'Unassigned')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__none">Niet toegewezen</SelectItem>
+                            <SelectItem value="__none">{t3('Niet toegewezen', 'Non assigné', 'Unassigned')}</SelectItem>
                             {volunteers.map(v => (
                               <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
                             ))}

@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
@@ -18,36 +19,11 @@ interface EventRow {
   status: string;
 }
 
-const EventCard = ({ event, onClick }: { event: EventRow; onClick: () => void }) => (
-  <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={onClick}>
-    <CardContent className="p-4 flex items-center justify-between gap-3">
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="font-semibold text-foreground truncate">{event.title}</p>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          {event.event_date && (
-            <span className="flex items-center gap-1">
-              <CalendarDays className="w-3.5 h-3.5" />
-              {new Date(event.event_date).toLocaleDateString('nl-BE')}
-            </span>
-          )}
-          {event.location && (
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5" />
-              {event.location}
-            </span>
-          )}
-        </div>
-      </div>
-      <Badge variant={event.status === 'open' ? 'default' : 'secondary'} className="shrink-0 text-[10px]">
-        {event.status}
-      </Badge>
-      <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
-    </CardContent>
-  </Card>
-);
-
 const SafetyOverview = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [demoLoading, setDemoLoading] = useState(false);
@@ -90,7 +66,7 @@ const SafetyOverview = () => {
     setDemoLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Niet ingelogd');
+      if (!session) throw new Error(t3('Niet ingelogd', 'Non connecté', 'Not logged in'));
 
       const res = await supabase.functions.invoke('safety-demo', {
         body: { club_id: clubId },
@@ -98,10 +74,10 @@ const SafetyOverview = () => {
 
       if (res.error) throw res.error;
       const { event_id } = res.data;
-      toast.success('Demo scenario gestart! Incidenten verschijnen de komende 5 minuten.');
+      toast.success(t3('Demo scenario gestart! Incidenten verschijnen de komende 5 minuten.', 'Scénario démo lancé! Les incidents apparaîtront dans les 5 prochaines minutes.', 'Demo scenario started! Incidents will appear in the next 5 minutes.'));
       navigate(`/safety/${event_id}`);
     } catch (err: any) {
-      toast.error(err.message || 'Kon demo niet starten');
+      toast.error(err.message || t3('Kon demo niet starten', 'Impossible de lancer la démo', 'Could not start demo'));
     } finally {
       setDemoLoading(false);
     }
@@ -109,7 +85,6 @@ const SafetyOverview = () => {
 
   const handleDeleteDemo = async () => {
     if (!clubId) return;
-    // Find demo events
     const { data: demoEvents } = await supabase
       .from('events')
       .select('id')
@@ -117,12 +92,11 @@ const SafetyOverview = () => {
       .eq('title', 'Demo Veiligheidsdag 2026');
 
     if (!demoEvents?.length) {
-      toast.info('Geen demo evenementen gevonden.');
+      toast.info(t3('Geen demo evenementen gevonden.', 'Aucun événement démo trouvé.', 'No demo events found.'));
       return;
     }
 
     for (const ev of demoEvents) {
-      // Delete related data in order
       await (supabase as any).from('safety_incidents').delete().eq('event_id', ev.id);
       await (supabase as any).from('safety_checklist_progress').delete().in(
         'checklist_item_id',
@@ -134,8 +108,36 @@ const SafetyOverview = () => {
     }
 
     setEvents(prev => prev.filter(e => e.title !== 'Demo Veiligheidsdag 2026'));
-    toast.success('Demo data verwijderd!');
+    toast.success(t3('Demo data verwijderd!', 'Données démo supprimées!', 'Demo data deleted!'));
   };
+
+  const EventCard = ({ event, onClick }: { event: EventRow; onClick: () => void }) => (
+    <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={onClick}>
+      <CardContent className="p-4 flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="font-semibold text-foreground truncate">{event.title}</p>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {event.event_date && (
+              <span className="flex items-center gap-1">
+                <CalendarDays className="w-3.5 h-3.5" />
+                {new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB')}
+              </span>
+            )}
+            {event.location && (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" />
+                {event.location}
+              </span>
+            )}
+          </div>
+        </div>
+        <Badge variant={event.status === 'open' ? 'default' : 'secondary'} className="shrink-0 text-[10px]">
+          {event.status}
+        </Badge>
+        <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+      </CardContent>
+    </Card>
+  );
 
   const renderGrid = (list: EventRow[], emptyMsg: string) =>
     list.length === 0 ? (
@@ -158,21 +160,21 @@ const SafetyOverview = () => {
             <Shield className="w-7 h-7 text-primary" />
             <div>
               <h1 className="text-2xl font-bold text-foreground">Safety & Security</h1>
-              <p className="text-sm text-muted-foreground">Kies een evenement</p>
+              <p className="text-sm text-muted-foreground">{t3('Kies een evenement', 'Choisissez un événement', 'Choose an event')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} disabled={!clubId} className="gap-1.5">
-              <Settings className="w-4 h-4" /> Configuratie
+              <Settings className="w-4 h-4" /> {t3('Configuratie', 'Configuration', 'Configuration')}
             </Button>
             {hasDemoEvent && (
               <Button variant="outline" size="sm" onClick={handleDeleteDemo} className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
-                <Trash2 className="w-4 h-4" /> Demo wissen
+                <Trash2 className="w-4 h-4" /> {t3('Demo wissen', 'Supprimer démo', 'Delete demo')}
               </Button>
             )}
             <Button onClick={handleStartDemo} disabled={demoLoading || !clubId} size="sm" className="gap-1.5">
               {demoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-              Start Demo
+              {t3('Start Demo', 'Lancer démo', 'Start Demo')}
             </Button>
           </div>
         </div>
@@ -186,18 +188,18 @@ const SafetyOverview = () => {
             <TabsList>
               <TabsTrigger value="upcoming" className="gap-1.5">
                 <CalendarDays className="w-4 h-4" />
-                Aankomend ({upcoming.length})
+                {t3('Aankomend', 'À venir', 'Upcoming')} ({upcoming.length})
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-1.5">
                 <History className="w-4 h-4" />
-                Historie ({past.length})
+                {t3('Historie', 'Historique', 'History')} ({past.length})
               </TabsTrigger>
             </TabsList>
             <TabsContent value="upcoming">
-              {renderGrid(upcoming, 'Geen aankomende evenementen. Maak eerst een evenement aan in de Events Manager.')}
+              {renderGrid(upcoming, t3('Geen aankomende evenementen. Maak eerst een evenement aan in de Events Manager.', 'Aucun événement à venir. Créez d\'abord un événement.', 'No upcoming events. Create an event first in the Events Manager.'))}
             </TabsContent>
             <TabsContent value="history">
-              {renderGrid(past, 'Nog geen afgelopen evenementen.')}
+              {renderGrid(past, t3('Nog geen afgelopen evenementen.', 'Pas encore d\'événements passés.', 'No past events yet.'))}
             </TabsContent>
           </Tabs>
         )}
