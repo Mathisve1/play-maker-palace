@@ -42,7 +42,7 @@ const Navbar = () => {
             to="/community" 
             className={`text-sm font-medium transition-colors ${isCommunityPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            Community
+            {language === 'nl' ? 'Community' : language === 'fr' ? 'Communauté' : 'Community'}
           </Link>
 
           {/* Language switcher */}
