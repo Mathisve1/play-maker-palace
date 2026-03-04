@@ -281,9 +281,9 @@ const MonthlyPlanning = () => {
       });
       if (error) throw error;
       if (data?.success) {
-        toast.success('Ticket per e-mail verstuurd!');
+        toast.success(t3('Ticket per e-mail verstuurd!', 'Ticket envoyé par e-mail !', 'Ticket sent by email!'));
       } else {
-        toast.error(data?.error || 'Versturen mislukt');
+        toast.error(data?.error || t3('Versturen mislukt', 'Échec de l\'envoi', 'Sending failed'));
       }
     } catch (e: any) {
       toast.error(e.message);
