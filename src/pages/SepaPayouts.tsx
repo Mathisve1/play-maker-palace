@@ -203,7 +203,7 @@ const SepaPayouts = () => {
 
       payableList.push({
         volunteerId: profile.id,
-        fullName: profile.full_name || 'Onbekend',
+        fullName: profile.full_name || t3('Onbekend', 'Inconnu', 'Unknown'),
         email: profile.email || '',
         avatarUrl: profile.avatar_url,
         iban,
