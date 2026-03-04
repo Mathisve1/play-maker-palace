@@ -574,7 +574,7 @@ const MonthlyPlanning = () => {
         {!plan && !loading ? (
           <Card className="p-12 text-center">
             <Calendar className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nog geen maandplan voor {MONTH_NAMES_NL[viewMonth - 1]}</h3>
+            <h3 className="text-lg font-semibold mb-2">{t3(`Nog geen maandplan voor ${MONTH_NAMES.nl[viewMonth - 1]}`, `Pas encore de plan mensuel pour ${MONTH_NAMES.fr[viewMonth - 1]}`, `No monthly plan for ${MONTH_NAMES.en[viewMonth - 1]} yet`)}</h3>
             <p className="text-sm text-muted-foreground mb-6">
               Maak een maandplan aan om dagelijkse taken in te plannen en vrijwilligers uit te nodigen.
             </p>
