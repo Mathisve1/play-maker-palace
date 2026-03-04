@@ -12,10 +12,10 @@ import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
 import { useDashboardLayout } from '@/components/dashboard/useDashboardLayout';
 import { WidgetInstance } from '@/components/dashboard/widgetRegistry';
-import { KpiWidget } from '@/components/dashboard/KpiWidget';
-import { ShortcutsWidget } from '@/components/dashboard/ShortcutsWidget';
-import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget';
-import { ActionListWidget } from '@/components/dashboard/ActionListWidget';
+import { WidgetRenderer } from '@/components/dashboard/WidgetRenderer';
+import { EditTaskDialog } from '@/components/dashboard/EditTaskDialog';
+import { DeleteConfirmDialog } from '@/components/dashboard/DeleteConfirmDialog';
+import { EditEventDialog } from '@/components/dashboard/EditEventDialog';
 
 import ClubSettingsDialog from '@/components/ClubSettingsDialog';
 import ClubMembersDialog from '@/components/ClubMembersDialog';
@@ -325,14 +325,7 @@ const ClubOwnerDashboard = () => {
   const [sendingContract, setSendingContract] = useState<string | null>(null);
   const [contractConfirm, setContractConfirm] = useState<{ volunteer: Signup['volunteer']; task: Task } | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editForm, setEditForm] = useState({
-    title: '', description: '', task_date: '', location: '', spots_available: 1,
-    briefing_time: '', briefing_location: '', start_time: '', end_time: '',
-    notes: '', expense_reimbursement: false, expense_amount: '', contract_template_id: '',
-    compensation_type: 'fixed' as string, hourly_rate: '', estimated_hours: '',
-  });
   const [hourConfirmOpen, setHourConfirmOpen] = useState<{ taskId: string; volunteerId: string; volunteerName: string; hourlyRate: number; estimatedHours: number } | null>(null);
-  const [savingTask, setSavingTask] = useState(false);
   const [deletingTask, setDeletingTask] = useState<string | null>(null);
   const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -355,8 +348,6 @@ const ClubOwnerDashboard = () => {
   const [confirmDeleteEvent, setConfirmDeleteEvent] = useState<string | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventData | null>(null);
-  const [editEventForm, setEditEventForm] = useState({ title: '', description: '', event_date: '', location: '' });
-  const [savingEvent, setSavingEvent] = useState(false);
   const [duplicatingEvent, setDuplicatingEvent] = useState<string | null>(null);
 
   // KPI counts for monthly planning
@@ -717,38 +708,6 @@ const ClubOwnerDashboard = () => {
 
   const handleStartEditEvent = (event: EventData) => {
     setEditingEvent(event);
-    setEditEventForm({
-      title: event.title,
-      description: event.description || '',
-      event_date: event.event_date ? new Date(event.event_date).toISOString().slice(0, 16) : '',
-      location: event.location || '',
-    });
-  };
-
-  const handleSaveEditEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingEvent) return;
-    setSavingEvent(true);
-    const { error } = await (supabase as any).from('events').update({
-      title: editEventForm.title.trim(),
-      description: editEventForm.description.trim() || null,
-      event_date: editEventForm.event_date || null,
-      location: editEventForm.location.trim() || null,
-    }).eq('id', editingEvent.id);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success(dt.eventUpdated);
-      setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? {
-        ...ev,
-        title: editEventForm.title.trim(),
-        description: editEventForm.description.trim() || null,
-        event_date: editEventForm.event_date || null,
-        location: editEventForm.location.trim() || null,
-      } : ev));
-      setEditingEvent(null);
-    }
-    setSavingEvent(false);
   };
 
   const handleDuplicateEvent = async (eventId: string) => {
@@ -932,65 +891,6 @@ const ClubOwnerDashboard = () => {
 
   const handleStartEdit = (task: Task) => {
     setEditingTask(task);
-    supabase.from('tasks').select('*').eq('id', task.id).maybeSingle().then(({ data }) => {
-      if (data) {
-        setEditForm({
-          title: data.title,
-          description: data.description || '',
-          task_date: data.task_date ? new Date(data.task_date).toISOString().slice(0, 16) : '',
-          location: data.location || '',
-          spots_available: data.spots_available || 1,
-          briefing_time: data.briefing_time ? new Date(data.briefing_time).toISOString().slice(0, 16) : '',
-          briefing_location: data.briefing_location || '',
-          start_time: data.start_time ? new Date(data.start_time).toISOString().slice(0, 16) : '',
-          end_time: data.end_time ? new Date(data.end_time).toISOString().slice(0, 16) : '',
-          notes: data.notes || '',
-          expense_reimbursement: data.expense_reimbursement || false,
-          expense_amount: data.expense_amount ? String(data.expense_amount) : '',
-          contract_template_id: data.contract_template_id || '',
-          compensation_type: (data as any).compensation_type || 'fixed',
-          hourly_rate: (data as any).hourly_rate ? String((data as any).hourly_rate) : '',
-          estimated_hours: (data as any).estimated_hours ? String((data as any).estimated_hours) : '',
-        });
-      }
-    });
-  };
-
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingTask) return;
-    setSavingTask(true);
-    const updateData: Record<string, unknown> = {
-      title: editForm.title.trim(),
-      description: editForm.description.trim() || null,
-      task_date: editForm.task_date || null,
-      location: editForm.location.trim() || null,
-      spots_available: editForm.spots_available,
-      briefing_time: editForm.briefing_time || null,
-      briefing_location: editForm.briefing_location.trim() || null,
-      start_time: editForm.start_time || null,
-      end_time: editForm.end_time || null,
-      notes: editForm.notes.trim() || null,
-      expense_reimbursement: editForm.compensation_type === 'fixed' ? editForm.expense_reimbursement : false,
-      expense_amount: editForm.compensation_type === 'fixed' && editForm.expense_reimbursement && editForm.expense_amount ? parseFloat(editForm.expense_amount) : null,
-      contract_template_id: editForm.contract_template_id || null,
-      compensation_type: editForm.compensation_type,
-      hourly_rate: editForm.compensation_type === 'hourly' && editForm.hourly_rate ? parseFloat(editForm.hourly_rate) : null,
-      estimated_hours: editForm.compensation_type === 'hourly' && editForm.estimated_hours ? parseFloat(editForm.estimated_hours) : null,
-    };
-    const { error } = await supabase.from('tasks').update(updateData as any).eq('id', editingTask.id);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success(dt.taskUpdated);
-      setTasks(prev => prev.map(t => t.id === editingTask.id ? {
-        ...t, title: editForm.title.trim(), description: editForm.description.trim() || null,
-        task_date: editForm.task_date || null, location: editForm.location.trim() || null,
-        spots_available: editForm.spots_available, contract_template_id: editForm.contract_template_id || null,
-      } : t));
-      setEditingTask(null);
-    }
-    setSavingTask(false);
   };
 
   const handleDeleteTask = async (taskId: string) => {
@@ -1507,125 +1407,21 @@ const ClubOwnerDashboard = () => {
             onLayoutChange={saveLayout}
             onReset={resetLayout}
             language={language}
-            renderWidget={(widget: WidgetInstance) => {
-              const now = new Date();
-              const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-              const upcomingEventCount = events.filter(e => e.event_date && new Date(e.event_date) >= now && new Date(e.event_date) <= in30).length;
-              const allSignups = Object.values(signups).flat();
-              const pendingSignupCount = allSignups.filter(s => s.status === 'pending').length;
-              const activeVolunteerCount = new Set(allSignups.filter(s => s.status === 'assigned').map(s => s.volunteer_id)).size;
-              const unsignedContractCount = Object.values(signatureStatuses).filter(s => s.status === 'pending').length;
-
-              switch (widget.type) {
-                case 'kpi_upcoming_events':
-                  return <KpiWidget type={widget.type} value={upcomingEventCount} language={language} onClick={() => navigate('/events-manager')} />;
-                case 'kpi_pending_signups':
-                  return <KpiWidget type={widget.type} value={pendingSignupCount} language={language} onClick={() => navigate('/planning?tab=overview')} />;
-                case 'kpi_active_volunteers':
-                  return <KpiWidget type={widget.type} value={activeVolunteerCount} language={language} onClick={() => navigate('/reporting')} />;
-                case 'kpi_unsigned_contracts':
-                  return <KpiWidget type={widget.type} value={unsignedContractCount} language={language} onClick={() => navigate('/reporting?tab=compliance')} />;
-                case 'kpi_pending_enrollments':
-                  return <KpiWidget type={widget.type} value={pendingEnrollmentCount} language={language} onClick={() => navigate('/command-center')} />;
-                case 'kpi_day_signups_pending':
-                  return <KpiWidget type={widget.type} value={pendingDaySignupCount} language={language} onClick={() => navigate('/command-center')} />;
-                case 'monthly_planning':
-                  return (
-                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 overflow-auto">
-                      <MonthlyPlanningKPIs clubId={clubId} language={language} navigate={navigate} />
-                    </div>
-                  );
-                case 'shortcuts':
-                  return <ShortcutsWidget language={language} />;
-                case 'recent_activity':
-                  return <RecentActivityWidget clubId={clubId} language={language} />;
-                case 'action_list':
-                  return <ActionListWidget clubId={clubId} language={language} />;
-                case 'upcoming_events': {
-                  const futureEvents = events.filter(e => !e.event_date || new Date(e.event_date) >= now);
-                  return (
-                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 overflow-auto">
-                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-                        <CalendarDays className="w-4 h-4 text-primary" />
-                        {language === 'nl' ? 'Evenementen' : 'Events'}
-                        <button onClick={() => navigate('/events-manager')} className="ml-auto text-xs text-primary hover:underline">
-                          {language === 'nl' ? 'Alles bekijken' : 'View all'} →
-                        </button>
-                      </h3>
-                      {futureEvents.length === 0 ? (
-                        <p className="text-xs text-muted-foreground text-center py-4">
-                          {language === 'nl' ? 'Geen evenementen.' : 'No events.'}
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {futureEvents.slice(0, 5).map(event => (
-                            <button key={event.id} onClick={() => navigate('/events-manager')} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/30 transition-colors text-left">
-                              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                                <Calendar className="w-4 h-4 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground truncate">{event.title}</p>
-                                <p className="text-[11px] text-muted-foreground">
-                                  {event.event_date ? new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
-                                  {event.location ? ` · ${event.location}` : ''}
-                                </p>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                case 'pending_tickets':
-                  return (
-                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/ticketing')}>
-                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                        <Ticket className="w-6 h-6 text-purple-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{pendingTicketCount}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{language === 'nl' ? 'Tickets te genereren' : 'Tickets to generate'}</p>
-                      <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {language === 'nl' ? 'Naar ticketing →' : 'Go to ticketing →'}
-                      </p>
-                    </div>
-                  );
-                case 'compliance_overview':
-                  return (
-                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/compliance')}>
-                      <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                        <Shield className="w-6 h-6 text-green-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{Array.from(complianceMap.values()).filter(c => c.hasCurrentMonthDeclaration).length}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{language === 'nl' ? 'Vrijwilligers met verklaring' : 'Volunteers with declaration'}</p>
-                      <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {language === 'nl' ? 'Compliance bekijken →' : 'View compliance →'}
-                      </p>
-                    </div>
-                  );
-                case 'payments_summary':
-                  return (
-                    <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/sepa-payouts')}>
-                      <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                        <CreditCard className="w-6 h-6 text-emerald-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">
-                        {Object.values(volunteerPayments).filter(p => p.status === 'pending').length}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">{language === 'nl' ? 'Openstaande betalingen' : 'Pending payments'}</p>
-                      <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {language === 'nl' ? 'Betalingen bekijken →' : 'View payments →'}
-                      </p>
-                    </div>
-                  );
-                default:
-                  return (
-                    <div className="w-full h-full bg-card rounded-2xl border border-dashed border-border p-4 flex items-center justify-center">
-                      <p className="text-xs text-muted-foreground">Widget: {widget.type}</p>
-                    </div>
-                  );
-              }
-            }}
+            renderWidget={(widget: WidgetInstance) => (
+              <WidgetRenderer
+                widget={widget}
+                language={language}
+                clubId={clubId}
+                events={events}
+                allSignups={Object.values(signups).flat()}
+                signatureStatuses={signatureStatuses}
+                pendingEnrollmentCount={pendingEnrollmentCount}
+                pendingDaySignupCount={pendingDaySignupCount}
+                pendingTicketCount={pendingTicketCount}
+                complianceMap={complianceMap}
+                volunteerPayments={volunteerPayments}
+              />
+            )}
           />
         )}
       </main>
@@ -1655,142 +1451,49 @@ const ClubOwnerDashboard = () => {
       )}
 
       {/* Edit Task Dialog */}
-      <AnimatePresence>
-        {editingTask && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditingTask(null)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-heading font-semibold text-foreground">{dt.editTask}</h2>
-                <button onClick={() => setEditingTask(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
-              </div>
-              <form onSubmit={handleSaveEdit} className="space-y-4">
-                <div>
-                  <label className={labelClass}>{dt.contractTemplate}</label>
-                  <select value={editForm.contract_template_id} onChange={e => setEditForm(p => ({ ...p, contract_template_id: e.target.value }))} className={inputClass}>
-                    <option value="">{dt.selectTemplate}</option>
-                    {contractTemplates.map(tmpl => <option key={tmpl.id} value={tmpl.id}>{tmpl.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>{dt.taskTitle} *</label>
-                  <input type="text" required maxLength={200} value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>{dt.taskDescription}</label>
-                  <textarea rows={3} maxLength={2000} value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className={labelClass}>{dt.taskDate}</label><input type="datetime-local" value={editForm.task_date} onChange={e => setEditForm(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>{dt.taskLocation}</label><input type="text" maxLength={300} value={editForm.location} onChange={e => setEditForm(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>{dt.taskSpots}</label><input type="number" min={1} max={999} value={editForm.spots_available} onChange={e => setEditForm(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>{dt.taskBriefingLocation}</label><input type="text" maxLength={300} value={editForm.briefing_location} onChange={e => setEditForm(p => ({ ...p, briefing_location: e.target.value }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>{dt.taskBriefingTime}</label><input type="datetime-local" value={editForm.briefing_time} onChange={e => setEditForm(p => ({ ...p, briefing_time: e.target.value }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>{dt.taskStartTime}</label><input type="datetime-local" value={editForm.start_time} onChange={e => setEditForm(p => ({ ...p, start_time: e.target.value }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>{dt.taskEndTime}</label><input type="datetime-local" value={editForm.end_time} onChange={e => setEditForm(p => ({ ...p, end_time: e.target.value }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>{dt.taskNotes}</label><input type="text" maxLength={500} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} className={inputClass} /></div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={editForm.expense_reimbursement} onChange={e => setEditForm(p => ({ ...p, expense_reimbursement: e.target.checked }))} className="w-4 h-4 rounded border-input accent-primary" />
-                    <span className="text-sm text-foreground">{dt.taskExpenseReimbursement}</span>
-                  </label>
-                  {editForm.expense_reimbursement && (
-                    <input type="number" min={0} step={0.01} placeholder={dt.taskExpenseAmount} value={editForm.expense_amount} onChange={e => setEditForm(p => ({ ...p, expense_amount: e.target.value }))} className={inputClass + ' max-w-[150px]'} />
-                  )}
-                </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={() => setEditingTask(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
-                  <button type="submit" disabled={savingTask || !editForm.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                    {savingTask ? dt.saving : dt.save}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <EditTaskDialog
+        task={editingTask}
+        onClose={() => setEditingTask(null)}
+        onSaved={(updated) => {
+          setTasks(prev => prev.map(t => t.id === editingTask?.id ? { ...t, ...updated } : t));
+        }}
+        contractTemplates={contractTemplates}
+        language={language}
+      />
 
       {/* Delete Task Confirmation */}
-      <AnimatePresence>
-        {confirmDeleteTask && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setConfirmDeleteTask(null)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div>
-                <h2 className="text-lg font-heading font-semibold text-foreground">{dt.deleteTask}</h2>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">{dt.deleteConfirm}</p>
-              <div className="flex justify-end gap-3">
-                <button onClick={() => setConfirmDeleteTask(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
-                <button onClick={() => handleDeleteTask(confirmDeleteTask)} disabled={deletingTask === confirmDeleteTask} className="px-5 py-2 text-sm rounded-xl bg-destructive text-destructive-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {deletingTask === confirmDeleteTask ? <Loader2 className="w-4 h-4 animate-spin" /> : dt.delete}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <DeleteConfirmDialog
+        open={!!confirmDeleteTask}
+        onClose={() => setConfirmDeleteTask(null)}
+        onConfirm={() => confirmDeleteTask && handleDeleteTask(confirmDeleteTask)}
+        loading={!!deletingTask}
+        title={dt.deleteTask}
+        message={dt.deleteConfirm}
+        cancelLabel={dt.cancel}
+        deleteLabel={dt.delete}
+      />
 
       {/* Delete Event Confirmation */}
-      <AnimatePresence>
-        {confirmDeleteEvent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setConfirmDeleteEvent(null)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div>
-                <h2 className="text-lg font-heading font-semibold text-foreground">{dt.deleteEvent}</h2>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">{dt.deleteEventConfirm}</p>
-              <div className="flex justify-end gap-3">
-                <button onClick={() => setConfirmDeleteEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
-                <button onClick={() => handleDeleteEvent(confirmDeleteEvent)} disabled={deletingEvent === confirmDeleteEvent} className="px-5 py-2 text-sm rounded-xl bg-destructive text-destructive-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {deletingEvent === confirmDeleteEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : dt.delete}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <DeleteConfirmDialog
+        open={!!confirmDeleteEvent}
+        onClose={() => setConfirmDeleteEvent(null)}
+        onConfirm={() => confirmDeleteEvent && handleDeleteEvent(confirmDeleteEvent)}
+        loading={!!deletingEvent}
+        title={dt.deleteEvent}
+        message={dt.deleteEventConfirm}
+        cancelLabel={dt.cancel}
+        deleteLabel={dt.delete}
+      />
 
       {/* Edit Event Dialog */}
-      <AnimatePresence>
-        {editingEvent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditingEvent(null)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-heading font-semibold text-foreground">{dt.editEvent}</h2>
-                <button onClick={() => setEditingEvent(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
-              </div>
-              <form onSubmit={handleSaveEditEvent} className="space-y-4">
-                <div>
-                  <label className={labelClass}>{dt.eventTitle} *</label>
-                  <input type="text" required maxLength={200} value={editEventForm.title} onChange={e => setEditEventForm(p => ({ ...p, title: e.target.value }))} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>{dt.eventDescription}</label>
-                  <textarea rows={2} maxLength={2000} value={editEventForm.description} onChange={e => setEditEventForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelClass}>{dt.eventDate}</label>
-                    <input type="datetime-local" value={editEventForm.event_date} onChange={e => setEditEventForm(p => ({ ...p, event_date: e.target.value }))} className={inputClass} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>{dt.eventLocation}</label>
-                    <input type="text" maxLength={300} value={editEventForm.location} onChange={e => setEditEventForm(p => ({ ...p, location: e.target.value }))} className={inputClass} />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={() => setEditingEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
-                  <button type="submit" disabled={savingEvent || !editEventForm.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                    {savingEvent ? dt.saving : dt.save}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <EditEventDialog
+        event={editingEvent}
+        onClose={() => setEditingEvent(null)}
+        onSaved={(updated) => {
+          setEvents(prev => prev.map(ev => ev.id === updated.id ? { ...ev, ...updated } : ev));
+        }}
+        language={language}
+      />
 
       <EditProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} userId={currentUserId} language={language} onProfileUpdated={(p) => setProfile({ full_name: p.full_name || '', email: p.email || '' })} />
       {bulkMessageTask && <BulkMessageDialog taskId={bulkMessageTask.taskId} taskTitle={bulkMessageTask.taskTitle} clubOwnerId={currentUserId} volunteers={bulkMessageTask.volunteers} onClose={() => setBulkMessageTask(null)} />}
