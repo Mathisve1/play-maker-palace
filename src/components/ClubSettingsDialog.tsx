@@ -146,7 +146,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
             className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            {saving ? 'Opslaan...' : 'Opslaan'}
+            {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : t3('Opslaan', 'Enregistrer', 'Save')}
           </button>
         </div>
       </div>

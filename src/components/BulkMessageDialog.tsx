@@ -427,12 +427,12 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
             {sending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Versturen...
+                {t3('Versturen...', 'Envoi...', 'Sending...')}
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                Verstuur naar {selectedVolunteers.size} vrijwilliger{selectedVolunteers.size !== 1 ? 's' : ''}
+                {t3(`Verstuur naar ${selectedVolunteers.size} vrijwilliger${selectedVolunteers.size !== 1 ? 's' : ''}`, `Envoyer à ${selectedVolunteers.size} bénévole${selectedVolunteers.size !== 1 ? 's' : ''}`, `Send to ${selectedVolunteers.size} volunteer${selectedVolunteers.size !== 1 ? 's' : ''}`)}
               </>
             )}
           </button>

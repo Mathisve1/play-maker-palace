@@ -411,8 +411,8 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
             {invitations.map(inv => (
               <div key={inv.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/10 border border-dashed border-border">
                 <div className="min-w-0">
-                  <p className="text-sm text-foreground truncate">{inv.email || 'Via link'}</p>
-                  <p className="text-xs text-muted-foreground">{roleLabels[inv.role]} · Verloopt {new Date(inv.expires_at).toLocaleDateString('nl-BE')}</p>
+                  <p className="text-sm text-foreground truncate">{inv.email || t3('Via link', 'Via lien', 'Via link')}</p>
+                  <p className="text-xs text-muted-foreground">{roleLabels[inv.role]} · {t3('Verloopt', 'Expire le', 'Expires')} {new Date(inv.expires_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB')}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => copyInviteLink(inv.invite_token)} className="p-1.5 text-muted-foreground hover:text-foreground">
