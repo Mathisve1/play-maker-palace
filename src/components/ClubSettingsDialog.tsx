@@ -130,7 +130,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
               <input type="text" value={sport} onChange={e => setSport(e.target.value)} maxLength={100} className={inputClass} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Locatie</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t3('Locatie', 'Localisation', 'Location')}</label>
               <input type="text" value={location} onChange={e => setLocation(e.target.value)} maxLength={200} className={inputClass} />
             </div>
           </div>
