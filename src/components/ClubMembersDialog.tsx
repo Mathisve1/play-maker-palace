@@ -238,7 +238,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            Leden beheren
+            {t3('Leden beheren', 'Gérer les membres', 'Manage members')}
           </h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
