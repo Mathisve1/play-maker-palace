@@ -979,7 +979,7 @@ const SafetyDashboard = () => {
                   ) : (
                     <label className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors">
                       <Camera className="w-5 h-5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Foto toevoegen (optioneel)</span>
+                      <span className="text-xs text-muted-foreground">{t3('Foto toevoegen (optioneel)', 'Ajouter une photo (optionnel)', 'Add photo (optional)')}</span>
                       <input type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
                     </label>
                   )}
