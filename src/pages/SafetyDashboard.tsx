@@ -1174,7 +1174,7 @@ const SafetyDashboard = () => {
                 {/* Overall */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Totaal</span>
+                    <span className="text-muted-foreground">{t3('Totaal', 'Total', 'Total')}</span>
                     <span className="font-semibold text-foreground">{totalChecklistDone}/{totalChecklistItems} ({totalChecklistItems > 0 ? Math.round((totalChecklistDone / totalChecklistItems) * 100) : 0}%)</span>
                   </div>
                   <Progress value={totalChecklistItems > 0 ? (totalChecklistDone / totalChecklistItems) * 100 : 0} className="h-3" />
