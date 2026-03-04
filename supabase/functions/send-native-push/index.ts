@@ -154,10 +154,21 @@ serve(async (req) => {
   }
 
   try {
-    const { type, user_id, title, message, url, data, broadcast } = await req.json();
+    const body = await req.json();
+    const { type, user_id, title, message, url, data, broadcast } = body;
 
     const vapidPub = Deno.env.get('VAPID_PUBLIC_KEY')!;
     const vapidPrivJwkStr = Deno.env.get('VAPID_PRIVATE_JWK')!;
+
+    // Debug mode: return the current runtime keys for verification
+    if (body.debug_keys === true) {
+      return new Response(JSON.stringify({
+        vapid_pub_prefix: vapidPub?.substring(0, 20) || 'NOT SET',
+        vapid_priv_is_json: vapidPrivJwkStr ? vapidPrivJwkStr.startsWith('{') : false,
+        vapid_priv_prefix: vapidPrivJwkStr?.substring(0, 30) || 'NOT SET',
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     if (!vapidPub || !vapidPrivJwkStr) {
       return new Response(JSON.stringify({ error: 'VAPID keys not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
