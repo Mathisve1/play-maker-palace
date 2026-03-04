@@ -50,6 +50,8 @@ const PlanningOverview = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { language } = useLanguage();
   const nl = language === 'nl';
+  const fr = language === 'fr';
+  const t3 = (nlS: string, frS: string, enS: string) => nl ? nlS : fr ? frS : enS;
 
   const activeTab = searchParams.get('tab') || 'events';
 
