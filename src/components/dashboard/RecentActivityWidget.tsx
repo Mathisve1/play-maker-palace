@@ -58,7 +58,7 @@ export const RecentActivityWidget = ({ clubId, language }: RecentActivityWidgetP
         activities.push({
           id: `enroll-${e.id}`,
           type: 'signup',
-          text: `${name} ${language === 'nl' ? 'schreef zich in voor' : 'enrolled in'} "${e.monthly_plans?.title || '?'}"`,
+          text: `${name} ${language === 'nl' ? 'schreef zich in voor' : language === 'fr' ? 's\'est inscrit à' : 'enrolled in'} "${e.monthly_plans?.title || '?'}"`,
           time: e.created_at,
           icon: FileSignature,
           color: 'text-blue-600',
