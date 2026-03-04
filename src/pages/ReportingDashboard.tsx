@@ -1051,7 +1051,7 @@ const ReportingDashboard = () => {
               </TableRow></TableHeader>
               <TableBody>
                 {eventReports.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Geen data gevonden</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{L.noDataFound}</TableCell></TableRow>
                 ) : eventReports.map(e => (
                   <TableRow key={e.id}>
                     <TableCell className="font-medium">{e.title}</TableCell>
