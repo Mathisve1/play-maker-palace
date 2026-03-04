@@ -177,6 +177,16 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
 
   const { data: compliance, loading: complianceLoading, refresh: refreshCompliance } = useComplianceData(userId);
 
+  // Check push notification permission state
+  useEffect(() => {
+    if (!open) return;
+    if (typeof Notification === 'undefined') {
+      setPushPermission('unsupported');
+    } else {
+      setPushPermission(Notification.permission as any);
+    }
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const fetchProfile = async () => {
