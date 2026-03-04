@@ -723,7 +723,7 @@ const ExternalPartners = () => {
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base flex items-center gap-2">
                             <ClipboardList className="w-4 h-4" />
-                            {nl ? 'Aanwezigheidsopvolging' : 'Attendance tracking'}
+                            {t3('Aanwezigheidsopvolging', 'Suivi des présences', 'Attendance tracking')}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
