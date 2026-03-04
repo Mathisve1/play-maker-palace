@@ -670,9 +670,9 @@ const BriefingBuilder = () => {
         await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convoId);
       }
       setShowSendDialog(false);
-      toast.success('Briefing link verstuurd naar vrijwilligers!');
+      toast.success(t3('Briefing link verstuurd naar vrijwilligers!', 'Lien du briefing envoyé aux bénévoles !', 'Briefing link sent to volunteers!'));
     } catch (err: any) {
-      toast.error(err.message || 'Error sending briefing');
+      toast.error(err.message || t3('Fout bij versturen', 'Erreur lors de l\'envoi', 'Error sending briefing'));
     } finally {
       setSendingBriefing(false);
     }

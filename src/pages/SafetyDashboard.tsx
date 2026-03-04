@@ -619,11 +619,11 @@ const SafetyDashboard = () => {
       if (res.error) throw res.error;
       const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
       if (data.event_id) {
-        toast.success('Simulatie herstart! Navigeren naar nieuw event...');
+        toast.success(t3('Simulatie herstart! Navigeren naar nieuw event...', 'Simulation redémarrée ! Navigation vers le nouvel événement...', 'Simulation restarted! Navigating to new event...'));
         navigate(`/safety/${data.event_id}`);
       }
     } catch (err: any) {
-      toast.error(err.message || 'Fout bij herstarten');
+      toast.error(err.message || t3('Fout bij herstarten', 'Erreur lors du redémarrage', 'Error restarting'));
     } finally {
       setSimLoading(false);
     }
