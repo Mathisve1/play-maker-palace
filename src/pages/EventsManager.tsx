@@ -402,7 +402,7 @@ const EventsManager = () => {
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setShowTour(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
-              <BookOpen className="w-4 h-4" /> {nl ? 'Hoe werkt het?' : 'How does it work?'}
+              <BookOpen className="w-4 h-4" /> {t3('Hoe werkt het?', 'Comment ça marche?', 'How does it work?')}
             </button>
             {hasDemoEvent ? (
               <button onClick={handleDeletePlanningDemo} disabled={demoDeleteLoading}
