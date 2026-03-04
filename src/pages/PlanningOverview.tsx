@@ -39,13 +39,19 @@ interface MonthlyPlanSummary {
   enrollment_count: number;
 }
 
-const MONTH_NAMES_NL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
+const MONTH_NAMES: Record<string, string[]> = {
+  nl: ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'],
+  fr: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+};
 
 const PlanningOverview = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { language } = useLanguage();
   const nl = language === 'nl';
+  const fr = language === 'fr';
+  const t3 = (nlS: string, frS: string, enS: string) => nl ? nlS : fr ? frS : enS;
 
   const activeTab = searchParams.get('tab') || 'events';
 
@@ -158,7 +164,7 @@ const PlanningOverview = () => {
         body: { club_id: clubId, action: 'create' },
       });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Demo aangemaakt! Pagina wordt herladen...' : 'Demo created! Reloading...');
+      toast.success(t3('Demo aangemaakt! Pagina wordt herladen...', 'Démo créée! Rechargement...', 'Demo created! Reloading...'));
       setShowPostDemoCta(true);
       setTimeout(() => window.location.reload(), 2500);
     } catch (err: any) {
@@ -175,7 +181,7 @@ const PlanningOverview = () => {
         body: { club_id: clubId, action: 'delete' },
       });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Demo data verwijderd!' : 'Demo data deleted!');
+      toast.success(t3('Demo data verwijderd!', 'Données démo supprimées!', 'Demo data deleted!'));
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
       toast.error(err.message);
@@ -193,7 +199,7 @@ const PlanningOverview = () => {
         body: { club_id: clubId, action: 'create' },
       });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Maandplanning demo aangemaakt! Pagina wordt herladen...' : 'Monthly demo created! Reloading...');
+      toast.success(t3('Maandplanning demo aangemaakt! Pagina wordt herladen...', 'Démo planning mensuelle créée! Rechargement...', 'Monthly demo created! Reloading...'));
       setTimeout(() => window.location.reload(), 2500);
     } catch (err: any) {
       toast.error(err.message);
@@ -209,7 +215,7 @@ const PlanningOverview = () => {
         body: { club_id: clubId, action: 'delete' },
       });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Maandplanning demo verwijderd!' : 'Monthly demo deleted!');
+      toast.success(t3('Maandplanning demo verwijderd!', 'Démo planning mensuelle supprimée!', 'Monthly demo deleted!'));
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
       toast.error(err.message);
@@ -235,9 +241,9 @@ const PlanningOverview = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-            {task.task_date && (
-              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(task.task_date).toLocaleDateString(nl ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>
+           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+             {task.task_date && (
+               <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>
             )}
             {task.location && (
               <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{task.location}</span>
@@ -247,7 +253,7 @@ const PlanningOverview = () => {
           </div>
         </div>
         {hasZones && <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
-        {!hasZones && <span className="text-[10px] text-muted-foreground shrink-0">{nl ? 'Geen zones' : 'No zones'}</span>}
+        {!hasZones && <span className="text-[10px] text-muted-foreground shrink-0">{t3('Geen zones', 'Pas de zones', 'No zones')}</span>}
       </button>
     );
   };
@@ -261,24 +267,24 @@ const PlanningOverview = () => {
             <h1 className="text-2xl font-heading font-bold text-foreground">
               Planning
             </h1>
-            <p className="text-muted-foreground mt-1">
-              {nl ? 'Beheer event planning, losse taken en maandcontracten' : 'Manage event planning, standalone tasks and monthly contracts'}
+             <p className="text-muted-foreground mt-1">
+               {t3('Beheer event planning, losse taken en maandcontracten', 'Gérez la planification, les tâches et les contrats mensuels', 'Manage event planning, standalone tasks and monthly contracts')}
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setShowSafetyRoles(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
-              <Shield className="w-4 h-4" /> {nl ? 'Safety Rollen' : 'Safety Roles'}
+              <Shield className="w-4 h-4" /> {t3('Safety Rollen', 'Rôles sécurité', 'Safety Roles')}
             </button>
             <button onClick={() => setShowTour(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
-              <BookOpen className="w-4 h-4" /> {nl ? 'Hoe werkt het?' : 'How does it work?'}
+              <BookOpen className="w-4 h-4" /> {t3('Hoe werkt het?', 'Comment ça marche?', 'How does it work?')}
             </button>
             {hasDemoEvent ? (
               <button onClick={handleDeleteDemo} disabled={demoDeleteLoading}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50">
                 {demoDeleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {nl ? 'Demo wissen' : 'Delete demo'}
+                 {nl ? 'Demo wissen' : fr ? 'Supprimer démo' : 'Delete demo'}
               </button>
             ) : (
               <button onClick={handleStartDemo} disabled={demoLoading}
@@ -294,12 +300,12 @@ const PlanningOverview = () => {
         {showPostDemoCta && (
           <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-foreground">🎉 {nl ? 'Demo is aangemaakt!' : 'Demo created!'}</p>
-              <p className="text-xs text-muted-foreground mt-1">{nl ? 'Wil je leren hoe je dit zelf kunt opzetten?' : 'Want to learn how to set this up yourself?'}</p>
+               <p className="text-sm font-semibold text-foreground">🎉 {t3('Demo is aangemaakt!', 'Démo créée!', 'Demo created!')}</p>
+               <p className="text-xs text-muted-foreground mt-1">{t3('Wil je leren hoe je dit zelf kunt opzetten?', 'Voulez-vous apprendre à le configurer?', 'Want to learn how to set this up yourself?')}</p>
             </div>
             <button onClick={() => { setShowPostDemoCta(false); setShowTour(true); }}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-              <BookOpen className="w-4 h-4" /> {nl ? 'Maak nu zelf' : 'Create your own'}
+              <BookOpen className="w-4 h-4" /> {t3('Maak nu zelf', 'Créez le vôtre', 'Create your own')}
             </button>
           </div>
         )}
@@ -307,17 +313,17 @@ const PlanningOverview = () => {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
           <TabsList className="w-full grid grid-cols-3 h-12">
-            <TabsTrigger value="events" className="flex items-center gap-2 text-sm">
-              <Calendar className="w-4 h-4" />
-              {nl ? 'Event Planning' : 'Event Planning'}
-            </TabsTrigger>
-            <TabsTrigger value="loose" className="flex items-center gap-2 text-sm">
-              <ClipboardList className="w-4 h-4" />
-              {nl ? 'Losse Taken' : 'Standalone Tasks'}
-            </TabsTrigger>
-            <TabsTrigger value="monthly" className="flex items-center gap-2 text-sm">
-              <CalendarDays className="w-4 h-4" />
-              {nl ? 'Maandplanning' : 'Monthly Planning'}
+             <TabsTrigger value="events" className="flex items-center gap-2 text-sm">
+               <Calendar className="w-4 h-4" />
+               Event Planning
+             </TabsTrigger>
+             <TabsTrigger value="loose" className="flex items-center gap-2 text-sm">
+               <ClipboardList className="w-4 h-4" />
+               {t3('Losse Taken', 'Tâches libres', 'Standalone Tasks')}
+             </TabsTrigger>
+             <TabsTrigger value="monthly" className="flex items-center gap-2 text-sm">
+               <CalendarDays className="w-4 h-4" />
+               {t3('Maandplanning', 'Planning mensuel', 'Monthly Planning')}
             </TabsTrigger>
           </TabsList>
 
@@ -328,7 +334,7 @@ const PlanningOverview = () => {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder={nl ? 'Zoek evenement of taak...' : 'Search event or task...'}
+              placeholder={t3('Zoek evenement of taak...', 'Rechercher événement ou tâche...', 'Search event or task...')}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -344,17 +350,17 @@ const PlanningOverview = () => {
                     <h2 className="text-base font-heading font-semibold text-foreground">{event.title}</h2>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       {event.event_date && (
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(event.event_date).toLocaleDateString(nl ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       )}
                       {event.location && (
                         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{event.location}</span>
                       )}
-                      <span>{eventTasks.length} {nl ? 'taken' : 'tasks'}</span>
+                      <span>{eventTasks.length} {t3('taken', 'tâches', 'tasks')}</span>
                     </div>
                   </div>
                   <div className="divide-y divide-border">
                     {eventTasks.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-4">{nl ? 'Geen taken' : 'No tasks'}</p>
+                      <p className="text-xs text-muted-foreground text-center py-4">{t3('Geen taken', 'Pas de tâches', 'No tasks')}</p>
                     )}
                     {eventTasks.map((task, ti) => (
                       <TaskRow key={task.id} task={task} isFirst={ti === 0 && task.zone_count > 0} />
@@ -366,7 +372,7 @@ const PlanningOverview = () => {
             {filteredEvents.length === 0 && (
               <div className="text-center py-12">
                 <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">{nl ? 'Geen evenementen gevonden' : 'No events found'}</p>
+                <p className="text-muted-foreground">{t3('Geen evenementen gevonden', 'Aucun événement trouvé', 'No events found')}</p>
               </div>
             )}
           </TabsContent>
@@ -444,11 +450,11 @@ const PlanningOverview = () => {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-foreground">
-                            {MONTH_NAMES_NL[plan.month - 1]} {plan.year}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                            <span>{plan.task_count} {nl ? 'taken' : 'tasks'}</span>
-                            <span>{plan.enrollment_count} {nl ? 'vrijwilligers' : 'volunteers'}</span>
+                             {(MONTH_NAMES[language] || MONTH_NAMES.en)[plan.month - 1]} {plan.year}
+                           </p>
+                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                             <span>{plan.task_count} {t3('taken', 'tâches', 'tasks')}</span>
+                             <span>{plan.enrollment_count} {t3('vrijwilligers', 'bénévoles', 'volunteers')}</span>
                           </div>
                         </div>
                       </div>

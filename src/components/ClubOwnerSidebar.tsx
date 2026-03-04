@@ -14,6 +14,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import { useLocation } from 'react-router-dom';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ClubOwnerSidebarProps {
@@ -32,10 +33,12 @@ const ClubOwnerSidebar = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { setOpenMobile } = useSidebar();
+  const { language } = useLanguage();
   const [actionCount, setActionCount] = useState(0);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   // Fetch pending action count for badge
   useEffect(() => {
@@ -81,23 +84,23 @@ const ClubOwnerSidebar = ({
 
   const mainItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
-    { label: 'Actielijst', icon: Inbox, path: '/command-center', badge: actionCount },
-    { label: 'Evenementen & Taken', icon: CalendarPlus, path: '/events-manager' },
+    { label: t3('Actielijst', 'Liste d\'actions', 'Action List'), icon: Inbox, path: '/command-center', badge: actionCount },
+    { label: t3('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks'), icon: CalendarPlus, path: '/events-manager' },
     { label: 'Planning', icon: LayoutGrid, path: '/planning' },
-    { label: 'Safety & Security', icon: ShieldAlert, path: '/safety' },
-    { label: 'Berichten', icon: MessageCircle, path: '/chat' },
+    { label: t3('Safety & Security', 'Sécurité', 'Safety & Security'), icon: ShieldAlert, path: '/safety' },
+    { label: t3('Berichten', 'Messages', 'Messages'), icon: MessageCircle, path: '/chat' },
   ];
 
   const managementItems = [
-    { label: 'SEPA Vergoedingen', icon: Banknote, path: '/sepa-payouts' },
-    { label: 'Contracten', icon: FileText, path: '/contract-builder' },
+    { label: t3('SEPA Vergoedingen', 'Indemnités SEPA', 'SEPA Payments'), icon: Banknote, path: '/sepa-payouts' },
+    { label: t3('Contracten', 'Contrats', 'Contracts'), icon: FileText, path: '/contract-builder' },
     { label: 'Briefings', icon: ClipboardList, path: '/briefing-builder' },
     { label: 'Compliance', icon: Shield, path: '/compliance' },
     { label: 'Ticketing', icon: Ticket, path: '/ticketing' },
-    { label: 'Academy', icon: Award, path: '/academy' },
-    { label: 'Loyaliteit', icon: Award, path: '/loyalty' },
-    { label: 'Partners', icon: Handshake, path: '/external-partners' },
-    { label: 'Rapportering', icon: BarChart3, path: '/reporting' },
+    { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
+    { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Award, path: '/loyalty' },
+    { label: t3('Partners', 'Partenaires', 'Partners'), icon: Handshake, path: '/external-partners' },
+    { label: t3('Rapportering', 'Rapports', 'Reporting'), icon: BarChart3, path: '/reporting' },
   ];
 
   return (
@@ -124,7 +127,7 @@ const ClubOwnerSidebar = ({
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigatie</SidebarGroupLabel>
+          <SidebarGroupLabel>{t3('Navigatie', 'Navigation', 'Navigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map(item => (
@@ -145,7 +148,7 @@ const ClubOwnerSidebar = ({
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Beheer</SidebarGroupLabel>
+          <SidebarGroupLabel>{t3('Beheer', 'Gestion', 'Management')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {managementItems.map(item => (
@@ -162,14 +165,14 @@ const ClubOwnerSidebar = ({
 
         {(onOpenSettings || onOpenMembers) && (
           <SidebarGroup>
-            <SidebarGroupLabel>Instellingen</SidebarGroupLabel>
+            <SidebarGroupLabel>{t3('Instellingen', 'Paramètres', 'Settings')}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {onOpenMembers && (
                   <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="min-h-[48px]">
                       <Users className="w-5 h-5" />
-                      <span>Leden</span>
+                      <span>{t3('Leden', 'Membres', 'Members')}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
@@ -177,7 +180,7 @@ const ClubOwnerSidebar = ({
                   <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => { onOpenSettings(); setOpenMobile(false); }} className="min-h-[48px]">
                       <Settings className="w-5 h-5" />
-                      <span>Instellingen</span>
+                      <span>{t3('Instellingen', 'Paramètres', 'Settings')}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
@@ -194,7 +197,7 @@ const ClubOwnerSidebar = ({
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onLogout} className="min-h-[48px] text-destructive hover:text-destructive">
               <LogOut className="w-5 h-5" />
-              <span>Uitloggen</span>
+              <span>{t3('Uitloggen', 'Déconnexion', 'Log out')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

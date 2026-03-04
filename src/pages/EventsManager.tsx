@@ -81,6 +81,8 @@ const EventsManager = () => {
   const [safetyConfigEvent, setSafetyConfigEvent] = useState<{ eventId: string; clubId: string } | null>(null);
 
   const nl = language === 'nl';
+  const fr = language === 'fr';
+  const t3 = (nlS: string, frS: string, enS: string) => nl ? nlS : fr ? frS : enS;
   const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
   const labelClass = "block text-xs font-medium text-muted-foreground mb-1";
 
@@ -185,7 +187,7 @@ const EventsManager = () => {
       event_date: newEvent.event_date || null, location: locationStr,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(nl ? 'Evenement aangemaakt!' : 'Event created!'); setEvents(prev => [data, ...prev]); setShowCreateEvent(false); setNewEvent({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' }); }
+    else if (data) { toast.success(t3('Evenement aangemaakt!', 'Événement créé!', 'Event created!')); setEvents(prev => [data, ...prev]); setShowCreateEvent(false); setNewEvent({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' }); }
     setCreatingEvent(false);
   };
 
@@ -199,7 +201,7 @@ const EventsManager = () => {
       spots_available: newTask.spots_available,
     }).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(nl ? 'Taak aangemaakt!' : 'Task created!'); setTasks(prev => [...prev, data]); setShowCreateTask(false); setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1 }); }
+    else if (data) { toast.success(t3('Taak aangemaakt!', 'Tâche créée!', 'Task created!')); setTasks(prev => [...prev, data]); setShowCreateTask(false); setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1 }); }
     setCreatingTask(false);
   };
 
@@ -214,7 +216,7 @@ const EventsManager = () => {
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
-      toast.success(nl ? 'Groep aangemaakt!' : 'Group created!');
+      toast.success(t3('Groep aangemaakt!', 'Groupe créé!', 'Group created!'));
       setEventGroups(prev => [...prev, data]);
       setAddingGroupToEvent(null);
       setNewGroupWristbandColor(''); setNewGroupWristbandLabel(''); setNewGroupMaterialsNote('');
@@ -231,7 +233,7 @@ const EventsManager = () => {
       event_id: addingTaskToGroup.eventId, event_group_id: addingTaskToGroup.groupId,
     }).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(nl ? 'Taak toegevoegd!' : 'Task added!'); setTasks(prev => [...prev, data]); setAddingTaskToGroup(null); setGroupTaskForm({ title: '', task_date: '', location: '', spots_available: 1 }); }
+    else if (data) { toast.success(t3('Taak toegevoegd!', 'Tâche ajoutée!', 'Task added!')); setTasks(prev => [...prev, data]); setAddingTaskToGroup(null); setGroupTaskForm({ title: '', task_date: '', location: '', spots_available: 1 }); }
     setCreatingGroupTask(false);
   };
 
@@ -263,7 +265,7 @@ const EventsManager = () => {
       }
     }
     setEvents(prev => [newEv, ...prev]);
-    toast.success(nl ? 'Evenement gedupliceerd!' : 'Event duplicated!');
+    toast.success(t3('Evenement gedupliceerd!', 'Événement dupliqué!', 'Event duplicated!'));
     setDuplicatingEvent(null);
   };
 
@@ -278,7 +280,7 @@ const EventsManager = () => {
     const { error } = await (supabase as any).from('events').delete().eq('id', eventId);
     if (error) toast.error(error.message);
     else {
-      toast.success(nl ? 'Evenement verwijderd!' : 'Event deleted!');
+      toast.success(t3('Evenement verwijderd!', 'Événement supprimé!', 'Event deleted!'));
       setEvents(prev => prev.filter(e => e.id !== eventId));
       setEventGroups(prev => prev.filter(g => g.event_id !== eventId));
       setTasks(prev => prev.filter(t => t.event_id !== eventId));
@@ -292,7 +294,7 @@ const EventsManager = () => {
     await (supabase as any).from('event_groups').delete().eq('id', groupId);
     setEventGroups(prev => prev.filter(g => g.id !== groupId));
     setTasks(prev => prev.filter(t => t.event_group_id !== groupId));
-    toast.success(nl ? 'Groep verwijderd!' : 'Group deleted!');
+    toast.success(t3('Groep verwijderd!', 'Groupe supprimé!', 'Group deleted!'));
   };
 
   const handleStartEditEvent = (event: EventData) => {
@@ -310,7 +312,7 @@ const EventsManager = () => {
     }).eq('id', editingEvent.id);
     if (error) toast.error(error.message);
     else {
-      toast.success(nl ? 'Evenement bijgewerkt!' : 'Event updated!');
+      toast.success(t3('Evenement bijgewerkt!', 'Événement mis à jour!', 'Event updated!'));
       setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? { ...ev, ...editEventForm, description: editEventForm.description || null, event_date: editEventForm.event_date || null, location: editEventForm.location || null } : ev));
       setEditingEvent(null);
     }
@@ -333,7 +335,7 @@ const EventsManager = () => {
     try {
       const res = await supabase.functions.invoke('planning-demo', { body: { club_id: clubId, action: 'create' } });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Demo aangemaakt! Pagina wordt herladen...' : 'Demo created! Reloading...');
+      toast.success(t3('Demo aangemaakt! Pagina wordt herladen...', 'Démo créée! Rechargement...', 'Demo created! Reloading...'));
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) { toast.error(err.message); }
     setDemoLoading(false);
@@ -345,7 +347,7 @@ const EventsManager = () => {
     try {
       const res = await supabase.functions.invoke('planning-demo', { body: { club_id: clubId, action: 'delete' } });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Demo data verwijderd!' : 'Demo data deleted!');
+      toast.success(t3('Demo data verwijderd!', 'Données démo supprimées!', 'Demo data deleted!'));
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) { toast.error(err.message); }
     setDemoDeleteLoading(false);
@@ -355,7 +357,7 @@ const EventsManager = () => {
     setDeletingTask(taskId);
     const { error } = await (supabase as any).from('tasks').delete().eq('id', taskId);
     if (error) toast.error(error.message);
-    else { toast.success(nl ? 'Taak verwijderd!' : 'Task deleted!'); setTasks(prev => prev.filter(t => t.id !== taskId)); }
+    else { toast.success(t3('Taak verwijderd!', 'Tâche supprimée!', 'Task deleted!')); setTasks(prev => prev.filter(t => t.id !== taskId)); }
     setDeletingTask(null);
     setConfirmDeleteTask(null);
   };
@@ -366,7 +368,7 @@ const EventsManager = () => {
     const newStatus = event?.status === 'on_hold' ? 'open' : 'on_hold';
     const { error } = await (supabase as any).from('events').update({ status: newStatus }).eq('id', eventId);
     if (error) toast.error(error.message);
-    else { setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e)); toast.success(newStatus === 'on_hold' ? (nl ? 'Evenement on hold gezet' : 'Event put on hold') : (nl ? 'Evenement weer actief' : 'Event reactivated')); }
+    else { setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e)); toast.success(newStatus === 'on_hold' ? t3('Evenement on hold gezet', 'Événement mis en attente', 'Event put on hold') : t3('Evenement weer actief', 'Événement réactivé', 'Event reactivated')); }
     setTogglingHold(null);
   };
 
@@ -375,7 +377,7 @@ const EventsManager = () => {
     const newStatus = currentStatus === 'on_hold' ? 'open' : 'on_hold';
     const { error } = await (supabase as any).from('tasks').update({ status: newStatus }).eq('id', taskId);
     if (error) toast.error(error.message);
-    else { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)); toast.success(newStatus === 'on_hold' ? (nl ? 'Taak on hold gezet' : 'Task put on hold') : (nl ? 'Taak weer actief' : 'Task reactivated')); }
+    else { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)); toast.success(newStatus === 'on_hold' ? t3('Taak on hold gezet', 'Tâche mise en attente', 'Task put on hold') : t3('Taak weer actief', 'Tâche réactivée', 'Task reactivated')); }
     setTogglingHold(null);
   };
 
@@ -390,23 +392,23 @@ const EventsManager = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-heading font-bold text-foreground">
-              {nl ? 'Evenementen & Taken' : 'Events & Tasks'}
+             <h1 className="text-2xl font-heading font-bold text-foreground">
+               {t3('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks')}
             </h1>
-            <p className="text-muted-foreground mt-1">
-              {events.length} {nl ? 'evenementen' : 'events'} · {looseTasks.length} {nl ? 'losse taken' : 'loose tasks'}
+             <p className="text-muted-foreground mt-1">
+               {events.length} {t3('evenementen', 'événements', 'events')} · {looseTasks.length} {t3('losse taken', 'tâches libres', 'loose tasks')}
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setShowTour(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
-              <BookOpen className="w-4 h-4" /> {nl ? 'Hoe werkt het?' : 'How does it work?'}
+              <BookOpen className="w-4 h-4" /> {t3('Hoe werkt het?', 'Comment ça marche?', 'How does it work?')}
             </button>
             {hasDemoEvent ? (
               <button onClick={handleDeletePlanningDemo} disabled={demoDeleteLoading}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50">
                 {demoDeleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {nl ? 'Demo wissen' : 'Delete demo'}
+                {nl ? 'Demo wissen' : fr ? 'Supprimer démo' : 'Delete demo'}
               </button>
             ) : (
               <button onClick={handleStartPlanningDemo} disabled={demoLoading}
@@ -416,10 +418,10 @@ const EventsManager = () => {
               </button>
             )}
             <button data-tour="btn-new-event" onClick={() => { setShowCreateEvent(true); setShowCreateTask(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-              <CalendarDays className="w-4 h-4" /> {nl ? 'Nieuw evenement' : 'New event'}
-            </button>
-            <button onClick={() => { setShowCreateTask(true); setShowCreateEvent(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
-              <Plus className="w-4 h-4" /> {nl ? 'Losse taak' : 'Loose task'}
+               <CalendarDays className="w-4 h-4" /> {t3('Nieuw evenement', 'Nouvel événement', 'New event')}
+             </button>
+             <button onClick={() => { setShowCreateTask(true); setShowCreateEvent(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
+               <Plus className="w-4 h-4" /> {t3('Losse taak', 'Tâche libre', 'Loose task')}
             </button>
           </div>
         </div>
@@ -429,39 +431,39 @@ const EventsManager = () => {
           {showCreateEvent && (
             <motion.form data-tour="form-new-event" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               onSubmit={handleCreateEvent} className="bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden">
-              <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{nl ? 'Nieuw evenement' : 'New event'}</h2>
+              <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{t3('Nieuw evenement', 'Nouvel événement', 'New event')}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Beschrijving' : 'Description'}</label><textarea rows={2} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label>
-                  <div className="grid gap-3 sm:grid-cols-4">
-                    <div className="sm:col-span-3">
-                      <input type="text" placeholder={nl ? 'Straat' : 'Street'} maxLength={200} value={newEvent.street} onChange={e => setNewEvent(p => ({ ...p, street: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Nr.' : 'No.'} maxLength={20} value={newEvent.number} onChange={e => setNewEvent(p => ({ ...p, number: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Postcode' : 'Postal code'} maxLength={10} value={newEvent.postalCode} onChange={e => setNewEvent(p => ({ ...p, postalCode: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Stad' : 'City'} maxLength={100} value={newEvent.city} onChange={e => setNewEvent(p => ({ ...p, city: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Land' : 'Country'} maxLength={60} value={newEvent.country} onChange={e => setNewEvent(p => ({ ...p, country: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Extra info (bv. zaal, ingang...)' : 'Extra info'} maxLength={200} value={newEvent.locationNote} onChange={e => setNewEvent(p => ({ ...p, locationNote: e.target.value }))} className={inputClass} />
-                    </div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
+                 <div className="sm:col-span-2">
+                   <label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label>
+                   <div className="grid gap-3 sm:grid-cols-4">
+                     <div className="sm:col-span-3">
+                       <input type="text" placeholder={t3('Straat', 'Rue', 'Street')} maxLength={200} value={newEvent.street} onChange={e => setNewEvent(p => ({ ...p, street: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Nr.', 'N°', 'No.')} maxLength={20} value={newEvent.number} onChange={e => setNewEvent(p => ({ ...p, number: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Postcode', 'Code postal', 'Postal code')} maxLength={10} value={newEvent.postalCode} onChange={e => setNewEvent(p => ({ ...p, postalCode: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Stad', 'Ville', 'City')} maxLength={100} value={newEvent.city} onChange={e => setNewEvent(p => ({ ...p, city: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Land', 'Pays', 'Country')} maxLength={60} value={newEvent.country} onChange={e => setNewEvent(p => ({ ...p, country: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Extra info (bv. zaal, ingang...)', 'Info supplémentaire', 'Extra info')} maxLength={200} value={newEvent.locationNote} onChange={e => setNewEvent(p => ({ ...p, locationNote: e.target.value }))} className={inputClass} />
+                     </div>
                   </div>
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowCreateEvent(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
-                <button type="submit" disabled={creatingEvent || !newEvent.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
-                  {creatingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : (nl ? 'Aanmaken' : 'Create')}
+                 <button type="button" onClick={() => setShowCreateEvent(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
+                 <button type="submit" disabled={creatingEvent || !newEvent.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
+                   {creatingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Aanmaken', 'Créer', 'Create')}
                 </button>
               </div>
             </motion.form>
@@ -473,18 +475,18 @@ const EventsManager = () => {
           {showCreateTask && (
             <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               onSubmit={handleCreateLooseTask} className="bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden">
-              <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{nl ? 'Nieuwe losse taak' : 'New loose task'}</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required maxLength={200} value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Beschrijving' : 'Description'}</label><textarea rows={2} value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
-                <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={newTask.task_date} onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
-                <div><label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label><input type="text" value={newTask.location} onChange={e => setNewTask(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
-                <div><label className={labelClass}>{nl ? 'Plaatsen' : 'Spots'}</label><input type="number" min={1} value={newTask.spots_available} onChange={e => setNewTask(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowCreateTask(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
-                <button type="submit" disabled={creatingTask || !newTask.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
-                  {creatingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : (nl ? 'Aanmaken' : 'Create')}
+               <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{t3('Nieuwe losse taak', 'Nouvelle tâche libre', 'New loose task')}</h2>
+               <div className="grid gap-4 sm:grid-cols-2">
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required maxLength={200} value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
+                 <div><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={newTask.task_date} onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label><input type="text" value={newTask.location} onChange={e => setNewTask(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Plaatsen', 'Places', 'Spots')}</label><input type="number" min={1} value={newTask.spots_available} onChange={e => setNewTask(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
+               </div>
+               <div className="flex justify-end gap-3 mt-6">
+                 <button type="button" onClick={() => setShowCreateTask(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
+                 <button type="submit" disabled={creatingTask || !newTask.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
+                   {creatingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Aanmaken', 'Créer', 'Create')}
                 </button>
               </div>
             </motion.form>
@@ -494,16 +496,16 @@ const EventsManager = () => {
         {/* Events Tabs */}
         <Tabs defaultValue="upcoming" className="w-full">
           <TabsList className="mb-4">
-            <TabsTrigger value="upcoming">{nl ? 'Aankomende Evenementen' : 'Upcoming Events'} ({upcomingEvents.length})</TabsTrigger>
-            <TabsTrigger value="loose">{nl ? 'Losse taken' : 'Loose tasks'} ({upcomingLooseTasks.length})</TabsTrigger>
-            <TabsTrigger value="past">{nl ? 'Historie' : 'History'} ({pastEvents.length + pastLooseTasks.length})</TabsTrigger>
+             <TabsTrigger value="upcoming">{t3('Aankomende Evenementen', 'Événements à venir', 'Upcoming Events')} ({upcomingEvents.length})</TabsTrigger>
+             <TabsTrigger value="loose">{t3('Losse taken', 'Tâches libres', 'Loose tasks')} ({upcomingLooseTasks.length})</TabsTrigger>
+             <TabsTrigger value="past">{t3('Historie', 'Historique', 'History')} ({pastEvents.length + pastLooseTasks.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upcoming" className="space-y-4">
             {upcomingEvents.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <CalendarDays className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                <p>{nl ? 'Geen aankomende evenementen.' : 'No upcoming events.'}</p>
+                <p>{t3('Geen aankomende evenementen.', 'Aucun événement à venir.', 'No upcoming events.')}</p>
               </div>
             ) : [...upcomingEvents].sort((a, b) => {
               if (!a.event_date) return 1;
@@ -514,13 +516,13 @@ const EventsManager = () => {
 
           <TabsContent value="loose" className="space-y-3">
             {upcomingLooseTasks.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen losse taken.' : 'No loose tasks.'}</p></div>
+              <div className="text-center py-12 text-muted-foreground"><p>{t3('Geen losse taken.', 'Aucune tâche libre.', 'No loose tasks.')}</p></div>
             ) : upcomingLooseTasks.map((task, i) => renderLooseTaskCard(task, i))}
           </TabsContent>
 
           <TabsContent value="past" className="space-y-4">
             {pastEvents.length === 0 && pastLooseTasks.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen afgelopen items.' : 'No past items.'}</p></div>
+              <div className="text-center py-12 text-muted-foreground"><p>{t3('Geen afgelopen items.', 'Aucun élément passé.', 'No past items.')}</p></div>
             ) : (
               <>
                 {[...pastEvents].sort((a, b) => {
@@ -529,7 +531,7 @@ const EventsManager = () => {
                 }).map((event, ei) => renderEventCard(event, ei))}
                 {pastLooseTasks.length > 0 && (
                   <>
-                    {pastEvents.length > 0 && <div className="pt-2"><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{nl ? 'Afgelopen losse taken' : 'Past loose tasks'}</p></div>}
+                    {pastEvents.length > 0 && <div className="pt-2"><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t3('Afgelopen losse taken', 'Tâches libres passées', 'Past loose tasks')}</p></div>}
                     {pastLooseTasks.map((task, i) => renderLooseTaskCard(task, i))}
                   </>
                 )}
@@ -546,13 +548,13 @@ const EventsManager = () => {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-sm">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div>
-                <h2 className="text-lg font-heading font-semibold text-foreground">{nl ? 'Evenement verwijderen' : 'Delete event'}</h2>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">{nl ? 'Weet je zeker dat je dit evenement wilt verwijderen? Alle groepen en taken worden ook verwijderd.' : 'Are you sure? All groups and tasks will also be deleted.'}</p>
-              <div className="flex justify-end gap-3">
-                <button onClick={() => setConfirmDeleteEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
-                <button onClick={() => handleDeleteEvent(confirmDeleteEvent)} disabled={deletingEvent === confirmDeleteEvent} className="px-5 py-2 text-sm rounded-xl bg-destructive text-destructive-foreground font-medium hover:opacity-90 disabled:opacity-50">
-                  {deletingEvent === confirmDeleteEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : (nl ? 'Verwijderen' : 'Delete')}
+                 <h2 className="text-lg font-heading font-semibold text-foreground">{t3('Evenement verwijderen', 'Supprimer l\'événement', 'Delete event')}</h2>
+               </div>
+               <p className="text-sm text-muted-foreground mb-6">{t3('Weet je zeker dat je dit evenement wilt verwijderen? Alle groepen en taken worden ook verwijderd.', 'Êtes-vous sûr? Tous les groupes et tâches seront supprimés.', 'Are you sure? All groups and tasks will also be deleted.')}</p>
+               <div className="flex justify-end gap-3">
+                 <button onClick={() => setConfirmDeleteEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
+                 <button onClick={() => handleDeleteEvent(confirmDeleteEvent)} disabled={deletingEvent === confirmDeleteEvent} className="px-5 py-2 text-sm rounded-xl bg-destructive text-destructive-foreground font-medium hover:opacity-90 disabled:opacity-50">
+                   {deletingEvent === confirmDeleteEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Verwijderen', 'Supprimer', 'Delete')}
                 </button>
               </div>
             </motion.div>
@@ -566,20 +568,20 @@ const EventsManager = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditingEvent(null)}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-lg">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-heading font-semibold text-foreground">{nl ? 'Evenement bewerken' : 'Edit event'}</h2>
+                <h2 className="text-lg font-heading font-semibold text-foreground">{t3('Evenement bewerken', 'Modifier l\'événement', 'Edit event')}</h2>
                 <button onClick={() => setEditingEvent(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
               </div>
               <form onSubmit={handleSaveEditEvent} className="space-y-4">
-                <div><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required value={editEventForm.title} onChange={e => setEditEventForm(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
-                <div><label className={labelClass}>{nl ? 'Beschrijving' : 'Description'}</label><textarea rows={2} value={editEventForm.description} onChange={e => setEditEventForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={editEventForm.event_date} onChange={e => setEditEventForm(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label><input type="text" value={editEventForm.location} onChange={e => setEditEventForm(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
-                </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={() => setEditingEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
+                 <div><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required value={editEventForm.title} onChange={e => setEditEventForm(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={editEventForm.description} onChange={e => setEditEventForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={editEventForm.event_date} onChange={e => setEditEventForm(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
+                   <div><label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label><input type="text" value={editEventForm.location} onChange={e => setEditEventForm(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
+                 </div>
+                 <div className="flex justify-end gap-3 pt-2">
+                   <button type="button" onClick={() => setEditingEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
                   <button type="submit" disabled={savingEvent} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
-                    {savingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : (nl ? 'Opslaan' : 'Save')}
+                    {savingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Opslaan', 'Enregistrer', 'Save')}
                   </button>
                 </div>
               </form>
