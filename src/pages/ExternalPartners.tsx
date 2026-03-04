@@ -841,7 +841,7 @@ const ExternalPartners = () => {
                 )}
               </div>
             </div>
-            <div><Label>{nl ? 'Naam' : 'Name'} *</Label><Input value={newPartner.name} onChange={e => setNewPartner(p => ({ ...p, name: e.target.value }))} placeholder="Stewards VZW Antwerp" /></div>
+            <div><Label>{t3('Naam', 'Nom', 'Name')} *</Label><Input value={newPartner.name} onChange={e => setNewPartner(p => ({ ...p, name: e.target.value }))} placeholder="Stewards VZW Antwerp" /></div>
             <div>
               <Label>{nl ? 'Categorie' : 'Category'}</Label>
               <Select value={newPartner.category} onValueChange={v => setNewPartner(p => ({ ...p, category: v }))}>
