@@ -595,11 +595,10 @@ const SafetyDashboard = () => {
         body: { club_id: clubId, action: 'delete' },
       });
       if (res.error) throw res.error;
-      toast.success('Simulatie data verwijderd!');
-      // Navigate back to events
+      toast.success(t3('Simulatie data verwijderd!', 'Données de simulation supprimées !', 'Simulation data deleted!'));
       navigate('/events-manager');
     } catch (err: any) {
-      toast.error(err.message || 'Fout bij verwijderen');
+      toast.error(err.message || t3('Fout bij verwijderen', 'Erreur lors de la suppression', 'Error deleting'));
     } finally {
       setSimLoading(false);
     }
