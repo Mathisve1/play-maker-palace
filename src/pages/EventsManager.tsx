@@ -522,7 +522,7 @@ const EventsManager = () => {
 
           <TabsContent value="past" className="space-y-4">
             {pastEvents.length === 0 && pastLooseTasks.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen afgelopen items.' : 'No past items.'}</p></div>
+              <div className="text-center py-12 text-muted-foreground"><p>{t3('Geen afgelopen items.', 'Aucun élément passé.', 'No past items.')}</p></div>
             ) : (
               <>
                 {[...pastEvents].sort((a, b) => {
