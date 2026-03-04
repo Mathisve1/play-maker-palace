@@ -857,12 +857,12 @@ const SepaPayouts = () => {
                         onCheckedChange={toggleAll}
                       />
                     </TableHead>
-                    <TableHead>Vrijwilliger</TableHead>
-                    <TableHead>Taak</TableHead>
-                    <TableHead>Datum</TableHead>
+                    <TableHead>{t3('Vrijwilliger', 'Bénévole', 'Volunteer')}</TableHead>
+                    <TableHead>{t3('Taak', 'Tâche', 'Task')}</TableHead>
+                    <TableHead>{t3('Datum', 'Date', 'Date')}</TableHead>
                     <TableHead>IBAN</TableHead>
                     <TableHead>BIC</TableHead>
-                    <TableHead className="text-right">Bedrag</TableHead>
+                    <TableHead className="text-right">{t3('Bedrag', 'Montant', 'Amount')}</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
