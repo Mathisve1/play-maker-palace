@@ -943,7 +943,7 @@ const ExternalPartners = () => {
                   </div>
                   <Button onClick={() => handleSendTicket(member)} disabled={sendingTicket || !ticketTaskId} className="w-full">
                     {sendingTicket ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Ticket className="w-4 h-4 mr-2" />}
-                    {nl ? 'Ticket aanmaken' : 'Create ticket'}
+                    {t3('Ticket aanmaken', 'Créer le ticket', 'Create ticket')}
                   </Button>
                 </>
               );
