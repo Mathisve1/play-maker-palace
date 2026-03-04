@@ -110,7 +110,7 @@ export const ActionListWidget = ({ clubId, language }: ActionListWidgetProps) =>
       ) : total === 0 ? (
         <div className="flex-1 flex items-center justify-center text-center">
           <p className="text-xs text-muted-foreground">
-            {language === 'nl' ? 'Alles afgehandeld! 🎉' : 'All caught up! 🎉'}
+            {language === 'nl' ? 'Alles afgehandeld! 🎉' : language === 'fr' ? 'Tout est en ordre ! 🎉' : 'All caught up! 🎉'}
           </p>
         </div>
       ) : (
