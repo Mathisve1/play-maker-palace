@@ -733,7 +733,7 @@ const MonthlyPlanning = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-yellow-600" /> Dag-aanmeldingen te bevestigen ({pendingDaySignups.length})
+                    <Clock className="w-4 h-4 text-yellow-600" /> {t3('Dag-aanmeldingen te bevestigen', 'Inscriptions journalières à confirmer', 'Day signups to confirm')} ({pendingDaySignups.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
