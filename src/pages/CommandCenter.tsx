@@ -383,7 +383,7 @@ const CommandCenter = () => {
             status: 'generated' as any,
           });
         }
-        toast.success(language === 'nl' ? 'Ticket gegenereerd!' : 'Ticket generated!');
+        toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
       }
       await loadData();
     } catch (err: any) {
