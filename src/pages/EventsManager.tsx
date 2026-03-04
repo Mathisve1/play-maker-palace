@@ -335,7 +335,7 @@ const EventsManager = () => {
     try {
       const res = await supabase.functions.invoke('planning-demo', { body: { club_id: clubId, action: 'create' } });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Demo aangemaakt! Pagina wordt herladen...' : 'Demo created! Reloading...');
+      toast.success(t3('Demo aangemaakt! Pagina wordt herladen...', 'Démo créée! Rechargement...', 'Demo created! Reloading...'));
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) { toast.error(err.message); }
     setDemoLoading(false);
