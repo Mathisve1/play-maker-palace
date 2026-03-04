@@ -74,43 +74,43 @@ const App = () => {
             <Route path="/club-login" element={<ClubLogin />} />
             <Route path="/club-signup" element={<ClubSignup />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/dashboard" element={<VolunteerDashboard />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/task/:id" element={<TaskDetail />} />
-            <Route path="/club-dashboard" element={<ClubOwnerDashboard />} />
-            <Route path="/command-center" element={<CommandCenter />} />
+            <Route path="/dashboard" element={<RequireAuth><VolunteerDashboard /></RequireAuth>} />
+            <Route path="/admin" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
+            <Route path="/task/:id" element={<RequireAuth><TaskDetail /></RequireAuth>} />
+            <Route path="/club-dashboard" element={<RequireAuth redirectTo="/club-login"><ClubOwnerDashboard /></RequireAuth>} />
+            <Route path="/command-center" element={<RequireAuth redirectTo="/club-login"><CommandCenter /></RequireAuth>} />
             <Route path="/club-invite/:token" element={<ClubInviteAccept />} />
-            <Route path="/payments" element={<PaymentsOverview />} />
-            <Route path="/contract-builder" element={<ContractBuilder />} />
-            <Route path="/briefing-builder" element={<BriefingBuilder />} />
-            <Route path="/compliance" element={<ComplianceDashboard />} />
-            <Route path="/loyalty" element={<LoyaltyPrograms />} />
-            <Route path="/ticketing" element={<TicketingDashboard />} />
-            <Route path="/scan" element={<TicketScanner />} />
-            <Route path="/sepa-payouts" element={<SepaPayouts />} />
-            <Route path="/academy" element={<AcademyBuilder />} />
-            <Route path="/academy/physical-trainings" element={<PhysicalTrainings />} />
-            <Route path="/academy/certificate-builder" element={<CertificateBuilder />} />
-            <Route path="/training/:trainingId" element={<VolunteerTraining />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/chat/:conversationId" element={<Chat />} />
+            <Route path="/payments" element={<RequireAuth redirectTo="/club-login"><PaymentsOverview /></RequireAuth>} />
+            <Route path="/contract-builder" element={<RequireAuth redirectTo="/club-login"><ContractBuilder /></RequireAuth>} />
+            <Route path="/briefing-builder" element={<RequireAuth redirectTo="/club-login"><BriefingBuilder /></RequireAuth>} />
+            <Route path="/compliance" element={<RequireAuth redirectTo="/club-login"><ComplianceDashboard /></RequireAuth>} />
+            <Route path="/loyalty" element={<RequireAuth redirectTo="/club-login"><LoyaltyPrograms /></RequireAuth>} />
+            <Route path="/ticketing" element={<RequireAuth redirectTo="/club-login"><TicketingDashboard /></RequireAuth>} />
+            <Route path="/scan" element={<RequireAuth><TicketScanner /></RequireAuth>} />
+            <Route path="/sepa-payouts" element={<RequireAuth redirectTo="/club-login"><SepaPayouts /></RequireAuth>} />
+            <Route path="/academy" element={<RequireAuth redirectTo="/club-login"><AcademyBuilder /></RequireAuth>} />
+            <Route path="/academy/physical-trainings" element={<RequireAuth redirectTo="/club-login"><PhysicalTrainings /></RequireAuth>} />
+            <Route path="/academy/certificate-builder" element={<RequireAuth redirectTo="/club-login"><CertificateBuilder /></RequireAuth>} />
+            <Route path="/training/:trainingId" element={<RequireAuth><VolunteerTraining /></RequireAuth>} />
+            <Route path="/chat" element={<RequireAuth><Chat /></RequireAuth>} />
+            <Route path="/chat/:conversationId" element={<RequireAuth><Chat /></RequireAuth>} />
             <Route path="/partner-login" element={<PartnerLogin />} />
-            <Route path="/external-partners" element={<ExternalPartners />} />
-            <Route path="/partner-dashboard" element={<PartnerDashboard />} />
-            <Route path="/reporting" element={<ReportingDashboard />} />
-            <Route path="/report-builder" element={<ReportBuilder />} />
-            <Route path="/events-manager" element={<EventsManager />} />
-            <Route path="/planning" element={<PlanningOverview />} />
-            <Route path="/monthly-planning" element={<MonthlyPlanning />} />
-            <Route path="/planning/:taskId" element={<ZonePlanning />} />
-            <Route path="/safety" element={<SafetyOverview />} />
-            <Route path="/safety/:eventId" element={<SafetyEventHub />} />
-            <Route path="/safety/:eventId/control-room" element={<SafetyDashboard />} />
-            <Route path="/safety/:eventId/closing" element={<SafetyClosing />} />
-            <Route path="/community" element={<Community />} />
-            <Route path="/community/club/:clubId" element={<CommunityClubDetail />} />
-            <Route path="/community/partner/:partnerId" element={<CommunityPartnerDetail />} />
-            <Route path="/help" element={<VolunteerHelp />} />
+            <Route path="/external-partners" element={<RequireAuth redirectTo="/club-login"><ExternalPartners /></RequireAuth>} />
+            <Route path="/partner-dashboard" element={<RequireAuth redirectTo="/partner-login"><PartnerDashboard /></RequireAuth>} />
+            <Route path="/reporting" element={<RequireAuth redirectTo="/club-login"><ReportingDashboard /></RequireAuth>} />
+            <Route path="/report-builder" element={<RequireAuth redirectTo="/club-login"><ReportBuilder /></RequireAuth>} />
+            <Route path="/events-manager" element={<RequireAuth redirectTo="/club-login"><EventsManager /></RequireAuth>} />
+            <Route path="/planning" element={<RequireAuth redirectTo="/club-login"><PlanningOverview /></RequireAuth>} />
+            <Route path="/monthly-planning" element={<RequireAuth redirectTo="/club-login"><MonthlyPlanning /></RequireAuth>} />
+            <Route path="/planning/:taskId" element={<RequireAuth redirectTo="/club-login"><ZonePlanning /></RequireAuth>} />
+            <Route path="/safety" element={<RequireAuth redirectTo="/club-login"><SafetyOverview /></RequireAuth>} />
+            <Route path="/safety/:eventId" element={<RequireAuth redirectTo="/club-login"><SafetyEventHub /></RequireAuth>} />
+            <Route path="/safety/:eventId/control-room" element={<RequireAuth redirectTo="/club-login"><SafetyDashboard /></RequireAuth>} />
+            <Route path="/safety/:eventId/closing" element={<RequireAuth redirectTo="/club-login"><SafetyClosing /></RequireAuth>} />
+            <Route path="/community" element={<RequireAuth><Community /></RequireAuth>} />
+            <Route path="/community/club/:clubId" element={<RequireAuth><CommunityClubDetail /></RequireAuth>} />
+            <Route path="/community/partner/:partnerId" element={<RequireAuth><CommunityPartnerDetail /></RequireAuth>} />
+            <Route path="/help" element={<RequireAuth><VolunteerHelp /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <IOSInstallOverlay />
