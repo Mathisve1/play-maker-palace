@@ -216,7 +216,7 @@ const EventsManager = () => {
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
-      toast.success(nl ? 'Groep aangemaakt!' : 'Group created!');
+      toast.success(t3('Groep aangemaakt!', 'Groupe créé!', 'Group created!'));
       setEventGroups(prev => [...prev, data]);
       setAddingGroupToEvent(null);
       setNewGroupWristbandColor(''); setNewGroupWristbandLabel(''); setNewGroupMaterialsNote('');
