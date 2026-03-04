@@ -199,16 +199,21 @@ serve(async (req) => {
   }
 
   try {
+    console.log('send-native-push invoked');
     const { type, user_id, title, message, url, data, broadcast } = await req.json();
+    console.log('Payload:', JSON.stringify({ type, user_id, broadcast, title: !!title, message: !!message }));
 
     const vapidPub = Deno.env.get('VAPID_PUBLIC_KEY')!;
     const vapidPriv = Deno.env.get('VAPID_PRIVATE_KEY')!;
+    console.log('VAPID keys present:', !!vapidPub, !!vapidPriv);
     if (!vapidPub || !vapidPriv) {
       return new Response(JSON.stringify({ error: 'VAPID keys not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    console.log('Importing VAPID key...');
     const vapidKey = await importVapidKey(vapidPriv, vapidPub);
+    console.log('VAPID key imported successfully');
     const vapidSubject = 'mailto:info@de12eman.be';
 
     const sbUrl = Deno.env.get('SUPABASE_URL')!;
