@@ -894,7 +894,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
                       <Sparkles className="h-4 w-4 text-primary" /> AI Grafiek
                     </p>
                     <p className="text-xs text-muted-foreground mb-2">
-                      Beschrijf welke data je in een grafiek wilt zien en AI maakt hem voor je.
+                      {t3('Beschrijf welke data je in een grafiek wilt zien en AI maakt hem voor je.', 'Décrivez les données souhaitées et l\'IA créera le graphique.', 'Describe the data you want and AI will create the chart for you.')}
                     </p>
                     <div className="flex gap-2">
                       <Input placeholder="Bv: 'Toon hoeveel we per evenement uitgeven'" value={aiPrompt}
