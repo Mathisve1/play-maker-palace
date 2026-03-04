@@ -417,7 +417,7 @@ const SepaPayouts = () => {
       .single();
     
     if (!data || !data.xml_content || !['signed', 'downloaded'].includes(data.status)) {
-      toast.error('Batch is niet ondertekend of XML ontbreekt.');
+      toast.error(t3('Batch is niet ondertekend of XML ontbreekt.', 'Lot non signé ou XML manquant.', 'Batch not signed or XML missing.'));
       return;
     }
 
