@@ -163,9 +163,9 @@ const SortableBlock = ({
       {/* Emergency Contact */}
       {block.type === 'emergency_contact' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Input value={block.contact_name || ''} onChange={e => onUpdate(groupId, block.id, { contact_name: e.target.value })} placeholder="Naam" className="bg-background/60 text-sm" />
-          <Input value={block.contact_phone || ''} onChange={e => onUpdate(groupId, block.id, { contact_phone: e.target.value })} placeholder="Telefoon" className="bg-background/60 text-sm" />
-          <Input value={block.contact_role || ''} onChange={e => onUpdate(groupId, block.id, { contact_role: e.target.value })} placeholder="Functie" className="bg-background/60 text-sm" />
+          <Input value={block.contact_name || ''} onChange={e => onUpdate(groupId, block.id, { contact_name: e.target.value })} placeholder={language === 'fr' ? 'Nom' : language === 'en' ? 'Name' : 'Naam'} className="bg-background/60 text-sm" />
+          <Input value={block.contact_phone || ''} onChange={e => onUpdate(groupId, block.id, { contact_phone: e.target.value })} placeholder={language === 'fr' ? 'Téléphone' : language === 'en' ? 'Phone' : 'Telefoon'} className="bg-background/60 text-sm" />
+          <Input value={block.contact_role || ''} onChange={e => onUpdate(groupId, block.id, { contact_role: e.target.value })} placeholder={language === 'fr' ? 'Fonction' : language === 'en' ? 'Role' : 'Functie'} className="bg-background/60 text-sm" />
         </div>
       )}
 
