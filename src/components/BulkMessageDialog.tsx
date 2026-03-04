@@ -18,13 +18,28 @@ interface Props {
   onClose: () => void;
 }
 
-const templateVars: { key: string; label: string; description: string }[] = [
-  { key: '{{naam}}', label: 'Naam', description: 'Volledige naam van de vrijwilliger' },
-  { key: '{{email}}', label: 'E-mail', description: 'E-mailadres van de vrijwilliger' },
-  { key: '{{taak}}', label: 'Taak', description: 'Titel van de taak' },
-];
+const templateVarsI18n: Record<string, { key: string; label: string; description: string }[]> = {
+  nl: [
+    { key: '{{naam}}', label: 'Naam', description: 'Volledige naam van de vrijwilliger' },
+    { key: '{{email}}', label: 'E-mail', description: 'E-mailadres van de vrijwilliger' },
+    { key: '{{taak}}', label: 'Taak', description: 'Titel van de taak' },
+  ],
+  fr: [
+    { key: '{{naam}}', label: 'Nom', description: 'Nom complet du bénévole' },
+    { key: '{{email}}', label: 'E-mail', description: 'Adresse e-mail du bénévole' },
+    { key: '{{taak}}', label: 'Tâche', description: 'Titre de la tâche' },
+  ],
+  en: [
+    { key: '{{naam}}', label: 'Name', description: 'Full name of the volunteer' },
+    { key: '{{email}}', label: 'Email', description: 'Email address of the volunteer' },
+    { key: '{{taak}}', label: 'Task', description: 'Title of the task' },
+  ],
+};
 
 const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose }: Props) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+  const templateVars = templateVarsI18n[language] || templateVarsI18n.nl;
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
