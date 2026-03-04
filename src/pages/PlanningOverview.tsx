@@ -355,7 +355,7 @@ const PlanningOverview = () => {
                       {event.location && (
                         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{event.location}</span>
                       )}
-                      <span>{eventTasks.length} {nl ? 'taken' : 'tasks'}</span>
+                      <span>{eventTasks.length} {t3('taken', 'tâches', 'tasks')}</span>
                     </div>
                   </div>
                   <div className="divide-y divide-border">
