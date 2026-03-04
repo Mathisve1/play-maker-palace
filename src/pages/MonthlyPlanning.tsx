@@ -837,7 +837,7 @@ const MonthlyPlanning = () => {
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
-                            <p className="text-xs text-muted-foreground">Gerapporteerd: <strong>{ds.volunteer_reported_hours}u</strong></p>
+                            <p className="text-xs text-muted-foreground">{t3('Gerapporteerd', 'Rapporté', 'Reported')}: <strong>{ds.volunteer_reported_hours}{t3('u', 'h', 'h')}</strong></p>
                           </div>
                           <Button size="sm" variant="outline" onClick={async () => {
                             const finalHours = ds.volunteer_reported_hours!;
