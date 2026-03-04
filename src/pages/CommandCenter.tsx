@@ -402,7 +402,7 @@ const CommandCenter = () => {
       } else if (item.type === 'day_signup') {
         await supabase.from('monthly_day_signups').update({ status: 'rejected' }).eq('id', item.source_id);
       }
-      toast.success(language === 'nl' ? 'Afgewezen.' : 'Rejected.');
+      toast.success(t3('Afgewezen.', 'Rejeté.', 'Rejected.'));
       await loadData();
     } catch (err: any) {
       toast.error(err.message);
