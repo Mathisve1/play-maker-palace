@@ -653,7 +653,7 @@ const MonthlyPlanning = () => {
                       return (
                         <div key={t.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
                           <div className="text-center min-w-[40px]">
-                            <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString('nl-BE', { weekday: 'short' })}</p>
+                             <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE', { weekday: 'short' })}</p>
                             <p className="text-lg font-bold text-foreground">{d.getDate()}</p>
                           </div>
                           <div className="flex-1 min-w-0">
