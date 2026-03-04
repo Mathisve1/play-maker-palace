@@ -880,7 +880,7 @@ const ContractBuilder = () => {
                       </div>
                     ))}
                     {/* Identity fields */}
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">Identificatie & juridisch</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">{t3('Identificatie & juridisch', 'Identification & juridique', 'Identification & Legal')}</p>
                     {mergeFields.filter(f => f.group === 'identity').map(field => (
                       <div
                         key={field.name}
