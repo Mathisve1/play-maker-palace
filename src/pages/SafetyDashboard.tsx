@@ -1330,7 +1330,7 @@ const SafetyDashboard = () => {
                     <p className="text-[10px] text-muted-foreground">{t3('Incidenten zonder toegewezen zone', 'Incidents sans zone attribuée', 'Incidents without assigned zone')}</p>
                   </motion.div>
                 )}
-                {zones.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">Geen zones geconfigureerd voor dit evenement.</p>}
+                {zones.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">{t3('Geen zones geconfigureerd voor dit evenement.', 'Aucune zone configurée pour cet événement.', 'No zones configured for this event.')}</p>}
               </CardContent>
             </Card>
           </div>
