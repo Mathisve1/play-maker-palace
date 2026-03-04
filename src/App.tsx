@@ -75,6 +75,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<VolunteerLanding />} />
             <Route path="/clubs" element={<ClubsLanding />} />
