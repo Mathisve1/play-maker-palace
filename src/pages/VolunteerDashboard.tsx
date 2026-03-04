@@ -855,7 +855,7 @@ const VolunteerDashboard = () => {
         <div className="max-w-5xl mx-auto space-y-4">
           <h1 className="text-2xl font-heading font-bold text-foreground mb-2">Tickets</h1>
           {myTickets.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen tickets.' : 'No tickets.'}</p></div>
+            <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen tickets.' : language === 'fr' ? 'Aucun ticket.' : 'No tickets.'}</p></div>
           ) : (
             myTickets.map((ticket, i) => (
               <motion.div key={ticket.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
