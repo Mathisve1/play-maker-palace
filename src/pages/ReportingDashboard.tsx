@@ -714,7 +714,7 @@ const ReportingDashboard = () => {
     kpiLines.forEach(l => { doc.text(l, 14, y); y += 5; });
 
     y += 4; doc.setFontSize(12);
-    doc.text('Top 10 Vrijwilligers', 14, y); y += 7;
+    doc.text(L.pdfTop10, 14, y); y += 7;
     doc.setFontSize(8);
     volunteerReports.slice(0, 10).forEach(v => {
       if (y > 275) { doc.addPage(); y = 20; }
