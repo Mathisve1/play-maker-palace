@@ -239,6 +239,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       bank_consent_date: bankConsentGiven && !bankConsentDate ? now : bankConsentDate,
       bank_consent_text: bankConsentGiven ? consentText : null,
       avatar_url: avatarUrl,
+      language: profileLanguage,
     };
 
     const { error } = await supabase
