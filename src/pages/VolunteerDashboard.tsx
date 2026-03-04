@@ -1017,7 +1017,7 @@ const VolunteerDashboard = () => {
 
               {sepaPayouts.length > 0 && (
                 <>
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-2"><Banknote className="w-4 h-4 text-primary" />{language === 'nl' ? 'SEPA Vergoedingen' : 'SEPA Payments'}</h3>
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-2"><Banknote className="w-4 h-4 text-primary" />{language === 'nl' ? 'SEPA Vergoedingen' : language === 'fr' ? 'Remboursements SEPA' : 'SEPA Payments'}</h3>
                   {sepaPayouts.map((payout, i) => {
                     const isExported = ['downloaded', 'signed'].includes(payout.batch_status);
                     const isPending = ['pending', 'awaiting_signature'].includes(payout.batch_status);
