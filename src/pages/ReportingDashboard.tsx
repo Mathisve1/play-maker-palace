@@ -609,28 +609,28 @@ const ReportingDashboard = () => {
       `${L.occupancy}: ${kpis.fillRate}%`, `€ ${L.paidOut} (month): €${kpis.thisMonthPaid.toFixed(2)}`,
       `${L.contracts}: ${kpis.contractsPercent}%`, `${L.partnerStaff}: ${kpis.activePartnerMembers}`,
       '',
-      'TOP 10 VRIJWILLIGERS:',
+      `TOP 10 ${L.volunteers.toUpperCase()}:`,
       ...volunteerReports.slice(0, 10).map(v =>
-        `- ${v.name}: ${v.totalAssigned} taken, ${v.totalCheckedIn} ingecheckt, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)} verdiend, betrouwbaarheid ${v.reliabilityScore}%, evenementen: ${v.eventsWorked.join(', ') || 'geen'}`
+        `- ${v.name}: ${v.totalAssigned} ${L.tasks.toLowerCase()}, ${v.totalCheckedIn} ${L.checkedIn.toLowerCase()}, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)} ${L.earned.toLowerCase()}, ${L.reliability.toLowerCase()} ${v.reliabilityScore}%, ${L.events.toLowerCase()}: ${v.eventsWorked.join(', ') || '—'}`
       ),
-      '', 'EVENEMENTEN:',
+      '', `${L.events.toUpperCase()}:`,
       ...eventReports.map(e =>
-        `- ${e.title} (${e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '?'}): ${e.totalTasks} taken, ${e.totalVolunteers} vrijwilligers, ${e.checkedIn} ingecheckt, bezetting ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`
+        `- ${e.title} (${e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '?'}): ${e.totalTasks} ${L.tasks.toLowerCase()}, ${e.totalVolunteers} ${L.volunteers.toLowerCase()}, ${e.checkedIn} ${L.checkedIn.toLowerCase()}, ${L.occupancy.toLowerCase()} ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`
       ),
-      '', 'TAKEN (recent):',
+      '', `${L.tasks.toUpperCase()} (recent):`,
       ...taskReports.slice(0, 20).map(t =>
-        `- ${t.title} (${t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '?'}): ${t.assigned}/${t.totalSlots} pl, ${t.checkedIn} in, ${t.noShows} ns, ${t.compensation}, €${t.totalPaid.toFixed(2)}, uren: ${t.hourConfStatus}`
+        `- ${t.title} (${t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '?'}): ${t.assigned}/${t.totalSlots}, ${t.checkedIn} in, ${t.noShows} ns, ${t.compensation}, €${t.totalPaid.toFixed(2)}, ${L.hoursStatus.toLowerCase()}: ${t.hourConfStatus}`
       ),
-      '', 'PARTNERS:',
+      '', `${L.partners.toUpperCase()}:`,
       ...partners.map((p: any) => {
         const members = partnerMembers.filter((m: any) => m.partner_id === p.id);
         const assignments = partnerTaskAssignments.filter((a: any) => members.some((m: any) => m.id === a.partner_member_id));
-        return `- ${p.name} (${p.category}): ${members.length} medewerkers, ${assignments.length} ingezet, ${members.filter((m: any) => m.user_id).length} met account`;
+        return `- ${p.name} (${p.category}): ${members.length} ${L.partnerStaff.toLowerCase()}, ${assignments.length} ${L.assigned.toLowerCase()}, ${members.filter((m: any) => m.user_id).length} with account`;
       }),
-      '', 'COMPLIANCE:',
-      `Uur-bevestigingen: ${hourConfStats.total} totaal, ${hourConfStats.approved} goedgekeurd, ${hourConfStats.pending} in afwachting`,
-      `Contracten: ${signatureRequests.filter(s => s.status === 'completed').length}/${signatureRequests.length} ondertekend`,
-      '', 'MAANDELIJKSE UITGAVEN:',
+      '', `${L.compliance.toUpperCase()}:`,
+      `${L.hourConf}: ${hourConfStats.total} total, ${hourConfStats.approved} ${L.approved.toLowerCase()}, ${hourConfStats.pending} ${L.awaitingLabel.toLowerCase()}`,
+      `${L.contracts}: ${signatureRequests.filter(s => s.status === 'completed').length}/${signatureRequests.length}`,
+      '', `${L.monthlySpending.toUpperCase()}:`,
       ...monthlySpendingChart.map(m => `- ${m.month}: €${Number(m[L.paidOut] || 0).toFixed(2)}`),
       '', 'DAY DISTRIBUTION:',
       ...dayOfWeekChart.map(d => `- ${d.name}: ${d[L.tasks]} tasks`),
