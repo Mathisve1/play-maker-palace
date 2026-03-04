@@ -692,7 +692,7 @@ const MonthlyPlanning = () => {
                           {((e.profiles as any)?.full_name || '?')[0].toUpperCase()}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium">{(e.profiles as any)?.full_name || (e.profiles as any)?.email || 'Onbekend'}</p>
+                          <p className="text-sm font-medium">{(e.profiles as any)?.full_name || (e.profiles as any)?.email || t3('Onbekend', 'Inconnu', 'Unknown')}</p>
                           <p className="text-xs text-muted-foreground">{(e.profiles as any)?.email}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
