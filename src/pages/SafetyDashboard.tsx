@@ -1327,7 +1327,7 @@ const SafetyDashboard = () => {
                       <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-3 h-3 rounded-full bg-destructive" />
                     </div>
                     <Badge variant="destructive" className="text-[10px] mb-1">{unzonedActiveIncidents.length} incident{unzonedActiveIncidents.length > 1 ? 'en' : ''}</Badge>
-                    <p className="text-[10px] text-muted-foreground">Incidenten zonder toegewezen zone</p>
+                    <p className="text-[10px] text-muted-foreground">{t3('Incidenten zonder toegewezen zone', 'Incidents sans zone attribuée', 'Incidents without assigned zone')}</p>
                   </motion.div>
                 )}
                 {zones.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">Geen zones geconfigureerd voor dit evenement.</p>}
