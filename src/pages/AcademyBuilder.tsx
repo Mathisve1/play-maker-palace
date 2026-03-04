@@ -1159,7 +1159,7 @@ const AcademyBuilder = () => {
     if (!ev?.task || !clubId) return;
 
     const { data: signups } = await supabase.from('task_signups').select('volunteer_id').eq('task_id', ev.task.id).eq('status', 'approved');
-    if (!signups || signups.length === 0) { toast.error('Geen goedgekeurde inschrijvingen'); return; }
+    if (!signups || signups.length === 0) { toast.error(language === 'fr' ? 'Aucune inscription approuvée' : language === 'en' ? 'No approved signups' : 'Geen goedgekeurde inschrijvingen'); return; }
 
     // Check existing tickets
     const { data: existing } = await supabase.from('volunteer_tickets').select('volunteer_id').eq('event_id', eventId).eq('club_id', clubId);
