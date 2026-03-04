@@ -872,7 +872,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
 
                   {/* Preset charts */}
                   <div>
-                    <p className="text-sm font-medium mb-2">Grafieken</p>
+                    <p className="text-sm font-medium mb-2">{t3('Grafieken', 'Graphiques', 'Charts')}</p>
                     <div className="grid grid-cols-1 gap-2">
                       {PRESET_CHARTS.map(chart => (
                         <Button key={chart.key} variant="outline" className="justify-start h-auto py-3"
