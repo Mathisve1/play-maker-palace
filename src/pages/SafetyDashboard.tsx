@@ -1020,7 +1020,7 @@ const SafetyDashboard = () => {
           {/* Progress */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Voortgang</span>
+              <span className="text-muted-foreground">{t3('Voortgang', 'Progression', 'Progress')}</span>
               <span className="font-semibold text-foreground">{volChecklistTotal > 0 ? Math.round((volChecklistDone / volChecklistTotal) * 100) : 0}%</span>
             </div>
             <Progress value={volChecklistTotal > 0 ? (volChecklistDone / volChecklistTotal) * 100 : 0} className="h-3" />
