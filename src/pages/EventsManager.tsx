@@ -531,7 +531,7 @@ const EventsManager = () => {
                 }).map((event, ei) => renderEventCard(event, ei))}
                 {pastLooseTasks.length > 0 && (
                   <>
-                    {pastEvents.length > 0 && <div className="pt-2"><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{nl ? 'Afgelopen losse taken' : 'Past loose tasks'}</p></div>}
+                    {pastEvents.length > 0 && <div className="pt-2"><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t3('Afgelopen losse taken', 'Tâches libres passées', 'Past loose tasks')}</p></div>}
                     {pastLooseTasks.map((task, i) => renderLooseTaskCard(task, i))}
                   </>
                 )}
