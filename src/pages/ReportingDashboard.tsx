@@ -704,12 +704,12 @@ const ReportingDashboard = () => {
     doc.text(L.pdfKpiOverview, 14, y); y += 8;
     doc.setFontSize(9);
     const kpiLines = [
-      `Vrijwilligers: ${kpis.totalVolunteers}`, `Taken: ${kpis.totalTasks}`,
-      `Toewijzingen: ${kpis.totalAssigned}`, `Ingecheckt: ${kpis.totalCheckedIn}`,
-      `No-shows: ${kpis.totalNoShows}`, `Opkomst: ${kpis.attendanceRate}%`,
-      `Bezetting: ${kpis.fillRate}%`, `Uitbetaald: €${kpis.totalPaid.toFixed(2)}`,
-      `Openstaand: €${kpis.totalPending.toFixed(2)}`, `SEPA: €${kpis.totalSepa.toFixed(2)}`,
-      `Contracten: ${kpis.contractsPercent}%`, `Partner mdw: ${kpis.activePartnerMembers}`,
+      `${L.volunteers}: ${kpis.totalVolunteers}`, `${L.tasks}: ${kpis.totalTasks}`,
+      `${L.assignments}: ${kpis.totalAssigned}`, `${L.checkedIn}: ${kpis.totalCheckedIn}`,
+      `${L.noShows}: ${kpis.totalNoShows}`, `${L.attendance}: ${kpis.attendanceRate}%`,
+      `${L.occupancy}: ${kpis.fillRate}%`, `${L.paidOut}: €${kpis.totalPaid.toFixed(2)}`,
+      `${L.outstanding}: €${kpis.totalPending.toFixed(2)}`, `SEPA: €${kpis.totalSepa.toFixed(2)}`,
+      `${L.contracts}: ${kpis.contractsPercent}%`, `${L.partnerStaff}: ${kpis.activePartnerMembers}`,
     ];
     kpiLines.forEach(l => { doc.text(l, 14, y); y += 5; });
 
