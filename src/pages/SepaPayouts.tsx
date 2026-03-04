@@ -823,7 +823,7 @@ const SepaPayouts = () => {
               <Input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Zoek op naam, taak of e-mail..."
+                placeholder={t3('Zoek op naam, taak of e-mail...', 'Rechercher par nom, tâche ou e-mail...', 'Search by name, task or email...')}
                 className="pl-9"
               />
             </div>
