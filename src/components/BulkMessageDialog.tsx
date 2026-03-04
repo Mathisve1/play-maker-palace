@@ -308,7 +308,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
           {showVars && (
             <div className="mt-2 p-3 rounded-xl bg-muted/30 border border-border space-y-1.5">
               <p className="text-xs text-muted-foreground mb-2">
-                Klik om in te voegen. Variabelen worden automatisch vervangen per vrijwilliger.
+                {t3('Klik om in te voegen. Variabelen worden automatisch vervangen per vrijwilliger.', 'Cliquez pour insérer. Les variables seront remplacées automatiquement par bénévole.', 'Click to insert. Variables are automatically replaced per volunteer.')}
               </p>
               {templateVars.map(v => (
                 <button
