@@ -45,7 +45,7 @@ const ClubsLanding = () => {
               {t.clubs.heroSubtitle}
             </motion.p>
             <motion.div variants={fadeUp} custom={2} className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <Link to="/club-login" className="px-6 py-3 rounded-xl bg-hero-secondary text-secondary-foreground font-medium hover:opacity-90 transition-opacity">
+              <Link to="/club-signup" className="px-6 py-3 rounded-xl bg-hero-secondary text-secondary-foreground font-medium hover:opacity-90 transition-opacity">
                 {t.clubs.heroCta}
               </Link>
               <Link to="/partner-login" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors flex items-center gap-2 justify-center">
