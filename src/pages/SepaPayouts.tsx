@@ -381,7 +381,7 @@ const SepaPayouts = () => {
     if (!currentBatchId) return;
 
     // Poll for signed status
-    toast.info('Verwerken... Even geduld.');
+    toast.info(t3('Verwerken... Even geduld.', 'Traitement... Veuillez patienter.', 'Processing... Please wait.'));
     let attempts = 0;
     const poll = setInterval(async () => {
       attempts++;
