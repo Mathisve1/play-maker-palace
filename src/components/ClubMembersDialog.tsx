@@ -406,7 +406,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         {invitations.length > 0 && (
           <div className="mt-4 space-y-2">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              Openstaande uitnodigingen ({invitations.length})
+              {t3('Openstaande uitnodigingen', 'Invitations en attente', 'Pending invitations')} ({invitations.length})
             </h3>
             {invitations.map(inv => (
               <div key={inv.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/10 border border-dashed border-border">
