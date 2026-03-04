@@ -60,7 +60,7 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
     else if (data) {
       setZones(prev => [...prev, data]);
       if (parentId) setExpanded(prev => new Set([...prev, parentId]));
-      toast.success(nl ? 'Zone toegevoegd!' : 'Zone added!');
+      toast.success(t3('Zone toegevoegd!', 'Zone ajoutée !', 'Zone added!'));
     }
     setNewName('');
     setNewCapacity('');
@@ -69,14 +69,13 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
   };
 
   const handleDelete = async (zoneId: string) => {
-    // Recursively delete children first (cascade handles it in DB)
     const { error } = await (supabase as any).from('task_zones').delete().eq('id', zoneId);
     if (error) toast.error(error.message);
     else {
       const removeIds = getDescendantIds(zoneId);
       removeIds.add(zoneId);
       setZones(prev => prev.filter(z => !removeIds.has(z.id)));
-      toast.success(nl ? 'Zone verwijderd!' : 'Zone deleted!');
+      toast.success(t3('Zone verwijderd!', 'Zone supprimée !', 'Zone deleted!'));
     }
   };
 
@@ -134,32 +133,30 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
             </span>
           )}
 
-          <button onClick={() => handleToggleVisibility(zone)} className={`p-1 rounded-lg transition-colors ${zone.is_visible ? 'text-accent hover:bg-accent/10' : 'text-muted-foreground hover:bg-muted'}`} title={zone.is_visible ? (nl ? 'Zichtbaar' : 'Visible') : (nl ? 'Verborgen' : 'Hidden')}>
+          <button onClick={() => handleToggleVisibility(zone)} className={`p-1 rounded-lg transition-colors ${zone.is_visible ? 'text-accent hover:bg-accent/10' : 'text-muted-foreground hover:bg-muted'}`} title={zone.is_visible ? t3('Zichtbaar', 'Visible', 'Visible') : t3('Verborgen', 'Masqué', 'Hidden')}>
             {zone.is_visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
           </button>
 
-          <button onClick={() => { setAddingTo(zone.id); setNewName(''); setNewCapacity(''); }} className="p-1 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title={nl ? 'Sub-zone toevoegen' : 'Add sub-zone'}>
+          <button onClick={() => { setAddingTo(zone.id); setNewName(''); setNewCapacity(''); }} className="p-1 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title={t3('Sub-zone toevoegen', 'Ajouter une sous-zone', 'Add sub-zone')}>
             <Plus className="w-3.5 h-3.5" />
           </button>
 
-          <button onClick={() => handleDelete(zone.id)} className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100" title={nl ? 'Verwijderen' : 'Delete'}>
+          <button onClick={() => handleDelete(zone.id)} className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100" title={t3('Verwijderen', 'Supprimer', 'Delete')}>
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Add sub-zone form */}
         {addingTo === zone.id && (
           <div className="flex items-center gap-2 py-2" style={{ paddingLeft: `${(depth + 1) * 24 + 12}px` }}>
-            <input type="text" placeholder={nl ? 'Zone naam...' : 'Zone name...'} value={newName} onChange={e => setNewName(e.target.value)} className="flex-1 px-3 py-1.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" autoFocus onKeyDown={e => e.key === 'Enter' && handleAdd()} />
+            <input type="text" placeholder={t3('Zone naam...', 'Nom de zone...', 'Zone name...')} value={newName} onChange={e => setNewName(e.target.value)} className="flex-1 px-3 py-1.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" autoFocus onKeyDown={e => e.key === 'Enter' && handleAdd()} />
             <input type="number" placeholder="Max" min={1} value={newCapacity} onChange={e => setNewCapacity(e.target.value)} className="w-16 px-2 py-1.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             <button onClick={handleAdd} disabled={saving || !newName.trim()} className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground disabled:opacity-50">
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (nl ? 'Toevoegen' : 'Add')}
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t3('Toevoegen', 'Ajouter', 'Add')}
             </button>
             <button onClick={() => setAddingTo(null)} className="px-2 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground">✕</button>
           </div>
         )}
 
-        {/* Children */}
         {isExpanded && children.map(child => renderZone(child, depth + 1))}
       </div>
     );
@@ -171,62 +168,59 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
 
   return (
     <div className="space-y-4">
-      {/* Settings */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">
-            {nl ? 'Inschrijfmodus' : 'Signup mode'}
+            {t3('Inschrijfmodus', 'Mode d\'inscription', 'Signup mode')}
           </label>
           <select
             value={zoneSignupMode}
             onChange={e => onSignupModeChange(e.target.value)}
             className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <option value="club_only">{nl ? 'Alleen club wijst toe' : 'Club assigns only'}</option>
-            <option value="volunteer_choice">{nl ? 'Vrijwilliger kiest zelf' : 'Volunteer chooses'}</option>
-            <option value="both">{nl ? 'Beide (voorkeur + club bevestigt)' : 'Both (preference + club confirms)'}</option>
+            <option value="club_only">{t3('Alleen club wijst toe', 'Le club attribue uniquement', 'Club assigns only')}</option>
+            <option value="volunteer_choice">{t3('Vrijwilliger kiest zelf', 'Le bénévole choisit', 'Volunteer chooses')}</option>
+            <option value="both">{t3('Beide (voorkeur + club bevestigt)', 'Les deux (préférence + club confirme)', 'Both (preference + club confirms)')}</option>
           </select>
         </div>
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">
-            {nl ? 'Zichtbare diepte (leeg = alles)' : 'Visible depth (empty = all)'}
+            {t3('Zichtbare diepte (leeg = alles)', 'Profondeur visible (vide = tout)', 'Visible depth (empty = all)')}
           </label>
           <input
             type="number"
             min={1}
             value={zoneVisibleDepth ?? ''}
             onChange={e => onVisibleDepthChange(e.target.value ? parseInt(e.target.value) : null)}
-            placeholder={nl ? 'Onbeperkt' : 'Unlimited'}
+            placeholder={t3('Onbeperkt', 'Illimité', 'Unlimited')}
             className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       </div>
 
-      {/* Zone Tree */}
       <div className="border border-border rounded-2xl bg-card overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-foreground">{nl ? 'Zone structuur' : 'Zone structure'}</h4>
+          <h4 className="text-sm font-semibold text-foreground">{t3('Zone structuur', 'Structure des zones', 'Zone structure')}</h4>
           <button onClick={() => { setAddingTo('root'); setNewName(''); setNewCapacity(''); }} className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-            <Plus className="w-3.5 h-3.5" /> {nl ? 'Zone toevoegen' : 'Add zone'}
+            <Plus className="w-3.5 h-3.5" /> {t3('Zone toevoegen', 'Ajouter une zone', 'Add zone')}
           </button>
         </div>
 
         <div className="p-2 min-h-[80px]">
           {rootZones.length === 0 && addingTo !== 'root' ? (
-            <p className="text-sm text-muted-foreground text-center py-6">{nl ? 'Nog geen zones. Voeg je eerste zone toe.' : 'No zones yet. Add your first zone.'}</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t3('Nog geen zones. Voeg je eerste zone toe.', 'Pas encore de zones. Ajoutez votre première zone.', 'No zones yet. Add your first zone.')}</p>
           ) : (
             <>
               {rootZones.map(z => renderZone(z, 0))}
             </>
           )}
 
-          {/* Add root zone form */}
           {addingTo === 'root' && (
             <div className="flex items-center gap-2 py-2 px-3">
-              <input type="text" placeholder={nl ? 'Zone naam...' : 'Zone name...'} value={newName} onChange={e => setNewName(e.target.value)} className="flex-1 px-3 py-1.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" autoFocus onKeyDown={e => e.key === 'Enter' && handleAdd()} />
+              <input type="text" placeholder={t3('Zone naam...', 'Nom de zone...', 'Zone name...')} value={newName} onChange={e => setNewName(e.target.value)} className="flex-1 px-3 py-1.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" autoFocus onKeyDown={e => e.key === 'Enter' && handleAdd()} />
               <input type="number" placeholder="Max" min={1} value={newCapacity} onChange={e => setNewCapacity(e.target.value)} className="w-16 px-2 py-1.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               <button onClick={handleAdd} disabled={saving || !newName.trim()} className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground disabled:opacity-50">
-                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (nl ? 'Toevoegen' : 'Add')}
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t3('Toevoegen', 'Ajouter', 'Add')}
               </button>
               <button onClick={() => setAddingTo(null)} className="px-2 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground">✕</button>
             </div>
