@@ -619,7 +619,7 @@ const MonthlyPlanning = () => {
                 <div className="flex items-center gap-3 flex-wrap">
                   <Button variant="outline" onClick={copyPreviousMonth} disabled={copyingTasks}>
                     {copyingTasks ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />}
-                    Kopieer vorige maand
+                    {t3('Kopieer vorige maand', 'Copier le mois précédent', 'Copy previous month')}
                   </Button>
                   <div className="flex items-center gap-2">
                     <Label className="text-sm whitespace-nowrap">Contractsjabloon:</Label>
