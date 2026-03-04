@@ -370,6 +370,7 @@ const PartnerDashboard = () => {
       activeTab={activeTab}
       setActiveTab={setActiveTab}
       onLogout={handleLogoutWrapped}
+      onOpenProfile={() => setShowProfileDialog(true)}
     />
   );
 
