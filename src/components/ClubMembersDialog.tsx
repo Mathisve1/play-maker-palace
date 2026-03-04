@@ -302,8 +302,8 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                 onChange={e => setInviteRole(e.target.value as ClubRole)}
                 className="px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                {canManage && <option value="beheerder">Beheerder</option>}
-                <option value="medewerker">Medewerker</option>
+                {canManage && <option value="beheerder">{roleLabels.beheerder}</option>}
+                <option value="medewerker">{roleLabels.medewerker}</option>
               </select>
             </div>
 
