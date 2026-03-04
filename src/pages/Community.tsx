@@ -317,7 +317,7 @@ const Community = () => {
               {otherClubs.length === 0 && filtered.length === 0 ? (
                 <div className="text-center py-16 text-muted-foreground">
                   <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>Geen clubs gevonden</p>
+                  <p>{cl.noClubs}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
