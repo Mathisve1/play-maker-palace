@@ -163,7 +163,29 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const privateJwk = JSON.parse(vapidPrivJwkStr);
+    let privateJwk: any;
+    try {
+      privateJwk = JSON.parse(vapidPrivJwkStr);
+    } catch {
+      // If the secret is a raw base64url-encoded 32-byte private key, convert to JWK
+      privateJwk = {
+        kty: 'EC',
+        crv: 'P-256',
+        d: vapidPrivJwkStr,
+        x: '', // will be derived below
+        y: '',
+      };
+      // Derive x,y from the public key
+      const pubBytes = b64urlDecode(vapidPub);
+      // Uncompressed public key: 0x04 || x (32 bytes) || y (32 bytes)
+      if (pubBytes.length === 65 && pubBytes[0] === 0x04) {
+        privateJwk.x = b64url(pubBytes.slice(1, 33));
+        privateJwk.y = b64url(pubBytes.slice(33, 65));
+      } else {
+        return new Response(JSON.stringify({ error: 'Cannot derive JWK from VAPID keys. Please store VAPID_PRIVATE_JWK as a full JWK JSON string.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
     const vapidSubject = 'mailto:info@de12eman.be';
     const sbUrl = Deno.env.get('SUPABASE_URL')!;
     const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
