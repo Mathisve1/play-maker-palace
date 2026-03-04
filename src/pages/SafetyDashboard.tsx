@@ -342,7 +342,7 @@ const SafetyDashboard = () => {
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
         () => {
           // Event was deleted (e.g. simulation restart) — navigate volunteer away
-          toast.info('Event is beëindigd of herstart.');
+          toast.info(t3('Event is beëindigd of herstart.', 'L\'événement est terminé ou redémarré.', 'Event has ended or restarted.'));
           navigate('/volunteer');
         })
       .subscribe();
