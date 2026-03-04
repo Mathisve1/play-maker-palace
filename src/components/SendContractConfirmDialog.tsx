@@ -468,9 +468,9 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
             {/* Volunteer details */}
             <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{l.volunteerDetails}</p>
-              <InfoRow icon={User} label="Naam" value={volunteer.full_name || l.noName} muted={!volunteer.full_name} />
+              <InfoRow icon={User} label={language === 'nl' ? 'Naam' : language === 'fr' ? 'Nom' : 'Name'} value={volunteer.full_name || l.noName} muted={!volunteer.full_name} />
               <InfoRow icon={Mail} label="E-mail" value={volunteer.email || l.noEmail} muted={!volunteer.email} />
-              <InfoRow icon={Phone} label="Telefoon" value={volunteer.phone || l.noPhone} muted={!volunteer.phone} />
+              <InfoRow icon={Phone} label={language === 'nl' ? 'Telefoon' : language === 'fr' ? 'Téléphone' : 'Phone'} value={volunteer.phone || l.noPhone} muted={!volunteer.phone} />
               {volunteer.bank_iban && (
                 <InfoRow icon={Building2} label="IBAN" value={volunteer.bank_iban} />
               )}
@@ -479,10 +479,10 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
             {/* Task details */}
             <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{l.taskDetails}</p>
-              <InfoRow icon={FileSignature} label="Taak" value={task.title} />
+              <InfoRow icon={FileSignature} label={language === 'nl' ? 'Taak' : language === 'fr' ? 'Tâche' : 'Task'} value={task.title} />
               {(clubData?.name || clubName) && <InfoRow icon={Building2} label="Club" value={clubData?.name || clubName || ''} />}
-              {task.task_date && <InfoRow icon={Calendar} label="Datum" value={formatDate(task.task_date, language)!} />}
-              {task.location && <InfoRow icon={MapPin} label="Locatie" value={task.location} />}
+              {task.task_date && <InfoRow icon={Calendar} label={language === 'nl' ? 'Datum' : 'Date'} value={formatDate(task.task_date, language)!} />}
+              {task.location && <InfoRow icon={MapPin} label={language === 'nl' ? 'Locatie' : language === 'fr' ? 'Lieu' : 'Location'} value={task.location} />}
               {(fullTask?.start_time || task.start_time) && (
                 <InfoRow
                   icon={Clock}
