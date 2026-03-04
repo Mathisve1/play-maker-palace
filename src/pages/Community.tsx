@@ -246,7 +246,7 @@ const Community = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Zoek op naam, sport of locatie..."
+                placeholder={cl.searchPlaceholder}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10 h-12 text-base rounded-xl border-border/50 bg-card shadow-card"
