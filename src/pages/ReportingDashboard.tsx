@@ -1033,13 +1033,13 @@ const ReportingDashboard = () => {
           {/* EVENTS */}
           <TabsContent value="events" className="space-y-4 mt-4">
             <div className="flex justify-end">
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(eventReports.map(e => ({
-                Evenement: e.title, Datum: e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '',
-                Taken: e.totalTasks, Vrijwilligers: e.totalVolunteers, Ingecheckt: e.checkedIn,
-                'Bezetting %': `${e.fillRate}%`, Uitbetaald: `€${e.totalPaid.toFixed(2)}`,
-                'Populairste taak': e.topTask || '',
-              })), 'evenementen-rapport')}>
-                <Download className="w-4 h-4" /> Exporteer CSV
+               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(eventReports.map(e => ({
+                 [L.event]: e.title, [L.date]: e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '',
+                 [L.tasks]: e.totalTasks, [L.volunteers]: e.totalVolunteers, [L.checkedIn]: e.checkedIn,
+                 [`${L.occupancy} %`]: `${e.fillRate}%`, [L.paidOut]: `€${e.totalPaid.toFixed(2)}`,
+                 [L.popularTask]: e.topTask || '',
+               })), 'events-report')}>
+                 <Download className="w-4 h-4" /> {L.exportCsv}
               </Button>
             </div>
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
