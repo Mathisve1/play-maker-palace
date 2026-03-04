@@ -637,7 +637,7 @@ const MonthlyPlanning = () => {
               )}
               {plan.status === 'published' && (
                 <Badge variant="outline" className="text-sm py-2 px-4">
-                  <Users className="w-4 h-4 mr-1" /> {enrollments.length} vrijwilliger(s) ingeschreven
+                  <Users className="w-4 h-4 mr-1" /> {enrollments.length} {t3('vrijwilliger(s) ingeschreven', 'bénévole(s) inscrit(s)', 'volunteer(s) enrolled')}
                 </Badge>
               )}
             </div>
