@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PartnerSidebar from '@/components/PartnerSidebar';
+import EditProfileDialog from '@/components/EditProfileDialog';
+import { Language } from '@/i18n/translations';
 
 interface ClubInfo { id: string; name: string; logo_url: string | null; }
 interface PartnerInfo { id: string; name: string; category: string; external_payroll: boolean; club_id: string; }
