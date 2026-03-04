@@ -1237,8 +1237,8 @@ const SafetyDashboard = () => {
                     </Button>
                   </motion.div>
                 ) : (
-                  <div className="bg-muted/50 rounded-xl p-4 text-center">
-                    <p className="text-sm text-muted-foreground">Alle checklist items moeten afgevinkt zijn voordat je live kunt gaan.</p>
+                   <div className="bg-muted/50 rounded-xl p-4 text-center">
+                     <p className="text-sm text-muted-foreground">{t3('Alle checklist items moeten afgevinkt zijn voordat je live kunt gaan.', 'Tous les éléments doivent être cochés avant de passer en direct.', 'All checklist items must be completed before going live.')}</p>
                   </div>
                 )}
               </CardContent>
