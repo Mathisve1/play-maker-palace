@@ -19,7 +19,6 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, subMonths, isWithinInterval, parseISO, isSameMonth, getDay } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { toast } from 'sonner';
