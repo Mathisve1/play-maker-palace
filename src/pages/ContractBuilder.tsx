@@ -805,7 +805,7 @@ const ContractBuilder = () => {
               {/* Content Blocks */}
               <button onClick={() => setBlocksOpen(!blocksOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
                 {blocksOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                Inhoudblokken
+                {t3('Inhoudblokken', 'Blocs de contenu', 'Content Blocks')}
               </button>
               <AnimatePresence>
                 {blocksOpen && (
