@@ -80,6 +80,7 @@ const SepaPayouts = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
 
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState('');
   const [clubId, setClubId] = useState<string | null>(null);
@@ -202,7 +203,7 @@ const SepaPayouts = () => {
 
       payableList.push({
         volunteerId: profile.id,
-        fullName: profile.full_name || 'Onbekend',
+        fullName: profile.full_name || t3('Onbekend', 'Inconnu', 'Unknown'),
         email: profile.email || '',
         avatarUrl: profile.avatar_url,
         iban,
@@ -264,11 +265,11 @@ const SepaPayouts = () => {
   const handleGenerateSepa = async () => {
     if (selected.size === 0) return;
     if (!clubIban.trim()) {
-      toast.error('Vul het IBAN van de club in');
+      toast.error(t3('Vul het IBAN van de club in', 'Veuillez saisir l\'IBAN du club', 'Please enter the club IBAN'));
       return;
     }
     if (!batchMessage.trim()) {
-      toast.error('Vul een batch mededeling in');
+      toast.error(t3('Vul een batch mededeling in', 'Veuillez saisir un message de lot', 'Please enter a batch message'));
       return;
     }
 
@@ -366,7 +367,7 @@ const SepaPayouts = () => {
 
       setSigningUrl(signData.signingUrl);
       setShowSigningDialog(true);
-      toast.success('SEPA batch aangemaakt. Onderteken nu het document.');
+      toast.success(t3('SEPA batch aangemaakt. Onderteken nu het document.', 'Lot SEPA créé. Signez le document.', 'SEPA batch created. Sign the document now.'));
     } catch (err: any) {
       toast.error(err.message || 'Er ging iets mis');
     }
@@ -380,7 +381,7 @@ const SepaPayouts = () => {
     if (!currentBatchId) return;
 
     // Poll for signed status
-    toast.info('Verwerken... Even geduld.');
+    toast.info(t3('Verwerken... Even geduld.', 'Traitement... Veuillez patienter.', 'Processing... Please wait.'));
     let attempts = 0;
     const poll = setInterval(async () => {
       attempts++;
@@ -402,7 +403,7 @@ const SepaPayouts = () => {
           setSelected(new Set());
           init(); // Refresh
         } else if (attempts > 30) {
-          toast.error('Ondertekening niet ontvangen. Probeer opnieuw.');
+          toast.error(t3('Ondertekening niet ontvangen. Probeer opnieuw.', 'Signature non reçue. Réessayez.', 'Signature not received. Please try again.'));
         }
       }
     }, 2000);
@@ -416,7 +417,7 @@ const SepaPayouts = () => {
       .single();
     
     if (!data || !data.xml_content || !['signed', 'downloaded'].includes(data.status)) {
-      toast.error('Batch is niet ondertekend of XML ontbreekt.');
+      toast.error(t3('Batch is niet ondertekend of XML ontbreekt.', 'Lot non signé ou XML manquant.', 'Batch not signed or XML missing.'));
       return;
     }
 
@@ -447,7 +448,7 @@ const SepaPayouts = () => {
         }
       );
     }
-    toast.success('SEPA XML gedownload!');
+    toast.success(t3('SEPA XML gedownload!', 'SEPA XML téléchargé !', 'SEPA XML downloaded!'));
     init();
   };
 
@@ -470,7 +471,7 @@ const SepaPayouts = () => {
       // Get batch info
       const batch = batches.find(b => b.id === batchId);
       if (!batch || !['signed', 'downloaded'].includes(batch.status)) {
-        toast.error('Batch moet eerst ondertekend zijn.');
+        toast.error(t3('Batch moet eerst ondertekend zijn.', 'Le lot doit d\'abord être signé.', 'Batch must be signed first.'));
         return;
       }
 
@@ -532,9 +533,9 @@ const SepaPayouts = () => {
       });
 
       doc.save(`Verantwoordingsstuk-${batch.batch_reference}.pdf`);
-      toast.success('Boekhoudkundig verantwoordingsstuk gedownload!');
+      toast.success(t3('Boekhoudkundig verantwoordingsstuk gedownload!', 'Justificatif comptable téléchargé !', 'Accounting document downloaded!'));
     } catch (err: any) {
-      toast.error(err.message || 'PDF generatie mislukt');
+      toast.error(err.message || t3('PDF generatie mislukt', 'Échec de la génération PDF', 'PDF generation failed'));
     }
   };
 
@@ -548,7 +549,7 @@ const SepaPayouts = () => {
         .eq('batch_id', batchId)
         .eq('error_flag', false);
       if (!data || data.length === 0) {
-        toast.error('Geen items in batch');
+        toast.error(t3('Geen items in batch', 'Aucun élément dans le lot', 'No items in batch'));
         return;
       }
       const batch = batches.find(b => b.id === batchId);
@@ -560,11 +561,11 @@ const SepaPayouts = () => {
       const csvContent = generateCsv(validItems, batch?.batch_message || '');
       downloadFile(csvContent, `${batch?.batch_reference || 'batch'}.csv`, 'text/csv;charset=utf-8');
     }
-    toast.success('CSV gedownload!');
+    toast.success(t3('CSV gedownload!', 'CSV téléchargé !', 'CSV downloaded!'));
   };
 
   const generateCsv = (items: SepaBatchItem[], message: string): string => {
-    const header = 'Naam,IBAN,BIC,Bedrag,Mededeling';
+    const header = t3('Naam,IBAN,BIC,Bedrag,Mededeling', 'Nom,IBAN,BIC,Montant,Message', 'Name,IBAN,BIC,Amount,Message');
     const rows = items.map(item => {
       const name = (item.holder_name || '').replace(/"/g, '""');
       const iban = item.iban.replace(/\s/g, '');
@@ -577,7 +578,7 @@ const SepaPayouts = () => {
   };
 
   const handleRollback = async (batchId: string) => {
-    if (!confirm('Weet je zeker dat je deze batch wilt terugdraaien? Je moet eerst een annuleringsverklaring ondertekenen.')) return;
+    if (!confirm(t3('Weet je zeker dat je deze batch wilt terugdraaien? Je moet eerst een annuleringsverklaring ondertekenen.', 'Êtes-vous sûr de vouloir annuler ce lot ? Vous devez d\'abord signer une déclaration d\'annulation.', 'Are you sure you want to roll back this batch? You must first sign a cancellation declaration.'))) return;
     setRollingBack(batchId);
     setRollbackBatchId(batchId);
     try {
@@ -650,7 +651,7 @@ const SepaPayouts = () => {
       );
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Rollback failed');
-      toast.success('Batch verwijderd na ondertekening. Vrijwilligers staan opnieuw in de betaallijst.');
+      toast.success(t3('Batch verwijderd na ondertekening. Vrijwilligers staan opnieuw in de betaallijst.', 'Lot supprimé après signature. Les bénévoles sont de retour dans la liste de paiement.', 'Batch removed after signing. Volunteers are back in the payment list.'));
       init();
     } catch (err: any) {
       toast.error(err.message || 'Rollback mislukt');
@@ -678,7 +679,7 @@ const SepaPayouts = () => {
       );
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Flag failed');
-      toast.success(flag ? 'Transactie gemarkeerd als fout.' : 'Fout-markering verwijderd.');
+      toast.success(flag ? t3('Transactie gemarkeerd als fout.', 'Transaction marquée comme erreur.', 'Transaction flagged as error.') : t3('Fout-markering verwijderd.', 'Marqueur d\'erreur supprimé.', 'Error flag removed.'));
       // Update local state
       setBatchItems(prev => {
         const updated = { ...prev };
@@ -713,10 +714,10 @@ const SepaPayouts = () => {
 
   const statusBadge = (status: string) => {
     switch (status) {
-      case 'pending': return <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" /> Open</Badge>;
-      case 'awaiting_signature': return <Badge className="gap-1 bg-amber-500/10 text-amber-600 border-amber-200"><FileSignature className="w-3 h-3" /> Wacht op handtekening</Badge>;
-      case 'signed': return <Badge className="gap-1 bg-blue-500/10 text-blue-600 border-blue-200"><CheckCircle className="w-3 h-3" /> Ondertekend</Badge>;
-      case 'downloaded': return <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-200"><Download className="w-3 h-3" /> Geëxporteerd</Badge>;
+      case 'pending': return <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" /> {t3('Open', 'Ouvert', 'Open')}</Badge>;
+      case 'awaiting_signature': return <Badge className="gap-1 bg-amber-500/10 text-amber-600 border-amber-200"><FileSignature className="w-3 h-3" /> {t3('Wacht op handtekening', 'En attente de signature', 'Awaiting signature')}</Badge>;
+      case 'signed': return <Badge className="gap-1 bg-blue-500/10 text-blue-600 border-blue-200"><CheckCircle className="w-3 h-3" /> {t3('Ondertekend', 'Signé', 'Signed')}</Badge>;
+      case 'downloaded': return <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-200"><Download className="w-3 h-3" /> {t3('Geëxporteerd', 'Exporté', 'Exported')}</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
@@ -742,7 +743,7 @@ const SepaPayouts = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{payables.length}</p>
-                <p className="text-xs text-muted-foreground">Openstaande vergoedingen</p>
+                <p className="text-xs text-muted-foreground">{t3('Openstaande vergoedingen', 'Remboursements en attente', 'Outstanding reimbursements')}</p>
               </div>
             </div>
           </motion.div>
@@ -754,7 +755,7 @@ const SepaPayouts = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{selected.size}</p>
-                <p className="text-xs text-muted-foreground">Geselecteerd</p>
+                <p className="text-xs text-muted-foreground">{t3('Geselecteerd', 'Sélectionnés', 'Selected')}</p>
               </div>
             </div>
           </motion.div>
@@ -766,7 +767,7 @@ const SepaPayouts = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">€{totalAmount.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">Totaalbedrag geselecteerd</p>
+                <p className="text-xs text-muted-foreground">{t3('Totaalbedrag geselecteerd', 'Montant total sélectionné', 'Total amount selected')}</p>
               </div>
             </div>
           </motion.div>
@@ -776,11 +777,11 @@ const SepaPayouts = () => {
         <div className="bg-card rounded-xl border border-border p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Building2 className="w-4 h-4 text-primary" />
-            Club Bankgegevens & Mededeling
+            {t3('Club Bankgegevens & Mededeling', 'Données bancaires & Message', 'Club Bank Details & Message')}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Club IBAN *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{t3('Club IBAN *', 'IBAN du club *', 'Club IBAN *')}</label>
               <Input
                 value={clubIban}
                 onChange={e => {
@@ -793,7 +794,7 @@ const SepaPayouts = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Club BIC</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{t3('Club BIC', 'BIC du club', 'Club BIC')}</label>
               <Input
                 value={clubBic}
                 onChange={e => setClubBic(e.target.value.toUpperCase())}
@@ -803,7 +804,7 @@ const SepaPayouts = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Batch Mededeling *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{t3('Batch Mededeling *', 'Message du lot *', 'Batch Message *')}</label>
               <Input
                 value={batchMessage}
                 onChange={e => setBatchMessage(e.target.value)}
@@ -822,7 +823,7 @@ const SepaPayouts = () => {
               <Input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Zoek op naam, taak of e-mail..."
+                placeholder={t3('Zoek op naam, taak of e-mail...', 'Rechercher par nom, tâche ou e-mail...', 'Search by name, task or email...')}
                 className="pl-9"
               />
             </div>
@@ -842,8 +843,8 @@ const SepaPayouts = () => {
           {filtered.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">
               <Euro className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">Geen openstaande vergoedingen</p>
-              <p className="text-sm mt-1">Alle vrijwilligers zijn uitbetaald of er zijn geen taken met onkostenvergoeding.</p>
+              <p className="font-medium">{t3('Geen openstaande vergoedingen', 'Aucun remboursement en attente', 'No outstanding reimbursements')}</p>
+              <p className="text-sm mt-1">{t3('Alle vrijwilligers zijn uitbetaald of er zijn geen taken met onkostenvergoeding.', 'Tous les bénévoles sont payés ou aucune tâche avec remboursement.', 'All volunteers are paid or no tasks with reimbursement.')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -856,12 +857,12 @@ const SepaPayouts = () => {
                         onCheckedChange={toggleAll}
                       />
                     </TableHead>
-                    <TableHead>Vrijwilliger</TableHead>
-                    <TableHead>Taak</TableHead>
-                    <TableHead>Datum</TableHead>
+                    <TableHead>{t3('Vrijwilliger', 'Bénévole', 'Volunteer')}</TableHead>
+                    <TableHead>{t3('Taak', 'Tâche', 'Task')}</TableHead>
+                    <TableHead>{t3('Datum', 'Date', 'Date')}</TableHead>
                     <TableHead>IBAN</TableHead>
                     <TableHead>BIC</TableHead>
-                    <TableHead className="text-right">Bedrag</TableHead>
+                    <TableHead className="text-right">{t3('Bedrag', 'Montant', 'Amount')}</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -906,7 +907,7 @@ const SepaPayouts = () => {
                             </span>
                           ) : (
                             <span className="text-xs text-destructive flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" /> Ontbreekt
+                              <AlertTriangle className="w-3 h-3" /> {t3('Ontbreekt', 'Manquant', 'Missing')}
                             </span>
                           )}
                         </TableCell>

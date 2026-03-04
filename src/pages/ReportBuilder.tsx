@@ -21,6 +21,7 @@ import { nl } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import Logo from '@/components/Logo';
+import { useLanguage } from '@/i18n/LanguageContext';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart as RechartsPie, Pie, Cell, LineChart, Line, Legend, AreaChart, Area
@@ -61,6 +62,8 @@ const ReportBuilder = () => {
   const [clubId, setClubId] = useState<string | null>(null);
   const [clubName, setClubName] = useState('');
   const [clubLogo, setClubLogo] = useState<string | null>(null);
+  const { language } = useLanguage();
+  const t3 = (nlS: string, fr: string, en: string) => language === 'nl' ? nlS : language === 'fr' ? fr : en;
   const [widgets, setWidgets] = useState<ReportWidget[]>([
     { id: genId(), type: 'title', data: { text: 'Bestuursrapport', subtitle: format(new Date(), 'MMMM yyyy', { locale: nl }) } },
   ]);
@@ -501,10 +504,10 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
         prompt: aiPrompt,
       });
       setAiPrompt('');
-      toast.success('AI grafiek toegevoegd!');
+      toast.success(t3('AI grafiek toegevoegd!', 'Graphique IA ajouté !', 'AI chart added!'));
     } catch (e: any) {
       console.error('AI chart error:', e);
-      toast.error('Kon geen grafiek genereren. Probeer een andere vraag.');
+      toast.error(t3('Kon geen grafiek genereren. Probeer een andere vraag.', 'Impossible de générer le graphique. Essayez une autre question.', 'Could not generate chart. Try a different question.'));
     } finally {
       setAiLoading(false);
     }
@@ -539,10 +542,10 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
       }
 
       pdf.save(`rapport-${clubName}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      toast.success('PDF gedownload!');
+      toast.success(t3('PDF gedownload!', 'PDF téléchargé !', 'PDF downloaded!'));
     } catch (e) {
       console.error(e);
-      toast.error('PDF export mislukt');
+      toast.error(t3('PDF export mislukt', 'Échec de l\'export PDF', 'PDF export failed'));
     } finally {
       setExporting(false);
     }
@@ -822,14 +825,14 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
             <div>
               <h1 className="text-lg font-bold flex items-center gap-2">
                 <LayoutDashboard className="h-5 w-5" />
-                Rapport Builder
+              {t3('Rapport Builder', 'Rapport Builder', 'Report Builder')}
               </h1>
-              <p className="text-xs text-muted-foreground">Stel je eigen bestuursrapport samen</p>
+              <p className="text-xs text-muted-foreground">{t3('Stel je eigen bestuursrapport samen', 'Composez votre propre rapport', 'Build your own board report')}</p>
             </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={history.length === 0} onClick={undo}>
-              <Undo2 className="h-4 w-4 mr-1" /> Ongedaan
+              <Undo2 className="h-4 w-4 mr-1" /> {t3('Ongedaan', 'Annuler', 'Undo')}
             </Button>
             <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
@@ -837,30 +840,30 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Widget toevoegen</DialogTitle>
+                  <DialogTitle>{t3('Widget toevoegen', 'Ajouter un widget', 'Add widget')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 mt-2">
                   {/* Basic widgets */}
                   <div>
-                    <p className="text-sm font-medium mb-2">Basis</p>
+                    <p className="text-sm font-medium mb-2">{t3('Basis', 'De base', 'Basic')}</p>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('title', { text: 'Nieuwe titel', subtitle: '' })}>
-                        <Type className="h-4 w-4 mr-2" /> Titel
+                      <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('title', { text: t3('Nieuwe titel', 'Nouveau titre', 'New title'), subtitle: '' })}>
+                        <Type className="h-4 w-4 mr-2" /> {t3('Titel', 'Titre', 'Title')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('text', { text: '' })}>
-                        <FileText className="h-4 w-4 mr-2" /> Tekstveld
+                        <FileText className="h-4 w-4 mr-2" /> {t3('Tekstveld', 'Champ texte', 'Text field')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('logo')}>
-                        <Image className="h-4 w-4 mr-2" /> Club logo
+                        <Image className="h-4 w-4 mr-2" /> {t3('Club logo', 'Logo du club', 'Club logo')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('signature', { name: '', role: '' })}>
-                        <PenLine className="h-4 w-4 mr-2" /> Handtekening
+                        <PenLine className="h-4 w-4 mr-2" /> {t3('Handtekening', 'Signature', 'Signature')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('kpi-grid')}>
-                        <BarChart3 className="h-4 w-4 mr-2" /> KPI overzicht
+                        <BarChart3 className="h-4 w-4 mr-2" /> {t3('KPI overzicht', 'Aperçu KPI', 'KPI overview')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('spacer')}>
-                        <GripVertical className="h-4 w-4 mr-2" /> Scheidingslijn
+                        <GripVertical className="h-4 w-4 mr-2" /> {t3('Scheidingslijn', 'Séparateur', 'Divider')}
                       </Button>
                     </div>
                   </div>
@@ -869,7 +872,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
 
                   {/* Preset charts */}
                   <div>
-                    <p className="text-sm font-medium mb-2">Grafieken</p>
+                    <p className="text-sm font-medium mb-2">{t3('Grafieken', 'Graphiques', 'Charts')}</p>
                     <div className="grid grid-cols-1 gap-2">
                       {PRESET_CHARTS.map(chart => (
                         <Button key={chart.key} variant="outline" className="justify-start h-auto py-3"
@@ -891,7 +894,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
                       <Sparkles className="h-4 w-4 text-primary" /> AI Grafiek
                     </p>
                     <p className="text-xs text-muted-foreground mb-2">
-                      Beschrijf welke data je in een grafiek wilt zien en AI maakt hem voor je.
+                      {t3('Beschrijf welke data je in een grafiek wilt zien en AI maakt hem voor je.', 'Décrivez les données souhaitées et l\'IA créera le graphique.', 'Describe the data you want and AI will create the chart for you.')}
                     </p>
                     <div className="flex gap-2">
                       <Input placeholder="Bv: 'Toon hoeveel we per evenement uitgeven'" value={aiPrompt}
@@ -926,9 +929,9 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
         {widgets.length === 0 ? (
           <div className="text-center py-20">
             <LayoutDashboard className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">Voeg widgets toe om je rapport samen te stellen</p>
+              <p className="text-muted-foreground">{t3('Voeg widgets toe om je rapport samen te stellen', 'Ajoutez des widgets pour composer votre rapport', 'Add widgets to build your report')}</p>
             <Button variant="outline" className="mt-4" onClick={() => setAddDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Eerste widget toevoegen
+              <Plus className="h-4 w-4 mr-1" /> {t3('Eerste widget toevoegen', 'Ajouter le premier widget', 'Add first widget')}
             </Button>
           </div>
         ) : (

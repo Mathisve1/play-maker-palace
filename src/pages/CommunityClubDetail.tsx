@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { motion } from 'framer-motion';
 import { MapPin, Users, Calendar, Heart, HeartOff, ArrowLeft, Trophy, Clock, Briefcase, Building2, ArrowRight, Star, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -48,9 +49,32 @@ interface ClubEvent {
   status: string;
 }
 
+const detailLabels = {
+  nl: {
+    unfollow: 'Ontvolgen', follow: 'Volgen', unfollowed: 'Club ontvolgd', followed: 'Club gevolgd!',
+    volunteers: 'Vrijwilligers', openTasks: 'Open taken', events: 'Events', completedTasks: 'Afgeronde taken',
+    tasks: 'Taken', partners: 'Partners', noTasks: 'Momenteel geen openstaande taken',
+    noPartners: 'Geen partners', noEvents: 'Nog geen events',
+  },
+  fr: {
+    unfollow: 'Ne plus suivre', follow: 'Suivre', unfollowed: 'Club non suivi', followed: 'Club suivi !',
+    volunteers: 'Bénévoles', openTasks: 'Tâches ouvertes', events: 'Événements', completedTasks: 'Tâches terminées',
+    tasks: 'Tâches', partners: 'Partenaires', noTasks: 'Aucune tâche ouverte',
+    noPartners: 'Aucun partenaire', noEvents: 'Pas encore d\'événements',
+  },
+  en: {
+    unfollow: 'Unfollow', follow: 'Follow', unfollowed: 'Club unfollowed', followed: 'Club followed!',
+    volunteers: 'Volunteers', openTasks: 'Open tasks', events: 'Events', completedTasks: 'Completed tasks',
+    tasks: 'Tasks', partners: 'Partners', noTasks: 'No open tasks at the moment',
+    noPartners: 'No partners', noEvents: 'No events yet',
+  },
+};
+
 const CommunityClubDetail = () => {
   const { clubId } = useParams();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const dl = detailLabels[language];
   const [club, setClub] = useState<ClubDetail | null>(null);
   const [tasks, setTasks] = useState<ClubTask[]>([]);
   const [partners, setPartners] = useState<ClubPartner[]>([]);
@@ -71,15 +95,12 @@ const CommunityClubDetail = () => {
         setIsFollowing(!!follow);
       }
 
-      // Club data
       const { data: clubData } = await supabase.from('clubs').select('*').eq('id', clubId).maybeSingle();
       if (!clubData) { navigate('/community'); return; }
       setClub(clubData);
 
-      // Open tasks
       const { data: tasksData } = await supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status').eq('club_id', clubId).eq('status', 'open').order('task_date', { ascending: true });
       
-      // Signup counts
       if (tasksData && tasksData.length > 0) {
         const taskIds = tasksData.map(t => t.id);
         const { data: signups } = await supabase.from('task_signups').select('task_id').in('task_id', taskIds);
@@ -90,15 +111,12 @@ const CommunityClubDetail = () => {
         setTasks([]);
       }
 
-      // Partners
       const { data: partnersData } = await supabase.from('external_partners').select('id, name, category, logo_url, contact_name').eq('club_id', clubId);
       setPartners(partnersData || []);
 
-      // Events
       const { data: eventsData } = await (supabase as any).from('events').select('id, title, description, event_date, location, status').eq('club_id', clubId).neq('status', 'on_hold').order('event_date', { ascending: false }).limit(10);
       setEvents(eventsData || []);
 
-      // Stats
       const { data: allClubTasks } = await supabase.from('tasks').select('id').eq('club_id', clubId);
       const allTaskIds = allClubTasks?.map(t => t.id) || [];
       let uniqueVols = 0;
@@ -124,14 +142,16 @@ const CommunityClubDetail = () => {
     if (isFollowing) {
       await supabase.from('club_follows').delete().eq('user_id', currentUserId).eq('club_id', clubId!);
       setIsFollowing(false);
-      toast.success('Club ontvolgd');
+      toast.success(dl.unfollowed);
     } else {
       await supabase.from('club_follows').insert({ user_id: currentUserId, club_id: clubId! });
       setIsFollowing(true);
-      toast.success('Club gevolgd!');
+      toast.success(dl.followed);
     }
     setTogglingFollow(false);
   };
+
+  const dateFmt = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
 
   if (loading || !club) {
     return (
@@ -185,7 +205,7 @@ const CommunityClubDetail = () => {
                   variant={isFollowing ? 'outline' : 'default'}
                   className="gap-2 rounded-xl"
                 >
-                  {isFollowing ? <><HeartOff className="w-4 h-4" /> Ontvolgen</> : <><Heart className="w-4 h-4" /> Volgen</>}
+                  {isFollowing ? <><HeartOff className="w-4 h-4" /> {dl.unfollow}</> : <><Heart className="w-4 h-4" /> {dl.follow}</>}
                 </Button>
               </div>
               {club.description && (
@@ -197,10 +217,10 @@ const CommunityClubDetail = () => {
           {/* Stats row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             {[
-              { icon: Users, label: 'Vrijwilligers', value: stats.volunteers, color: 'text-secondary' },
-              { icon: Calendar, label: 'Open taken', value: tasks.length, color: 'text-primary' },
-              { icon: Trophy, label: 'Events', value: stats.totalEvents, color: 'text-accent' },
-              { icon: TrendingUp, label: 'Afgeronde taken', value: stats.completedTasks, color: 'text-muted-foreground' },
+              { icon: Users, label: dl.volunteers, value: stats.volunteers, color: 'text-secondary' },
+              { icon: Calendar, label: dl.openTasks, value: tasks.length, color: 'text-primary' },
+              { icon: Trophy, label: dl.events, value: stats.totalEvents, color: 'text-accent' },
+              { icon: TrendingUp, label: dl.completedTasks, value: stats.completedTasks, color: 'text-muted-foreground' },
             ].map((s, i) => (
               <motion.div
                 key={s.label}
@@ -223,22 +243,21 @@ const CommunityClubDetail = () => {
         <Tabs defaultValue="tasks" className="w-full">
           <TabsList className="w-full md:w-auto grid grid-cols-3 md:flex rounded-xl bg-muted/50 p-1">
             <TabsTrigger value="tasks" className="rounded-lg text-sm gap-1.5">
-              <Calendar className="w-4 h-4" /> Taken ({tasks.length})
+              <Calendar className="w-4 h-4" /> {dl.tasks} ({tasks.length})
             </TabsTrigger>
             <TabsTrigger value="partners" className="rounded-lg text-sm gap-1.5">
-              <Building2 className="w-4 h-4" /> Partners ({partners.length})
+              <Building2 className="w-4 h-4" /> {dl.partners} ({partners.length})
             </TabsTrigger>
             <TabsTrigger value="events" className="rounded-lg text-sm gap-1.5">
-              <Trophy className="w-4 h-4" /> Events ({events.length})
+              <Trophy className="w-4 h-4" /> {dl.events} ({events.length})
             </TabsTrigger>
           </TabsList>
 
-          {/* Tasks Tab */}
           <TabsContent value="tasks" className="mt-6">
             {tasks.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p>Momenteel geen openstaande taken</p>
+                <p>{dl.noTasks}</p>
               </div>
             ) : (
               <div className="grid gap-4">
@@ -259,7 +278,7 @@ const CommunityClubDetail = () => {
                           {task.task_date && (
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {new Date(task.task_date).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {new Date(task.task_date).toLocaleDateString(dateFmt, { day: 'numeric', month: 'short', year: 'numeric' })}
                             </span>
                           )}
                           {task.location && (
@@ -280,12 +299,11 @@ const CommunityClubDetail = () => {
             )}
           </TabsContent>
 
-          {/* Partners Tab */}
           <TabsContent value="partners" className="mt-6">
             {partners.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Building2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p>Geen partners</p>
+                <p>{dl.noPartners}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -315,12 +333,11 @@ const CommunityClubDetail = () => {
             )}
           </TabsContent>
 
-          {/* Events Tab */}
           <TabsContent value="events" className="mt-6">
             {events.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Trophy className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p>Nog geen events</p>
+                <p>{dl.noEvents}</p>
               </div>
             ) : (
               <div className="grid gap-4">
@@ -341,7 +358,7 @@ const CommunityClubDetail = () => {
                           {event.event_date && (
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {new Date(event.event_date).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {new Date(event.event_date).toLocaleDateString(dateFmt, { day: 'numeric', month: 'short', year: 'numeric' })}
                             </span>
                           )}
                           {event.location && (
