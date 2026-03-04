@@ -1431,8 +1431,8 @@ const SafetyDashboard = () => {
                           </div>
                           <div className="flex gap-1.5">
                             {inc.status === 'nieuw' && (
-                              <Button size="sm" variant="outline" className={`text-xs ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'bezig'); }}>
-                                In behandeling
+                               <Button size="sm" variant="outline" className={`text-xs ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'bezig'); }}>
+                                 {t3('In behandeling', 'En cours', 'In progress')}
                               </Button>
                             )}
                             <Button size="sm" variant="outline" className={`text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'opgelost'); }}>
