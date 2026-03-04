@@ -1,73 +1,85 @@
 
+# Volledige Audit – Maart 2026
 
-## Native Web Push zonder OneSignal
+## PWA & Safe Area (urgent - jouw klacht over tekst achter statusbar)
 
-Ja, dit is mogelijk via de **Web Push API** met **VAPID keys**. Dit is een browserstandaard die werkt zonder externe diensten.
+### P1. Mobile header hoogte telt safe-area-inset-top niet mee
+**Probleem:** `DashboardLayout.tsx` header is `h-14` (56px) met `paddingTop: env(safe-area-inset-top)`. Maar omdat `h-14` de TOTALE hoogte is, wordt de content IN de header samengeperst achter de statusbar (batterij/uur). Hetzelfde geldt voor `Chat.tsx`, `TicketScanner.tsx` en `TicketingDashboard.tsx`.
+**Oplossing:** Verander van vaste `h-14` naar `min-h-14` + `pt-safe-top`, zodat de header GROEIT op iOS/Android PWA. Of gebruik een wrapper-div voor de safe area padding boven de header content.
 
-### Hoe het werkt
+### P2. Chat pagina mist sidebar-layout
+**Probleem:** Chat gebruikt een eigen header + navigatie ipv `DashboardLayout` of `ClubPageLayout`. Inconsistente ervaring: geen sidebar, geen hamburger menu, terug-knop navigeert naar dashboard maar je verliest sidebar-context.
+**Oplossing:** Chat integreren in `DashboardLayout` met de juiste sidebar per rol.
 
-```text
-┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
-│  PWA Client  │────▶│  Service     │────▶│  Browser Push   │
-│  (subscribe) │     │  Worker      │     │  Service (FCM/  │
-│              │     │  (receive)   │     │  APNs/Mozilla)  │
-└─────────────┘     └──────────────┘     └─────────────────┘
-                                                ▲
-                                                │
-                                         ┌──────┴──────┐
-                                         │  Supabase   │
-                                         │  Edge Func  │
-                                         │  (web-push) │
-                                         └─────────────┘
-```
+---
 
-1. **VAPID key pair** genereren (eenmalig, public + private key)
-2. **Client**: `navigator.serviceWorker` + `PushManager.subscribe()` → krijgt een `PushSubscription` (endpoint + keys)
-3. **Database**: sla de subscription op in een `push_subscriptions` tabel
-4. **Edge Function**: gebruik de `web-push` library om berichten te sturen naar de opgeslagen endpoints
-5. **Service Worker**: luistert op `push` event en toont de notificatie
+## Data & Performance
 
-### Wat verandert
+### P3. VolunteerDashboard init() doet 20+ queries sequentieel
+**Probleem:** De `init()` functie in VolunteerDashboard (1188 regels) laadt taken, signups, payments, SEPA, contracten, tickets, loyalty, certificates, follows – allemaal SEQUENTIEEL. Geen `Promise.all()` waar mogelijk. Laadtijd op mobiel is merkbaar.
+**Oplossing:** Groepeer onafhankelijke queries in `Promise.all()` blokken. Splits init in parallelle fasen.
 
-| Onderdeel | Nu (OneSignal) | Straks (Native) |
-|-----------|---------------|-----------------|
-| SDK | react-onesignal (~50KB) | Geen extra library |
-| Dashboard | OneSignal.com | Eigen UI |
-| Kosten | Gratis tier limiet | Gratis, onbeperkt |
-| iOS Safari | Vereist Add-to-Home-Screen | Zelfde vereiste (Apple-beperking) |
-| Complexiteit | Laag | Medium (zelf bouwen) |
+### P4. CommandCenter herlaadt ALLES bij elke realtime change
+**Probleem:** Lijn 286-289: elke `task_signups`, `monthly_enrollments`, of `monthly_day_signups` change triggert een volledige `loadData()` – dit doet 10+ queries opnieuw. Bij drukke events kan dit elke seconde triggeren.
+**Oplossing:** Debounce met 500ms, of targeted updates per change type.
 
-### Implementatieplan
+### P5. TicketingDashboard pollt elke 5 seconden
+**Probleem:** Lijn 323-336: een `setInterval(5000)` pollt de volledige tickets-tabel, ook als de tab inactief is. Verspilt resources.
+**Oplossing:** Gebruik `document.visibilityState` check, of vervang polling door pure realtime subscriptions (die al bestaan op lijn 308-321).
 
-**1. Database: `push_subscriptions` tabel**
-- Kolommen: `id`, `user_id` (FK profiles), `endpoint`, `p256dh`, `auth`, `user_agent`, `created_at`
-- RLS: gebruikers beheren eigen subscriptions
+### P6. Volunteer live-event polling elke 3 seconden
+**Probleem:** VolunteerDashboard lijn 439-442: pollt elke 3 seconden voor live events, naast de realtime subscriptions die er al zijn. Overkill.
+**Oplossing:** Verhoog interval naar 15-30 seconden, of verwijder polling en vertrouw op de realtime channels.
 
-**2. VAPID keys als secrets opslaan**
-- Genereer VAPID key pair
-- Sla `VAPID_PUBLIC_KEY` en `VAPID_PRIVATE_KEY` op als secrets
+---
 
-**3. Service Worker uitbreiden**
-- Voeg `push` en `notificationclick` event listeners toe aan de bestaande PWA service worker
+## UX & Navigatie
 
-**4. Client-side subscribe flow**
-- Vervang OneSignal init door `PushManager.subscribe()` met de VAPID public key
-- Sla subscription op in `push_subscriptions` tabel
-- Update `PushPermissionBanner` en profiel-toggle
+### P7. Geen loading skeletons, alleen spinners
+**Probleem:** Alle dashboards tonen een centered spinner bij initial load. Op mobiel lijkt het alsof de app "leeg" is tot alles geladen is. Geen visuele hint over de structuur.
+**Oplossing:** Skeleton placeholders voor KPI cards, takenlijst, sidebar content.
 
-**5. Edge Function: `send-native-push`**
-- Gebruik `web-push` npm package (beschikbaar in Deno)
-- Leest subscriptions uit DB, stuurt naar browser push endpoints
+### P8. VolunteerDashboard.tsx is 1188 regels – niet gerefactord
+**Probleem:** Vergelijkbaar met ClubOwnerDashboard vóór refactor. Eén component met 30+ state variabelen, init() van 200 regels, en alle tab-renders inline.
+**Oplossing:** Extract `VolunteerDashboardTab`, `VolunteerPaymentsTab`, `VolunteerContractsTab`, etc.
 
-**6. Bestaande triggers migreren**
-- `monthly-reminders` en `send-push-notification` herschrijven naar native web-push
+### P9. MonthlyPlanning.tsx is 971 regels
+**Probleem:** Bevat calendar rendering, task CRUD, enrollment management, day signup management, ticket generation, payout generation – alles in 1 component.
+**Oplossing:** Extract `MonthlyCalendar`, `MonthlyEnrollmentList`, `MonthlyDaySignupManager`.
 
-### Belangrijk nadeel
+### P10. Duplicate club-finding logic in 8+ pagina's
+**Probleem:** CommandCenter, TicketingDashboard, TicketScanner, MonthlyPlanning, ClubPageLayout – allemaal dupliceren dezelfde "find club by owner_id OR club_members" logica.
+**Oplossing:** Maak een `useClub()` hook die dit centraal afhandelt.
 
-- **iOS Safari**: de Web Push API werkt hier **alleen** als PWA (Add to Home Screen). Dit is een Apple-beperking die ook geldt voor OneSignal. Er is geen verschil.
-- **Zelf onderhouden**: geen analytics dashboard, geen A/B testing, geen segmentatie out-of-the-box.
+---
 
-### Aanbeveling
+## Veiligheid & Code Quality
 
-Als OneSignal-origin-problemen het hoofdprobleem zijn, is native web push een goede oplossing. Je elimineert de SDK-afhankelijkheid en het origin-conflict volledig. De implementatie vergt ~6 bestanden maar is volledig binnen Lovable te bouwen.
+### P11. Veel `(supabase as any)` casts
+**Probleem:** 15+ plekken waar Supabase queries gecast worden naar `any`, wat type safety volledig uitschakelt. Bugs worden niet gevangen door TypeScript.
+**Oplossing:** Database types updaten en proper typeren, of expliciete type assertions gebruiken.
 
+### P12. Auth guard is niet centraal
+**Probleem:** Elke pagina doet een eigen `getSession()` check met redirect. Als er een race condition is of de session expire, krijg je inconsistent gedrag.
+**Oplossing:** Een `<RequireAuth>` wrapper component die sessie centraal controleert.
+
+---
+
+## Aanbevolen prioriteit
+
+| # | Upgrade | Impact | Moeite | Gebied |
+|---|---------|--------|--------|--------|
+| P1 | Safe area header fix (PWA statusbar) | **Kritiek** | Klein | PWA |
+| P3 | Parallel queries VolunteerDashboard | Hoog | Medium | Performance |
+| P4 | CommandCenter debounce | Hoog | Klein | Performance |
+| P5 | Ticketing polling optimalisatie | Medium | Klein | Performance |
+| P6 | Volunteer live-event polling reduceren | Medium | Klein | Performance |
+| P7 | Loading skeletons | Medium | Medium | UX |
+| P10 | useClub() hook extracten | Medium | Medium | Code quality |
+| P8 | VolunteerDashboard refactor | Medium | Groot | Code quality |
+| P9 | MonthlyPlanning refactor | Medium | Groot | Code quality |
+| P2 | Chat sidebar-integratie | Laag | Medium | UX |
+| P11 | Supabase type safety | Laag | Medium | Code quality |
+| P12 | Centrale auth guard | Laag | Medium | Security |
+
+Geef aan welke je wilt aanpakken.
