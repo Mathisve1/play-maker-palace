@@ -1256,8 +1256,8 @@ const SafetyDashboard = () => {
           <div ref={zoneRef} className={`${incidentFullscreen ? 'hidden' : zoneFullscreen ? 'col-span-full' : isDemoEvent ? 'xl:col-span-1' : 'lg:col-span-2'} ${zoneFullscreen ? 'bg-background h-screen flex flex-col' : ''}`}>
             <Card className={`bg-card border-border ${zoneFullscreen ? 'flex-1 flex flex-col border-0 rounded-none' : ''}`}>
               <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
-                <CardTitle className="text-lg font-heading flex items-center gap-2">
-                  <Radio className="w-5 h-5 text-primary" /> Sectie Monitor
+                 <CardTitle className="text-lg font-heading flex items-center gap-2">
+                   <Radio className="w-5 h-5 text-primary" /> {t3('Sectie Monitor', 'Moniteur de Sections', 'Section Monitor')}
                 </CardTitle>
                 <Button variant="ghost" size="icon" onClick={() => { const next = !zoneFullscreen; setZoneFullscreen(next); setIncidentFullscreen(false); toggleBrowserFullscreen(zoneRef, next); }}>
                   {zoneFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
