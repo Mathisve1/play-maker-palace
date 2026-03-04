@@ -199,7 +199,7 @@ const PlanningOverview = () => {
         body: { club_id: clubId, action: 'create' },
       });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Maandplanning demo aangemaakt! Pagina wordt herladen...' : 'Monthly demo created! Reloading...');
+      toast.success(t3('Maandplanning demo aangemaakt! Pagina wordt herladen...', 'Démo planning mensuelle créée! Rechargement...', 'Monthly demo created! Reloading...'));
       setTimeout(() => window.location.reload(), 2500);
     } catch (err: any) {
       toast.error(err.message);
