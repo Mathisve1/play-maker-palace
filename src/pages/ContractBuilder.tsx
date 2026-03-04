@@ -950,7 +950,7 @@ const ContractBuilder = () => {
                 <>
                   <div className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mt-3">
                     <CalendarDays className="w-3 h-3" />
-                    Maandcontract clausules
+                    {t3('Maandcontract clausules', 'Clauses contrat mensuel', 'Monthly Contract Clauses')}
                   </div>
                   <div className="space-y-1">
                     {monthlyClausules.map(article => (
