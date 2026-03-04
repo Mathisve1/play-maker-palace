@@ -467,11 +467,11 @@ const ContractBuilder = () => {
 
   const handleGenerateMonthlyContract = () => {
     if (blocks.length > 3) {
-      if (!confirm('Dit vervangt alle huidige blokken met een maandcontract. Doorgaan?')) return;
+      if (!confirm(t3('Dit vervangt alle huidige blokken met een maandcontract. Doorgaan?', 'Cela remplacera tous les blocs par un contrat mensuel. Continuer?', 'This will replace all blocks with a monthly contract. Continue?'))) return;
     }
     setBlocks(getMonthlyContractBlocks());
-    setTemplateName(prev => prev || 'Maandelijkse Vrijwilligersovereenkomst');
-    toast.success('Maandcontract gegenereerd met alle vereiste clausules (looptijd, rooster, afrekening, GDPR, cumulatie).');
+    setTemplateName(prev => prev || t3('Maandelijkse Vrijwilligersovereenkomst', 'Convention mensuelle de bénévolat', 'Monthly Volunteer Agreement'));
+    toast.success(t3('Maandcontract gegenereerd met alle vereiste clausules (looptijd, rooster, afrekening, GDPR, cumulatie).', 'Contrat mensuel généré avec toutes les clauses requises.', 'Monthly contract generated with all required clauses.'));
   };
 
   const handleLoadTemplate = async (templateId: string) => {
