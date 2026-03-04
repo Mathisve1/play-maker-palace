@@ -387,7 +387,7 @@ const MonthlyPlanning = () => {
         return { ...rest, plan_id: plan.id, task_date: newDate };
       }).filter(Boolean);
 
-      if (newTasks.length === 0) { toast.error('Geen taken konden worden gekopieerd'); setCopyingTasks(false); return; }
+      if (newTasks.length === 0) { toast.error(t3('Geen taken konden worden gekopieerd', 'Aucune tâche n\'a pu être copiée', 'No tasks could be copied')); setCopyingTasks(false); return; }
       const { data: inserted, error } = await supabase.from('monthly_plan_tasks').insert(newTasks).select();
       if (error) throw error;
       setTasks(prev => [...prev, ...(inserted as unknown as PlanTask[])]);
