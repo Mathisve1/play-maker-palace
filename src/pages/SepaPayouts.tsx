@@ -535,7 +535,7 @@ const SepaPayouts = () => {
       doc.save(`Verantwoordingsstuk-${batch.batch_reference}.pdf`);
       toast.success(t3('Boekhoudkundig verantwoordingsstuk gedownload!', 'Justificatif comptable téléchargé !', 'Accounting document downloaded!'));
     } catch (err: any) {
-      toast.error(err.message || 'PDF generatie mislukt');
+      toast.error(err.message || t3('PDF generatie mislukt', 'Échec de la génération PDF', 'PDF generation failed'));
     }
   };
 
