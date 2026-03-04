@@ -330,7 +330,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
 
       <div className="flex items-center justify-between">
         <Button variant="outline" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
-        <h2 className="text-lg font-bold">{MONTH_NL[viewMonth - 1]} {viewYear}</h2>
+        <h2 className="text-lg font-bold">{MONTH_NAMES[language][viewMonth - 1]} {viewYear}</h2>
         <Button variant="outline" size="icon" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
       </div>
 
