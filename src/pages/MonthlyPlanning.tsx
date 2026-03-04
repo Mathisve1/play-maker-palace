@@ -628,7 +628,7 @@ const MonthlyPlanning = () => {
                       setPlan(prev => prev ? { ...prev, contract_template_id: v || null } : null);
                       toast.success(t3('Sjabloon gekoppeld', 'Modèle lié', 'Template linked'));
                     }}>
-                      <SelectTrigger className="w-[200px]"><SelectValue placeholder="Kies sjabloon..." /></SelectTrigger>
+                      <SelectTrigger className="w-[200px]"><SelectValue placeholder={t3('Kies sjabloon...', 'Choisir modèle...', 'Choose template...')} /></SelectTrigger>
                       <SelectContent>{contractTemplates.map(ct => <SelectItem key={ct.id} value={ct.id}>{ct.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
