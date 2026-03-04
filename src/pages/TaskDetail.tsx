@@ -300,11 +300,11 @@ const TaskDetail = () => {
     if (!file || !currentUserId) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Selecteer een afbeelding');
+      toast.error(language === 'fr' ? 'Sélectionnez une image' : language === 'en' ? 'Select an image' : 'Selecteer een afbeelding');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Afbeelding mag maximaal 5MB zijn');
+      toast.error(language === 'fr' ? 'L\'image ne peut pas dépasser 5 Mo' : language === 'en' ? 'Image must be under 5MB' : 'Afbeelding mag maximaal 5MB zijn');
       return;
     }
 
