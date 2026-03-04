@@ -920,7 +920,7 @@ const SafetyDashboard = () => {
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-muted-foreground text-center mt-2">GPS wordt automatisch meegestuurd bij klik</p>
+                <p className="text-[10px] text-muted-foreground text-center mt-2">{t3('GPS wordt automatisch meegestuurd bij klik', 'GPS envoyé automatiquement', 'GPS sent automatically on click')}</p>
               </motion.div>
             )}
 
