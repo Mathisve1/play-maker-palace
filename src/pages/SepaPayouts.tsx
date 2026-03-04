@@ -843,8 +843,8 @@ const SepaPayouts = () => {
           {filtered.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">
               <Euro className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">Geen openstaande vergoedingen</p>
-              <p className="text-sm mt-1">Alle vrijwilligers zijn uitbetaald of er zijn geen taken met onkostenvergoeding.</p>
+              <p className="font-medium">{t3('Geen openstaande vergoedingen', 'Aucun remboursement en attente', 'No outstanding reimbursements')}</p>
+              <p className="text-sm mt-1">{t3('Alle vrijwilligers zijn uitbetaald of er zijn geen taken met onkostenvergoeding.', 'Tous les bénévoles sont payés ou aucune tâche avec remboursement.', 'All volunteers are paid or no tasks with reimbursement.')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
