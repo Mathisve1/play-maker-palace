@@ -89,12 +89,14 @@ export async function autoPromptPushPermission() {
   if (!ONESIGNAL_APP_ID) return;
 
   try {
+    await initOneSignal();
+
     const OneSignalModule = await import('react-onesignal').then(m => m.default).catch(() => null);
     if (!OneSignalModule) return;
 
     // Check current permission state
     const permission = OneSignalModule.Notifications.permission;
-    
+
     // Only prompt if permission hasn't been decided yet (not granted AND not denied)
     if (!permission) {
       // Small delay so the dashboard loads first, then prompt
@@ -115,9 +117,16 @@ export async function promptPushPermission() {
   if (!ONESIGNAL_APP_ID) return;
 
   try {
+    await initOneSignal();
+
     const OneSignalModule = await import('react-onesignal').then(m => m.default).catch(() => null);
     if (OneSignalModule) {
       await OneSignalModule.Notifications.requestPermission();
+
+      const currentId = OneSignalModule.User.PushSubscription.id;
+      if (currentId) {
+        await linkPlayerIdToProfile(currentId);
+      }
     }
   } catch (error) {
     console.error('Push permission error:', error);
