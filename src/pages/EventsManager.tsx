@@ -568,7 +568,7 @@ const EventsManager = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditingEvent(null)}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-lg">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-heading font-semibold text-foreground">{nl ? 'Evenement bewerken' : 'Edit event'}</h2>
+                <h2 className="text-lg font-heading font-semibold text-foreground">{t3('Evenement bewerken', 'Modifier l\'événement', 'Edit event')}</h2>
                 <button onClick={() => setEditingEvent(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
               </div>
               <form onSubmit={handleSaveEditEvent} className="space-y-4">
