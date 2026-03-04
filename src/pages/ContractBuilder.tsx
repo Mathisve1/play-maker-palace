@@ -402,7 +402,7 @@ const ContractBuilder = () => {
       setClubSignatureUrl(`${data.publicUrl}?t=${Date.now()}`);
       toast.success(t3('Handtekening opgeslagen! Deze wordt hergebruikt voor alle contracten.', 'Signature enregistrée! Elle sera réutilisée pour tous les contrats.', 'Signature saved! It will be reused for all contracts.'));
     } catch (err: any) {
-      toast.error(err.message || 'Handtekening uploaden mislukt');
+      toast.error(err.message || t3('Handtekening uploaden mislukt', 'Échec du téléchargement de la signature', 'Signature upload failed'));
     }
     setUploadingSignature(false);
   };
