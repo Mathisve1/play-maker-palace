@@ -1043,8 +1043,8 @@ const SafetyDashboard = () => {
                   {isActive ? (
                     <span className="text-xs text-muted-foreground">{pct}%</span>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
-                      <Lock className="w-3 h-3" /> Wacht op activatie
+                     <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
+                       <Lock className="w-3 h-3" /> {t3('Wacht op activatie', 'En attente d\'activation', 'Waiting for activation')}
                     </Badge>
                   )}
                 </div>
