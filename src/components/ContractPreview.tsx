@@ -135,7 +135,7 @@ const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
                 <div style={{ display: 'flex', gap: 48 }}>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                      {clubName || 'De organisatie'} — {clubOwnerName || 'Verantwoordelijke'}:
+                      {clubName || t3('De organisatie', 'L\'organisation', 'The organisation')} — {clubOwnerName || t3('Verantwoordelijke', 'Responsable', 'Responsible')}:
                     </p>
                     {clubSignatureUrl ? (
                       <div style={{ marginBottom: 8 }}>
