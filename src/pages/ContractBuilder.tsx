@@ -317,6 +317,8 @@ const runComplianceCheck = (blocks: ContractBlock[]): ComplianceResult => {
 
 const ContractBuilder = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [searchParams] = useSearchParams();
   const clubId = searchParams.get('club_id') || '';
   const editTemplateId = searchParams.get('template_id') || '';
