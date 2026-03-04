@@ -777,20 +777,7 @@ const ReportingDashboard = () => {
   };
 
   // ── AI presets ─────────────────────────────────────────────────
-  const aiPresets = [
-    'Hoeveel hebben we deze maand uitgegeven?',
-    'Welke vrijwilliger heeft de meeste no-shows?',
-    'Op welk evenement zetten we de meeste vrijwilligers in?',
-    'Wat is ons gemiddeld opkomstpercentage per evenement?',
-    'Wie zijn onze meest betrouwbare vrijwilligers?',
-    'Welke taken zijn het minst bezet?',
-    'Geef een overzicht van onze maandelijkse kosten',
-    'Hoeveel contracten zijn al ondertekend?',
-    'Welke partners leveren de meeste medewerkers?',
-    'Hoeveel vrijwilligers zitten dicht bij de jaargrens?',
-    'Op welke dag van de week plannen we de meeste taken?',
-    'Hoeveel uur-bevestigingen staan nog open?',
-  ];
+  const aiPresets = [L.aiQ1, L.aiQ2, L.aiQ3, L.aiQ4, L.aiQ5, L.aiQ6, L.aiQ7, L.aiQ8, L.aiQ9, L.aiQ10, L.aiQ11, L.aiQ12];
 
   if (loading) {
     return (<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>);
