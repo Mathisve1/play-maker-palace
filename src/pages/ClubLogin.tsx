@@ -20,15 +20,25 @@ const ClubLogin = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error, data } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
+
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      const userId = data.user?.id ?? (await supabase.auth.getUser()).data.user?.id ?? null;
+      if (!userId) {
+        toast.error(t3('Inloggen gelukt, maar sessie kon niet geladen worden.', 'Connexion réussie, mais session introuvable.', 'Login succeeded, but session could not be loaded.'));
+        return;
+      }
+
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', data.user.id);
+        .eq('user_id', userId);
+
       const isClubOwner = roles?.some(r => r.role === 'club_owner');
       if (!isClubOwner) {
         toast.error(t3(
@@ -39,8 +49,11 @@ const ClubLogin = () => {
         await supabase.auth.signOut();
         return;
       }
+
       toast.success(t3('Ingelogd!', 'Connecté !', 'Logged in!'));
-      navigate('/club-dashboard');
+      navigate('/club-dashboard', { replace: true });
+    } finally {
+      setLoading(false);
     }
   };
 

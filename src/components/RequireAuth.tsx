@@ -41,16 +41,25 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     let cancelled = false;
 
     const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (!session) {
-        navigate(redirectTo, { replace: true });
-      } else {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (cancelled) return;
+
+        if (!session) {
+          navigate(redirectTo, { replace: true });
+          return;
+        }
+
         await ensureProfileExists(session.user);
-        await syncOneSignalUser(session.user.id);
+        if (cancelled) return;
+
         setAuthenticated(true);
+        void syncOneSignalUser(session.user.id).catch((error) => {
+          console.error('OneSignal sync failed:', error);
+        });
+      } finally {
+        if (!cancelled) setChecked(true);
       }
-      setChecked(true);
     };
     check();
 
@@ -62,7 +71,11 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
 
       if (session && !cancelled) {
         await ensureProfileExists(session.user);
-        await syncOneSignalUser(session.user.id);
+        setAuthenticated(true);
+        setChecked(true);
+        void syncOneSignalUser(session.user.id).catch((error) => {
+          console.error('OneSignal sync failed:', error);
+        });
       }
     });
 
