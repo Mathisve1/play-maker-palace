@@ -664,8 +664,8 @@ const MonthlyPlanning = () => {
                             <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                               {t.start_time && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t.start_time}–{t.end_time}</span>}
                               {t.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{t.location}</span>}
-                              <span className="flex items-center gap-1"><Euro className="w-3 h-3" />{t.compensation_type === 'daily' ? `€${t.daily_rate}/dag` : `€${t.hourly_rate}/u`}</span>
-                              <span className="flex items-center gap-1"><Users className="w-3 h-3" />{t.spots_available} plaatsen</span>
+                               <span className="flex items-center gap-1"><Euro className="w-3 h-3" />{t.compensation_type === 'daily' ? `€${t.daily_rate}/${t3('dag', 'jour', 'day')}` : `€${t.hourly_rate}/${t3('u', 'h', 'h')}`}</span>
+                               <span className="flex items-center gap-1"><Users className="w-3 h-3" />{t.spots_available} {t3('plaatsen', 'places', 'spots')}</span>
                             </div>
                           </div>
                           <div className="flex gap-1">
