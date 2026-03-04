@@ -94,7 +94,7 @@ export const ActionListWidget = ({ clubId, language }: ActionListWidgetProps) =>
           <Inbox className="w-4 h-4 text-primary" />
         </div>
         <h3 className="text-sm font-semibold text-foreground flex-1">
-          {language === 'nl' ? 'Actielijst' : 'Action List'}
+          {language === 'nl' ? 'Actielijst' : language === 'fr' ? 'Liste d\'actions' : 'Action List'}
         </h3>
         {total > 0 && (
           <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center">
