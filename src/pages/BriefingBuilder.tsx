@@ -155,7 +155,7 @@ const SortableBlock = ({
             </div>
           ))}
           <button onClick={() => onAddChecklistItem(groupId, block.id)} className="text-xs text-primary hover:underline flex items-center gap-1">
-            <Plus className="w-3 h-3" /> Item toevoegen
+            <Plus className="w-3 h-3" /> {language === 'fr' ? 'Ajouter un élément' : language === 'en' ? 'Add item' : 'Item toevoegen'}
           </button>
         </div>
       )}
