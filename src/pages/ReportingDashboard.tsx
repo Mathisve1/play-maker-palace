@@ -1019,7 +1019,7 @@ const ReportingDashboard = () => {
                     <TableCell className="text-sm">{t.compensation}</TableCell>
                     <TableCell className="text-right font-medium">€{t.totalPaid.toFixed(2)}</TableCell>
                     <TableCell className="text-center text-sm">
-                      <Badge variant={t.hourConfStatus === 'Goedgekeurd' ? 'default' : t.hourConfStatus === '—' ? 'secondary' : 'outline'}>
+                      <Badge variant={t.hourConfStatus === L.approved ? 'default' : t.hourConfStatus === '—' ? 'secondary' : 'outline'}>
                         {t.hourConfStatus}
                       </Badge>
                     </TableCell>
