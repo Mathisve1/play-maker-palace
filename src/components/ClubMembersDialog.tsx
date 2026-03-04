@@ -208,7 +208,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Lid verwijderd');
+      toast.success(t3('Lid verwijderd', 'Membre supprimé', 'Member removed'));
       setMembers(prev => prev.filter(m => m.id !== memberId));
     }
   };
