@@ -887,7 +887,7 @@ const MonthlyPlanning = () => {
                       );
                     })}
                     <div className="flex items-center justify-between p-2 mt-2 rounded bg-muted font-semibold text-sm">
-                      <span>Totaal</span>
+                      <span>{t3('Totaal', 'Total', 'Total')}</span>
                       <span>€{daySignups.filter(ds => ds.hour_status === 'confirmed').reduce((s, ds) => s + (ds.final_amount || 0), 0).toFixed(2)}</span>
                     </div>
                   </div>
