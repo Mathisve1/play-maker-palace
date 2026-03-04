@@ -240,12 +240,6 @@ const content: Record<Language, {
         ],
       },
     ],
-    contactEmail: 'E-mail sturen',
-    contactWhatsApp: 'WhatsApp bericht',
-    contactPhone: 'Bellen',
-    troubleshootTitle: 'Problemen oplossen',
-    stepByStep: 'Stap-voor-stap',
-    popularTopics: 'Populaire onderwerpen',
   },
   fr: {
     pageTitle: 'Centre d\'aide',
