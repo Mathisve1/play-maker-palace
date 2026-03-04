@@ -74,12 +74,14 @@ interface OnboardingFormData {
   bic: string;
   bankHolderName: string;
   bankConsentGiven: boolean;
+  language: 'nl' | 'fr' | 'en';
 }
 
 interface OnboardingFormProps {
   language: 'nl' | 'fr' | 'en';
   onComplete: (data: OnboardingFormData) => void;
   saving?: boolean;
+  onLanguageChange?: (lang: 'nl' | 'fr' | 'en') => void;
 }
 
 const labels = {
