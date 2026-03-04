@@ -49,7 +49,7 @@ const ClubsLanding = () => {
                 {t.clubs.heroCta}
               </Link>
               <Link to="/partner-login" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors flex items-center gap-2 justify-center">
-                <span>Partner Login</span>
+                <span>{t.clubs.heroCtaSecondary}</span>
               </Link>
             </motion.div>
             <motion.div variants={fadeUp} custom={3} className="mt-6 flex justify-center">
