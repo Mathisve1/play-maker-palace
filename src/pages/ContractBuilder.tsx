@@ -545,11 +545,11 @@ const ContractBuilder = () => {
 
   const handleSave = async () => {
     if (!templateName.trim()) {
-      toast.error('Geef een naam op voor het sjabloon.');
+      toast.error(t3('Geef een naam op voor het sjabloon.', 'Veuillez donner un nom au modèle.', 'Please provide a template name.'));
       return;
     }
     if (!clubId) {
-      toast.error('Geen club gevonden.');
+      toast.error(t3('Geen club gevonden.', 'Aucun club trouvé.', 'No club found.'));
       return;
     }
 
