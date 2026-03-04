@@ -575,10 +575,10 @@ const MonthlyPlanning = () => {
           <Card className="p-12 text-center">
             <Calendar className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">{t3(`Nog geen maandplan voor ${MONTH_NAMES.nl[viewMonth - 1]}`, `Pas encore de plan mensuel pour ${MONTH_NAMES.fr[viewMonth - 1]}`, `No monthly plan for ${MONTH_NAMES.en[viewMonth - 1]} yet`)}</h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              Maak een maandplan aan om dagelijkse taken in te plannen en vrijwilligers uit te nodigen.
-            </p>
-            <Button onClick={createPlan} size="lg"><Plus className="w-4 h-4 mr-2" /> Maandplan aanmaken</Button>
+             <p className="text-sm text-muted-foreground mb-6">
+               {t3('Maak een maandplan aan om dagelijkse taken in te plannen en vrijwilligers uit te nodigen.', 'Créez un plan mensuel pour planifier les tâches quotidiennes et inviter des bénévoles.', 'Create a monthly plan to schedule daily tasks and invite volunteers.')}
+             </p>
+             <Button onClick={createPlan} size="lg"><Plus className="w-4 h-4 mr-2" /> {t3('Maandplan aanmaken', 'Créer un plan mensuel', 'Create monthly plan')}</Button>
           </Card>
         ) : plan ? (
           <>
