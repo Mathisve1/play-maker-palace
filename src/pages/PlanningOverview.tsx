@@ -164,7 +164,7 @@ const PlanningOverview = () => {
         body: { club_id: clubId, action: 'create' },
       });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Demo aangemaakt! Pagina wordt herladen...' : 'Demo created! Reloading...');
+      toast.success(t3('Demo aangemaakt! Pagina wordt herladen...', 'Démo créée! Rechargement...', 'Demo created! Reloading...'));
       setShowPostDemoCta(true);
       setTimeout(() => window.location.reload(), 2500);
     } catch (err: any) {
