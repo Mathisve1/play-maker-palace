@@ -899,9 +899,9 @@ const VolunteerDashboard = () => {
       {/* ===== LOYALTY TAB ===== */}
       {activeTab === 'loyalty' && (
         <div className="max-w-5xl mx-auto space-y-4">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{language === 'nl' ? 'Loyaliteit' : 'Loyalty'}</h1>
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'}</h1>
           {loyaltyPrograms.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground"><Gift className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen programma\'s.' : 'No programs.'}</p></div>
+            <div className="text-center py-16 text-muted-foreground"><Gift className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen programma\'s.' : language === 'fr' ? 'Aucun programme.' : 'No programs.'}</p></div>
           ) : (
             loyaltyPrograms.map((program, i) => {
               const enrollment = loyaltyEnrollments[program.id];
