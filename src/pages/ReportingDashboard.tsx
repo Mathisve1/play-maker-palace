@@ -737,11 +737,11 @@ const ReportingDashboard = () => {
   };
 
   // ── Date picker ────────────────────────────────────────────────
-  const DatePicker = ({ date, onChange }: { date: Date; onChange: (d: Date) => void; label?: string }) => (
+    const DatePicker = ({ date, onChange }: { date: Date; onChange: (d: Date) => void; label?: string }) => (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" className={cn("justify-start text-left font-normal gap-2", !date && "text-muted-foreground")}>
-          <Calendar className="w-4 h-4" />{format(date, 'dd MMM yyyy', { locale: nl })}
+          <Calendar className="w-4 h-4" />{format(date, 'dd MMM yyyy')}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
