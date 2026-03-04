@@ -367,7 +367,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
                   type="button"
                   onClick={startRecording}
                   className="text-muted-foreground hover:text-foreground transition-colors"
-                  title="Audio opnemen"
+                  title={t3('Audio opnemen', 'Enregistrer un audio', 'Record audio')}
                 >
                   <Mic className="w-3.5 h-3.5" />
                 </button>
