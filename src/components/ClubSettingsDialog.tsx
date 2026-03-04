@@ -41,7 +41,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error('Clubnaam is verplicht');
+      toast.error(t3('Clubnaam is verplicht', 'Le nom du club est obligatoire', 'Club name is required'));
       return;
     }
     setSaving(true);
