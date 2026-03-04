@@ -458,7 +458,7 @@ const ExternalPartners = () => {
     setExporting(true);
     try {
       const { data: signups } = await supabase.from('partner_event_signups').select('status, partner_member_id').eq('partner_event_access_id', accessId);
-      if (!signups?.length) { toast.info(nl ? 'Geen inschrijvingen.' : 'No signups.'); setExporting(false); return; }
+      if (!signups?.length) { toast.info(t3('Geen inschrijvingen.', 'Aucune inscription.', 'No signups.')); setExporting(false); return; }
       const memberIds = signups.map(s => s.partner_member_id);
       const { data: memberData } = await supabase.from('partner_members').select('id, full_name, date_of_birth, email, phone').in('id', memberIds);
       const lines = ['Naam,Geboortedatum,E-mail,Telefoon,Partner,Status'];
