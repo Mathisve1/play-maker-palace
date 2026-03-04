@@ -960,7 +960,7 @@ const SafetyDashboard = () => {
                           onChange={e => setSelectedLocationValues(prev => ({ ...prev, [level.id]: e.target.value }))}
                           className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm"
                         >
-                          <option value="">{level.name} {level.is_required ? '*' : '(optioneel)'}</option>
+                          <option value="">{level.name} {level.is_required ? '*' : t3('(optioneel)', '(optionnel)', '(optional)')}</option>
                           {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                         </select>
                       );
