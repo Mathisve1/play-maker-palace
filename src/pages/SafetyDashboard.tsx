@@ -342,7 +342,7 @@ const SafetyDashboard = () => {
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
         () => {
           // Event was deleted (e.g. simulation restart) — navigate volunteer away
-          toast.info('Event is beëindigd of herstart.');
+          toast.info(t3('Event is beëindigd of herstart.', 'L\'événement est terminé ou redémarré.', 'Event has ended or restarted.'));
           navigate('/volunteer');
         })
       .subscribe();
@@ -595,11 +595,10 @@ const SafetyDashboard = () => {
         body: { club_id: clubId, action: 'delete' },
       });
       if (res.error) throw res.error;
-      toast.success('Simulatie data verwijderd!');
-      // Navigate back to events
+      toast.success(t3('Simulatie data verwijderd!', 'Données de simulation supprimées !', 'Simulation data deleted!'));
       navigate('/events-manager');
     } catch (err: any) {
-      toast.error(err.message || 'Fout bij verwijderen');
+      toast.error(err.message || t3('Fout bij verwijderen', 'Erreur lors de la suppression', 'Error deleting'));
     } finally {
       setSimLoading(false);
     }
@@ -620,11 +619,11 @@ const SafetyDashboard = () => {
       if (res.error) throw res.error;
       const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
       if (data.event_id) {
-        toast.success('Simulatie herstart! Navigeren naar nieuw event...');
+        toast.success(t3('Simulatie herstart! Navigeren naar nieuw event...', 'Simulation redémarrée ! Navigation vers le nouvel événement...', 'Simulation restarted! Navigating to new event...'));
         navigate(`/safety/${data.event_id}`);
       }
     } catch (err: any) {
-      toast.error(err.message || 'Fout bij herstarten');
+      toast.error(err.message || t3('Fout bij herstarten', 'Erreur lors du redémarrage', 'Error restarting'));
     } finally {
       setSimLoading(false);
     }

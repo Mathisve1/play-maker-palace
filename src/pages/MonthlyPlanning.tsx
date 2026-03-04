@@ -176,7 +176,7 @@ const MonthlyPlanning = () => {
             const enr = enrs.find(e => e.id === s.enrollment_id);
             return {
               ...s,
-              volunteer_name: (enr?.profiles as any)?.full_name || 'Onbekend',
+              volunteer_name: (enr?.profiles as any)?.full_name || t3('Onbekend', 'Inconnu', 'Unknown'),
               volunteer_email: (enr?.profiles as any)?.email || null,
             };
           });
@@ -202,7 +202,7 @@ const MonthlyPlanning = () => {
       .eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'approved' } : e));
-    toast.success('Inschrijving goedgekeurd!');
+    toast.success(t3('Inschrijving goedgekeurd!', 'Inscription approuvée !', 'Enrollment approved!'));
   };
 
   const rejectEnrollment = async (enrollmentId: string) => {
@@ -211,7 +211,7 @@ const MonthlyPlanning = () => {
       .eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'rejected' } : e));
-    toast.success('Inschrijving afgewezen.');
+    toast.success(t3('Inschrijving afgewezen.', 'Inscription refusée.', 'Enrollment rejected.'));
   };
 
   // --- Day signup assignment ---
@@ -221,7 +221,7 @@ const MonthlyPlanning = () => {
       .eq('id', signupId);
     if (error) { toast.error(error.message); return; }
     setDaySignups(prev => prev.map(s => s.id === signupId ? { ...s, status: 'assigned' } : s));
-    toast.success('Vrijwilliger toegekend aan deze dag!');
+    toast.success(t3('Vrijwilliger toegekend aan deze dag!', 'Bénévole attribué à ce jour !', 'Volunteer assigned to this day!'));
   };
 
   const rejectDaySignup = async (signupId: string) => {
@@ -230,7 +230,7 @@ const MonthlyPlanning = () => {
       .eq('id', signupId);
     if (error) { toast.error(error.message); return; }
     setDaySignups(prev => prev.map(s => s.id === signupId ? { ...s, status: 'rejected' } : s));
-    toast.success('Dag-aanmelding afgewezen.');
+    toast.success(t3('Dag-aanmelding afgewezen.', 'Inscription journalière refusée.', 'Day signup rejected.'));
   };
 
   // --- Ticket generation for assigned day signups ---
@@ -253,9 +253,9 @@ const MonthlyPlanning = () => {
         // Update local barcode from ticket
         const barcode = data.barcode || signup.ticket_barcode;
         setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, ticket_barcode: barcode } : s));
-        toast.success('Ticket gegenereerd!');
+        toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
       } else {
-        toast.error(data?.error || 'Ticket genereren mislukt');
+        toast.error(data?.error || t3('Ticket genereren mislukt', 'Échec de la génération du ticket', 'Ticket generation failed'));
       }
     } catch (e: any) {
       toast.error(e.message);
@@ -281,9 +281,9 @@ const MonthlyPlanning = () => {
       });
       if (error) throw error;
       if (data?.success) {
-        toast.success('Ticket per e-mail verstuurd!');
+        toast.success(t3('Ticket per e-mail verstuurd!', 'Ticket envoyé par e-mail !', 'Ticket sent by email!'));
       } else {
-        toast.error(data?.error || 'Versturen mislukt');
+        toast.error(data?.error || t3('Versturen mislukt', 'Échec de l\'envoi', 'Sending failed'));
       }
     } catch (e: any) {
       toast.error(e.message);
@@ -303,9 +303,9 @@ const MonthlyPlanning = () => {
       created_by: user.id,
       status: 'draft',
     }).select().single();
-    if (error) { toast.error('Kon plan niet aanmaken'); return; }
+    if (error) { toast.error(t3('Kon plan niet aanmaken', 'Impossible de créer le plan', 'Could not create plan')); return; }
     setPlan(data as unknown as MonthlyPlan);
-    toast.success('Maandplan aangemaakt!');
+    toast.success(t3('Maandplan aangemaakt!', 'Plan mensuel créé !', 'Monthly plan created!'));
   };
 
   const addOrUpdateTask = async () => {
@@ -328,14 +328,14 @@ const MonthlyPlanning = () => {
 
     if (editingTask) {
       const { error } = await supabase.from('monthly_plan_tasks').update(payload).eq('id', editingTask.id);
-      if (error) { toast.error('Update mislukt'); return; }
+      if (error) { toast.error(t3('Update mislukt', 'Mise à jour échouée', 'Update failed')); return; }
       setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...payload } : t));
-      toast.success('Taak bijgewerkt');
+      toast.success(t3('Taak bijgewerkt', 'Tâche mise à jour', 'Task updated'));
     } else {
       const { data, error } = await supabase.from('monthly_plan_tasks').insert(payload).select().single();
-      if (error) { toast.error('Taak toevoegen mislukt'); return; }
+      if (error) { toast.error(t3('Taak toevoegen mislukt', 'Échec de l\'ajout', 'Failed to add task')); return; }
       setTasks(prev => [...prev, data as unknown as PlanTask]);
-      toast.success('Taak toegevoegd');
+      toast.success(t3('Taak toegevoegd', 'Tâche ajoutée', 'Task added'));
     }
     setShowAddTask(false);
     setEditingTask(null);
@@ -344,17 +344,17 @@ const MonthlyPlanning = () => {
 
   const deleteTask = async (taskId: string) => {
     const { error } = await supabase.from('monthly_plan_tasks').delete().eq('id', taskId);
-    if (error) { toast.error('Verwijderen mislukt'); return; }
+    if (error) { toast.error(t3('Verwijderen mislukt', 'Suppression échouée', 'Delete failed')); return; }
     setTasks(prev => prev.filter(t => t.id !== taskId));
-    toast.success('Taak verwijderd');
+    toast.success(t3('Taak verwijderd', 'Tâche supprimée', 'Task deleted'));
   };
 
   const publishPlan = async () => {
     if (!plan) return;
     const { error } = await supabase.from('monthly_plans').update({ status: 'published' }).eq('id', plan.id);
-    if (error) { toast.error('Publiceren mislukt'); return; }
+    if (error) { toast.error(t3('Publiceren mislukt', 'Publication échouée', 'Publishing failed')); return; }
     setPlan(prev => prev ? { ...prev, status: 'published' } : null);
-    toast.success('Maandplan gepubliceerd! Vrijwilligers kunnen zich nu inschrijven.');
+    toast.success(t3('Maandplan gepubliceerd! Vrijwilligers kunnen zich nu inschrijven.', 'Plan mensuel publié ! Les bénévoles peuvent s\'inscrire.', 'Monthly plan published! Volunteers can now sign up.'));
   };
 
   const resetForm = () => {
@@ -373,9 +373,9 @@ const MonthlyPlanning = () => {
       const prevM = viewMonth === 1 ? 12 : viewMonth - 1;
       const prevY = viewMonth === 1 ? viewYear - 1 : viewYear;
       const { data: prevPlan } = await supabase.from('monthly_plans').select('id').eq('club_id', clubId).eq('year', prevY).eq('month', prevM).maybeSingle();
-      if (!prevPlan) { toast.error('Geen plan gevonden voor de vorige maand'); setCopyingTasks(false); return; }
+      if (!prevPlan) { toast.error(t3('Geen plan gevonden voor de vorige maand', 'Aucun plan trouvé pour le mois précédent', 'No plan found for previous month')); setCopyingTasks(false); return; }
       const { data: prevTasks } = await supabase.from('monthly_plan_tasks').select('*').eq('plan_id', prevPlan.id);
-      if (!prevTasks || prevTasks.length === 0) { toast.error('Geen taken gevonden in de vorige maand'); setCopyingTasks(false); return; }
+      if (!prevTasks || prevTasks.length === 0) { toast.error(t3('Geen taken gevonden in de vorige maand', 'Aucune tâche trouvée le mois précédent', 'No tasks found in previous month')); setCopyingTasks(false); return; }
 
       const newDaysInMonth = getDaysInMonth(viewYear, viewMonth);
       const newTasks = prevTasks.map((t: any) => {
@@ -387,12 +387,12 @@ const MonthlyPlanning = () => {
         return { ...rest, plan_id: plan.id, task_date: newDate };
       }).filter(Boolean);
 
-      if (newTasks.length === 0) { toast.error('Geen taken konden worden gekopieerd'); setCopyingTasks(false); return; }
+      if (newTasks.length === 0) { toast.error(t3('Geen taken konden worden gekopieerd', 'Aucune tâche n\'a pu être copiée', 'No tasks could be copied')); setCopyingTasks(false); return; }
       const { data: inserted, error } = await supabase.from('monthly_plan_tasks').insert(newTasks).select();
       if (error) throw error;
       setTasks(prev => [...prev, ...(inserted as unknown as PlanTask[])]);
       toast.success(`${inserted!.length} ${t3('taken gekopieerd van', 'tâches copiées de', 'tasks copied from')} ${MONTH_NAMES[language]?.[prevM - 1] || MONTH_NAMES.nl[prevM - 1]}`);
-    } catch (err: any) { toast.error(err.message || 'Kopiëren mislukt'); }
+    } catch (err: any) { toast.error(err.message || t3('Kopiëren mislukt', 'Copie échouée', 'Copy failed')); }
     setCopyingTasks(false);
   };
 
@@ -402,7 +402,7 @@ const MonthlyPlanning = () => {
     setGeneratingPayout(true);
     try {
       const confirmedSignups = daySignups.filter(ds => ds.hour_status === 'confirmed');
-      if (confirmedSignups.length === 0) { toast.error('Geen bevestigde uren gevonden'); setGeneratingPayout(false); return; }
+      if (confirmedSignups.length === 0) { toast.error(t3('Geen bevestigde uren gevonden', 'Aucune heure confirmée trouvée', 'No confirmed hours found')); setGeneratingPayout(false); return; }
       const byVolunteer: Record<string, { enrollment_id: string; total_days: number; total_hours: number; total_amount: number }> = {};
       for (const ds of confirmedSignups) {
         const enr = enrollments.find(e => e.id === ds.enrollment_id);
@@ -413,7 +413,7 @@ const MonthlyPlanning = () => {
         byVolunteer[ds.volunteer_id].total_amount += ds.final_amount || 0;
       }
       const { data: existing } = await supabase.from('monthly_payouts').select('id').eq('plan_id', plan.id);
-      if (existing && existing.length > 0) { toast.error('Maandafrekening bestaat al voor dit plan'); setGeneratingPayout(false); return; }
+      if (existing && existing.length > 0) { toast.error(t3('Maandafrekening bestaat al voor dit plan', 'Le décompte mensuel existe déjà', 'Monthly settlement already exists for this plan')); setGeneratingPayout(false); return; }
       const payoutRows = Object.entries(byVolunteer).map(([volunteerId, data]) => ({
         club_id: clubId, plan_id: plan.id, enrollment_id: data.enrollment_id,
         volunteer_id: volunteerId, total_days: data.total_days, total_hours: data.total_hours,
@@ -421,8 +421,8 @@ const MonthlyPlanning = () => {
       }));
       const { error } = await supabase.from('monthly_payouts').insert(payoutRows);
       if (error) throw error;
-      toast.success(`Maandafrekening gegenereerd voor ${payoutRows.length} vrijwilliger(s)`);
-    } catch (err: any) { toast.error(err.message || 'Genereren mislukt'); }
+      toast.success(t3(`Maandafrekening gegenereerd voor ${payoutRows.length} vrijwilliger(s)`, `Décompte mensuel généré pour ${payoutRows.length} bénévole(s)`, `Monthly settlement generated for ${payoutRows.length} volunteer(s)`));
+    } catch (err: any) { toast.error(err.message || t3('Genereren mislukt', 'Échec de la génération', 'Generation failed')); }
     setGeneratingPayout(false);
   };
 
@@ -477,9 +477,9 @@ const MonthlyPlanning = () => {
 
   const approvalBadge = (status: string) => {
     switch (status) {
-      case 'approved': return <Badge className="bg-green-600 text-[10px]">Goedgekeurd</Badge>;
-      case 'rejected': return <Badge variant="destructive" className="text-[10px]">Afgewezen</Badge>;
-      default: return <Badge variant="secondary" className="text-[10px]">Wacht op goedkeuring</Badge>;
+      case 'approved': return <Badge className="bg-green-600 text-[10px]">{t3('Goedgekeurd', 'Approuvé', 'Approved')}</Badge>;
+      case 'rejected': return <Badge variant="destructive" className="text-[10px]">{t3('Afgewezen', 'Refusé', 'Rejected')}</Badge>;
+      default: return <Badge variant="secondary" className="text-[10px]">{t3('Wacht op goedkeuring', 'En attente d\'approbation', 'Awaiting approval')}</Badge>;
     }
   };
 
@@ -495,10 +495,10 @@ const MonthlyPlanning = () => {
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <CalendarDays className="w-7 h-7 text-primary" />
-              Maandplanning
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Plan dagelijkse taken en vergoed vrijwilligers met één maandcontract
+               {t3('Maandplanning', 'Planning mensuel', 'Monthly planning')}
+             </h1>
+             <p className="text-sm text-muted-foreground mt-1">
+               {t3('Plan dagelijkse taken en vergoed vrijwilligers met één maandcontract', 'Planifiez les tâches quotidiennes et rémunérez les bénévoles avec un contrat mensuel', 'Plan daily tasks and compensate volunteers with one monthly contract')}
             </p>
           </div>
           <div className="flex gap-2">
@@ -508,13 +508,13 @@ const MonthlyPlanning = () => {
                 try {
                   const res = await supabase.functions.invoke('monthly-planning-demo', { body: { club_id: clubId, action: 'delete' } });
                   if (res.error) throw new Error(res.error.message);
-                  toast.success('Demo data verwijderd!');
+                  toast.success(t3('Demo data verwijderd!', 'Données de démo supprimées !', 'Demo data deleted!'));
                   setTimeout(() => window.location.reload(), 1000);
                 } catch (err: any) { toast.error(err.message); }
                 setDemoDeleteLoading(false);
               }}>
                 {demoDeleteLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Trash2 className="w-4 h-4 mr-1" />}
-                Demo wissen
+                {t3('Demo wissen', 'Supprimer démo', 'Delete demo')}
               </Button>
             ) : !plan ? (
               <Button variant="outline" size="sm" disabled={demoLoading} onClick={async () => {
@@ -522,13 +522,13 @@ const MonthlyPlanning = () => {
                 try {
                   const res = await supabase.functions.invoke('monthly-planning-demo', { body: { club_id: clubId, action: 'create' } });
                   if (res.error) throw new Error(res.error.message);
-                  toast.success('Demo maandplan aangemaakt! Pagina wordt herladen...');
+                  toast.success(t3('Demo maandplan aangemaakt! Pagina wordt herladen...', 'Plan de démo créé ! La page se recharge...', 'Demo plan created! Page reloading...'));
                   setTimeout(() => window.location.reload(), 2000);
                 } catch (err: any) { toast.error(err.message); }
                 setDemoLoading(false);
               }}>
                 {demoLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
-                Start demo
+                {t3('Start demo', 'Lancer démo', 'Start demo')}
               </Button>
             ) : null}
           </div>
@@ -541,7 +541,7 @@ const MonthlyPlanning = () => {
             <h2 className="text-xl font-bold">{MONTH_NAMES[language]?.[viewMonth - 1] || MONTH_NAMES.nl[viewMonth - 1]} {viewYear}</h2>
             {plan && (
               <Badge variant={plan.status === 'published' ? 'default' : 'secondary'} className="mt-1">
-                {plan.status === 'published' ? 'Gepubliceerd' : 'Concept'}
+                {plan.status === 'published' ? t3('Gepubliceerd', 'Publié', 'Published') : t3('Concept', 'Brouillon', 'Draft')}
               </Badge>
             )}
           </div>
@@ -553,15 +553,15 @@ const MonthlyPlanning = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card><CardContent className="p-3 text-center">
               <p className="text-2xl font-bold text-primary">{tasks.length}</p>
-              <p className="text-xs text-muted-foreground">Taken gepland</p>
+              <p className="text-xs text-muted-foreground">{t3('Taken gepland', 'Tâches planifiées', 'Tasks planned')}</p>
             </CardContent></Card>
             <Card><CardContent className="p-3 text-center">
               <p className="text-2xl font-bold text-primary">{enrollments.length}</p>
-              <p className="text-xs text-muted-foreground">Inschrijvingen</p>
+              <p className="text-xs text-muted-foreground">{t3('Inschrijvingen', 'Inscriptions', 'Enrollments')}</p>
             </CardContent></Card>
             <Card><CardContent className="p-3 text-center">
               <p className="text-2xl font-bold text-primary">{new Set(tasks.map(t => t.task_date)).size}</p>
-              <p className="text-xs text-muted-foreground">Actieve dagen</p>
+              <p className="text-xs text-muted-foreground">{t3('Actieve dagen', 'Jours actifs', 'Active days')}</p>
             </CardContent></Card>
             <Card><CardContent className="p-3 text-center">
               <p className="text-2xl font-bold text-primary">€{totalAmount.toFixed(0)}</p>
@@ -575,10 +575,10 @@ const MonthlyPlanning = () => {
           <Card className="p-12 text-center">
             <Calendar className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">{t3(`Nog geen maandplan voor ${MONTH_NAMES.nl[viewMonth - 1]}`, `Pas encore de plan mensuel pour ${MONTH_NAMES.fr[viewMonth - 1]}`, `No monthly plan for ${MONTH_NAMES.en[viewMonth - 1]} yet`)}</h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              Maak een maandplan aan om dagelijkse taken in te plannen en vrijwilligers uit te nodigen.
-            </p>
-            <Button onClick={createPlan} size="lg"><Plus className="w-4 h-4 mr-2" /> Maandplan aanmaken</Button>
+             <p className="text-sm text-muted-foreground mb-6">
+               {t3('Maak een maandplan aan om dagelijkse taken in te plannen en vrijwilligers uit te nodigen.', 'Créez un plan mensuel pour planifier les tâches quotidiennes et inviter des bénévoles.', 'Create a monthly plan to schedule daily tasks and invite volunteers.')}
+             </p>
+             <Button onClick={createPlan} size="lg"><Plus className="w-4 h-4 mr-2" /> {t3('Maandplan aanmaken', 'Créer un plan mensuel', 'Create monthly plan')}</Button>
           </Card>
         ) : plan ? (
           <>
@@ -604,7 +604,7 @@ const MonthlyPlanning = () => {
                             <div key={t.id} className={`text-[10px] sm:text-xs px-1 py-0.5 rounded truncate ${categoryColor(t.category)}`}
                               onClick={(e) => { e.stopPropagation(); openEditTask(t); }}>{t.title}</div>
                           ))}
-                          {dayTasks.length > 3 && <div className="text-[10px] text-muted-foreground px-1">+{dayTasks.length - 3} meer</div>}
+                          {dayTasks.length > 3 && <div className="text-[10px] text-muted-foreground px-1">+{dayTasks.length - 3} {t3('meer', 'plus', 'more')}</div>}
                         </div>
                       </div>
                     );
@@ -619,25 +619,25 @@ const MonthlyPlanning = () => {
                 <div className="flex items-center gap-3 flex-wrap">
                   <Button variant="outline" onClick={copyPreviousMonth} disabled={copyingTasks}>
                     {copyingTasks ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />}
-                    Kopieer vorige maand
+                    {t3('Kopieer vorige maand', 'Copier le mois précédent', 'Copy previous month')}
                   </Button>
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm whitespace-nowrap">Contractsjabloon:</Label>
+                    <Label className="text-sm whitespace-nowrap">{t3('Contractsjabloon:', 'Modèle de contrat :', 'Contract template:')}</Label>
                     <Select value={plan.contract_template_id || ''} onValueChange={async (v) => {
                       await supabase.from('monthly_plans').update({ contract_template_id: v || null }).eq('id', plan.id);
                       setPlan(prev => prev ? { ...prev, contract_template_id: v || null } : null);
-                      toast.success('Sjabloon gekoppeld');
+                      toast.success(t3('Sjabloon gekoppeld', 'Modèle lié', 'Template linked'));
                     }}>
-                      <SelectTrigger className="w-[200px]"><SelectValue placeholder="Kies sjabloon..." /></SelectTrigger>
+                      <SelectTrigger className="w-[200px]"><SelectValue placeholder={t3('Kies sjabloon...', 'Choisir modèle...', 'Choose template...')} /></SelectTrigger>
                       <SelectContent>{contractTemplates.map(ct => <SelectItem key={ct.id} value={ct.id}>{ct.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  {tasks.length > 0 && <Button onClick={publishPlan}><Send className="w-4 h-4 mr-2" /> Publiceer maandplan</Button>}
+                  {tasks.length > 0 && <Button onClick={publishPlan}><Send className="w-4 h-4 mr-2" /> {t3('Publiceer maandplan', 'Publier le plan mensuel', 'Publish monthly plan')}</Button>}
                 </div>
               )}
               {plan.status === 'published' && (
                 <Badge variant="outline" className="text-sm py-2 px-4">
-                  <Users className="w-4 h-4 mr-1" /> {enrollments.length} vrijwilliger(s) ingeschreven
+                  <Users className="w-4 h-4 mr-1" /> {enrollments.length} {t3('vrijwilliger(s) ingeschreven', 'bénévole(s) inscrit(s)', 'volunteer(s) enrolled')}
                 </Badge>
               )}
             </div>
@@ -645,7 +645,7 @@ const MonthlyPlanning = () => {
             {/* Tasks list */}
             {tasks.length > 0 && (
               <Card>
-                <CardHeader><CardTitle className="text-base">Alle taken deze maand</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base">{t3('Alle taken deze maand', 'Toutes les tâches ce mois', 'All tasks this month')}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {tasks.map(t => {
@@ -653,7 +653,7 @@ const MonthlyPlanning = () => {
                       return (
                         <div key={t.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
                           <div className="text-center min-w-[40px]">
-                            <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString('nl-BE', { weekday: 'short' })}</p>
+                             <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE', { weekday: 'short' })}</p>
                             <p className="text-lg font-bold text-foreground">{d.getDate()}</p>
                           </div>
                           <div className="flex-1 min-w-0">
@@ -664,8 +664,8 @@ const MonthlyPlanning = () => {
                             <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                               {t.start_time && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t.start_time}–{t.end_time}</span>}
                               {t.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{t.location}</span>}
-                              <span className="flex items-center gap-1"><Euro className="w-3 h-3" />{t.compensation_type === 'daily' ? `€${t.daily_rate}/dag` : `€${t.hourly_rate}/u`}</span>
-                              <span className="flex items-center gap-1"><Users className="w-3 h-3" />{t.spots_available} plaatsen</span>
+                               <span className="flex items-center gap-1"><Euro className="w-3 h-3" />{t.compensation_type === 'daily' ? `€${t.daily_rate}/${t3('dag', 'jour', 'day')}` : `€${t.hourly_rate}/${t3('u', 'h', 'h')}`}</span>
+                               <span className="flex items-center gap-1"><Users className="w-3 h-3" />{t.spots_available} {t3('plaatsen', 'places', 'spots')}</span>
                             </div>
                           </div>
                           <div className="flex gap-1">
@@ -683,7 +683,7 @@ const MonthlyPlanning = () => {
             {/* Enrollments with approval flow */}
             {enrollments.length > 0 && (
               <Card>
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Ingeschreven vrijwilligers</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> {t3('Ingeschreven vrijwilligers', 'Bénévoles inscrits', 'Enrolled volunteers')}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {enrollments.map(e => (
@@ -692,32 +692,32 @@ const MonthlyPlanning = () => {
                           {((e.profiles as any)?.full_name || '?')[0].toUpperCase()}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium">{(e.profiles as any)?.full_name || (e.profiles as any)?.email || 'Onbekend'}</p>
+                          <p className="text-sm font-medium">{(e.profiles as any)?.full_name || (e.profiles as any)?.email || t3('Onbekend', 'Inconnu', 'Unknown')}</p>
                           <p className="text-xs text-muted-foreground">{(e.profiles as any)?.email}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           {approvalBadge(e.approval_status)}
                           {e.approval_status === 'approved' && (
                             <Badge variant={e.contract_status === 'signed' ? 'default' : 'secondary'}>
-                              {e.contract_status === 'signed' ? 'Contract getekend' : e.contract_status === 'sent' ? 'Verstuurd' : 'Wacht op contract'}
+                              {e.contract_status === 'signed' ? t3('Contract getekend', 'Contrat signé', 'Contract signed') : e.contract_status === 'sent' ? t3('Verstuurd', 'Envoyé', 'Sent') : t3('Wacht op contract', 'En attente du contrat', 'Awaiting contract')}
                             </Badge>
                           )}
                         </div>
                         <div className="flex gap-1 shrink-0">
                           {e.approval_status === 'pending' && (
                             <>
-                              <Button size="sm" variant="outline" className="gap-1 text-green-700" onClick={() => approveEnrollment(e.id)}>
-                                <UserCheck className="w-3.5 h-3.5" /> Goedkeuren
-                              </Button>
-                              <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => rejectEnrollment(e.id)}>
-                                <UserX className="w-3.5 h-3.5" /> Afwijzen
+                               <Button size="sm" variant="outline" className="gap-1 text-green-700" onClick={() => approveEnrollment(e.id)}>
+                                 <UserCheck className="w-3.5 h-3.5" /> {t3('Goedkeuren', 'Approuver', 'Approve')}
+                               </Button>
+                               <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => rejectEnrollment(e.id)}>
+                                 <UserX className="w-3.5 h-3.5" /> {t3('Afwijzen', 'Refuser', 'Reject')}
                               </Button>
                             </>
                           )}
                           {e.approval_status === 'approved' && plan?.contract_template_id && e.contract_status !== 'signed' && (
                             <Button size="sm" variant="outline" onClick={() => setContractVolunteer(e)}>
                               <FileSignature className="w-3.5 h-3.5 mr-1" />
-                              {e.contract_status === 'sent' ? 'Opnieuw' : 'Contract'}
+                              {e.contract_status === 'sent' ? t3('Opnieuw', 'Renvoyer', 'Resend') : 'Contract'}
                             </Button>
                           )}
                         </div>
@@ -733,7 +733,7 @@ const MonthlyPlanning = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-yellow-600" /> Dag-aanmeldingen te bevestigen ({pendingDaySignups.length})
+                    <Clock className="w-4 h-4 text-yellow-600" /> {t3('Dag-aanmeldingen te bevestigen', 'Inscriptions journalières à confirmer', 'Day signups to confirm')} ({pendingDaySignups.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -745,7 +745,7 @@ const MonthlyPlanning = () => {
                       return (
                         <div key={ds.id} className="flex items-center gap-3 p-3 rounded-lg border bg-yellow-50 dark:bg-yellow-900/10">
                           <div className="text-center min-w-[40px]">
-                            <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString('nl-BE', { weekday: 'short' })}</p>
+                             <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE', { weekday: 'short' })}</p>
                             <p className="text-lg font-bold">{d.getDate()}</p>
                           </div>
                           <div className="flex-1">
@@ -753,11 +753,11 @@ const MonthlyPlanning = () => {
                             <p className="text-xs text-muted-foreground">{task.start_time}–{task.end_time} · {task.location || ''}</p>
                           </div>
                           <div className="flex gap-1.5 shrink-0">
-                            <Button size="sm" variant="outline" className="gap-1 text-green-700" onClick={() => assignDaySignup(ds.id)}>
-                              <UserCheck className="w-3.5 h-3.5" /> Toekennen
-                            </Button>
-                            <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => rejectDaySignup(ds.id)}>
-                              <UserX className="w-3.5 h-3.5" /> Afwijzen
+                             <Button size="sm" variant="outline" className="gap-1 text-green-700" onClick={() => assignDaySignup(ds.id)}>
+                               <UserCheck className="w-3.5 h-3.5" /> {t3('Toekennen', 'Attribuer', 'Assign')}
+                             </Button>
+                             <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => rejectDaySignup(ds.id)}>
+                               <UserX className="w-3.5 h-3.5" /> {t3('Afwijzen', 'Refuser', 'Reject')}
                             </Button>
                           </div>
                         </div>
@@ -773,7 +773,7 @@ const MonthlyPlanning = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-primary" /> Toegekende dag-aanmeldingen ({assignedDaySignups.length})
+                    <Ticket className="w-4 h-4 text-primary" /> {t3('Toegekende dag-aanmeldingen', 'Inscriptions journalières attribuées', 'Assigned day signups')} ({assignedDaySignups.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -786,13 +786,13 @@ const MonthlyPlanning = () => {
                       return (
                         <div key={ds.id} className="flex items-center gap-3 p-3 rounded-lg border">
                           <div className="text-center min-w-[40px]">
-                            <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString('nl-BE', { weekday: 'short' })}</p>
+                             <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE', { weekday: 'short' })}</p>
                             <p className="text-lg font-bold">{d.getDate()}</p>
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <Badge className="bg-green-600 text-[10px]">Toegekend</Badge>
+                              <Badge className="bg-green-600 text-[10px]">{t3('Toegekend', 'Attribué', 'Assigned')}</Badge>
                               {hasTicket && <Badge variant="outline" className="text-[10px]">Ticket: {ds.ticket_barcode}</Badge>}
                             </div>
                           </div>
@@ -800,13 +800,13 @@ const MonthlyPlanning = () => {
                             {!hasTicket && (
                               <Button size="sm" variant="outline" className="gap-1" onClick={() => generateTicketForSignup(ds)} disabled={generatingTicketIds.has(ds.id)}>
                                 {generatingTicketIds.has(ds.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ticket className="w-3.5 h-3.5" />}
-                                Ticket genereren
+                                 {t3('Ticket genereren', 'Générer ticket', 'Generate ticket')}
                               </Button>
                             )}
                             {hasTicket && ds.volunteer_email && (
                               <Button size="sm" variant="outline" className="gap-1" onClick={() => sendTicketEmail(ds)} disabled={sendingTicketEmailIds.has(ds.id)}>
                                 {sendingTicketEmailIds.has(ds.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                                E-mail ticket
+                                {t3('E-mail ticket', 'E-mail ticket', 'Email ticket')}
                               </Button>
                             )}
                           </div>
@@ -821,9 +821,9 @@ const MonthlyPlanning = () => {
             {/* Hour confirmations - club side */}
             {daySignups.filter(ds => ds.checked_in_at && ds.volunteer_approved && !ds.club_approved).length > 0 && (
               <Card>
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> Uren bevestigen</CardTitle></CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground mb-3">Deze vrijwilligers hebben hun uren gerapporteerd. Bevestig of pas aan.</p>
+                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> {t3('Uren bevestigen', 'Confirmer les heures', 'Confirm hours')}</CardTitle></CardHeader>
+                 <CardContent>
+                   <p className="text-xs text-muted-foreground mb-3">{t3('Deze vrijwilligers hebben hun uren gerapporteerd. Bevestig of pas aan.', 'Ces bénévoles ont rapporté leurs heures. Confirmez ou ajustez.', 'These volunteers reported their hours. Confirm or adjust.')}</p>
                   <div className="space-y-2">
                     {daySignups.filter(ds => ds.checked_in_at && ds.volunteer_approved && !ds.club_approved).map(ds => {
                       const task = tasks.find(t => t.id === ds.plan_task_id);
@@ -832,12 +832,12 @@ const MonthlyPlanning = () => {
                       return (
                         <div key={ds.id} className="flex items-center gap-3 p-3 rounded-lg border bg-amber-50 dark:bg-amber-900/10">
                           <div className="text-center min-w-[40px]">
-                            <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString('nl-BE', { weekday: 'short' })}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE', { weekday: 'short' })}</p>
                             <p className="text-lg font-bold">{d.getDate()}</p>
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
-                            <p className="text-xs text-muted-foreground">Gerapporteerd: <strong>{ds.volunteer_reported_hours}u</strong></p>
+                            <p className="text-xs text-muted-foreground">{t3('Gerapporteerd', 'Rapporté', 'Reported')}: <strong>{ds.volunteer_reported_hours}{t3('u', 'h', 'h')}</strong></p>
                           </div>
                           <Button size="sm" variant="outline" onClick={async () => {
                             const finalHours = ds.volunteer_reported_hours!;
@@ -845,10 +845,10 @@ const MonthlyPlanning = () => {
                             if (task.compensation_type === 'daily') finalAmount = task.daily_rate || 0;
                             else finalAmount = finalHours * (task.hourly_rate || 0);
                             await supabase.from('monthly_day_signups').update({ club_reported_hours: finalHours, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' }).eq('id', ds.id);
-                            toast.success(`${ds.volunteer_name}: ${finalHours}u bevestigd (€${finalAmount.toFixed(2)})`);
+                            toast.success(`${ds.volunteer_name}: ${finalHours}${t3('u', 'h', 'h')} ${t3('bevestigd', 'confirmé', 'confirmed')} (€${finalAmount.toFixed(2)})`);
                             setDaySignups(prev => prev.map(s => s.id === ds.id ? { ...s, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' } : s));
                           }}>
-                            <CheckCircle className="w-3.5 h-3.5 mr-1" /> Akkoord ({ds.volunteer_reported_hours}u)
+                            <CheckCircle className="w-3.5 h-3.5 mr-1" /> {t3('Akkoord', 'D\'accord', 'Agree')} ({ds.volunteer_reported_hours}{t3('u', 'h', 'h')})
                           </Button>
                         </div>
                       );
@@ -863,11 +863,11 @@ const MonthlyPlanning = () => {
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2"><Euro className="w-4 h-4 text-primary" /> Maandafrekening</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2"><Euro className="w-4 h-4 text-primary" /> {t3('Maandafrekening', 'Décompte mensuel', 'Monthly settlement')}</CardTitle>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={generateMonthlyPayout} disabled={generatingPayout}>
                         {generatingPayout ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Banknote className="w-3.5 h-3.5 mr-1" />}
-                        Genereer afrekening
+                        {t3('Genereer afrekening', 'Générer le décompte', 'Generate settlement')}
                       </Button>
                       <Button size="sm" variant="outline" onClick={exportToSepa}>
                         <Euro className="w-3.5 h-3.5 mr-1" /> SEPA export
@@ -882,12 +882,12 @@ const MonthlyPlanning = () => {
                       return (
                         <div key={ds.id} className="flex items-center justify-between p-2 rounded border text-sm">
                           <span>{ds.volunteer_name} — {task?.title || '?'}</span>
-                          <span className="font-medium text-green-600">{ds.final_hours}u · €{(ds.final_amount || 0).toFixed(2)}</span>
+                          <span className="font-medium text-green-600">{ds.final_hours}{t3('u', 'h', 'h')} · €{(ds.final_amount || 0).toFixed(2)}</span>
                         </div>
                       );
                     })}
                     <div className="flex items-center justify-between p-2 mt-2 rounded bg-muted font-semibold text-sm">
-                      <span>Totaal</span>
+                      <span>{t3('Totaal', 'Total', 'Total')}</span>
                       <span>€{daySignups.filter(ds => ds.hour_status === 'confirmed').reduce((s, ds) => s + (ds.final_amount || 0), 0).toFixed(2)}</span>
                     </div>
                   </div>
@@ -902,48 +902,48 @@ const MonthlyPlanning = () => {
       <Dialog open={showAddTask} onOpenChange={setShowAddTask}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingTask ? 'Taak bewerken' : 'Taak toevoegen'}</DialogTitle>
-            <DialogDescription>
-              {selectedDate && new Date(selectedDate).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
+             <DialogTitle>{editingTask ? t3('Taak bewerken', 'Modifier la tâche', 'Edit task') : t3('Taak toevoegen', 'Ajouter une tâche', 'Add task')}</DialogTitle>
+             <DialogDescription>
+               {selectedDate && new Date(selectedDate).toLocaleDateString(language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div><Label>Titel *</Label><Input value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} placeholder="bv. Bar openen, Materiaal opruimen..." /></div>
+            <div><Label>{t3('Titel', 'Titre', 'Title')} *</Label><Input value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} placeholder={t3('bv. Bar openen, Materiaal opruimen...', 'ex. Ouvrir le bar, Ranger le matériel...', 'e.g. Open bar, Clean up materials...')} /></div>
             <div>
-              <Label>Categorie</Label>
+              <Label>{t3('Categorie', 'Catégorie', 'Category')}</Label>
               <Select value={taskForm.category} onValueChange={v => setTaskForm(f => ({ ...f, category: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Start</Label><Input type="time" value={taskForm.start_time} onChange={e => setTaskForm(f => ({ ...f, start_time: e.target.value }))} /></div>
-              <div><Label>Einde</Label><Input type="time" value={taskForm.end_time} onChange={e => setTaskForm(f => ({ ...f, end_time: e.target.value }))} /></div>
+               <div><Label>{t3('Start', 'Début', 'Start')}</Label><Input type="time" value={taskForm.start_time} onChange={e => setTaskForm(f => ({ ...f, start_time: e.target.value }))} /></div>
+               <div><Label>{t3('Einde', 'Fin', 'End')}</Label><Input type="time" value={taskForm.end_time} onChange={e => setTaskForm(f => ({ ...f, end_time: e.target.value }))} /></div>
             </div>
-            <div><Label>Locatie</Label><Input value={taskForm.location} onChange={e => setTaskForm(f => ({ ...f, location: e.target.value }))} placeholder="bv. Clubhuis, Veld 3..." /></div>
+            <div><Label>{t3('Locatie', 'Lieu', 'Location')}</Label><Input value={taskForm.location} onChange={e => setTaskForm(f => ({ ...f, location: e.target.value }))} placeholder={t3('bv. Clubhuis, Veld 3...', 'ex. Club-house, Terrain 3...', 'e.g. Clubhouse, Field 3...')} /></div>
             <div>
-              <Label>Vergoeding</Label>
-              <Select value={taskForm.compensation_type} onValueChange={v => setTaskForm(f => ({ ...f, compensation_type: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Dagvergoeding (vast bedrag)</SelectItem>
-                  <SelectItem value="hourly">Uurloon</SelectItem>
-                </SelectContent>
+               <Label>{t3('Vergoeding', 'Rémunération', 'Compensation')}</Label>
+               <Select value={taskForm.compensation_type} onValueChange={v => setTaskForm(f => ({ ...f, compensation_type: v }))}>
+                 <SelectTrigger><SelectValue /></SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="daily">{t3('Dagvergoeding (vast bedrag)', 'Indemnité journalière (montant fixe)', 'Daily rate (fixed amount)')}</SelectItem>
+                   <SelectItem value="hourly">{t3('Uurloon', 'Tarif horaire', 'Hourly rate')}</SelectItem>
+                 </SelectContent>
               </Select>
             </div>
             {taskForm.compensation_type === 'daily' ? (
-              <div><Label>Dagvergoeding (€)</Label><Input type="number" value={taskForm.daily_rate} onChange={e => setTaskForm(f => ({ ...f, daily_rate: e.target.value }))} /></div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Uurloon (€)</Label><Input type="number" value={taskForm.hourly_rate} onChange={e => setTaskForm(f => ({ ...f, hourly_rate: e.target.value }))} /></div>
-                <div><Label>Geschatte uren</Label><Input type="number" value={taskForm.estimated_hours} onChange={e => setTaskForm(f => ({ ...f, estimated_hours: e.target.value }))} /></div>
+               <div><Label>{t3('Dagvergoeding (€)', 'Indemnité journalière (€)', 'Daily rate (€)')}</Label><Input type="number" value={taskForm.daily_rate} onChange={e => setTaskForm(f => ({ ...f, daily_rate: e.target.value }))} /></div>
+             ) : (
+               <div className="grid grid-cols-2 gap-3">
+                 <div><Label>{t3('Uurloon (€)', 'Tarif horaire (€)', 'Hourly rate (€)')}</Label><Input type="number" value={taskForm.hourly_rate} onChange={e => setTaskForm(f => ({ ...f, hourly_rate: e.target.value }))} /></div>
+                 <div><Label>{t3('Geschatte uren', 'Heures estimées', 'Estimated hours')}</Label><Input type="number" value={taskForm.estimated_hours} onChange={e => setTaskForm(f => ({ ...f, estimated_hours: e.target.value }))} /></div>
               </div>
             )}
-            <div><Label>Aantal plaatsen</Label><Input type="number" value={taskForm.spots_available} onChange={e => setTaskForm(f => ({ ...f, spots_available: e.target.value }))} /></div>
-            <div><Label>Beschrijving</Label><Textarea value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} placeholder="Extra info over de taak..." rows={2} /></div>
-            <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowAddTask(false)}>Annuleren</Button>
-              <Button className="flex-1" onClick={addOrUpdateTask} disabled={!taskForm.title}>{editingTask ? 'Opslaan' : 'Toevoegen'}</Button>
+             <div><Label>{t3('Aantal plaatsen', 'Nombre de places', 'Number of spots')}</Label><Input type="number" value={taskForm.spots_available} onChange={e => setTaskForm(f => ({ ...f, spots_available: e.target.value }))} /></div>
+             <div><Label>{t3('Beschrijving', 'Description', 'Description')}</Label><Textarea value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} placeholder={t3('Extra info over de taak...', 'Informations supplémentaires...', 'Additional task info...')} rows={2} /></div>
+             <div className="flex gap-3 pt-2">
+               <Button variant="outline" className="flex-1" onClick={() => setShowAddTask(false)}>{t3('Annuleren', 'Annuler', 'Cancel')}</Button>
+               <Button className="flex-1" onClick={addOrUpdateTask} disabled={!taskForm.title}>{editingTask ? t3('Opslaan', 'Enregistrer', 'Save') : t3('Toevoegen', 'Ajouter', 'Add')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -967,7 +967,7 @@ const MonthlyPlanning = () => {
             contract_template_id: plan.contract_template_id,
           }}
           clubId={clubId || undefined}
-          language="nl"
+          language={language}
           onSent={async () => {
             await supabase.from('monthly_enrollments').update({ contract_status: 'sent' }).eq('id', contractVolunteer.id);
             setEnrollments(prev => prev.map(e => e.id === contractVolunteer.id ? { ...e, contract_status: 'sent' } : e));

@@ -267,6 +267,7 @@ const DroppableGroup = ({ id, children }: { id: string; children: React.ReactNod
 // ─── Main Component ───
 const BriefingBuilder = () => {
   const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const taskId = searchParams.get('taskId');
@@ -599,9 +600,9 @@ const BriefingBuilder = () => {
         if (exists) return prev.map(b => b.id === bId ? { ...b, title: briefingTitle } : b);
         return [...prev, { id: bId!, title: briefingTitle }];
       });
-      toast.success('Briefing opgeslagen!');
+      toast.success(t3('Briefing opgeslagen!', 'Briefing enregistré !', 'Briefing saved!'));
     } catch (err: any) {
-      toast.error(err.message || 'Error saving briefing');
+      toast.error(err.message || t3('Fout bij opslaan', 'Erreur lors de la sauvegarde', 'Error saving briefing'));
     } finally {
       setSaving(false);
     }
@@ -616,7 +617,7 @@ const BriefingBuilder = () => {
 
   const handleDuplicate = () => {
     setBriefingId(null);
-    setBriefingTitle(`${briefingTitle} (kopie)`);
+    setBriefingTitle(`${briefingTitle} (${t3('kopie', 'copie', 'copy')})`);
     setGroups(groups.map(g => ({
       ...g, id: uid(),
       blocks: g.blocks.map(b => ({
@@ -625,7 +626,7 @@ const BriefingBuilder = () => {
         waypoints: (b.waypoints || []).map(wp => ({ ...wp, id: uid() })),
       })),
     })));
-    toast.success('Briefing gedupliceerd — sla op om te bewaren');
+    toast.success(t3('Briefing gedupliceerd — sla op om te bewaren', 'Briefing dupliqué — enregistrez pour conserver', 'Briefing duplicated — save to keep'));
   };
 
   const switchBriefing = async (bId: string) => {
@@ -640,7 +641,7 @@ const BriefingBuilder = () => {
 
   // ─── Send briefing ───
   const handleOpenSendDialog = () => {
-    if (!briefingId) { toast.error('Sla de briefing eerst op voordat je verstuurt.'); return; }
+    if (!briefingId) { toast.error(t3('Sla de briefing eerst op voordat je verstuurt.', 'Enregistrez d\'abord le briefing avant d\'envoyer.', 'Save the briefing first before sending.')); return; }
     setShowSendDialog(true);
   };
 
@@ -661,17 +662,17 @@ const BriefingBuilder = () => {
 
         const briefingLink = `${window.location.origin}/training/${briefingId}`;
         const msgContent = personalMessage.trim()
-          ? `📋 ${briefingTitle || 'Briefing'}\n\n${personalMessage.trim()}\n\n🔗 Bekijk je briefing: ${briefingLink}`
-          : `📋 ${briefingTitle || 'Briefing'}\n\n🔗 Bekijk je briefing: ${briefingLink}`;
+          ? `📋 ${briefingTitle || 'Briefing'}\n\n${personalMessage.trim()}\n\n🔗 ${t3('Bekijk je briefing', 'Consultez votre briefing', 'View your briefing')}: ${briefingLink}`
+          : `📋 ${briefingTitle || 'Briefing'}\n\n🔗 ${t3('Bekijk je briefing', 'Consultez votre briefing', 'View your briefing')}: ${briefingLink}`;
 
         const { error: msgErr } = await supabase.from('messages').insert({ conversation_id: convoId, sender_id: userId, content: msgContent });
         if (msgErr) throw msgErr;
         await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convoId);
       }
       setShowSendDialog(false);
-      toast.success('Briefing link verstuurd naar vrijwilligers!');
+      toast.success(t3('Briefing link verstuurd naar vrijwilligers!', 'Lien du briefing envoyé aux bénévoles !', 'Briefing link sent to volunteers!'));
     } catch (err: any) {
-      toast.error(err.message || 'Error sending briefing');
+      toast.error(err.message || t3('Fout bij versturen', 'Erreur lors de l\'envoi', 'Error sending briefing'));
     } finally {
       setSendingBriefing(false);
     }

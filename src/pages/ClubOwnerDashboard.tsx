@@ -299,6 +299,7 @@ const ClubOwnerDashboard = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const dt = dashboardT[language];
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -676,9 +677,9 @@ const ClubOwnerDashboard = () => {
           });
           if (ebError) {
             console.error('Eventbrite sync error:', ebError);
-            toast.error(language === 'nl' ? 'Eventbrite-sync mislukt: ' + ebError.message : 'Eventbrite sync failed: ' + ebError.message);
+            toast.error(t3('Eventbrite-sync mislukt: ', 'Échec sync Eventbrite : ', 'Eventbrite sync failed: ') + ebError.message);
           } else if (ebResult?.success) {
-            toast.success(language === 'nl' ? 'Evenement automatisch aangemaakt in Eventbrite!' : 'Event automatically created in Eventbrite!');
+            toast.success(t3('Evenement automatisch aangemaakt in Eventbrite!', 'Événement créé automatiquement dans Eventbrite !', 'Event automatically created in Eventbrite!'));
           } else if (ebResult?.error) {
             toast.error('Eventbrite: ' + ebResult.error);
           }
@@ -881,10 +882,10 @@ const ClubOwnerDashboard = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success('Betaling aangemaakt!');
+      toast.success(t3('Betaling aangemaakt!', 'Paiement créé !', 'Payment created!'));
       setVolunteerPayments(prev => ({ ...prev, [key]: { status: 'processing' } }));
     } catch (err: any) {
-      toast.error(err.message || 'Er ging iets mis');
+      toast.error(err.message || t3('Er ging iets mis', 'Une erreur est survenue', 'Something went wrong'));
     }
     setSendingPayment(null);
   };
@@ -1040,7 +1041,7 @@ const ClubOwnerDashboard = () => {
                       </Avatar>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-medium text-foreground truncate">{signup.volunteer?.full_name || 'Onbekend'}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{signup.volunteer?.full_name || t3('Onbekend', 'Inconnu', 'Unknown')}</p>
                           <ComplianceBadge compliance={complianceMap.get(signup.volunteer_id) || null} language={language} compact />
                         </div>
                         <p className="text-xs text-muted-foreground truncate">{signup.volunteer?.email || ''}</p>
@@ -1131,9 +1132,9 @@ const ClubOwnerDashboard = () => {
                                     setSendingContract(contractKey);
                                     try {
                                       const tmplId = task.contract_template_id;
-                                      if (!tmplId) { toast.error('Geen contractsjabloon gekoppeld aan deze taak.'); setSendingContract(null); return; }
+                                      if (!tmplId) { toast.error(t3('Geen contractsjabloon gekoppeld aan deze taak.', 'Aucun modèle de contrat lié à cette tâche.', 'No contract template linked to this task.')); setSendingContract(null); return; }
                                       const { data: tmpl } = await supabase.from('contract_templates').select('docuseal_template_id').eq('id', tmplId).maybeSingle();
-                                      if (!tmpl) { toast.error('Contractsjabloon niet gevonden.'); setSendingContract(null); return; }
+                                      if (!tmpl) { toast.error(t3('Contractsjabloon niet gevonden.', 'Modèle de contrat introuvable.', 'Contract template not found.')); setSendingContract(null); return; }
                                       const { data: { session: sess } } = await supabase.auth.getSession();
                                       if (!sess) { setSendingContract(null); return; }
                                       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=create-submission`, {
@@ -1143,10 +1144,10 @@ const ClubOwnerDashboard = () => {
                                       });
                                       const result = await resp.json();
                                       if (resp.ok && result.success) {
-                                        toast.success('Contract verstuurd naar vrijwilliger!');
+                                        toast.success(t3('Contract verstuurd naar vrijwilliger!', 'Contrat envoyé au bénévole !', 'Contract sent to volunteer!'));
                                         setSignatureStatuses(prev => ({ ...prev, [contractKey]: { status: 'pending' } }));
-                                      } else { toast.error(result.error || 'Er ging iets mis bij het versturen.'); }
-                                    } catch (err: any) { toast.error(err.message || 'Er ging iets mis.'); }
+                                      } else { toast.error(result.error || t3('Er ging iets mis bij het versturen.', 'Échec de l\'envoi.', 'Something went wrong sending.')); }
+                                    } catch (err: any) { toast.error(err.message || t3('Er ging iets mis.', 'Une erreur est survenue.', 'Something went wrong.')); }
                                     setSendingContract(null);
                                   }}
                                   disabled={isSending}
