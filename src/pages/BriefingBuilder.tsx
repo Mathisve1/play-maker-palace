@@ -185,8 +185,8 @@ const SortableBlock = ({
             <Select value={block.zone_mode || 'full'} onValueChange={(v) => onUpdate(groupId, block.id, { zone_mode: v as 'full' | 'personalized' })}>
               <SelectTrigger className="bg-background/60 text-sm flex-1"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="full">Volledig zone-overzicht</SelectItem>
-                <SelectItem value="personalized">Gepersonaliseerd per vrijwilliger</SelectItem>
+                <SelectItem value="full">{language === 'fr' ? 'Aperçu complet des zones' : language === 'en' ? 'Full zone overview' : 'Volledig zone-overzicht'}</SelectItem>
+                <SelectItem value="personalized">{language === 'fr' ? 'Personnalisé par bénévole' : language === 'en' ? 'Personalized per volunteer' : 'Gepersonaliseerd per vrijwilliger'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
