@@ -203,7 +203,7 @@ const SortableBlock = ({
                 className="bg-background/60 text-sm w-20"
               />
               <span className="text-[10px] text-muted-foreground">
-                {block.zone_visible_depth ? `Niveau 1–${block.zone_visible_depth}` : 'Alle niveaus'}
+                {block.zone_visible_depth ? `${language === 'fr' ? 'Niveau' : language === 'en' ? 'Level' : 'Niveau'} 1–${block.zone_visible_depth}` : (language === 'fr' ? 'Tous les niveaux' : language === 'en' ? 'All levels' : 'Alle niveaus')}
               </span>
             </div>
           )}
