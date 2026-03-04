@@ -331,7 +331,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
               className="flex items-center gap-2 text-sm text-primary hover:underline"
             >
               <Copy className="w-3.5 h-3.5" />
-              Genereer uitnodigingslink
+              {t3('Genereer uitnodigingslink', 'Générer un lien d\'invitation', 'Generate invite link')}
             </button>
           </div>
         )}
