@@ -847,23 +847,23 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
                   <div>
                     <p className="text-sm font-medium mb-2">{t3('Basis', 'De base', 'Basic')}</p>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('title', { text: 'Nieuwe titel', subtitle: '' })}>
-                        <Type className="h-4 w-4 mr-2" /> Titel
+                      <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('title', { text: t3('Nieuwe titel', 'Nouveau titre', 'New title'), subtitle: '' })}>
+                        <Type className="h-4 w-4 mr-2" /> {t3('Titel', 'Titre', 'Title')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('text', { text: '' })}>
-                        <FileText className="h-4 w-4 mr-2" /> Tekstveld
+                        <FileText className="h-4 w-4 mr-2" /> {t3('Tekstveld', 'Champ texte', 'Text field')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('logo')}>
-                        <Image className="h-4 w-4 mr-2" /> Club logo
+                        <Image className="h-4 w-4 mr-2" /> {t3('Club logo', 'Logo du club', 'Club logo')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('signature', { name: '', role: '' })}>
-                        <PenLine className="h-4 w-4 mr-2" /> Handtekening
+                        <PenLine className="h-4 w-4 mr-2" /> {t3('Handtekening', 'Signature', 'Signature')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('kpi-grid')}>
-                        <BarChart3 className="h-4 w-4 mr-2" /> KPI overzicht
+                        <BarChart3 className="h-4 w-4 mr-2" /> {t3('KPI overzicht', 'Aperçu KPI', 'KPI overview')}
                       </Button>
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('spacer')}>
-                        <GripVertical className="h-4 w-4 mr-2" /> Scheidingslijn
+                        <GripVertical className="h-4 w-4 mr-2" /> {t3('Scheidingslijn', 'Séparateur', 'Divider')}
                       </Button>
                     </div>
                   </div>
