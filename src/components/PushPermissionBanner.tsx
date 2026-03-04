@@ -34,12 +34,21 @@ const PushPermissionBanner = () => {
   const l = labels[language] || labels.nl;
 
   useEffect(() => {
-    // Use a per-user key so switching accounts shows the banner again
-    const getUserId = async () => {
+    // v2: Clean up ALL old dismiss keys so every user gets prompted fresh
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key === 'push_banner_dismissed' || key.startsWith('push_banner_dismissed_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+
+    const checkAndShow = async () => {
       const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
       const uid = user?.id || 'anon';
-      const key = `push_banner_dismissed_${uid}`;
-      
+      const key = `push_banner_v2_${uid}`;
+
       const wasDismissed = localStorage.getItem(key);
       if (wasDismissed) return;
 
@@ -51,16 +60,15 @@ const PushPermissionBanner = () => {
       }
 
       // Show banner after short delay
-      const timer = setTimeout(() => setVisible(true), 3000);
-      return () => clearTimeout(timer);
+      setTimeout(() => setVisible(true), 3000);
     };
-    getUserId();
+    checkAndShow();
   }, []);
 
   const dismissForUser = async () => {
     const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
     const uid = user?.id || 'anon';
-    localStorage.setItem(`push_banner_dismissed_${uid}`, '1');
+    localStorage.setItem(`push_banner_v2_${uid}`, '1');
   };
 
   const handleEnable = async () => {
