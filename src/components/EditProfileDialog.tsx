@@ -63,6 +63,13 @@ const labels = {
     requiredForBank: 'Vul eerst uw naam en IBAN in om toestemming te geven.',
     firstLoginTitle: 'Welkom! Vul je profiel aan',
     firstLoginDescription: 'Vul je gegevens in zodat clubs je beter leren kennen.',
+    pushNotifications: 'Pushmeldingen',
+    pushEnabled: 'Meldingen zijn ingeschakeld',
+    pushDisabled: 'Meldingen zijn uitgeschakeld',
+    pushEnable: 'Inschakelen',
+    pushDisable: 'Uitschakelen',
+    pushUnavailable: 'Pushmeldingen worden niet ondersteund in deze browser',
+    pushDenied: 'Pushmeldingen zijn geblokkeerd. Wijzig dit in je browserinstellingen.',
   },
   fr: {
     title: 'Mon profil',
