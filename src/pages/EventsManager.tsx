@@ -395,8 +395,8 @@ const EventsManager = () => {
              <h1 className="text-2xl font-heading font-bold text-foreground">
                {t3('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks')}
             </h1>
-            <p className="text-muted-foreground mt-1">
-              {events.length} {nl ? 'evenementen' : 'events'} · {looseTasks.length} {nl ? 'losse taken' : 'loose tasks'}
+             <p className="text-muted-foreground mt-1">
+               {events.length} {t3('evenementen', 'événements', 'events')} · {looseTasks.length} {t3('losse taken', 'tâches libres', 'loose tasks')}
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
