@@ -973,7 +973,7 @@ const AcademyBuilder = () => {
   };
 
   const handleGenerateAI = async (target: 'global' | string) => {
-    if (!modules.length) { toast.error('Voeg eerst modules met inhoud toe.'); return; }
+    if (!modules.length) { toast.error(l.noTrainings.includes('Nog') ? 'Voeg eerst modules met inhoud toe.' : l.noTrainings.includes('Aucune') ? 'Ajoutez d\'abord des modules avec du contenu.' : 'Add modules with content first.'); return; }
     setGeneratingAI(true);
     try {
       const content = target === 'global'
@@ -1159,7 +1159,7 @@ const AcademyBuilder = () => {
     if (!ev?.task || !clubId) return;
 
     const { data: signups } = await supabase.from('task_signups').select('volunteer_id').eq('task_id', ev.task.id).eq('status', 'approved');
-    if (!signups || signups.length === 0) { toast.error('Geen goedgekeurde inschrijvingen'); return; }
+    if (!signups || signups.length === 0) { toast.error(language === 'fr' ? 'Aucune inscription approuvée' : language === 'en' ? 'No approved signups' : 'Geen goedgekeurde inschrijvingen'); return; }
 
     // Check existing tickets
     const { data: existing } = await supabase.from('volunteer_tickets').select('volunteer_id').eq('event_id', eventId).eq('club_id', clubId);
@@ -1194,7 +1194,7 @@ const AcademyBuilder = () => {
       .eq('club_id', clubId)
       .eq('status', 'checked_in');
 
-    if (!tickets || tickets.length === 0) { toast.error('Geen ingecheckte vrijwilligers'); return; }
+    if (!tickets || tickets.length === 0) { toast.error(language === 'fr' ? 'Aucun bénévole enregistré' : language === 'en' ? 'No checked-in volunteers' : 'Geen ingecheckte vrijwilligers'); return; }
 
     // Check existing certs
     const { data: existingCerts } = await supabase.from('volunteer_certificates')
@@ -1284,7 +1284,7 @@ const AcademyBuilder = () => {
                   else if (type === 'subheading') { defaultStyle.fontSize = 'lg'; defaultStyle.bold = true; }
                   updateModuleBlocks(targetIdx, [...modules[targetIdx].blocks, { id: crypto.randomUUID(), type, value: '', style: defaultStyle }]);
                 } else {
-                  toast.error('Open eerst een module');
+                  toast.error(language === 'fr' ? 'Ouvrez d\'abord un module' : language === 'en' ? 'Open a module first' : 'Open eerst een module');
                 }
               }} />
             </div>
@@ -1332,7 +1332,7 @@ const AcademyBuilder = () => {
                       if (type === 'heading') { defaultStyle.fontSize = '2xl'; defaultStyle.bold = true; }
                       else if (type === 'subheading') { defaultStyle.fontSize = 'lg'; defaultStyle.bold = true; }
                       updateModuleBlocks(targetIdx, [...modules[targetIdx].blocks, { id: crypto.randomUUID(), type, value: '', style: defaultStyle }]);
-                    } else { toast.error('Open eerst een module'); }
+                    } else { toast.error(language === 'fr' ? 'Ouvrez d\'abord un module' : language === 'en' ? 'Open a module first' : 'Open eerst een module'); }
                   }} />
                 </div>
 

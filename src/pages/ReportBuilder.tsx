@@ -694,20 +694,20 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
               <div className="flex-1 space-y-1">
                 {!isExporting ? (
                   <Input className="border-none border-b shadow-none bg-transparent" value={w.data.name || ''}
-                    onChange={e => updateWidget(w.id, { name: e.target.value })} placeholder="Naam ondertekenaar" />
+                    onChange={e => updateWidget(w.id, { name: e.target.value })} placeholder={t3('Naam ondertekenaar', 'Nom du signataire', 'Signer name')} />
                 ) : <p className="font-medium">{w.data.name || '_______________'}</p>}
                 {!isExporting ? (
                   <Input className="border-none border-b shadow-none bg-transparent text-sm" value={w.data.role || ''}
-                    onChange={e => updateWidget(w.id, { role: e.target.value })} placeholder="Functie" />
+                    onChange={e => updateWidget(w.id, { role: e.target.value })} placeholder={t3('Functie', 'Fonction', 'Role')} />
                 ) : <p className="text-sm text-muted-foreground">{w.data.role}</p>}
               </div>
               <div className="flex-1 text-center">
                 <div className="border-b border-foreground/30 pb-1 mb-1 h-12" />
-                <p className="text-xs text-muted-foreground">Handtekening</p>
+                <p className="text-xs text-muted-foreground">{t3('Handtekening', 'Signature', 'Signature')}</p>
               </div>
               <div className="flex-1 text-right">
                 <p className="text-sm">{format(new Date(), 'dd MMMM yyyy', { locale: nl })}</p>
-                <p className="text-xs text-muted-foreground">Datum</p>
+                <p className="text-xs text-muted-foreground">{t3('Datum', 'Date', 'Date')}</p>
               </div>
             </div>
           </div>

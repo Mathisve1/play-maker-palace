@@ -548,7 +548,7 @@ const ExternalPartners = () => {
                       </CardHeader>
                       <CardContent>
                         {partnerTasks.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen taken toegewezen.' : 'No tasks assigned yet.'}</p>
+                          <p className="text-sm text-muted-foreground">{t3('Nog geen taken toegewezen.', 'Aucune tâche assignée.', 'No tasks assigned yet.')}</p>
                         ) : (
                           <div className="space-y-3">
                             {partnerTasks.map(task => (
@@ -580,7 +580,7 @@ const ExternalPartners = () => {
                                       className="text-xs shrink-0"
                                     >
                                       {task.partner_acceptance_status === 'accepted' ? '✅' : task.partner_acceptance_status === 'rejected' ? '❌' : '⏳'}
-                                      {' '}{task.partner_acceptance_status === 'accepted' ? (nl ? 'Aanvaard' : 'Accepted') : task.partner_acceptance_status === 'rejected' ? (nl ? 'Geweigerd' : 'Rejected') : (nl ? 'Wachtend' : 'Pending')}
+                                      {' '}{task.partner_acceptance_status === 'accepted' ? t3('Aanvaard', 'Accepté', 'Accepted') : task.partner_acceptance_status === 'rejected' ? t3('Geweigerd', 'Refusé', 'Rejected') : t3('Wachtend', 'En attente', 'Pending')}
                                     </Badge>
                                   </div>
                                 </div>
@@ -595,12 +595,12 @@ const ExternalPartners = () => {
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />{nl ? 'Opengestelde evenementen' : 'Event access'}
+                          <Calendar className="w-4 h-4" />{t3('Opengestelde evenementen', 'Événements ouverts', 'Event access')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
                         {eventAccess.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen evenementen opengesteld.' : 'No events assigned yet.'}</p>
+                          <p className="text-sm text-muted-foreground">{t3('Nog geen evenementen opengesteld.', 'Aucun événement ouvert.', 'No events assigned yet.')}</p>
                         ) : (
                           <div className="space-y-2">
                             {eventAccess.map(ea => (
@@ -610,7 +610,7 @@ const ExternalPartners = () => {
                                   <p className="text-xs text-muted-foreground">
                                     {ea.event_date ? new Date(ea.event_date).toLocaleDateString() : ''}
                                     {ea.max_spots ? ` • Max ${ea.max_spots}` : ''}
-                                    {` • ${ea.signup_count} ${nl ? 'inschrijvingen' : 'signups'}`}
+                                    {` • ${ea.signup_count} ${t3('inschrijvingen', 'inscriptions', 'signups')}`}
                                   </p>
                                 </div>
                                 <Button variant="ghost" size="sm" onClick={() => handleExportAttendees(ea.id, ea.event_title || '')} disabled={exporting}>
@@ -629,7 +629,7 @@ const ExternalPartners = () => {
                     <TabsContent value="members" className="space-y-3 mt-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Button variant="ghost" size="sm" onClick={() => { setSelectedTaskForDetail(null); setDetailTab('overview'); }}>
-                          <ArrowLeft className="w-4 h-4 mr-1" />{nl ? 'Terug' : 'Back'}
+                          <ArrowLeft className="w-4 h-4 mr-1" />{t3('Terug', 'Retour', 'Back')}
                         </Button>
                         <div className="flex-1">
                           <p className="text-sm font-medium">{selectedTaskForDetail.title}</p>
@@ -640,12 +640,12 @@ const ExternalPartners = () => {
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base flex items-center gap-2">
                             <Users className="w-4 h-4" />
-                            {nl ? `Toegewezen medewerkers (${selectedTaskForDetail.signups.length})` : `Assigned members (${selectedTaskForDetail.signups.length})`}
+                            {t3(`Toegewezen medewerkers (${selectedTaskForDetail.signups.length})`, `Membres assignés (${selectedTaskForDetail.signups.length})`, `Assigned members (${selectedTaskForDetail.signups.length})`)}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           {selectedTaskForDetail.signups.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">{nl ? 'Nog geen medewerkers toegewezen aan deze taak.' : 'No members assigned to this task yet.'}</p>
+                            <p className="text-sm text-muted-foreground">{t3('Nog geen medewerkers toegewezen aan deze taak.', 'Aucun membre assigné à cette tâche.', 'No members assigned to this task yet.')}</p>
                           ) : (
                             <div className="space-y-2">
                               {selectedTaskForDetail.signups.map((s, idx) => {
@@ -662,11 +662,11 @@ const ExternalPartners = () => {
                                           <p className="text-sm font-medium">{s.volunteer_name}</p>
                                           {member?.user_id ? (
                                             <Badge variant="outline" className="text-[10px] gap-0.5 border-green-500/40 text-green-700 dark:text-green-400">
-                                              <UserCheck className="w-2.5 h-2.5" />{nl ? 'Account' : 'Account'}
+                                              <UserCheck className="w-2.5 h-2.5" />{t3('Account', 'Compte', 'Account')}
                                             </Badge>
                                           ) : member && !member.user_id ? (
                                             <Badge variant="outline" className="text-[10px] gap-0.5 border-amber-500/40 text-amber-700 dark:text-amber-400">
-                                              <UserX className="w-2.5 h-2.5" />{nl ? 'Geen account' : 'No account'}
+                                              <UserX className="w-2.5 h-2.5" />{t3('Geen account', 'Pas de compte', 'No account')}
                                             </Badge>
                                           ) : null}
                                         </div>
@@ -684,7 +684,7 @@ const ExternalPartners = () => {
                                             disabled={invitingMemberId === member.id}
                                           >
                                             {invitingMemberId === member.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3 mr-0.5" />}
-                                            {nl ? 'Uitnodigen' : 'Invite'}
+                                            {t3('Uitnodigen', 'Inviter', 'Invite')}
                                           </Button>
                                         )}
                                         {member?.user_id && (
@@ -712,7 +712,7 @@ const ExternalPartners = () => {
                     <TabsContent value="tracking" className="space-y-4 mt-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Button variant="ghost" size="sm" onClick={() => { setSelectedTaskForDetail(null); setDetailTab('overview'); }}>
-                          <ArrowLeft className="w-4 h-4 mr-1" />{nl ? 'Terug' : 'Back'}
+                          <ArrowLeft className="w-4 h-4 mr-1" />{t3('Terug', 'Retour', 'Back')}
                         </Button>
                         <div className="flex-1">
                           <p className="text-sm font-medium">{selectedTaskForDetail.title}</p>
@@ -723,7 +723,7 @@ const ExternalPartners = () => {
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base flex items-center gap-2">
                             <ClipboardList className="w-4 h-4" />
-                            {nl ? 'Aanwezigheidsopvolging' : 'Attendance tracking'}
+                            {t3('Aanwezigheidsopvolging', 'Suivi des présences', 'Attendance tracking')}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -732,15 +732,15 @@ const ExternalPartners = () => {
                           ) : (() => {
                             const taskRecords = trackingRecords.filter(r => r.task_title === selectedTaskForDetail.title);
                             return taskRecords.length === 0 ? (
-                              <p className="text-sm text-muted-foreground">{nl ? 'Nog geen gegevens beschikbaar voor deze taak.' : 'No data available for this task yet.'}</p>
+                              <p className="text-sm text-muted-foreground">{t3('Nog geen gegevens beschikbaar voor deze taak.', 'Pas encore de données pour cette tâche.', 'No data available for this task yet.')}</p>
                             ) : (
                               <div className="overflow-x-auto">
                                 <table className="w-full text-xs">
                                   <thead>
                                     <tr className="border-b border-border text-left">
-                                      <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Medewerker' : 'Member'}</th>
-                                      <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Status' : 'Status'}</th>
-                                      <th className="py-2 font-medium text-muted-foreground">{nl ? 'Ingecheckt' : 'Checked in'}</th>
+                                      <th className="py-2 pr-3 font-medium text-muted-foreground">{t3('Medewerker', 'Membre', 'Member')}</th>
+                                      <th className="py-2 pr-3 font-medium text-muted-foreground">Status</th>
+                                      <th className="py-2 font-medium text-muted-foreground">{t3('Ingecheckt', 'Enregistré', 'Checked in')}</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -750,11 +750,11 @@ const ExternalPartners = () => {
                                         <td className="py-2 pr-3">
                                           {r.checked_in ? (
                                             <Badge variant="outline" className="text-[10px] border-green-500/40 text-green-700 dark:text-green-400">
-                                              <Check className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Aanwezig' : 'Present'}
+                                              <Check className="w-2.5 h-2.5 mr-0.5" />{t3('Aanwezig', 'Présent', 'Present')}
                                             </Badge>
                                           ) : (
                                             <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">
-                                              <Clock className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Niet ingecheckt' : 'Not checked in'}
+                                              <Clock className="w-2.5 h-2.5 mr-0.5" />{t3('Niet ingecheckt', 'Non enregistré', 'Not checked in')}
                                             </Badge>
                                           )}
                                         </td>
@@ -780,7 +780,7 @@ const ExternalPartners = () => {
             {partners.length === 0 ? (
               <div className="text-center py-16">
                 <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
-                <p className="text-muted-foreground">{nl ? 'Nog geen externe partners.' : 'No external partners yet.'}</p>
+                <p className="text-muted-foreground">{t3('Nog geen externe partners.', 'Pas encore de partenaires externes.', 'No external partners yet.')}</p>
               </div>
             ) : (
               partners.map(p => (
@@ -799,11 +799,11 @@ const ExternalPartners = () => {
                         <Badge className={`text-xs ${categoryColors[p.category] || categoryColors['andere']}`}>
                           {categoryLabels[language]?.[p.category] || p.category}
                         </Badge>
-                        {p.external_payroll && <Badge variant="outline" className="text-xs">Externe Payroll</Badge>}
+                        {p.external_payroll && <Badge variant="outline" className="text-xs">{t3('Externe Payroll', 'Paie externe', 'External Payroll')}</Badge>}
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
                         {p.contact_name || ''}{p.contact_name && p.contact_email ? ' • ' : ''}{p.contact_email || ''}
-                        {` • ${p.member_count || 0} ${nl ? 'medewerkers' : 'members'}`}
+                        {` • ${p.member_count || 0} ${t3('medewerkers', 'membres', 'members')}`}
                       </p>
                     </div>
                     <Eye className="w-4 h-4 text-muted-foreground" />
@@ -822,11 +822,11 @@ const ExternalPartners = () => {
       }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{nl ? 'Nieuwe partner aanmaken' : 'Create new partner'}</DialogTitle>
+            <DialogTitle>{t3('Nieuwe partner aanmaken', 'Créer un nouveau partenaire', 'Create new partner')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{nl ? 'Logo (optioneel)' : 'Logo (optional)'}</Label>
+              <Label>{t3('Logo (optioneel)', 'Logo (optionnel)', 'Logo (optional)')}</Label>
               <div className="mt-1 flex items-center gap-3">
                 {logoPreview ? (
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
@@ -841,25 +841,25 @@ const ExternalPartners = () => {
                 )}
               </div>
             </div>
-            <div><Label>{nl ? 'Naam' : 'Name'} *</Label><Input value={newPartner.name} onChange={e => setNewPartner(p => ({ ...p, name: e.target.value }))} placeholder="Stewards VZW Antwerp" /></div>
+            <div><Label>{t3('Naam', 'Nom', 'Name')} *</Label><Input value={newPartner.name} onChange={e => setNewPartner(p => ({ ...p, name: e.target.value }))} placeholder="Stewards VZW Antwerp" /></div>
             <div>
-              <Label>{nl ? 'Categorie' : 'Category'}</Label>
+              <Label>{t3('Categorie', 'Catégorie', 'Category')}</Label>
               <Select value={newPartner.category} onValueChange={v => setNewPartner(p => ({ ...p, category: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="stewards">Stewards</SelectItem>
                   <SelectItem value="horeca">Horeca</SelectItem>
                   <SelectItem value="supporters">Supporters</SelectItem>
-                  <SelectItem value="andere">{nl ? 'Andere...' : 'Other...'}</SelectItem>
+                  <SelectItem value="andere">{t3('Andere...', 'Autre...', 'Other...')}</SelectItem>
                 </SelectContent>
               </Select>
-              {newPartner.category === 'andere' && <Input className="mt-2" value={newPartner.custom_category} onChange={e => setNewPartner(p => ({ ...p, custom_category: e.target.value }))} placeholder={nl ? 'Specificeer categorie...' : 'Specify category...'} />}
+              {newPartner.category === 'andere' && <Input className="mt-2" value={newPartner.custom_category} onChange={e => setNewPartner(p => ({ ...p, custom_category: e.target.value }))} placeholder={t3('Specificeer categorie...', 'Spécifiez la catégorie...', 'Specify category...')} />}
             </div>
-            <div><Label>{nl ? 'Contactpersoon' : 'Contact name'}</Label><Input value={newPartner.contact_name} onChange={e => setNewPartner(p => ({ ...p, contact_name: e.target.value }))} /></div>
+            <div><Label>{t3('Contactpersoon', 'Personne de contact', 'Contact name')}</Label><Input value={newPartner.contact_name} onChange={e => setNewPartner(p => ({ ...p, contact_name: e.target.value }))} /></div>
             <div><Label>E-mail</Label><Input type="email" value={newPartner.contact_email} onChange={e => setNewPartner(p => ({ ...p, contact_email: e.target.value }))} /></div>
             <div>
-              <Label className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{nl ? 'Verantwoordelijken uitnodigen' : 'Invite administrators'}</Label>
-              <p className="text-xs text-muted-foreground mb-2">{nl ? 'Nodig verantwoordelijken uit die hun medewerkers kunnen beheren via het partner portaal.' : 'Invite administrators who can manage their staff via the partner portal.'}</p>
+              <Label className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{t3('Verantwoordelijken uitnodigen', 'Inviter des administrateurs', 'Invite administrators')}</Label>
+              <p className="text-xs text-muted-foreground mb-2">{t3('Nodig verantwoordelijken uit die hun medewerkers kunnen beheren via het partner portaal.', 'Invitez des administrateurs qui peuvent gérer leur personnel via le portail partenaire.', 'Invite administrators who can manage their staff via the partner portal.')}</p>
               <div className="space-y-2">
                 {inviteEmails.map((email, idx) => (
                   <div key={idx} className="flex items-center gap-2">
@@ -867,16 +867,16 @@ const ExternalPartners = () => {
                     {inviteEmails.length > 1 && <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setInviteEmails(inviteEmails.filter((_, i) => i !== idx))}><X className="w-4 h-4" /></Button>}
                   </div>
                 ))}
-                <Button variant="outline" size="sm" onClick={() => setInviteEmails([...inviteEmails, ''])}><Plus className="w-3.5 h-3.5 mr-1" />{nl ? 'Nog iemand toevoegen' : 'Add another'}</Button>
+                <Button variant="outline" size="sm" onClick={() => setInviteEmails([...inviteEmails, ''])}><Plus className="w-3.5 h-3.5 mr-1" />{t3('Nog iemand toevoegen', 'Ajouter une autre personne', 'Add another')}</Button>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={newPartner.external_payroll} onCheckedChange={c => setNewPartner(p => ({ ...p, external_payroll: !!c }))} id="payroll" />
-              <Label htmlFor="payroll" className="cursor-pointer">{nl ? 'Externe Payroll (medewerkers hebben al een contract)' : 'External Payroll (members have existing contracts)'}</Label>
+              <Label htmlFor="payroll" className="cursor-pointer">{t3('Externe Payroll (medewerkers hebben al een contract)', 'Paie externe (les membres ont déjà un contrat)', 'External Payroll (members have existing contracts)')}</Label>
             </div>
             <Button onClick={handleCreatePartner} disabled={creating || !newPartner.name.trim()} className="w-full">
               {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {nl ? 'Aanmaken & uitnodigen' : 'Create & invite'}
+              {t3('Aanmaken & uitnodigen', 'Créer & inviter', 'Create & invite')}
             </Button>
           </div>
         </DialogContent>
@@ -885,12 +885,12 @@ const ExternalPartners = () => {
       {/* Invite Admin Dialog */}
       <Dialog open={showInvite} onOpenChange={setShowInvite}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{nl ? 'Partner beheerder uitnodigen' : 'Invite partner admin'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t3('Partner beheerder uitnodigen', 'Inviter un administrateur partenaire', 'Invite partner admin')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>E-mail</Label><Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="beheerder@partner.be" /></div>
             <Button onClick={handleInviteAdmin} disabled={inviting || !inviteEmail.trim()} className="w-full">
               {inviting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
-              {nl ? 'Uitnodiging versturen' : 'Send invitation'}
+              {t3('Uitnodiging versturen', 'Envoyer l\'invitation', 'Send invitation')}
             </Button>
           </div>
         </DialogContent>
@@ -902,18 +902,18 @@ const ExternalPartners = () => {
           <DialogHeader><DialogTitle>{nl ? 'Evenement openstellen' : 'Add event access'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{nl ? 'Evenement' : 'Event'}</Label>
+              <Label>{t3('Evenement', 'Événement', 'Event')}</Label>
               <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-                <SelectTrigger><SelectValue placeholder={nl ? 'Selecteer...' : 'Select...'} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t3('Selecteer...', 'Sélectionner...', 'Select...')} /></SelectTrigger>
                 <SelectContent>
                   {events.map(e => <SelectItem key={e.id} value={e.id}>{e.title}{e.event_date ? ` (${new Date(e.event_date).toLocaleDateString()})` : ''}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>{nl ? 'Max plaatsen (optioneel)' : 'Max spots (optional)'}</Label><Input type="number" min={1} value={maxSpots} onChange={e => setMaxSpots(e.target.value)} /></div>
+            <div><Label>{t3('Max plaatsen (optioneel)', 'Places max (optionnel)', 'Max spots (optional)')}</Label><Input type="number" min={1} value={maxSpots} onChange={e => setMaxSpots(e.target.value)} /></div>
             <Button onClick={handleAddEventAccess} disabled={addingEvent || !selectedEventId} className="w-full">
               {addingEvent ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {nl ? 'Openstellen' : 'Add'}
+              {t3('Openstellen', 'Ouvrir', 'Add')}
             </Button>
           </div>
         </DialogContent>
@@ -922,18 +922,18 @@ const ExternalPartners = () => {
       {/* Send Ticket Dialog */}
       <Dialog open={!!sendingTicketFor} onOpenChange={() => setSendingTicketFor(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{nl ? 'Ticket versturen' : 'Send ticket'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t3('Ticket versturen', 'Envoyer un ticket', 'Send ticket')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             {(() => {
               const member = members.find(m => m.id === sendingTicketFor);
               if (!member) return null;
               return (
                 <>
-                  <p className="text-sm">{nl ? 'Ticket aanmaken voor' : 'Create ticket for'} <strong>{member.full_name}</strong></p>
+                  <p className="text-sm">{t3('Ticket aanmaken voor', 'Créer un ticket pour', 'Create ticket for')} <strong>{member.full_name}</strong></p>
                   <div>
-                    <Label>{nl ? 'Taak' : 'Task'}</Label>
+                    <Label>{t3('Taak', 'Tâche', 'Task')}</Label>
                     <Select value={ticketTaskId} onValueChange={setTicketTaskId}>
-                      <SelectTrigger><SelectValue placeholder={nl ? 'Selecteer taak...' : 'Select task...'} /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t3('Selecteer taak...', 'Sélectionner une tâche...', 'Select task...')} /></SelectTrigger>
                       <SelectContent>
                         {partnerTasks.filter(t => t.partner_acceptance_status === 'accepted').map(t => (
                           <SelectItem key={t.id} value={t.id}>{t.title}{t.event_title ? ` (${t.event_title})` : ''}</SelectItem>
@@ -943,7 +943,7 @@ const ExternalPartners = () => {
                   </div>
                   <Button onClick={() => handleSendTicket(member)} disabled={sendingTicket || !ticketTaskId} className="w-full">
                     {sendingTicket ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Ticket className="w-4 h-4 mr-2" />}
-                    {nl ? 'Ticket aanmaken' : 'Create ticket'}
+                    {t3('Ticket aanmaken', 'Créer le ticket', 'Create ticket')}
                   </Button>
                 </>
               );

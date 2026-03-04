@@ -473,7 +473,7 @@ const PaymentsOverview = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast.success('Betaling aangemaakt! Voltooi de betaling via Stripe.');
+      toast.success(t.sendPayment + ' ✓');
 
       // Refresh payments
       if (clubId) {

@@ -315,33 +315,34 @@ const CommandCenter = () => {
     navigate('/login');
   };
 
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+
   const getSteps = (item: ActionItem) => {
     const steps: { label: string; status: StepStatus }[] = [];
-    const nl = language === 'nl';
 
     if (item.type === 'enrollment') {
-      steps.push({ label: nl ? 'Aangemeld' : 'Signed up', status: 'completed' });
-      steps.push({ label: nl ? 'Goedkeuren' : 'Approve', status: 'active' });
-      steps.push({ label: nl ? 'Contract' : 'Contract', status: 'upcoming' });
-      steps.push({ label: nl ? 'Actief' : 'Active', status: 'upcoming' });
+      steps.push({ label: t3('Aangemeld', 'Inscrit', 'Signed up'), status: 'completed' });
+      steps.push({ label: t3('Goedkeuren', 'Approuver', 'Approve'), status: 'active' });
+      steps.push({ label: 'Contract', status: 'upcoming' });
+      steps.push({ label: t3('Actief', 'Actif', 'Active'), status: 'upcoming' });
     } else if (item.type === 'task_signup') {
-      steps.push({ label: nl ? 'Aangemeld' : 'Signed up', status: 'completed' });
-      steps.push({ label: nl ? 'Toekennen' : 'Assign', status: 'active' });
-      if (item.contract_template_id) steps.push({ label: nl ? 'Contract' : 'Contract', status: 'upcoming' });
-      steps.push({ label: nl ? 'Actief' : 'Active', status: 'upcoming' });
+      steps.push({ label: t3('Aangemeld', 'Inscrit', 'Signed up'), status: 'completed' });
+      steps.push({ label: t3('Toekennen', 'Attribuer', 'Assign'), status: 'active' });
+      if (item.contract_template_id) steps.push({ label: 'Contract', status: 'upcoming' });
+      steps.push({ label: t3('Actief', 'Actif', 'Active'), status: 'upcoming' });
     } else if (item.type === 'contract') {
-      steps.push({ label: nl ? 'Aangemeld' : 'Signed up', status: 'completed' });
-      steps.push({ label: nl ? 'Goedgekeurd' : 'Approved', status: 'completed' });
-      steps.push({ label: nl ? 'Contract' : 'Contract', status: 'active' });
-      steps.push({ label: nl ? 'Actief' : 'Active', status: 'upcoming' });
+      steps.push({ label: t3('Aangemeld', 'Inscrit', 'Signed up'), status: 'completed' });
+      steps.push({ label: t3('Goedgekeurd', 'Approuvé', 'Approved'), status: 'completed' });
+      steps.push({ label: 'Contract', status: 'active' });
+      steps.push({ label: t3('Actief', 'Actif', 'Active'), status: 'upcoming' });
     } else if (item.type === 'day_signup') {
-      steps.push({ label: nl ? 'Contract' : 'Contract', status: 'completed' });
-      steps.push({ label: nl ? 'Dag aangemeld' : 'Day signup', status: 'completed' });
-      steps.push({ label: nl ? 'Toekennen' : 'Assign', status: 'active' });
-      steps.push({ label: nl ? 'Ticket' : 'Ticket', status: 'upcoming' });
+      steps.push({ label: 'Contract', status: 'completed' });
+      steps.push({ label: t3('Dag aangemeld', 'Inscription jour', 'Day signup'), status: 'completed' });
+      steps.push({ label: t3('Toekennen', 'Attribuer', 'Assign'), status: 'active' });
+      steps.push({ label: 'Ticket', status: 'upcoming' });
     } else if (item.type === 'ticket') {
-      steps.push({ label: nl ? 'Toegekend' : 'Assigned', status: 'completed' });
-      steps.push({ label: nl ? 'Ticket' : 'Ticket', status: 'active' });
+      steps.push({ label: t3('Toegekend', 'Attribué', 'Assigned'), status: 'completed' });
+      steps.push({ label: 'Ticket', status: 'active' });
     }
     return steps;
   };
@@ -352,10 +353,10 @@ const CommandCenter = () => {
     try {
       if (item.type === 'enrollment') {
         await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', item.source_id);
-        toast.success(language === 'nl' ? 'Goedgekeurd!' : 'Approved!');
+        toast.success(t3('Goedgekeurd!', 'Approuvé !', 'Approved!'));
       } else if (item.type === 'task_signup') {
         await supabase.from('task_signups').update({ status: 'assigned' }).eq('id', item.source_id);
-        toast.success(language === 'nl' ? 'Toegekend!' : 'Assigned!');
+        toast.success(t3('Toegekend!', 'Attribué !', 'Assigned!'));
         // Trigger contract dialog if template exists
         if (item.contract_template_id && item.task_id) {
           setContractConfirm({
@@ -365,7 +366,7 @@ const CommandCenter = () => {
         }
       } else if (item.type === 'day_signup') {
         await supabase.from('monthly_day_signups').update({ status: 'assigned' }).eq('id', item.source_id);
-        toast.success(language === 'nl' ? 'Toegekend!' : 'Assigned!');
+        toast.success(t3('Toegekend!', 'Attribué !', 'Assigned!'));
       } else if (item.type === 'ticket') {
         if (item.id.startsWith('tkt-')) {
           // Monthly day signup ticket
@@ -382,7 +383,7 @@ const CommandCenter = () => {
             status: 'generated' as any,
           });
         }
-        toast.success(language === 'nl' ? 'Ticket gegenereerd!' : 'Ticket generated!');
+        toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
       }
       await loadData();
     } catch (err: any) {
@@ -401,7 +402,7 @@ const CommandCenter = () => {
       } else if (item.type === 'day_signup') {
         await supabase.from('monthly_day_signups').update({ status: 'rejected' }).eq('id', item.source_id);
       }
-      toast.success(language === 'nl' ? 'Afgewezen.' : 'Rejected.');
+      toast.success(t3('Afgewezen.', 'Rejeté.', 'Rejected.'));
       await loadData();
     } catch (err: any) {
       toast.error(err.message);
@@ -421,7 +422,7 @@ const CommandCenter = () => {
       } catch {}
     }
 
-    toast.success(`${selected.size} ${language === 'nl' ? 'acties verwerkt' : 'actions processed'}`);
+    toast.success(`${selected.size} ${t3('acties verwerkt', 'actions traitées', 'actions processed')}`);
     await loadData();
     setProcessing(false);
   };
@@ -470,11 +471,10 @@ const CommandCenter = () => {
   const typeCounts = items.reduce((acc, i) => { acc[i.type] = (acc[i.type] || 0) + 1; return acc; }, {} as Record<string, number>);
 
   const actionLabel = (item: ActionItem) => {
-    const nl = language === 'nl';
-    if (item.type === 'enrollment') return nl ? 'Goedkeuren' : 'Approve';
-    if (item.type === 'task_signup' || item.type === 'day_signup') return nl ? 'Toekennen' : 'Assign';
-    if (item.type === 'contract') return nl ? 'Contract versturen' : 'Send contract';
-    if (item.type === 'ticket') return nl ? 'Ticket genereren' : 'Generate ticket';
+    if (item.type === 'enrollment') return t3('Goedkeuren', 'Approuver', 'Approve');
+    if (item.type === 'task_signup' || item.type === 'day_signup') return t3('Toekennen', 'Attribuer', 'Assign');
+    if (item.type === 'contract') return t3('Contract versturen', 'Envoyer le contrat', 'Send contract');
+    if (item.type === 'ticket') return t3('Ticket genereren', 'Générer le ticket', 'Generate ticket');
     return '';
   };
 
@@ -600,7 +600,7 @@ const CommandCenter = () => {
 
                         <p className="text-xs text-muted-foreground">
                           {item.context_label}
-                          {item.context_date && ` · ${new Date(item.context_date).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })}`}
+                          {item.context_date && ` · ${new Date(item.context_date).toLocaleDateString(language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE', { day: 'numeric', month: 'short' })}`}
                         </p>
 
                         {/* Stepper */}

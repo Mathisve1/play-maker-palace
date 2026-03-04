@@ -117,11 +117,11 @@ const SortableBlock = ({
       {/* Time Slot */}
       {block.type === 'time_slot' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Input type="time" value={block.start_time || ''} onChange={e => onUpdate(groupId, block.id, { start_time: e.target.value })} placeholder="Starttijd" className="bg-background/60 text-sm" />
-          <Input type="time" value={block.end_time || ''} onChange={e => onUpdate(groupId, block.id, { end_time: e.target.value })} placeholder="Eindtijd" className="bg-background/60 text-sm" />
-          <Input value={block.location || ''} onChange={e => onUpdate(groupId, block.id, { location: e.target.value })} placeholder="Locatie" className="bg-background/60 text-sm" />
+          <Input type="time" value={block.start_time || ''} onChange={e => onUpdate(groupId, block.id, { start_time: e.target.value })} placeholder={language === 'fr' ? 'Heure de début' : language === 'en' ? 'Start time' : 'Starttijd'} className="bg-background/60 text-sm" />
+          <Input type="time" value={block.end_time || ''} onChange={e => onUpdate(groupId, block.id, { end_time: e.target.value })} placeholder={language === 'fr' ? 'Heure de fin' : language === 'en' ? 'End time' : 'Eindtijd'} className="bg-background/60 text-sm" />
+          <Input value={block.location || ''} onChange={e => onUpdate(groupId, block.id, { location: e.target.value })} placeholder={language === 'fr' ? 'Lieu' : language === 'en' ? 'Location' : 'Locatie'} className="bg-background/60 text-sm" />
           <div className="sm:col-span-3">
-            <Input value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder="Beschrijving" className="bg-background/60 text-sm" />
+            <Input value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder={language === 'fr' ? 'Description' : language === 'en' ? 'Description' : 'Beschrijving'} className="bg-background/60 text-sm" />
           </div>
         </div>
       )}
@@ -129,24 +129,24 @@ const SortableBlock = ({
       {/* Instruction / Custom */}
       {(block.type === 'instruction' || block.type === 'custom') && (
         <div className="space-y-2">
-          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder="Titel" className="bg-background/60 text-sm font-medium" />
-          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder="Beschrijving" className="bg-background/60 text-sm min-h-[60px]" />
+          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder={language === 'fr' ? 'Titre' : language === 'en' ? 'Title' : 'Titel'} className="bg-background/60 text-sm font-medium" />
+          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder={language === 'fr' ? 'Description' : language === 'en' ? 'Description' : 'Beschrijving'} className="bg-background/60 text-sm min-h-[60px]" />
         </div>
       )}
 
       {/* Pause */}
       {block.type === 'pause' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Input type="number" min={1} value={block.duration_minutes || ''} onChange={e => onUpdate(groupId, block.id, { duration_minutes: parseInt(e.target.value) || undefined })} placeholder="Duur (min)" className="bg-background/60 text-sm" />
-          <Input type="time" value={block.start_time || ''} onChange={e => onUpdate(groupId, block.id, { start_time: e.target.value })} placeholder="Starttijd" className="bg-background/60 text-sm" />
-          <Input value={block.location || ''} onChange={e => onUpdate(groupId, block.id, { location: e.target.value })} placeholder="Locatie" className="bg-background/60 text-sm" />
+          <Input type="number" min={1} value={block.duration_minutes || ''} onChange={e => onUpdate(groupId, block.id, { duration_minutes: parseInt(e.target.value) || undefined })} placeholder={language === 'fr' ? 'Durée (min)' : language === 'en' ? 'Duration (min)' : 'Duur (min)'} className="bg-background/60 text-sm" />
+          <Input type="time" value={block.start_time || ''} onChange={e => onUpdate(groupId, block.id, { start_time: e.target.value })} placeholder={language === 'fr' ? 'Heure de début' : language === 'en' ? 'Start time' : 'Starttijd'} className="bg-background/60 text-sm" />
+          <Input value={block.location || ''} onChange={e => onUpdate(groupId, block.id, { location: e.target.value })} placeholder={language === 'fr' ? 'Lieu' : language === 'en' ? 'Location' : 'Locatie'} className="bg-background/60 text-sm" />
         </div>
       )}
 
       {/* Checklist */}
       {block.type === 'checklist' && (
         <div className="space-y-2">
-          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder="Titel" className="bg-background/60 text-sm font-medium" />
+          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder={language === 'fr' ? 'Titre' : language === 'en' ? 'Title' : 'Titel'} className="bg-background/60 text-sm font-medium" />
           {(block.checklist_items || []).map((item, idx) => (
             <div key={item.id} className="flex items-center gap-2">
               <CheckSquare className="w-3.5 h-3.5 opacity-40 shrink-0" />
@@ -155,7 +155,7 @@ const SortableBlock = ({
             </div>
           ))}
           <button onClick={() => onAddChecklistItem(groupId, block.id)} className="text-xs text-primary hover:underline flex items-center gap-1">
-            <Plus className="w-3 h-3" /> Item toevoegen
+            <Plus className="w-3 h-3" /> {language === 'fr' ? 'Ajouter un élément' : language === 'en' ? 'Add item' : 'Item toevoegen'}
           </button>
         </div>
       )}
@@ -163,17 +163,17 @@ const SortableBlock = ({
       {/* Emergency Contact */}
       {block.type === 'emergency_contact' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Input value={block.contact_name || ''} onChange={e => onUpdate(groupId, block.id, { contact_name: e.target.value })} placeholder="Naam" className="bg-background/60 text-sm" />
-          <Input value={block.contact_phone || ''} onChange={e => onUpdate(groupId, block.id, { contact_phone: e.target.value })} placeholder="Telefoon" className="bg-background/60 text-sm" />
-          <Input value={block.contact_role || ''} onChange={e => onUpdate(groupId, block.id, { contact_role: e.target.value })} placeholder="Functie" className="bg-background/60 text-sm" />
+          <Input value={block.contact_name || ''} onChange={e => onUpdate(groupId, block.id, { contact_name: e.target.value })} placeholder={language === 'fr' ? 'Nom' : language === 'en' ? 'Name' : 'Naam'} className="bg-background/60 text-sm" />
+          <Input value={block.contact_phone || ''} onChange={e => onUpdate(groupId, block.id, { contact_phone: e.target.value })} placeholder={language === 'fr' ? 'Téléphone' : language === 'en' ? 'Phone' : 'Telefoon'} className="bg-background/60 text-sm" />
+          <Input value={block.contact_role || ''} onChange={e => onUpdate(groupId, block.id, { contact_role: e.target.value })} placeholder={language === 'fr' ? 'Fonction' : language === 'en' ? 'Role' : 'Functie'} className="bg-background/60 text-sm" />
         </div>
       )}
 
       {/* Route */}
       {block.type === 'route' && (
         <div className="space-y-2">
-          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder="Titel" className="bg-background/60 text-sm font-medium" />
-          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder="Beschrijving" className="bg-background/60 text-sm min-h-[40px]" rows={2} />
+          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder={language === 'fr' ? 'Titre' : language === 'en' ? 'Title' : 'Titel'} className="bg-background/60 text-sm font-medium" />
+          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder={language === 'fr' ? 'Description' : language === 'en' ? 'Description' : 'Beschrijving'} className="bg-background/60 text-sm min-h-[40px]" rows={2} />
           <RouteMapEditor waypoints={block.waypoints || []} onChange={wps => onUpdate(groupId, block.id, { waypoints: wps })} language={language as Language} />
         </div>
       )}
@@ -185,34 +185,34 @@ const SortableBlock = ({
             <Select value={block.zone_mode || 'full'} onValueChange={(v) => onUpdate(groupId, block.id, { zone_mode: v as 'full' | 'personalized' })}>
               <SelectTrigger className="bg-background/60 text-sm flex-1"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="full">Volledig zone-overzicht</SelectItem>
-                <SelectItem value="personalized">Gepersonaliseerd per vrijwilliger</SelectItem>
+                <SelectItem value="full">{language === 'fr' ? 'Aperçu complet des zones' : language === 'en' ? 'Full zone overview' : 'Volledig zone-overzicht'}</SelectItem>
+                <SelectItem value="personalized">{language === 'fr' ? 'Personnalisé par bénévole' : language === 'en' ? 'Personalized per volunteer' : 'Gepersonaliseerd per vrijwilliger'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {block.zone_mode === 'full' && (
             <div className="flex items-center gap-2">
-              <label className="text-xs text-muted-foreground whitespace-nowrap">Toon tot diepte:</label>
+              <label className="text-xs text-muted-foreground whitespace-nowrap">{language === 'fr' ? 'Afficher jusqu\'à la profondeur :' : language === 'en' ? 'Show up to depth:' : 'Toon tot diepte:'}</label>
               <Input
                 type="number"
                 min={1}
                 max={10}
                 value={block.zone_visible_depth ?? ''}
                 onChange={e => onUpdate(groupId, block.id, { zone_visible_depth: e.target.value ? parseInt(e.target.value) : null })}
-                placeholder="Alles"
+                placeholder={language === 'fr' ? 'Tout' : language === 'en' ? 'All' : 'Alles'}
                 className="bg-background/60 text-sm w-20"
               />
               <span className="text-[10px] text-muted-foreground">
-                {block.zone_visible_depth ? `Niveau 1–${block.zone_visible_depth}` : 'Alle niveaus'}
+                {block.zone_visible_depth ? `${language === 'fr' ? 'Niveau' : language === 'en' ? 'Level' : 'Niveau'} 1–${block.zone_visible_depth}` : (language === 'fr' ? 'Tous les niveaux' : language === 'en' ? 'All levels' : 'Alle niveaus')}
               </span>
             </div>
           )}
           <p className="text-[10px] text-muted-foreground">
             {block.zone_mode === 'personalized'
-              ? 'Elke vrijwilliger ziet enkel zijn eigen zone-toewijzing, wristband-kleur en materialen.'
+              ? (language === 'fr' ? 'Chaque bénévole voit uniquement sa zone assignée, couleur de bracelet et matériaux.' : language === 'en' ? 'Each volunteer sees only their assigned zone, wristband color and materials.' : 'Elke vrijwilliger ziet enkel zijn eigen zone-toewijzing, wristband-kleur en materialen.')
               : block.zone_visible_depth
-                ? `Zones worden getoond tot niveau ${block.zone_visible_depth} (bv. Zone > Sectie).`
-                : 'Alle zones, subzones, capaciteiten en wristband-info worden getoond.'}
+                ? (language === 'fr' ? `Les zones sont affichées jusqu'au niveau ${block.zone_visible_depth}.` : language === 'en' ? `Zones shown up to level ${block.zone_visible_depth}.` : `Zones worden getoond tot niveau ${block.zone_visible_depth} (bv. Zone > Sectie).`)
+                : (language === 'fr' ? 'Toutes les zones, sous-zones, capacités et infos de bracelets sont affichées.' : language === 'en' ? 'All zones, sub-zones, capacities and wristband info are shown.' : 'Alle zones, subzones, capaciteiten en wristband-info worden getoond.')}
           </p>
         </div>
       )}
@@ -220,16 +220,16 @@ const SortableBlock = ({
       {/* Materials Checklist */}
       {block.type === 'materials_checklist' && (
         <div className="space-y-2">
-          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder="Titel (bv. Op te halen materialen)" className="bg-background/60 text-sm font-medium" />
+          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder={language === 'fr' ? 'Titre (ex. Matériel à récupérer)' : language === 'en' ? 'Title (e.g. Materials to pick up)' : 'Titel (bv. Op te halen materialen)'} className="bg-background/60 text-sm font-medium" />
           {(block.materials || []).map((mat, idx) => (
             <div key={idx} className="flex items-center gap-2">
               <Package className="w-3.5 h-3.5 opacity-40 shrink-0" />
-              <Input value={mat} onChange={e => onUpdateMaterial(groupId, block.id, idx, e.target.value)} placeholder={`Materiaal ${idx + 1}`} className="bg-background/60 text-sm flex-1" />
+              <Input value={mat} onChange={e => onUpdateMaterial(groupId, block.id, idx, e.target.value)} placeholder={`${language === 'fr' ? 'Matériel' : language === 'en' ? 'Material' : 'Materiaal'} ${idx + 1}`} className="bg-background/60 text-sm flex-1" />
               <button onClick={() => onRemoveMaterial(groupId, block.id, idx)} className="p-1 opacity-40 hover:opacity-100 hover:text-destructive"><X className="w-3 h-3" /></button>
             </div>
           ))}
           <button onClick={() => onAddMaterial(groupId, block.id)} className="text-xs text-primary hover:underline flex items-center gap-1">
-            <Plus className="w-3 h-3" /> Materiaal toevoegen
+            <Plus className="w-3 h-3" /> {language === 'fr' ? 'Ajouter un matériel' : language === 'en' ? 'Add material' : 'Materiaal toevoegen'}
           </button>
         </div>
       )}
@@ -246,8 +246,8 @@ const SortableBlock = ({
       {/* Map Overview */}
       {block.type === 'map_overview' && (
         <div className="space-y-2">
-          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder="Titel (bv. Plattegrond evenement)" className="bg-background/60 text-sm" />
-          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder="Beschrijving of instructies" className="bg-background/60 text-sm min-h-[40px]" rows={2} />
+          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder={language === 'fr' ? 'Titre (ex. Plan de l\'événement)' : language === 'en' ? 'Title (e.g. Event map)' : 'Titel (bv. Plattegrond evenement)'} className="bg-background/60 text-sm" />
+          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder={language === 'fr' ? 'Description ou instructions' : language === 'en' ? 'Description or instructions' : 'Beschrijving of instructies'} className="bg-background/60 text-sm min-h-[40px]" rows={2} />
         </div>
       )}
     </div>
@@ -765,7 +765,7 @@ const BriefingBuilder = () => {
               <Input
                 value={briefingTitle}
                 onChange={e => setBriefingTitle(e.target.value)}
-                placeholder="Briefing titel"
+                placeholder={t3('Briefing titel', 'Titre du briefing', 'Briefing title')}
                 className="text-xl font-heading font-semibold border-none shadow-none px-0 focus-visible:ring-0 h-auto"
               />
             </div>
