@@ -922,13 +922,13 @@ const MonthlyPlanning = () => {
             </div>
             <div><Label>{t3('Locatie', 'Lieu', 'Location')}</Label><Input value={taskForm.location} onChange={e => setTaskForm(f => ({ ...f, location: e.target.value }))} placeholder={t3('bv. Clubhuis, Veld 3...', 'ex. Club-house, Terrain 3...', 'e.g. Clubhouse, Field 3...')} /></div>
             <div>
-              <Label>Vergoeding</Label>
-              <Select value={taskForm.compensation_type} onValueChange={v => setTaskForm(f => ({ ...f, compensation_type: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Dagvergoeding (vast bedrag)</SelectItem>
-                  <SelectItem value="hourly">Uurloon</SelectItem>
-                </SelectContent>
+               <Label>{t3('Vergoeding', 'Rémunération', 'Compensation')}</Label>
+               <Select value={taskForm.compensation_type} onValueChange={v => setTaskForm(f => ({ ...f, compensation_type: v }))}>
+                 <SelectTrigger><SelectValue /></SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="daily">{t3('Dagvergoeding (vast bedrag)', 'Indemnité journalière (montant fixe)', 'Daily rate (fixed amount)')}</SelectItem>
+                   <SelectItem value="hourly">{t3('Uurloon', 'Tarif horaire', 'Hourly rate')}</SelectItem>
+                 </SelectContent>
               </Select>
             </div>
             {taskForm.compensation_type === 'daily' ? (
