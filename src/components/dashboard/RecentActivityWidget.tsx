@@ -38,7 +38,7 @@ export const RecentActivityWidget = ({ clubId, language }: RecentActivityWidgetP
         activities.push({
           id: `signup-${s.id}`,
           type: 'signup',
-          text: `${language === 'nl' ? 'Nieuwe aanmelding voor' : 'New signup for'} "${s.tasks?.title || '?'}"`,
+          text: `${language === 'nl' ? 'Nieuwe aanmelding voor' : language === 'fr' ? 'Nouvelle inscription pour' : 'New signup for'} "${s.tasks?.title || '?'}"`,
           time: s.signed_up_at,
           icon: Users,
           color: 'text-primary',
