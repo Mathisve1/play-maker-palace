@@ -215,7 +215,7 @@ const PlanningOverview = () => {
         body: { club_id: clubId, action: 'delete' },
       });
       if (res.error) throw new Error(res.error.message);
-      toast.success(nl ? 'Maandplanning demo verwijderd!' : 'Monthly demo deleted!');
+      toast.success(t3('Maandplanning demo verwijderd!', 'Démo planning mensuelle supprimée!', 'Monthly demo deleted!'));
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
       toast.error(err.message);
