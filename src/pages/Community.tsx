@@ -343,6 +343,8 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
   toggling: string | null;
 }) => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const cl = communityLabels[language];
 
   return (
     <motion.div
