@@ -540,9 +540,9 @@ const VolunteerDashboard = () => {
       const data = await resp.json();
       if (resp.ok && data.success) {
         setMyContracts(prev => prev.map(c => c.id === contractId ? { ...c, status: data.status, document_url: data.document_url || c.document_url } : c));
-        if (data.status === 'completed') { toast.success('Contract is ondertekend!'); } else { toast.info('Contract is nog in afwachting.'); }
+        if (data.status === 'completed') { toast.success(language === 'nl' ? 'Contract is ondertekend!' : language === 'fr' ? 'Contrat signé !' : 'Contract signed!'); } else { toast.info(language === 'nl' ? 'Contract is nog in afwachting.' : language === 'fr' ? 'Contrat en attente.' : 'Contract still pending.'); }
       }
-    } catch { toast.error('Kon de status niet ophalen.'); }
+    } catch { toast.error(language === 'nl' ? 'Kon de status niet ophalen.' : language === 'fr' ? 'Impossible de récupérer le statut.' : 'Could not fetch status.'); }
     setCheckingContract(null);
   };
 
