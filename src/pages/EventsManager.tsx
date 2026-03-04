@@ -233,7 +233,7 @@ const EventsManager = () => {
       event_id: addingTaskToGroup.eventId, event_group_id: addingTaskToGroup.groupId,
     }).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(nl ? 'Taak toegevoegd!' : 'Task added!'); setTasks(prev => [...prev, data]); setAddingTaskToGroup(null); setGroupTaskForm({ title: '', task_date: '', location: '', spots_available: 1 }); }
+    else if (data) { toast.success(t3('Taak toegevoegd!', 'Tâche ajoutée!', 'Task added!')); setTasks(prev => [...prev, data]); setAddingTaskToGroup(null); setGroupTaskForm({ title: '', task_date: '', location: '', spots_available: 1 }); }
     setCreatingGroupTask(false);
   };
 
