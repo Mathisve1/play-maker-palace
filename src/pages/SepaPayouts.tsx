@@ -651,7 +651,7 @@ const SepaPayouts = () => {
       );
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Rollback failed');
-      toast.success('Batch verwijderd na ondertekening. Vrijwilligers staan opnieuw in de betaallijst.');
+      toast.success(t3('Batch verwijderd na ondertekening. Vrijwilligers staan opnieuw in de betaallijst.', 'Lot supprimé après signature. Les bénévoles sont de retour dans la liste de paiement.', 'Batch removed after signing. Volunteers are back in the payment list.'));
       init();
     } catch (err: any) {
       toast.error(err.message || 'Rollback mislukt');
