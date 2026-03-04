@@ -750,7 +750,7 @@ const ExternalPartners = () => {
                                         <td className="py-2 pr-3">
                                           {r.checked_in ? (
                                             <Badge variant="outline" className="text-[10px] border-green-500/40 text-green-700 dark:text-green-400">
-                                              <Check className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Aanwezig' : 'Present'}
+                                              <Check className="w-2.5 h-2.5 mr-0.5" />{t3('Aanwezig', 'Présent', 'Present')}
                                             </Badge>
                                           ) : (
                                             <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">
