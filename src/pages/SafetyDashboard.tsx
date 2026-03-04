@@ -889,7 +889,7 @@ const SafetyDashboard = () => {
                   onClick={() => setShowIncidentGrid(true)}
                   className="w-full h-14 rounded-2xl bg-destructive text-destructive-foreground shadow-lg text-base font-bold gap-2"
                 >
-                  <AlertTriangle className="w-5 h-5" /> Incident melden
+                  <AlertTriangle className="w-5 h-5" /> {t3('Incident melden', 'Signaler un incident', 'Report incident')}
                 </Button>
               </motion.div>
             )}
