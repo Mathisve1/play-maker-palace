@@ -312,7 +312,7 @@ const EventsManager = () => {
     }).eq('id', editingEvent.id);
     if (error) toast.error(error.message);
     else {
-      toast.success(nl ? 'Evenement bijgewerkt!' : 'Event updated!');
+      toast.success(t3('Evenement bijgewerkt!', 'Événement mis à jour!', 'Event updated!'));
       setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? { ...ev, ...editEventForm, description: editEventForm.description || null, event_date: editEventForm.event_date || null, location: editEventForm.location || null } : ev));
       setEditingEvent(null);
     }
