@@ -600,7 +600,7 @@ const CommandCenter = () => {
 
                         <p className="text-xs text-muted-foreground">
                           {item.context_label}
-                          {item.context_date && ` · ${new Date(item.context_date).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })}`}
+                          {item.context_date && ` · ${new Date(item.context_date).toLocaleDateString(language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE', { day: 'numeric', month: 'short' })}`}
                         </p>
 
                         {/* Stepper */}
