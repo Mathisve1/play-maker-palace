@@ -731,7 +731,7 @@ const ContractBuilder = () => {
           className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
         >
           <CalendarDays className="w-3.5 h-3.5" />
-          Maandcontract
+          {t3('Maandcontract', 'Contrat mensuel', 'Monthly Contract')}
         </button>
         <div className="ml-auto flex items-center gap-2">
           <input
