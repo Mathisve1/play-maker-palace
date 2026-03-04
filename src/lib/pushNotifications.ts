@@ -158,12 +158,17 @@ export async function markPushPromptSeen(): Promise<void> {
  * This handles cases where subscriptions were cleared (e.g. VAPID key rotation).
  */
 export async function autoResubscribeIfNeeded(): Promise<void> {
-  if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
-  if (Notification.permission !== 'granted') return;
+  if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.log('[Push] Auto-resub: not supported');
+    return;
+  }
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      console.log('[Push] Auto-resub: no user');
+      return;
+    }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -171,7 +176,10 @@ export async function autoResubscribeIfNeeded(): Promise<void> {
       .eq('id', user.id)
       .single();
 
-    if (!profile?.push_notifications_enabled) return;
+    if (!profile?.push_notifications_enabled) {
+      console.log('[Push] Auto-resub: push not enabled in profile');
+      return;
+    }
 
     // Check if there's already a subscription in the DB
     const { data: subs } = await supabase
@@ -180,21 +188,38 @@ export async function autoResubscribeIfNeeded(): Promise<void> {
       .eq('user_id', user.id)
       .limit(1);
 
-    if (subs && subs.length > 0) return; // Already has subscription
+    if (subs && subs.length > 0) {
+      console.log('[Push] Auto-resub: already has subscription');
+      return;
+    }
 
     console.log('[Push] Auto-resubscribing — profile has push enabled but no subscription found');
 
-    // Re-register service worker and subscribe
+    // Force update the service worker
     const registration = await navigator.serviceWorker.register('/push-sw.js');
+    await registration.update();
     await navigator.serviceWorker.ready;
 
-    const applicationServerKey = new Uint8Array(urlBase64ToUint8Array(VAPID_PUBLIC_KEY));
+    const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
 
+    // Unsubscribe any existing browser subscription (may have old VAPID key)
     let subscription = await registration.pushManager.getSubscription();
-    // If existing subscription has wrong key, unsubscribe first
     if (subscription) {
-      await subscription.unsubscribe();
+      console.log('[Push] Unsubscribing old browser subscription');
+      try { await subscription.unsubscribe(); } catch (e) { console.warn('[Push] Unsubscribe failed:', e); }
     }
+
+    // If permission isn't granted, request it
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        console.log('[Push] Auto-resub: permission denied');
+        await supabase.from('profiles').update({ push_notifications_enabled: false } as any).eq('id', user.id);
+        return;
+      }
+    }
+
+    // Subscribe with new VAPID key
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey,
@@ -205,9 +230,12 @@ export async function autoResubscribeIfNeeded(): Promise<void> {
     const p256dh = subJson.keys?.p256dh || '';
     const auth = subJson.keys?.auth || '';
 
-    if (!endpoint || !p256dh || !auth) return;
+    if (!endpoint || !p256dh || !auth) {
+      console.error('[Push] Auto-resub: invalid subscription payload');
+      return;
+    }
 
-    await supabase
+    const { error } = await supabase
       .from('push_subscriptions')
       .upsert(
         {
@@ -220,7 +248,11 @@ export async function autoResubscribeIfNeeded(): Promise<void> {
         { onConflict: 'user_id,endpoint' }
       );
 
-    console.log('[Push] ✅ Auto-resubscribed successfully');
+    if (error) {
+      console.error('[Push] Auto-resub DB error:', error);
+    } else {
+      console.log('[Push] ✅ Auto-resubscribed successfully');
+    }
   } catch (err) {
     console.error('[Push] Auto-resubscribe error:', err);
   }
