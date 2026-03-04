@@ -1435,8 +1435,8 @@ const SafetyDashboard = () => {
                                  {t3('In behandeling', 'En cours', 'In progress')}
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" className={`text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'opgelost'); }}>
-                              ✓ Opgelost
+                             <Button size="sm" variant="outline" className={`text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'opgelost'); }}>
+                               ✓ {t3('Opgelost', 'Résolu', 'Resolved')}
                             </Button>
                           </div>
                         </motion.div>
