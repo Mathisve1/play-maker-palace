@@ -1043,11 +1043,11 @@ const ReportingDashboard = () => {
               </Button>
             </div>
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
-              <TableHeader><TableRow>
-                <TableHead>Evenement</TableHead><TableHead>Datum</TableHead>
-                <TableHead className="text-center">Taken</TableHead><TableHead className="text-center">Vrijwilligers</TableHead>
-                <TableHead className="text-center">Ingecheckt</TableHead><TableHead className="text-center">Bezetting</TableHead>
-                <TableHead className="text-right">Uitbetaald</TableHead><TableHead>Populairste taak</TableHead>
+               <TableHeader><TableRow>
+                 <TableHead>{L.event}</TableHead><TableHead>{L.date}</TableHead>
+                 <TableHead className="text-center">{L.tasks}</TableHead><TableHead className="text-center">{L.volunteers}</TableHead>
+                 <TableHead className="text-center">{L.checkedIn}</TableHead><TableHead className="text-center">{L.occupancy}</TableHead>
+                 <TableHead className="text-right">{L.paidOut}</TableHead><TableHead>{L.popularTask}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {eventReports.length === 0 ? (
