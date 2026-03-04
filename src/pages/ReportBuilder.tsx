@@ -698,7 +698,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
                 ) : <p className="font-medium">{w.data.name || '_______________'}</p>}
                 {!isExporting ? (
                   <Input className="border-none border-b shadow-none bg-transparent text-sm" value={w.data.role || ''}
-                    onChange={e => updateWidget(w.id, { role: e.target.value })} placeholder="Functie" />
+                    onChange={e => updateWidget(w.id, { role: e.target.value })} placeholder={t3('Functie', 'Fonction', 'Role')} />
                 ) : <p className="text-sm text-muted-foreground">{w.data.role}</p>}
               </div>
               <div className="flex-1 text-center">
