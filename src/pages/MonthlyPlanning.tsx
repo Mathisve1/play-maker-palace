@@ -848,7 +848,7 @@ const MonthlyPlanning = () => {
                             toast.success(`${ds.volunteer_name}: ${finalHours}${t3('u', 'h', 'h')} ${t3('bevestigd', 'confirmé', 'confirmed')} (€${finalAmount.toFixed(2)})`);
                             setDaySignups(prev => prev.map(s => s.id === ds.id ? { ...s, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' } : s));
                           }}>
-                            <CheckCircle className="w-3.5 h-3.5 mr-1" /> Akkoord ({ds.volunteer_reported_hours}u)
+                            <CheckCircle className="w-3.5 h-3.5 mr-1" /> {t3('Akkoord', 'D\'accord', 'Agree')} ({ds.volunteer_reported_hours}{t3('u', 'h', 'h')})
                           </Button>
                         </div>
                       );
