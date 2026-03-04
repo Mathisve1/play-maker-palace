@@ -516,7 +516,7 @@ const EventsManager = () => {
 
           <TabsContent value="loose" className="space-y-3">
             {upcomingLooseTasks.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground"><p>{nl ? 'Geen losse taken.' : 'No loose tasks.'}</p></div>
+              <div className="text-center py-12 text-muted-foreground"><p>{t3('Geen losse taken.', 'Aucune tâche libre.', 'No loose tasks.')}</p></div>
             ) : upcomingLooseTasks.map((task, i) => renderLooseTaskCard(task, i))}
           </TabsContent>
 
