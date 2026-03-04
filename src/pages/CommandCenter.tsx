@@ -356,7 +356,7 @@ const CommandCenter = () => {
         toast.success(t3('Goedgekeurd!', 'Approuvé !', 'Approved!'));
       } else if (item.type === 'task_signup') {
         await supabase.from('task_signups').update({ status: 'assigned' }).eq('id', item.source_id);
-        toast.success(language === 'nl' ? 'Toegekend!' : 'Assigned!');
+        toast.success(t3('Toegekend!', 'Attribué !', 'Assigned!'));
         // Trigger contract dialog if template exists
         if (item.contract_template_id && item.task_id) {
           setContractConfirm({
