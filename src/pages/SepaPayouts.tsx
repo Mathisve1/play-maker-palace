@@ -714,10 +714,10 @@ const SepaPayouts = () => {
 
   const statusBadge = (status: string) => {
     switch (status) {
-      case 'pending': return <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" /> Open</Badge>;
-      case 'awaiting_signature': return <Badge className="gap-1 bg-amber-500/10 text-amber-600 border-amber-200"><FileSignature className="w-3 h-3" /> Wacht op handtekening</Badge>;
-      case 'signed': return <Badge className="gap-1 bg-blue-500/10 text-blue-600 border-blue-200"><CheckCircle className="w-3 h-3" /> Ondertekend</Badge>;
-      case 'downloaded': return <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-200"><Download className="w-3 h-3" /> Geëxporteerd</Badge>;
+      case 'pending': return <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" /> {t3('Open', 'Ouvert', 'Open')}</Badge>;
+      case 'awaiting_signature': return <Badge className="gap-1 bg-amber-500/10 text-amber-600 border-amber-200"><FileSignature className="w-3 h-3" /> {t3('Wacht op handtekening', 'En attente de signature', 'Awaiting signature')}</Badge>;
+      case 'signed': return <Badge className="gap-1 bg-blue-500/10 text-blue-600 border-blue-200"><CheckCircle className="w-3 h-3" /> {t3('Ondertekend', 'Signé', 'Signed')}</Badge>;
+      case 'downloaded': return <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-200"><Download className="w-3 h-3" /> {t3('Geëxporteerd', 'Exporté', 'Exported')}</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
