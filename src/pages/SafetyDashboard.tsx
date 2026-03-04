@@ -1146,7 +1146,7 @@ const SafetyDashboard = () => {
               {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="gap-1.5">
-              <Settings className="w-3.5 h-3.5" /> Configuratie
+              <Settings className="w-3.5 h-3.5" /> {t3('Configuratie', 'Configuration', 'Configuration')}
             </Button>
             {isDemoEvent && (
               <>
