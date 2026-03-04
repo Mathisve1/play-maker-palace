@@ -407,7 +407,7 @@ const TaskDetail = () => {
               onClick={() => avatarInputRef.current?.click()}
               disabled={uploadingAvatar}
               className="relative group ml-1"
-              title="Profielfoto wijzigen"
+              title={language === 'fr' ? 'Modifier la photo' : language === 'en' ? 'Change photo' : 'Profielfoto wijzigen'}
             >
               <Avatar className="w-8 h-8">
                 {profile?.avatar_url && (

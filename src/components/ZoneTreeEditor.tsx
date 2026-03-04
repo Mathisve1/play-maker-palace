@@ -33,7 +33,7 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
   const [newCapacity, setNewCapacity] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const nl = language === 'nl';
+  const t3 = (nlT: string, frT: string, enT: string) => language === 'fr' ? frT : language === 'en' ? enT : nlT;
 
   const fetchZones = useCallback(async () => {
     const { data, error } = await (supabase as any).from('task_zones').select('*').eq('task_id', taskId).order('sort_order');

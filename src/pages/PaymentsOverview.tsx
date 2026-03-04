@@ -456,9 +456,9 @@ const PaymentsOverview = () => {
         .eq('id', clubId);
       setClubStripeId(null);
       setStripeStatus(null);
-      toast.success('Stripe account ontkoppeld');
+      toast.success(language === 'fr' ? 'Compte Stripe déconnecté' : language === 'en' ? 'Stripe account disconnected' : 'Stripe account ontkoppeld');
     } catch (err: any) {
-      toast.error(err.message || 'Fout bij ontkoppelen');
+      toast.error(err.message || (language === 'fr' ? 'Erreur lors de la déconnexion' : language === 'en' ? 'Error disconnecting' : 'Fout bij ontkoppelen'));
     }
     setDisconnecting(false);
   };
