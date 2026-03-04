@@ -777,7 +777,7 @@ const SepaPayouts = () => {
         <div className="bg-card rounded-xl border border-border p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Building2 className="w-4 h-4 text-primary" />
-            Club Bankgegevens & Mededeling
+            {t3('Club Bankgegevens & Mededeling', 'Données bancaires & Message', 'Club Bank Details & Message')}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
