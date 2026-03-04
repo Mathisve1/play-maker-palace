@@ -929,7 +929,7 @@ const ExternalPartners = () => {
               if (!member) return null;
               return (
                 <>
-                  <p className="text-sm">{nl ? 'Ticket aanmaken voor' : 'Create ticket for'} <strong>{member.full_name}</strong></p>
+                  <p className="text-sm">{t3('Ticket aanmaken voor', 'Créer un ticket pour', 'Create ticket for')} <strong>{member.full_name}</strong></p>
                   <div>
                     <Label>{nl ? 'Taak' : 'Task'}</Label>
                     <Select value={ticketTaskId} onValueChange={setTicketTaskId}>
