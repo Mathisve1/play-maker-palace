@@ -792,7 +792,7 @@ const MonthlyPlanning = () => {
                           <div className="flex-1">
                             <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <Badge className="bg-green-600 text-[10px]">Toegekend</Badge>
+                              <Badge className="bg-green-600 text-[10px]">{t3('Toegekend', 'Attribué', 'Assigned')}</Badge>
                               {hasTicket && <Badge variant="outline" className="text-[10px]">Ticket: {ds.ticket_barcode}</Badge>}
                             </div>
                           </div>
