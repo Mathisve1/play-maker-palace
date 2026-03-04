@@ -120,7 +120,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Clubnaam *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t3('Clubnaam', 'Nom du club', 'Club name')} *</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)} maxLength={200} className={inputClass} />
           </div>
 
