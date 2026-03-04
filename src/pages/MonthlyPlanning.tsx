@@ -586,7 +586,7 @@ const MonthlyPlanning = () => {
             <Card>
               <CardContent className="p-2 sm:p-4">
                 <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
-                  {WEEKDAY_NAMES_NL.map(d => (
+                  {(WEEKDAY_NAMES[language] || WEEKDAY_NAMES.nl).map(d => (
                     <div key={d} className="bg-muted p-2 text-center text-xs font-semibold text-muted-foreground">{d}</div>
                   ))}
                   {calendarDays.map((day, i) => {
