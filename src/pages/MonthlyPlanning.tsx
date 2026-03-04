@@ -541,7 +541,7 @@ const MonthlyPlanning = () => {
             <h2 className="text-xl font-bold">{MONTH_NAMES[language]?.[viewMonth - 1] || MONTH_NAMES.nl[viewMonth - 1]} {viewYear}</h2>
             {plan && (
               <Badge variant={plan.status === 'published' ? 'default' : 'secondary'} className="mt-1">
-                {plan.status === 'published' ? 'Gepubliceerd' : 'Concept'}
+                {plan.status === 'published' ? t3('Gepubliceerd', 'Publié', 'Published') : t3('Concept', 'Brouillon', 'Draft')}
               </Badge>
             )}
           </div>
