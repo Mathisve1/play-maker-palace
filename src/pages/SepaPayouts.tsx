@@ -794,7 +794,7 @@ const SepaPayouts = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Club BIC</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{t3('Club BIC', 'BIC du club', 'Club BIC')}</label>
               <Input
                 value={clubBic}
                 onChange={e => setClubBic(e.target.value.toUpperCase())}
