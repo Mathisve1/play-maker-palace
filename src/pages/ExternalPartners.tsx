@@ -890,7 +890,7 @@ const ExternalPartners = () => {
             <div><Label>E-mail</Label><Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="beheerder@partner.be" /></div>
             <Button onClick={handleInviteAdmin} disabled={inviting || !inviteEmail.trim()} className="w-full">
               {inviting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
-              {nl ? 'Uitnodiging versturen' : 'Send invitation'}
+              {t3('Uitnodiging versturen', 'Envoyer l\'invitation', 'Send invitation')}
             </Button>
           </div>
         </DialogContent>
