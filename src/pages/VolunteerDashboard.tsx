@@ -1032,11 +1032,11 @@ const VolunteerDashboard = () => {
                           </div>
                           <div className="shrink-0">
                             {payout.error_flag ? (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive"><AlertTriangle className="w-3.5 h-3.5" />{payout.error_message || 'Fout'}</span>
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive"><AlertTriangle className="w-3.5 h-3.5" />{payout.error_message || (language === 'nl' ? 'Fout' : language === 'fr' ? 'Erreur' : 'Error')}</span>
                             ) : isExported ? (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Geëxporteerd' : 'Exported'}</span>
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Geëxporteerd' : language === 'fr' ? 'Exporté' : 'Exported'}</span>
                             ) : (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In verwerking' : 'Processing'}</span>
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In verwerking' : language === 'fr' ? 'En cours' : 'Processing'}</span>
                             )}
                           </div>
                         </div>
