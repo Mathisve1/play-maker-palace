@@ -683,7 +683,7 @@ const MonthlyPlanning = () => {
             {/* Enrollments with approval flow */}
             {enrollments.length > 0 && (
               <Card>
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Ingeschreven vrijwilligers</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> {t3('Ingeschreven vrijwilligers', 'Bénévoles inscrits', 'Enrolled volunteers')}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {enrollments.map(e => (
