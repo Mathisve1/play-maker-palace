@@ -353,7 +353,7 @@ const CommandCenter = () => {
     try {
       if (item.type === 'enrollment') {
         await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', item.source_id);
-        toast.success(language === 'nl' ? 'Goedgekeurd!' : 'Approved!');
+        toast.success(t3('Goedgekeurd!', 'Approuvé !', 'Approved!'));
       } else if (item.type === 'task_signup') {
         await supabase.from('task_signups').update({ status: 'assigned' }).eq('id', item.source_id);
         toast.success(language === 'nl' ? 'Toegekend!' : 'Assigned!');
