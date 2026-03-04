@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
@@ -19,8 +20,16 @@ import {
 } from 'lucide-react';
 import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 
-const MONTH_NAMES_NL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
-const WEEKDAY_NAMES_NL = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+const MONTH_NAMES: Record<string, string[]> = {
+  nl: ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'],
+  fr: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+};
+const WEEKDAY_NAMES: Record<string, string[]> = {
+  nl: ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'],
+  fr: ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'],
+  en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+};
 const CATEGORIES = ['Bar', 'Logistiek', 'Catering', 'Onderhoud', 'Administratie', 'Kantine', 'Jeugdwerking', 'Evenement', 'Schoonmaak', 'Andere'];
 
 interface MonthlyPlan {
@@ -81,6 +90,8 @@ interface DaySignupClub {
 
 const MonthlyPlanning = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const now = new Date();
   
   // Read initial month from URL params
@@ -288,7 +299,7 @@ const MonthlyPlanning = () => {
       club_id: clubId,
       year: viewYear,
       month: viewMonth,
-      title: `${MONTH_NAMES_NL[viewMonth - 1]} ${viewYear}`,
+      title: `${MONTH_NAMES[language]?.[viewMonth - 1] || MONTH_NAMES.nl[viewMonth - 1]} ${viewYear}`,
       created_by: user.id,
       status: 'draft',
     }).select().single();
@@ -380,7 +391,7 @@ const MonthlyPlanning = () => {
       const { data: inserted, error } = await supabase.from('monthly_plan_tasks').insert(newTasks).select();
       if (error) throw error;
       setTasks(prev => [...prev, ...(inserted as unknown as PlanTask[])]);
-      toast.success(`${inserted!.length} taken gekopieerd van ${MONTH_NAMES_NL[prevM - 1]}`);
+      toast.success(`${inserted!.length} ${t3('taken gekopieerd van', 'tâches copiées de', 'tasks copied from')} ${MONTH_NAMES[language]?.[prevM - 1] || MONTH_NAMES.nl[prevM - 1]}`);
     } catch (err: any) { toast.error(err.message || 'Kopiëren mislukt'); }
     setCopyingTasks(false);
   };
@@ -527,7 +538,7 @@ const MonthlyPlanning = () => {
         <div className="flex items-center justify-between">
           <Button variant="outline" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
           <div className="text-center">
-            <h2 className="text-xl font-bold">{MONTH_NAMES_NL[viewMonth - 1]} {viewYear}</h2>
+            <h2 className="text-xl font-bold">{MONTH_NAMES[language]?.[viewMonth - 1] || MONTH_NAMES.nl[viewMonth - 1]} {viewYear}</h2>
             {plan && (
               <Badge variant={plan.status === 'published' ? 'default' : 'secondary'} className="mt-1">
                 {plan.status === 'published' ? 'Gepubliceerd' : 'Concept'}
@@ -563,7 +574,7 @@ const MonthlyPlanning = () => {
         {!plan && !loading ? (
           <Card className="p-12 text-center">
             <Calendar className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nog geen maandplan voor {MONTH_NAMES_NL[viewMonth - 1]}</h3>
+            <h3 className="text-lg font-semibold mb-2">{t3(`Nog geen maandplan voor ${MONTH_NAMES.nl[viewMonth - 1]}`, `Pas encore de plan mensuel pour ${MONTH_NAMES.fr[viewMonth - 1]}`, `No monthly plan for ${MONTH_NAMES.en[viewMonth - 1]} yet`)}</h3>
             <p className="text-sm text-muted-foreground mb-6">
               Maak een maandplan aan om dagelijkse taken in te plannen en vrijwilligers uit te nodigen.
             </p>
@@ -575,7 +586,7 @@ const MonthlyPlanning = () => {
             <Card>
               <CardContent className="p-2 sm:p-4">
                 <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
-                  {WEEKDAY_NAMES_NL.map(d => (
+                  {(WEEKDAY_NAMES[language] || WEEKDAY_NAMES.nl).map(d => (
                     <div key={d} className="bg-muted p-2 text-center text-xs font-semibold text-muted-foreground">{d}</div>
                   ))}
                   {calendarDays.map((day, i) => {

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, AlertTriangle, CheckCircle2, Radio, Maximize2, Minimize2,
@@ -73,6 +74,8 @@ const playAlarm = () => {
 
 const SafetyDashboard = () => {
   const { eventId } = useParams<{ eventId: string }>();
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const navigate = useNavigate();
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -394,7 +397,7 @@ const SafetyDashboard = () => {
       const pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
       lat = pos.coords.latitude; lng = pos.coords.longitude;
     } catch {
-      toast.error('GPS-locatie is vereist om een incident te melden. Sta locatietoegang toe.');
+      toast.error(t3('GPS-locatie is vereist om een incident te melden. Sta locatietoegang toe.', 'La localisation GPS est requise pour signaler un incident.', 'GPS location is required to report an incident.'));
       setReporting(false);
       return;
     }
@@ -416,7 +419,7 @@ const SafetyDashboard = () => {
     setPendingIncidentId(inc.id);
     setStep2Mode(true);
     setShowIncidentGrid(false);
-    toast.success('⚡ Melding direct verstuurd met GPS!');
+    toast.success(t3('⚡ Melding direct verstuurd met GPS!', '⚡ Signalement envoyé avec GPS !', '⚡ Report sent instantly with GPS!'));
     setReporting(false);
   };
 
@@ -445,7 +448,7 @@ const SafetyDashboard = () => {
       await (supabase as any).from('safety_incidents').update(updates).eq('id', pendingIncidentId);
     }
 
-    toast.success('Details toegevoegd aan melding');
+    toast.success(t3('Details toegevoegd aan melding', 'Détails ajoutés au signalement', 'Details added to report'));
     resetReportFlow();
     setReporting(false);
   };
@@ -475,7 +478,7 @@ const SafetyDashboard = () => {
     if (!eventId) return;
     await (supabase as any).from('events').update({ is_live: true }).eq('id', eventId);
     setIsLive(true);
-    toast.success('🚀 Event is LIVE! Vrijwilligers kunnen nu incidenten melden.');
+    toast.success(t3('🚀 Event is LIVE! Vrijwilligers kunnen nu incidenten melden.', '🚀 L\'événement est EN DIRECT ! Les bénévoles peuvent signaler.', '🚀 Event is LIVE! Volunteers can now report incidents.'));
   };
 
   // ── CLOSE EVENT ──
@@ -488,7 +491,7 @@ const SafetyDashboard = () => {
     } else {
       setIsLive(false);
       setEventClosed(true);
-      toast.success('Event is afgesloten. Alle vrijwilligers worden doorgestuurd.');
+      toast.success(t3('Event is afgesloten. Alle vrijwilligers worden doorgestuurd.', 'Événement clôturé. Tous les bénévoles sont redirigés.', 'Event closed. All volunteers are being redirected.'));
     }
     setClosingEvent(false);
     setShowCloseConfirm(false);
@@ -555,8 +558,8 @@ const SafetyDashboard = () => {
         totalChecklistDone,
       });
 
-      doc.save(`veiligheidsrapport-${eventTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`);
-      toast.success('Veiligheidsrapport gedownload!');
+      doc.save(`${t3('veiligheidsrapport', 'rapport-securite', 'safety-report')}-${eventTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+      toast.success(t3('Veiligheidsrapport gedownload!', 'Rapport de sécurité téléchargé !', 'Safety report downloaded!'));
     } catch (err: any) {
       toast.error(err.message || 'Fout bij rapport generatie');
     } finally {
@@ -647,7 +650,7 @@ const SafetyDashboard = () => {
   const activeIncidents = useMemo(() => incidents.filter(i => i.status !== 'opgelost'), [incidents]);
   const highPriorityCount = activeIncidents.filter(i => i.priority === 'high').length;
 
-  const getIncidentTypeName = (typeId: string | null) => incidentTypes.find(t => t.id === typeId)?.label || 'Onbekend';
+  const getIncidentTypeName = (typeId: string | null) => incidentTypes.find(t => t.id === typeId)?.label || t3('Onbekend', 'Inconnu', 'Unknown');
   const getZoneName = (zoneId: string | null) => zones.find(z => z.id === zoneId)?.name || '—';
 
   // Build full zone hierarchy path for a volunteer (e.g. "Hoofdtribune > Rij A > Stoel 12")
@@ -756,18 +759,22 @@ const SafetyDashboard = () => {
               <PartyPopper className="w-12 h-12 mx-auto text-primary mb-1" />
             </motion.div>
 
-            <h1 className="text-3xl font-heading font-bold text-foreground">Bedankt!</h1>
+            <h1 className="text-3xl font-heading font-bold text-foreground">{t3('Bedankt!', 'Merci !', 'Thank you!')}</h1>
 
             {clubName && (
               <p className="text-lg font-semibold text-foreground">{clubName}</p>
             )}
 
             <p className="text-muted-foreground text-base mt-1">
-              Het evenement <span className="font-semibold text-foreground">{eventTitle}</span> is afgelopen.
+              {t3(
+                `Het evenement ${eventTitle} is afgelopen.`,
+                `L'événement ${eventTitle} est terminé.`,
+                `The event ${eventTitle} has ended.`
+              )}
             </p>
 
             <p className="text-muted-foreground text-sm">
-              Hartelijk dank voor je geweldige inzet als vrijwilliger. Jouw hulp maakt het verschil! 💪
+              {t3('Hartelijk dank voor je geweldige inzet als vrijwilliger. Jouw hulp maakt het verschil! 💪', 'Merci pour votre engagement en tant que bénévole. Votre aide fait la différence ! 💪', 'Thank you for your amazing effort as a volunteer. Your help makes the difference! 💪')}
             </p>
           </div>
 
@@ -789,7 +796,7 @@ const SafetyDashboard = () => {
               onClick={() => navigate('/dashboard')}
               className="w-full h-12 rounded-xl text-base font-semibold gap-2"
             >
-              <Heart className="w-5 h-5" /> Oké, terug naar dashboard
+              <Heart className="w-5 h-5" /> {t3('Oké, terug naar dashboard', 'OK, retour au tableau de bord', 'OK, back to dashboard')}
             </Button>
           </motion.div>
         </motion.div>
@@ -818,15 +825,15 @@ const SafetyDashboard = () => {
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card">
               <div className="w-3 h-3 rounded-full shrink-0" style={{ background: myRole.color }} />
               <span className="text-sm font-medium text-foreground">{myRole.name}</span>
-              <Badge variant="outline" className="text-[10px] ml-auto">Niv. {myRole.level}</Badge>
+              <Badge variant="outline" className="text-[10px] ml-auto">{t3('Niv.', 'Niv.', 'Lvl.')} {myRole.level}</Badge>
             </div>
           )}
 
           <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 text-center">
             <Lock className="w-6 h-6 text-destructive mx-auto mb-2" />
-            <p className="text-sm font-semibold text-foreground">Event is live{myRole && !myRole.can_report_incidents ? '' : ' — Meld incidenten hieronder'}</p>
+            <p className="text-sm font-semibold text-foreground">{t3('Event is live', 'L\'événement est en direct', 'Event is live')}{myRole && !myRole.can_report_incidents ? '' : t3(' — Meld incidenten hieronder', ' — Signalez les incidents ci-dessous', ' — Report incidents below')}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {myRole && !myRole.can_report_incidents ? 'Je hebt geen rechten om incidenten te melden.' : 'Andere functies zijn vergrendeld tijdens het evenement.'}
+              {myRole && !myRole.can_report_incidents ? t3('Je hebt geen rechten om incidenten te melden.', 'Vous n\'avez pas les droits pour signaler.', 'You don\'t have permission to report incidents.') : t3('Andere functies zijn vergrendeld tijdens het evenement.', 'Les autres fonctions sont verrouillées.', 'Other features are locked during the event.')}
             </p>
           </div>
 
@@ -835,7 +842,7 @@ const SafetyDashboard = () => {
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="px-4 py-3 border-b border-border bg-muted/30">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Users className="w-4 h-4" /> Mijn Team ({teamMembers.length})
+                  <Users className="w-4 h-4" /> {t3('Mijn Team', 'Mon Équipe', 'My Team')} ({teamMembers.length})
                 </h3>
               </div>
               <div className="p-3 space-y-3">
@@ -862,7 +869,7 @@ const SafetyDashboard = () => {
                           ))}
                         </div>
                       ) : (
-                        <p className="pl-9 text-[11px] text-muted-foreground">Geen meldingen</p>
+                        <p className="pl-9 text-[11px] text-muted-foreground">{t3('Geen meldingen', 'Aucun signalement', 'No reports')}</p>
                       )}
                     </div>
                   );
@@ -882,7 +889,7 @@ const SafetyDashboard = () => {
                   onClick={() => setShowIncidentGrid(true)}
                   className="w-full h-14 rounded-2xl bg-destructive text-destructive-foreground shadow-lg text-base font-bold gap-2"
                 >
-                  <AlertTriangle className="w-5 h-5" /> Incident melden
+                  <AlertTriangle className="w-5 h-5" /> {t3('Incident melden', 'Signaler un incident', 'Report incident')}
                 </Button>
               </motion.div>
             )}
@@ -893,7 +900,7 @@ const SafetyDashboard = () => {
                 className="bg-card rounded-2xl border border-border shadow-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-heading font-bold text-foreground">Tik = direct melden!</h3>
+                  <h3 className="font-heading font-bold text-foreground">{t3('Tik = direct melden!', 'Appuyez = signaler !', 'Tap = instant report!')}</h3>
                   <Button variant="ghost" size="icon" onClick={() => setShowIncidentGrid(false)}><Minimize2 className="w-4 h-4" /></Button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -913,7 +920,7 @@ const SafetyDashboard = () => {
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-muted-foreground text-center mt-2">GPS wordt automatisch meegestuurd bij klik</p>
+                <p className="text-[10px] text-muted-foreground text-center mt-2">{t3('GPS wordt automatisch meegestuurd bij klik', 'GPS envoyé automatiquement', 'GPS sent automatically on click')}</p>
               </motion.div>
             )}
 
@@ -923,8 +930,8 @@ const SafetyDashboard = () => {
                 className="bg-card rounded-2xl border border-border shadow-2xl p-4 space-y-3"
               >
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-2 text-center">
-                  <p className="text-xs font-semibold text-emerald-600">✓ Melding verstuurd met GPS!</p>
-                  <p className="text-[10px] text-muted-foreground">Voeg hieronder extra details toe</p>
+                  <p className="text-xs font-semibold text-emerald-600">✓ {t3('Melding verstuurd met GPS!', 'Signalement envoyé avec GPS !', 'Report sent with GPS!')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t3('Voeg hieronder extra details toe', 'Ajoutez des détails ci-dessous', 'Add extra details below')}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedIncidentType.emoji ? (
@@ -936,7 +943,7 @@ const SafetyDashboard = () => {
                 </div>
                 {zones.length > 0 && (
                   <select value={selectedZoneId} onChange={e => setSelectedZoneId(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm">
-                    <option value="">Zone (optioneel)</option>
+                    <option value="">{t3('Zone (optioneel)', 'Zone (optionnel)', 'Zone (optional)')}</option>
                     {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                   </select>
                 )}
@@ -953,14 +960,14 @@ const SafetyDashboard = () => {
                           onChange={e => setSelectedLocationValues(prev => ({ ...prev, [level.id]: e.target.value }))}
                           className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm"
                         >
-                          <option value="">{level.name} {level.is_required ? '*' : '(optioneel)'}</option>
+                          <option value="">{level.name} {level.is_required ? '*' : t3('(optioneel)', '(optionnel)', '(optional)')}</option>
                           {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                         </select>
                       );
                     })}
                   </div>
                 )}
-                <input type="text" placeholder="Korte beschrijving (optioneel)" value={incidentDesc} onChange={e => setIncidentDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm" />
+                <input type="text" placeholder={t3('Korte beschrijving (optioneel)', 'Description courte (optionnel)', 'Short description (optional)')} value={incidentDesc} onChange={e => setIncidentDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm" />
 
                 {/* Photo upload */}
                 <div>
@@ -972,7 +979,7 @@ const SafetyDashboard = () => {
                   ) : (
                     <label className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors">
                       <Camera className="w-5 h-5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Foto toevoegen (optioneel)</span>
+                      <span className="text-xs text-muted-foreground">{t3('Foto toevoegen (optioneel)', 'Ajouter une photo (optionnel)', 'Add photo (optional)')}</span>
                       <input type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
                     </label>
                   )}
@@ -980,10 +987,10 @@ const SafetyDashboard = () => {
 
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={resetReportFlow} className="flex-1 h-12 rounded-xl text-sm">
-                    Overslaan
+                    {t3('Overslaan', 'Passer', 'Skip')}
                   </Button>
                   <Button onClick={handleUpdateReport} disabled={reporting} className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm">
-                    {reporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Details toevoegen'}
+                    {reporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : t3('Details toevoegen', 'Ajouter les détails', 'Add details')}
                   </Button>
                 </div>
               </motion.div>
@@ -1013,7 +1020,7 @@ const SafetyDashboard = () => {
           {/* Progress */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Voortgang</span>
+              <span className="text-muted-foreground">{t3('Voortgang', 'Progression', 'Progress')}</span>
               <span className="font-semibold text-foreground">{volChecklistTotal > 0 ? Math.round((volChecklistDone / volChecklistTotal) * 100) : 0}%</span>
             </div>
             <Progress value={volChecklistTotal > 0 ? (volChecklistDone / volChecklistTotal) * 100 : 0} className="h-3" />
@@ -1036,8 +1043,8 @@ const SafetyDashboard = () => {
                   {isActive ? (
                     <span className="text-xs text-muted-foreground">{pct}%</span>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
-                      <Lock className="w-3 h-3" /> Wacht op activatie
+                     <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
+                       <Lock className="w-3 h-3" /> {t3('Wacht op activatie', 'En attente d\'activation', 'Waiting for activation')}
                     </Badge>
                   )}
                 </div>
@@ -1080,7 +1087,7 @@ const SafetyDashboard = () => {
           })}
 
           {myChecklistItems.length === 0 && (
-            <p className="text-muted-foreground text-sm text-center py-6">Geen checklist items voor jouw toegewezen zones.</p>
+            <p className="text-muted-foreground text-sm text-center py-6">{t3('Geen checklist items voor jouw toegewezen zones.', 'Aucun élément de checklist pour vos zones.', 'No checklist items for your assigned zones.')}</p>
           )}
         </div>
       </div>
@@ -1122,7 +1129,7 @@ const SafetyDashboard = () => {
             )}
             {isLive && (
               <Badge variant={highPriorityCount > 0 ? 'destructive' : 'secondary'}>
-                {activeIncidents.length} actief{highPriorityCount > 0 && ` · ${highPriorityCount} hoog`}
+                {activeIncidents.length} {t3('actief', 'actifs', 'active')}{highPriorityCount > 0 && ` · ${highPriorityCount} ${t3('hoog', 'élevé', 'high')}`}
               </Badge>
             )}
             {isLive && (
@@ -1132,22 +1139,22 @@ const SafetyDashboard = () => {
                 className="gap-1.5 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 onClick={() => setShowCloseConfirm(true)}
               >
-                <XCircle className="w-3.5 h-3.5" /> Sluit Event
+                <XCircle className="w-3.5 h-3.5" /> {t3('Sluit Event', 'Clôturer', 'Close Event')}
               </Button>
             )}
             <Button variant="ghost" size="icon" onClick={() => setAudioEnabled(!audioEnabled)}>
               {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="gap-1.5">
-              <Settings className="w-3.5 h-3.5" /> Configuratie
+              <Settings className="w-3.5 h-3.5" /> {t3('Configuratie', 'Configuration', 'Configuration')}
             </Button>
             {isDemoEvent && (
               <>
-                <Button variant="outline" size="sm" onClick={handleRestartSimulation} disabled={simLoading} className="gap-1.5">
-                  <RotateCcw className="w-3.5 h-3.5" /> Herstart
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleResetSimulation} disabled={simLoading} className="gap-1.5 text-destructive hover:text-destructive">
-                  <Trash2 className="w-3.5 h-3.5" /> Verwijder
+                 <Button variant="outline" size="sm" onClick={handleRestartSimulation} disabled={simLoading} className="gap-1.5">
+                   <RotateCcw className="w-3.5 h-3.5" /> {t3('Herstart', 'Redémarrer', 'Restart')}
+                 </Button>
+                 <Button variant="ghost" size="sm" onClick={handleResetSimulation} disabled={simLoading} className="gap-1.5 text-destructive hover:text-destructive">
+                   <Trash2 className="w-3.5 h-3.5" /> {t3('Verwijder', 'Supprimer', 'Delete')}
                 </Button>
               </>
             )}
@@ -1160,14 +1167,14 @@ const SafetyDashboard = () => {
             <Card className="bg-card border-border">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-primary" /> Pre-event Checklist Voortgang
+                  <CheckCircle2 className="w-5 h-5 text-primary" /> {t3('Pre-event Checklist Voortgang', 'Progression Checklist Pré-événement', 'Pre-event Checklist Progress')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Overall */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Totaal</span>
+                    <span className="text-muted-foreground">{t3('Totaal', 'Total', 'Total')}</span>
                     <span className="font-semibold text-foreground">{totalChecklistDone}/{totalChecklistItems} ({totalChecklistItems > 0 ? Math.round((totalChecklistDone / totalChecklistItems) * 100) : 0}%)</span>
                   </div>
                   <Progress value={totalChecklistItems > 0 ? (totalChecklistDone / totalChecklistItems) * 100 : 0} className="h-3" />
@@ -1195,8 +1202,8 @@ const SafetyDashboard = () => {
                               className={`h-7 px-2 gap-1 text-xs ${(zone as any).checklist_active ? 'text-emerald-500' : 'text-muted-foreground'}`}
                               onClick={() => handleToggleZoneActive(zone.id, (zone as any).checklist_active)}
                             >
-                              {(zone as any).checklist_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                              {(zone as any).checklist_active ? 'Actief' : 'Uit'}
+                               {(zone as any).checklist_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                               {(zone as any).checklist_active ? t3('Actief', 'Actif', 'Active') : t3('Uit', 'Désactivé', 'Off')}
                             </Button>
                           </div>
                         </div>
@@ -1230,8 +1237,8 @@ const SafetyDashboard = () => {
                     </Button>
                   </motion.div>
                 ) : (
-                  <div className="bg-muted/50 rounded-xl p-4 text-center">
-                    <p className="text-sm text-muted-foreground">Alle checklist items moeten afgevinkt zijn voordat je live kunt gaan.</p>
+                   <div className="bg-muted/50 rounded-xl p-4 text-center">
+                     <p className="text-sm text-muted-foreground">{t3('Alle checklist items moeten afgevinkt zijn voordat je live kunt gaan.', 'Tous les éléments doivent être cochés avant de passer en direct.', 'All checklist items must be completed before going live.')}</p>
                   </div>
                 )}
               </CardContent>
@@ -1249,8 +1256,8 @@ const SafetyDashboard = () => {
           <div ref={zoneRef} className={`${incidentFullscreen ? 'hidden' : zoneFullscreen ? 'col-span-full' : isDemoEvent ? 'xl:col-span-1' : 'lg:col-span-2'} ${zoneFullscreen ? 'bg-background h-screen flex flex-col' : ''}`}>
             <Card className={`bg-card border-border ${zoneFullscreen ? 'flex-1 flex flex-col border-0 rounded-none' : ''}`}>
               <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
-                <CardTitle className="text-lg font-heading flex items-center gap-2">
-                  <Radio className="w-5 h-5 text-primary" /> Sectie Monitor
+                 <CardTitle className="text-lg font-heading flex items-center gap-2">
+                   <Radio className="w-5 h-5 text-primary" /> {t3('Sectie Monitor', 'Moniteur de Sections', 'Section Monitor')}
                 </CardTitle>
                 <Button variant="ghost" size="icon" onClick={() => { const next = !zoneFullscreen; setZoneFullscreen(next); setIncidentFullscreen(false); toggleBrowserFullscreen(zoneRef, next); }}>
                   {zoneFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -1288,7 +1295,7 @@ const SafetyDashboard = () => {
                         {!isLive && pct !== null && (
                           <div className="mt-2">
                             <Progress value={pct} className={zoneFullscreen ? 'h-2.5' : 'h-1.5'} />
-                            <p className={`text-muted-foreground mt-0.5 ${zoneFullscreen ? 'text-xs' : 'text-[10px]'}`}>{pct}% klaar</p>
+                            <p className={`text-muted-foreground mt-0.5 ${zoneFullscreen ? 'text-xs' : 'text-[10px]'}`}>{pct}% {t3('klaar', 'terminé', 'done')}</p>
                           </div>
                         )}
 
@@ -1320,10 +1327,10 @@ const SafetyDashboard = () => {
                       <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-3 h-3 rounded-full bg-destructive" />
                     </div>
                     <Badge variant="destructive" className="text-[10px] mb-1">{unzonedActiveIncidents.length} incident{unzonedActiveIncidents.length > 1 ? 'en' : ''}</Badge>
-                    <p className="text-[10px] text-muted-foreground">Incidenten zonder toegewezen zone</p>
+                    <p className="text-[10px] text-muted-foreground">{t3('Incidenten zonder toegewezen zone', 'Incidents sans zone attribuée', 'Incidents without assigned zone')}</p>
                   </motion.div>
                 )}
-                {zones.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">Geen zones geconfigureerd voor dit evenement.</p>}
+                {zones.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">{t3('Geen zones geconfigureerd voor dit evenement.', 'Aucune zone configurée pour cet événement.', 'No zones configured for this event.')}</p>}
               </CardContent>
             </Card>
           </div>
@@ -1424,12 +1431,12 @@ const SafetyDashboard = () => {
                           </div>
                           <div className="flex gap-1.5">
                             {inc.status === 'nieuw' && (
-                              <Button size="sm" variant="outline" className={`text-xs ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'bezig'); }}>
-                                In behandeling
+                               <Button size="sm" variant="outline" className={`text-xs ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'bezig'); }}>
+                                 {t3('In behandeling', 'En cours', 'In progress')}
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" className={`text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'opgelost'); }}>
-                              ✓ Opgelost
+                             <Button size="sm" variant="outline" className={`text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 ${incidentFullscreen ? 'h-9' : 'h-7'}`} onClick={(e) => { e.stopPropagation(); handleUpdateIncident(inc.id, 'opgelost'); }}>
+                               ✓ {t3('Opgelost', 'Résolu', 'Resolved')}
                             </Button>
                           </div>
                         </motion.div>
@@ -1440,7 +1447,7 @@ const SafetyDashboard = () => {
                   {activeIncidents.length === 0 && (
                     <div className="text-center py-8">
                       <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
-                      <p className="text-muted-foreground text-sm">{isLive ? 'Geen actieve incidenten' : 'Wacht op GO LIVE'}</p>
+                      <p className="text-muted-foreground text-sm">{isLive ? t3('Geen actieve incidenten', 'Aucun incident actif', 'No active incidents') : t3('Wacht op GO LIVE', 'En attente de GO LIVE', 'Waiting for GO LIVE')}</p>
                     </div>
                   )}
                 </div>

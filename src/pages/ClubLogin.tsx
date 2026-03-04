@@ -8,12 +8,14 @@ import { Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 const ClubLogin = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,18 +25,21 @@ const ClubLogin = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      // Verify user has club_owner role
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', data.user.id);
       const isClubOwner = roles?.some(r => r.role === 'club_owner');
       if (!isClubOwner) {
-        toast.error('Dit account is geen club-eigenaar. Gebruik de vrijwilligers login.');
+        toast.error(t3(
+          'Dit account is geen club-eigenaar. Gebruik de vrijwilligers login.',
+          'Ce compte n\'est pas propriétaire de club. Utilisez la connexion bénévole.',
+          'This account is not a club owner. Use the volunteer login.'
+        ));
         await supabase.auth.signOut();
         return;
       }
-      toast.success('Ingelogd!');
+      toast.success(t3('Ingelogd!', 'Connecté !', 'Logged in!'));
       navigate('/club-dashboard');
     }
   };
@@ -51,9 +56,11 @@ const ClubLogin = () => {
         </div>
 
         <div className="bg-card rounded-2xl shadow-elevated p-8">
-          <h1 className="text-2xl font-heading font-bold text-foreground text-center">Club Login</h1>
+          <h1 className="text-2xl font-heading font-bold text-foreground text-center">
+            {t3('Club Login', 'Connexion Club', 'Club Login')}
+          </h1>
           <p className="text-sm text-muted-foreground text-center mt-1">
-            Log in op je club dashboard
+            {t3('Log in op je club dashboard', 'Connectez-vous à votre tableau de bord', 'Log in to your club dashboard')}
           </p>
 
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
@@ -92,12 +99,12 @@ const ClubLogin = () => {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Nog geen account?{' '}
-            <Link to="/club-signup" className="text-secondary font-medium hover:underline">Registreer je club</Link>
+            {t.auth.noAccount}{' '}
+            <Link to="/club-signup" className="text-secondary font-medium hover:underline">{t3('Registreer je club', 'Enregistrez votre club', 'Register your club')}</Link>
           </p>
           <p className="mt-2 text-center text-sm text-muted-foreground">
-            Vrijwilliger?{' '}
-            <Link to="/login" className="text-primary font-medium hover:underline">Log hier in</Link>
+            {t3('Vrijwilliger?', 'Bénévole ?', 'Volunteer?')}{' '}
+            <Link to="/login" className="text-primary font-medium hover:underline">{t3('Log hier in', 'Connectez-vous ici', 'Log in here')}</Link>
           </p>
         </div>
       </motion.div>

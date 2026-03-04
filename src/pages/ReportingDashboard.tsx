@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft, BarChart3, Download, Filter, Loader2, PieChart, TrendingUp, Users,
@@ -61,7 +62,11 @@ const COLORS = [
   'hsl(var(--chart-5, 340 75% 55%))', '#6366f1', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6',
 ];
 
-const DAY_NAMES = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
+const DAY_NAMES: Record<string, string[]> = {
+  nl: ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'],
+  fr: ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'],
+  en: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+};
 
 const ReportingDashboard = () => {
   const navigate = useNavigate();
@@ -447,7 +452,7 @@ const ReportingDashboard = () => {
     filteredTasks.forEach((t: any) => {
       if (t.task_date) counts[getDay(parseISO(t.task_date))]++;
     });
-    return DAY_NAMES.map((name, i) => ({ name, Taken: counts[i] }));
+    return (DAY_NAMES.nl).map((name, i) => ({ name, Taken: counts[i] }));
   }, [filteredTasks]);
 
   // Hour confirmation stats
