@@ -458,11 +458,11 @@ const ContractBuilder = () => {
 
   const handleGenerateSmartDefault = () => {
     if (blocks.length > 3) {
-      if (!confirm('Dit vervangt alle huidige blokken. Doorgaan?')) return;
+      if (!confirm(t3('Dit vervangt alle huidige blokken. Doorgaan?', 'Cela remplacera tous les blocs actuels. Continuer?', 'This will replace all current blocks. Continue?'))) return;
     }
     setBlocks(getSmartDefaultBlocks());
-    setTemplateName(prev => prev || 'Standaard Vrijwilligerscontract');
-    toast.success('Standaard vrijwilligerscontract gegenereerd met alle essentiële clausules.');
+    setTemplateName(prev => prev || t3('Standaard Vrijwilligerscontract', 'Contrat bénévole standard', 'Standard Volunteer Contract'));
+    toast.success(t3('Standaard vrijwilligerscontract gegenereerd met alle essentiële clausules.', 'Contrat bénévole standard généré avec toutes les clauses essentielles.', 'Standard volunteer contract generated with all essential clauses.'));
   };
 
   const handleGenerateMonthlyContract = () => {
