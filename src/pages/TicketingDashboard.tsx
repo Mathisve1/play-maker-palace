@@ -321,7 +321,7 @@ const TicketingDashboard = () => {
       .subscribe();
 
     const pollInterval = setInterval(async () => {
-      if (!selectedEventId) return;
+      if (!selectedEventId || document.visibilityState === 'hidden') return;
       const { data: tickets } = await supabase.from('volunteer_tickets').select('*').eq('club_id', clubId).eq('event_id', selectedEventId);
       if (tickets) {
         const ticketMap = Object.fromEntries(tickets.map(t => [t.volunteer_id + '_' + t.task_id, t]));
