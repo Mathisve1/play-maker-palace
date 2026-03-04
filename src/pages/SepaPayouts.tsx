@@ -269,7 +269,7 @@ const SepaPayouts = () => {
       return;
     }
     if (!batchMessage.trim()) {
-      toast.error('Vul een batch mededeling in');
+      toast.error(t3('Vul een batch mededeling in', 'Veuillez saisir un message de lot', 'Please enter a batch message'));
       return;
     }
 
