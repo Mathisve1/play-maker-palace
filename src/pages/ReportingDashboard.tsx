@@ -514,7 +514,7 @@ const ReportingDashboard = () => {
   const compensationPieData = useMemo(() => {
     const byType: Record<string, number> = {};
     filteredTasks.forEach((t: any) => {
-      const label = t.compensation_type === 'hourly' ? 'Uurloon' : 'Vast bedrag';
+      const label = t.compensation_type === 'hourly' ? L.hourly : L.fixed;
       byType[label] = (byType[label] || 0) + 1;
     });
     return Object.entries(byType).map(([name, value]) => ({ name, value }));
