@@ -526,7 +526,7 @@ const VolunteerDashboard = () => {
       else if (contract.status === 'completed' && contract.document_url) { window.open(contract.document_url, '_blank'); }
       else { setActiveTab('contracts'); }
     } else {
-      toast.info(language === 'nl' ? 'Het contract is nog niet verstuurd door de club.' : 'The contract has not been sent yet.');
+      toast.info(language === 'nl' ? 'Het contract is nog niet verstuurd door de club.' : language === 'fr' ? 'Le contrat n\'a pas encore été envoyé par le club.' : 'The contract has not been sent yet.');
     }
   };
 
