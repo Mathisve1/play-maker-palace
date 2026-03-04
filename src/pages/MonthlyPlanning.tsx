@@ -553,7 +553,7 @@ const MonthlyPlanning = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card><CardContent className="p-3 text-center">
               <p className="text-2xl font-bold text-primary">{tasks.length}</p>
-              <p className="text-xs text-muted-foreground">Taken gepland</p>
+              <p className="text-xs text-muted-foreground">{t3('Taken gepland', 'Tâches planifiées', 'Tasks planned')}</p>
             </CardContent></Card>
             <Card><CardContent className="p-3 text-center">
               <p className="text-2xl font-bold text-primary">{enrollments.length}</p>
