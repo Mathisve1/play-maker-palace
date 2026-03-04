@@ -867,7 +867,7 @@ const ExternalPartners = () => {
                     {inviteEmails.length > 1 && <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setInviteEmails(inviteEmails.filter((_, i) => i !== idx))}><X className="w-4 h-4" /></Button>}
                   </div>
                 ))}
-                <Button variant="outline" size="sm" onClick={() => setInviteEmails([...inviteEmails, ''])}><Plus className="w-3.5 h-3.5 mr-1" />{nl ? 'Nog iemand toevoegen' : 'Add another'}</Button>
+                <Button variant="outline" size="sm" onClick={() => setInviteEmails([...inviteEmails, ''])}><Plus className="w-3.5 h-3.5 mr-1" />{t3('Nog iemand toevoegen', 'Ajouter une autre personne', 'Add another')}</Button>
               </div>
             </div>
             <div className="flex items-center gap-2">
