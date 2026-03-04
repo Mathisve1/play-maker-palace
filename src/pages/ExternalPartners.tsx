@@ -645,7 +645,7 @@ const ExternalPartners = () => {
                         </CardHeader>
                         <CardContent>
                           {selectedTaskForDetail.signups.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">{nl ? 'Nog geen medewerkers toegewezen aan deze taak.' : 'No members assigned to this task yet.'}</p>
+                            <p className="text-sm text-muted-foreground">{t3('Nog geen medewerkers toegewezen aan deze taak.', 'Aucun membre assigné à cette tâche.', 'No members assigned to this task yet.')}</p>
                           ) : (
                             <div className="space-y-2">
                               {selectedTaskForDetail.signups.map((s, idx) => {
