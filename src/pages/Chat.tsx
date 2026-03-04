@@ -298,7 +298,7 @@ const Chat = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 20 * 1024 * 1024) { toast.error('Bestand mag max 20MB zijn'); return; }
+    if (file.size > 20 * 1024 * 1024) { toast.error(language === 'nl' ? 'Bestand mag max 20MB zijn' : language === 'fr' ? 'Le fichier ne peut pas dépasser 20 Mo' : 'File must be max 20MB'); return; }
     setAttachmentFile(file);
     if (file.type.startsWith('image/')) {
       setAttachmentPreview(URL.createObjectURL(file));
@@ -338,7 +338,7 @@ const Chat = () => {
       setRecordingTime(0);
       recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
     } catch {
-      toast.error('Microfoon niet beschikbaar');
+      toast.error(language === 'nl' ? 'Microfoon niet beschikbaar' : language === 'fr' ? 'Microphone non disponible' : 'Microphone not available');
     }
   };
 
@@ -361,7 +361,7 @@ const Chat = () => {
     const ext = file.name.split('.').pop();
     const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage.from('chat-attachments').upload(path, file);
-    if (error) { toast.error('Upload mislukt'); return null; }
+    if (error) { toast.error(language === 'nl' ? 'Upload mislukt' : language === 'fr' ? 'Échec du téléchargement' : 'Upload failed'); return null; }
     const { data: { publicUrl } } = supabase.storage.from('chat-attachments').getPublicUrl(path);
     return { url: publicUrl, type: getAttachmentCategory(file.type), name: file.name };
   };

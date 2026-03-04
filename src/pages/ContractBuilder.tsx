@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
@@ -317,6 +318,8 @@ const runComplianceCheck = (blocks: ContractBlock[]): ComplianceResult => {
 
 const ContractBuilder = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [searchParams] = useSearchParams();
   const clubId = searchParams.get('club_id') || '';
   const editTemplateId = searchParams.get('template_id') || '';
@@ -397,9 +400,9 @@ const ContractBuilder = () => {
       if (error) throw error;
       const { data } = supabase.storage.from('club-signatures').getPublicUrl(sigPath);
       setClubSignatureUrl(`${data.publicUrl}?t=${Date.now()}`);
-      toast.success('Handtekening opgeslagen! Deze wordt hergebruikt voor alle contracten.');
+      toast.success(t3('Handtekening opgeslagen! Deze wordt hergebruikt voor alle contracten.', 'Signature enregistrée! Elle sera réutilisée pour tous les contrats.', 'Signature saved! It will be reused for all contracts.'));
     } catch (err: any) {
-      toast.error(err.message || 'Handtekening uploaden mislukt');
+      toast.error(err.message || t3('Handtekening uploaden mislukt', 'Échec du téléchargement de la signature', 'Signature upload failed'));
     }
     setUploadingSignature(false);
   };
@@ -409,7 +412,7 @@ const ContractBuilder = () => {
     const sigPath = `${clubId}/signature.png`;
     await supabase.storage.from('club-signatures').remove([sigPath]);
     setClubSignatureUrl(null);
-    toast.success('Handtekening verwijderd.');
+    toast.success(t3('Handtekening verwijderd.', 'Signature supprimée.', 'Signature deleted.'));
   };
 
   const selectedBlock = blocks.find(b => b.id === selectedBlockId) || null;
@@ -455,25 +458,25 @@ const ContractBuilder = () => {
 
   const handleGenerateSmartDefault = () => {
     if (blocks.length > 3) {
-      if (!confirm('Dit vervangt alle huidige blokken. Doorgaan?')) return;
+      if (!confirm(t3('Dit vervangt alle huidige blokken. Doorgaan?', 'Cela remplacera tous les blocs actuels. Continuer?', 'This will replace all current blocks. Continue?'))) return;
     }
     setBlocks(getSmartDefaultBlocks());
-    setTemplateName(prev => prev || 'Standaard Vrijwilligerscontract');
-    toast.success('Standaard vrijwilligerscontract gegenereerd met alle essentiële clausules.');
+    setTemplateName(prev => prev || t3('Standaard Vrijwilligerscontract', 'Contrat bénévole standard', 'Standard Volunteer Contract'));
+    toast.success(t3('Standaard vrijwilligerscontract gegenereerd met alle essentiële clausules.', 'Contrat bénévole standard généré avec toutes les clauses essentielles.', 'Standard volunteer contract generated with all essential clauses.'));
   };
 
   const handleGenerateMonthlyContract = () => {
     if (blocks.length > 3) {
-      if (!confirm('Dit vervangt alle huidige blokken met een maandcontract. Doorgaan?')) return;
+      if (!confirm(t3('Dit vervangt alle huidige blokken met een maandcontract. Doorgaan?', 'Cela remplacera tous les blocs par un contrat mensuel. Continuer?', 'This will replace all blocks with a monthly contract. Continue?'))) return;
     }
     setBlocks(getMonthlyContractBlocks());
-    setTemplateName(prev => prev || 'Maandelijkse Vrijwilligersovereenkomst');
-    toast.success('Maandcontract gegenereerd met alle vereiste clausules (looptijd, rooster, afrekening, GDPR, cumulatie).');
+    setTemplateName(prev => prev || t3('Maandelijkse Vrijwilligersovereenkomst', 'Convention mensuelle de bénévolat', 'Monthly Volunteer Agreement'));
+    toast.success(t3('Maandcontract gegenereerd met alle vereiste clausules (looptijd, rooster, afrekening, GDPR, cumulatie).', 'Contrat mensuel généré avec toutes les clauses requises.', 'Monthly contract generated with all required clauses.'));
   };
 
   const handleLoadTemplate = async (templateId: string) => {
     if (blocks.length > 3) {
-      if (!confirm('Dit vervangt alle huidige blokken. Doorgaan?')) return;
+      if (!confirm(t3('Dit vervangt alle huidige blokken. Doorgaan?', 'Cela remplacera tous les blocs actuels. Continuer?', 'This will replace all current blocks. Continue?'))) return;
     }
     const { data } = await supabase
       .from('contract_templates')
@@ -485,9 +488,9 @@ const ContractBuilder = () => {
       setTemplateName(data.name);
       setEditingTemplateId(data.id);
       setShowTemplateSelector(false);
-      toast.success(`Sjabloon "${data.name}" geladen.`);
+      toast.success(t3(`Sjabloon "${data.name}" geladen.`, `Modèle "${data.name}" chargé.`, `Template "${data.name}" loaded.`));
     } else {
-      toast.error('Dit sjabloon heeft geen opgeslagen blokstructuur.');
+      toast.error(t3('Dit sjabloon heeft geen opgeslagen blokstructuur.', 'Ce modèle n\'a pas de structure de blocs enregistrée.', 'This template has no saved block structure.'));
     }
   };
 
@@ -542,11 +545,11 @@ const ContractBuilder = () => {
 
   const handleSave = async () => {
     if (!templateName.trim()) {
-      toast.error('Geef een naam op voor het sjabloon.');
+      toast.error(t3('Geef een naam op voor het sjabloon.', 'Veuillez donner un nom au modèle.', 'Please provide a template name.'));
       return;
     }
     if (!clubId) {
-      toast.error('Geen club gevonden.');
+      toast.error(t3('Geen club gevonden.', 'Aucun club trouvé.', 'No club found.'));
       return;
     }
 
@@ -640,10 +643,10 @@ const ContractBuilder = () => {
         await supabase.from('contract_templates').update({ template_data: blocks as any, name: templateName.trim() }).eq('id', editingTemplateId);
       }
 
-      toast.success('Contractsjabloon succesvol opgeslagen!');
+      toast.success(t3('Contractsjabloon succesvol opgeslagen!', 'Modèle de contrat enregistré avec succès!', 'Contract template saved successfully!'));
       navigate('/club-dashboard');
     } catch (err: any) {
-      toast.error(err.message || 'Opslaan mislukt');
+      toast.error(err.message || t3('Opslaan mislukt', 'Échec de l\'enregistrement', 'Save failed'));
     }
     setSaving(false);
   };
@@ -690,12 +693,12 @@ const ContractBuilder = () => {
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-input bg-background text-xs font-medium text-foreground hover:bg-muted transition-colors"
           >
             <FileText className="w-3.5 h-3.5" />
-            {editingTemplateId ? 'Sjabloon laden' : 'Bestaand sjabloon'}
+            {editingTemplateId ? t3('Sjabloon laden', 'Charger un modèle', 'Load template') : t3('Bestaand sjabloon', 'Modèle existant', 'Existing template')}
           </button>
           {showTemplateSelector && existingTemplates.length > 0 && (
             <div className="absolute left-0 top-full mt-1 w-64 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
               <div className="p-2 border-b border-border">
-                <p className="text-xs font-semibold text-muted-foreground px-2">Opgeslagen sjablonen</p>
+                <p className="text-xs font-semibold text-muted-foreground px-2">{t3('Opgeslagen sjablonen', 'Modèles enregistrés', 'Saved templates')}</p>
               </div>
               <div className="max-h-48 overflow-y-auto p-1">
                 {existingTemplates.map(t => (
@@ -712,7 +715,7 @@ const ContractBuilder = () => {
           )}
           {showTemplateSelector && existingTemplates.length === 0 && (
             <div className="absolute left-0 top-full mt-1 w-56 bg-card border border-border rounded-xl shadow-lg z-50 p-4">
-              <p className="text-xs text-muted-foreground text-center">Geen opgeslagen sjablonen.</p>
+              <p className="text-xs text-muted-foreground text-center">{t3('Geen opgeslagen sjablonen.', 'Aucun modèle enregistré.', 'No saved templates.')}</p>
             </div>
           )}
         </div>
@@ -721,21 +724,21 @@ const ContractBuilder = () => {
           className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          Standaard Contract
+           {t3('Standaard Contract', 'Contrat standard', 'Standard Contract')}
         </button>
         <button
           onClick={handleGenerateMonthlyContract}
           className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
         >
           <CalendarDays className="w-3.5 h-3.5" />
-          Maandcontract
+          {t3('Maandcontract', 'Contrat mensuel', 'Monthly Contract')}
         </button>
         <div className="ml-auto flex items-center gap-2">
           <input
             type="text"
             value={templateName}
             onChange={e => setTemplateName(e.target.value)}
-            placeholder="Naam sjabloon..."
+            placeholder={t3('Naam sjabloon...', 'Nom du modèle...', 'Template name...')}
             className="px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm w-48 focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
@@ -744,7 +747,7 @@ const ContractBuilder = () => {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Opslaan...' : editingTemplateId ? 'Bijwerken' : 'Opslaan'}
+            {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : editingTemplateId ? t3('Bijwerken', 'Mettre à jour', 'Update') : t3('Opslaan', 'Enregistrer', 'Save')}
           </button>
         </div>
       </div>
@@ -773,14 +776,14 @@ const ContractBuilder = () => {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Standaard Contract
+              {t3('Standaard Contract', 'Contrat standard', 'Standard Contract')}
             </button>
             <button
               onClick={handleGenerateMonthlyContract}
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
             >
               <CalendarDays className="w-3.5 h-3.5" />
-              Maandcontract (compleet)
+              {t3('Maandcontract (compleet)', 'Contrat mensuel (complet)', 'Monthly Contract (complete)')}
             </button>
           </div>
 
@@ -789,11 +792,11 @@ const ContractBuilder = () => {
             <TabsList className="mx-3 mt-3 mb-0 grid grid-cols-2">
               <TabsTrigger value="blokken" className="text-xs">
                 <FileText className="w-3.5 h-3.5 mr-1" />
-                Bouwblokken
+                {t3('Bouwblokken', 'Blocs', 'Building Blocks')}
               </TabsTrigger>
               <TabsTrigger value="artikelen" className="text-xs">
                 <BookOpen className="w-3.5 h-3.5 mr-1" />
-                Wettelijke Artikelen
+                {t3('Wettelijke Artikelen', 'Articles juridiques', 'Legal Articles')}
               </TabsTrigger>
             </TabsList>
 
@@ -802,7 +805,7 @@ const ContractBuilder = () => {
               {/* Content Blocks */}
               <button onClick={() => setBlocksOpen(!blocksOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
                 {blocksOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                Inhoudblokken
+                {t3('Inhoudblokken', 'Blocs de contenu', 'Content Blocks')}
               </button>
               <AnimatePresence>
                 {blocksOpen && (
@@ -831,13 +834,13 @@ const ContractBuilder = () => {
               {/* Merge Fields */}
               <button onClick={() => setFieldsOpen(!fieldsOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors mt-3">
                 {fieldsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                Invulvelden
+                {t3('Invulvelden', 'Champs de fusion', 'Merge Fields')}
               </button>
               <AnimatePresence>
                 {fieldsOpen && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-0.5 overflow-hidden">
                     {/* Basic fields */}
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-2 pb-1">Basis</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-2 pb-1">{t3('Basis', 'Base', 'Basic')}</p>
                     {mergeFields.filter(f => f.group === 'basic').map(field => (
                       <div
                         key={field.name}
@@ -857,7 +860,7 @@ const ContractBuilder = () => {
                     ))}
                     {/* Monthly fields */}
                     <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider px-3 pt-3 pb-1 flex items-center gap-1">
-                      <CalendarDays className="w-3 h-3" /> Maandcontract
+                      <CalendarDays className="w-3 h-3" /> {t3('Maandcontract', 'Contrat mensuel', 'Monthly Contract')}
                     </p>
                     {mergeFields.filter(f => f.group === 'monthly').map(field => (
                       <div
@@ -877,7 +880,7 @@ const ContractBuilder = () => {
                       </div>
                     ))}
                     {/* Identity fields */}
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">Identificatie & juridisch</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">{t3('Identificatie & juridisch', 'Identification & juridique', 'Identification & Legal')}</p>
                     {mergeFields.filter(f => f.group === 'identity').map(field => (
                       <div
                         key={field.name}
@@ -906,7 +909,7 @@ const ContractBuilder = () => {
               <div className="px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 mb-2">
                 <p className="text-[10px] text-green-700 dark:text-green-400 leading-relaxed">
                   <ShieldCheck className="w-3 h-3 inline mr-1 -mt-0.5" />
-                  Artikelen met een <strong>groen label</strong> zijn essentieel volgens de Vrijwilligerswet en worden aanbevolen in elk contract.
+                  {t3('Artikelen met een', 'Les articles avec un', 'Articles with a')} <strong>{t3('groen label', 'label vert', 'green label')}</strong> {t3('zijn essentieel volgens de Vrijwilligerswet en worden aanbevolen in elk contract.', 'sont essentiels selon la Loi sur le bénévolat et recommandés dans chaque contrat.', 'are essential under the Volunteer Act and recommended in every contract.')}
                 </p>
               </div>
 
@@ -914,7 +917,7 @@ const ContractBuilder = () => {
               <button onClick={() => setLawArticlesOpen(!lawArticlesOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
                 {lawArticlesOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                 <Scale className="w-3 h-3" />
-                Wetsartikelen (Wet 3 juli 2005)
+                {t3('Wetsartikelen (Wet 3 juli 2005)', 'Articles de loi (Loi du 3 juillet 2005)', 'Law Articles (Act of July 3, 2005)')}
               </button>
               <AnimatePresence>
                 {lawArticlesOpen && (
@@ -930,7 +933,7 @@ const ContractBuilder = () => {
               <button onClick={() => setClausulesOpen(!clausulesOpen)} className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors mt-3">
                 {clausulesOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                 <Gavel className="w-3 h-3" />
-                Contractclausules
+                {t3('Contractclausules', 'Clauses contractuelles', 'Contract Clauses')}
               </button>
               <AnimatePresence>
                 {clausulesOpen && (
@@ -947,7 +950,7 @@ const ContractBuilder = () => {
                 <>
                   <div className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mt-3">
                     <CalendarDays className="w-3 h-3" />
-                    Maandcontract clausules
+                    {t3('Maandcontract clausules', 'Clauses contrat mensuel', 'Monthly Contract Clauses')}
                   </div>
                   <div className="space-y-1">
                     {monthlyClausules.map(article => (
