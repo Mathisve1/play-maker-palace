@@ -943,7 +943,7 @@ const SafetyDashboard = () => {
                 </div>
                 {zones.length > 0 && (
                   <select value={selectedZoneId} onChange={e => setSelectedZoneId(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm">
-                    <option value="">Zone (optioneel)</option>
+                    <option value="">{t3('Zone (optioneel)', 'Zone (optionnel)', 'Zone (optional)')}</option>
                     {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                   </select>
                 )}
