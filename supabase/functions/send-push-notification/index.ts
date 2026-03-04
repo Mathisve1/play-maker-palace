@@ -33,7 +33,7 @@ serve(async (req) => {
   try {
     const { type, user_id, title, message, url, data, broadcast } = await req.json();
 
-    const onesignalAppId = Deno.env.get('ONESIGNAL_APP_ID') || 'e0d35921-dd83-4e98-a289-f9d1bb1694cc';
+    const onesignalAppId = Deno.env.get('ONESIGNAL_APP_ID') || 'd1373810-d2ca-4689-8858-178e45d144c4';
     const onesignalApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY');
 
     if (!onesignalAppId || !onesignalApiKey) {
@@ -79,6 +79,7 @@ serve(async (req) => {
           pushPayload.target_channel = 'push';
         }
 
+        pushPayload.web_url = url || 'https://play-maker-palace.lovable.app/dashboard';
         if (url) pushPayload.url = url;
         if (data) pushPayload.data = data;
 
@@ -172,6 +173,7 @@ serve(async (req) => {
         pushPayload.target_channel = 'push';
       }
 
+      pushPayload.web_url = url || 'https://play-maker-palace.lovable.app/dashboard';
       if (url) pushPayload.url = url;
       if (data) pushPayload.data = data;
 

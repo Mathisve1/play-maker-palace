@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'e0d35921-dd83-4e98-a289-f9d1bb1694cc';
+const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'd1373810-d2ca-4689-8858-178e45d144c4';
 
 let oneSignalInitPromise: Promise<void> | null = null;
 let oneSignalInitialized = false;
@@ -54,7 +54,7 @@ export async function initOneSignal() {
     try {
       await OneSignalModule.init({
         appId: ONESIGNAL_APP_ID,
-        safari_web_id: 'web.onesignal.auto.00b75e31-4d41-4106-ab79-a5c68121f393',
+        safari_web_id: 'web.onesignal.auto.69a0d04c-4cfa-4f80-8d34-652264ce8748',
         allowLocalhostAsSecureOrigin: true,
         serviceWorkerPath: '/push/OneSignalSDKWorker.js',
         serviceWorkerUpdaterPath: '/push/OneSignalSDKUpdaterWorker.js',
@@ -67,6 +67,11 @@ export async function initOneSignal() {
 
       oneSignalInitialized = true;
       console.log('OneSignal initialized');
+
+      // Set default URL for notification clicks (PWA)
+      if (OneSignalModule.Notifications?.setDefaultUrl) {
+        OneSignalModule.Notifications.setDefaultUrl('https://play-maker-palace.lovable.app');
+      }
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id) {
