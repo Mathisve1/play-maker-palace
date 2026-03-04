@@ -724,7 +724,7 @@ const ReportingDashboard = () => {
 
     y += 4; doc.setFontSize(12);
     if (y > 260) { doc.addPage(); y = 20; }
-    doc.text('Evenementen', 14, y); y += 7;
+    doc.text(L.pdfEvents, 14, y); y += 7;
     doc.setFontSize(8);
     eventReports.forEach(e => {
       if (y > 275) { doc.addPage(); y = 20; }
