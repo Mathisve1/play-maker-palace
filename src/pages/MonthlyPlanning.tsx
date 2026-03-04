@@ -352,9 +352,9 @@ const MonthlyPlanning = () => {
   const publishPlan = async () => {
     if (!plan) return;
     const { error } = await supabase.from('monthly_plans').update({ status: 'published' }).eq('id', plan.id);
-    if (error) { toast.error('Publiceren mislukt'); return; }
+    if (error) { toast.error(t3('Publiceren mislukt', 'Publication échouée', 'Publishing failed')); return; }
     setPlan(prev => prev ? { ...prev, status: 'published' } : null);
-    toast.success('Maandplan gepubliceerd! Vrijwilligers kunnen zich nu inschrijven.');
+    toast.success(t3('Maandplan gepubliceerd! Vrijwilligers kunnen zich nu inschrijven.', 'Plan mensuel publié ! Les bénévoles peuvent s\'inscrire.', 'Monthly plan published! Volunteers can now sign up.'));
   };
 
   const resetForm = () => {
