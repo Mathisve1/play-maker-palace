@@ -102,7 +102,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
         <div className="space-y-4">
           {/* Logo */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Logo</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t3('Logo', 'Logo', 'Logo')}</label>
             <div className="flex items-center gap-3">
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo" className="w-14 h-14 rounded-xl object-cover border border-border" />
