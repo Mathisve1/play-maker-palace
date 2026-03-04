@@ -802,7 +802,7 @@ const ReportingDashboard = () => {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-4">
               <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Filters</span>
+              <span className="text-sm font-medium text-foreground">{L.filters}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.from}</label><DatePicker date={dateFrom} onChange={setDateFrom} /></div>
