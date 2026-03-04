@@ -548,7 +548,7 @@ const ExternalPartners = () => {
                       </CardHeader>
                       <CardContent>
                         {partnerTasks.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen taken toegewezen.' : 'No tasks assigned yet.'}</p>
+                          <p className="text-sm text-muted-foreground">{t3('Nog geen taken toegewezen.', 'Aucune tâche assignée.', 'No tasks assigned yet.')}</p>
                         ) : (
                           <div className="space-y-3">
                             {partnerTasks.map(task => (
