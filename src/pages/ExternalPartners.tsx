@@ -629,7 +629,7 @@ const ExternalPartners = () => {
                     <TabsContent value="members" className="space-y-3 mt-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Button variant="ghost" size="sm" onClick={() => { setSelectedTaskForDetail(null); setDetailTab('overview'); }}>
-                          <ArrowLeft className="w-4 h-4 mr-1" />{nl ? 'Terug' : 'Back'}
+                          <ArrowLeft className="w-4 h-4 mr-1" />{t3('Terug', 'Retour', 'Back')}
                         </Button>
                         <div className="flex-1">
                           <p className="text-sm font-medium">{selectedTaskForDetail.title}</p>
