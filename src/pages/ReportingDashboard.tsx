@@ -1152,7 +1152,7 @@ const ReportingDashboard = () => {
           }}
           open={!!selectedVolunteerProfile}
           onOpenChange={(open) => { if (!open) setSelectedVolunteerProfile(null); }}
-          language="nl"
+          language={language}
         />
       )}
     </ClubPageLayout>
