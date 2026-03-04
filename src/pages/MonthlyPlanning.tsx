@@ -967,7 +967,7 @@ const MonthlyPlanning = () => {
             contract_template_id: plan.contract_template_id,
           }}
           clubId={clubId || undefined}
-          language="nl"
+          language={language}
           onSent={async () => {
             await supabase.from('monthly_enrollments').update({ contract_status: 'sent' }).eq('id', contractVolunteer.id);
             setEnrollments(prev => prev.map(e => e.id === contractVolunteer.id ? { ...e, contract_status: 'sent' } : e));
