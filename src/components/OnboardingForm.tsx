@@ -214,7 +214,7 @@ const steps = [
   { id: 3, label: 'Bank' },
 ];
 
-export function OnboardingForm({ language, onComplete, saving }: OnboardingFormProps) {
+export function OnboardingForm({ language, onComplete, saving, onLanguageChange }: OnboardingFormProps) {
   const l = labels[language];
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -230,6 +230,7 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
     bic: '',
     bankHolderName: '',
     bankConsentGiven: false,
+    language: language,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showBankDropdown, setShowBankDropdown] = useState(false);
