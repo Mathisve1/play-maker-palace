@@ -49,6 +49,7 @@ import Community from "./pages/Community";
 import CommunityClubDetail from "./pages/CommunityClubDetail";
 import CommunityPartnerDetail from "./pages/CommunityPartnerDetail";
 import CommandCenter from "./pages/CommandCenter";
+import VolunteerHelp from "./pages/VolunteerHelp";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
