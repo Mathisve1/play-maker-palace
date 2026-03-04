@@ -684,7 +684,7 @@ const ReportingDashboard = () => {
           catch { textBuffer = line + '\n' + textBuffer; break; }
         }
       }
-    } catch (e) { toast.error('AI assistent fout'); console.error(e); }
+    } catch (e) { toast.error('AI assistant error'); console.error(e); }
     setAiLoading(false);
   };
 
