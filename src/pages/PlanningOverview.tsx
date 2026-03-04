@@ -305,7 +305,7 @@ const PlanningOverview = () => {
             </div>
             <button onClick={() => { setShowPostDemoCta(false); setShowTour(true); }}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-              <BookOpen className="w-4 h-4" /> {nl ? 'Maak nu zelf' : 'Create your own'}
+              <BookOpen className="w-4 h-4" /> {t3('Maak nu zelf', 'Créez le vôtre', 'Create your own')}
             </button>
           </div>
         )}
