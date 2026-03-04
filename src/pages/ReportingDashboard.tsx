@@ -508,7 +508,7 @@ const ReportingDashboard = () => {
   const signupsPerEventChart = useMemo(() =>
     eventReports.slice(0, 15).map(e => ({
       name: e.title.length > 20 ? e.title.slice(0, 18) + '…' : e.title,
-      Toegewezen: e.totalVolunteers, Ingecheckt: e.checkedIn,
+      [L.assigned]: e.totalVolunteers, [L.checkedIn]: e.checkedIn,
     })), [eventReports]);
 
   const compensationPieData = useMemo(() => {
