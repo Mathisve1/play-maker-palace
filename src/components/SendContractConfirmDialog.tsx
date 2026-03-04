@@ -486,7 +486,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
               {(fullTask?.start_time || task.start_time) && (
                 <InfoRow
                   icon={Clock}
-                  label="Tijd"
+                  label={language === 'nl' ? 'Tijd' : language === 'fr' ? 'Heure' : 'Time'}
                   value={`${formatTime(fullTask?.start_time || task.start_time, language)}${(fullTask?.end_time || task.end_time) ? ` ${l.to} ${formatTime(fullTask?.end_time || task.end_time, language)}` : ''}`}
                 />
               )}
