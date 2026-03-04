@@ -850,7 +850,7 @@ const ExternalPartners = () => {
                   <SelectItem value="stewards">Stewards</SelectItem>
                   <SelectItem value="horeca">Horeca</SelectItem>
                   <SelectItem value="supporters">Supporters</SelectItem>
-                  <SelectItem value="andere">{nl ? 'Andere...' : 'Other...'}</SelectItem>
+                  <SelectItem value="andere">{t3('Andere...', 'Autre...', 'Other...')}</SelectItem>
                 </SelectContent>
               </Select>
               {newPartner.category === 'andere' && <Input className="mt-2" value={newPartner.custom_category} onChange={e => setNewPartner(p => ({ ...p, custom_category: e.target.value }))} placeholder={nl ? 'Specificeer categorie...' : 'Specify category...'} />}
