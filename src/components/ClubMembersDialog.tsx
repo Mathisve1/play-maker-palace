@@ -339,7 +339,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         {/* Members list */}
         <div className="space-y-2">
           <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-            Leden ({members.length})
+            {t3('Leden', 'Membres', 'Members')} ({members.length})
           </h3>
           {loading ? (
             <div className="py-4 text-center text-muted-foreground text-sm">Laden...</div>
