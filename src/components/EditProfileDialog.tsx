@@ -157,6 +157,8 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
   const [pushPermission, setPushPermission] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushToggling, setPushToggling] = useState(false);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
