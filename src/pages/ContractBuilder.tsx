@@ -476,7 +476,7 @@ const ContractBuilder = () => {
 
   const handleLoadTemplate = async (templateId: string) => {
     if (blocks.length > 3) {
-      if (!confirm('Dit vervangt alle huidige blokken. Doorgaan?')) return;
+      if (!confirm(t3('Dit vervangt alle huidige blokken. Doorgaan?', 'Cela remplacera tous les blocs actuels. Continuer?', 'This will replace all current blocks. Continue?'))) return;
     }
     const { data } = await supabase
       .from('contract_templates')
