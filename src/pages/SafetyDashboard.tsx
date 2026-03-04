@@ -397,7 +397,7 @@ const SafetyDashboard = () => {
       const pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
       lat = pos.coords.latitude; lng = pos.coords.longitude;
     } catch {
-      toast.error('GPS-locatie is vereist om een incident te melden. Sta locatietoegang toe.');
+      toast.error(t3('GPS-locatie is vereist om een incident te melden. Sta locatietoegang toe.', 'La localisation GPS est requise pour signaler un incident.', 'GPS location is required to report an incident.'));
       setReporting(false);
       return;
     }
