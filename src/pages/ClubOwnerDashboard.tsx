@@ -1041,7 +1041,7 @@ const ClubOwnerDashboard = () => {
                       </Avatar>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-medium text-foreground truncate">{signup.volunteer?.full_name || 'Onbekend'}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{signup.volunteer?.full_name || t3('Onbekend', 'Inconnu', 'Unknown')}</p>
                           <ComplianceBadge compliance={complianceMap.get(signup.volunteer_id) || null} language={language} compact />
                         </div>
                         <p className="text-xs text-muted-foreground truncate">{signup.volunteer?.email || ''}</p>
