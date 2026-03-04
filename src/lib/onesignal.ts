@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 // OneSignal App ID - to be configured
-const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || '';
+const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'e0d35921-dd83-4e98-a289-f9d1bb1694cc';
 
 export async function initOneSignal() {
   if (!ONESIGNAL_APP_ID) {
