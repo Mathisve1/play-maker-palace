@@ -329,7 +329,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
           <textarea
             value={message}
             onChange={e => setMessage(e.target.value)}
-            placeholder="Typ je bericht... Gebruik {{naam}} om automatisch de naam van elke vrijwilliger in te voegen."
+            placeholder={t3('Typ je bericht... Gebruik {{naam}} om automatisch de naam van elke vrijwilliger in te voegen.', 'Tapez votre message... Utilisez {{naam}} pour insérer automatiquement le nom de chaque bénévole.', 'Type your message... Use {{naam}} to automatically insert each volunteer\'s name.')}
             className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             rows={4}
             maxLength={2000}
