@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard, BarChart3, Edit3 } from 'lucide-react';
+import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard, BarChart3, Edit3, Bell, BellOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Language } from '@/i18n/translations';
