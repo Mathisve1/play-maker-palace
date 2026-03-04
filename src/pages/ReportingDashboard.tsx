@@ -423,7 +423,7 @@ const ReportingDashboard = () => {
         ? Math.round(approvedHours.reduce((s: number, h: any) => s + Number(h.final_hours || 0), 0) / approvedHours.length * 10) / 10
         : null;
       const pendingConfs = tHourConfs.filter((h: any) => h.status === 'pending').length;
-      const hourConfStatus = tHourConfs.length === 0 ? '—' : pendingConfs > 0 ? `${pendingConfs} pending` : 'Goedgekeurd';
+      const hourConfStatus = tHourConfs.length === 0 ? '—' : pendingConfs > 0 ? `${pendingConfs} ${L.pending.toLowerCase()}` : L.approved;
 
       return {
         id: t.id, title: t.title, eventTitle: event?.title || null, date: t.task_date,
