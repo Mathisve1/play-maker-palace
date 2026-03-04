@@ -146,7 +146,7 @@ const SortableBlock = ({
       {/* Checklist */}
       {block.type === 'checklist' && (
         <div className="space-y-2">
-          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder="Titel" className="bg-background/60 text-sm font-medium" />
+          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder={language === 'fr' ? 'Titre' : language === 'en' ? 'Title' : 'Titel'} className="bg-background/60 text-sm font-medium" />
           {(block.checklist_items || []).map((item, idx) => (
             <div key={item.id} className="flex items-center gap-2">
               <CheckSquare className="w-3.5 h-3.5 opacity-40 shrink-0" />
