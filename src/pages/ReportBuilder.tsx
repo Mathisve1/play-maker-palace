@@ -825,9 +825,9 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
             <div>
               <h1 className="text-lg font-bold flex items-center gap-2">
                 <LayoutDashboard className="h-5 w-5" />
-                Rapport Builder
+              {t3('Rapport Builder', 'Rapport Builder', 'Report Builder')}
               </h1>
-              <p className="text-xs text-muted-foreground">Stel je eigen bestuursrapport samen</p>
+              <p className="text-xs text-muted-foreground">{t3('Stel je eigen bestuursrapport samen', 'Composez votre propre rapport', 'Build your own board report')}</p>
             </div>
           </div>
           <div className="flex gap-2">
