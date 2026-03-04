@@ -23,7 +23,7 @@ const Login = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Logged in!');
+      toast.success(language === 'nl' ? 'Ingelogd!' : language === 'fr' ? 'Connecté !' : 'Logged in!');
       // Check if user is a partner admin
       const { data: partnerAdmins } = await supabase
         .from('partner_admins')
