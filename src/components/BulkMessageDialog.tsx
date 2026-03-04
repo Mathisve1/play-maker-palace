@@ -289,7 +289,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
                   onChange={() => toggleVolunteer(v.id)}
                   className="rounded border-input text-primary focus:ring-ring w-4 h-4"
                 />
-                <span className="text-sm text-foreground truncate">{v.full_name || v.email || 'Onbekend'}</span>
+                <span className="text-sm text-foreground truncate">{v.full_name || v.email || t3('Onbekend', 'Inconnu', 'Unknown')}</span>
               </label>
             ))}
           </div>
