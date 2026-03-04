@@ -359,7 +359,7 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
         {club.is_following && (
           <div className="absolute top-3 left-3">
             <Badge className="bg-primary/90 text-primary-foreground text-[10px] gap-1">
-              <Heart className="w-3 h-3 fill-current" /> Volgend
+              <Heart className="w-3 h-3 fill-current" /> {cl.following}
             </Badge>
           </div>
         )}
