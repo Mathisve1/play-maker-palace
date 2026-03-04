@@ -192,7 +192,7 @@ const SortableBlock = ({
           </div>
           {block.zone_mode === 'full' && (
             <div className="flex items-center gap-2">
-              <label className="text-xs text-muted-foreground whitespace-nowrap">Toon tot diepte:</label>
+              <label className="text-xs text-muted-foreground whitespace-nowrap">{language === 'fr' ? 'Afficher jusqu\'à la profondeur :' : language === 'en' ? 'Show up to depth:' : 'Toon tot diepte:'}</label>
               <Input
                 type="number"
                 min={1}
