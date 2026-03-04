@@ -218,7 +218,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
     await supabase.from('profiles').update({ avatar_url: newUrl }).eq('id', userId);
     setAvatarUrl(newUrl);
     setUploadingAvatar(false);
-    toast.success('Foto bijgewerkt!');
+    toast.success(l.saved);
   };
 
   const handleSave = async () => {
