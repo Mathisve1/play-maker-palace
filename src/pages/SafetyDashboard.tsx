@@ -1139,7 +1139,7 @@ const SafetyDashboard = () => {
                 className="gap-1.5 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 onClick={() => setShowCloseConfirm(true)}
               >
-                <XCircle className="w-3.5 h-3.5" /> Sluit Event
+                <XCircle className="w-3.5 h-3.5" /> {t3('Sluit Event', 'Clôturer', 'Close Event')}
               </Button>
             )}
             <Button variant="ghost" size="icon" onClick={() => setAudioEnabled(!audioEnabled)}>
