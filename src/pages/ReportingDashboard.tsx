@@ -701,7 +701,7 @@ const ReportingDashboard = () => {
 
     let y = 44;
     doc.setFontSize(12);
-    doc.text('KPI Overzicht', 14, y); y += 8;
+    doc.text(L.pdfKpiOverview, 14, y); y += 8;
     doc.setFontSize(9);
     const kpiLines = [
       `Vrijwilligers: ${kpis.totalVolunteers}`, `Taken: ${kpis.totalTasks}`,
