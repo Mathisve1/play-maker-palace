@@ -508,7 +508,7 @@ const MonthlyPlanning = () => {
                 try {
                   const res = await supabase.functions.invoke('monthly-planning-demo', { body: { club_id: clubId, action: 'delete' } });
                   if (res.error) throw new Error(res.error.message);
-                  toast.success('Demo data verwijderd!');
+                  toast.success(t3('Demo data verwijderd!', 'Données de démo supprimées !', 'Demo data deleted!'));
                   setTimeout(() => window.location.reload(), 1000);
                 } catch (err: any) { toast.error(err.message); }
                 setDemoDeleteLoading(false);
