@@ -431,7 +431,7 @@ const EventsManager = () => {
           {showCreateEvent && (
             <motion.form data-tour="form-new-event" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               onSubmit={handleCreateEvent} className="bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden">
-              <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{nl ? 'Nieuw evenement' : 'New event'}</h2>
+              <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{t3('Nieuw evenement', 'Nouvel événement', 'New event')}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
                 <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Beschrijving' : 'Description'}</label><textarea rows={2} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
