@@ -25,6 +25,10 @@ import VolunteerActivitiesSection from '@/components/VolunteerActivitiesSection'
 import VolunteerPartnerTab from '@/components/VolunteerPartnerTab';
 import VolunteerSafetyTab from '@/components/VolunteerSafetyTab';
 import VolunteerMonthlyTab from '@/components/VolunteerMonthlyTab';
+import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
+import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab';
+import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
+import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
 
 interface Task {
   id: string;
@@ -853,88 +857,12 @@ const VolunteerDashboard = () => {
 
       {/* ===== TICKETS TAB ===== */}
       {activeTab === 'tickets' && (
-        <div className="max-w-5xl mx-auto space-y-4">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">Tickets</h1>
-          {myTickets.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen tickets.' : language === 'fr' ? 'Aucun ticket.' : 'No tickets.'}</p></div>
-          ) : (
-            myTickets.map((ticket, i) => (
-              <motion.div key={ticket.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                className={`bg-card rounded-2xl shadow-sm border overflow-hidden ${ticket.status === 'checked_in' ? 'border-accent/30' : 'border-border'}`}>
-                <div className="p-5 pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{ticket.task_title || ticket.event_title || 'Ticket'}</p>
-                      {ticket.club_name && <p className="text-xs text-muted-foreground mt-0.5">{ticket.club_name}</p>}
-                    </div>
-                    <div className="shrink-0">
-                      {ticket.status === 'checked_in' ? (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-foreground"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Ingecheckt' : language === 'fr' ? 'Enregistré' : 'Checked in'}</span>
-                      ) : ticket.status === 'sent' ? (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><Ticket className="w-3.5 h-3.5" />{language === 'nl' ? 'Geldig' : language === 'fr' ? 'Valide' : 'Valid'}</span>
-                      ) : (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In afwachting' : language === 'fr' ? 'En attente' : 'Pending'}</span>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">{new Date(ticket.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                </div>
-                {ticket.barcode && (
-                  <>
-                    <div className="border-t border-dashed border-border mx-3" />
-                    <div className="p-5 pt-3 flex flex-col items-center gap-3">
-                      <div className="bg-white rounded-xl p-3 shadow-sm"><QRCodeSVG value={ticket.barcode} size={160} level="H" /></div>
-                      <div className="bg-foreground/5 rounded-xl px-6 py-2 flex flex-col items-center gap-0.5">
-                        <span className="text-xs font-mono font-bold tracking-widest text-foreground">{ticket.barcode}</span>
-                      </div>
-                      <TicketDownloadButtons barcode={ticket.barcode} ticketTitle={ticket.task_title || 'Ticket'} clubName={ticket.club_name} eventTitle={ticket.event_title} ticketId={ticket.id} volunteerName={profile?.full_name || undefined} language={language} />
-                    </div>
-                  </>
-                )}
-              </motion.div>
-            ))
-          )}
-        </div>
+        <VolunteerTicketsTab tickets={myTickets} language={language} profile={profile} />
       )}
 
       {/* ===== LOYALTY TAB ===== */}
       {activeTab === 'loyalty' && (
-        <div className="max-w-5xl mx-auto space-y-4">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'}</h1>
-          {loyaltyPrograms.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground"><Gift className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen programma\'s.' : language === 'fr' ? 'Aucun programme.' : 'No programs.'}</p></div>
-          ) : (
-            loyaltyPrograms.map((program, i) => {
-              const enrollment = loyaltyEnrollments[program.id];
-              const isPointsBased = program.points_based && program.required_points;
-              const progress = enrollment ? (isPointsBased ? Math.min(100, (enrollment.points_earned / (program.required_points || 1)) * 100) : Math.min(100, (enrollment.tasks_completed / program.required_tasks) * 100)) : 0;
-              return (
-                <motion.div key={program.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-card rounded-2xl p-5 shadow-sm border border-border">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2"><Gift className="w-4 h-4 text-primary" /><h3 className="font-heading font-semibold text-foreground">{program.name}</h3></div>
-                      {program.club_name && <p className="text-xs text-muted-foreground mt-0.5">{program.club_name}</p>}
-                      {program.description && <p className="text-sm text-muted-foreground mt-1">{program.description}</p>}
-                      <p className="text-sm mt-2">🎁 {program.reward_description}</p>
-                    </div>
-                    <div className="shrink-0">
-                      {!enrollment ? (
-                         <button onClick={() => handleEnrollLoyalty(program.id)} disabled={enrollingProgram === program.id} className="px-3 py-1.5 text-xs rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
-                           {language === 'nl' ? 'Deelnemen' : language === 'fr' ? 'Rejoindre' : 'Join'}
-                         </button>
-                      ) : (
-                        <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-muted text-muted-foreground">
-                          {isPointsBased ? `${enrollment.points_earned}/${program.required_points}` : `${enrollment.tasks_completed}/${program.required_tasks}`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {enrollment && <div className="mt-3"><div className="bg-muted rounded-full h-2 w-full"><div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${progress}%` }} /></div></div>}
-                </motion.div>
-              );
-            })
-          )}
-        </div>
+        <VolunteerLoyaltyTab programs={loyaltyPrograms} enrollments={loyaltyEnrollments} language={language} enrollingProgram={enrollingProgram} onEnroll={handleEnrollLoyalty} />
       )}
 
       {/* ===== BRIEFINGS TAB ===== */}
@@ -962,93 +890,12 @@ const VolunteerDashboard = () => {
 
 
       {activeTab === 'contracts' && (
-        <div className="max-w-5xl mx-auto space-y-4">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{dt.contracts}</h1>
-          {myContracts.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground"><FileSignature className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{dt.noContracts}</p></div>
-          ) : (
-            myContracts.map((contract, i) => (
-              <motion.div key={contract.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={`bg-card rounded-2xl p-5 shadow-sm border ${contract.status === 'completed' ? 'border-green-200 dark:border-green-800' : 'border-border'}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{contract.task_title || 'Contract'}</p>
-                    {contract.club_name && <p className="text-xs text-muted-foreground">{contract.club_name}</p>}
-                    <div className="flex items-center gap-2 mt-2">
-                      {contract.status === 'completed' ? <span className="flex items-center gap-1 text-xs font-medium text-green-600"><CheckCircle className="w-3.5 h-3.5" />{dt.signed}</span> : <span className="flex items-center gap-1 text-xs font-medium text-yellow-600"><Clock className="w-3.5 h-3.5" />{dt.awaitingSignature}</span>}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    {contract.status === 'pending' && contract.signing_url && <a href={contract.signing_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"><FileSignature className="w-3.5 h-3.5" />{dt.signNow}</a>}
-                    {contract.status === 'pending' && <button onClick={() => handleCheckContractStatus(contract.id)} disabled={checkingContract === contract.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"><Clock className="w-3 h-3" />{dt.checkStatus}</button>}
-                    {contract.status === 'completed' && contract.document_url && <a href={contract.document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-green-200 text-green-700 hover:bg-green-50 transition-colors"><Download className="w-3.5 h-3.5" />{dt.downloadContract}</a>}
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">{dt.sentOn}: {new Date(contract.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-              </motion.div>
-            ))
-          )}
-        </div>
+        <VolunteerContractsTab contracts={myContracts} language={language} checkingContract={checkingContract} onCheckStatus={handleCheckContractStatus} />
       )}
 
       {/* ===== PAYMENTS TAB ===== */}
       {activeTab === 'payments' && (
-        <div className="max-w-5xl mx-auto space-y-4">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{dt.payments}</h1>
-          {myPayments.length === 0 && sepaPayouts.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground"><CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{dt.noPayments}</p></div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.paid}</p>
-                  <p className="text-2xl font-heading font-bold text-green-600 mt-1">€{(
-                    myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0) +
-                    sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0)
-                  ).toFixed(2)}</p>
-                </div>
-                <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{dt.processing}</p>
-                  <p className="text-2xl font-heading font-bold text-primary mt-1">€{(
-                    myPayments.filter(p => p.status === 'processing').reduce((s, p) => s + p.amount, 0) +
-                    sepaPayouts.filter(s => ['signed', 'awaiting_signature', 'pending'].includes(s.batch_status) && !s.error_flag).reduce((s, p) => s + p.amount, 0)
-                  ).toFixed(2)}</p>
-                </div>
-              </div>
-
-              {sepaPayouts.length > 0 && (
-                <>
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-2"><Banknote className="w-4 h-4 text-primary" />{language === 'nl' ? 'SEPA Vergoedingen' : language === 'fr' ? 'Remboursements SEPA' : 'SEPA Payments'}</h3>
-                  {sepaPayouts.map((payout, i) => {
-                    const isExported = ['downloaded', 'signed'].includes(payout.batch_status);
-                    const isPending = ['pending', 'awaiting_signature'].includes(payout.batch_status);
-                    return (
-                      <motion.div key={payout.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                        className={`bg-card rounded-2xl p-5 shadow-sm border ${payout.error_flag ? 'border-destructive/30' : 'border-border'}`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{payout.task_title || (language === 'nl' ? 'Taak' : language === 'fr' ? 'Tâche' : 'Task')}</p>
-                            {payout.club_name && <p className="text-xs text-muted-foreground">{payout.club_name}</p>}
-                            <p className="text-lg font-heading font-bold text-foreground mt-1">€{payout.amount.toFixed(2)}</p>
-                          </div>
-                          <div className="shrink-0">
-                            {payout.error_flag ? (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive"><AlertTriangle className="w-3.5 h-3.5" />{payout.error_message || (language === 'nl' ? 'Fout' : language === 'fr' ? 'Erreur' : 'Error')}</span>
-                            ) : isExported ? (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Geëxporteerd' : language === 'fr' ? 'Exporté' : 'Exported'}</span>
-                            ) : (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In verwerking' : language === 'fr' ? 'En cours' : 'Processing'}</span>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">Ref: {payout.batch_reference} · {new Date(payout.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                      </motion.div>
-                    );
-                  })}
-                </>
-              )}
-            </>
-          )}
-        </div>
+        <VolunteerPaymentsTab payments={myPayments} sepaPayouts={sepaPayouts} language={language} />
       )}
 
       {/* ===== ALL TASKS / MINE TASKS ===== */}
