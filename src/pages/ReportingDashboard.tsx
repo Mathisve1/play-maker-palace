@@ -732,8 +732,8 @@ const ReportingDashboard = () => {
       y += 4.5;
     });
 
-    doc.save(`rapportage-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-    toast.success('PDF rapport gedownload');
+    doc.save(`report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    toast.success(L.pdfDownloaded);
   };
 
   // ── Date picker ────────────────────────────────────────────────
