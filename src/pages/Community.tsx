@@ -310,7 +310,7 @@ const Community = () => {
               <div className="flex items-center gap-2 mb-4">
                 <Building2 className="w-5 h-5 text-muted-foreground" />
                 <h2 className="text-xl font-bold font-heading">
-                  {followedClubs.length > 0 ? 'Andere clubs' : 'Alle clubs'}
+                  {followedClubs.length > 0 ? cl.otherClubs : cl.allClubs}
                 </h2>
                 <Badge variant="outline" className="ml-2">{otherClubs.length}</Badge>
               </div>
