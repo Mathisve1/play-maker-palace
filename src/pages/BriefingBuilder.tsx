@@ -229,7 +229,7 @@ const SortableBlock = ({
             </div>
           ))}
           <button onClick={() => onAddMaterial(groupId, block.id)} className="text-xs text-primary hover:underline flex items-center gap-1">
-            <Plus className="w-3 h-3" /> Materiaal toevoegen
+            <Plus className="w-3 h-3" /> {language === 'fr' ? 'Ajouter un matériel' : language === 'en' ? 'Add material' : 'Materiaal toevoegen'}
           </button>
         </div>
       )}
