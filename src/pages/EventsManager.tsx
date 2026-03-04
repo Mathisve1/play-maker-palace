@@ -280,7 +280,7 @@ const EventsManager = () => {
     const { error } = await (supabase as any).from('events').delete().eq('id', eventId);
     if (error) toast.error(error.message);
     else {
-      toast.success(nl ? 'Evenement verwijderd!' : 'Event deleted!');
+      toast.success(t3('Evenement verwijderd!', 'Événement supprimé!', 'Event deleted!'));
       setEvents(prev => prev.filter(e => e.id !== eventId));
       setEventGroups(prev => prev.filter(g => g.event_id !== eventId));
       setTasks(prev => prev.filter(t => t.event_id !== eventId));
