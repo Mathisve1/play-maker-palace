@@ -517,7 +517,7 @@ export function OnboardingForm({ language, onComplete, saving, onLanguageChange 
           </div>
         )}
 
-        {currentStep === 2 && (
+        {currentStep === 3 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="text-center mb-4">
               <div className="w-12 h-12 rounded-2xl bg-primary/10 mx-auto flex items-center justify-center mb-3">
