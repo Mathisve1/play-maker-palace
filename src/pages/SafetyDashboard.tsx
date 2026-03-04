@@ -987,10 +987,10 @@ const SafetyDashboard = () => {
 
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={resetReportFlow} className="flex-1 h-12 rounded-xl text-sm">
-                    Overslaan
+                    {t3('Overslaan', 'Passer', 'Skip')}
                   </Button>
                   <Button onClick={handleUpdateReport} disabled={reporting} className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm">
-                    {reporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Details toevoegen'}
+                    {reporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : t3('Details toevoegen', 'Ajouter les détails', 'Add details')}
                   </Button>
                 </div>
               </motion.div>
