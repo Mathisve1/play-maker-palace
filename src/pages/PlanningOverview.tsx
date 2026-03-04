@@ -267,8 +267,8 @@ const PlanningOverview = () => {
             <h1 className="text-2xl font-heading font-bold text-foreground">
               Planning
             </h1>
-            <p className="text-muted-foreground mt-1">
-              {nl ? 'Beheer event planning, losse taken en maandcontracten' : 'Manage event planning, standalone tasks and monthly contracts'}
+             <p className="text-muted-foreground mt-1">
+               {t3('Beheer event planning, losse taken en maandcontracten', 'Gérez la planification, les tâches et les contrats mensuels', 'Manage event planning, standalone tasks and monthly contracts')}
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
