@@ -907,7 +907,7 @@ const SepaPayouts = () => {
                             </span>
                           ) : (
                             <span className="text-xs text-destructive flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" /> Ontbreekt
+                              <AlertTriangle className="w-3 h-3" /> {t3('Ontbreekt', 'Manquant', 'Missing')}
                             </span>
                           )}
                         </TableCell>

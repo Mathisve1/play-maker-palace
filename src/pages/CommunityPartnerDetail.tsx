@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Users, Mail, User, Building2, Briefcase, Calendar, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,30 +30,45 @@ interface PartnerTask {
   status: string;
 }
 
+const partnerLabels = {
+  nl: {
+    backTo: 'Terug naar', members: 'Medewerkers', assignedTasks: 'Toegewezen taken',
+    contact: 'Contactpersoon', noTasks: 'Geen taken toegewezen',
+  },
+  fr: {
+    backTo: 'Retour vers', members: 'Membres', assignedTasks: 'Tâches assignées',
+    contact: 'Personne de contact', noTasks: 'Aucune tâche assignée',
+  },
+  en: {
+    backTo: 'Back to', members: 'Members', assignedTasks: 'Assigned tasks',
+    contact: 'Contact person', noTasks: 'No tasks assigned',
+  },
+};
+
 const CommunityPartnerDetail = () => {
   const { partnerId } = useParams();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const pl = partnerLabels[language];
   const [partner, setPartner] = useState<PartnerDetail | null>(null);
   const [tasks, setTasks] = useState<PartnerTask[]>([]);
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const dateFmt = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
+
   useEffect(() => {
     if (!partnerId) return;
     const load = async () => {
-      // Partner data
       const { data: p } = await supabase.from('external_partners').select('id, name, category, logo_url, contact_name, contact_email, club_id').eq('id', partnerId).maybeSingle();
       if (!p) { navigate('/community'); return; }
       
-      // Club name
       const { data: club } = await supabase.from('clubs').select('name, logo_url').eq('id', p.club_id).maybeSingle();
       setPartner({ ...p, club_name: club?.name || '', club_logo: club?.logo_url });
 
-      // Partner tasks
       const { data: tasksData } = await supabase.from('tasks').select('id, title, task_date, location, status').eq('assigned_partner_id', partnerId).eq('partner_only', true).order('task_date', { ascending: true });
       setTasks(tasksData || []);
 
-      // Member count
       const { count } = await supabase.from('partner_members').select('id', { count: 'exact', head: true }).eq('partner_id', partnerId);
       setMemberCount(count || 0);
 
@@ -91,7 +107,7 @@ const CommunityPartnerDetail = () => {
             </Avatar>
             <div className="flex-1 pt-2">
               <Button variant="ghost" size="sm" className="mb-2 -ml-3 text-muted-foreground gap-1" onClick={() => navigate(`/community/club/${partner.club_id}`)}>
-                <ArrowLeft className="w-4 h-4" /> Terug naar {partner.club_name}
+                <ArrowLeft className="w-4 h-4" /> {pl.backTo} {partner.club_name}
               </Button>
               <h1 className="text-2xl md:text-3xl font-bold font-heading">{partner.name}</h1>
               <div className="flex items-center gap-3 mt-2 flex-wrap">
@@ -113,18 +129,18 @@ const CommunityPartnerDetail = () => {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl border border-border/50 p-4 text-center shadow-card">
               <Users className="w-5 h-5 mx-auto mb-1.5 text-secondary" />
               <p className="text-2xl font-bold font-heading">{memberCount}</p>
-              <p className="text-xs text-muted-foreground">Medewerkers</p>
+              <p className="text-xs text-muted-foreground">{pl.members}</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-card rounded-xl border border-border/50 p-4 text-center shadow-card">
               <Calendar className="w-5 h-5 mx-auto mb-1.5 text-primary" />
               <p className="text-2xl font-bold font-heading">{tasks.length}</p>
-              <p className="text-xs text-muted-foreground">Toegewezen taken</p>
+              <p className="text-xs text-muted-foreground">{pl.assignedTasks}</p>
             </motion.div>
             {partner.contact_name && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-card rounded-xl border border-border/50 p-4 text-center shadow-card col-span-2 md:col-span-1">
                 <User className="w-5 h-5 mx-auto mb-1.5 text-accent" />
                 <p className="text-sm font-semibold">{partner.contact_name}</p>
-                <p className="text-xs text-muted-foreground">Contactpersoon</p>
+                <p className="text-xs text-muted-foreground">{pl.contact}</p>
               </motion.div>
             )}
           </div>
@@ -134,12 +150,12 @@ const CommunityPartnerDetail = () => {
       {/* Tasks */}
       <section className="container mx-auto px-4 py-8 pb-24">
         <h2 className="text-lg font-bold font-heading mb-4 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" /> Toegewezen taken
+          <Shield className="w-5 h-5 text-primary" /> {pl.assignedTasks}
         </h2>
         {tasks.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p>Geen taken toegewezen</p>
+            <p>{pl.noTasks}</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -157,7 +173,7 @@ const CommunityPartnerDetail = () => {
                   {task.task_date && (
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {new Date(task.task_date).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {new Date(task.task_date).toLocaleDateString(dateFmt, { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   )}
                   {task.location && (

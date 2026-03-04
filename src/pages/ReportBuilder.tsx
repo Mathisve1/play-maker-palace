@@ -545,7 +545,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
       toast.success(t3('PDF gedownload!', 'PDF téléchargé !', 'PDF downloaded!'));
     } catch (e) {
       console.error(e);
-      toast.error('PDF export mislukt');
+      toast.error(t3('PDF export mislukt', 'Échec de l\'export PDF', 'PDF export failed'));
     } finally {
       setExporting(false);
     }
