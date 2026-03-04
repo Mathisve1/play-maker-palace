@@ -9,7 +9,7 @@ import Logo from '@/components/Logo';
 import { OnboardingForm } from '@/components/OnboardingForm';
 
 const Signup = () => {
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
 
   // Step 0 = account creation, Step 1 = onboarding
