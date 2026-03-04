@@ -1,0 +1,1 @@
+UPDATE public.profiles SET onesignal_player_id = NULL, push_notifications_enabled = false, push_prompt_seen = false;
