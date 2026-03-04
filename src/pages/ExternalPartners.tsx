@@ -86,8 +86,7 @@ const categoryColors: Record<string, string> = {
 const ExternalPartners = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const nl = language === 'nl';
-  const [loading, setLoading] = useState(true);
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [clubId, setClubId] = useState<string | null>(null);
   const [clubName, setClubName] = useState('');
   const [partners, setPartners] = useState<Partner[]>([]);
