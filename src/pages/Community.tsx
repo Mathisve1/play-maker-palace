@@ -257,10 +257,10 @@ const Community = () => {
                 <button
                   onClick={() => setFilterSport(null)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    !filterSport ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                   !filterSport ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
                 >
-                  Alles
+                  {cl.all}
                 </button>
                 {sports.map(s => (
                   <button
