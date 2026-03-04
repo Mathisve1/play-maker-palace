@@ -298,7 +298,7 @@ const Chat = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 20 * 1024 * 1024) { toast.error('Bestand mag max 20MB zijn'); return; }
+    if (file.size > 20 * 1024 * 1024) { toast.error(language === 'nl' ? 'Bestand mag max 20MB zijn' : language === 'fr' ? 'Le fichier ne peut pas dépasser 20 Mo' : 'File must be max 20MB'); return; }
     setAttachmentFile(file);
     if (file.type.startsWith('image/')) {
       setAttachmentPreview(URL.createObjectURL(file));
