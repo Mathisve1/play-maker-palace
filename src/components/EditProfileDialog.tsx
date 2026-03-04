@@ -161,7 +161,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       setLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_url, phone, bio, date_of_birth, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, stripe_account_id')
+        .select('full_name, email, avatar_url, phone, bio, date_of_birth, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, stripe_account_id, language')
         .eq('id', userId)
         .maybeSingle();
 
@@ -178,6 +178,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
         setBankConsentDate(data.bank_consent_date);
         setBankConsentText(data.bank_consent_text);
         setStripeAccountId(data.stripe_account_id);
+        if ((data as any).language) setProfileLanguage((data as any).language);
       }
       setLoading(false);
     };
