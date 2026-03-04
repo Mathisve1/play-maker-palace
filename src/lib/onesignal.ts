@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 
-// OneSignal App ID - to be configured
 const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'e0d35921-dd83-4e98-a289-f9d1bb1694cc';
 
 export async function initOneSignal() {
@@ -9,7 +8,6 @@ export async function initOneSignal() {
     return;
   }
 
-  // Dynamically load OneSignal SDK
   const OneSignalModule = await import('react-onesignal').then(m => m.default).catch(() => null);
   if (!OneSignalModule) {
     console.warn('OneSignal SDK not available');
@@ -23,6 +21,9 @@ export async function initOneSignal() {
       allowLocalhostAsSecureOrigin: true,
       serviceWorkerPath: '/OneSignalSDKWorker.js',
       notifyButton: { enable: true },
+      promptOptions: {
+        autoPrompt: false, // We handle prompting ourselves after login
+      },
     });
 
     console.log('OneSignal initialized');
@@ -58,6 +59,37 @@ async function linkPlayerIdToProfile(playerId: string) {
     console.log('OneSignal Player ID linked:', playerId);
   } catch (error) {
     console.error('Failed to link OneSignal Player ID:', error);
+  }
+}
+
+/**
+ * Automatically request push permission if not yet decided.
+ * Call this after user logs in to prompt them once.
+ * If they deny, we respect that and don't ask again.
+ */
+export async function autoPromptPushPermission() {
+  if (!ONESIGNAL_APP_ID) return;
+
+  try {
+    const OneSignalModule = await import('react-onesignal').then(m => m.default).catch(() => null);
+    if (!OneSignalModule) return;
+
+    // Check current permission state
+    const permission = OneSignalModule.Notifications.permission;
+    
+    // Only prompt if permission hasn't been decided yet (not granted AND not denied)
+    if (!permission) {
+      // Small delay so the dashboard loads first, then prompt
+      setTimeout(async () => {
+        try {
+          await OneSignalModule.Notifications.requestPermission();
+        } catch (e) {
+          console.log('Push permission prompt dismissed or denied');
+        }
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Auto push permission error:', error);
   }
 }
 
