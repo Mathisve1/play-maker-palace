@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { X, Send, Users, Eye, ChevronDown, ChevronUp, Loader2, Info, Paperclip, FileText, Music, Image, Mic, Square } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface Volunteer {
   id: string;
@@ -17,13 +18,28 @@ interface Props {
   onClose: () => void;
 }
 
-const templateVars: { key: string; label: string; description: string }[] = [
-  { key: '{{naam}}', label: 'Naam', description: 'Volledige naam van de vrijwilliger' },
-  { key: '{{email}}', label: 'E-mail', description: 'E-mailadres van de vrijwilliger' },
-  { key: '{{taak}}', label: 'Taak', description: 'Titel van de taak' },
-];
+const templateVarsI18n: Record<string, { key: string; label: string; description: string }[]> = {
+  nl: [
+    { key: '{{naam}}', label: 'Naam', description: 'Volledige naam van de vrijwilliger' },
+    { key: '{{email}}', label: 'E-mail', description: 'E-mailadres van de vrijwilliger' },
+    { key: '{{taak}}', label: 'Taak', description: 'Titel van de taak' },
+  ],
+  fr: [
+    { key: '{{naam}}', label: 'Nom', description: 'Nom complet du bénévole' },
+    { key: '{{email}}', label: 'E-mail', description: 'Adresse e-mail du bénévole' },
+    { key: '{{taak}}', label: 'Tâche', description: 'Titre de la tâche' },
+  ],
+  en: [
+    { key: '{{naam}}', label: 'Name', description: 'Full name of the volunteer' },
+    { key: '{{email}}', label: 'Email', description: 'Email address of the volunteer' },
+    { key: '{{taak}}', label: 'Task', description: 'Title of the task' },
+  ],
+};
 
 const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose }: Props) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+  const templateVars = templateVarsI18n[language] || templateVarsI18n.nl;
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -72,7 +88,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 20 * 1024 * 1024) { toast.error('Bestand mag max 20MB zijn'); return; }
+    if (file.size > 20 * 1024 * 1024) { toast.error(t3('Bestand mag max 20MB zijn', 'Le fichier ne peut pas dépasser 20 Mo', 'File must be max 20MB')); return; }
     setAttachmentFile(file);
     if (file.type.startsWith('image/')) {
       setAttachmentPreview(URL.createObjectURL(file));
@@ -106,7 +122,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
       setRecording(true);
       setRecordingTime(0);
       recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
-    } catch { toast.error('Microfoon niet beschikbaar'); }
+    } catch { toast.error(t3('Microfoon niet beschikbaar', 'Microphone non disponible', 'Microphone not available')); }
   };
 
   const stopRecording = () => {
@@ -127,7 +143,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
     const ext = file.name.split('.').pop();
     const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage.from('chat-attachments').upload(path, file);
-    if (error) { toast.error('Upload mislukt'); return null; }
+    if (error) { toast.error(t3('Upload mislukt', 'Échec du téléchargement', 'Upload failed')); return null; }
     const { data: { publicUrl } } = supabase.storage.from('chat-attachments').getPublicUrl(path);
     return { url: publicUrl, type: getAttachmentCategory(file.type), name: file.name };
   };
@@ -213,11 +229,11 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
     }
 
     if (sent === selected.length) {
-      toast.success(`Bericht verstuurd naar ${sent} vrijwilliger${sent > 1 ? 's' : ''}!`);
+      toast.success(t3(`Bericht verstuurd naar ${sent} vrijwilliger${sent > 1 ? 's' : ''}!`, `Message envoyé à ${sent} bénévole${sent > 1 ? 's' : ''}!`, `Message sent to ${sent} volunteer${sent > 1 ? 's' : ''}!`));
     } else if (sent > 0) {
-      toast.warning(`${sent} van ${selected.length} berichten verstuurd.`);
+      toast.warning(t3(`${sent} van ${selected.length} berichten verstuurd.`, `${sent} sur ${selected.length} messages envoyés.`, `${sent} of ${selected.length} messages sent.`));
     } else {
-      toast.error('Geen berichten konden worden verstuurd.');
+      toast.error(t3('Geen berichten konden worden verstuurd.', 'Aucun message n\'a pu être envoyé.', 'No messages could be sent.'));
     }
 
     setSending(false);
@@ -236,7 +252,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />
-            Bericht versturen
+            {t3('Bericht versturen', 'Envoyer un message', 'Send message')}
           </h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
@@ -244,7 +260,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Stuur een bericht naar vrijwilligers voor <span className="font-medium text-foreground">{taskTitle}</span>
+          {t3('Stuur een bericht naar vrijwilligers voor', 'Envoyer un message aux bénévoles pour', 'Send a message to volunteers for')} <span className="font-medium text-foreground">{taskTitle}</span>
         </p>
 
         {/* Volunteer selection */}
@@ -252,13 +268,13 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" />
-              Ontvangers ({selectedVolunteers.size}/{volunteers.length})
+              {t3('Ontvangers', 'Destinataires', 'Recipients')} ({selectedVolunteers.size}/{volunteers.length})
             </h3>
             <button
               onClick={toggleAll}
               className="text-xs text-primary hover:underline"
             >
-              {selectedVolunteers.size === volunteers.length ? 'Deselecteer alles' : 'Selecteer alles'}
+              {selectedVolunteers.size === volunteers.length ? t3('Deselecteer alles', 'Tout désélectionner', 'Deselect all') : t3('Selecteer alles', 'Tout sélectionner', 'Select all')}
             </button>
           </div>
           <div className="space-y-1 max-h-32 overflow-y-auto">
@@ -273,7 +289,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
                   onChange={() => toggleVolunteer(v.id)}
                   className="rounded border-input text-primary focus:ring-ring w-4 h-4"
                 />
-                <span className="text-sm text-foreground truncate">{v.full_name || v.email || 'Onbekend'}</span>
+                <span className="text-sm text-foreground truncate">{v.full_name || v.email || t3('Onbekend', 'Inconnu', 'Unknown')}</span>
               </label>
             ))}
           </div>
@@ -286,13 +302,13 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Info className="w-3.5 h-3.5" />
-            Dynamische variabelen
+            {t3('Dynamische variabelen', 'Variables dynamiques', 'Dynamic variables')}
             {showVars ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
           {showVars && (
             <div className="mt-2 p-3 rounded-xl bg-muted/30 border border-border space-y-1.5">
               <p className="text-xs text-muted-foreground mb-2">
-                Klik om in te voegen. Variabelen worden automatisch vervangen per vrijwilliger.
+                {t3('Klik om in te voegen. Variabelen worden automatisch vervangen per vrijwilliger.', 'Cliquez pour insérer. Les variables seront remplacées automatiquement par bénévole.', 'Click to insert. Variables are automatically replaced per volunteer.')}
               </p>
               {templateVars.map(v => (
                 <button
@@ -313,7 +329,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
           <textarea
             value={message}
             onChange={e => setMessage(e.target.value)}
-            placeholder="Typ je bericht... Gebruik {{naam}} om automatisch de naam van elke vrijwilliger in te voegen."
+            placeholder={t3('Typ je bericht... Gebruik {{naam}} om automatisch de naam van elke vrijwilliger in te voegen.', 'Tapez votre message... Utilisez {{naam}} pour insérer automatiquement le nom de chaque bénévole.', 'Type your message... Use {{naam}} to automatically insert each volunteer\'s name.')}
             className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             rows={4}
             maxLength={2000}
@@ -332,7 +348,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="text-muted-foreground hover:text-foreground transition-colors"
-                title="Bijlage toevoegen"
+                title={t3('Bijlage toevoegen', 'Ajouter une pièce jointe', 'Add attachment')}
               >
                 <Paperclip className="w-3.5 h-3.5" />
               </button>
@@ -341,7 +357,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
                   type="button"
                   onClick={stopRecording}
                   className="flex items-center gap-1 text-destructive hover:text-destructive/80 transition-colors"
-                  title="Stop opname"
+                  title={t3('Stop opname', 'Arrêter l\'enregistrement', 'Stop recording')}
                 >
                   <Square className="w-3.5 h-3.5" />
                   <span className="text-[10px] font-medium animate-pulse">{formatRecordingTime(recordingTime)}</span>
@@ -351,7 +367,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
                   type="button"
                   onClick={startRecording}
                   className="text-muted-foreground hover:text-foreground transition-colors"
-                  title="Audio opnemen"
+                  title={t3('Audio opnemen', 'Enregistrer un audio', 'Record audio')}
                 >
                   <Mic className="w-3.5 h-3.5" />
                 </button>
@@ -383,12 +399,12 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
               className="flex items-center gap-1.5 text-xs text-primary hover:underline"
             >
               <Eye className="w-3.5 h-3.5" />
-              {showPreview ? 'Verberg voorbeeld' : 'Voorbeeld bekijken'}
+              {showPreview ? t3('Verberg voorbeeld', 'Masquer l\'aperçu', 'Hide preview') : t3('Voorbeeld bekijken', 'Voir l\'aperçu', 'Preview')}
             </button>
             {showPreview && previewVolunteer && (
               <div className="mt-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
                 <p className="text-[10px] text-muted-foreground mb-1">
-                  Voorbeeld voor: {previewVolunteer.full_name || previewVolunteer.email}
+                  {t3('Voorbeeld voor:', 'Aperçu pour:', 'Preview for:')} {previewVolunteer.full_name || previewVolunteer.email}
                 </p>
                 <p className="text-sm text-foreground whitespace-pre-wrap">
                   {resolveTemplate(message, previewVolunteer)}
@@ -401,7 +417,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
         {/* Send button */}
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {sending && `${sentCount}/${selectedVolunteers.size} verstuurd...`}
+            {sending && `${sentCount}/${selectedVolunteers.size} ${t3('verstuurd...', 'envoyé...', 'sent...')}`}
           </span>
           <button
             onClick={handleSend}
@@ -411,12 +427,12 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
             {sending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Versturen...
+                {t3('Versturen...', 'Envoi...', 'Sending...')}
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                Verstuur naar {selectedVolunteers.size} vrijwilliger{selectedVolunteers.size !== 1 ? 's' : ''}
+                {t3(`Verstuur naar ${selectedVolunteers.size} vrijwilliger${selectedVolunteers.size !== 1 ? 's' : ''}`, `Envoyer à ${selectedVolunteers.size} bénévole${selectedVolunteers.size !== 1 ? 's' : ''}`, `Send to ${selectedVolunteers.size} volunteer${selectedVolunteers.size !== 1 ? 's' : ''}`)}
               </>
             )}
           </button>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { X, Upload, Save } from 'lucide-react';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface ClubInfo {
   name: string;
@@ -18,6 +19,8 @@ interface Props {
 }
 
 const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [name, setName] = useState(clubInfo.name);
   const [sport, setSport] = useState(clubInfo.sport || '');
   const [location, setLocation] = useState(clubInfo.location || '');
@@ -29,7 +32,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Logo mag maximaal 5MB zijn');
+      toast.error(t3('Logo mag maximaal 5MB zijn', 'Le logo ne peut pas dépasser 5 Mo', 'Logo must be max 5MB'));
       return;
     }
     setLogoFile(file);
@@ -38,7 +41,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error('Clubnaam is verplicht');
+      toast.error(t3('Clubnaam is verplicht', 'Le nom du club est obligatoire', 'Club name is required'));
       return;
     }
     setSaving(true);
@@ -77,7 +80,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Club gegevens bijgewerkt!');
+      toast.success(t3('Club gegevens bijgewerkt!', 'Informations du club mises à jour!', 'Club details updated!'));
       onUpdated({ name: name.trim(), sport: sport.trim() || null, location: location.trim() || null, logo_url: logoUrl });
       onClose();
     }
@@ -90,7 +93,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onClose}>
       <div className="bg-card rounded-2xl shadow-elevated p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-heading font-semibold text-foreground">Club instellingen</h2>
+          <h2 className="text-lg font-heading font-semibold text-foreground">{t3('Club instellingen', 'Paramètres du club', 'Club settings')}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
@@ -99,7 +102,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
         <div className="space-y-4">
           {/* Logo */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Logo</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t3('Logo', 'Logo', 'Logo')}</label>
             <div className="flex items-center gap-3">
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo" className="w-14 h-14 rounded-xl object-cover border border-border" />
@@ -110,24 +113,24 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
               )}
               <label className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-input cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
                 <Upload className="w-4 h-4" />
-                Wijzig logo
+                {t3('Wijzig logo', 'Modifier le logo', 'Change logo')}
                 <input type="file" accept="image/*" onChange={handleLogoChange} className="hidden" />
               </label>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Clubnaam *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t3('Clubnaam', 'Nom du club', 'Club name')} *</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)} maxLength={200} className={inputClass} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Sport</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t3('Sport', 'Sport', 'Sport')}</label>
               <input type="text" value={sport} onChange={e => setSport(e.target.value)} maxLength={100} className={inputClass} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Locatie</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t3('Locatie', 'Localisation', 'Location')}</label>
               <input type="text" value={location} onChange={e => setLocation(e.target.value)} maxLength={200} className={inputClass} />
             </div>
           </div>
@@ -135,7 +138,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
 
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
-            Annuleren
+            {t3('Annuleren', 'Annuler', 'Cancel')}
           </button>
           <button
             onClick={handleSave}
@@ -143,7 +146,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
             className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            {saving ? 'Opslaan...' : 'Opslaan'}
+            {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : t3('Opslaan', 'Enregistrer', 'Save')}
           </button>
         </div>
       </div>

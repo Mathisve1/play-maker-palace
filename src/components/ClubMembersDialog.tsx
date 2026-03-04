@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { X, UserPlus, Copy, Trash2, Shield, ChevronDown, Info } from 'lucide-react';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 type ClubRole = 'bestuurder' | 'beheerder' | 'medewerker';
 
@@ -29,10 +30,10 @@ interface Props {
   onClose: () => void;
 }
 
-const roleLabels: Record<ClubRole, string> = {
-  bestuurder: 'Bestuurder',
-  beheerder: 'Beheerder',
-  medewerker: 'Medewerker',
+const roleLabelsI18n: Record<string, Record<ClubRole, string>> = {
+  nl: { bestuurder: 'Bestuurder', beheerder: 'Beheerder', medewerker: 'Medewerker' },
+  fr: { bestuurder: 'Administrateur', beheerder: 'Gestionnaire', medewerker: 'Collaborateur' },
+  en: { bestuurder: 'Board member', beheerder: 'Manager', medewerker: 'Staff' },
 };
 
 const roleColors: Record<ClubRole, string> = {
@@ -42,6 +43,9 @@ const roleColors: Record<ClubRole, string> = {
 };
 
 const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, onClose }: Props) => {
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+  const roleLabels = roleLabelsI18n[language] || roleLabelsI18n.nl;
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +149,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
       } catch (e) {
         console.error('Email sending failed:', e);
       }
-      toast.success(`Uitnodiging verstuurd naar ${inviteEmail}`);
+      toast.success(t3(`Uitnodiging verstuurd naar ${inviteEmail}`, `Invitation envoyée à ${inviteEmail}`, `Invitation sent to ${inviteEmail}`));
       setInviteEmail('');
       fetchData();
     }
@@ -171,7 +175,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
     } else if (data) {
       const link = `${window.location.origin}/club-invite/${data.invite_token}`;
       await navigator.clipboard.writeText(link);
-      toast.success('Uitnodigingslink gekopieerd!');
+      toast.success(t3('Uitnodigingslink gekopieerd!', 'Lien d\'invitation copié!', 'Invite link copied!'));
       fetchData();
     }
   };
@@ -185,7 +189,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Rol bijgewerkt');
+      toast.success(t3('Rol bijgewerkt', 'Rôle mis à jour', 'Role updated'));
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
     }
     setShowRoleDropdown(null);
@@ -193,7 +197,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
 
   const handleRemoveMember = async (memberId: string, userId: string) => {
     if (userId === currentUserId) {
-      toast.error('Je kunt jezelf niet verwijderen');
+      toast.error(t3('Je kunt jezelf niet verwijderen', 'Vous ne pouvez pas vous supprimer', 'You cannot remove yourself'));
       return;
     }
     const { error } = await supabase
@@ -204,7 +208,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Lid verwijderd');
+      toast.success(t3('Lid verwijderd', 'Membre supprimé', 'Member removed'));
       setMembers(prev => prev.filter(m => m.id !== memberId));
     }
   };
@@ -225,7 +229,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   const copyInviteLink = (token: string) => {
     const link = `${window.location.origin}/club-invite/${token}`;
     navigator.clipboard.writeText(link);
-    toast.success('Link gekopieerd!');
+    toast.success(t3('Link gekopieerd!', 'Lien copié!', 'Link copied!'));
   };
 
   return (
@@ -234,7 +238,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            Leden beheren
+            {t3('Leden beheren', 'Gérer les membres', 'Manage members')}
           </h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
@@ -248,7 +252,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <Info className="w-4 h-4" />
-            Wat kunnen de verschillende rollen?
+            {t3('Wat kunnen de verschillende rollen?', 'Que peuvent faire les différents rôles?', 'What can the different roles do?')}
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showRolesInfo ? 'rotate-180' : ''}`} />
           </button>
 
@@ -257,28 +261,28 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
               <div>
                 <p className="font-semibold text-foreground flex items-center gap-2">
                   <span className={`inline-block w-2 h-2 rounded-full bg-primary`} />
-                  Bestuurder
+                  {roleLabels.bestuurder}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  Volledige toegang: rollen toewijzen &amp; wijzigen, Stripe koppelen/ontkoppelen, betalingen uitvoeren, contracten aanmaken, uitsturen &amp; toekennen, taken beheren, en andere leden tot medebestuurder benoemen.
+                  {t3('Volledige toegang: rollen toewijzen & wijzigen, Stripe koppelen/ontkoppelen, betalingen uitvoeren, contracten aanmaken, uitsturen & toekennen, taken beheren, en andere leden tot medebestuurder benoemen.', 'Accès complet: attribuer et modifier les rôles, connecter/déconnecter Stripe, effectuer des paiements, créer et envoyer des contrats, gérer les tâches.', 'Full access: assign & change roles, connect/disconnect Stripe, process payments, create & send contracts, manage tasks, and appoint other board members.')}
                 </p>
               </div>
               <div>
                 <p className="font-semibold text-foreground flex items-center gap-2">
                   <span className={`inline-block w-2 h-2 rounded-full bg-accent-foreground`} />
-                  Beheerder
+                  {roleLabels.beheerder}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  Kan bijna alles: taken beheren, contracten aanmaken &amp; uitsturen, betalingen uitvoeren, en leden uitnodigen. Kan <strong>geen</strong> rollen wijzigen en <strong>geen</strong> Stripe-gegevens aanpassen of ontkoppelen.
+                  {t3('Kan bijna alles: taken beheren, contracten aanmaken & uitsturen, betalingen uitvoeren, en leden uitnodigen. Kan geen rollen wijzigen en geen Stripe-gegevens aanpassen of ontkoppelen.', 'Peut presque tout faire: gérer les tâches, créer et envoyer des contrats, effectuer des paiements et inviter des membres. Ne peut pas modifier les rôles ni les paramètres Stripe.', 'Can do almost everything: manage tasks, create & send contracts, process payments, and invite members. Cannot change roles or modify Stripe settings.')}
                 </p>
               </div>
               <div>
                 <p className="font-semibold text-foreground flex items-center gap-2">
                   <span className={`inline-block w-2 h-2 rounded-full bg-muted-foreground`} />
-                  Medewerker
+                  {roleLabels.medewerker}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  Kan taken bekijken &amp; beheren, contracten aanmaken &amp; uitsturen, en het dagelijkse werk uitvoeren. Kan <strong>geen</strong> rollen wijzigen en <strong>geen</strong> betalingen uitvoeren.
+                  {t3('Kan taken bekijken & beheren, contracten aanmaken & uitsturen, en het dagelijkse werk uitvoeren. Kan geen rollen wijzigen en geen betalingen uitvoeren.', 'Peut consulter et gérer les tâches, créer et envoyer des contrats, et effectuer le travail quotidien. Ne peut pas modifier les rôles ni effectuer des paiements.', 'Can view & manage tasks, create & send contracts, and perform daily work. Cannot change roles or process payments.')}
                 </p>
               </div>
             </div>
@@ -290,7 +294,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
           <div className="mb-6 p-4 rounded-xl bg-muted/30 border border-border">
             <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
               <UserPlus className="w-4 h-4" />
-              Nieuw lid uitnodigen
+              {t3('Nieuw lid uitnodigen', 'Inviter un nouveau membre', 'Invite new member')}
             </h3>
             <div className="flex gap-2 mb-2">
               <select
@@ -298,8 +302,8 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                 onChange={e => setInviteRole(e.target.value as ClubRole)}
                 className="px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                {canManage && <option value="beheerder">Beheerder</option>}
-                <option value="medewerker">Medewerker</option>
+                {canManage && <option value="beheerder">{roleLabels.beheerder}</option>}
+                <option value="medewerker">{roleLabels.medewerker}</option>
               </select>
             </div>
 
@@ -307,7 +311,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
             <div className="flex gap-2 mb-2">
               <input
                 type="email"
-                placeholder="E-mailadres"
+                placeholder={t3('E-mailadres', 'Adresse e-mail', 'Email address')}
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
                 className="flex-1 px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -317,7 +321,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                 disabled={inviting || !inviteEmail.trim()}
                 className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                Verstuur
+                {t3('Verstuur', 'Envoyer', 'Send')}
               </button>
             </div>
 
@@ -327,7 +331,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
               className="flex items-center gap-2 text-sm text-primary hover:underline"
             >
               <Copy className="w-3.5 h-3.5" />
-              Genereer uitnodigingslink
+              {t3('Genereer uitnodigingslink', 'Générer un lien d\'invitation', 'Generate invite link')}
             </button>
           </div>
         )}
@@ -335,10 +339,10 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         {/* Members list */}
         <div className="space-y-2">
           <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-            Leden ({members.length})
+            {t3('Leden', 'Membres', 'Members')} ({members.length})
           </h3>
           {loading ? (
-            <div className="py-4 text-center text-muted-foreground text-sm">Laden...</div>
+            <div className="py-4 text-center text-muted-foreground text-sm">{t3('Laden...', 'Chargement...', 'Loading...')}</div>
           ) : (
             members.map(member => (
               <div key={member.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20 border border-transparent">
@@ -348,8 +352,8 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
-                      {member.profile?.full_name || 'Onbekend'}
-                      {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">(jij)</span>}
+                      {member.profile?.full_name || t3('Onbekend', 'Inconnu', 'Unknown')}
+                      {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">({t3('jij', 'vous', 'you')})</span>}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{member.profile?.email}</p>
                   </div>
@@ -402,13 +406,13 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         {invitations.length > 0 && (
           <div className="mt-4 space-y-2">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              Openstaande uitnodigingen ({invitations.length})
+              {t3('Openstaande uitnodigingen', 'Invitations en attente', 'Pending invitations')} ({invitations.length})
             </h3>
             {invitations.map(inv => (
               <div key={inv.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/10 border border-dashed border-border">
                 <div className="min-w-0">
-                  <p className="text-sm text-foreground truncate">{inv.email || 'Via link'}</p>
-                  <p className="text-xs text-muted-foreground">{roleLabels[inv.role]} · Verloopt {new Date(inv.expires_at).toLocaleDateString('nl-BE')}</p>
+                  <p className="text-sm text-foreground truncate">{inv.email || t3('Via link', 'Via lien', 'Via link')}</p>
+                  <p className="text-xs text-muted-foreground">{roleLabels[inv.role]} · {t3('Verloopt', 'Expire le', 'Expires')} {new Date(inv.expires_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB')}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => copyInviteLink(inv.invite_token)} className="p-1.5 text-muted-foreground hover:text-foreground">

@@ -87,6 +87,7 @@ const ExternalPartners = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const nl = language === 'nl';
+  const t3 = (nlStr: string, fr: string, en: string) => language === 'nl' ? nlStr : language === 'fr' ? fr : en;
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
   const [clubName, setClubName] = useState('');
@@ -220,10 +221,10 @@ const ExternalPartners = () => {
             });
           } catch { /* skip */ }
         }
-        if (validEmails.length > 0) toast.success(`${validEmails.length} ${nl ? 'uitnodiging(en) verstuurd!' : 'invitation(s) sent!'}`);
+        if (validEmails.length > 0) toast.success(`${validEmails.length} ${t3('uitnodiging(en) verstuurd!', 'invitation(s) envoyée(s)!', 'invitation(s) sent!')}`);
       }
 
-      toast.success(nl ? 'Partner aangemaakt!' : 'Partner created!');
+      toast.success(t3('Partner aangemaakt!', 'Partenaire créé!', 'Partner created!'));
       setShowCreate(false);
       setNewPartner({ name: '', category: 'stewards', custom_category: '', contact_name: '', contact_email: '', external_payroll: false });
       setLogoFile(null); setLogoPreview(null); setInviteEmails(['']);
@@ -372,14 +373,14 @@ const ExternalPartners = () => {
         body: { email: inviteEmail.trim(), invite_token: inv.invite_token, role: 'partner_admin', club_name: club?.name, partner_id: selectedPartner.id, partner_name: selectedPartner.name },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      toast.success(nl ? 'Uitnodiging verstuurd!' : 'Invitation sent!');
+      toast.success(t3('Uitnodiging verstuurd!', 'Invitation envoyée!', 'Invitation sent!'));
       setShowInvite(false); setInviteEmail('');
     } catch (err: any) { toast.error(err.message); }
     setInviting(false);
   };
 
   const handleInviteMemberAsVolunteer = async (member: PartnerMember) => {
-    if (!clubId || !member.email) { toast.error(nl ? 'Deze medewerker heeft geen e-mailadres.' : 'This member has no email.'); return; }
+    if (!clubId || !member.email) { toast.error(t3('Deze medewerker heeft geen e-mailadres.', 'Ce membre n\'a pas d\'adresse e-mail.', 'This member has no email.')); return; }
     setInvitingMemberId(member.id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -392,7 +393,7 @@ const ExternalPartners = () => {
         body: { email: member.email, invite_token: inv.invite_token, role: 'medewerker', club_name: clubName },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      toast.success(nl ? `Uitnodiging verstuurd naar ${member.full_name}!` : `Invitation sent to ${member.full_name}!`);
+      toast.success(t3(`Uitnodiging verstuurd naar ${member.full_name}!`, `Invitation envoyée à ${member.full_name}!`, `Invitation sent to ${member.full_name}!`));
     } catch (err: any) { toast.error(err.message); }
     setInvitingMemberId(null);
   };
@@ -408,7 +409,7 @@ const ExternalPartners = () => {
       // If member has user_id, use it; otherwise use a placeholder
       const volunteerId = member.user_id;
       if (!volunteerId) {
-        toast.error(nl ? 'Deze medewerker heeft nog geen vrijwilligersaccount. Stuur eerst een uitnodiging.' : 'This member has no volunteer account yet. Send an invitation first.');
+        toast.error(t3('Deze medewerker heeft nog geen vrijwilligersaccount. Stuur eerst een uitnodiging.', 'Ce membre n\'a pas encore de compte bénévole. Envoyez d\'abord une invitation.', 'This member has no volunteer account yet. Send an invitation first.'));
         setSendingTicket(false);
         return;
       }
@@ -422,7 +423,7 @@ const ExternalPartners = () => {
         status: 'active' as any,
       });
       if (error) throw error;
-      toast.success(nl ? `Ticket aangemaakt voor ${member.full_name}!` : `Ticket created for ${member.full_name}!`);
+      toast.success(t3(`Ticket aangemaakt voor ${member.full_name}!`, `Ticket créé pour ${member.full_name}!`, `Ticket created for ${member.full_name}!`));
       setSendingTicketFor(null);
       setTicketTaskId('');
     } catch (err: any) { toast.error(err.message); }
@@ -437,9 +438,9 @@ const ExternalPartners = () => {
       max_spots: maxSpots ? parseInt(maxSpots) : null,
     });
     if (error) {
-      toast.error(error.message?.includes('duplicate') ? (nl ? 'Dit evenement is al opengesteld.' : 'Event already added.') : error.message);
+      toast.error(error.message?.includes('duplicate') ? t3('Dit evenement is al opengesteld.', 'Cet événement est déjà ouvert.', 'Event already added.') : error.message);
     } else {
-      toast.success(nl ? 'Evenement opengesteld!' : 'Event access added!');
+      toast.success(t3('Evenement opengesteld!', 'Accès à l\'événement ajouté!', 'Event access added!'));
       setShowAddEvent(false); setSelectedEventId(''); setMaxSpots('');
       handleSelectPartner(selectedPartner);
     }
@@ -450,14 +451,14 @@ const ExternalPartners = () => {
     if (!clubId) return;
     const { error } = await supabase.from('external_partners').delete().eq('id', partnerId);
     if (error) toast.error(error.message);
-    else { toast.success(nl ? 'Partner verwijderd.' : 'Partner deleted.'); setSelectedPartner(null); await fetchPartners(clubId); }
+    else { toast.success(t3('Partner verwijderd.', 'Partenaire supprimé.', 'Partner deleted.')); setSelectedPartner(null); await fetchPartners(clubId); }
   };
 
   const handleExportAttendees = async (accessId: string, eventTitle: string) => {
     setExporting(true);
     try {
       const { data: signups } = await supabase.from('partner_event_signups').select('status, partner_member_id').eq('partner_event_access_id', accessId);
-      if (!signups?.length) { toast.info(nl ? 'Geen inschrijvingen.' : 'No signups.'); setExporting(false); return; }
+      if (!signups?.length) { toast.info(t3('Geen inschrijvingen.', 'Aucune inscription.', 'No signups.')); setExporting(false); return; }
       const memberIds = signups.map(s => s.partner_member_id);
       const { data: memberData } = await supabase.from('partner_members').select('id, full_name, date_of_birth, email, phone').in('id', memberIds);
       const lines = ['Naam,Geboortedatum,E-mail,Telefoon,Partner,Status'];
@@ -470,7 +471,7 @@ const ExternalPartners = () => {
       const a = document.createElement('a');
       a.href = url; a.download = `aanwezigen-${eventTitle.replace(/\s/g, '_')}.csv`;
       a.click(); URL.revokeObjectURL(url);
-      toast.success(nl ? 'Export gedownload!' : 'Export downloaded!');
+      toast.success(t3('Export gedownload!', 'Export téléchargé!', 'Export downloaded!'));
     } catch (err: any) { toast.error(err.message); }
     setExporting(false);
   };
@@ -482,23 +483,23 @@ const ExternalPartners = () => {
       <div className="max-w-4xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-heading font-semibold text-foreground">
-            {nl ? 'Externe Partners' : language === 'fr' ? 'Partenaires Externes' : 'External Partners'}
+            {t3('Externe Partners', 'Partenaires Externes', 'External Partners')}
           </h1>
           <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="w-4 h-4 mr-1" />{nl ? 'Nieuw' : 'New'}
+            <Plus className="w-4 h-4 mr-1" />{t3('Nieuw', 'Nouveau', 'New')}
           </Button>
         </div>
         {selectedPartner ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => setSelectedPartner(null)}>
-                <ArrowLeft className="w-4 h-4 mr-1" />{nl ? 'Terug' : 'Back'}
+                <ArrowLeft className="w-4 h-4 mr-1" />{t3('Terug', 'Retour', 'Back')}
               </Button>
               <h2 className="text-xl font-heading font-semibold flex-1">{selectedPartner.name}</h2>
               <Badge className={categoryColors[selectedPartner.category]}>
                 {categoryLabels[language]?.[selectedPartner.category] || selectedPartner.category}
               </Badge>
-              {selectedPartner.external_payroll && <Badge variant="outline" className="text-xs">Externe Payroll</Badge>}
+              {selectedPartner.external_payroll && <Badge variant="outline" className="text-xs">{t3('Externe Payroll', 'Paie externe', 'External Payroll')}</Badge>}
             </div>
 
             {loadingDetail ? (
@@ -508,13 +509,13 @@ const ExternalPartners = () => {
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={() => setShowInvite(true)}>
-                    <Mail className="w-4 h-4 mr-1" />{nl ? 'Beheerder uitnodigen' : 'Invite admin'}
+                    <Mail className="w-4 h-4 mr-1" />{t3('Beheerder uitnodigen', 'Inviter un administrateur', 'Invite admin')}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setShowAddEvent(true)}>
-                    <Calendar className="w-4 h-4 mr-1" />{nl ? 'Evenement openstellen' : 'Add event'}
+                    <Calendar className="w-4 h-4 mr-1" />{t3('Evenement openstellen', 'Ouvrir un événement', 'Add event')}
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => handleDeletePartner(selectedPartner.id)}>
-                    <Trash2 className="w-4 h-4 mr-1" />{nl ? 'Verwijderen' : 'Delete'}
+                    <Trash2 className="w-4 h-4 mr-1" />{t3('Verwijderen', 'Supprimer', 'Delete')}
                   </Button>
                 </div>
 
@@ -525,12 +526,12 @@ const ExternalPartners = () => {
                   if (v === 'tracking' && trackingRecords.length === 0 && selectedTaskForDetail) fetchTracking(selectedPartner);
                 }}>
                   <TabsList className={`w-full grid ${selectedTaskForDetail ? 'grid-cols-3' : 'grid-cols-1'}`}>
-                    <TabsTrigger value="overview" className="gap-1"><Eye className="w-3.5 h-3.5" />{nl ? 'Overzicht' : 'Overview'}</TabsTrigger>
+                    <TabsTrigger value="overview" className="gap-1"><Eye className="w-3.5 h-3.5" />{t3('Overzicht', 'Aperçu', 'Overview')}</TabsTrigger>
                     {selectedTaskForDetail && (
-                      <TabsTrigger value="members" className="gap-1"><Users className="w-3.5 h-3.5" />{nl ? 'Medewerkers' : 'Members'}</TabsTrigger>
+                      <TabsTrigger value="members" className="gap-1"><Users className="w-3.5 h-3.5" />{t3('Medewerkers', 'Membres', 'Members')}</TabsTrigger>
                     )}
                     {selectedTaskForDetail && (
-                      <TabsTrigger value="tracking" className="gap-1"><ClipboardList className="w-3.5 h-3.5" />{nl ? 'Opvolging' : 'Tracking'}</TabsTrigger>
+                      <TabsTrigger value="tracking" className="gap-1"><ClipboardList className="w-3.5 h-3.5" />{t3('Opvolging', 'Suivi', 'Tracking')}</TabsTrigger>
                     )}
                   </TabsList>
 
@@ -541,9 +542,9 @@ const ExternalPartners = () => {
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
                           <Handshake className="w-4 h-4" />
-                          {nl ? `Toegewezen taken (${partnerTasks.length})` : `Assigned tasks (${partnerTasks.length})`}
+                          {t3(`Toegewezen taken (${partnerTasks.length})`, `Tâches assignées (${partnerTasks.length})`, `Assigned tasks (${partnerTasks.length})`)}
                         </CardTitle>
-                        <p className="text-xs text-muted-foreground">{nl ? 'Klik op een taak om medewerkers en opvolging te bekijken.' : 'Click a task to view members and tracking.'}</p>
+                        <p className="text-xs text-muted-foreground">{t3('Klik op een taak om medewerkers en opvolging te bekijken.', 'Cliquez sur une tâche pour voir les membres et le suivi.', 'Click a task to view members and tracking.')}</p>
                       </CardHeader>
                       <CardContent>
                         {partnerTasks.length === 0 ? (
