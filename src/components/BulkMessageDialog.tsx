@@ -357,7 +357,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
                   type="button"
                   onClick={stopRecording}
                   className="flex items-center gap-1 text-destructive hover:text-destructive/80 transition-colors"
-                  title="Stop opname"
+                  title={t3('Stop opname', 'Arrêter l\'enregistrement', 'Stop recording')}
                 >
                   <Square className="w-3.5 h-3.5" />
                   <span className="text-[10px] font-medium animate-pulse">{formatRecordingTime(recordingTime)}</span>
