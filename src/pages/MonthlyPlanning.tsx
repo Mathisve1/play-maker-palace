@@ -230,7 +230,7 @@ const MonthlyPlanning = () => {
       .eq('id', signupId);
     if (error) { toast.error(error.message); return; }
     setDaySignups(prev => prev.map(s => s.id === signupId ? { ...s, status: 'rejected' } : s));
-    toast.success('Dag-aanmelding afgewezen.');
+    toast.success(t3('Dag-aanmelding afgewezen.', 'Inscription journalière refusée.', 'Day signup rejected.'));
   };
 
   // --- Ticket generation for assigned day signups ---
