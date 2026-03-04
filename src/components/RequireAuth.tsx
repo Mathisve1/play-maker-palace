@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { autoPromptPushPermission } from '@/lib/onesignal';
 import { Loader2 } from 'lucide-react';
+import PushPermissionBanner from './PushPermissionBanner';
 
 interface RequireAuthProps {
   children: React.ReactNode;
@@ -19,7 +19,6 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(false);
   const [checked, setChecked] = useState(false);
-  const pushPrompted = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,11 +30,6 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
         navigate(redirectTo, { replace: true });
       } else {
         setAuthenticated(true);
-        // Auto-prompt push permission once after login
-        if (!pushPrompted.current) {
-          pushPrompted.current = true;
-          autoPromptPushPermission();
-        }
       }
       setChecked(true);
     };
@@ -61,7 +55,12 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <PushPermissionBanner />
+      {children}
+    </>
+  );
 };
 
 export default RequireAuth;

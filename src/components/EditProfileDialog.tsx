@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard, BarChart3, Edit3 } from 'lucide-react';
+import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard, BarChart3, Edit3, Bell, BellOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Language } from '@/i18n/translations';
@@ -63,6 +63,13 @@ const labels = {
     requiredForBank: 'Vul eerst uw naam en IBAN in om toestemming te geven.',
     firstLoginTitle: 'Welkom! Vul je profiel aan',
     firstLoginDescription: 'Vul je gegevens in zodat clubs je beter leren kennen.',
+    pushNotifications: 'Pushmeldingen',
+    pushEnabled: 'Meldingen zijn ingeschakeld',
+    pushDisabled: 'Meldingen zijn uitgeschakeld',
+    pushEnable: 'Inschakelen',
+    pushDisable: 'Uitschakelen',
+    pushUnavailable: 'Pushmeldingen worden niet ondersteund in deze browser',
+    pushDenied: 'Pushmeldingen zijn geblokkeerd. Wijzig dit in je browserinstellingen.',
   },
   fr: {
     title: 'Mon profil',
@@ -91,6 +98,13 @@ const labels = {
     requiredForBank: 'Veuillez d\'abord remplir votre nom et IBAN pour donner votre consentement.',
     firstLoginTitle: 'Bienvenue ! Complétez votre profil',
     firstLoginDescription: 'Remplissez vos informations pour que les clubs vous connaissent mieux.',
+    pushNotifications: 'Notifications push',
+    pushEnabled: 'Les notifications sont activées',
+    pushDisabled: 'Les notifications sont désactivées',
+    pushEnable: 'Activer',
+    pushDisable: 'Désactiver',
+    pushUnavailable: 'Les notifications push ne sont pas supportées dans ce navigateur',
+    pushDenied: 'Les notifications push sont bloquées. Modifiez cela dans les paramètres de votre navigateur.',
   },
   en: {
     title: 'My profile',
@@ -119,6 +133,13 @@ const labels = {
     requiredForBank: 'Please fill in your name and IBAN first to give consent.',
     firstLoginTitle: 'Welcome! Complete your profile',
     firstLoginDescription: 'Fill in your details so clubs can get to know you better.',
+    pushNotifications: 'Push notifications',
+    pushEnabled: 'Notifications are enabled',
+    pushDisabled: 'Notifications are disabled',
+    pushEnable: 'Enable',
+    pushDisable: 'Disable',
+    pushUnavailable: 'Push notifications are not supported in this browser',
+    pushDenied: 'Push notifications are blocked. Change this in your browser settings.',
   },
 };
 
@@ -135,6 +156,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
+  const [pushPermission, setPushPermission] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -154,6 +176,16 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   
 
   const { data: compliance, loading: complianceLoading, refresh: refreshCompliance } = useComplianceData(userId);
+
+  // Check push notification permission state
+  useEffect(() => {
+    if (!open) return;
+    if (typeof Notification === 'undefined') {
+      setPushPermission('unsupported');
+    } else {
+      setPushPermission(Notification.permission as any);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -426,6 +458,48 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Push notifications */}
+        <div className="space-y-3 mt-6 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Bell className="w-4 h-4 text-primary" />
+            {l.pushNotifications}
+          </h3>
+
+          {pushPermission === 'unsupported' ? (
+            <p className="text-xs text-muted-foreground">{l.pushUnavailable}</p>
+          ) : pushPermission === 'denied' ? (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+              <BellOff className="w-4 h-4 text-destructive flex-shrink-0" />
+              <p className="text-xs text-destructive">{l.pushDenied}</p>
+            </div>
+          ) : pushPermission === 'granted' ? (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <Bell className="w-4 h-4 text-primary flex-shrink-0" />
+              <p className="text-xs text-foreground flex-1">{l.pushEnabled}</p>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={async () => {
+                const { promptPushPermission } = await import('@/lib/onesignal');
+                await promptPushPermission();
+                if (typeof Notification !== 'undefined') {
+                  setPushPermission(Notification.permission as any);
+                }
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-primary" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="text-sm font-medium text-foreground">{l.pushEnable}</p>
+                <p className="text-[11px] text-muted-foreground">{l.pushDisabled}</p>
+              </div>
+            </button>
+          )}
         </div>
 
         {/* Bank details */}
