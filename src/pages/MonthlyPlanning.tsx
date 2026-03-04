@@ -753,11 +753,11 @@ const MonthlyPlanning = () => {
                             <p className="text-xs text-muted-foreground">{task.start_time}–{task.end_time} · {task.location || ''}</p>
                           </div>
                           <div className="flex gap-1.5 shrink-0">
-                            <Button size="sm" variant="outline" className="gap-1 text-green-700" onClick={() => assignDaySignup(ds.id)}>
-                              <UserCheck className="w-3.5 h-3.5" /> Toekennen
-                            </Button>
-                            <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => rejectDaySignup(ds.id)}>
-                              <UserX className="w-3.5 h-3.5" /> Afwijzen
+                             <Button size="sm" variant="outline" className="gap-1 text-green-700" onClick={() => assignDaySignup(ds.id)}>
+                               <UserCheck className="w-3.5 h-3.5" /> {t3('Toekennen', 'Attribuer', 'Assign')}
+                             </Button>
+                             <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => rejectDaySignup(ds.id)}>
+                               <UserX className="w-3.5 h-3.5" /> {t3('Afwijzen', 'Refuser', 'Reject')}
                             </Button>
                           </div>
                         </div>
