@@ -19,15 +19,16 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
  * Stores the subscription in the push_subscriptions table.
  */
 export async function subscribeToPush(): Promise<{ enabled: boolean; reason: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { enabled: false, reason: 'not_authenticated' };
-
   if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
     return { enabled: false, reason: 'unsupported' };
   }
 
-  // Request permission via user gesture
+  // Request permission IMMEDIATELY — before any async network call.
+  // iOS Safari requires this to happen synchronously within the user gesture.
   const permission = await Notification.requestPermission();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { enabled: false, reason: 'not_authenticated' };
   if (permission !== 'granted') {
     await supabase
       .from('profiles')
