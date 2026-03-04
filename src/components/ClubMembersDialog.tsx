@@ -189,7 +189,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Rol bijgewerkt');
+      toast.success(t3('Rol bijgewerkt', 'Rôle mis à jour', 'Role updated'));
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
     }
     setShowRoleDropdown(null);
