@@ -863,7 +863,7 @@ const MonthlyPlanning = () => {
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2"><Euro className="w-4 h-4 text-primary" /> Maandafrekening</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2"><Euro className="w-4 h-4 text-primary" /> {t3('Maandafrekening', 'Décompte mensuel', 'Monthly settlement')}</CardTitle>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={generateMonthlyPayout} disabled={generatingPayout}>
                         {generatingPayout ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Banknote className="w-3.5 h-3.5 mr-1" />}
