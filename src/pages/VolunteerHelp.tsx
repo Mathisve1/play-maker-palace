@@ -309,12 +309,6 @@ const content: Record<Language, {
         ],
       },
     ],
-    contactEmail: 'Envoyer un e-mail',
-    contactWhatsApp: 'Message WhatsApp',
-    contactPhone: 'Appeler',
-    troubleshootTitle: 'Résolution de problèmes',
-    stepByStep: 'Pas à pas',
-    popularTopics: 'Sujets populaires',
   },
   en: {
     pageTitle: 'Help Center',
