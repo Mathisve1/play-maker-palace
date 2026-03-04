@@ -945,25 +945,25 @@ const ReportingDashboard = () => {
           <TabsContent value="volunteers" className="space-y-4 mt-4">
             <div className="flex justify-end">
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(volunteerReports.map(v => ({
-                Naam: v.name, Email: v.email || '', Inschrijvingen: v.totalSignups, Toegewezen: v.totalAssigned,
-                Ingecheckt: v.totalCheckedIn, NoShows: v.noShows, Betrouwbaarheid: `${v.reliabilityScore}%`,
-                Verdiend: `€${v.totalEarned.toFixed(2)}`, GemPerTaak: `€${v.avgEarnedPerTask.toFixed(2)}`,
-                Evenementen: v.eventsWorked.join(', '),
-              })), 'vrijwilligers-rapport')}>
-                <Download className="w-4 h-4" /> Exporteer CSV
+                [L.name]: v.name, [L.email]: v.email || '', [L.assignments]: v.totalSignups, [L.assigned]: v.totalAssigned,
+                [L.checkedIn]: v.totalCheckedIn, [L.noShows]: v.noShows, [L.reliability]: `${v.reliabilityScore}%`,
+                [L.earned]: `€${v.totalEarned.toFixed(2)}`, [L.perTaskShort]: `€${v.avgEarnedPerTask.toFixed(2)}`,
+                [L.events]: v.eventsWorked.join(', '),
+              })), 'volunteers-report')}>
+                <Download className="w-4 h-4" /> {L.exportCsv}
               </Button>
             </div>
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
               <TableHeader><TableRow>
-                <TableHead>Naam</TableHead><TableHead>E-mail</TableHead>
-                <TableHead className="text-center">Toegewezen</TableHead>
-                <TableHead className="text-center">Ingecheckt</TableHead><TableHead className="text-center">No-shows</TableHead>
-                <TableHead className="text-center">Betrouwbaarheid</TableHead>
-                <TableHead className="text-right">Verdiend</TableHead><TableHead className="text-right">€/taak</TableHead>
+                <TableHead>{L.name}</TableHead><TableHead>{L.email}</TableHead>
+                <TableHead className="text-center">{L.assigned}</TableHead>
+                <TableHead className="text-center">{L.checkedIn}</TableHead><TableHead className="text-center">{L.noShows}</TableHead>
+                <TableHead className="text-center">{L.reliability}</TableHead>
+                <TableHead className="text-right">{L.earned}</TableHead><TableHead className="text-right">{L.perTaskShort}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                  {volunteerReports.length === 0 ? (
-                   <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Geen data gevonden</TableCell></TableRow>
+                   <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{L.noDataFound}</TableCell></TableRow>
                  ) : volunteerReports.map(v => (
                    <TableRow key={v.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedVolunteerProfile(v)}>
                      <TableCell className="font-medium">{v.name}</TableCell>
