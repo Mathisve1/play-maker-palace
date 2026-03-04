@@ -738,9 +738,9 @@ const ExternalPartners = () => {
                                 <table className="w-full text-xs">
                                   <thead>
                                     <tr className="border-b border-border text-left">
-                                      <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Medewerker' : 'Member'}</th>
-                                      <th className="py-2 pr-3 font-medium text-muted-foreground">{nl ? 'Status' : 'Status'}</th>
-                                      <th className="py-2 font-medium text-muted-foreground">{nl ? 'Ingecheckt' : 'Checked in'}</th>
+                                      <th className="py-2 pr-3 font-medium text-muted-foreground">{t3('Medewerker', 'Membre', 'Member')}</th>
+                                      <th className="py-2 pr-3 font-medium text-muted-foreground">Status</th>
+                                      <th className="py-2 font-medium text-muted-foreground">{t3('Ingecheckt', 'Enregistré', 'Checked in')}</th>
                                     </tr>
                                   </thead>
                                   <tbody>
