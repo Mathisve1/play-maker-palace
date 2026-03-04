@@ -488,9 +488,9 @@ const ContractBuilder = () => {
       setTemplateName(data.name);
       setEditingTemplateId(data.id);
       setShowTemplateSelector(false);
-      toast.success(`Sjabloon "${data.name}" geladen.`);
+      toast.success(t3(`Sjabloon "${data.name}" geladen.`, `Modèle "${data.name}" chargé.`, `Template "${data.name}" loaded.`));
     } else {
-      toast.error('Dit sjabloon heeft geen opgeslagen blokstructuur.');
+      toast.error(t3('Dit sjabloon heeft geen opgeslagen blokstructuur.', 'Ce modèle n\'a pas de structure de blocs enregistrée.', 'This template has no saved block structure.'));
     }
   };
 
