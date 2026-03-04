@@ -826,7 +826,7 @@ const ExternalPartners = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{nl ? 'Logo (optioneel)' : 'Logo (optional)'}</Label>
+              <Label>{t3('Logo (optioneel)', 'Logo (optionnel)', 'Logo (optional)')}</Label>
               <div className="mt-1 flex items-center gap-3">
                 {logoPreview ? (
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
