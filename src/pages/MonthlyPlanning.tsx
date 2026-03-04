@@ -773,7 +773,7 @@ const MonthlyPlanning = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-primary" /> Toegekende dag-aanmeldingen ({assignedDaySignups.length})
+                    <Ticket className="w-4 h-4 text-primary" /> {t3('Toegekende dag-aanmeldingen', 'Inscriptions journalières attribuées', 'Assigned day signups')} ({assignedDaySignups.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
