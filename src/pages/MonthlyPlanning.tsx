@@ -421,8 +421,8 @@ const MonthlyPlanning = () => {
       }));
       const { error } = await supabase.from('monthly_payouts').insert(payoutRows);
       if (error) throw error;
-      toast.success(`Maandafrekening gegenereerd voor ${payoutRows.length} vrijwilliger(s)`);
-    } catch (err: any) { toast.error(err.message || 'Genereren mislukt'); }
+      toast.success(t3(`Maandafrekening gegenereerd voor ${payoutRows.length} vrijwilliger(s)`, `Décompte mensuel généré pour ${payoutRows.length} bénévole(s)`, `Monthly settlement generated for ${payoutRows.length} volunteer(s)`));
+    } catch (err: any) { toast.error(err.message || t3('Genereren mislukt', 'Échec de la génération', 'Generation failed')); }
     setGeneratingPayout(false);
   };
 
