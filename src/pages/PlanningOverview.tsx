@@ -274,7 +274,7 @@ const PlanningOverview = () => {
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setShowSafetyRoles(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
-              <Shield className="w-4 h-4" /> {nl ? 'Safety Rollen' : 'Safety Roles'}
+              <Shield className="w-4 h-4" /> {t3('Safety Rollen', 'Rôles sécurité', 'Safety Roles')}
             </button>
             <button onClick={() => setShowTour(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
