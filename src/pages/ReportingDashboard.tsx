@@ -62,7 +62,11 @@ const COLORS = [
   'hsl(var(--chart-5, 340 75% 55%))', '#6366f1', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6',
 ];
 
-const DAY_NAMES = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
+const DAY_NAMES: Record<string, string[]> = {
+  nl: ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'],
+  fr: ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'],
+  en: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+};
 
 const ReportingDashboard = () => {
   const navigate = useNavigate();

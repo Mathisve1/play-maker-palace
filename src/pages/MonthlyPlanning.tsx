@@ -90,6 +90,8 @@ interface DaySignupClub {
 
 const MonthlyPlanning = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const now = new Date();
   
   // Read initial month from URL params
