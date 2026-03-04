@@ -402,7 +402,7 @@ const MonthlyPlanning = () => {
     setGeneratingPayout(true);
     try {
       const confirmedSignups = daySignups.filter(ds => ds.hour_status === 'confirmed');
-      if (confirmedSignups.length === 0) { toast.error('Geen bevestigde uren gevonden'); setGeneratingPayout(false); return; }
+      if (confirmedSignups.length === 0) { toast.error(t3('Geen bevestigde uren gevonden', 'Aucune heure confirmée trouvée', 'No confirmed hours found')); setGeneratingPayout(false); return; }
       const byVolunteer: Record<string, { enrollment_id: string; total_days: number; total_hours: number; total_amount: number }> = {};
       for (const ds of confirmedSignups) {
         const enr = enrollments.find(e => e.id === ds.enrollment_id);
