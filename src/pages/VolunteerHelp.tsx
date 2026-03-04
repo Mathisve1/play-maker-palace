@@ -378,12 +378,6 @@ const content: Record<Language, {
         ],
       },
     ],
-    contactEmail: 'Send email',
-    contactWhatsApp: 'WhatsApp message',
-    contactPhone: 'Call',
-    troubleshootTitle: 'Troubleshooting',
-    stepByStep: 'Step by step',
-    popularTopics: 'Popular topics',
   },
 };
 
