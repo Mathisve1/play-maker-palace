@@ -19,7 +19,6 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, subMonths, isWithinInterval, parseISO, isSameMonth, getDay } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { toast } from 'sonner';
@@ -601,36 +600,36 @@ const ReportingDashboard = () => {
   const buildDataSummary = () => {
     const lines = [
       `Periode: ${format(dateFrom, 'dd/MM/yyyy')} - ${format(dateTo, 'dd/MM/yyyy')}`,
-      `Totaal taken: ${kpis.totalTasks}`, `Totaal vrijwilligers: ${kpis.totalVolunteers}`,
-      `Totaal toewijzingen: ${kpis.totalAssigned}`, `Totaal ingecheckt: ${kpis.totalCheckedIn}`,
-      `Totaal no-shows: ${kpis.totalNoShows}`, `Opkomstpercentage: ${kpis.attendanceRate}%`,
-      `Totaal uitbetaald: €${kpis.totalPaid.toFixed(2)}`, `Openstaande betalingen: €${kpis.totalPending.toFixed(2)}`,
-      `SEPA uitbetalingen: €${kpis.totalSepa.toFixed(2)}`, `Gem. per taak: €${kpis.avgCostPerTask.toFixed(2)}`,
-      `Bezettingsgraad: ${kpis.fillRate}%`, `Deze maand: €${kpis.thisMonthPaid.toFixed(2)}`,
-      `Contracten ondertekend: ${kpis.contractsPercent}%`, `Partner medewerkers ingezet: ${kpis.activePartnerMembers}`,
+      `${L.tasks}: ${kpis.totalTasks}`, `${L.volunteers}: ${kpis.totalVolunteers}`,
+      `${L.assignments}: ${kpis.totalAssigned}`, `${L.checkedIn}: ${kpis.totalCheckedIn}`,
+      `${L.noShows}: ${kpis.totalNoShows}`, `${L.attendance}: ${kpis.attendanceRate}%`,
+      `${L.paidOut}: €${kpis.totalPaid.toFixed(2)}`, `${L.outstanding}: €${kpis.totalPending.toFixed(2)}`,
+      `SEPA: €${kpis.totalSepa.toFixed(2)}`, `${L.avgPerTask}: €${kpis.avgCostPerTask.toFixed(2)}`,
+      `${L.occupancy}: ${kpis.fillRate}%`, `€ ${L.paidOut} (month): €${kpis.thisMonthPaid.toFixed(2)}`,
+      `${L.contracts}: ${kpis.contractsPercent}%`, `${L.partnerStaff}: ${kpis.activePartnerMembers}`,
       '',
-      'TOP 10 VRIJWILLIGERS:',
+      `TOP 10 ${L.volunteers.toUpperCase()}:`,
       ...volunteerReports.slice(0, 10).map(v =>
-        `- ${v.name}: ${v.totalAssigned} taken, ${v.totalCheckedIn} ingecheckt, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)} verdiend, betrouwbaarheid ${v.reliabilityScore}%, evenementen: ${v.eventsWorked.join(', ') || 'geen'}`
+        `- ${v.name}: ${v.totalAssigned} ${L.tasks.toLowerCase()}, ${v.totalCheckedIn} ${L.checkedIn.toLowerCase()}, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)} ${L.earned.toLowerCase()}, ${L.reliability.toLowerCase()} ${v.reliabilityScore}%, ${L.events.toLowerCase()}: ${v.eventsWorked.join(', ') || '—'}`
       ),
-      '', 'EVENEMENTEN:',
+      '', `${L.events.toUpperCase()}:`,
       ...eventReports.map(e =>
-        `- ${e.title} (${e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '?'}): ${e.totalTasks} taken, ${e.totalVolunteers} vrijwilligers, ${e.checkedIn} ingecheckt, bezetting ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`
+        `- ${e.title} (${e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '?'}): ${e.totalTasks} ${L.tasks.toLowerCase()}, ${e.totalVolunteers} ${L.volunteers.toLowerCase()}, ${e.checkedIn} ${L.checkedIn.toLowerCase()}, ${L.occupancy.toLowerCase()} ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`
       ),
-      '', 'TAKEN (recent):',
+      '', `${L.tasks.toUpperCase()} (recent):`,
       ...taskReports.slice(0, 20).map(t =>
-        `- ${t.title} (${t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '?'}): ${t.assigned}/${t.totalSlots} pl, ${t.checkedIn} in, ${t.noShows} ns, ${t.compensation}, €${t.totalPaid.toFixed(2)}, uren: ${t.hourConfStatus}`
+        `- ${t.title} (${t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '?'}): ${t.assigned}/${t.totalSlots}, ${t.checkedIn} in, ${t.noShows} ns, ${t.compensation}, €${t.totalPaid.toFixed(2)}, ${L.hoursStatus.toLowerCase()}: ${t.hourConfStatus}`
       ),
-      '', 'PARTNERS:',
+      '', `${L.partners.toUpperCase()}:`,
       ...partners.map((p: any) => {
         const members = partnerMembers.filter((m: any) => m.partner_id === p.id);
         const assignments = partnerTaskAssignments.filter((a: any) => members.some((m: any) => m.id === a.partner_member_id));
-        return `- ${p.name} (${p.category}): ${members.length} medewerkers, ${assignments.length} ingezet, ${members.filter((m: any) => m.user_id).length} met account`;
+        return `- ${p.name} (${p.category}): ${members.length} ${L.partnerStaff.toLowerCase()}, ${assignments.length} ${L.assigned.toLowerCase()}, ${members.filter((m: any) => m.user_id).length} with account`;
       }),
-      '', 'COMPLIANCE:',
-      `Uur-bevestigingen: ${hourConfStats.total} totaal, ${hourConfStats.approved} goedgekeurd, ${hourConfStats.pending} in afwachting`,
-      `Contracten: ${signatureRequests.filter(s => s.status === 'completed').length}/${signatureRequests.length} ondertekend`,
-      '', 'MAANDELIJKSE UITGAVEN:',
+      '', `${L.compliance.toUpperCase()}:`,
+      `${L.hourConf}: ${hourConfStats.total} total, ${hourConfStats.approved} ${L.approved.toLowerCase()}, ${hourConfStats.pending} ${L.awaitingLabel.toLowerCase()}`,
+      `${L.contracts}: ${signatureRequests.filter(s => s.status === 'completed').length}/${signatureRequests.length}`,
+      '', `${L.monthlySpending.toUpperCase()}:`,
       ...monthlySpendingChart.map(m => `- ${m.month}: €${Number(m[L.paidOut] || 0).toFixed(2)}`),
       '', 'DAY DISTRIBUTION:',
       ...dayOfWeekChart.map(d => `- ${d.name}: ${d[L.tasks]} tasks`),
@@ -652,8 +651,8 @@ const ReportingDashboard = () => {
           body: JSON.stringify({ question, dataSummary: buildDataSummary() }) }
       );
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: 'Fout' }));
-        toast.error(err.error || 'AI fout'); setAiLoading(false); return;
+        const err = await resp.json().catch(() => ({ error: 'Error' }));
+        toast.error(err.error || 'AI error'); setAiLoading(false); return;
       }
       const reader = resp.body?.getReader();
       if (!reader) throw new Error('No reader');
@@ -684,7 +683,7 @@ const ReportingDashboard = () => {
           catch { textBuffer = line + '\n' + textBuffer; break; }
         }
       }
-    } catch (e) { toast.error('AI assistent fout'); console.error(e); }
+    } catch (e) { toast.error('AI assistant error'); console.error(e); }
     setAiLoading(false);
   };
 
@@ -704,12 +703,12 @@ const ReportingDashboard = () => {
     doc.text(L.pdfKpiOverview, 14, y); y += 8;
     doc.setFontSize(9);
     const kpiLines = [
-      `Vrijwilligers: ${kpis.totalVolunteers}`, `Taken: ${kpis.totalTasks}`,
-      `Toewijzingen: ${kpis.totalAssigned}`, `Ingecheckt: ${kpis.totalCheckedIn}`,
-      `No-shows: ${kpis.totalNoShows}`, `Opkomst: ${kpis.attendanceRate}%`,
-      `Bezetting: ${kpis.fillRate}%`, `Uitbetaald: €${kpis.totalPaid.toFixed(2)}`,
-      `Openstaand: €${kpis.totalPending.toFixed(2)}`, `SEPA: €${kpis.totalSepa.toFixed(2)}`,
-      `Contracten: ${kpis.contractsPercent}%`, `Partner mdw: ${kpis.activePartnerMembers}`,
+      `${L.volunteers}: ${kpis.totalVolunteers}`, `${L.tasks}: ${kpis.totalTasks}`,
+      `${L.assignments}: ${kpis.totalAssigned}`, `${L.checkedIn}: ${kpis.totalCheckedIn}`,
+      `${L.noShows}: ${kpis.totalNoShows}`, `${L.attendance}: ${kpis.attendanceRate}%`,
+      `${L.occupancy}: ${kpis.fillRate}%`, `${L.paidOut}: €${kpis.totalPaid.toFixed(2)}`,
+      `${L.outstanding}: €${kpis.totalPending.toFixed(2)}`, `SEPA: €${kpis.totalSepa.toFixed(2)}`,
+      `${L.contracts}: ${kpis.contractsPercent}%`, `${L.partnerStaff}: ${kpis.activePartnerMembers}`,
     ];
     kpiLines.forEach(l => { doc.text(l, 14, y); y += 5; });
 
@@ -718,7 +717,7 @@ const ReportingDashboard = () => {
     doc.setFontSize(8);
     volunteerReports.slice(0, 10).forEach(v => {
       if (y > 275) { doc.addPage(); y = 20; }
-      doc.text(`${v.name}: ${v.totalAssigned} taken, ${v.totalCheckedIn} ingecheckt, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)}, betrouwbaarheid ${v.reliabilityScore}%`, 14, y);
+      doc.text(`${v.name}: ${v.totalAssigned} ${L.tasks.toLowerCase()}, ${v.totalCheckedIn} ${L.checkedIn.toLowerCase()}, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)}, ${L.reliability.toLowerCase()} ${v.reliabilityScore}%`, 14, y);
       y += 4.5;
     });
 
@@ -728,7 +727,7 @@ const ReportingDashboard = () => {
     doc.setFontSize(8);
     eventReports.forEach(e => {
       if (y > 275) { doc.addPage(); y = 20; }
-      doc.text(`${e.title}: ${e.totalTasks} taken, ${e.totalVolunteers} vrw, bezetting ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`, 14, y);
+      doc.text(`${e.title}: ${e.totalTasks} ${L.tasks.toLowerCase()}, ${e.totalVolunteers} vol, ${L.occupancy.toLowerCase()} ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`, 14, y);
       y += 4.5;
     });
 
@@ -737,11 +736,11 @@ const ReportingDashboard = () => {
   };
 
   // ── Date picker ────────────────────────────────────────────────
-  const DatePicker = ({ date, onChange }: { date: Date; onChange: (d: Date) => void; label?: string }) => (
+    const DatePicker = ({ date, onChange }: { date: Date; onChange: (d: Date) => void; label?: string }) => (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" className={cn("justify-start text-left font-normal gap-2", !date && "text-muted-foreground")}>
-          <Calendar className="w-4 h-4" />{format(date, 'dd MMM yyyy', { locale: nl })}
+          <Calendar className="w-4 h-4" />{format(date, 'dd MMM yyyy')}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -787,10 +786,10 @@ const ReportingDashboard = () => {
     <ClubPageLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold text-foreground">Rapportering</h1>
+          <h1 className="text-lg font-bold text-foreground">{L.reporting}</h1>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/report-builder')}>
-              <FileText className="w-4 h-4" /> Rapport Builder
+              <FileText className="w-4 h-4" /> {L.reportBuilder}
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={exportPDF}>
               <FileDown className="w-4 h-4" /> PDF
@@ -802,7 +801,7 @@ const ReportingDashboard = () => {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-4">
               <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Filters</span>
+              <span className="text-sm font-medium text-foreground">{L.filters}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.from}</label><DatePicker date={dateFrom} onChange={setDateFrom} /></div>
@@ -890,13 +889,13 @@ const ReportingDashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="overflow-x-auto -mx-4 px-4">
             <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
-              <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="w-3.5 h-3.5" />Overzicht</TabsTrigger>
-              <TabsTrigger value="volunteers" className="gap-1.5 text-xs sm:text-sm"><Users className="w-3.5 h-3.5" />Vrijwilligers</TabsTrigger>
-              <TabsTrigger value="tasks" className="gap-1.5 text-xs sm:text-sm"><Calendar className="w-3.5 h-3.5" />Taken</TabsTrigger>
-              <TabsTrigger value="events" className="gap-1.5 text-xs sm:text-sm"><PieChart className="w-3.5 h-3.5" />Evenementen</TabsTrigger>
-              <TabsTrigger value="financial" className="gap-1.5 text-xs sm:text-sm"><Euro className="w-3.5 h-3.5" />Financieel</TabsTrigger>
-              <TabsTrigger value="partners" className="gap-1.5 text-xs sm:text-sm"><Handshake className="w-3.5 h-3.5" />Partners</TabsTrigger>
-              <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><Shield className="w-3.5 h-3.5" />Compliance</TabsTrigger>
+              <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="w-3.5 h-3.5" />{L.overview}</TabsTrigger>
+              <TabsTrigger value="volunteers" className="gap-1.5 text-xs sm:text-sm"><Users className="w-3.5 h-3.5" />{L.volunteers}</TabsTrigger>
+              <TabsTrigger value="tasks" className="gap-1.5 text-xs sm:text-sm"><Calendar className="w-3.5 h-3.5" />{L.tasks}</TabsTrigger>
+              <TabsTrigger value="events" className="gap-1.5 text-xs sm:text-sm"><PieChart className="w-3.5 h-3.5" />{L.events}</TabsTrigger>
+              <TabsTrigger value="financial" className="gap-1.5 text-xs sm:text-sm"><Euro className="w-3.5 h-3.5" />{L.financial}</TabsTrigger>
+              <TabsTrigger value="partners" className="gap-1.5 text-xs sm:text-sm"><Handshake className="w-3.5 h-3.5" />{L.partners}</TabsTrigger>
+              <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><Shield className="w-3.5 h-3.5" />{L.compliance}</TabsTrigger>
               <TabsTrigger value="ai" className="gap-1.5 text-xs sm:text-sm"><Bot className="w-3.5 h-3.5" />AI</TabsTrigger>
             </TabsList>
           </div>
@@ -904,13 +903,13 @@ const ReportingDashboard = () => {
           {/* OVERVIEW */}
           <TabsContent value="overview" className="space-y-6 mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card><CardHeader><CardTitle className="text-base">Maandelijkse trend</CardTitle></CardHeader>
+              <Card><CardHeader><CardTitle className="text-base">{L.monthlyTrend}</CardTitle></CardHeader>
                 <CardContent>{renderChart(monthlyTrendData, ['signups', 'checkedIn'], 'month')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Maandelijkse uitgaven (€)</CardTitle></CardHeader>
-                <CardContent>{renderChart(monthlySpendingChart, ['Bedrag'], 'month')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Per evenement</CardTitle></CardHeader>
-                <CardContent>{renderChart(signupsPerEventChart, ['Toegewezen', 'Ingecheckt'], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Opkomst overzicht</CardTitle></CardHeader>
+              <Card><CardHeader><CardTitle className="text-base">{L.monthlySpending}</CardTitle></CardHeader>
+                <CardContent>{renderChart(monthlySpendingChart, [L.paidOut], 'month')}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">{L.perEvent}</CardTitle></CardHeader>
+                <CardContent>{renderChart(signupsPerEventChart, [L.assigned, L.checkedIn], 'name')}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">{L.attendanceOverview}</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <RechartsPie><Pie data={noShowRateChart} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -987,26 +986,26 @@ const ReportingDashboard = () => {
           {/* TASKS */}
           <TabsContent value="tasks" className="space-y-4 mt-4">
             <div className="flex justify-end">
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(taskReports.map(t => ({
-                Taak: t.title, Evenement: t.eventTitle || '', Datum: t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '',
-                Locatie: t.location || '', Plaatsen: t.totalSlots, Toegewezen: t.assigned,
-                Ingecheckt: t.checkedIn, NoShows: t.noShows, Vergoeding: t.compensation,
-                Uitbetaald: `€${t.totalPaid.toFixed(2)}`, UrenStatus: t.hourConfStatus, GemUren: t.avgHours ?? '',
-              })), 'taken-rapport')}>
-                <Download className="w-4 h-4" /> Exporteer CSV
+               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(taskReports.map(t => ({
+                 [L.task]: t.title, [L.event]: t.eventTitle || '', [L.date]: t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '',
+                 [L.location]: t.location || '', [L.spots]: t.totalSlots, [L.assigned]: t.assigned,
+                 [L.checkedIn]: t.checkedIn, [L.noShows]: t.noShows, [L.compensation]: t.compensation,
+                 [L.paidOut]: `€${t.totalPaid.toFixed(2)}`, [L.hoursStatus]: t.hourConfStatus, [L.avgHours]: t.avgHours ?? '',
+               })), 'tasks-report')}>
+                 <Download className="w-4 h-4" /> {L.exportCsv}
               </Button>
             </div>
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
-              <TableHeader><TableRow>
-                <TableHead>Taak</TableHead><TableHead>Evenement</TableHead><TableHead>Datum</TableHead>
-                <TableHead className="text-center">Plaatsen</TableHead><TableHead className="text-center">Toegewezen</TableHead>
-                <TableHead className="text-center">Ingecheckt</TableHead><TableHead className="text-center">No-shows</TableHead>
-                <TableHead>Vergoeding</TableHead><TableHead className="text-right">Uitbetaald</TableHead>
-                <TableHead className="text-center">Uren status</TableHead><TableHead className="text-right">Gem. uren</TableHead>
+               <TableHeader><TableRow>
+                 <TableHead>{L.task}</TableHead><TableHead>{L.event}</TableHead><TableHead>{L.date}</TableHead>
+                 <TableHead className="text-center">{L.spots}</TableHead><TableHead className="text-center">{L.assigned}</TableHead>
+                 <TableHead className="text-center">{L.checkedIn}</TableHead><TableHead className="text-center">{L.noShows}</TableHead>
+                 <TableHead>{L.compensation}</TableHead><TableHead className="text-right">{L.paidOut}</TableHead>
+                 <TableHead className="text-center">{L.hoursStatus}</TableHead><TableHead className="text-right">{L.avgHours}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {taskReports.length === 0 ? (
-                  <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Geen data gevonden</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">{L.noDataFound}</TableCell></TableRow>
                 ) : taskReports.map(t => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.title}</TableCell>
@@ -1019,7 +1018,7 @@ const ReportingDashboard = () => {
                     <TableCell className="text-sm">{t.compensation}</TableCell>
                     <TableCell className="text-right font-medium">€{t.totalPaid.toFixed(2)}</TableCell>
                     <TableCell className="text-center text-sm">
-                      <Badge variant={t.hourConfStatus === 'Goedgekeurd' ? 'default' : t.hourConfStatus === '—' ? 'secondary' : 'outline'}>
+                      <Badge variant={t.hourConfStatus === L.approved ? 'default' : t.hourConfStatus === '—' ? 'secondary' : 'outline'}>
                         {t.hourConfStatus}
                       </Badge>
                     </TableCell>
@@ -1033,25 +1032,25 @@ const ReportingDashboard = () => {
           {/* EVENTS */}
           <TabsContent value="events" className="space-y-4 mt-4">
             <div className="flex justify-end">
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(eventReports.map(e => ({
-                Evenement: e.title, Datum: e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '',
-                Taken: e.totalTasks, Vrijwilligers: e.totalVolunteers, Ingecheckt: e.checkedIn,
-                'Bezetting %': `${e.fillRate}%`, Uitbetaald: `€${e.totalPaid.toFixed(2)}`,
-                'Populairste taak': e.topTask || '',
-              })), 'evenementen-rapport')}>
-                <Download className="w-4 h-4" /> Exporteer CSV
+               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(eventReports.map(e => ({
+                 [L.event]: e.title, [L.date]: e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '',
+                 [L.tasks]: e.totalTasks, [L.volunteers]: e.totalVolunteers, [L.checkedIn]: e.checkedIn,
+                 [`${L.occupancy} %`]: `${e.fillRate}%`, [L.paidOut]: `€${e.totalPaid.toFixed(2)}`,
+                 [L.popularTask]: e.topTask || '',
+               })), 'events-report')}>
+                 <Download className="w-4 h-4" /> {L.exportCsv}
               </Button>
             </div>
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
-              <TableHeader><TableRow>
-                <TableHead>Evenement</TableHead><TableHead>Datum</TableHead>
-                <TableHead className="text-center">Taken</TableHead><TableHead className="text-center">Vrijwilligers</TableHead>
-                <TableHead className="text-center">Ingecheckt</TableHead><TableHead className="text-center">Bezetting</TableHead>
-                <TableHead className="text-right">Uitbetaald</TableHead><TableHead>Populairste taak</TableHead>
+               <TableHeader><TableRow>
+                 <TableHead>{L.event}</TableHead><TableHead>{L.date}</TableHead>
+                 <TableHead className="text-center">{L.tasks}</TableHead><TableHead className="text-center">{L.volunteers}</TableHead>
+                 <TableHead className="text-center">{L.checkedIn}</TableHead><TableHead className="text-center">{L.occupancy}</TableHead>
+                 <TableHead className="text-right">{L.paidOut}</TableHead><TableHead>{L.popularTask}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {eventReports.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Geen data gevonden</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{L.noDataFound}</TableCell></TableRow>
                 ) : eventReports.map(e => (
                   <TableRow key={e.id}>
                     <TableCell className="font-medium">{e.title}</TableCell>
@@ -1098,8 +1097,8 @@ const ReportingDashboard = () => {
           <TabsContent value="ai" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="w-5 h-5 text-primary" />AI Rapportage Assistent</CardTitle>
-                <p className="text-sm text-muted-foreground">Stel een vraag over je club data — inclusief financiën, partners, compliance en meer.</p>
+                <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="w-5 h-5 text-primary" />{L.aiTitle}</CardTitle>
+                 <p className="text-sm text-muted-foreground">{L.aiSubtitle}</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
@@ -1111,7 +1110,7 @@ const ReportingDashboard = () => {
                   {aiMessages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
                       <Bot className="w-12 h-12 mb-3 opacity-30" />
-                      <p className="text-sm">Stel een vraag om te beginnen...</p>
+                      <p className="text-sm">{L.aiEmpty}</p>
                     </div>
                   )}
                   {aiMessages.map((msg, i) => (
@@ -1124,14 +1123,14 @@ const ReportingDashboard = () => {
                   {aiLoading && (
                     <div className="flex justify-start">
                       <div className="bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-muted-foreground flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Analyseren...
+                        <Loader2 className="w-4 h-4 animate-spin" /> {L.aiAnalyzing}
                       </div>
                     </div>
                   )}
                   <div ref={aiEndRef} />
                 </div>
                 <div className="flex gap-2">
-                  <Textarea placeholder="Stel je vraag..." value={aiQuestion} onChange={e => setAiQuestion(e.target.value)}
+                  <Textarea placeholder={L.aiPlaceholder} value={aiQuestion} onChange={e => setAiQuestion(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAiQuestion(); } }}
                     className="min-h-[44px] max-h-[100px] resize-none" rows={1} />
                   <Button onClick={handleAiQuestion} disabled={aiLoading || !aiQuestion.trim()} size="icon" className="shrink-0"><Send className="w-4 h-4" /></Button>
