@@ -44,3 +44,9 @@ verify_jwt = false
 
 [functions.safety-demo]
 verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.monthly-reminders]
+verify_jwt = false
