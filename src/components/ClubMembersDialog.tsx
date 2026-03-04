@@ -342,7 +342,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
             {t3('Leden', 'Membres', 'Members')} ({members.length})
           </h3>
           {loading ? (
-            <div className="py-4 text-center text-muted-foreground text-sm">Laden...</div>
+            <div className="py-4 text-center text-muted-foreground text-sm">{t3('Laden...', 'Chargement...', 'Loading...')}</div>
           ) : (
             members.map(member => (
               <div key={member.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20 border border-transparent">
