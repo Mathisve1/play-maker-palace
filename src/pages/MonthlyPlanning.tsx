@@ -882,7 +882,7 @@ const MonthlyPlanning = () => {
                       return (
                         <div key={ds.id} className="flex items-center justify-between p-2 rounded border text-sm">
                           <span>{ds.volunteer_name} — {task?.title || '?'}</span>
-                          <span className="font-medium text-green-600">{ds.final_hours}u · €{(ds.final_amount || 0).toFixed(2)}</span>
+                          <span className="font-medium text-green-600">{ds.final_hours}{t3('u', 'h', 'h')} · €{(ds.final_amount || 0).toFixed(2)}</span>
                         </div>
                       );
                     })}
