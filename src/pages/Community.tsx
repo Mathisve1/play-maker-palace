@@ -226,13 +226,13 @@ const Community = () => {
           >
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-4">
               <Sparkles className="w-4 h-4" />
-              Community
+              {cl.badge}
             </div>
             <h1 className="text-3xl md:text-4xl font-bold font-heading mb-3">
-              Ontdek sportclubs
+              {cl.heroTitle}
             </h1>
             <p className="text-muted-foreground text-lg mb-8">
-              Volg jouw favoriete clubs en krijg hun taken op je feed. Ontdek partners en evenementen.
+              {cl.heroSubtitle}
             </p>
           </motion.div>
 
