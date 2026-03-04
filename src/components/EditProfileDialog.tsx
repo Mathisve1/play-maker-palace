@@ -460,6 +460,48 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
           </div>
         </div>
 
+        {/* Push notifications */}
+        <div className="space-y-3 mt-6 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Bell className="w-4 h-4 text-primary" />
+            {l.pushNotifications}
+          </h3>
+
+          {pushPermission === 'unsupported' ? (
+            <p className="text-xs text-muted-foreground">{l.pushUnavailable}</p>
+          ) : pushPermission === 'denied' ? (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+              <BellOff className="w-4 h-4 text-destructive flex-shrink-0" />
+              <p className="text-xs text-destructive">{l.pushDenied}</p>
+            </div>
+          ) : pushPermission === 'granted' ? (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <Bell className="w-4 h-4 text-primary flex-shrink-0" />
+              <p className="text-xs text-foreground flex-1">{l.pushEnabled}</p>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={async () => {
+                const { promptPushPermission } = await import('@/lib/onesignal');
+                await promptPushPermission();
+                if (typeof Notification !== 'undefined') {
+                  setPushPermission(Notification.permission as any);
+                }
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-primary" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="text-sm font-medium text-foreground">{l.pushEnable}</p>
+                <p className="text-[11px] text-muted-foreground">{l.pushDisabled}</p>
+              </div>
+            </button>
+          )}
+        </div>
+
         {/* Bank details */}
         <div className="space-y-4 mt-6 pt-6 border-t border-border">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
