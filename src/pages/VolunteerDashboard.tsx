@@ -921,7 +921,6 @@ const VolunteerDashboard = () => {
                          <button onClick={() => handleEnrollLoyalty(program.id)} disabled={enrollingProgram === program.id} className="px-3 py-1.5 text-xs rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
                            {language === 'nl' ? 'Deelnemen' : language === 'fr' ? 'Rejoindre' : 'Join'}
                          </button>
-                        </button>
                       ) : (
                         <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-muted text-muted-foreground">
                           {isPointsBased ? `${enrollment.points_earned}/${program.required_points}` : `${enrollment.tasks_completed}/${program.required_tasks}`}
