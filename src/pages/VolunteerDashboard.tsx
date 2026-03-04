@@ -1026,7 +1026,7 @@ const VolunteerDashboard = () => {
                         className={`bg-card rounded-2xl p-5 shadow-sm border ${payout.error_flag ? 'border-destructive/30' : 'border-border'}`}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{payout.task_title || 'Taak'}</p>
+                            <p className="text-sm font-medium text-foreground truncate">{payout.task_title || (language === 'nl' ? 'Taak' : language === 'fr' ? 'Tâche' : 'Task')}</p>
                             {payout.club_name && <p className="text-xs text-muted-foreground">{payout.club_name}</p>}
                             <p className="text-lg font-heading font-bold text-foreground mt-1">€{payout.amount.toFixed(2)}</p>
                           </div>
