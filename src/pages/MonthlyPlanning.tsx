@@ -622,7 +622,7 @@ const MonthlyPlanning = () => {
                     {t3('Kopieer vorige maand', 'Copier le mois précédent', 'Copy previous month')}
                   </Button>
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm whitespace-nowrap">Contractsjabloon:</Label>
+                    <Label className="text-sm whitespace-nowrap">{t3('Contractsjabloon:', 'Modèle de contrat :', 'Contract template:')}</Label>
                     <Select value={plan.contract_template_id || ''} onValueChange={async (v) => {
                       await supabase.from('monthly_plans').update({ contract_template_id: v || null }).eq('id', plan.id);
                       setPlan(prev => prev ? { ...prev, contract_template_id: v || null } : null);
