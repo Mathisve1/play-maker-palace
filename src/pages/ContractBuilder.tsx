@@ -860,7 +860,7 @@ const ContractBuilder = () => {
                     ))}
                     {/* Monthly fields */}
                     <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider px-3 pt-3 pb-1 flex items-center gap-1">
-                      <CalendarDays className="w-3 h-3" /> Maandcontract
+                      <CalendarDays className="w-3 h-3" /> {t3('Maandcontract', 'Contrat mensuel', 'Monthly Contract')}
                     </p>
                     {mergeFields.filter(f => f.group === 'monthly').map(field => (
                       <div
