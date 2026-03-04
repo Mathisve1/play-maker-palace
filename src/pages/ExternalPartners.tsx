@@ -221,10 +221,10 @@ const ExternalPartners = () => {
             });
           } catch { /* skip */ }
         }
-        if (validEmails.length > 0) toast.success(`${validEmails.length} ${nl ? 'uitnodiging(en) verstuurd!' : 'invitation(s) sent!'}`);
+        if (validEmails.length > 0) toast.success(`${validEmails.length} ${t3('uitnodiging(en) verstuurd!', 'invitation(s) envoyée(s)!', 'invitation(s) sent!')}`);
       }
 
-      toast.success(nl ? 'Partner aangemaakt!' : 'Partner created!');
+      toast.success(t3('Partner aangemaakt!', 'Partenaire créé!', 'Partner created!'));
       setShowCreate(false);
       setNewPartner({ name: '', category: 'stewards', custom_category: '', contact_name: '', contact_email: '', external_payroll: false });
       setLogoFile(null); setLogoPreview(null); setInviteEmails(['']);
