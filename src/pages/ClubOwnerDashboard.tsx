@@ -882,7 +882,7 @@ const ClubOwnerDashboard = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success('Betaling aangemaakt!');
+      toast.success(t3('Betaling aangemaakt!', 'Paiement créé !', 'Payment created!'));
       setVolunteerPayments(prev => ({ ...prev, [key]: { status: 'processing' } }));
     } catch (err: any) {
       toast.error(err.message || 'Er ging iets mis');
