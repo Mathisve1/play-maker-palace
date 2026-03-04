@@ -565,7 +565,7 @@ const SepaPayouts = () => {
   };
 
   const generateCsv = (items: SepaBatchItem[], message: string): string => {
-    const header = 'Naam,IBAN,BIC,Bedrag,Mededeling';
+    const header = t3('Naam,IBAN,BIC,Bedrag,Mededeling', 'Nom,IBAN,BIC,Montant,Message', 'Name,IBAN,BIC,Amount,Message');
     const rows = items.map(item => {
       const name = (item.holder_name || '').replace(/"/g, '""');
       const iban = item.iban.replace(/\s/g, '');
