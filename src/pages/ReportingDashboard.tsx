@@ -1124,7 +1124,7 @@ const ReportingDashboard = () => {
                   {aiLoading && (
                     <div className="flex justify-start">
                       <div className="bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-muted-foreground flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Analyseren...
+                        <Loader2 className="w-4 h-4 animate-spin" /> {L.aiAnalyzing}
                       </div>
                     </div>
                   )}
