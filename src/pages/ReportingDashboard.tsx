@@ -997,12 +997,12 @@ const ReportingDashboard = () => {
               </Button>
             </div>
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
-              <TableHeader><TableRow>
-                <TableHead>Taak</TableHead><TableHead>Evenement</TableHead><TableHead>Datum</TableHead>
-                <TableHead className="text-center">Plaatsen</TableHead><TableHead className="text-center">Toegewezen</TableHead>
-                <TableHead className="text-center">Ingecheckt</TableHead><TableHead className="text-center">No-shows</TableHead>
-                <TableHead>Vergoeding</TableHead><TableHead className="text-right">Uitbetaald</TableHead>
-                <TableHead className="text-center">Uren status</TableHead><TableHead className="text-right">Gem. uren</TableHead>
+               <TableHeader><TableRow>
+                 <TableHead>{L.task}</TableHead><TableHead>{L.event}</TableHead><TableHead>{L.date}</TableHead>
+                 <TableHead className="text-center">{L.spots}</TableHead><TableHead className="text-center">{L.assigned}</TableHead>
+                 <TableHead className="text-center">{L.checkedIn}</TableHead><TableHead className="text-center">{L.noShows}</TableHead>
+                 <TableHead>{L.compensation}</TableHead><TableHead className="text-right">{L.paidOut}</TableHead>
+                 <TableHead className="text-center">{L.hoursStatus}</TableHead><TableHead className="text-right">{L.avgHours}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {taskReports.length === 0 ? (
