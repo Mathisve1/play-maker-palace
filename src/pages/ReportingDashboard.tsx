@@ -839,24 +839,24 @@ const ReportingDashboard = () => {
                 <Select value={selectedPaymentStatus} onValueChange={setSelectedPaymentStatus}><SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="all">{L.allStatuses}</SelectItem><SelectItem value="paid">{L.paid}</SelectItem><SelectItem value="pending">{L.pending}</SelectItem><SelectItem value="failed">{L.failed}</SelectItem></SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Partner filter</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.partnerFilter}</label>
                 <Select value={selectedPartnerFilter} onValueChange={setSelectedPartnerFilter}><SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alle taken</SelectItem>
-                    <SelectItem value="own">Alleen eigen vrijwilligers</SelectItem>
-                    <SelectItem value="partner">Alleen partner taken</SelectItem>
+                    <SelectItem value="all">{L.allTasks}</SelectItem>
+                    <SelectItem value="own">{L.ownOnly}</SelectItem>
+                    <SelectItem value="partner">{L.partnerOnly}</SelectItem>
                     {partners.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                   </SelectContent></Select>
               </div>
               <div className="space-y-1 col-span-1 sm:col-span-2 flex items-end gap-2">
-                <Input placeholder="Zoek op naam of e-mail..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-xs" />
+                <Input placeholder={L.searchPlaceholder} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-xs" />
                 <Button variant="outline" size="sm" onClick={() => {
                   setDateFrom(subMonths(new Date(), 3)); setDateTo(new Date());
                   setSelectedEventId('all'); setSelectedVolunteerId('all');
                   setSelectedCompType('all'); setSelectedLocation('all');
                   setSelectedStatus('all'); setSearchQuery('');
                   setSelectedPaymentStatus('all'); setSelectedPartnerFilter('all');
-                }}>Reset</Button>
+                }}>{L.reset}</Button>
               </div>
             </div>
           </CardContent>
