@@ -904,7 +904,7 @@ const ExternalPartners = () => {
             <div>
               <Label>{t3('Evenement', 'Événement', 'Event')}</Label>
               <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-                <SelectTrigger><SelectValue placeholder={nl ? 'Selecteer...' : 'Select...'} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t3('Selecteer...', 'Sélectionner...', 'Select...')} /></SelectTrigger>
                 <SelectContent>
                   {events.map(e => <SelectItem key={e.id} value={e.id}>{e.title}{e.event_date ? ` (${new Date(e.event_date).toLocaleDateString()})` : ''}</SelectItem>)}
                 </SelectContent>
