@@ -408,7 +408,7 @@ const EventsManager = () => {
               <button onClick={handleDeletePlanningDemo} disabled={demoDeleteLoading}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50">
                 {demoDeleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {nl ? 'Demo wissen' : 'Delete demo'}
+                {nl ? 'Demo wissen' : fr ? 'Supprimer démo' : 'Delete demo'}
               </button>
             ) : (
               <button onClick={handleStartPlanningDemo} disabled={demoLoading}
