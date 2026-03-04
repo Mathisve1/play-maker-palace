@@ -438,9 +438,9 @@ const ExternalPartners = () => {
       max_spots: maxSpots ? parseInt(maxSpots) : null,
     });
     if (error) {
-      toast.error(error.message?.includes('duplicate') ? (nl ? 'Dit evenement is al opengesteld.' : 'Event already added.') : error.message);
+      toast.error(error.message?.includes('duplicate') ? t3('Dit evenement is al opengesteld.', 'Cet événement est déjà ouvert.', 'Event already added.') : error.message);
     } else {
-      toast.success(nl ? 'Evenement opengesteld!' : 'Event access added!');
+      toast.success(t3('Evenement opengesteld!', 'Accès à l\'événement ajouté!', 'Event access added!'));
       setShowAddEvent(false); setSelectedEventId(''); setMaxSpots('');
       handleSelectPartner(selectedPartner);
     }
