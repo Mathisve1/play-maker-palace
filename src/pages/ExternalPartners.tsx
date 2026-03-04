@@ -803,7 +803,7 @@ const ExternalPartners = () => {
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
                         {p.contact_name || ''}{p.contact_name && p.contact_email ? ' • ' : ''}{p.contact_email || ''}
-                        {` • ${p.member_count || 0} ${nl ? 'medewerkers' : 'members'}`}
+                        {` • ${p.member_count || 0} ${t3('medewerkers', 'membres', 'members')}`}
                       </p>
                     </div>
                     <Eye className="w-4 h-4 text-muted-foreground" />
