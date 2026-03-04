@@ -491,7 +491,7 @@ const SafetyDashboard = () => {
     } else {
       setIsLive(false);
       setEventClosed(true);
-      toast.success('Event is afgesloten. Alle vrijwilligers worden doorgestuurd.');
+      toast.success(t3('Event is afgesloten. Alle vrijwilligers worden doorgestuurd.', 'Événement clôturé. Tous les bénévoles sont redirigés.', 'Event closed. All volunteers are being redirected.'));
     }
     setClosingEvent(false);
     setShowCloseConfirm(false);
