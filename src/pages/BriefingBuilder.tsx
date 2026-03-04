@@ -641,7 +641,7 @@ const BriefingBuilder = () => {
 
   // ─── Send briefing ───
   const handleOpenSendDialog = () => {
-    if (!briefingId) { toast.error('Sla de briefing eerst op voordat je verstuurt.'); return; }
+    if (!briefingId) { toast.error(t3('Sla de briefing eerst op voordat je verstuurt.', 'Enregistrez d\'abord le briefing avant d\'envoyer.', 'Save the briefing first before sending.')); return; }
     setShowSendDialog(true);
   };
 
