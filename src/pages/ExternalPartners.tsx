@@ -780,7 +780,7 @@ const ExternalPartners = () => {
             {partners.length === 0 ? (
               <div className="text-center py-16">
                 <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
-                <p className="text-muted-foreground">{nl ? 'Nog geen externe partners.' : 'No external partners yet.'}</p>
+                <p className="text-muted-foreground">{t3('Nog geen externe partners.', 'Pas encore de partenaires externes.', 'No external partners yet.')}</p>
               </div>
             ) : (
               partners.map(p => (
