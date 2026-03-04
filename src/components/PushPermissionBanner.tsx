@@ -34,34 +34,45 @@ const PushPermissionBanner = () => {
   const l = labels[language] || labels.nl;
 
   useEffect(() => {
-    // Check if user already dismissed
-    const wasDismissed = localStorage.getItem('push_banner_dismissed');
-    if (wasDismissed) return;
+    // Use a per-user key so switching accounts shows the banner again
+    const getUserId = async () => {
+      const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
+      const uid = user?.id || 'anon';
+      const key = `push_banner_dismissed_${uid}`;
+      
+      const wasDismissed = localStorage.getItem(key);
+      if (wasDismissed) return;
 
-    // If Notification API exists, check permission state
-    if (typeof Notification !== 'undefined') {
-      if (Notification.permission === 'granted' || Notification.permission === 'denied') {
-        // Already decided — don't show
-        return;
+      // If Notification API exists, check permission state
+      if (typeof Notification !== 'undefined') {
+        if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+          return;
+        }
       }
-    }
 
-    // Show banner: either permission is 'default' or Notification API is missing
-    // (on Android PWA / some browsers, we still want to offer the prompt)
-    const timer = setTimeout(() => setVisible(true), 3000);
-    return () => clearTimeout(timer);
+      // Show banner after short delay
+      const timer = setTimeout(() => setVisible(true), 3000);
+      return () => clearTimeout(timer);
+    };
+    getUserId();
   }, []);
+
+  const dismissForUser = async () => {
+    const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
+    const uid = user?.id || 'anon';
+    localStorage.setItem(`push_banner_dismissed_${uid}`, '1');
+  };
 
   const handleEnable = async () => {
     setVisible(false);
-    localStorage.setItem('push_banner_dismissed', '1');
+    await dismissForUser();
     await promptPushPermission();
   };
 
-  const handleDismiss = () => {
+  const handleDismiss = async () => {
     setVisible(false);
     setDismissed(true);
-    localStorage.setItem('push_banner_dismissed', '1');
+    await dismissForUser();
   };
 
   return (
