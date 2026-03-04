@@ -600,7 +600,7 @@ const ExternalPartners = () => {
                       </CardHeader>
                       <CardContent>
                         {eventAccess.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">{nl ? 'Nog geen evenementen opengesteld.' : 'No events assigned yet.'}</p>
+                          <p className="text-sm text-muted-foreground">{t3('Nog geen evenementen opengesteld.', 'Aucun événement ouvert.', 'No events assigned yet.')}</p>
                         ) : (
                           <div className="space-y-2">
                             {eventAccess.map(ea => (
