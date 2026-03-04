@@ -601,13 +601,13 @@ const ReportingDashboard = () => {
   const buildDataSummary = () => {
     const lines = [
       `Periode: ${format(dateFrom, 'dd/MM/yyyy')} - ${format(dateTo, 'dd/MM/yyyy')}`,
-      `Totaal taken: ${kpis.totalTasks}`, `Totaal vrijwilligers: ${kpis.totalVolunteers}`,
-      `Totaal toewijzingen: ${kpis.totalAssigned}`, `Totaal ingecheckt: ${kpis.totalCheckedIn}`,
-      `Totaal no-shows: ${kpis.totalNoShows}`, `Opkomstpercentage: ${kpis.attendanceRate}%`,
-      `Totaal uitbetaald: €${kpis.totalPaid.toFixed(2)}`, `Openstaande betalingen: €${kpis.totalPending.toFixed(2)}`,
-      `SEPA uitbetalingen: €${kpis.totalSepa.toFixed(2)}`, `Gem. per taak: €${kpis.avgCostPerTask.toFixed(2)}`,
-      `Bezettingsgraad: ${kpis.fillRate}%`, `Deze maand: €${kpis.thisMonthPaid.toFixed(2)}`,
-      `Contracten ondertekend: ${kpis.contractsPercent}%`, `Partner medewerkers ingezet: ${kpis.activePartnerMembers}`,
+      `${L.tasks}: ${kpis.totalTasks}`, `${L.volunteers}: ${kpis.totalVolunteers}`,
+      `${L.assignments}: ${kpis.totalAssigned}`, `${L.checkedIn}: ${kpis.totalCheckedIn}`,
+      `${L.noShows}: ${kpis.totalNoShows}`, `${L.attendance}: ${kpis.attendanceRate}%`,
+      `${L.paidOut}: €${kpis.totalPaid.toFixed(2)}`, `${L.outstanding}: €${kpis.totalPending.toFixed(2)}`,
+      `SEPA: €${kpis.totalSepa.toFixed(2)}`, `${L.avgPerTask}: €${kpis.avgCostPerTask.toFixed(2)}`,
+      `${L.occupancy}: ${kpis.fillRate}%`, `€ ${L.paidOut} (month): €${kpis.thisMonthPaid.toFixed(2)}`,
+      `${L.contracts}: ${kpis.contractsPercent}%`, `${L.partnerStaff}: ${kpis.activePartnerMembers}`,
       '',
       'TOP 10 VRIJWILLIGERS:',
       ...volunteerReports.slice(0, 10).map(v =>
