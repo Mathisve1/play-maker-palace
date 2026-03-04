@@ -399,13 +399,13 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
         {/* Stats */}
         <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5 text-primary" /> {club.task_count} taken
+            <Calendar className="w-3.5 h-3.5 text-primary" /> {club.task_count} {cl.tasks}
           </span>
           <span className="flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-secondary" /> {club.volunteer_count} vrijwilligers
+            <Users className="w-3.5 h-3.5 text-secondary" /> {club.volunteer_count} {cl.volunteers}
           </span>
           <span className="flex items-center gap-1">
-            <Trophy className="w-3.5 h-3.5 text-accent" /> {club.event_count} events
+            <Trophy className="w-3.5 h-3.5 text-accent" /> {club.event_count} {cl.events}
           </span>
         </div>
 
