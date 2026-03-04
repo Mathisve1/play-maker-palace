@@ -8,6 +8,7 @@ import {
   SidebarSeparator, useSidebar,
 } from '@/components/ui/sidebar';
 import Logo from '@/components/Logo';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface PartnerSidebarProps {
   partnerName: string;
