@@ -84,23 +84,23 @@ const ClubOwnerSidebar = ({
 
   const mainItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
-    { label: 'Actielijst', icon: Inbox, path: '/command-center', badge: actionCount },
-    { label: 'Evenementen & Taken', icon: CalendarPlus, path: '/events-manager' },
+    { label: t3('Actielijst', 'Liste d\'actions', 'Action List'), icon: Inbox, path: '/command-center', badge: actionCount },
+    { label: t3('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks'), icon: CalendarPlus, path: '/events-manager' },
     { label: 'Planning', icon: LayoutGrid, path: '/planning' },
-    { label: 'Safety & Security', icon: ShieldAlert, path: '/safety' },
-    { label: 'Berichten', icon: MessageCircle, path: '/chat' },
+    { label: t3('Safety & Security', 'Sécurité', 'Safety & Security'), icon: ShieldAlert, path: '/safety' },
+    { label: t3('Berichten', 'Messages', 'Messages'), icon: MessageCircle, path: '/chat' },
   ];
 
   const managementItems = [
-    { label: 'SEPA Vergoedingen', icon: Banknote, path: '/sepa-payouts' },
-    { label: 'Contracten', icon: FileText, path: '/contract-builder' },
+    { label: t3('SEPA Vergoedingen', 'Indemnités SEPA', 'SEPA Payments'), icon: Banknote, path: '/sepa-payouts' },
+    { label: t3('Contracten', 'Contrats', 'Contracts'), icon: FileText, path: '/contract-builder' },
     { label: 'Briefings', icon: ClipboardList, path: '/briefing-builder' },
     { label: 'Compliance', icon: Shield, path: '/compliance' },
     { label: 'Ticketing', icon: Ticket, path: '/ticketing' },
-    { label: 'Academy', icon: Award, path: '/academy' },
-    { label: 'Loyaliteit', icon: Award, path: '/loyalty' },
-    { label: 'Partners', icon: Handshake, path: '/external-partners' },
-    { label: 'Rapportering', icon: BarChart3, path: '/reporting' },
+    { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
+    { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Award, path: '/loyalty' },
+    { label: t3('Partners', 'Partenaires', 'Partners'), icon: Handshake, path: '/external-partners' },
+    { label: t3('Rapportering', 'Rapports', 'Reporting'), icon: BarChart3, path: '/reporting' },
   ];
 
   return (
