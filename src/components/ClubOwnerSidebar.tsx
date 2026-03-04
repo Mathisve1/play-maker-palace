@@ -33,10 +33,12 @@ const ClubOwnerSidebar = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { setOpenMobile } = useSidebar();
+  const { language } = useLanguage();
   const [actionCount, setActionCount] = useState(0);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   // Fetch pending action count for badge
   useEffect(() => {
