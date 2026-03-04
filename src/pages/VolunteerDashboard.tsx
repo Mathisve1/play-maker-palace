@@ -451,9 +451,10 @@ const VolunteerDashboard = () => {
       }
 
       intervalId = setInterval(async () => {
+        if (document.visibilityState === 'hidden') return;
         const refreshedEventIds = await fetchMyEventIds();
         await checkForLiveEvent(refreshedEventIds);
-      }, 3000);
+      }, 15000);
     };
 
     setupLiveListeners();
