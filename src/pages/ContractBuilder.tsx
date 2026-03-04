@@ -693,7 +693,7 @@ const ContractBuilder = () => {
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-input bg-background text-xs font-medium text-foreground hover:bg-muted transition-colors"
           >
             <FileText className="w-3.5 h-3.5" />
-            {editingTemplateId ? 'Sjabloon laden' : 'Bestaand sjabloon'}
+            {editingTemplateId ? t3('Sjabloon laden', 'Charger un modèle', 'Load template') : t3('Bestaand sjabloon', 'Modèle existant', 'Existing template')}
           </button>
           {showTemplateSelector && existingTemplates.length > 0 && (
             <div className="absolute left-0 top-full mt-1 w-64 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
