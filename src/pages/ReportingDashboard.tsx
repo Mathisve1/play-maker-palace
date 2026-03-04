@@ -987,13 +987,13 @@ const ReportingDashboard = () => {
           {/* TASKS */}
           <TabsContent value="tasks" className="space-y-4 mt-4">
             <div className="flex justify-end">
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(taskReports.map(t => ({
-                Taak: t.title, Evenement: t.eventTitle || '', Datum: t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '',
-                Locatie: t.location || '', Plaatsen: t.totalSlots, Toegewezen: t.assigned,
-                Ingecheckt: t.checkedIn, NoShows: t.noShows, Vergoeding: t.compensation,
-                Uitbetaald: `€${t.totalPaid.toFixed(2)}`, UrenStatus: t.hourConfStatus, GemUren: t.avgHours ?? '',
-              })), 'taken-rapport')}>
-                <Download className="w-4 h-4" /> Exporteer CSV
+               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(taskReports.map(t => ({
+                 [L.task]: t.title, [L.event]: t.eventTitle || '', [L.date]: t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '',
+                 [L.location]: t.location || '', [L.spots]: t.totalSlots, [L.assigned]: t.assigned,
+                 [L.checkedIn]: t.checkedIn, [L.noShows]: t.noShows, [L.compensation]: t.compensation,
+                 [L.paidOut]: `€${t.totalPaid.toFixed(2)}`, [L.hoursStatus]: t.hourConfStatus, [L.avgHours]: t.avgHours ?? '',
+               })), 'tasks-report')}>
+                 <Download className="w-4 h-4" /> {L.exportCsv}
               </Button>
             </div>
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
