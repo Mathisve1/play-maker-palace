@@ -499,7 +499,7 @@ const ExternalPartners = () => {
               <Badge className={categoryColors[selectedPartner.category]}>
                 {categoryLabels[language]?.[selectedPartner.category] || selectedPartner.category}
               </Badge>
-              {selectedPartner.external_payroll && <Badge variant="outline" className="text-xs">Externe Payroll</Badge>}
+              {selectedPartner.external_payroll && <Badge variant="outline" className="text-xs">{t3('Externe Payroll', 'Paie externe', 'External Payroll')}</Badge>}
             </div>
 
             {loadingDetail ? (
