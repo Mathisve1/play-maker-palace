@@ -904,13 +904,13 @@ const ReportingDashboard = () => {
           {/* OVERVIEW */}
           <TabsContent value="overview" className="space-y-6 mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card><CardHeader><CardTitle className="text-base">Maandelijkse trend</CardTitle></CardHeader>
+              <Card><CardHeader><CardTitle className="text-base">{L.monthlyTrend}</CardTitle></CardHeader>
                 <CardContent>{renderChart(monthlyTrendData, ['signups', 'checkedIn'], 'month')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Maandelijkse uitgaven (€)</CardTitle></CardHeader>
-                <CardContent>{renderChart(monthlySpendingChart, ['Bedrag'], 'month')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Per evenement</CardTitle></CardHeader>
-                <CardContent>{renderChart(signupsPerEventChart, ['Toegewezen', 'Ingecheckt'], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Opkomst overzicht</CardTitle></CardHeader>
+              <Card><CardHeader><CardTitle className="text-base">{L.monthlySpending}</CardTitle></CardHeader>
+                <CardContent>{renderChart(monthlySpendingChart, [L.paidOut], 'month')}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">{L.perEvent}</CardTitle></CardHeader>
+                <CardContent>{renderChart(signupsPerEventChart, [L.assigned, L.checkedIn], 'name')}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">{L.attendanceOverview}</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <RechartsPie><Pie data={noShowRateChart} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
