@@ -254,15 +254,18 @@ export function OnboardingForm({ language, onComplete, saving, onLanguageChange 
     const errs: Record<string, string> = {};
 
     if (step === 0) {
+      // Language step - always valid
+    }
+    if (step === 1) {
       if (!formData.fullName.trim()) errs.fullName = 'Verplicht';
       if (!formData.dateOfBirth) errs.dateOfBirth = 'Verplicht';
       if (!formData.phone.trim()) errs.phone = 'Verplicht';
     }
-    if (step === 1) {
+    if (step === 2) {
       if (!formData.avatarFile && !formData.avatarPreview) errs.avatar = l.photoRequired;
       if (!formData.identityConfirmed) errs.identityConfirmed = (l as any).identityRequired || 'Required';
     }
-    if (step === 2) {
+    if (step === 3) {
       if (!formData.iban.replace(/\s/g, '')) errs.iban = 'Verplicht';
       if (!formData.ibanConfirm.replace(/\s/g, '')) errs.ibanConfirm = 'Verplicht';
       if (formData.iban.replace(/\s/g, '') !== formData.ibanConfirm.replace(/\s/g, '')) errs.ibanConfirm = l.ibanMismatch;
