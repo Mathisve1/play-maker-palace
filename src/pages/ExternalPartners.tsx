@@ -373,7 +373,7 @@ const ExternalPartners = () => {
         body: { email: inviteEmail.trim(), invite_token: inv.invite_token, role: 'partner_admin', club_name: club?.name, partner_id: selectedPartner.id, partner_name: selectedPartner.name },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      toast.success(nl ? 'Uitnodiging verstuurd!' : 'Invitation sent!');
+      toast.success(t3('Uitnodiging verstuurd!', 'Invitation envoyée!', 'Invitation sent!'));
       setShowInvite(false); setInviteEmail('');
     } catch (err: any) { toast.error(err.message); }
     setInviting(false);
