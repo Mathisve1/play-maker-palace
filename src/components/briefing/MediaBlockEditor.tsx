@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Upload, X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface Block {
   id: string;
@@ -17,7 +18,10 @@ interface MediaBlockEditorProps {
   onUpdate: (groupId: string, blockId: string, updates: Partial<Block>) => void;
 }
 
+const t3 = (nl: string, fr: string, en: string, lang: string) => lang === 'fr' ? fr : lang === 'en' ? en : nl;
+
 const MediaBlockEditor = ({ block, groupId, onUpdate }: MediaBlockEditorProps) => {
+  const { language } = useLanguage();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,22 +29,27 @@ const MediaBlockEditor = ({ block, groupId, onUpdate }: MediaBlockEditorProps) =
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error('Bestand is te groot (max 10MB)');
+      toast.error(t3('Bestand is te groot (max 10MB)', 'Fichier trop volumineux (max 10 Mo)', 'File is too large (max 10MB)', language));
       return;
     }
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Ongeldig bestandstype. Gebruik JPG, PNG, WEBP, GIF, MP4 of WEBM.');
+      toast.error(t3(
+        'Ongeldig bestandstype. Gebruik JPG, PNG, WEBP, GIF, MP4 of WEBM.',
+        'Type de fichier invalide. Utilisez JPG, PNG, WEBP, GIF, MP4 ou WEBM.',
+        'Invalid file type. Use JPG, PNG, WEBP, GIF, MP4 or WEBM.',
+        language
+      ));
       return;
     }
 
     setUploading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Niet ingelogd');
+      if (!user) throw new Error(t3('Niet ingelogd', 'Non connecté', 'Not logged in', language));
 
       const ext = file.name.split('.').pop();
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -56,10 +65,10 @@ const MediaBlockEditor = ({ block, groupId, onUpdate }: MediaBlockEditorProps) =
         .getPublicUrl(path);
 
       onUpdate(groupId, block.id, { media_url: publicUrl });
-      toast.success('Media geüpload!');
+      toast.success(t3('Media geüpload!', 'Média téléchargé !', 'Media uploaded!', language));
     } catch (err: any) {
       console.error('Upload error:', err);
-      toast.error('Upload mislukt: ' + (err.message || 'Onbekende fout'));
+      toast.error(t3('Upload mislukt: ', 'Échec du téléchargement : ', 'Upload failed: ', language) + (err.message || t3('Onbekende fout', 'Erreur inconnue', 'Unknown error', language)));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -77,7 +86,7 @@ const MediaBlockEditor = ({ block, groupId, onUpdate }: MediaBlockEditorProps) =
       <Input
         value={block.title || ''}
         onChange={e => onUpdate(groupId, block.id, { title: e.target.value })}
-        placeholder="Bijschrift"
+        placeholder={t3('Bijschrift', 'Légende', 'Caption', language)}
         className="bg-background/60 text-sm"
       />
 
@@ -113,9 +122,9 @@ const MediaBlockEditor = ({ block, groupId, onUpdate }: MediaBlockEditorProps) =
             className="flex-1 text-xs"
           >
             {uploading ? (
-              <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Uploaden...</>
+              <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> {t3('Uploaden...', 'Téléchargement...', 'Uploading...', language)}</>
             ) : (
-              <><Upload className="w-3.5 h-3.5 mr-1.5" /> Bestand uploaden</>
+              <><Upload className="w-3.5 h-3.5 mr-1.5" /> {t3('Bestand uploaden', 'Télécharger un fichier', 'Upload file', language)}</>
             )}
           </Button>
         </div>
@@ -125,7 +134,7 @@ const MediaBlockEditor = ({ block, groupId, onUpdate }: MediaBlockEditorProps) =
         <Input
           value=""
           onChange={e => onUpdate(groupId, block.id, { media_url: e.target.value })}
-          placeholder="Of plak een URL"
+          placeholder={t3('Of plak een URL', 'Ou collez une URL', 'Or paste a URL', language)}
           className="bg-background/60 text-xs"
         />
       )}
