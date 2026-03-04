@@ -133,6 +133,13 @@ const labels = {
     requiredForBank: 'Please fill in your name and IBAN first to give consent.',
     firstLoginTitle: 'Welcome! Complete your profile',
     firstLoginDescription: 'Fill in your details so clubs can get to know you better.',
+    pushNotifications: 'Push notifications',
+    pushEnabled: 'Notifications are enabled',
+    pushDisabled: 'Notifications are disabled',
+    pushEnable: 'Enable',
+    pushDisable: 'Disable',
+    pushUnavailable: 'Push notifications are not supported in this browser',
+    pushDenied: 'Push notifications are blocked. Change this in your browser settings.',
   },
 };
 
