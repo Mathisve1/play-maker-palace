@@ -557,7 +557,7 @@ const MonthlyPlanning = () => {
             </CardContent></Card>
             <Card><CardContent className="p-3 text-center">
               <p className="text-2xl font-bold text-primary">{enrollments.length}</p>
-              <p className="text-xs text-muted-foreground">Inschrijvingen</p>
+              <p className="text-xs text-muted-foreground">{t3('Inschrijvingen', 'Inscriptions', 'Enrollments')}</p>
             </CardContent></Card>
             <Card><CardContent className="p-3 text-center">
               <p className="text-2xl font-bold text-primary">{new Set(tasks.map(t => t.task_date)).size}</p>
