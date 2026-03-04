@@ -151,6 +151,10 @@ async function sendPush(
 
   const body = await encrypt(p256dh, auth, new TextEncoder().encode(JSON.stringify(payloadObj)));
 
+  console.log(`Sending push to ${endpoint.slice(0, 80)}`);
+  console.log(`VAPID audience: ${audience}, subject: ${vapidSubject}`);
+  console.log(`Body size: ${body.length} bytes`);
+
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
