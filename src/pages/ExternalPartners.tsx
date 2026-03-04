@@ -380,7 +380,7 @@ const ExternalPartners = () => {
   };
 
   const handleInviteMemberAsVolunteer = async (member: PartnerMember) => {
-    if (!clubId || !member.email) { toast.error(nl ? 'Deze medewerker heeft geen e-mailadres.' : 'This member has no email.'); return; }
+    if (!clubId || !member.email) { toast.error(t3('Deze medewerker heeft geen e-mailadres.', 'Ce membre n\'a pas d\'adresse e-mail.', 'This member has no email.')); return; }
     setInvitingMemberId(member.id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
