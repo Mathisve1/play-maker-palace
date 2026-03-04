@@ -652,8 +652,8 @@ const ReportingDashboard = () => {
           body: JSON.stringify({ question, dataSummary: buildDataSummary() }) }
       );
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: 'Fout' }));
-        toast.error(err.error || 'AI fout'); setAiLoading(false); return;
+        const err = await resp.json().catch(() => ({ error: 'Error' }));
+        toast.error(err.error || 'AI error'); setAiLoading(false); return;
       }
       const reader = resp.body?.getReader();
       if (!reader) throw new Error('No reader');
