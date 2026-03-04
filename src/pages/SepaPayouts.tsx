@@ -471,7 +471,7 @@ const SepaPayouts = () => {
       // Get batch info
       const batch = batches.find(b => b.id === batchId);
       if (!batch || !['signed', 'downloaded'].includes(batch.status)) {
-        toast.error('Batch moet eerst ondertekend zijn.');
+        toast.error(t3('Batch moet eerst ondertekend zijn.', 'Le lot doit d\'abord être signé.', 'Batch must be signed first.'));
         return;
       }
 
