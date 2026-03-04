@@ -137,9 +137,9 @@ const SortableBlock = ({
       {/* Pause */}
       {block.type === 'pause' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Input type="number" min={1} value={block.duration_minutes || ''} onChange={e => onUpdate(groupId, block.id, { duration_minutes: parseInt(e.target.value) || undefined })} placeholder="Duur (min)" className="bg-background/60 text-sm" />
-          <Input type="time" value={block.start_time || ''} onChange={e => onUpdate(groupId, block.id, { start_time: e.target.value })} placeholder="Starttijd" className="bg-background/60 text-sm" />
-          <Input value={block.location || ''} onChange={e => onUpdate(groupId, block.id, { location: e.target.value })} placeholder="Locatie" className="bg-background/60 text-sm" />
+          <Input type="number" min={1} value={block.duration_minutes || ''} onChange={e => onUpdate(groupId, block.id, { duration_minutes: parseInt(e.target.value) || undefined })} placeholder={language === 'fr' ? 'Durée (min)' : language === 'en' ? 'Duration (min)' : 'Duur (min)'} className="bg-background/60 text-sm" />
+          <Input type="time" value={block.start_time || ''} onChange={e => onUpdate(groupId, block.id, { start_time: e.target.value })} placeholder={language === 'fr' ? 'Heure de début' : language === 'en' ? 'Start time' : 'Starttijd'} className="bg-background/60 text-sm" />
+          <Input value={block.location || ''} onChange={e => onUpdate(groupId, block.id, { location: e.target.value })} placeholder={language === 'fr' ? 'Lieu' : language === 'en' ? 'Location' : 'Locatie'} className="bg-background/60 text-sm" />
         </div>
       )}
 
