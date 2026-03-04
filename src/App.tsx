@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import IOSInstallOverlay from "@/components/IOSInstallOverlay";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
+import { autoResubscribeIfNeeded } from "@/lib/pushNotifications";
 
 import RequireAuth from "./components/RequireAuth";
 import { Loader2 } from "lucide-react";
