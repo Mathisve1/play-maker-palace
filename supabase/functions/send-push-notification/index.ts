@@ -6,6 +6,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Notification message templates per language
+const NOTIFICATION_TEMPLATES: Record<string, Record<string, { title: string; message: string }>> = {
+  task_reminder: {
+    nl: { title: '📋 Taakherinnering', message: 'Je hebt een taak die binnenkort begint.' },
+    fr: { title: '📋 Rappel de tâche', message: 'Vous avez une tâche qui commence bientôt.' },
+    en: { title: '📋 Task Reminder', message: 'You have a task starting soon.' },
+  },
+  contract_update: {
+    nl: { title: '📝 Contractupdate', message: 'Er is een update voor je contract.' },
+    fr: { title: '📝 Mise à jour du contrat', message: 'Il y a une mise à jour de votre contrat.' },
+    en: { title: '📝 Contract Update', message: 'There is an update to your contract.' },
+  },
+  club_invitation: {
+    nl: { title: '🎉 Clubuitnodiging', message: 'Je bent uitgenodigd voor een club!' },
+    fr: { title: '🎉 Invitation au club', message: 'Vous êtes invité(e) à rejoindre un club !' },
+    en: { title: '🎉 Club Invitation', message: 'You have been invited to join a club!' },
+  },
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,14 +43,14 @@ serve(async (req) => {
       );
     }
 
-    // Get the user's OneSignal player ID from profiles
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Get user profile with language preference and player ID
     const { data: profile } = await supabase
       .from('profiles')
-      .select('onesignal_player_id, full_name')
+      .select('onesignal_player_id, full_name, language')
       .eq('id', user_id)
       .single();
 
@@ -42,21 +61,28 @@ serve(async (req) => {
       );
     }
 
-    // Send push via OneSignal REST API
+    const lang = profile.language || 'nl';
+
+    // Use provided title/message or fall back to templates
+    let finalTitle = title;
+    let finalMessage = message;
+
+    if (!finalTitle && type && NOTIFICATION_TEMPLATES[type]) {
+      const tpl = NOTIFICATION_TEMPLATES[type][lang] || NOTIFICATION_TEMPLATES[type]['nl'];
+      finalTitle = tpl.title;
+      finalMessage = tpl.message;
+    }
+
+    // Send push via OneSignal
     const pushPayload: any = {
       app_id: onesignalAppId,
       include_subscription_ids: [profile.onesignal_player_id],
-      headings: { en: title },
-      contents: { en: message },
+      headings: { en: finalTitle },
+      contents: { en: finalMessage },
     };
 
-    if (url) {
-      pushPayload.url = url;
-    }
-
-    if (data) {
-      pushPayload.data = data;
-    }
+    if (url) pushPayload.url = url;
+    if (data) pushPayload.data = data;
 
     const pushRes = await fetch('https://api.onesignal.com/notifications', {
       method: 'POST',
@@ -69,6 +95,14 @@ serve(async (req) => {
 
     const pushResult = await pushRes.json();
     console.log('OneSignal push result:', JSON.stringify(pushResult));
+
+    // Also create in-app notification in the user's language
+    await supabase.from('notifications').insert({
+      user_id,
+      type: type || 'general',
+      title: finalTitle,
+      message: finalMessage,
+    });
 
     return new Response(
       JSON.stringify({ success: true, result: pushResult }),
