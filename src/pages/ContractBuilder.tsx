@@ -792,11 +792,11 @@ const ContractBuilder = () => {
             <TabsList className="mx-3 mt-3 mb-0 grid grid-cols-2">
               <TabsTrigger value="blokken" className="text-xs">
                 <FileText className="w-3.5 h-3.5 mr-1" />
-                Bouwblokken
+                {t3('Bouwblokken', 'Blocs', 'Building Blocks')}
               </TabsTrigger>
               <TabsTrigger value="artikelen" className="text-xs">
                 <BookOpen className="w-3.5 h-3.5 mr-1" />
-                Wettelijke Artikelen
+                {t3('Wettelijke Artikelen', 'Articles juridiques', 'Legal Articles')}
               </TabsTrigger>
             </TabsList>
 
