@@ -19,6 +19,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(false);
   const [checked, setChecked] = useState(false);
+  const pushPrompted = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
