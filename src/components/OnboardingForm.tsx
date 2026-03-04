@@ -208,6 +208,7 @@ const labels = {
 };
 
 const steps = [
+  { id: 0, label: 'Language' },
   { id: 1, label: 'Personal' },
   { id: 2, label: 'Photo' },
   { id: 3, label: 'Bank' },
