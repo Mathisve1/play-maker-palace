@@ -403,7 +403,7 @@ const SepaPayouts = () => {
           setSelected(new Set());
           init(); // Refresh
         } else if (attempts > 30) {
-          toast.error('Ondertekening niet ontvangen. Probeer opnieuw.');
+          toast.error(t3('Ondertekening niet ontvangen. Probeer opnieuw.', 'Signature non reçue. Réessayez.', 'Signature not received. Please try again.'));
         }
       }
     }, 2000);
