@@ -542,7 +542,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
       }
 
       pdf.save(`rapport-${clubName}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      toast.success('PDF gedownload!');
+      toast.success(t3('PDF gedownload!', 'PDF téléchargé !', 'PDF downloaded!'));
     } catch (e) {
       console.error(e);
       toast.error('PDF export mislukt');
