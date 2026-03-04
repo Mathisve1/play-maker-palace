@@ -413,7 +413,7 @@ const MonthlyPlanning = () => {
         byVolunteer[ds.volunteer_id].total_amount += ds.final_amount || 0;
       }
       const { data: existing } = await supabase.from('monthly_payouts').select('id').eq('plan_id', plan.id);
-      if (existing && existing.length > 0) { toast.error('Maandafrekening bestaat al voor dit plan'); setGeneratingPayout(false); return; }
+      if (existing && existing.length > 0) { toast.error(t3('Maandafrekening bestaat al voor dit plan', 'Le décompte mensuel existe déjà', 'Monthly settlement already exists for this plan')); setGeneratingPayout(false); return; }
       const payoutRows = Object.entries(byVolunteer).map(([volunteerId, data]) => ({
         club_id: clubId, plan_id: plan.id, enrollment_id: data.enrollment_id,
         volunteer_id: volunteerId, total_days: data.total_days, total_hours: data.total_hours,
