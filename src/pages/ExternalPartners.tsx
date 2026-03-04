@@ -858,8 +858,8 @@ const ExternalPartners = () => {
             <div><Label>{t3('Contactpersoon', 'Personne de contact', 'Contact name')}</Label><Input value={newPartner.contact_name} onChange={e => setNewPartner(p => ({ ...p, contact_name: e.target.value }))} /></div>
             <div><Label>E-mail</Label><Input type="email" value={newPartner.contact_email} onChange={e => setNewPartner(p => ({ ...p, contact_email: e.target.value }))} /></div>
             <div>
-              <Label className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{nl ? 'Verantwoordelijken uitnodigen' : 'Invite administrators'}</Label>
-              <p className="text-xs text-muted-foreground mb-2">{nl ? 'Nodig verantwoordelijken uit die hun medewerkers kunnen beheren via het partner portaal.' : 'Invite administrators who can manage their staff via the partner portal.'}</p>
+              <Label className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{t3('Verantwoordelijken uitnodigen', 'Inviter des administrateurs', 'Invite administrators')}</Label>
+              <p className="text-xs text-muted-foreground mb-2">{t3('Nodig verantwoordelijken uit die hun medewerkers kunnen beheren via het partner portaal.', 'Invitez des administrateurs qui peuvent gérer leur personnel via le portail partenaire.', 'Invite administrators who can manage their staff via the partner portal.')}</p>
               <div className="space-y-2">
                 {inviteEmails.map((email, idx) => (
                   <div key={idx} className="flex items-center gap-2">
