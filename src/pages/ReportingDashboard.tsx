@@ -805,21 +805,21 @@ const ReportingDashboard = () => {
               <span className="text-sm font-medium text-foreground">Filters</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Van</label><DatePicker date={dateFrom} onChange={setDateFrom} /></div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Tot</label><DatePicker date={dateTo} onChange={setDateTo} /></div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Evenement</label>
-                <Select value={selectedEventId} onValueChange={setSelectedEventId}><SelectTrigger><SelectValue placeholder="Alle evenementen" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle evenementen</SelectItem>{events.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}</SelectContent></Select>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.from}</label><DatePicker date={dateFrom} onChange={setDateFrom} /></div>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.to}</label><DatePicker date={dateTo} onChange={setDateTo} /></div>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.event}</label>
+                <Select value={selectedEventId} onValueChange={setSelectedEventId}><SelectTrigger><SelectValue placeholder={L.allEvents} /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">{L.allEvents}</SelectItem>{events.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}</SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Vrijwilliger</label>
-                <Select value={selectedVolunteerId} onValueChange={setSelectedVolunteerId}><SelectTrigger><SelectValue placeholder="Alle vrijwilligers" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle vrijwilligers</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>)}</SelectContent></Select>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.volunteer}</label>
+                <Select value={selectedVolunteerId} onValueChange={setSelectedVolunteerId}><SelectTrigger><SelectValue placeholder={L.allVolunteers} /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">{L.allVolunteers}</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>)}</SelectContent></Select>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Vergoedingstype</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.compType}</label>
                 <Select value={selectedCompType} onValueChange={setSelectedCompType}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle types</SelectItem><SelectItem value="fixed">Vast bedrag</SelectItem><SelectItem value="hourly">Uurloon</SelectItem></SelectContent></Select>
+                  <SelectContent><SelectItem value="all">{L.allTypes}</SelectItem><SelectItem value="fixed">{L.fixed}</SelectItem><SelectItem value="hourly">{L.hourly}</SelectItem></SelectContent></Select>
               </div>
               <div className="space-y-1"><label className="text-xs text-muted-foreground">Locatie</label>
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}><SelectTrigger><SelectValue /></SelectTrigger>
