@@ -433,30 +433,30 @@ const EventsManager = () => {
               onSubmit={handleCreateEvent} className="bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden">
               <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{t3('Nieuw evenement', 'Nouvel événement', 'New event')}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Beschrijving' : 'Description'}</label><textarea rows={2} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label>
-                  <div className="grid gap-3 sm:grid-cols-4">
-                    <div className="sm:col-span-3">
-                      <input type="text" placeholder={nl ? 'Straat' : 'Street'} maxLength={200} value={newEvent.street} onChange={e => setNewEvent(p => ({ ...p, street: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Nr.' : 'No.'} maxLength={20} value={newEvent.number} onChange={e => setNewEvent(p => ({ ...p, number: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Postcode' : 'Postal code'} maxLength={10} value={newEvent.postalCode} onChange={e => setNewEvent(p => ({ ...p, postalCode: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Stad' : 'City'} maxLength={100} value={newEvent.city} onChange={e => setNewEvent(p => ({ ...p, city: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Land' : 'Country'} maxLength={60} value={newEvent.country} onChange={e => setNewEvent(p => ({ ...p, country: e.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
-                      <input type="text" placeholder={nl ? 'Extra info (bv. zaal, ingang...)' : 'Extra info'} maxLength={200} value={newEvent.locationNote} onChange={e => setNewEvent(p => ({ ...p, locationNote: e.target.value }))} className={inputClass} />
-                    </div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
+                 <div className="sm:col-span-2">
+                   <label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label>
+                   <div className="grid gap-3 sm:grid-cols-4">
+                     <div className="sm:col-span-3">
+                       <input type="text" placeholder={t3('Straat', 'Rue', 'Street')} maxLength={200} value={newEvent.street} onChange={e => setNewEvent(p => ({ ...p, street: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Nr.', 'N°', 'No.')} maxLength={20} value={newEvent.number} onChange={e => setNewEvent(p => ({ ...p, number: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Postcode', 'Code postal', 'Postal code')} maxLength={10} value={newEvent.postalCode} onChange={e => setNewEvent(p => ({ ...p, postalCode: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Stad', 'Ville', 'City')} maxLength={100} value={newEvent.city} onChange={e => setNewEvent(p => ({ ...p, city: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Land', 'Pays', 'Country')} maxLength={60} value={newEvent.country} onChange={e => setNewEvent(p => ({ ...p, country: e.target.value }))} className={inputClass} />
+                     </div>
+                     <div>
+                       <input type="text" placeholder={t3('Extra info (bv. zaal, ingang...)', 'Info supplémentaire', 'Extra info')} maxLength={200} value={newEvent.locationNote} onChange={e => setNewEvent(p => ({ ...p, locationNote: e.target.value }))} className={inputClass} />
+                     </div>
                   </div>
                 </div>
               </div>
