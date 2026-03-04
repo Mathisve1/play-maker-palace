@@ -373,9 +373,9 @@ const MonthlyPlanning = () => {
       const prevM = viewMonth === 1 ? 12 : viewMonth - 1;
       const prevY = viewMonth === 1 ? viewYear - 1 : viewYear;
       const { data: prevPlan } = await supabase.from('monthly_plans').select('id').eq('club_id', clubId).eq('year', prevY).eq('month', prevM).maybeSingle();
-      if (!prevPlan) { toast.error('Geen plan gevonden voor de vorige maand'); setCopyingTasks(false); return; }
+      if (!prevPlan) { toast.error(t3('Geen plan gevonden voor de vorige maand', 'Aucun plan trouvé pour le mois précédent', 'No plan found for previous month')); setCopyingTasks(false); return; }
       const { data: prevTasks } = await supabase.from('monthly_plan_tasks').select('*').eq('plan_id', prevPlan.id);
-      if (!prevTasks || prevTasks.length === 0) { toast.error('Geen taken gevonden in de vorige maand'); setCopyingTasks(false); return; }
+      if (!prevTasks || prevTasks.length === 0) { toast.error(t3('Geen taken gevonden in de vorige maand', 'Aucune tâche trouvée le mois précédent', 'No tasks found in previous month')); setCopyingTasks(false); return; }
 
       const newDaysInMonth = getDaysInMonth(viewYear, viewMonth);
       const newTasks = prevTasks.map((t: any) => {
