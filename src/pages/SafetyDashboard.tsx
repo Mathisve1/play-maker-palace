@@ -869,7 +869,7 @@ const SafetyDashboard = () => {
                           ))}
                         </div>
                       ) : (
-                        <p className="pl-9 text-[11px] text-muted-foreground">Geen meldingen</p>
+                        <p className="pl-9 text-[11px] text-muted-foreground">{t3('Geen meldingen', 'Aucun signalement', 'No reports')}</p>
                       )}
                     </div>
                   );
