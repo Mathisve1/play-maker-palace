@@ -917,8 +917,8 @@ const MonthlyPlanning = () => {
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Start</Label><Input type="time" value={taskForm.start_time} onChange={e => setTaskForm(f => ({ ...f, start_time: e.target.value }))} /></div>
-              <div><Label>Einde</Label><Input type="time" value={taskForm.end_time} onChange={e => setTaskForm(f => ({ ...f, end_time: e.target.value }))} /></div>
+               <div><Label>{t3('Start', 'Début', 'Start')}</Label><Input type="time" value={taskForm.start_time} onChange={e => setTaskForm(f => ({ ...f, start_time: e.target.value }))} /></div>
+               <div><Label>{t3('Einde', 'Fin', 'End')}</Label><Input type="time" value={taskForm.end_time} onChange={e => setTaskForm(f => ({ ...f, end_time: e.target.value }))} /></div>
             </div>
             <div><Label>Locatie</Label><Input value={taskForm.location} onChange={e => setTaskForm(f => ({ ...f, location: e.target.value }))} placeholder="bv. Clubhuis, Veld 3..." /></div>
             <div>
