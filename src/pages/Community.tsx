@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import Logo from '@/components/Logo';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface ClubWithStats {
   id: string;
