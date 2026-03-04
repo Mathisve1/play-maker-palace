@@ -822,7 +822,7 @@ const ExternalPartners = () => {
       }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{nl ? 'Nieuwe partner aanmaken' : 'Create new partner'}</DialogTitle>
+            <DialogTitle>{t3('Nieuwe partner aanmaken', 'Créer un nouveau partenaire', 'Create new partner')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
