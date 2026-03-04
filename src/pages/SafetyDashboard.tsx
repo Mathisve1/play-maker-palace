@@ -930,8 +930,8 @@ const SafetyDashboard = () => {
                 className="bg-card rounded-2xl border border-border shadow-2xl p-4 space-y-3"
               >
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-2 text-center">
-                  <p className="text-xs font-semibold text-emerald-600">✓ Melding verstuurd met GPS!</p>
-                  <p className="text-[10px] text-muted-foreground">Voeg hieronder extra details toe</p>
+                  <p className="text-xs font-semibold text-emerald-600">✓ {t3('Melding verstuurd met GPS!', 'Signalement envoyé avec GPS !', 'Report sent with GPS!')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t3('Voeg hieronder extra details toe', 'Ajoutez des détails ci-dessous', 'Add extra details below')}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedIncidentType.emoji ? (
