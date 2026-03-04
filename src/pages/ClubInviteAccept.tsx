@@ -6,6 +6,17 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/Logo';
 
+const t3 = (nl: string, fr: string, en: string, lang: string) => lang === 'fr' ? fr : lang === 'en' ? en : nl;
+
+// Detect browser language for invite page (no LanguageContext available here)
+const detectLang = (): string => {
+  const saved = localStorage.getItem('de12eman-lang');
+  if (saved && ['nl', 'fr', 'en'].includes(saved)) return saved;
+  const browserLang = navigator.language?.slice(0, 2).toLowerCase();
+  if (['nl', 'fr', 'en'].includes(browserLang)) return browserLang;
+  return 'nl';
+};
+
 interface InviteInfo {
   role: string;
   status: string;
@@ -17,26 +28,24 @@ interface InviteInfo {
   partner_name: string | null;
 }
 
-const roleLabels: Record<string, string> = {
-  bestuurder: 'Bestuurder',
-  beheerder: 'Beheerder',
-  medewerker: 'Medewerker',
-  partner_admin: 'Partner Beheerder',
+const roleLabels: Record<string, Record<string, string>> = {
+  nl: { bestuurder: 'Bestuurder', beheerder: 'Beheerder', medewerker: 'Medewerker', partner_admin: 'Partner Beheerder' },
+  fr: { bestuurder: 'Directeur', beheerder: 'Administrateur', medewerker: 'Collaborateur', partner_admin: 'Admin Partenaire' },
+  en: { bestuurder: 'Director', beheerder: 'Administrator', medewerker: 'Staff', partner_admin: 'Partner Admin' },
 };
 
 const ClubInviteAccept = () => {
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [lang] = useState(detectLang);
   const [status, setStatus] = useState<'loading' | 'show-options' | 'login' | 'signup' | 'accepting' | 'success' | 'error'>('loading');
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Login form
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Signup form
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -59,38 +68,31 @@ const ClubInviteAccept = () => {
         const data = await resp.json();
         if (!resp.ok || data.error) {
           setStatus('error');
-          setErrorMsg(data.error || 'Uitnodiging niet gevonden');
+          setErrorMsg(data.error || t3('Uitnodiging niet gevonden', 'Invitation introuvable', 'Invitation not found', lang));
           return;
         }
         if (data.status !== 'pending') {
           setStatus('error');
-          setErrorMsg('Deze uitnodiging is al gebruikt.');
+          setErrorMsg(t3('Deze uitnodiging is al gebruikt.', 'Cette invitation a déjà été utilisée.', 'This invitation has already been used.', lang));
           return;
         }
         if (new Date(data.expires_at) < new Date()) {
           setStatus('error');
-          setErrorMsg('Deze uitnodiging is verlopen.');
+          setErrorMsg(t3('Deze uitnodiging is verlopen.', 'Cette invitation a expiré.', 'This invitation has expired.', lang));
           return;
         }
         setInviteInfo(data);
       } catch {
         setStatus('error');
-        setErrorMsg('Kon uitnodiging niet laden.');
+        setErrorMsg(t3('Kon uitnodiging niet laden.', 'Impossible de charger l\'invitation.', 'Could not load invitation.', lang));
         return;
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Don't auto-accept yet, wait for inviteInfo to be set
-        setStatus('show-options');
-      } else {
-        setStatus('show-options');
-      }
+      setStatus('show-options');
     };
     init();
   }, [token]);
-
-  const getRedirectPath = () => isPartnerInvite ? '/partner-dashboard' : '/club-dashboard';
 
   const acceptWithSession = async (session: { access_token: string; user: { id: string } }) => {
     setStatus('accepting');
@@ -111,15 +113,18 @@ const ClubInviteAccept = () => {
       if (resp.ok && data.success) {
         setStatus('success');
         const dest = data.is_partner ? '/partner-dashboard' : '/club-dashboard';
-        toast.success(data.is_partner ? 'Je bent toegevoegd als partner beheerder!' : 'Je bent toegevoegd aan de club!');
+        toast.success(data.is_partner
+          ? t3('Je bent toegevoegd als partner beheerder!', 'Vous avez été ajouté en tant qu\'administrateur partenaire !', 'You have been added as partner admin!', lang)
+          : t3('Je bent toegevoegd aan de club!', 'Vous avez été ajouté au club !', 'You have been added to the club!', lang)
+        );
         setTimeout(() => navigate(dest), 2000);
       } else {
         setStatus('error');
-        setErrorMsg(data.error || 'Er ging iets mis');
+        setErrorMsg(data.error || t3('Er ging iets mis', 'Quelque chose s\'est mal passé', 'Something went wrong', lang));
       }
     } catch {
       setStatus('error');
-      setErrorMsg('Er ging iets mis bij het accepteren');
+      setErrorMsg(t3('Er ging iets mis bij het accepteren', 'Erreur lors de l\'acceptation', 'Something went wrong while accepting', lang));
     }
   };
 
@@ -142,7 +147,7 @@ const ClubInviteAccept = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (signupPassword !== signupConfirm) {
-      toast.error('Wachtwoorden komen niet overeen');
+      toast.error(t3('Wachtwoorden komen niet overeen', 'Les mots de passe ne correspondent pas', 'Passwords do not match', lang));
       return;
     }
     setSubmitting(true);
@@ -171,19 +176,22 @@ const ClubInviteAccept = () => {
           password: signupPassword,
         });
         if (signInErr) {
-          toast.error('Account aangemaakt maar kon niet inloggen: ' + signInErr.message);
+          toast.error(t3('Account aangemaakt maar kon niet inloggen: ', 'Compte créé mais connexion impossible : ', 'Account created but could not log in: ', lang) + signInErr.message);
           setSubmitting(false);
           return;
         }
         setStatus('success');
         const dest = data.is_partner ? '/partner-dashboard' : '/club-dashboard';
-        toast.success(data.is_partner ? 'Account aangemaakt! Je wordt doorgestuurd naar het partner dashboard.' : 'Account aangemaakt en toegevoegd aan de club!');
+        toast.success(data.is_partner
+          ? t3('Account aangemaakt! Je wordt doorgestuurd naar het partner dashboard.', 'Compte créé ! Redirection vers le tableau de bord partenaire.', 'Account created! Redirecting to partner dashboard.', lang)
+          : t3('Account aangemaakt en toegevoegd aan de club!', 'Compte créé et ajouté au club !', 'Account created and added to the club!', lang)
+        );
         setTimeout(() => navigate(dest), 2000);
       } else {
-        toast.error(data.error || 'Er ging iets mis');
+        toast.error(data.error || t3('Er ging iets mis', 'Quelque chose s\'est mal passé', 'Something went wrong', lang));
       }
     } catch {
-      toast.error('Er ging iets mis bij de registratie');
+      toast.error(t3('Er ging iets mis bij de registratie', 'Erreur lors de l\'inscription', 'Something went wrong during registration', lang));
     }
     setSubmitting(false);
   };
@@ -198,7 +206,6 @@ const ClubInviteAccept = () => {
         </div>
 
         <div className="bg-card rounded-2xl shadow-elevated p-8">
-          {/* Club/Partner info header */}
           {inviteInfo && (
             <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-muted/30 border border-border">
               {inviteInfo.club_logo ? (
@@ -213,7 +220,7 @@ const ClubInviteAccept = () => {
                   {isPartnerInvite ? inviteInfo.partner_name || 'Partner' : inviteInfo.club_name || 'Club'}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Rol: {roleLabels[inviteInfo.role] || inviteInfo.role}
+                  {t3('Rol', 'Rôle', 'Role', lang)}: {roleLabels[lang]?.[inviteInfo.role] || inviteInfo.role}
                   {isPartnerInvite && inviteInfo.club_name && ` · ${inviteInfo.club_name}`}
                   {!isPartnerInvite && inviteInfo.club_sport && ` · ${inviteInfo.club_sport}`}
                 </p>
@@ -225,7 +232,9 @@ const ClubInviteAccept = () => {
             <>
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
               <p className="text-muted-foreground text-center">
-                {status === 'loading' ? 'Uitnodiging laden...' : 'Uitnodiging verwerken...'}
+                {status === 'loading'
+                  ? t3('Uitnodiging laden...', 'Chargement de l\'invitation...', 'Loading invitation...', lang)
+                  : t3('Uitnodiging verwerken...', 'Traitement de l\'invitation...', 'Processing invitation...', lang)}
               </p>
             </>
           )}
@@ -233,23 +242,25 @@ const ClubInviteAccept = () => {
           {status === 'show-options' && (
             <>
               <h2 className="text-xl font-heading font-bold text-foreground text-center mb-2">
-                {isPartnerInvite ? 'Partner uitnodiging accepteren' : 'Uitnodiging accepteren'}
+                {isPartnerInvite
+                  ? t3('Partner uitnodiging accepteren', 'Accepter l\'invitation partenaire', 'Accept partner invitation', lang)
+                  : t3('Uitnodiging accepteren', 'Accepter l\'invitation', 'Accept invitation', lang)}
               </h2>
               <p className="text-sm text-muted-foreground text-center mb-6">
-                Heb je al een account of wil je een nieuw account aanmaken?
+                {t3('Heb je al een account of wil je een nieuw account aanmaken?', 'Avez-vous déjà un compte ou souhaitez-vous en créer un nouveau ?', 'Do you already have an account or would you like to create a new one?', lang)}
               </p>
               <div className="space-y-3">
                 <button
                   onClick={() => setStatus('login')}
                   className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
                 >
-                  Ik heb al een account
+                  {t3('Ik heb al een account', 'J\'ai déjà un compte', 'I already have an account', lang)}
                 </button>
                 <button
                   onClick={() => setStatus('signup')}
                   className="w-full py-2.5 rounded-xl bg-secondary text-secondary-foreground font-medium hover:opacity-90 transition-opacity"
                 >
-                  Nieuw account aanmaken
+                  {t3('Nieuw account aanmaken', 'Créer un nouveau compte', 'Create new account', lang)}
                 </button>
               </div>
             </>
@@ -257,48 +268,48 @@ const ClubInviteAccept = () => {
 
           {status === 'login' && (
             <>
-              <h2 className="text-xl font-heading font-bold text-foreground text-center mb-1">Inloggen</h2>
+              <h2 className="text-xl font-heading font-bold text-foreground text-center mb-1">{t3('Inloggen', 'Connexion', 'Log in', lang)}</h2>
               <p className="text-sm text-muted-foreground text-center mb-4">
-                Log in om de uitnodiging te accepteren
+                {t3('Log in om de uitnodiging te accepteren', 'Connectez-vous pour accepter l\'invitation', 'Log in to accept the invitation', lang)}
               </p>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">E-mail</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">{t3('E-mail', 'E-mail', 'Email', lang)}</label>
                   <input type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Wachtwoord</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">{t3('Wachtwoord', 'Mot de passe', 'Password', lang)}</label>
                   <input type="password" required value={loginPassword} onChange={e => setLoginPassword(e.target.value)} className={inputClass} />
                 </div>
                 <button type="submit" disabled={submitting} className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {submitting ? '...' : 'Inloggen & accepteren'}
+                  {submitting ? '...' : t3('Inloggen & accepteren', 'Se connecter & accepter', 'Log in & accept', lang)}
                 </button>
               </form>
               <button onClick={() => setStatus('show-options')} className="mt-3 text-sm text-muted-foreground hover:text-foreground w-full text-center">
-                ← Terug
+                ← {t3('Terug', 'Retour', 'Back', lang)}
               </button>
             </>
           )}
 
           {status === 'signup' && (
             <>
-              <h2 className="text-xl font-heading font-bold text-foreground text-center mb-1">Account aanmaken</h2>
+              <h2 className="text-xl font-heading font-bold text-foreground text-center mb-1">{t3('Account aanmaken', 'Créer un compte', 'Create account', lang)}</h2>
               <p className="text-sm text-muted-foreground text-center mb-4">
                 {isPartnerInvite
-                  ? 'Maak een account aan om in te loggen op het partner platform'
-                  : 'Maak een account aan om lid te worden van de club'}
+                  ? t3('Maak een account aan om in te loggen op het partner platform', 'Créez un compte pour vous connecter à la plateforme partenaire', 'Create an account to log in to the partner platform', lang)
+                  : t3('Maak een account aan om lid te worden van de club', 'Créez un compte pour rejoindre le club', 'Create an account to join the club', lang)}
               </p>
               <form onSubmit={handleSignup} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Jouw naam</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">{t3('Jouw naam', 'Votre nom', 'Your name', lang)}</label>
                   <input type="text" value={signupName} onChange={e => setSignupName(e.target.value)} maxLength={100} className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">E-mail *</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">{t3('E-mail', 'E-mail', 'Email', lang)} *</label>
                   <input type="email" required value={signupEmail} onChange={e => setSignupEmail(e.target.value)} className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Wachtwoord *</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">{t3('Wachtwoord', 'Mot de passe', 'Password', lang)} *</label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -314,15 +325,15 @@ const ClubInviteAccept = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Bevestig wachtwoord *</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">{t3('Bevestig wachtwoord', 'Confirmer le mot de passe', 'Confirm password', lang)} *</label>
                   <input type="password" required minLength={6} value={signupConfirm} onChange={e => setSignupConfirm(e.target.value)} className={inputClass} />
                 </div>
                 <button type="submit" disabled={submitting} className="w-full py-2.5 rounded-xl bg-secondary text-secondary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {submitting ? '...' : 'Registreren & accepteren'}
+                  {submitting ? '...' : t3('Registreren & accepteren', 'S\'inscrire & accepter', 'Register & accept', lang)}
                 </button>
               </form>
               <button onClick={() => setStatus('show-options')} className="mt-3 text-sm text-muted-foreground hover:text-foreground w-full text-center">
-                ← Terug
+                ← {t3('Terug', 'Retour', 'Back', lang)}
               </button>
             </>
           )}
@@ -331,23 +342,30 @@ const ClubInviteAccept = () => {
             <div className="text-center">
               <div className="text-4xl mb-3">🎉</div>
               <h2 className="text-xl font-heading font-bold text-foreground mb-2">
-                {isPartnerInvite ? 'Welkom als partner!' : 'Welkom bij de club!'}
+                {isPartnerInvite
+                  ? t3('Welkom als partner!', 'Bienvenue en tant que partenaire !', 'Welcome as partner!', lang)
+                  : t3('Welkom bij de club!', 'Bienvenue dans le club !', 'Welcome to the club!', lang)}
               </h2>
               <p className="text-muted-foreground">
-                Je wordt doorgestuurd naar het {isPartnerInvite ? 'partner' : 'club'} dashboard...
+                {t3(
+                  `Je wordt doorgestuurd naar het ${isPartnerInvite ? 'partner' : 'club'} dashboard...`,
+                  `Redirection vers le tableau de bord ${isPartnerInvite ? 'partenaire' : 'du club'}...`,
+                  `Redirecting to ${isPartnerInvite ? 'partner' : 'club'} dashboard...`,
+                  lang
+                )}
               </p>
             </div>
           )}
 
           {status === 'error' && (
             <div className="text-center">
-              <h2 className="text-xl font-heading font-bold text-foreground mb-2">Uitnodiging mislukt</h2>
+              <h2 className="text-xl font-heading font-bold text-foreground mb-2">{t3('Uitnodiging mislukt', 'Invitation échouée', 'Invitation failed', lang)}</h2>
               <p className="text-muted-foreground mb-4">{errorMsg}</p>
               <button
                 onClick={() => navigate(isPartnerInvite ? '/partner-login' : '/club-login')}
                 className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
               >
-                Naar inloggen
+                {t3('Naar inloggen', 'Se connecter', 'Go to login', lang)}
               </button>
             </div>
           )}

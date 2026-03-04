@@ -7,8 +7,10 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Handshake } from 'lucide-react';
 import Logo from '@/components/Logo';
 
+const t3 = (nl: string, fr: string, en: string, lang: string) => lang === 'fr' ? fr : lang === 'en' ? en : nl;
+
 const PartnerLogin = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,19 +27,23 @@ const PartnerLogin = () => {
       return;
     }
 
-    // Verify user is a partner admin
     const { data: partnerAdmins } = await supabase
       .from('partner_admins')
       .select('id')
       .eq('user_id', data.user.id);
 
     if (!partnerAdmins || partnerAdmins.length === 0) {
-      toast.error('Dit account is geen partner-beheerder. Gebruik de vrijwilligers of club login.');
+      toast.error(t3(
+        'Dit account is geen partner-beheerder. Gebruik de vrijwilligers of club login.',
+        'Ce compte n\'est pas un administrateur partenaire. Utilisez la connexion bénévole ou club.',
+        'This account is not a partner admin. Use the volunteer or club login.',
+        language
+      ));
       await supabase.auth.signOut();
       return;
     }
 
-    toast.success('Ingelogd als partner!');
+    toast.success(t3('Ingelogd als partner!', 'Connecté en tant que partenaire !', 'Logged in as partner!', language));
     navigate('/partner-dashboard');
   };
 
@@ -58,7 +64,7 @@ const PartnerLogin = () => {
             <h1 className="text-2xl font-heading font-bold text-foreground">Partner Login</h1>
           </div>
           <p className="text-sm text-muted-foreground text-center mt-1">
-            Log in op je partner dashboard
+            {t3('Log in op je partner dashboard', 'Connectez-vous à votre tableau de bord partenaire', 'Log in to your partner dashboard', language)}
           </p>
 
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
@@ -97,12 +103,16 @@ const PartnerLogin = () => {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Club eigenaar?{' '}
-            <Link to="/club-login" className="text-secondary font-medium hover:underline">Club login</Link>
+            {t3('Club eigenaar?', 'Propriétaire de club ?', 'Club owner?', language)}{' '}
+            <Link to="/club-login" className="text-secondary font-medium hover:underline">
+              {t3('Club login', 'Connexion club', 'Club login', language)}
+            </Link>
           </p>
           <p className="mt-2 text-center text-sm text-muted-foreground">
-            Vrijwilliger?{' '}
-            <Link to="/login" className="text-primary font-medium hover:underline">Log hier in</Link>
+            {t3('Vrijwilliger?', 'Bénévole ?', 'Volunteer?', language)}{' '}
+            <Link to="/login" className="text-primary font-medium hover:underline">
+              {t3('Log hier in', 'Connectez-vous ici', 'Log in here', language)}
+            </Link>
           </p>
         </div>
       </motion.div>

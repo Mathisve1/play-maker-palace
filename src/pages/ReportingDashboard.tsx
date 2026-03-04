@@ -68,8 +68,139 @@ const DAY_NAMES: Record<string, string[]> = {
   en: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
 };
 
+const rl = {
+  nl: {
+    reporting: 'Rapportering', reportBuilder: 'Rapport Builder', filters: 'Filters',
+    from: 'Van', to: 'Tot', event: 'Evenement', allEvents: 'Alle evenementen',
+    volunteer: 'Vrijwilliger', allVolunteers: 'Alle vrijwilligers',
+    compType: 'Vergoedingstype', allTypes: 'Alle types', fixed: 'Vast bedrag', hourly: 'Uurloon',
+    location: 'Locatie', allLocations: 'Alle locaties',
+    taskStatus: 'Taakstatus', allStatuses: 'Alle statussen', open: 'Open', closed: 'Gesloten',
+    chartType: 'Grafiektype', bar: 'Staafdiagram', line: 'Lijndiagram', area: 'Vlakdiagram', pie: 'Taartdiagram',
+    paymentStatus: 'Betalingsstatus', paid: 'Betaald', pending: 'Openstaand', failed: 'Mislukt',
+    partnerFilter: 'Partner filter', allTasks: 'Alle taken', ownOnly: 'Alleen eigen vrijwilligers', partnerOnly: 'Alleen partner taken',
+    searchPlaceholder: 'Zoek op naam of e-mail...', reset: 'Reset',
+    volunteers: 'Vrijwilligers', tasks: 'Taken', assignments: 'Toewijzingen',
+    checkedIn: 'Ingecheckt', noShows: 'No-shows', attendance: 'Opkomst',
+    occupancy: 'Bezetting', paidOut: 'Uitbetaald', outstanding: 'Openstaand',
+    avgPerTask: '€/taak gem.', contracts: 'Contracten', partnerStaff: 'Partner mdw',
+    overview: 'Overzicht', events: 'Evenementen', financial: 'Financieel',
+    partners: 'Partners', compliance: 'Compliance',
+    monthlyTrend: 'Maandelijkse trend', monthlySpending: 'Maandelijkse uitgaven (€)',
+    perEvent: 'Per evenement', attendanceOverview: 'Opkomst overzicht',
+    topVolunteers: 'Top vrijwilligers', dayOfWeek: 'Dag van de week',
+    compTypeChart: 'Vergoedingstype', hourConf: 'Uur-bevestigingen',
+    approved: 'Goedgekeurd', awaitingLabel: 'In afwachting', disputed: 'Betwist',
+    noData: 'Geen data beschikbaar', noDataFound: 'Geen data gevonden',
+    exportCsv: 'Exporteer CSV', name: 'Naam', email: 'E-mail',
+    assigned: 'Toegewezen', reliability: 'Betrouwbaarheid', earned: 'Verdiend',
+    perTaskShort: '€/taak', task: 'Taak', date: 'Datum',
+    spots: 'Plaatsen', compensation: 'Vergoeding', hoursStatus: 'Uren status',
+    avgHours: 'Gem. uren', popularTask: 'Populairste taak',
+    pdfTitle: 'Rapportage Overzicht', pdfPeriod: 'Periode', pdfGenerated: 'Gegenereerd',
+    pdfKpiOverview: 'KPI Overzicht', pdfTop10: 'Top 10 Vrijwilligers',
+    pdfEvents: 'Evenementen', pdfDownloaded: 'PDF rapport gedownload',
+    present: 'Aanwezig', unknown: 'Onbekend',
+    aiTitle: 'AI Rapportage Assistent', aiSubtitle: 'Stel een vraag over je club data — inclusief financiën, partners, compliance en meer.',
+    aiPlaceholder: 'Stel je vraag...', aiEmpty: 'Stel een vraag om te beginnen...',
+    aiAnalyzing: 'Analyseren...',
+    aiQ1: 'Hoeveel hebben we deze maand uitgegeven?', aiQ2: 'Welke vrijwilliger heeft de meeste no-shows?',
+    aiQ3: 'Op welk evenement zetten we de meeste vrijwilligers in?', aiQ4: 'Wat is ons gemiddeld opkomstpercentage per evenement?',
+    aiQ5: 'Wie zijn onze meest betrouwbare vrijwilligers?', aiQ6: 'Welke taken zijn het minst bezet?',
+    aiQ7: 'Geef een overzicht van onze maandelijkse kosten', aiQ8: 'Hoeveel contracten zijn al ondertekend?',
+    aiQ9: 'Welke partners leveren de meeste medewerkers?', aiQ10: 'Hoeveel vrijwilligers zitten dicht bij de jaargrens?',
+    aiQ11: 'Op welke dag van de week plannen we de meeste taken?', aiQ12: 'Hoeveel uur-bevestigingen staan nog open?',
+  },
+  fr: {
+    reporting: 'Rapports', reportBuilder: 'Constructeur de rapports', filters: 'Filtres',
+    from: 'De', to: 'À', event: 'Événement', allEvents: 'Tous les événements',
+    volunteer: 'Bénévole', allVolunteers: 'Tous les bénévoles',
+    compType: 'Type de rémunération', allTypes: 'Tous les types', fixed: 'Montant fixe', hourly: 'Tarif horaire',
+    location: 'Lieu', allLocations: 'Tous les lieux',
+    taskStatus: 'Statut de tâche', allStatuses: 'Tous les statuts', open: 'Ouvert', closed: 'Fermé',
+    chartType: 'Type de graphique', bar: 'Barres', line: 'Lignes', area: 'Aires', pie: 'Camembert',
+    paymentStatus: 'Statut de paiement', paid: 'Payé', pending: 'En attente', failed: 'Échoué',
+    partnerFilter: 'Filtre partenaire', allTasks: 'Toutes les tâches', ownOnly: 'Propres bénévoles uniquement', partnerOnly: 'Tâches partenaires uniquement',
+    searchPlaceholder: 'Rechercher par nom ou e-mail...', reset: 'Réinitialiser',
+    volunteers: 'Bénévoles', tasks: 'Tâches', assignments: 'Attributions',
+    checkedIn: 'Enregistrés', noShows: 'Absences', attendance: 'Présence',
+    occupancy: 'Occupation', paidOut: 'Payé', outstanding: 'En attente',
+    avgPerTask: '€/tâche moy.', contracts: 'Contrats', partnerStaff: 'Personnel part.',
+    overview: 'Aperçu', events: 'Événements', financial: 'Financier',
+    partners: 'Partenaires', compliance: 'Conformité',
+    monthlyTrend: 'Tendance mensuelle', monthlySpending: 'Dépenses mensuelles (€)',
+    perEvent: 'Par événement', attendanceOverview: 'Aperçu de la présence',
+    topVolunteers: 'Top bénévoles', dayOfWeek: 'Jour de la semaine',
+    compTypeChart: 'Type de rémunération', hourConf: 'Confirmations d\'heures',
+    approved: 'Approuvé', awaitingLabel: 'En attente', disputed: 'Contesté',
+    noData: 'Aucune donnée disponible', noDataFound: 'Aucune donnée trouvée',
+    exportCsv: 'Exporter CSV', name: 'Nom', email: 'E-mail',
+    assigned: 'Attribué', reliability: 'Fiabilité', earned: 'Gagné',
+    perTaskShort: '€/tâche', task: 'Tâche', date: 'Date',
+    spots: 'Places', compensation: 'Rémunération', hoursStatus: 'Statut heures',
+    avgHours: 'Heures moy.', popularTask: 'Tâche populaire',
+    pdfTitle: 'Rapport d\'ensemble', pdfPeriod: 'Période', pdfGenerated: 'Généré',
+    pdfKpiOverview: 'Aperçu KPI', pdfTop10: 'Top 10 Bénévoles',
+    pdfEvents: 'Événements', pdfDownloaded: 'Rapport PDF téléchargé',
+    present: 'Présent', unknown: 'Inconnu',
+    aiTitle: 'Assistant IA Rapports', aiSubtitle: 'Posez une question sur les données de votre club — finances, partenaires, conformité et plus.',
+    aiPlaceholder: 'Posez votre question...', aiEmpty: 'Posez une question pour commencer...',
+    aiAnalyzing: 'Analyse en cours...',
+    aiQ1: 'Combien avons-nous dépensé ce mois-ci ?', aiQ2: 'Quel bénévole a le plus d\'absences ?',
+    aiQ3: 'Quel événement mobilise le plus de bénévoles ?', aiQ4: 'Quel est notre taux de présence moyen par événement ?',
+    aiQ5: 'Qui sont nos bénévoles les plus fiables ?', aiQ6: 'Quelles tâches sont les moins occupées ?',
+    aiQ7: 'Donnez un aperçu de nos coûts mensuels', aiQ8: 'Combien de contrats sont déjà signés ?',
+    aiQ9: 'Quels partenaires fournissent le plus de personnel ?', aiQ10: 'Combien de bénévoles approchent la limite annuelle ?',
+    aiQ11: 'Quel jour de la semaine planifions-nous le plus de tâches ?', aiQ12: 'Combien de confirmations d\'heures sont encore ouvertes ?',
+  },
+  en: {
+    reporting: 'Reporting', reportBuilder: 'Report Builder', filters: 'Filters',
+    from: 'From', to: 'To', event: 'Event', allEvents: 'All events',
+    volunteer: 'Volunteer', allVolunteers: 'All volunteers',
+    compType: 'Compensation type', allTypes: 'All types', fixed: 'Fixed amount', hourly: 'Hourly rate',
+    location: 'Location', allLocations: 'All locations',
+    taskStatus: 'Task status', allStatuses: 'All statuses', open: 'Open', closed: 'Closed',
+    chartType: 'Chart type', bar: 'Bar chart', line: 'Line chart', area: 'Area chart', pie: 'Pie chart',
+    paymentStatus: 'Payment status', paid: 'Paid', pending: 'Pending', failed: 'Failed',
+    partnerFilter: 'Partner filter', allTasks: 'All tasks', ownOnly: 'Own volunteers only', partnerOnly: 'Partner tasks only',
+    searchPlaceholder: 'Search by name or email...', reset: 'Reset',
+    volunteers: 'Volunteers', tasks: 'Tasks', assignments: 'Assignments',
+    checkedIn: 'Checked in', noShows: 'No-shows', attendance: 'Attendance',
+    occupancy: 'Occupancy', paidOut: 'Paid out', outstanding: 'Outstanding',
+    avgPerTask: '€/task avg.', contracts: 'Contracts', partnerStaff: 'Partner staff',
+    overview: 'Overview', events: 'Events', financial: 'Financial',
+    partners: 'Partners', compliance: 'Compliance',
+    monthlyTrend: 'Monthly trend', monthlySpending: 'Monthly spending (€)',
+    perEvent: 'Per event', attendanceOverview: 'Attendance overview',
+    topVolunteers: 'Top volunteers', dayOfWeek: 'Day of week',
+    compTypeChart: 'Compensation type', hourConf: 'Hour confirmations',
+    approved: 'Approved', awaitingLabel: 'Awaiting', disputed: 'Disputed',
+    noData: 'No data available', noDataFound: 'No data found',
+    exportCsv: 'Export CSV', name: 'Name', email: 'Email',
+    assigned: 'Assigned', reliability: 'Reliability', earned: 'Earned',
+    perTaskShort: '€/task', task: 'Task', date: 'Date',
+    spots: 'Spots', compensation: 'Compensation', hoursStatus: 'Hours status',
+    avgHours: 'Avg. hours', popularTask: 'Most popular task',
+    pdfTitle: 'Reporting Overview', pdfPeriod: 'Period', pdfGenerated: 'Generated',
+    pdfKpiOverview: 'KPI Overview', pdfTop10: 'Top 10 Volunteers',
+    pdfEvents: 'Events', pdfDownloaded: 'PDF report downloaded',
+    present: 'Present', unknown: 'Unknown',
+    aiTitle: 'AI Reporting Assistant', aiSubtitle: 'Ask a question about your club data — including finances, partners, compliance and more.',
+    aiPlaceholder: 'Ask your question...', aiEmpty: 'Ask a question to get started...',
+    aiAnalyzing: 'Analyzing...',
+    aiQ1: 'How much did we spend this month?', aiQ2: 'Which volunteer has the most no-shows?',
+    aiQ3: 'Which event uses the most volunteers?', aiQ4: 'What is our average attendance rate per event?',
+    aiQ5: 'Who are our most reliable volunteers?', aiQ6: 'Which tasks are least filled?',
+    aiQ7: 'Give an overview of our monthly costs', aiQ8: 'How many contracts are already signed?',
+    aiQ9: 'Which partners provide the most staff?', aiQ10: 'How many volunteers are close to the annual limit?',
+    aiQ11: 'On which day of the week do we schedule the most tasks?', aiQ12: 'How many hour confirmations are still open?',
+  },
+};
+
 const ReportingDashboard = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const L = rl[language];
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
 
@@ -237,7 +368,7 @@ const ReportingDashboard = () => {
       const p = profileMap[s.volunteer_id];
       if (!map.has(s.volunteer_id)) {
         map.set(s.volunteer_id, {
-          id: s.volunteer_id, name: p?.full_name || 'Onbekend', email: p?.email || null,
+          id: s.volunteer_id, name: p?.full_name || L.unknown, email: p?.email || null,
           totalSignups: 0, totalAssigned: 0, totalCheckedIn: 0, noShows: 0,
           totalEarned: 0, tasksWorked: [], eventsWorked: [],
           reliabilityScore: 0, avgEarnedPerTask: 0,
@@ -292,7 +423,7 @@ const ReportingDashboard = () => {
         ? Math.round(approvedHours.reduce((s: number, h: any) => s + Number(h.final_hours || 0), 0) / approvedHours.length * 10) / 10
         : null;
       const pendingConfs = tHourConfs.filter((h: any) => h.status === 'pending').length;
-      const hourConfStatus = tHourConfs.length === 0 ? '—' : pendingConfs > 0 ? `${pendingConfs} pending` : 'Goedgekeurd';
+      const hourConfStatus = tHourConfs.length === 0 ? '—' : pendingConfs > 0 ? `${pendingConfs} ${L.pending.toLowerCase()}` : L.approved;
 
       return {
         id: t.id, title: t.title, eventTitle: event?.title || null, date: t.task_date,
@@ -377,13 +508,13 @@ const ReportingDashboard = () => {
   const signupsPerEventChart = useMemo(() =>
     eventReports.slice(0, 15).map(e => ({
       name: e.title.length > 20 ? e.title.slice(0, 18) + '…' : e.title,
-      Toegewezen: e.totalVolunteers, Ingecheckt: e.checkedIn,
+      [L.assigned]: e.totalVolunteers, [L.checkedIn]: e.checkedIn,
     })), [eventReports]);
 
   const compensationPieData = useMemo(() => {
     const byType: Record<string, number> = {};
     filteredTasks.forEach((t: any) => {
-      const label = t.compensation_type === 'hourly' ? 'Uurloon' : 'Vast bedrag';
+      const label = t.compensation_type === 'hourly' ? L.hourly : L.fixed;
       byType[label] = (byType[label] || 0) + 1;
     });
     return Object.entries(byType).map(([name, value]) => ({ name, value }));
@@ -417,16 +548,16 @@ const ReportingDashboard = () => {
   const topVolunteersChart = useMemo(() =>
     volunteerReports.slice(0, 10).map(v => ({
       name: v.name.length > 15 ? v.name.slice(0, 13) + '…' : v.name,
-      Taken: v.totalAssigned, Verdiend: v.totalEarned,
+      [L.tasks]: v.totalAssigned, [L.earned]: v.totalEarned,
     })), [volunteerReports]);
 
   const noShowRateChart = useMemo(() => {
     const total = kpis.totalAssigned;
     if (total === 0) return [];
     return [
-      { name: 'Aanwezig', value: kpis.totalCheckedIn },
+      { name: L.present, value: kpis.totalCheckedIn },
       { name: 'No-show', value: kpis.totalNoShows },
-      { name: 'Onbekend', value: Math.max(0, total - kpis.totalCheckedIn - kpis.totalNoShows) },
+      { name: L.unknown, value: Math.max(0, total - kpis.totalCheckedIn - kpis.totalNoShows) },
     ];
   }, [kpis]);
 
@@ -436,13 +567,13 @@ const ReportingDashboard = () => {
       const m = format(parseISO(p.paid_at), 'yyyy-MM');
       months[m] = (months[m] || 0) + Number(p.amount);
     });
-    return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, bedrag]) => ({ month, Bedrag: Math.round(bedrag * 100) / 100 }));
+    return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, bedrag]) => ({ month, [L.paidOut]: Math.round(bedrag * 100) / 100 }));
   }, [filteredPayments]);
 
   const volunteersByEventChart = useMemo(() => {
     return eventReports.slice(0, 10).map(e => ({
       name: e.title.length > 18 ? e.title.slice(0, 16) + '…' : e.title,
-      Vrijwilligers: e.totalVolunteers, Bezetting: e.fillRate,
+      [L.volunteers]: e.totalVolunteers, [L.occupancy]: e.fillRate,
     }));
   }, [eventReports]);
 
@@ -452,7 +583,7 @@ const ReportingDashboard = () => {
     filteredTasks.forEach((t: any) => {
       if (t.task_date) counts[getDay(parseISO(t.task_date))]++;
     });
-    return (DAY_NAMES.nl).map((name, i) => ({ name, Taken: counts[i] }));
+    return (DAY_NAMES[language] || DAY_NAMES.nl).map((name, i) => ({ name, [L.tasks]: counts[i] }));
   }, [filteredTasks]);
 
   // Hour confirmation stats
@@ -500,9 +631,9 @@ const ReportingDashboard = () => {
       `Uur-bevestigingen: ${hourConfStats.total} totaal, ${hourConfStats.approved} goedgekeurd, ${hourConfStats.pending} in afwachting`,
       `Contracten: ${signatureRequests.filter(s => s.status === 'completed').length}/${signatureRequests.length} ondertekend`,
       '', 'MAANDELIJKSE UITGAVEN:',
-      ...monthlySpendingChart.map(m => `- ${m.month}: €${m.Bedrag.toFixed(2)}`),
-      '', 'DAG-VAN-DE-WEEK VERDELING:',
-      ...dayOfWeekChart.map(d => `- ${d.name}: ${d.Taken} taken`),
+      ...monthlySpendingChart.map(m => `- ${m.month}: €${Number(m[L.paidOut] || 0).toFixed(2)}`),
+      '', 'DAY DISTRIBUTION:',
+      ...dayOfWeekChart.map(d => `- ${d.name}: ${d[L.tasks]} tasks`),
     ];
     return lines.join('\n');
   };
@@ -563,14 +694,14 @@ const ReportingDashboard = () => {
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
-    doc.text('Rapportage Overzicht', 14, 20);
+    doc.text(L.pdfTitle, 14, 20);
     doc.setFontSize(10);
-    doc.text(`Periode: ${format(dateFrom, 'dd/MM/yyyy')} - ${format(dateTo, 'dd/MM/yyyy')}`, 14, 28);
-    doc.text(`Gegenereerd: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 34);
+    doc.text(`${L.pdfPeriod}: ${format(dateFrom, 'dd/MM/yyyy')} - ${format(dateTo, 'dd/MM/yyyy')}`, 14, 28);
+    doc.text(`${L.pdfGenerated}: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 34);
 
     let y = 44;
     doc.setFontSize(12);
-    doc.text('KPI Overzicht', 14, y); y += 8;
+    doc.text(L.pdfKpiOverview, 14, y); y += 8;
     doc.setFontSize(9);
     const kpiLines = [
       `Vrijwilligers: ${kpis.totalVolunteers}`, `Taken: ${kpis.totalTasks}`,
@@ -583,7 +714,7 @@ const ReportingDashboard = () => {
     kpiLines.forEach(l => { doc.text(l, 14, y); y += 5; });
 
     y += 4; doc.setFontSize(12);
-    doc.text('Top 10 Vrijwilligers', 14, y); y += 7;
+    doc.text(L.pdfTop10, 14, y); y += 7;
     doc.setFontSize(8);
     volunteerReports.slice(0, 10).forEach(v => {
       if (y > 275) { doc.addPage(); y = 20; }
@@ -593,7 +724,7 @@ const ReportingDashboard = () => {
 
     y += 4; doc.setFontSize(12);
     if (y > 260) { doc.addPage(); y = 20; }
-    doc.text('Evenementen', 14, y); y += 7;
+    doc.text(L.pdfEvents, 14, y); y += 7;
     doc.setFontSize(8);
     eventReports.forEach(e => {
       if (y > 275) { doc.addPage(); y = 20; }
@@ -601,8 +732,8 @@ const ReportingDashboard = () => {
       y += 4.5;
     });
 
-    doc.save(`rapportage-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-    toast.success('PDF rapport gedownload');
+    doc.save(`report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    toast.success(L.pdfDownloaded);
   };
 
   // ── Date picker ────────────────────────────────────────────────
@@ -621,7 +752,7 @@ const ReportingDashboard = () => {
 
   // ── Chart renderer ─────────────────────────────────────────────
   const renderChart = (data: any[], dataKeys: string[], xKey: string) => {
-    if (!data.length) return <p className="text-sm text-muted-foreground text-center py-8">Geen data beschikbaar</p>;
+    if (!data.length) return <p className="text-sm text-muted-foreground text-center py-8">{L.noData}</p>;
     switch (chartType) {
       case 'line':
         return (<ResponsiveContainer width="100%" height={300}><LineChart data={data}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey={xKey} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} /><Legend />{dataKeys.map((k, i) => <Line key={k} type="monotone" dataKey={k} stroke={COLORS[i % COLORS.length]} strokeWidth={2} />)}</LineChart></ResponsiveContainer>);
@@ -646,20 +777,7 @@ const ReportingDashboard = () => {
   };
 
   // ── AI presets ─────────────────────────────────────────────────
-  const aiPresets = [
-    'Hoeveel hebben we deze maand uitgegeven?',
-    'Welke vrijwilliger heeft de meeste no-shows?',
-    'Op welk evenement zetten we de meeste vrijwilligers in?',
-    'Wat is ons gemiddeld opkomstpercentage per evenement?',
-    'Wie zijn onze meest betrouwbare vrijwilligers?',
-    'Welke taken zijn het minst bezet?',
-    'Geef een overzicht van onze maandelijkse kosten',
-    'Hoeveel contracten zijn al ondertekend?',
-    'Welke partners leveren de meeste medewerkers?',
-    'Hoeveel vrijwilligers zitten dicht bij de jaargrens?',
-    'Op welke dag van de week plannen we de meeste taken?',
-    'Hoeveel uur-bevestigingen staan nog open?',
-  ];
+  const aiPresets = [L.aiQ1, L.aiQ2, L.aiQ3, L.aiQ4, L.aiQ5, L.aiQ6, L.aiQ7, L.aiQ8, L.aiQ9, L.aiQ10, L.aiQ11, L.aiQ12];
 
   if (loading) {
     return (<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>);
@@ -687,58 +805,58 @@ const ReportingDashboard = () => {
               <span className="text-sm font-medium text-foreground">Filters</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Van</label><DatePicker date={dateFrom} onChange={setDateFrom} /></div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Tot</label><DatePicker date={dateTo} onChange={setDateTo} /></div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Evenement</label>
-                <Select value={selectedEventId} onValueChange={setSelectedEventId}><SelectTrigger><SelectValue placeholder="Alle evenementen" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle evenementen</SelectItem>{events.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}</SelectContent></Select>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.from}</label><DatePicker date={dateFrom} onChange={setDateFrom} /></div>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.to}</label><DatePicker date={dateTo} onChange={setDateTo} /></div>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.event}</label>
+                <Select value={selectedEventId} onValueChange={setSelectedEventId}><SelectTrigger><SelectValue placeholder={L.allEvents} /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">{L.allEvents}</SelectItem>{events.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}</SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Vrijwilliger</label>
-                <Select value={selectedVolunteerId} onValueChange={setSelectedVolunteerId}><SelectTrigger><SelectValue placeholder="Alle vrijwilligers" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle vrijwilligers</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>)}</SelectContent></Select>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.volunteer}</label>
+                <Select value={selectedVolunteerId} onValueChange={setSelectedVolunteerId}><SelectTrigger><SelectValue placeholder={L.allVolunteers} /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">{L.allVolunteers}</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>)}</SelectContent></Select>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Vergoedingstype</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.compType}</label>
                 <Select value={selectedCompType} onValueChange={setSelectedCompType}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle types</SelectItem><SelectItem value="fixed">Vast bedrag</SelectItem><SelectItem value="hourly">Uurloon</SelectItem></SelectContent></Select>
+                  <SelectContent><SelectItem value="all">{L.allTypes}</SelectItem><SelectItem value="fixed">{L.fixed}</SelectItem><SelectItem value="hourly">{L.hourly}</SelectItem></SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Locatie</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.location}</label>
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle locaties</SelectItem>{uniqueLocations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent></Select>
+                  <SelectContent><SelectItem value="all">{L.allLocations}</SelectItem>{uniqueLocations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Taakstatus</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.taskStatus}</label>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle statussen</SelectItem><SelectItem value="open">Open</SelectItem><SelectItem value="closed">Gesloten</SelectItem></SelectContent></Select>
+                  <SelectContent><SelectItem value="all">{L.allStatuses}</SelectItem><SelectItem value="open">{L.open}</SelectItem><SelectItem value="closed">{L.closed}</SelectItem></SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Grafiektype</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.chartType}</label>
                 <Select value={chartType} onValueChange={(v) => setChartType(v as ChartType)}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="bar">Staafdiagram</SelectItem><SelectItem value="line">Lijndiagram</SelectItem><SelectItem value="area">Vlakdiagram</SelectItem><SelectItem value="pie">Taartdiagram</SelectItem></SelectContent></Select>
+                  <SelectContent><SelectItem value="bar">{L.bar}</SelectItem><SelectItem value="line">{L.line}</SelectItem><SelectItem value="area">{L.area}</SelectItem><SelectItem value="pie">{L.pie}</SelectItem></SelectContent></Select>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Betalingsstatus</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.paymentStatus}</label>
                 <Select value={selectedPaymentStatus} onValueChange={setSelectedPaymentStatus}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle statussen</SelectItem><SelectItem value="paid">Betaald</SelectItem><SelectItem value="pending">Openstaand</SelectItem><SelectItem value="failed">Mislukt</SelectItem></SelectContent></Select>
+                  <SelectContent><SelectItem value="all">{L.allStatuses}</SelectItem><SelectItem value="paid">{L.paid}</SelectItem><SelectItem value="pending">{L.pending}</SelectItem><SelectItem value="failed">{L.failed}</SelectItem></SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Partner filter</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.partnerFilter}</label>
                 <Select value={selectedPartnerFilter} onValueChange={setSelectedPartnerFilter}><SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alle taken</SelectItem>
-                    <SelectItem value="own">Alleen eigen vrijwilligers</SelectItem>
-                    <SelectItem value="partner">Alleen partner taken</SelectItem>
+                    <SelectItem value="all">{L.allTasks}</SelectItem>
+                    <SelectItem value="own">{L.ownOnly}</SelectItem>
+                    <SelectItem value="partner">{L.partnerOnly}</SelectItem>
                     {partners.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                   </SelectContent></Select>
               </div>
               <div className="space-y-1 col-span-1 sm:col-span-2 flex items-end gap-2">
-                <Input placeholder="Zoek op naam of e-mail..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-xs" />
+                <Input placeholder={L.searchPlaceholder} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-xs" />
                 <Button variant="outline" size="sm" onClick={() => {
                   setDateFrom(subMonths(new Date(), 3)); setDateTo(new Date());
                   setSelectedEventId('all'); setSelectedVolunteerId('all');
                   setSelectedCompType('all'); setSelectedLocation('all');
                   setSelectedStatus('all'); setSearchQuery('');
                   setSelectedPaymentStatus('all'); setSelectedPartnerFilter('all');
-                }}>Reset</Button>
+                }}>{L.reset}</Button>
               </div>
             </div>
           </CardContent>
@@ -747,18 +865,18 @@ const ReportingDashboard = () => {
         {/* ── KPI Cards ──────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {[
-            { icon: Users, label: 'Vrijwilligers', value: kpis.totalVolunteers, color: 'text-primary' },
-            { icon: Hash, label: 'Taken', value: kpis.totalTasks, color: 'text-primary' },
-            { icon: ClipboardCheck, label: 'Toewijzingen', value: kpis.totalAssigned, color: 'text-primary' },
-            { icon: CheckCircle2, label: 'Ingecheckt', value: kpis.totalCheckedIn, color: 'text-emerald-500' },
-            { icon: XCircle, label: 'No-shows', value: kpis.totalNoShows, color: 'text-destructive' },
-            { icon: Percent, label: 'Opkomst', value: `${kpis.attendanceRate}%`, color: 'text-primary' },
-            { icon: Target, label: 'Bezetting', value: `${kpis.fillRate}%`, color: 'text-primary' },
-            { icon: Euro, label: 'Uitbetaald', value: `€${kpis.totalPaid.toFixed(0)}`, color: 'text-primary' },
-            { icon: CreditCard, label: 'Openstaand', value: `€${kpis.totalPending.toFixed(0)}`, color: 'text-amber-500' },
-            { icon: Clock, label: '€/taak gem.', value: `€${kpis.avgCostPerTask.toFixed(0)}`, color: 'text-primary' },
-            { icon: FileText, label: 'Contracten', value: `${kpis.contractsPercent}%`, color: 'text-primary' },
-            { icon: Handshake, label: 'Partner mdw', value: kpis.activePartnerMembers, color: 'text-primary' },
+            { icon: Users, label: L.volunteers, value: kpis.totalVolunteers, color: 'text-primary' },
+            { icon: Hash, label: L.tasks, value: kpis.totalTasks, color: 'text-primary' },
+            { icon: ClipboardCheck, label: L.assignments, value: kpis.totalAssigned, color: 'text-primary' },
+            { icon: CheckCircle2, label: L.checkedIn, value: kpis.totalCheckedIn, color: 'text-emerald-500' },
+            { icon: XCircle, label: L.noShows, value: kpis.totalNoShows, color: 'text-destructive' },
+            { icon: Percent, label: L.attendance, value: `${kpis.attendanceRate}%`, color: 'text-primary' },
+            { icon: Target, label: L.occupancy, value: `${kpis.fillRate}%`, color: 'text-primary' },
+            { icon: Euro, label: L.paidOut, value: `€${kpis.totalPaid.toFixed(0)}`, color: 'text-primary' },
+            { icon: CreditCard, label: L.outstanding, value: `€${kpis.totalPending.toFixed(0)}`, color: 'text-amber-500' },
+            { icon: Clock, label: L.avgPerTask, value: `€${kpis.avgCostPerTask.toFixed(0)}`, color: 'text-primary' },
+            { icon: FileText, label: L.contracts, value: `${kpis.contractsPercent}%`, color: 'text-primary' },
+            { icon: Handshake, label: L.partnerStaff, value: kpis.activePartnerMembers, color: 'text-primary' },
           ].map((kpi, i) => (
             <Card key={i}><CardContent className="pt-4 pb-3 text-center">
               <kpi.icon className={cn("w-5 h-5 mx-auto mb-1", kpi.color)} />
@@ -800,11 +918,11 @@ const ReportingDashboard = () => {
                     </Pie><Tooltip /><Legend /></RechartsPie>
                   </ResponsiveContainer>
                 </CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Top vrijwilligers</CardTitle></CardHeader>
-                <CardContent>{renderChart(topVolunteersChart, ['Taken', 'Verdiend'], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Dag van de week</CardTitle></CardHeader>
-                <CardContent>{renderChart(dayOfWeekChart, ['Taken'], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Vergoedingstype</CardTitle></CardHeader>
+              <Card><CardHeader><CardTitle className="text-base">{L.topVolunteers}</CardTitle></CardHeader>
+                <CardContent>{renderChart(topVolunteersChart, [L.tasks, L.earned], 'name')}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">{L.dayOfWeek}</CardTitle></CardHeader>
+                <CardContent>{renderChart(dayOfWeekChart, [L.tasks], 'name')}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">{L.compTypeChart}</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
                     <RechartsPie><Pie data={compensationPieData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -812,12 +930,12 @@ const ReportingDashboard = () => {
                     </Pie><Tooltip /><Legend /></RechartsPie>
                   </ResponsiveContainer>
                 </CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Uur-bevestigingen</CardTitle></CardHeader>
+              <Card><CardHeader><CardTitle className="text-base">{L.hourConf}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4 text-center">
-                    <div><p className="text-2xl font-bold text-foreground">{hourConfStats.approved}</p><p className="text-xs text-muted-foreground">Goedgekeurd</p></div>
-                    <div><p className="text-2xl font-bold text-amber-500">{hourConfStats.pending}</p><p className="text-xs text-muted-foreground">In afwachting</p></div>
-                    <div><p className="text-2xl font-bold text-destructive">{hourConfStats.disputed}</p><p className="text-xs text-muted-foreground">Betwist</p></div>
+                    <div><p className="text-2xl font-bold text-foreground">{hourConfStats.approved}</p><p className="text-xs text-muted-foreground">{L.approved}</p></div>
+                    <div><p className="text-2xl font-bold text-amber-500">{hourConfStats.pending}</p><p className="text-xs text-muted-foreground">{L.awaitingLabel}</p></div>
+                    <div><p className="text-2xl font-bold text-destructive">{hourConfStats.disputed}</p><p className="text-xs text-muted-foreground">{L.disputed}</p></div>
                   </div>
                 </CardContent></Card>
             </div>
@@ -827,25 +945,25 @@ const ReportingDashboard = () => {
           <TabsContent value="volunteers" className="space-y-4 mt-4">
             <div className="flex justify-end">
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(volunteerReports.map(v => ({
-                Naam: v.name, Email: v.email || '', Inschrijvingen: v.totalSignups, Toegewezen: v.totalAssigned,
-                Ingecheckt: v.totalCheckedIn, NoShows: v.noShows, Betrouwbaarheid: `${v.reliabilityScore}%`,
-                Verdiend: `€${v.totalEarned.toFixed(2)}`, GemPerTaak: `€${v.avgEarnedPerTask.toFixed(2)}`,
-                Evenementen: v.eventsWorked.join(', '),
-              })), 'vrijwilligers-rapport')}>
-                <Download className="w-4 h-4" /> Exporteer CSV
+                [L.name]: v.name, [L.email]: v.email || '', [L.assignments]: v.totalSignups, [L.assigned]: v.totalAssigned,
+                [L.checkedIn]: v.totalCheckedIn, [L.noShows]: v.noShows, [L.reliability]: `${v.reliabilityScore}%`,
+                [L.earned]: `€${v.totalEarned.toFixed(2)}`, [L.perTaskShort]: `€${v.avgEarnedPerTask.toFixed(2)}`,
+                [L.events]: v.eventsWorked.join(', '),
+              })), 'volunteers-report')}>
+                <Download className="w-4 h-4" /> {L.exportCsv}
               </Button>
             </div>
             <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
               <TableHeader><TableRow>
-                <TableHead>Naam</TableHead><TableHead>E-mail</TableHead>
-                <TableHead className="text-center">Toegewezen</TableHead>
-                <TableHead className="text-center">Ingecheckt</TableHead><TableHead className="text-center">No-shows</TableHead>
-                <TableHead className="text-center">Betrouwbaarheid</TableHead>
-                <TableHead className="text-right">Verdiend</TableHead><TableHead className="text-right">€/taak</TableHead>
+                <TableHead>{L.name}</TableHead><TableHead>{L.email}</TableHead>
+                <TableHead className="text-center">{L.assigned}</TableHead>
+                <TableHead className="text-center">{L.checkedIn}</TableHead><TableHead className="text-center">{L.noShows}</TableHead>
+                <TableHead className="text-center">{L.reliability}</TableHead>
+                <TableHead className="text-right">{L.earned}</TableHead><TableHead className="text-right">{L.perTaskShort}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                  {volunteerReports.length === 0 ? (
-                   <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Geen data gevonden</TableCell></TableRow>
+                   <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{L.noDataFound}</TableCell></TableRow>
                  ) : volunteerReports.map(v => (
                    <TableRow key={v.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedVolunteerProfile(v)}>
                      <TableCell className="font-medium">{v.name}</TableCell>
@@ -854,7 +972,7 @@ const ReportingDashboard = () => {
                     <TableCell className="text-center"><Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-300">{v.totalCheckedIn}</Badge></TableCell>
                     <TableCell className="text-center">{v.noShows > 0 ? <Badge variant="destructive">{v.noShows}</Badge> : <span className="text-muted-foreground">0</span>}</TableCell>
                     <TableCell className="text-center">
-                      <Badge variant={v.reliabilityScore >= 80 ? 'default' : v.reliabilityScore >= 50 ? 'secondary' : 'destructive'}>
+                     <Badge variant={v.reliabilityScore >= 80 ? 'default' : v.reliabilityScore >= 50 ? 'secondary' : 'destructive'}>
                         {v.reliabilityScore}%
                       </Badge>
                     </TableCell>
@@ -1034,7 +1152,7 @@ const ReportingDashboard = () => {
           }}
           open={!!selectedVolunteerProfile}
           onOpenChange={(open) => { if (!open) setSelectedVolunteerProfile(null); }}
-          language="nl"
+          language={language}
         />
       )}
     </ClubPageLayout>

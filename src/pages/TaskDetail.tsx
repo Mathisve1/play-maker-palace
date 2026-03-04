@@ -300,11 +300,11 @@ const TaskDetail = () => {
     if (!file || !currentUserId) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Selecteer een afbeelding');
+      toast.error(language === 'fr' ? 'Sélectionnez une image' : language === 'en' ? 'Select an image' : 'Selecteer een afbeelding');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Afbeelding mag maximaal 5MB zijn');
+      toast.error(language === 'fr' ? 'L\'image ne peut pas dépasser 5 Mo' : language === 'en' ? 'Image must be under 5MB' : 'Afbeelding mag maximaal 5MB zijn');
       return;
     }
 
@@ -337,7 +337,7 @@ const TaskDetail = () => {
       toast.error(updateError.message);
     } else {
       setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : prev);
-      toast.success('Profielfoto bijgewerkt!');
+      toast.success(language === 'fr' ? 'Photo de profil mise à jour !' : language === 'en' ? 'Profile photo updated!' : 'Profielfoto bijgewerkt!');
     }
     setUploadingAvatar(false);
   };
@@ -347,7 +347,7 @@ const TaskDetail = () => {
       navigator.share({ title: task?.title, url: window.location.href });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      toast.success('Link gekopieerd!');
+      toast.success(language === 'fr' ? 'Lien copié !' : language === 'en' ? 'Link copied!' : 'Link gekopieerd!');
     }
   };
 
@@ -407,7 +407,7 @@ const TaskDetail = () => {
               onClick={() => avatarInputRef.current?.click()}
               disabled={uploadingAvatar}
               className="relative group ml-1"
-              title="Profielfoto wijzigen"
+              title={language === 'fr' ? 'Modifier la photo' : language === 'en' ? 'Change photo' : 'Profielfoto wijzigen'}
             >
               <Avatar className="w-8 h-8">
                 {profile?.avatar_url && (
