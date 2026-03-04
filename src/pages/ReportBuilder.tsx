@@ -840,7 +840,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Widget toevoegen</DialogTitle>
+                  <DialogTitle>{t3('Widget toevoegen', 'Ajouter un widget', 'Add widget')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 mt-2">
                   {/* Basic widgets */}
