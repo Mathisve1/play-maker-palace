@@ -113,7 +113,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
               )}
               <label className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-input cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
                 <Upload className="w-4 h-4" />
-                Wijzig logo
+                {t3('Wijzig logo', 'Modifier le logo', 'Change logo')}
                 <input type="file" accept="image/*" onChange={handleLogoChange} className="hidden" />
               </label>
             </div>
