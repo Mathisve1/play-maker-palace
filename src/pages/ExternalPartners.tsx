@@ -423,7 +423,7 @@ const ExternalPartners = () => {
         status: 'active' as any,
       });
       if (error) throw error;
-      toast.success(nl ? `Ticket aangemaakt voor ${member.full_name}!` : `Ticket created for ${member.full_name}!`);
+      toast.success(t3(`Ticket aangemaakt voor ${member.full_name}!`, `Ticket créé pour ${member.full_name}!`, `Ticket created for ${member.full_name}!`));
       setSendingTicketFor(null);
       setTicketTaskId('');
     } catch (err: any) { toast.error(err.message); }
