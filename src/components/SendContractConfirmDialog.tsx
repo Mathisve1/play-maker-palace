@@ -533,6 +533,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
             clubOwnerName={clubData?.owner_name}
             clubSignatureUrl={clubSignatureUrl}
             volunteerName={volunteer.full_name || undefined}
+            language={language}
           />
         </div>
       )}
