@@ -377,7 +377,7 @@ const EventsManager = () => {
     const newStatus = currentStatus === 'on_hold' ? 'open' : 'on_hold';
     const { error } = await (supabase as any).from('tasks').update({ status: newStatus }).eq('id', taskId);
     if (error) toast.error(error.message);
-    else { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)); toast.success(newStatus === 'on_hold' ? (nl ? 'Taak on hold gezet' : 'Task put on hold') : (nl ? 'Taak weer actief' : 'Task reactivated')); }
+    else { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)); toast.success(newStatus === 'on_hold' ? t3('Taak on hold gezet', 'Tâche mise en attente', 'Task put on hold') : t3('Taak weer actief', 'Tâche réactivée', 'Task reactivated')); }
     setTogglingHold(null);
   };
 
