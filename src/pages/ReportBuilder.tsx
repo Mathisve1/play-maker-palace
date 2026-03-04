@@ -845,7 +845,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
                 <div className="space-y-4 mt-2">
                   {/* Basic widgets */}
                   <div>
-                    <p className="text-sm font-medium mb-2">Basis</p>
+                    <p className="text-sm font-medium mb-2">{t3('Basis', 'De base', 'Basic')}</p>
                     <div className="grid grid-cols-2 gap-2">
                       <Button variant="outline" className="justify-start h-auto py-3" onClick={() => addWidget('title', { text: 'Nieuwe titel', subtitle: '' })}>
                         <Type className="h-4 w-4 mr-2" /> Titel
