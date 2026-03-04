@@ -202,7 +202,7 @@ const MonthlyPlanning = () => {
       .eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'approved' } : e));
-    toast.success('Inschrijving goedgekeurd!');
+    toast.success(t3('Inschrijving goedgekeurd!', 'Inscription approuvée !', 'Enrollment approved!'));
   };
 
   const rejectEnrollment = async (enrollmentId: string) => {
