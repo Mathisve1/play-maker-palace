@@ -1150,11 +1150,11 @@ const SafetyDashboard = () => {
             </Button>
             {isDemoEvent && (
               <>
-                <Button variant="outline" size="sm" onClick={handleRestartSimulation} disabled={simLoading} className="gap-1.5">
-                  <RotateCcw className="w-3.5 h-3.5" /> Herstart
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleResetSimulation} disabled={simLoading} className="gap-1.5 text-destructive hover:text-destructive">
-                  <Trash2 className="w-3.5 h-3.5" /> Verwijder
+                 <Button variant="outline" size="sm" onClick={handleRestartSimulation} disabled={simLoading} className="gap-1.5">
+                   <RotateCcw className="w-3.5 h-3.5" /> {t3('Herstart', 'Redémarrer', 'Restart')}
+                 </Button>
+                 <Button variant="ghost" size="sm" onClick={handleResetSimulation} disabled={simLoading} className="gap-1.5 text-destructive hover:text-destructive">
+                   <Trash2 className="w-3.5 h-3.5" /> {t3('Verwijder', 'Supprimer', 'Delete')}
                 </Button>
               </>
             )}
