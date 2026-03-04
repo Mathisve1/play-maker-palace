@@ -572,14 +572,14 @@ const EventsManager = () => {
                 <button onClick={() => setEditingEvent(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
               </div>
               <form onSubmit={handleSaveEditEvent} className="space-y-4">
-                <div><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required value={editEventForm.title} onChange={e => setEditEventForm(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
-                <div><label className={labelClass}>{nl ? 'Beschrijving' : 'Description'}</label><textarea rows={2} value={editEventForm.description} onChange={e => setEditEventForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={editEventForm.event_date} onChange={e => setEditEventForm(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label><input type="text" value={editEventForm.location} onChange={e => setEditEventForm(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
-                </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={() => setEditingEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
+                 <div><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required value={editEventForm.title} onChange={e => setEditEventForm(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={editEventForm.description} onChange={e => setEditEventForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={editEventForm.event_date} onChange={e => setEditEventForm(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
+                   <div><label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label><input type="text" value={editEventForm.location} onChange={e => setEditEventForm(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
+                 </div>
+                 <div className="flex justify-end gap-3 pt-2">
+                   <button type="button" onClick={() => setEditingEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
                   <button type="submit" disabled={savingEvent} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
                     {savingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : (nl ? 'Opslaan' : 'Save')}
                   </button>
