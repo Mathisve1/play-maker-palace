@@ -918,11 +918,11 @@ const ReportingDashboard = () => {
                     </Pie><Tooltip /><Legend /></RechartsPie>
                   </ResponsiveContainer>
                 </CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Top vrijwilligers</CardTitle></CardHeader>
-                <CardContent>{renderChart(topVolunteersChart, ['Taken', 'Verdiend'], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Dag van de week</CardTitle></CardHeader>
-                <CardContent>{renderChart(dayOfWeekChart, ['Taken'], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Vergoedingstype</CardTitle></CardHeader>
+              <Card><CardHeader><CardTitle className="text-base">{L.topVolunteers}</CardTitle></CardHeader>
+                <CardContent>{renderChart(topVolunteersChart, [L.tasks, L.earned], 'name')}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">{L.dayOfWeek}</CardTitle></CardHeader>
+                <CardContent>{renderChart(dayOfWeekChart, [L.tasks], 'name')}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-base">{L.compTypeChart}</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
                     <RechartsPie><Pie data={compensationPieData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -930,12 +930,12 @@ const ReportingDashboard = () => {
                     </Pie><Tooltip /><Legend /></RechartsPie>
                   </ResponsiveContainer>
                 </CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">Uur-bevestigingen</CardTitle></CardHeader>
+              <Card><CardHeader><CardTitle className="text-base">{L.hourConf}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4 text-center">
-                    <div><p className="text-2xl font-bold text-foreground">{hourConfStats.approved}</p><p className="text-xs text-muted-foreground">Goedgekeurd</p></div>
-                    <div><p className="text-2xl font-bold text-amber-500">{hourConfStats.pending}</p><p className="text-xs text-muted-foreground">In afwachting</p></div>
-                    <div><p className="text-2xl font-bold text-destructive">{hourConfStats.disputed}</p><p className="text-xs text-muted-foreground">Betwist</p></div>
+                    <div><p className="text-2xl font-bold text-foreground">{hourConfStats.approved}</p><p className="text-xs text-muted-foreground">{L.approved}</p></div>
+                    <div><p className="text-2xl font-bold text-amber-500">{hourConfStats.pending}</p><p className="text-xs text-muted-foreground">{L.awaitingLabel}</p></div>
+                    <div><p className="text-2xl font-bold text-destructive">{hourConfStats.disputed}</p><p className="text-xs text-muted-foreground">{L.disputed}</p></div>
                   </div>
                 </CardContent></Card>
             </div>
