@@ -800,7 +800,7 @@ const MonthlyPlanning = () => {
                             {!hasTicket && (
                               <Button size="sm" variant="outline" className="gap-1" onClick={() => generateTicketForSignup(ds)} disabled={generatingTicketIds.has(ds.id)}>
                                 {generatingTicketIds.has(ds.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ticket className="w-3.5 h-3.5" />}
-                                Ticket genereren
+                                 {t3('Ticket genereren', 'Générer ticket', 'Generate ticket')}
                               </Button>
                             )}
                             {hasTicket && ds.volunteer_email && (
