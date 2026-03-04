@@ -57,19 +57,28 @@ serve(async (req) => {
         .select('id, onesignal_player_id, push_notifications_enabled, in_app_notifications_enabled');
 
       const profiles = allProfiles || [];
-      const pushSubscriptionIds = profiles
-        .filter((p: any) => p.onesignal_player_id && p.push_notifications_enabled !== false)
+      const pushEligibleProfiles = profiles.filter((p: any) => p.push_notifications_enabled !== false);
+      const pushSubscriptionIds = pushEligibleProfiles
+        .filter((p: any) => p.onesignal_player_id)
         .map((p: any) => p.onesignal_player_id);
+      const pushExternalUserIds = pushEligibleProfiles.map((p: any) => p.id);
 
       let pushResult: any = { skipped: true, reason: 'no_push_subscribers' };
 
-      if (pushSubscriptionIds.length > 0) {
+      if (pushEligibleProfiles.length > 0) {
         const pushPayload: any = {
           app_id: onesignalAppId,
-          include_subscription_ids: pushSubscriptionIds,
           headings: { en: finalTitle, nl: finalTitle, fr: finalTitle },
           contents: { en: finalMessage, nl: finalMessage, fr: finalMessage },
         };
+
+        if (pushSubscriptionIds.length > 0) {
+          pushPayload.include_subscription_ids = pushSubscriptionIds;
+        } else {
+          pushPayload.include_external_user_ids = pushExternalUserIds;
+          pushPayload.channel_for_external_user_ids = 'push';
+        }
+
         if (url) pushPayload.url = url;
         if (data) pushPayload.data = data;
 
@@ -97,12 +106,14 @@ serve(async (req) => {
         await supabase.from('notifications').insert(inAppNotifs);
       }
 
+      const pushTargetCount = pushSubscriptionIds.length > 0 ? pushSubscriptionIds.length : pushExternalUserIds.length;
+
       return new Response(
         JSON.stringify({
           success: true,
           mode: 'broadcast',
           result: pushResult,
-          push_targets: pushSubscriptionIds.length,
+          push_targets: pushTargetCount,
           in_app_targets: inAppRecipients.length,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -147,13 +158,19 @@ serve(async (req) => {
     let pushResult: any = { skipped: true, reason: 'push_disabled_or_no_subscription' };
     let inAppInserted = false;
 
-    if (profile.push_notifications_enabled !== false && profile.onesignal_player_id) {
+    if (profile.push_notifications_enabled !== false) {
       const pushPayload: any = {
         app_id: onesignalAppId,
-        include_subscription_ids: [profile.onesignal_player_id],
         headings: { en: finalTitle, nl: finalTitle, fr: finalTitle },
         contents: { en: finalMessage, nl: finalMessage, fr: finalMessage },
       };
+
+      if (profile.onesignal_player_id) {
+        pushPayload.include_subscription_ids = [profile.onesignal_player_id];
+      } else {
+        pushPayload.include_external_user_ids = [user_id];
+        pushPayload.channel_for_external_user_ids = 'push';
+      }
 
       if (url) pushPayload.url = url;
       if (data) pushPayload.data = data;
