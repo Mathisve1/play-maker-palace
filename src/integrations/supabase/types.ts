@@ -1909,9 +1909,12 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          in_app_notifications_enabled: boolean
           language: string
           onesignal_player_id: string | null
           phone: string | null
+          push_notifications_enabled: boolean
+          push_prompt_seen: boolean
           stripe_account_id: string | null
           updated_at: string
         }
@@ -1929,9 +1932,12 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          in_app_notifications_enabled?: boolean
           language?: string
           onesignal_player_id?: string | null
           phone?: string | null
+          push_notifications_enabled?: boolean
+          push_prompt_seen?: boolean
           stripe_account_id?: string | null
           updated_at?: string
         }
@@ -1949,9 +1955,12 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          in_app_notifications_enabled?: boolean
           language?: string
           onesignal_player_id?: string | null
           phone?: string | null
+          push_notifications_enabled?: boolean
+          push_prompt_seen?: boolean
           stripe_account_id?: string | null
           updated_at?: string
         }

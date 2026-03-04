@@ -33,7 +33,6 @@ serve(async (req) => {
   try {
     const { type, user_id, title, message, url, data, broadcast } = await req.json();
 
-    // App ID is a public identifier, safe to hardcode as fallback
     const onesignalAppId = Deno.env.get('ONESIGNAL_APP_ID') || 'e0d35921-dd83-4e98-a289-f9d1bb1694cc';
     const onesignalApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY');
 
@@ -48,40 +47,48 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // === BROADCAST MODE: send to ALL subscribed devices ===
+    // === BROADCAST MODE ===
     if (broadcast) {
       const finalTitle = title || '📢 De 12e Man';
       const finalMessage = message || 'Je hebt een nieuwe melding.';
 
-      const pushPayload: any = {
-        app_id: onesignalAppId,
-        included_segments: ['Subscribed Users'],
-        headings: { en: finalTitle, nl: finalTitle, fr: finalTitle },
-        contents: { en: finalMessage, nl: finalMessage, fr: finalMessage },
-      };
-      if (url) pushPayload.url = url;
-      if (data) pushPayload.data = data;
-
-      const pushRes = await fetch('https://api.onesignal.com/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Key ${onesignalApiKey}`,
-        },
-        body: JSON.stringify(pushPayload),
-      });
-
-      const pushResult = await pushRes.json();
-      console.log('OneSignal broadcast result:', JSON.stringify(pushResult));
-
-      // Create in-app notification for all users with profiles
       const { data: allProfiles } = await supabase
         .from('profiles')
-        .select('id')
-        .not('onesignal_player_id', 'is', null);
+        .select('id, onesignal_player_id, push_notifications_enabled, in_app_notifications_enabled');
 
-      if (allProfiles && allProfiles.length > 0) {
-        const inAppNotifs = allProfiles.map((p: any) => ({
+      const profiles = allProfiles || [];
+      const pushSubscriptionIds = profiles
+        .filter((p: any) => p.onesignal_player_id && p.push_notifications_enabled !== false)
+        .map((p: any) => p.onesignal_player_id);
+
+      let pushResult: any = { skipped: true, reason: 'no_push_subscribers' };
+
+      if (pushSubscriptionIds.length > 0) {
+        const pushPayload: any = {
+          app_id: onesignalAppId,
+          include_subscription_ids: pushSubscriptionIds,
+          headings: { en: finalTitle, nl: finalTitle, fr: finalTitle },
+          contents: { en: finalMessage, nl: finalMessage, fr: finalMessage },
+        };
+        if (url) pushPayload.url = url;
+        if (data) pushPayload.data = data;
+
+        const pushRes = await fetch('https://api.onesignal.com/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Key ${onesignalApiKey}`,
+          },
+          body: JSON.stringify(pushPayload),
+        });
+
+        pushResult = await pushRes.json();
+        console.log('OneSignal broadcast result:', JSON.stringify(pushResult));
+      }
+
+      const inAppRecipients = profiles.filter((p: any) => p.in_app_notifications_enabled !== false);
+      if (inAppRecipients.length > 0) {
+        const inAppNotifs = inAppRecipients.map((p: any) => ({
           user_id: p.id,
           type: type || 'broadcast',
           title: finalTitle,
@@ -91,7 +98,13 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, mode: 'broadcast', result: pushResult }),
+        JSON.stringify({
+          success: true,
+          mode: 'broadcast',
+          result: pushResult,
+          push_targets: pushSubscriptionIds.length,
+          in_app_targets: inAppRecipients.length,
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -106,14 +119,14 @@ serve(async (req) => {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('onesignal_player_id, full_name, language')
+      .select('onesignal_player_id, full_name, language, push_notifications_enabled, in_app_notifications_enabled')
       .eq('id', user_id)
       .single();
 
-    if (!profile?.onesignal_player_id) {
+    if (!profile) {
       return new Response(
-        JSON.stringify({ error: 'User has no push subscription', user_id }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Profile not found', user_id }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -128,37 +141,48 @@ serve(async (req) => {
       finalMessage = tpl.message;
     }
 
-    const pushPayload: any = {
-      app_id: onesignalAppId,
-      include_subscription_ids: [profile.onesignal_player_id],
-      headings: { en: finalTitle },
-      contents: { en: finalMessage },
-    };
+    finalTitle = finalTitle || '📢 De 12e Man';
+    finalMessage = finalMessage || 'Je hebt een nieuwe melding.';
 
-    if (url) pushPayload.url = url;
-    if (data) pushPayload.data = data;
+    let pushResult: any = { skipped: true, reason: 'push_disabled_or_no_subscription' };
+    let inAppInserted = false;
 
-    const pushRes = await fetch('https://api.onesignal.com/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Key ${onesignalApiKey}`,
-      },
-      body: JSON.stringify(pushPayload),
-    });
+    if (profile.push_notifications_enabled !== false && profile.onesignal_player_id) {
+      const pushPayload: any = {
+        app_id: onesignalAppId,
+        include_subscription_ids: [profile.onesignal_player_id],
+        headings: { en: finalTitle, nl: finalTitle, fr: finalTitle },
+        contents: { en: finalMessage, nl: finalMessage, fr: finalMessage },
+      };
 
-    const pushResult = await pushRes.json();
-    console.log('OneSignal push result:', JSON.stringify(pushResult));
+      if (url) pushPayload.url = url;
+      if (data) pushPayload.data = data;
 
-    await supabase.from('notifications').insert({
-      user_id,
-      type: type || 'general',
-      title: finalTitle,
-      message: finalMessage,
-    });
+      const pushRes = await fetch('https://api.onesignal.com/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Key ${onesignalApiKey}`,
+        },
+        body: JSON.stringify(pushPayload),
+      });
+
+      pushResult = await pushRes.json();
+      console.log('OneSignal push result:', JSON.stringify(pushResult));
+    }
+
+    if (profile.in_app_notifications_enabled !== false) {
+      await supabase.from('notifications').insert({
+        user_id,
+        type: type || 'general',
+        title: finalTitle,
+        message: finalMessage,
+      });
+      inAppInserted = true;
+    }
 
     return new Response(
-      JSON.stringify({ success: true, result: pushResult }),
+      JSON.stringify({ success: true, result: pushResult, in_app_sent: inAppInserted }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

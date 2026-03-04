@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PartnerSidebar from '@/components/PartnerSidebar';
+import EditProfileDialog from '@/components/EditProfileDialog';
+import { Language } from '@/i18n/translations';
 
 interface ClubInfo { id: string; name: string; logo_url: string | null; }
 interface PartnerInfo { id: string; name: string; category: string; external_payroll: boolean; club_id: string; }
@@ -61,12 +63,27 @@ const PartnerDashboard = () => {
   const [assigning, setAssigning] = useState(false);
   const nl = language === 'nl';
   const [activeTab, setActiveTab] = useState('tasks');
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
 
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/partner-login'); return; }
       setUserId(session.user.id);
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, email, avatar_url')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      setProfile(profileData || {
+        full_name: (session.user.user_metadata?.full_name as string) || '',
+        email: session.user.email || '',
+        avatar_url: null,
+      });
+
       const { data: adminRecords } = await supabase.from('partner_admins').select('partner_id').eq('user_id', session.user.id);
       if (!adminRecords?.length) { navigate('/partner-login'); return; }
       const partnerId = adminRecords[0].partner_id;
@@ -353,6 +370,7 @@ const PartnerDashboard = () => {
       activeTab={activeTab}
       setActiveTab={setActiveTab}
       onLogout={handleLogoutWrapped}
+      onOpenProfile={() => setShowProfileDialog(true)}
     />
   );
 
@@ -501,8 +519,18 @@ const PartnerDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {userId && (
+        <EditProfileDialog
+          open={showProfileDialog}
+          onOpenChange={setShowProfileDialog}
+          userId={userId}
+          language={language as Language}
+          onProfileUpdated={(updated) => {
+            setProfile(prev => prev ? { ...prev, full_name: updated.full_name || prev.full_name, avatar_url: updated.avatar_url } : prev);
+          }}
+        />
+      )}
     </DashboardLayout>
-  );
 };
 
 export default PartnerDashboard;

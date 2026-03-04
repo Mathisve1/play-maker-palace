@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { promptPushPermission } from '@/lib/onesignal';
+import { markPushPromptSeen, setPushPreference } from '@/lib/onesignal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * A dismissible banner that appears after login asking users to enable push notifications.
@@ -34,53 +35,39 @@ const PushPermissionBanner = () => {
   const l = labels[language] || labels.nl;
 
   useEffect(() => {
-    // v2: Clean up ALL old dismiss keys so every user gets prompted fresh
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key === 'push_banner_dismissed' || key.startsWith('push_banner_dismissed_'))) {
-        keysToRemove.push(key);
-      }
-    }
-    keysToRemove.forEach(k => localStorage.removeItem(k));
+    let timeout: number | undefined;
 
     const checkAndShow = async () => {
-      const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
-      const uid = user?.id || 'anon';
-      const key = `push_banner_v2_${uid}`;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      const wasDismissed = localStorage.getItem(key);
-      if (wasDismissed) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('push_prompt_seen')
+        .eq('id', user.id)
+        .maybeSingle();
 
-      // If Notification API exists, check permission state
-      if (typeof Notification !== 'undefined') {
-        if (Notification.permission === 'granted' || Notification.permission === 'denied') {
-          return;
-        }
-      }
+      if ((profile as any)?.push_prompt_seen) return;
 
-      // Show banner after short delay
-      setTimeout(() => setVisible(true), 3000);
+      timeout = window.setTimeout(() => setVisible(true), 3000);
     };
-    checkAndShow();
-  }, []);
 
-  const dismissForUser = async () => {
-    const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
-    const uid = user?.id || 'anon';
-    localStorage.setItem(`push_banner_v2_${uid}`, '1');
-  };
+    checkAndShow();
+
+    return () => {
+      if (timeout) window.clearTimeout(timeout);
+    };
+  }, []);
 
   const handleEnable = async () => {
     setVisible(false);
-    await dismissForUser();
-    await promptPushPermission();
+    await setPushPreference(true);
   };
 
   const handleDismiss = async () => {
     setVisible(false);
     setDismissed(true);
-    await dismissForUser();
+    await markPushPromptSeen();
   };
 
   return (

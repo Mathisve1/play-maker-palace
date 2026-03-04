@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus, LayoutGrid, Inbox,
+  CalendarPlus, LayoutGrid, Inbox, User,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -40,7 +40,6 @@ const ClubOwnerSidebar = ({
   const isActive = (path: string) => location.pathname === path;
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
-  // Fetch pending action count for badge
   useEffect(() => {
     if (!clubId) return;
     const fetchCount = async () => {
@@ -71,7 +70,6 @@ const ClubOwnerSidebar = ({
     };
     fetchCount();
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel('sidebar-action-count')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_signups' }, fetchCount)
@@ -163,11 +161,19 @@ const ClubOwnerSidebar = ({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {(onOpenSettings || onOpenMembers) && (
+        {(onOpenProfile || onOpenSettings || onOpenMembers) && (
           <SidebarGroup>
             <SidebarGroupLabel>{t3('Instellingen', 'Paramètres', 'Settings')}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                {onOpenProfile && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="min-h-[48px]">
+                      <User className="w-5 h-5" />
+                      <span>{t3('Mijn profiel', 'Mon profil', 'My profile')}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 {onOpenMembers && (
                   <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="min-h-[48px]">

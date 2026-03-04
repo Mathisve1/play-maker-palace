@@ -5,6 +5,10 @@ const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'e0d35921-dd83
 let oneSignalInitPromise: Promise<void> | null = null;
 let oneSignalInitialized = false;
 
+async function getOneSignalModule() {
+  return import('react-onesignal').then(m => m.default).catch(() => null);
+}
+
 export async function initOneSignal() {
   if (!ONESIGNAL_APP_ID) {
     console.warn('OneSignal App ID not configured');
@@ -15,7 +19,7 @@ export async function initOneSignal() {
   if (oneSignalInitPromise) return oneSignalInitPromise;
 
   oneSignalInitPromise = (async () => {
-    const OneSignalModule = await import('react-onesignal').then(m => m.default).catch(() => null);
+    const OneSignalModule = await getOneSignalModule();
     if (!OneSignalModule) {
       console.warn('OneSignal SDK not available');
       return;
@@ -27,23 +31,22 @@ export async function initOneSignal() {
         safari_web_id: 'web.onesignal.auto.00b75e31-4d41-4106-ab79-a5c68121f393',
         allowLocalhostAsSecureOrigin: true,
         serviceWorkerPath: '/push/OneSignalSDKWorker.js',
+        serviceWorkerUpdaterPath: '/push/OneSignalSDKUpdaterWorker.js',
         serviceWorkerParam: { scope: '/push/' },
         notifyButton: { enable: true },
         promptOptions: {
-          autoPrompt: false, // We handle prompting ourselves after login
+          autoPrompt: false,
         },
       });
 
       oneSignalInitialized = true;
       console.log('OneSignal initialized');
 
-      // Tie browser subscription to logged-in app user for reliable targeting
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id) {
         await OneSignalModule.login(user.id).catch(() => null);
       }
 
-      // Listen for subscription changes and link player ID
       OneSignalModule.User.PushSubscription.addEventListener('change', async (event) => {
         const playerId = event.current?.id || OneSignalModule.User.PushSubscription.id;
         if (playerId) {
@@ -51,7 +54,6 @@ export async function initOneSignal() {
         }
       });
 
-      // Check if already subscribed
       const currentId = OneSignalModule.User.PushSubscription.id;
       if (currentId) {
         await linkPlayerIdToProfile(currentId);
@@ -64,6 +66,23 @@ export async function initOneSignal() {
   return oneSignalInitPromise;
 }
 
+export async function syncOneSignalUser(userIdOverride?: string) {
+  if (!ONESIGNAL_APP_ID) return;
+  await initOneSignal();
+
+  const OneSignalModule = await getOneSignalModule();
+  if (!OneSignalModule) return;
+
+  const userId = userIdOverride || (await supabase.auth.getUser()).data.user?.id;
+  if (!userId) return;
+
+  await OneSignalModule.login(userId).catch(() => null);
+  const currentId = OneSignalModule.User.PushSubscription.id;
+  if (currentId) {
+    await linkPlayerIdToProfile(currentId);
+  }
+}
+
 async function linkPlayerIdToProfile(playerId: string) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -71,7 +90,7 @@ async function linkPlayerIdToProfile(playerId: string) {
 
     await supabase
       .from('profiles')
-      .update({ onesignal_player_id: playerId } as any)
+      .update({ onesignal_player_id: playerId, push_notifications_enabled: true } as any)
       .eq('id', user.id);
 
     console.log('OneSignal Player ID linked:', playerId);
@@ -80,55 +99,68 @@ async function linkPlayerIdToProfile(playerId: string) {
   }
 }
 
-/**
- * Automatically request push permission if not yet decided.
- * Call this after user logs in to prompt them once.
- * If they deny, we respect that and don't ask again.
- */
-export async function autoPromptPushPermission() {
-  if (!ONESIGNAL_APP_ID) return;
+export async function markPushPromptSeen() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) return;
 
-  try {
-    await initOneSignal();
+  await supabase
+    .from('profiles')
+    .update({ push_prompt_seen: true } as any)
+    .eq('id', user.id);
+}
 
-    const OneSignalModule = await import('react-onesignal').then(m => m.default).catch(() => null);
-    if (!OneSignalModule) return;
+export async function setPushPreference(enabled: boolean) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) return { enabled: false, reason: 'not_authenticated' as const };
 
-    // Check current permission state
-    const permission = OneSignalModule.Notifications.permission;
+  await initOneSignal();
+  const OneSignalModule = await getOneSignalModule();
+  if (!OneSignalModule) return { enabled: false, reason: 'sdk_unavailable' as const };
 
-    // Only prompt if permission hasn't been decided yet (not granted AND not denied)
-    if (!permission) {
-      // Small delay so the dashboard loads first, then prompt
-      setTimeout(async () => {
-        try {
-          await OneSignalModule.Notifications.requestPermission();
-        } catch (e) {
-          console.log('Push permission prompt dismissed or denied');
-        }
-      }, 2000);
-    }
-  } catch (error) {
-    console.error('Auto push permission error:', error);
+  if (!enabled) {
+    await OneSignalModule.User.PushSubscription.optOut().catch(() => null);
+    await supabase
+      .from('profiles')
+      .update({ push_notifications_enabled: false, push_prompt_seen: true } as any)
+      .eq('id', user.id);
+    return { enabled: false, reason: 'disabled' as const };
   }
+
+  if (typeof Notification === 'undefined') {
+    await supabase
+      .from('profiles')
+      .update({ push_notifications_enabled: false, push_prompt_seen: true } as any)
+      .eq('id', user.id);
+    return { enabled: false, reason: 'unsupported' as const };
+  }
+
+  if (Notification.permission !== 'granted') {
+    await OneSignalModule.Notifications.requestPermission().catch(() => false);
+  }
+
+  if (Notification.permission !== 'granted') {
+    await supabase
+      .from('profiles')
+      .update({ push_notifications_enabled: false, push_prompt_seen: true } as any)
+      .eq('id', user.id);
+    return { enabled: false, reason: 'denied' as const };
+  }
+
+  await OneSignalModule.User.PushSubscription.optIn().catch(() => null);
+  await syncOneSignalUser(user.id);
+
+  await supabase
+    .from('profiles')
+    .update({ push_notifications_enabled: true, push_prompt_seen: true } as any)
+    .eq('id', user.id);
+
+  return { enabled: true, reason: 'enabled' as const };
+}
+
+export async function autoPromptPushPermission() {
+  await setPushPreference(true);
 }
 
 export async function promptPushPermission() {
-  if (!ONESIGNAL_APP_ID) return;
-
-  try {
-    await initOneSignal();
-
-    const OneSignalModule = await import('react-onesignal').then(m => m.default).catch(() => null);
-    if (OneSignalModule) {
-      await OneSignalModule.Notifications.requestPermission();
-
-      const currentId = OneSignalModule.User.PushSubscription.id;
-      if (currentId) {
-        await linkPlayerIdToProfile(currentId);
-      }
-    }
-  } catch (error) {
-    console.error('Push permission error:', error);
-  }
+  await setPushPreference(true);
 }
