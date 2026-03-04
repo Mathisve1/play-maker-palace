@@ -122,7 +122,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
       setRecording(true);
       setRecordingTime(0);
       recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
-    } catch { toast.error('Microfoon niet beschikbaar'); }
+    } catch { toast.error(t3('Microfoon niet beschikbaar', 'Microphone non disponible', 'Microphone not available')); }
   };
 
   const stopRecording = () => {
