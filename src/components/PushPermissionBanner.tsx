@@ -34,19 +34,22 @@ const PushPermissionBanner = () => {
   const l = labels[language] || labels.nl;
 
   useEffect(() => {
-    // Check if user already dismissed or already has permission
+    // Check if user already dismissed
     const wasDismissed = localStorage.getItem('push_banner_dismissed');
     if (wasDismissed) return;
 
-    // Check if Notification API exists and permission state
+    // If Notification API exists, check permission state
     if (typeof Notification !== 'undefined') {
-      if (Notification.permission === 'default') {
-        // Not yet decided — show banner after short delay
-        const timer = setTimeout(() => setVisible(true), 3000);
-        return () => clearTimeout(timer);
+      if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+        // Already decided — don't show
+        return;
       }
-      // Already granted or denied — don't show
     }
+
+    // Show banner: either permission is 'default' or Notification API is missing
+    // (on Android PWA / some browsers, we still want to offer the prompt)
+    const timer = setTimeout(() => setVisible(true), 3000);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleEnable = async () => {
