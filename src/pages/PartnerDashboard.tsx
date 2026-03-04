@@ -71,6 +71,19 @@ const PartnerDashboard = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/partner-login'); return; }
       setUserId(session.user.id);
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, email, avatar_url')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      setProfile(profileData || {
+        full_name: (session.user.user_metadata?.full_name as string) || '',
+        email: session.user.email || '',
+        avatar_url: null,
+      });
+
       const { data: adminRecords } = await supabase.from('partner_admins').select('partner_id').eq('user_id', session.user.id);
       if (!adminRecords?.length) { navigate('/partner-login'); return; }
       const partnerId = adminRecords[0].partner_id;
