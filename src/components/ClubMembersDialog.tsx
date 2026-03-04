@@ -294,7 +294,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
           <div className="mb-6 p-4 rounded-xl bg-muted/30 border border-border">
             <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
               <UserPlus className="w-4 h-4" />
-              Nieuw lid uitnodigen
+              {t3('Nieuw lid uitnodigen', 'Inviter un nouveau membre', 'Invite new member')}
             </h3>
             <div className="flex gap-2 mb-2">
               <select
