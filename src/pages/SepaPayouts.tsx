@@ -743,7 +743,7 @@ const SepaPayouts = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{payables.length}</p>
-                <p className="text-xs text-muted-foreground">Openstaande vergoedingen</p>
+                <p className="text-xs text-muted-foreground">{t3('Openstaande vergoedingen', 'Remboursements en attente', 'Outstanding reimbursements')}</p>
               </div>
             </div>
           </motion.div>
