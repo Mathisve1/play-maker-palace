@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, AlertTriangle, CheckCircle2, Radio, Maximize2, Minimize2,
