@@ -650,7 +650,7 @@ const SafetyDashboard = () => {
   const activeIncidents = useMemo(() => incidents.filter(i => i.status !== 'opgelost'), [incidents]);
   const highPriorityCount = activeIncidents.filter(i => i.priority === 'high').length;
 
-  const getIncidentTypeName = (typeId: string | null) => incidentTypes.find(t => t.id === typeId)?.label || 'Onbekend';
+  const getIncidentTypeName = (typeId: string | null) => incidentTypes.find(t => t.id === typeId)?.label || t3('Onbekend', 'Inconnu', 'Unknown');
   const getZoneName = (zoneId: string | null) => zones.find(z => z.id === zoneId)?.name || '—';
 
   // Build full zone hierarchy path for a volunteer (e.g. "Hoofdtribune > Rij A > Stoel 12")
