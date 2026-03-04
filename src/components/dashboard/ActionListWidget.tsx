@@ -14,11 +14,11 @@ interface ActionCount {
 }
 
 const categoryConfig = {
-  task_signup: { icon: UserCheck, label: { nl: 'Aanmeldingen', en: 'Signups' }, color: 'text-blue-600 bg-blue-500/10' },
-  enrollment: { icon: Users, label: { nl: 'Inschrijvingen', en: 'Enrollments' }, color: 'text-yellow-600 bg-yellow-500/10' },
-  contract: { icon: FileSignature, label: { nl: 'Contracten', en: 'Contracts' }, color: 'text-indigo-600 bg-indigo-500/10' },
-  day_signup: { icon: Clock, label: { nl: 'Dag-aanmeldingen', en: 'Day signups' }, color: 'text-orange-600 bg-orange-500/10' },
-  ticket: { icon: Ticket, label: { nl: 'Tickets', en: 'Tickets' }, color: 'text-purple-600 bg-purple-500/10' },
+  task_signup: { icon: UserCheck, label: { nl: 'Aanmeldingen', fr: 'Inscriptions', en: 'Signups' }, color: 'text-blue-600 bg-blue-500/10' },
+  enrollment: { icon: Users, label: { nl: 'Inschrijvingen', fr: 'Inscriptions mensuelles', en: 'Enrollments' }, color: 'text-yellow-600 bg-yellow-500/10' },
+  contract: { icon: FileSignature, label: { nl: 'Contracten', fr: 'Contrats', en: 'Contracts' }, color: 'text-indigo-600 bg-indigo-500/10' },
+  day_signup: { icon: Clock, label: { nl: 'Dag-aanmeldingen', fr: 'Inscriptions journalières', en: 'Day signups' }, color: 'text-orange-600 bg-orange-500/10' },
+  ticket: { icon: Ticket, label: { nl: 'Tickets', fr: 'Tickets', en: 'Tickets' }, color: 'text-purple-600 bg-purple-500/10' },
 };
 
 interface ActionListWidgetProps {
