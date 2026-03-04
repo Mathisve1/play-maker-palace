@@ -79,6 +79,7 @@ serve(async (req) => {
           pushPayload.target_channel = 'push';
         }
 
+        pushPayload.web_url = url || 'https://play-maker-palace.lovable.app/dashboard';
         if (url) pushPayload.url = url;
         if (data) pushPayload.data = data;
 
