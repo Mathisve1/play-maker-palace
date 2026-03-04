@@ -164,8 +164,15 @@ const Community = () => {
         is_following: followSet.has(c.id),
       }));
 
-      // Extract unique sports
-      const uniqueSports = [...new Set(enriched.map(c => c.sport).filter(Boolean))] as string[];
+      // Extract unique sports (case-insensitive dedup, keep first-seen casing)
+      const sportMap = new Map<string, string>();
+      enriched.forEach(c => {
+        if (c.sport) {
+          const key = c.sport.toLowerCase();
+          if (!sportMap.has(key)) sportMap.set(key, c.sport);
+        }
+      });
+      const uniqueSports = [...sportMap.values()];
       setSports(uniqueSports);
 
       setClubs(enriched);
