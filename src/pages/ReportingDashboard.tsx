@@ -728,7 +728,7 @@ const ReportingDashboard = () => {
     doc.setFontSize(8);
     eventReports.forEach(e => {
       if (y > 275) { doc.addPage(); y = 20; }
-      doc.text(`${e.title}: ${e.totalTasks} taken, ${e.totalVolunteers} vrw, bezetting ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`, 14, y);
+      doc.text(`${e.title}: ${e.totalTasks} ${L.tasks.toLowerCase()}, ${e.totalVolunteers} vol, ${L.occupancy.toLowerCase()} ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`, 14, y);
       y += 4.5;
     });
 
