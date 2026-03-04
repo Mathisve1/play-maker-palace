@@ -932,11 +932,11 @@ const MonthlyPlanning = () => {
               </Select>
             </div>
             {taskForm.compensation_type === 'daily' ? (
-              <div><Label>Dagvergoeding (€)</Label><Input type="number" value={taskForm.daily_rate} onChange={e => setTaskForm(f => ({ ...f, daily_rate: e.target.value }))} /></div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Uurloon (€)</Label><Input type="number" value={taskForm.hourly_rate} onChange={e => setTaskForm(f => ({ ...f, hourly_rate: e.target.value }))} /></div>
-                <div><Label>Geschatte uren</Label><Input type="number" value={taskForm.estimated_hours} onChange={e => setTaskForm(f => ({ ...f, estimated_hours: e.target.value }))} /></div>
+               <div><Label>{t3('Dagvergoeding (€)', 'Indemnité journalière (€)', 'Daily rate (€)')}</Label><Input type="number" value={taskForm.daily_rate} onChange={e => setTaskForm(f => ({ ...f, daily_rate: e.target.value }))} /></div>
+             ) : (
+               <div className="grid grid-cols-2 gap-3">
+                 <div><Label>{t3('Uurloon (€)', 'Tarif horaire (€)', 'Hourly rate (€)')}</Label><Input type="number" value={taskForm.hourly_rate} onChange={e => setTaskForm(f => ({ ...f, hourly_rate: e.target.value }))} /></div>
+                 <div><Label>{t3('Geschatte uren', 'Heures estimées', 'Estimated hours')}</Label><Input type="number" value={taskForm.estimated_hours} onChange={e => setTaskForm(f => ({ ...f, estimated_hours: e.target.value }))} /></div>
               </div>
             )}
             <div><Label>Aantal plaatsen</Label><Input type="number" value={taskForm.spots_available} onChange={e => setTaskForm(f => ({ ...f, spots_available: e.target.value }))} /></div>
