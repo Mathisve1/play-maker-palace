@@ -315,33 +315,34 @@ const CommandCenter = () => {
     navigate('/login');
   };
 
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+
   const getSteps = (item: ActionItem) => {
     const steps: { label: string; status: StepStatus }[] = [];
-    const nl = language === 'nl';
 
     if (item.type === 'enrollment') {
-      steps.push({ label: nl ? 'Aangemeld' : 'Signed up', status: 'completed' });
-      steps.push({ label: nl ? 'Goedkeuren' : 'Approve', status: 'active' });
-      steps.push({ label: nl ? 'Contract' : 'Contract', status: 'upcoming' });
-      steps.push({ label: nl ? 'Actief' : 'Active', status: 'upcoming' });
+      steps.push({ label: t3('Aangemeld', 'Inscrit', 'Signed up'), status: 'completed' });
+      steps.push({ label: t3('Goedkeuren', 'Approuver', 'Approve'), status: 'active' });
+      steps.push({ label: 'Contract', status: 'upcoming' });
+      steps.push({ label: t3('Actief', 'Actif', 'Active'), status: 'upcoming' });
     } else if (item.type === 'task_signup') {
-      steps.push({ label: nl ? 'Aangemeld' : 'Signed up', status: 'completed' });
-      steps.push({ label: nl ? 'Toekennen' : 'Assign', status: 'active' });
-      if (item.contract_template_id) steps.push({ label: nl ? 'Contract' : 'Contract', status: 'upcoming' });
-      steps.push({ label: nl ? 'Actief' : 'Active', status: 'upcoming' });
+      steps.push({ label: t3('Aangemeld', 'Inscrit', 'Signed up'), status: 'completed' });
+      steps.push({ label: t3('Toekennen', 'Attribuer', 'Assign'), status: 'active' });
+      if (item.contract_template_id) steps.push({ label: 'Contract', status: 'upcoming' });
+      steps.push({ label: t3('Actief', 'Actif', 'Active'), status: 'upcoming' });
     } else if (item.type === 'contract') {
-      steps.push({ label: nl ? 'Aangemeld' : 'Signed up', status: 'completed' });
-      steps.push({ label: nl ? 'Goedgekeurd' : 'Approved', status: 'completed' });
-      steps.push({ label: nl ? 'Contract' : 'Contract', status: 'active' });
-      steps.push({ label: nl ? 'Actief' : 'Active', status: 'upcoming' });
+      steps.push({ label: t3('Aangemeld', 'Inscrit', 'Signed up'), status: 'completed' });
+      steps.push({ label: t3('Goedgekeurd', 'Approuvé', 'Approved'), status: 'completed' });
+      steps.push({ label: 'Contract', status: 'active' });
+      steps.push({ label: t3('Actief', 'Actif', 'Active'), status: 'upcoming' });
     } else if (item.type === 'day_signup') {
-      steps.push({ label: nl ? 'Contract' : 'Contract', status: 'completed' });
-      steps.push({ label: nl ? 'Dag aangemeld' : 'Day signup', status: 'completed' });
-      steps.push({ label: nl ? 'Toekennen' : 'Assign', status: 'active' });
-      steps.push({ label: nl ? 'Ticket' : 'Ticket', status: 'upcoming' });
+      steps.push({ label: 'Contract', status: 'completed' });
+      steps.push({ label: t3('Dag aangemeld', 'Inscription jour', 'Day signup'), status: 'completed' });
+      steps.push({ label: t3('Toekennen', 'Attribuer', 'Assign'), status: 'active' });
+      steps.push({ label: 'Ticket', status: 'upcoming' });
     } else if (item.type === 'ticket') {
-      steps.push({ label: nl ? 'Toegekend' : 'Assigned', status: 'completed' });
-      steps.push({ label: nl ? 'Ticket' : 'Ticket', status: 'active' });
+      steps.push({ label: t3('Toegekend', 'Attribué', 'Assigned'), status: 'completed' });
+      steps.push({ label: 'Ticket', status: 'active' });
     }
     return steps;
   };
