@@ -549,7 +549,7 @@ const SepaPayouts = () => {
         .eq('batch_id', batchId)
         .eq('error_flag', false);
       if (!data || data.length === 0) {
-        toast.error('Geen items in batch');
+        toast.error(t3('Geen items in batch', 'Aucun élément dans le lot', 'No items in batch'));
         return;
       }
       const batch = batches.find(b => b.id === batchId);
@@ -561,7 +561,7 @@ const SepaPayouts = () => {
       const csvContent = generateCsv(validItems, batch?.batch_message || '');
       downloadFile(csvContent, `${batch?.batch_reference || 'batch'}.csv`, 'text/csv;charset=utf-8');
     }
-    toast.success('CSV gedownload!');
+    toast.success(t3('CSV gedownload!', 'CSV téléchargé !', 'CSV downloaded!'));
   };
 
   const generateCsv = (items: SepaBatchItem[], message: string): string => {
