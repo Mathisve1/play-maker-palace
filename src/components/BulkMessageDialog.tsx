@@ -260,7 +260,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Stuur een bericht naar vrijwilligers voor <span className="font-medium text-foreground">{taskTitle}</span>
+          {t3('Stuur een bericht naar vrijwilligers voor', 'Envoyer un message aux bénévoles pour', 'Send a message to volunteers for')} <span className="font-medium text-foreground">{taskTitle}</span>
         </p>
 
         {/* Volunteer selection */}
