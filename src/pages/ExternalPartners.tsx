@@ -471,7 +471,7 @@ const ExternalPartners = () => {
       const a = document.createElement('a');
       a.href = url; a.download = `aanwezigen-${eventTitle.replace(/\s/g, '_')}.csv`;
       a.click(); URL.revokeObjectURL(url);
-      toast.success(nl ? 'Export gedownload!' : 'Export downloaded!');
+      toast.success(t3('Export gedownload!', 'Export téléchargé!', 'Export downloaded!'));
     } catch (err: any) { toast.error(err.message); }
     setExporting(false);
   };
