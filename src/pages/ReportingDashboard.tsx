@@ -865,18 +865,18 @@ const ReportingDashboard = () => {
         {/* ── KPI Cards ──────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {[
-            { icon: Users, label: 'Vrijwilligers', value: kpis.totalVolunteers, color: 'text-primary' },
-            { icon: Hash, label: 'Taken', value: kpis.totalTasks, color: 'text-primary' },
-            { icon: ClipboardCheck, label: 'Toewijzingen', value: kpis.totalAssigned, color: 'text-primary' },
-            { icon: CheckCircle2, label: 'Ingecheckt', value: kpis.totalCheckedIn, color: 'text-emerald-500' },
-            { icon: XCircle, label: 'No-shows', value: kpis.totalNoShows, color: 'text-destructive' },
-            { icon: Percent, label: 'Opkomst', value: `${kpis.attendanceRate}%`, color: 'text-primary' },
-            { icon: Target, label: 'Bezetting', value: `${kpis.fillRate}%`, color: 'text-primary' },
-            { icon: Euro, label: 'Uitbetaald', value: `€${kpis.totalPaid.toFixed(0)}`, color: 'text-primary' },
-            { icon: CreditCard, label: 'Openstaand', value: `€${kpis.totalPending.toFixed(0)}`, color: 'text-amber-500' },
-            { icon: Clock, label: '€/taak gem.', value: `€${kpis.avgCostPerTask.toFixed(0)}`, color: 'text-primary' },
-            { icon: FileText, label: 'Contracten', value: `${kpis.contractsPercent}%`, color: 'text-primary' },
-            { icon: Handshake, label: 'Partner mdw', value: kpis.activePartnerMembers, color: 'text-primary' },
+            { icon: Users, label: L.volunteers, value: kpis.totalVolunteers, color: 'text-primary' },
+            { icon: Hash, label: L.tasks, value: kpis.totalTasks, color: 'text-primary' },
+            { icon: ClipboardCheck, label: L.assignments, value: kpis.totalAssigned, color: 'text-primary' },
+            { icon: CheckCircle2, label: L.checkedIn, value: kpis.totalCheckedIn, color: 'text-emerald-500' },
+            { icon: XCircle, label: L.noShows, value: kpis.totalNoShows, color: 'text-destructive' },
+            { icon: Percent, label: L.attendance, value: `${kpis.attendanceRate}%`, color: 'text-primary' },
+            { icon: Target, label: L.occupancy, value: `${kpis.fillRate}%`, color: 'text-primary' },
+            { icon: Euro, label: L.paidOut, value: `€${kpis.totalPaid.toFixed(0)}`, color: 'text-primary' },
+            { icon: CreditCard, label: L.outstanding, value: `€${kpis.totalPending.toFixed(0)}`, color: 'text-amber-500' },
+            { icon: Clock, label: L.avgPerTask, value: `€${kpis.avgCostPerTask.toFixed(0)}`, color: 'text-primary' },
+            { icon: FileText, label: L.contracts, value: `${kpis.contractsPercent}%`, color: 'text-primary' },
+            { icon: Handshake, label: L.partnerStaff, value: kpis.activePartnerMembers, color: 'text-primary' },
           ].map((kpi, i) => (
             <Card key={i}><CardContent className="pt-4 pb-3 text-center">
               <kpi.icon className={cn("w-5 h-5 mx-auto mb-1", kpi.color)} />
