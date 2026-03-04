@@ -176,6 +176,7 @@ const Signup = () => {
               language={language}
               onComplete={handleOnboardingComplete}
               saving={loading}
+              onLanguageChange={(lang) => setLanguage(lang)}
             />
           )}
         </div>
