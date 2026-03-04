@@ -806,7 +806,7 @@ const MonthlyPlanning = () => {
                             {hasTicket && ds.volunteer_email && (
                               <Button size="sm" variant="outline" className="gap-1" onClick={() => sendTicketEmail(ds)} disabled={sendingTicketEmailIds.has(ds.id)}>
                                 {sendingTicketEmailIds.has(ds.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                                E-mail ticket
+                                {t3('E-mail ticket', 'E-mail ticket', 'Email ticket')}
                               </Button>
                             )}
                           </div>
