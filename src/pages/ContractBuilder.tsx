@@ -747,7 +747,7 @@ const ContractBuilder = () => {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Opslaan...' : editingTemplateId ? 'Bijwerken' : 'Opslaan'}
+            {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : editingTemplateId ? t3('Bijwerken', 'Mettre à jour', 'Update') : t3('Opslaan', 'Enregistrer', 'Save')}
           </button>
         </div>
       </div>
