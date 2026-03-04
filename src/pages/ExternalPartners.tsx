@@ -662,7 +662,7 @@ const ExternalPartners = () => {
                                           <p className="text-sm font-medium">{s.volunteer_name}</p>
                                           {member?.user_id ? (
                                             <Badge variant="outline" className="text-[10px] gap-0.5 border-green-500/40 text-green-700 dark:text-green-400">
-                                              <UserCheck className="w-2.5 h-2.5" />{nl ? 'Account' : 'Account'}
+                                              <UserCheck className="w-2.5 h-2.5" />{t3('Account', 'Compte', 'Account')}
                                             </Badge>
                                           ) : member && !member.user_id ? (
                                             <Badge variant="outline" className="text-[10px] gap-0.5 border-amber-500/40 text-amber-700 dark:text-amber-400">
