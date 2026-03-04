@@ -348,7 +348,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="text-muted-foreground hover:text-foreground transition-colors"
-                title="Bijlage toevoegen"
+                title={t3('Bijlage toevoegen', 'Ajouter une pièce jointe', 'Add attachment')}
               >
                 <Paperclip className="w-3.5 h-3.5" />
               </button>
