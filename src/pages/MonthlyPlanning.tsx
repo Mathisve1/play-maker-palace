@@ -391,7 +391,7 @@ const MonthlyPlanning = () => {
       const { data: inserted, error } = await supabase.from('monthly_plan_tasks').insert(newTasks).select();
       if (error) throw error;
       setTasks(prev => [...prev, ...(inserted as unknown as PlanTask[])]);
-      toast.success(`${inserted!.length} taken gekopieerd van ${MONTH_NAMES_NL[prevM - 1]}`);
+      toast.success(`${inserted!.length} ${t3('taken gekopieerd van', 'tâches copiées de', 'tasks copied from')} ${MONTH_NAMES[language]?.[prevM - 1] || MONTH_NAMES.nl[prevM - 1]}`);
     } catch (err: any) { toast.error(err.message || 'Kopiëren mislukt'); }
     setCopyingTasks(false);
   };
