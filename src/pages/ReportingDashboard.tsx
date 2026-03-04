@@ -631,9 +631,9 @@ const ReportingDashboard = () => {
       `Uur-bevestigingen: ${hourConfStats.total} totaal, ${hourConfStats.approved} goedgekeurd, ${hourConfStats.pending} in afwachting`,
       `Contracten: ${signatureRequests.filter(s => s.status === 'completed').length}/${signatureRequests.length} ondertekend`,
       '', 'MAANDELIJKSE UITGAVEN:',
-      ...monthlySpendingChart.map(m => `- ${m.month}: €${m.Bedrag.toFixed(2)}`),
-      '', 'DAG-VAN-DE-WEEK VERDELING:',
-      ...dayOfWeekChart.map(d => `- ${d.name}: ${d.Taken} taken`),
+      ...monthlySpendingChart.map(m => `- ${m.month}: €${Number(m[L.paidOut] || 0).toFixed(2)}`),
+      '', 'DAY DISTRIBUTION:',
+      ...dayOfWeekChart.map(d => `- ${d.name}: ${d[L.tasks]} tasks`),
     ];
     return lines.join('\n');
   };
