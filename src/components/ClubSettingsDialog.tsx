@@ -93,7 +93,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onClose}>
       <div className="bg-card rounded-2xl shadow-elevated p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-heading font-semibold text-foreground">Club instellingen</h2>
+          <h2 className="text-lg font-heading font-semibold text-foreground">{t3('Club instellingen', 'Paramètres du club', 'Club settings')}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
