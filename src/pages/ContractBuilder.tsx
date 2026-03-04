@@ -412,7 +412,7 @@ const ContractBuilder = () => {
     const sigPath = `${clubId}/signature.png`;
     await supabase.storage.from('club-signatures').remove([sigPath]);
     setClubSignatureUrl(null);
-    toast.success('Handtekening verwijderd.');
+    toast.success(t3('Handtekening verwijderd.', 'Signature supprimée.', 'Signature deleted.'));
   };
 
   const selectedBlock = blocks.find(b => b.id === selectedBlockId) || null;
