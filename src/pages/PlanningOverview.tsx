@@ -360,7 +360,7 @@ const PlanningOverview = () => {
                   </div>
                   <div className="divide-y divide-border">
                     {eventTasks.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-4">{nl ? 'Geen taken' : 'No tasks'}</p>
+                      <p className="text-xs text-muted-foreground text-center py-4">{t3('Geen taken', 'Pas de tâches', 'No tasks')}</p>
                     )}
                     {eventTasks.map((task, ti) => (
                       <TaskRow key={task.id} task={task} isFirst={ti === 0 && task.zone_count > 0} />
