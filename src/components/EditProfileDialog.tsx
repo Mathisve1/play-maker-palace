@@ -396,6 +396,38 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
           </div>
         </div>
 
+        {/* Language preference */}
+        <div className="space-y-3 mt-6 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <span>🌍</span>
+            {language === 'nl' ? 'Taalvoorkeur' : language === 'fr' ? 'Préférence de langue' : 'Language preference'}
+          </h3>
+          <div className="flex gap-2">
+            {([
+              { code: 'nl' as const, flag: '🇧🇪', label: 'NL' },
+              { code: 'fr' as const, flag: '🇫🇷', label: 'FR' },
+              { code: 'en' as const, flag: '🇬🇧', label: 'EN' },
+            ]).map(lang => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => {
+                  setProfileLanguage(lang.code);
+                  setGlobalLanguage(lang.code);
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all ${
+                  profileLanguage === lang.code
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border bg-card text-foreground hover:bg-muted/50'
+                }`}
+              >
+                <span>{lang.flag}</span>
+                <span>{lang.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Bank details */}
         <div className="space-y-4 mt-6 pt-6 border-t border-border">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
