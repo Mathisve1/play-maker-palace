@@ -645,7 +645,7 @@ const MonthlyPlanning = () => {
             {/* Tasks list */}
             {tasks.length > 0 && (
               <Card>
-                <CardHeader><CardTitle className="text-base">Alle taken deze maand</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base">{t3('Alle taken deze maand', 'Toutes les tâches ce mois', 'All tasks this month')}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {tasks.map(t => {
