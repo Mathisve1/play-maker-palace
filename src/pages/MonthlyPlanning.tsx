@@ -920,7 +920,7 @@ const MonthlyPlanning = () => {
                <div><Label>{t3('Start', 'Début', 'Start')}</Label><Input type="time" value={taskForm.start_time} onChange={e => setTaskForm(f => ({ ...f, start_time: e.target.value }))} /></div>
                <div><Label>{t3('Einde', 'Fin', 'End')}</Label><Input type="time" value={taskForm.end_time} onChange={e => setTaskForm(f => ({ ...f, end_time: e.target.value }))} /></div>
             </div>
-            <div><Label>Locatie</Label><Input value={taskForm.location} onChange={e => setTaskForm(f => ({ ...f, location: e.target.value }))} placeholder="bv. Clubhuis, Veld 3..." /></div>
+            <div><Label>{t3('Locatie', 'Lieu', 'Location')}</Label><Input value={taskForm.location} onChange={e => setTaskForm(f => ({ ...f, location: e.target.value }))} placeholder={t3('bv. Clubhuis, Veld 3...', 'ex. Club-house, Terrain 3...', 'e.g. Clubhouse, Field 3...')} /></div>
             <div>
               <Label>Vergoeding</Label>
               <Select value={taskForm.compensation_type} onValueChange={v => setTaskForm(f => ({ ...f, compensation_type: v }))}>
