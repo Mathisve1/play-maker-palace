@@ -475,18 +475,18 @@ const EventsManager = () => {
           {showCreateTask && (
             <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               onSubmit={handleCreateLooseTask} className="bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden">
-              <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{nl ? 'Nieuwe losse taak' : 'New loose task'}</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required maxLength={200} value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
-                <div className="sm:col-span-2"><label className={labelClass}>{nl ? 'Beschrijving' : 'Description'}</label><textarea rows={2} value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
-                <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={newTask.task_date} onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
-                <div><label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label><input type="text" value={newTask.location} onChange={e => setNewTask(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
-                <div><label className={labelClass}>{nl ? 'Plaatsen' : 'Spots'}</label><input type="number" min={1} value={newTask.spots_available} onChange={e => setNewTask(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowCreateTask(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
-                <button type="submit" disabled={creatingTask || !newTask.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
-                  {creatingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : (nl ? 'Aanmaken' : 'Create')}
+               <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{t3('Nieuwe losse taak', 'Nouvelle tâche libre', 'New loose task')}</h2>
+               <div className="grid gap-4 sm:grid-cols-2">
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required maxLength={200} value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
+                 <div><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={newTask.task_date} onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label><input type="text" value={newTask.location} onChange={e => setNewTask(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Plaatsen', 'Places', 'Spots')}</label><input type="number" min={1} value={newTask.spots_available} onChange={e => setNewTask(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
+               </div>
+               <div className="flex justify-end gap-3 mt-6">
+                 <button type="button" onClick={() => setShowCreateTask(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
+                 <button type="submit" disabled={creatingTask || !newTask.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
+                   {creatingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Aanmaken', 'Créer', 'Create')}
                 </button>
               </div>
             </motion.form>
