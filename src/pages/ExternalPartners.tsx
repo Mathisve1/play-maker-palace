@@ -913,7 +913,7 @@ const ExternalPartners = () => {
             <div><Label>{t3('Max plaatsen (optioneel)', 'Places max (optionnel)', 'Max spots (optional)')}</Label><Input type="number" min={1} value={maxSpots} onChange={e => setMaxSpots(e.target.value)} /></div>
             <Button onClick={handleAddEventAccess} disabled={addingEvent || !selectedEventId} className="w-full">
               {addingEvent ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {nl ? 'Openstellen' : 'Add'}
+              {t3('Openstellen', 'Ouvrir', 'Add')}
             </Button>
           </div>
         </DialogContent>
