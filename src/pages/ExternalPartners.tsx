@@ -640,7 +640,7 @@ const ExternalPartners = () => {
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base flex items-center gap-2">
                             <Users className="w-4 h-4" />
-                            {nl ? `Toegewezen medewerkers (${selectedTaskForDetail.signups.length})` : `Assigned members (${selectedTaskForDetail.signups.length})`}
+                            {t3(`Toegewezen medewerkers (${selectedTaskForDetail.signups.length})`, `Membres assignés (${selectedTaskForDetail.signups.length})`, `Assigned members (${selectedTaskForDetail.signups.length})`)}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
