@@ -299,6 +299,7 @@ const ClubOwnerDashboard = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const dt = dashboardT[language];
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
