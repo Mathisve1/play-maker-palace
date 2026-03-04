@@ -74,6 +74,8 @@ const playAlarm = () => {
 
 const SafetyDashboard = () => {
   const { eventId } = useParams<{ eventId: string }>();
+  const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const navigate = useNavigate();
 
   const [userId, setUserId] = useState<string | null>(null);
