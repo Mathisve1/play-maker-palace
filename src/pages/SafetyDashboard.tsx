@@ -448,7 +448,7 @@ const SafetyDashboard = () => {
       await (supabase as any).from('safety_incidents').update(updates).eq('id', pendingIncidentId);
     }
 
-    toast.success('Details toegevoegd aan melding');
+    toast.success(t3('Details toegevoegd aan melding', 'Détails ajoutés au signalement', 'Details added to report'));
     resetReportFlow();
     setReporting(false);
   };
