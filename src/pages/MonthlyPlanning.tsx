@@ -392,7 +392,7 @@ const MonthlyPlanning = () => {
       if (error) throw error;
       setTasks(prev => [...prev, ...(inserted as unknown as PlanTask[])]);
       toast.success(`${inserted!.length} ${t3('taken gekopieerd van', 'tâches copiées de', 'tasks copied from')} ${MONTH_NAMES[language]?.[prevM - 1] || MONTH_NAMES.nl[prevM - 1]}`);
-    } catch (err: any) { toast.error(err.message || 'Kopiëren mislukt'); }
+    } catch (err: any) { toast.error(err.message || t3('Kopiëren mislukt', 'Copie échouée', 'Copy failed')); }
     setCopyingTasks(false);
   };
 
