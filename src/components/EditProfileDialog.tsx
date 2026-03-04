@@ -98,6 +98,13 @@ const labels = {
     requiredForBank: 'Veuillez d\'abord remplir votre nom et IBAN pour donner votre consentement.',
     firstLoginTitle: 'Bienvenue ! Complétez votre profil',
     firstLoginDescription: 'Remplissez vos informations pour que les clubs vous connaissent mieux.',
+    pushNotifications: 'Notifications push',
+    pushEnabled: 'Les notifications sont activées',
+    pushDisabled: 'Les notifications sont désactivées',
+    pushEnable: 'Activer',
+    pushDisable: 'Désactiver',
+    pushUnavailable: 'Les notifications push ne sont pas supportées dans ce navigateur',
+    pushDenied: 'Les notifications push sont bloquées. Modifiez cela dans les paramètres de votre navigateur.',
   },
   en: {
     title: 'My profile',
