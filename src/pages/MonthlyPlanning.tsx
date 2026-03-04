@@ -632,7 +632,7 @@ const MonthlyPlanning = () => {
                       <SelectContent>{contractTemplates.map(ct => <SelectItem key={ct.id} value={ct.id}>{ct.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  {tasks.length > 0 && <Button onClick={publishPlan}><Send className="w-4 h-4 mr-2" /> Publiceer maandplan</Button>}
+                  {tasks.length > 0 && <Button onClick={publishPlan}><Send className="w-4 h-4 mr-2" /> {t3('Publiceer maandplan', 'Publier le plan mensuel', 'Publish monthly plan')}</Button>}
                 </div>
               )}
               {plan.status === 'published' && (
