@@ -758,6 +758,42 @@ export type Database = {
         }
         Relationships: []
       }
+      content_translations: {
+        Row: {
+          created_at: string
+          id: string
+          source_field: string
+          source_hash: string
+          source_id: string
+          source_table: string
+          target_language: string
+          translated_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_field: string
+          source_hash: string
+          source_id: string
+          source_table: string
+          target_language: string
+          translated_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_field?: string
+          source_hash?: string
+          source_id?: string
+          source_table?: string
+          target_language?: string
+          translated_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contract_templates: {
         Row: {
           club_id: string
@@ -1873,6 +1909,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          language: string
           onesignal_player_id: string | null
           phone: string | null
           stripe_account_id: string | null
@@ -1892,6 +1929,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          language?: string
           onesignal_player_id?: string | null
           phone?: string | null
           stripe_account_id?: string | null
@@ -1911,6 +1949,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          language?: string
           onesignal_player_id?: string | null
           phone?: string | null
           stripe_account_id?: string | null
