@@ -922,7 +922,7 @@ const ExternalPartners = () => {
       {/* Send Ticket Dialog */}
       <Dialog open={!!sendingTicketFor} onOpenChange={() => setSendingTicketFor(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{nl ? 'Ticket versturen' : 'Send ticket'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t3('Ticket versturen', 'Envoyer un ticket', 'Send ticket')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             {(() => {
               const member = members.find(m => m.id === sendingTicketFor);
