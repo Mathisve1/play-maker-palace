@@ -57,16 +57,22 @@ const PushPermissionBanner = () => {
     getUserId();
   }, []);
 
+  const dismissForUser = async () => {
+    const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
+    const uid = user?.id || 'anon';
+    localStorage.setItem(`push_banner_dismissed_${uid}`, '1');
+  };
+
   const handleEnable = async () => {
     setVisible(false);
-    localStorage.setItem('push_banner_dismissed', '1');
+    await dismissForUser();
     await promptPushPermission();
   };
 
-  const handleDismiss = () => {
+  const handleDismiss = async () => {
     setVisible(false);
     setDismissed(true);
-    localStorage.setItem('push_banner_dismissed', '1');
+    await dismissForUser();
   };
 
   return (
