@@ -347,7 +347,7 @@ const TaskDetail = () => {
       navigator.share({ title: task?.title, url: window.location.href });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      toast.success('Link gekopieerd!');
+      toast.success(language === 'fr' ? 'Lien copié !' : language === 'en' ? 'Link copied!' : 'Link gekopieerd!');
     }
   };
 
