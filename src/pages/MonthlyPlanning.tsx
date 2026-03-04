@@ -717,7 +717,7 @@ const MonthlyPlanning = () => {
                           {e.approval_status === 'approved' && plan?.contract_template_id && e.contract_status !== 'signed' && (
                             <Button size="sm" variant="outline" onClick={() => setContractVolunteer(e)}>
                               <FileSignature className="w-3.5 h-3.5 mr-1" />
-                              {e.contract_status === 'sent' ? 'Opnieuw' : 'Contract'}
+                              {e.contract_status === 'sent' ? t3('Opnieuw', 'Renvoyer', 'Resend') : 'Contract'}
                             </Button>
                           )}
                         </div>
