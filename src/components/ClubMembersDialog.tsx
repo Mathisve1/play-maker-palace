@@ -229,7 +229,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   const copyInviteLink = (token: string) => {
     const link = `${window.location.origin}/club-invite/${token}`;
     navigator.clipboard.writeText(link);
-    toast.success('Link gekopieerd!');
+    toast.success(t3('Link gekopieerd!', 'Lien copié!', 'Link copied!'));
   };
 
   return (
