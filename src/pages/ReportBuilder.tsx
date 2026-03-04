@@ -832,7 +832,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={history.length === 0} onClick={undo}>
-              <Undo2 className="h-4 w-4 mr-1" /> Ongedaan
+              <Undo2 className="h-4 w-4 mr-1" /> {t3('Ongedaan', 'Annuler', 'Undo')}
             </Button>
             <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
