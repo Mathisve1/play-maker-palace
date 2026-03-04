@@ -417,7 +417,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
         {/* Send button */}
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {sending && `${sentCount}/${selectedVolunteers.size} verstuurd...`}
+            {sending && `${sentCount}/${selectedVolunteers.size} ${t3('verstuurd...', 'envoyé...', 'sent...')}`}
           </span>
           <button
             onClick={handleSend}
