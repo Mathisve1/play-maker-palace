@@ -138,7 +138,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
 
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
-            Annuleren
+            {t3('Annuleren', 'Annuler', 'Cancel')}
           </button>
           <button
             onClick={handleSave}
