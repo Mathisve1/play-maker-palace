@@ -1098,8 +1098,8 @@ const ReportingDashboard = () => {
           <TabsContent value="ai" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="w-5 h-5 text-primary" />AI Rapportage Assistent</CardTitle>
-                <p className="text-sm text-muted-foreground">Stel een vraag over je club data — inclusief financiën, partners, compliance en meer.</p>
+                <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="w-5 h-5 text-primary" />{L.aiTitle}</CardTitle>
+                 <p className="text-sm text-muted-foreground">{L.aiSubtitle}</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
