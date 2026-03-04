@@ -253,7 +253,7 @@ const PlanningOverview = () => {
           </div>
         </div>
         {hasZones && <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
-        {!hasZones && <span className="text-[10px] text-muted-foreground shrink-0">{nl ? 'Geen zones' : 'No zones'}</span>}
+        {!hasZones && <span className="text-[10px] text-muted-foreground shrink-0">{t3('Geen zones', 'Pas de zones', 'No zones')}</span>}
       </button>
     );
   };
