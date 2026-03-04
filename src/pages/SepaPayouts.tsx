@@ -367,7 +367,7 @@ const SepaPayouts = () => {
 
       setSigningUrl(signData.signingUrl);
       setShowSigningDialog(true);
-      toast.success('SEPA batch aangemaakt. Onderteken nu het document.');
+      toast.success(t3('SEPA batch aangemaakt. Onderteken nu het document.', 'Lot SEPA créé. Signez le document.', 'SEPA batch created. Sign the document now.'));
     } catch (err: any) {
       toast.error(err.message || 'Er ging iets mis');
     }
