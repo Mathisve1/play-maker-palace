@@ -610,7 +610,7 @@ const ExternalPartners = () => {
                                   <p className="text-xs text-muted-foreground">
                                     {ea.event_date ? new Date(ea.event_date).toLocaleDateString() : ''}
                                     {ea.max_spots ? ` • Max ${ea.max_spots}` : ''}
-                                    {` • ${ea.signup_count} ${nl ? 'inschrijvingen' : 'signups'}`}
+                                    {` • ${ea.signup_count} ${t3('inschrijvingen', 'inscriptions', 'signups')}`}
                                   </p>
                                 </div>
                                 <Button variant="ghost" size="sm" onClick={() => handleExportAttendees(ea.id, ea.event_title || '')} disabled={exporting}>
