@@ -176,7 +176,7 @@ const MonthlyPlanning = () => {
             const enr = enrs.find(e => e.id === s.enrollment_id);
             return {
               ...s,
-              volunteer_name: (enr?.profiles as any)?.full_name || 'Onbekend',
+              volunteer_name: (enr?.profiles as any)?.full_name || t3('Onbekend', 'Inconnu', 'Unknown'),
               volunteer_email: (enr?.profiles as any)?.email || null,
             };
           });
