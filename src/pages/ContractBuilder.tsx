@@ -776,7 +776,7 @@ const ContractBuilder = () => {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Standaard Contract
+              {t3('Standaard Contract', 'Contrat standard', 'Standard Contract')}
             </button>
             <button
               onClick={handleGenerateMonthlyContract}
