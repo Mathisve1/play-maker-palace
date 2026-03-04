@@ -514,7 +514,7 @@ const MonthlyPlanning = () => {
                 setDemoDeleteLoading(false);
               }}>
                 {demoDeleteLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Trash2 className="w-4 h-4 mr-1" />}
-                Demo wissen
+                {t3('Demo wissen', 'Supprimer démo', 'Delete demo')}
               </Button>
             ) : !plan ? (
               <Button variant="outline" size="sm" disabled={demoLoading} onClick={async () => {
