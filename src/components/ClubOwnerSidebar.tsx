@@ -117,7 +117,7 @@ const ClubOwnerSidebar = ({
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-sidebar-foreground truncate">{clubInfo.name}</p>
-              <p className="text-[11px] text-muted-foreground">Club Dashboard</p>
+              <p className="text-[11px] text-muted-foreground">{t3('Club Dashboard', 'Tableau de bord club', 'Club Dashboard')}</p>
             </div>
           </div>
         )}

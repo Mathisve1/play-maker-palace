@@ -111,9 +111,10 @@ const formatDate = (dateStr: string | null, lang: Language) => {
   return new Date(dateStr).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-const formatDateLong = (dateStr: string | null) => {
+const formatDateLong = (dateStr: string | null, lang: Language) => {
   if (!dateStr) return null;
-  return new Date(dateStr).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+  const locale = lang === 'nl' ? 'nl-BE' : lang === 'fr' ? 'fr-BE' : 'en-GB';
+  return new Date(dateStr).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 const formatTime = (dateStr: string | null, lang: Language) => {
@@ -206,7 +207,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
     if (volunteer.bank_holder_name) vals['Rekeninghouder'] = volunteer.bank_holder_name;
     if (clubData?.name || clubName) vals['Clubnaam'] = clubData?.name || clubName || '';
     if (t.title) vals['Taak'] = t.title;
-    if (t.task_date) vals['Datum'] = formatDateLong(t.task_date) || '';
+    if (t.task_date) vals['Datum'] = formatDateLong(t.task_date, language) || '';
     if (t.location) vals['Locatie'] = t.location;
 
     // Time range
@@ -225,7 +226,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
 
     // Always set Datum if not set
     if (!vals['Datum']) {
-      vals['Datum'] = new Date().toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+      vals['Datum'] = new Date().toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
     return vals;
@@ -467,9 +468,9 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
             {/* Volunteer details */}
             <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{l.volunteerDetails}</p>
-              <InfoRow icon={User} label="Naam" value={volunteer.full_name || l.noName} muted={!volunteer.full_name} />
+              <InfoRow icon={User} label={language === 'nl' ? 'Naam' : language === 'fr' ? 'Nom' : 'Name'} value={volunteer.full_name || l.noName} muted={!volunteer.full_name} />
               <InfoRow icon={Mail} label="E-mail" value={volunteer.email || l.noEmail} muted={!volunteer.email} />
-              <InfoRow icon={Phone} label="Telefoon" value={volunteer.phone || l.noPhone} muted={!volunteer.phone} />
+              <InfoRow icon={Phone} label={language === 'nl' ? 'Telefoon' : language === 'fr' ? 'Téléphone' : 'Phone'} value={volunteer.phone || l.noPhone} muted={!volunteer.phone} />
               {volunteer.bank_iban && (
                 <InfoRow icon={Building2} label="IBAN" value={volunteer.bank_iban} />
               )}
@@ -478,14 +479,14 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
             {/* Task details */}
             <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{l.taskDetails}</p>
-              <InfoRow icon={FileSignature} label="Taak" value={task.title} />
+              <InfoRow icon={FileSignature} label={language === 'nl' ? 'Taak' : language === 'fr' ? 'Tâche' : 'Task'} value={task.title} />
               {(clubData?.name || clubName) && <InfoRow icon={Building2} label="Club" value={clubData?.name || clubName || ''} />}
-              {task.task_date && <InfoRow icon={Calendar} label="Datum" value={formatDate(task.task_date, language)!} />}
-              {task.location && <InfoRow icon={MapPin} label="Locatie" value={task.location} />}
+              {task.task_date && <InfoRow icon={Calendar} label={language === 'nl' ? 'Datum' : 'Date'} value={formatDate(task.task_date, language)!} />}
+              {task.location && <InfoRow icon={MapPin} label={language === 'nl' ? 'Locatie' : language === 'fr' ? 'Lieu' : 'Location'} value={task.location} />}
               {(fullTask?.start_time || task.start_time) && (
                 <InfoRow
                   icon={Clock}
-                  label="Tijd"
+                  label={language === 'nl' ? 'Tijd' : language === 'fr' ? 'Heure' : 'Time'}
                   value={`${formatTime(fullTask?.start_time || task.start_time, language)}${(fullTask?.end_time || task.end_time) ? ` ${l.to} ${formatTime(fullTask?.end_time || task.end_time, language)}` : ''}`}
                 />
               )}
@@ -532,6 +533,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
             clubOwnerName={clubData?.owner_name}
             clubSignatureUrl={clubSignatureUrl}
             volunteerName={volunteer.full_name || undefined}
+            language={language}
           />
         </div>
       )}

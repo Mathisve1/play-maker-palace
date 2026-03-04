@@ -549,19 +549,20 @@ const SafetyDashboard = () => {
       const doc = generateSafetyReportPdf({
         eventTitle,
         eventDate: ev?.event_date || null,
-        clubName: club?.name || 'Onbekend',
-        generatedBy: profile?.full_name || 'Onbekend',
+        clubName: club?.name || t3('Onbekend', 'Inconnu', 'Unknown'),
+        generatedBy: profile?.full_name || t3('Onbekend', 'Inconnu', 'Unknown'),
         zones: pdfZones,
         incidents: pdfIncidents,
         closingTasks: pdfClosingTasks,
         totalChecklistItems,
         totalChecklistDone,
+        language,
       });
 
       doc.save(`${t3('veiligheidsrapport', 'rapport-securite', 'safety-report')}-${eventTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`);
       toast.success(t3('Veiligheidsrapport gedownload!', 'Rapport de sécurité téléchargé !', 'Safety report downloaded!'));
     } catch (err: any) {
-      toast.error(err.message || 'Fout bij rapport generatie');
+      toast.error(err.message || t3('Fout bij rapport generatie', 'Erreur lors de la génération', 'Error generating report'));
     } finally {
       setGeneratingReport(false);
     }

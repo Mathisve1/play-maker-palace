@@ -51,7 +51,7 @@ export const KpiWidget = ({ type, value, language, onClick, subtitle, trend }: K
       </div>
       {onClick && (
         <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {language === 'nl' ? 'Bekijk →' : 'View →'}
+          {language === 'nl' ? 'Bekijk →' : language === 'fr' ? 'Voir →' : 'View →'}
         </p>
       )}
     </button>

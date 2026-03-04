@@ -169,7 +169,7 @@ const SendSignatureDialog = ({ open, onOpenChange, taskId, volunteerEmail, volun
           </div>
 
           <div className="bg-muted/50 rounded-xl p-3">
-            <p className="text-xs text-muted-foreground">Naar: <span className="text-foreground font-medium">{volunteerName || volunteerEmail}</span></p>
+            <p className="text-xs text-muted-foreground">{language === 'nl' ? 'Naar:' : language === 'fr' ? 'À :' : 'To:'} <span className="text-foreground font-medium">{volunteerName || volunteerEmail}</span></p>
             <p className="text-xs text-muted-foreground">{volunteerEmail}</p>
           </div>
 

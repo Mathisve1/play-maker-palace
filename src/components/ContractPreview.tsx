@@ -10,10 +10,12 @@ interface ContractPreviewProps {
   clubSignatureUrl?: string | null;
   volunteerName?: string;
   contractColors?: { primary: string; accent: string; bg: string };
+  language?: 'nl' | 'fr' | 'en';
 }
 
 const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
-  ({ blocks, fieldValues, clubName, clubLogoUrl, clubOwnerName, clubSignatureUrl, volunteerName, contractColors }, ref) => {
+  ({ blocks, fieldValues, clubName, clubLogoUrl, clubOwnerName, clubSignatureUrl, volunteerName, contractColors, language }, ref) => {
+    const t3 = (nl: string, fr: string, en: string) => language === 'fr' ? fr : language === 'en' ? en : nl;
     const colors = contractColors || { primary: '#1a5632', accent: '#e8742e', bg: '#ffffff' };
 
     return (
@@ -133,7 +135,7 @@ const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
                 <div style={{ display: 'flex', gap: 48 }}>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                      {clubName || 'De organisatie'} — {clubOwnerName || 'Verantwoordelijke'}:
+                      {clubName || t3('De organisatie', 'L\'organisation', 'The organisation')} — {clubOwnerName || t3('Verantwoordelijke', 'Responsable', 'Responsible')}:
                     </p>
                     {clubSignatureUrl ? (
                       <div style={{ marginBottom: 8 }}>
@@ -144,14 +146,14 @@ const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
                         <div style={{ marginBottom: 40 }} />
                         <div style={{ borderBottom: `2px solid ${colors.primary}`, width: '80%' }} />
                         <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                          {clubName || 'Naam'} + datum
+                          {clubName || t3('Naam', 'Nom', 'Name')} + {t3('datum', 'date', 'date')}
                         </p>
                       </>
                     )}
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                      De vrijwilliger:
+                      {t3('De vrijwilliger', 'Le bénévole', 'The volunteer')}:
                     </p>
                     {/* DocuSeal embedded text tag - detected as interactive signature field */}
                     <p data-signature-field="true" style={{ fontSize: 8, color: '#d1d5db', marginBottom: 4, fontFamily: 'monospace' }}>
@@ -160,7 +162,7 @@ const ContractPreview = forwardRef<HTMLDivElement, ContractPreviewProps>(
                     <div style={{ marginBottom: 32 }} />
                     <div style={{ borderBottom: `2px solid ${colors.primary}`, width: '80%' }} />
                     <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                      {volunteerName || 'Naam'} + handtekening
+                      {volunteerName || t3('Naam', 'Nom', 'Name')} + {t3('handtekening', 'signature', 'signature')}
                     </p>
                   </div>
                 </div>

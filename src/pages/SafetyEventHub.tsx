@@ -115,6 +115,7 @@ const SafetyEventHub = () => {
         closingTasks: pdfClosingTasks,
         totalChecklistItems,
         totalChecklistDone,
+        language,
       });
 
       doc.save(`${t3('veiligheidsrapport', 'rapport-securite', 'safety-report')}-${event.title.replace(/\s+/g, '-').toLowerCase()}.pdf`);

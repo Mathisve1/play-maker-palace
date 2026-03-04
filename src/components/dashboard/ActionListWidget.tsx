@@ -14,11 +14,11 @@ interface ActionCount {
 }
 
 const categoryConfig = {
-  task_signup: { icon: UserCheck, label: { nl: 'Aanmeldingen', en: 'Signups' }, color: 'text-blue-600 bg-blue-500/10' },
-  enrollment: { icon: Users, label: { nl: 'Inschrijvingen', en: 'Enrollments' }, color: 'text-yellow-600 bg-yellow-500/10' },
-  contract: { icon: FileSignature, label: { nl: 'Contracten', en: 'Contracts' }, color: 'text-indigo-600 bg-indigo-500/10' },
-  day_signup: { icon: Clock, label: { nl: 'Dag-aanmeldingen', en: 'Day signups' }, color: 'text-orange-600 bg-orange-500/10' },
-  ticket: { icon: Ticket, label: { nl: 'Tickets', en: 'Tickets' }, color: 'text-purple-600 bg-purple-500/10' },
+  task_signup: { icon: UserCheck, label: { nl: 'Aanmeldingen', fr: 'Inscriptions', en: 'Signups' }, color: 'text-blue-600 bg-blue-500/10' },
+  enrollment: { icon: Users, label: { nl: 'Inschrijvingen', fr: 'Inscriptions mensuelles', en: 'Enrollments' }, color: 'text-yellow-600 bg-yellow-500/10' },
+  contract: { icon: FileSignature, label: { nl: 'Contracten', fr: 'Contrats', en: 'Contracts' }, color: 'text-indigo-600 bg-indigo-500/10' },
+  day_signup: { icon: Clock, label: { nl: 'Dag-aanmeldingen', fr: 'Inscriptions journalières', en: 'Day signups' }, color: 'text-orange-600 bg-orange-500/10' },
+  ticket: { icon: Ticket, label: { nl: 'Tickets', fr: 'Tickets', en: 'Tickets' }, color: 'text-purple-600 bg-purple-500/10' },
 };
 
 interface ActionListWidgetProps {
@@ -94,7 +94,7 @@ export const ActionListWidget = ({ clubId, language }: ActionListWidgetProps) =>
           <Inbox className="w-4 h-4 text-primary" />
         </div>
         <h3 className="text-sm font-semibold text-foreground flex-1">
-          {language === 'nl' ? 'Actielijst' : 'Action List'}
+          {language === 'nl' ? 'Actielijst' : language === 'fr' ? 'Liste d\'actions' : 'Action List'}
         </h3>
         {total > 0 && (
           <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center">
@@ -110,7 +110,7 @@ export const ActionListWidget = ({ clubId, language }: ActionListWidgetProps) =>
       ) : total === 0 ? (
         <div className="flex-1 flex items-center justify-center text-center">
           <p className="text-xs text-muted-foreground">
-            {language === 'nl' ? 'Alles afgehandeld! 🎉' : 'All caught up! 🎉'}
+            {language === 'nl' ? 'Alles afgehandeld! 🎉' : language === 'fr' ? 'Tout est en ordre ! 🎉' : 'All caught up! 🎉'}
           </p>
         </div>
       ) : (
@@ -123,7 +123,7 @@ export const ActionListWidget = ({ clubId, language }: ActionListWidgetProps) =>
                 <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${cfg.color}`}>
                   <Icon className="w-3 h-3" />
                 </div>
-                <span className="text-xs text-foreground flex-1">{cfg.label[language]}</span>
+                <span className="text-xs text-foreground flex-1">{cfg.label[language] || cfg.label.en}</span>
                 <span className="text-xs font-semibold text-foreground">{count}</span>
               </div>
             );
@@ -132,7 +132,7 @@ export const ActionListWidget = ({ clubId, language }: ActionListWidgetProps) =>
       )}
 
       <div className="flex items-center justify-end mt-2 text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-        {language === 'nl' ? 'Bekijk actielijst' : 'View action list'} <ChevronRight className="w-3 h-3 ml-0.5" />
+        {language === 'nl' ? 'Bekijk actielijst' : language === 'fr' ? 'Voir la liste' : 'View action list'} <ChevronRight className="w-3 h-3 ml-0.5" />
       </div>
     </div>
   );

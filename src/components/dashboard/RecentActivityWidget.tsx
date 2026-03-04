@@ -38,7 +38,7 @@ export const RecentActivityWidget = ({ clubId, language }: RecentActivityWidgetP
         activities.push({
           id: `signup-${s.id}`,
           type: 'signup',
-          text: `${language === 'nl' ? 'Nieuwe aanmelding voor' : 'New signup for'} "${s.tasks?.title || '?'}"`,
+          text: `${language === 'nl' ? 'Nieuwe aanmelding voor' : language === 'fr' ? 'Nouvelle inscription pour' : 'New signup for'} "${s.tasks?.title || '?'}"`,
           time: s.signed_up_at,
           icon: Users,
           color: 'text-primary',
@@ -58,7 +58,7 @@ export const RecentActivityWidget = ({ clubId, language }: RecentActivityWidgetP
         activities.push({
           id: `enroll-${e.id}`,
           type: 'signup',
-          text: `${name} ${language === 'nl' ? 'schreef zich in voor' : 'enrolled in'} "${e.monthly_plans?.title || '?'}"`,
+          text: `${name} ${language === 'nl' ? 'schreef zich in voor' : language === 'fr' ? 's\'est inscrit à' : 'enrolled in'} "${e.monthly_plans?.title || '?'}"`,
           time: e.created_at,
           icon: FileSignature,
           color: 'text-blue-600',
@@ -96,7 +96,7 @@ export const RecentActivityWidget = ({ clubId, language }: RecentActivityWidgetP
         </div>
       ) : items.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-4">
-          {language === 'nl' ? 'Nog geen activiteit.' : 'No activity yet.'}
+          {language === 'nl' ? 'Nog geen activiteit.' : language === 'fr' ? 'Aucune activité.' : 'No activity yet.'}
         </p>
       ) : (
         <div className="space-y-1">
