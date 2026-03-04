@@ -175,7 +175,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
     } else if (data) {
       const link = `${window.location.origin}/club-invite/${data.invite_token}`;
       await navigator.clipboard.writeText(link);
-      toast.success('Uitnodigingslink gekopieerd!');
+      toast.success(t3('Uitnodigingslink gekopieerd!', 'Lien d\'invitation copié!', 'Invite link copied!'));
       fetchData();
     }
   };
