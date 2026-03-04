@@ -509,13 +509,13 @@ const ExternalPartners = () => {
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={() => setShowInvite(true)}>
-                    <Mail className="w-4 h-4 mr-1" />{nl ? 'Beheerder uitnodigen' : 'Invite admin'}
+                    <Mail className="w-4 h-4 mr-1" />{t3('Beheerder uitnodigen', 'Inviter un administrateur', 'Invite admin')}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setShowAddEvent(true)}>
-                    <Calendar className="w-4 h-4 mr-1" />{nl ? 'Evenement openstellen' : 'Add event'}
+                    <Calendar className="w-4 h-4 mr-1" />{t3('Evenement openstellen', 'Ouvrir un événement', 'Add event')}
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => handleDeletePartner(selectedPartner.id)}>
-                    <Trash2 className="w-4 h-4 mr-1" />{nl ? 'Verwijderen' : 'Delete'}
+                    <Trash2 className="w-4 h-4 mr-1" />{t3('Verwijderen', 'Supprimer', 'Delete')}
                   </Button>
                 </div>
 
