@@ -1194,7 +1194,7 @@ const AcademyBuilder = () => {
       .eq('club_id', clubId)
       .eq('status', 'checked_in');
 
-    if (!tickets || tickets.length === 0) { toast.error('Geen ingecheckte vrijwilligers'); return; }
+    if (!tickets || tickets.length === 0) { toast.error(language === 'fr' ? 'Aucun bénévole enregistré' : language === 'en' ? 'No checked-in volunteers' : 'Geen ingecheckte vrijwilligers'); return; }
 
     // Check existing certs
     const { data: existingCerts } = await supabase.from('volunteer_certificates')
