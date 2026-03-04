@@ -583,7 +583,7 @@ const ReportingDashboard = () => {
     filteredTasks.forEach((t: any) => {
       if (t.task_date) counts[getDay(parseISO(t.task_date))]++;
     });
-    return (DAY_NAMES.nl).map((name, i) => ({ name, Taken: counts[i] }));
+    return (DAY_NAMES[language] || DAY_NAMES.nl).map((name, i) => ({ name, [L.tasks]: counts[i] }));
   }, [filteredTasks]);
 
   // Hour confirmation stats
