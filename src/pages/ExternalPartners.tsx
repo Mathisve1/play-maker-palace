@@ -799,7 +799,7 @@ const ExternalPartners = () => {
                         <Badge className={`text-xs ${categoryColors[p.category] || categoryColors['andere']}`}>
                           {categoryLabels[language]?.[p.category] || p.category}
                         </Badge>
-                        {p.external_payroll && <Badge variant="outline" className="text-xs">Externe Payroll</Badge>}
+                        {p.external_payroll && <Badge variant="outline" className="text-xs">{t3('Externe Payroll', 'Paie externe', 'External Payroll')}</Badge>}
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
                         {p.contact_name || ''}{p.contact_name && p.contact_email ? ' • ' : ''}{p.contact_email || ''}
