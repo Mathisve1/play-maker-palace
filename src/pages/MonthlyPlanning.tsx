@@ -211,7 +211,7 @@ const MonthlyPlanning = () => {
       .eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'rejected' } : e));
-    toast.success('Inschrijving afgewezen.');
+    toast.success(t3('Inschrijving afgewezen.', 'Inscription refusée.', 'Enrollment rejected.'));
   };
 
   // --- Day signup assignment ---
