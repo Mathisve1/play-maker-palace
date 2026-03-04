@@ -41,16 +41,25 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
     const registration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/push/' });
     await navigator.serviceWorker.ready;
 
-    // Subscribe to push
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
-    });
+    const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
+    // Reuse existing subscription when possible; if key changed, resubscribe.
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      });
+    }
 
     const subJson = subscription.toJSON();
-    const endpoint = subJson.endpoint!;
+    const endpoint = subJson.endpoint || '';
     const p256dh = subJson.keys?.p256dh || '';
     const auth = subJson.keys?.auth || '';
+
+    if (!endpoint || !p256dh || !auth) {
+      throw new Error('invalid_subscription_payload');
+    }
 
     // Upsert subscription in database
     const { error } = await supabase
@@ -67,10 +76,10 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
       );
 
     if (error) {
-      console.error('[Push] Failed to save subscription:', error);
+      throw error;
     }
 
-    // Update profile
+    // Update profile only after successful subscription persist
     await supabase
       .from('profiles')
       .update({ push_notifications_enabled: true, push_prompt_seen: true } as any)
