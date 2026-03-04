@@ -580,7 +580,7 @@ const ExternalPartners = () => {
                                       className="text-xs shrink-0"
                                     >
                                       {task.partner_acceptance_status === 'accepted' ? '✅' : task.partner_acceptance_status === 'rejected' ? '❌' : '⏳'}
-                                      {' '}{task.partner_acceptance_status === 'accepted' ? (nl ? 'Aanvaard' : 'Accepted') : task.partner_acceptance_status === 'rejected' ? (nl ? 'Geweigerd' : 'Rejected') : (nl ? 'Wachtend' : 'Pending')}
+                                      {' '}{task.partner_acceptance_status === 'accepted' ? t3('Aanvaard', 'Accepté', 'Accepted') : task.partner_acceptance_status === 'rejected' ? t3('Geweigerd', 'Refusé', 'Rejected') : t3('Wachtend', 'En attente', 'Pending')}
                                     </Badge>
                                   </div>
                                 </div>
