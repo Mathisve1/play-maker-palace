@@ -420,11 +420,11 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
           >
             {club.is_following ? (
               <>
-                <HeartOff className="w-3.5 h-3.5" /> Ontvolgen
+                <HeartOff className="w-3.5 h-3.5" /> {cl.unfollow}
               </>
             ) : (
               <>
-                <Heart className="w-3.5 h-3.5" /> Volgen
+                <Heart className="w-3.5 h-3.5" /> {cl.follow}
               </>
             )}
           </Button>
@@ -434,7 +434,7 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
             className="h-9 text-xs gap-1 rounded-xl"
             onClick={() => navigate(`/community/club/${club.id}`)}
           >
-            Bekijken <ArrowRight className="w-3.5 h-3.5" />
+            {cl.view} <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>

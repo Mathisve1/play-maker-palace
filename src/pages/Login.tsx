@@ -8,7 +8,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 const Login = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

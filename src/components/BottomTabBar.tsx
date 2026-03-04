@@ -1,36 +1,38 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Search, MessageCircle, User, Ticket } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
+import { Language } from '@/i18n/translations';
 
-interface TabItem {
-  icon: React.ElementType;
-  label: string;
-  path: string;
-  match?: string[];
-}
-
-const tabs: TabItem[] = [
-  { icon: Home, label: 'Home', path: '/dashboard', match: ['/dashboard'] },
-  { icon: Search, label: 'Taken', path: '/dashboard?tab=all', match: [] },
-  { icon: Ticket, label: 'Tickets', path: '/dashboard?tab=tickets', match: [] },
-  { icon: MessageCircle, label: 'Chat', path: '/chat', match: ['/chat'] },
-  { icon: User, label: 'Profiel', path: '/dashboard?tab=profile', match: [] },
-];
+const tabLabels: Record<Language, { home: string; tasks: string; tickets: string; chat: string; profile: string }> = {
+  nl: { home: 'Home', tasks: 'Taken', tickets: 'Tickets', chat: 'Chat', profile: 'Profiel' },
+  fr: { home: 'Accueil', tasks: 'Tâches', tickets: 'Tickets', chat: 'Chat', profile: 'Profil' },
+  en: { home: 'Home', tasks: 'Tasks', tickets: 'Tickets', chat: 'Chat', profile: 'Profile' },
+};
 
 const BottomTabBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { language } = useLanguage();
+  const l = tabLabels[language];
 
   if (!isMobile) return null;
 
-  // Only show on dashboard/chat pages (authenticated pages)
   const showOnPaths = ['/dashboard', '/chat', '/task'];
   const shouldShow = showOnPaths.some(p => location.pathname.startsWith(p));
   if (!shouldShow) return null;
 
-  const isActive = (tab: TabItem) => {
+  const tabs = [
+    { icon: Home, label: l.home, path: '/dashboard', match: ['/dashboard'] },
+    { icon: Search, label: l.tasks, path: '/dashboard?tab=all', match: [] },
+    { icon: Ticket, label: l.tickets, path: '/dashboard?tab=tickets', match: [] },
+    { icon: MessageCircle, label: l.chat, path: '/chat', match: ['/chat'] },
+    { icon: User, label: l.profile, path: '/dashboard?tab=profile', match: [] },
+  ];
+
+  const isActive = (tab: typeof tabs[0]) => {
     if (tab.match && tab.match.length > 0) {
       return tab.match.some(m => location.pathname.startsWith(m));
     }
@@ -59,9 +61,7 @@ const BottomTabBar = () => {
                 onClick={() => navigate(tab.path)}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-h-[44px] min-w-[44px] transition-colors active:opacity-70",
-                  active
-                    ? "text-primary"
-                    : "text-muted-foreground"
+                  active ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <Icon className={cn("w-5 h-5", active && "stroke-[2.5]")} />
