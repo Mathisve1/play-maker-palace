@@ -208,7 +208,7 @@ const Community = () => {
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.sport?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.location?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchSport = !filterSport || c.sport === filterSport;
+    const matchSport = !filterSport || c.sport?.toLowerCase() === filterSport.toLowerCase();
     return matchSearch && matchSport;
   });
 
