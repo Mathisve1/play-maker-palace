@@ -190,11 +190,11 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Selecteer een afbeelding');
+      toast.error(language === 'nl' ? 'Selecteer een afbeelding' : language === 'fr' ? 'Sélectionnez une image' : 'Select an image');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Max 5MB');
+      toast.error(language === 'nl' ? 'Max 5MB' : 'Max 5MB');
       return;
     }
 
