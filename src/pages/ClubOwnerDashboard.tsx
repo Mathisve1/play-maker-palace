@@ -1132,9 +1132,9 @@ const ClubOwnerDashboard = () => {
                                     setSendingContract(contractKey);
                                     try {
                                       const tmplId = task.contract_template_id;
-                                      if (!tmplId) { toast.error('Geen contractsjabloon gekoppeld aan deze taak.'); setSendingContract(null); return; }
+                                      if (!tmplId) { toast.error(t3('Geen contractsjabloon gekoppeld aan deze taak.', 'Aucun modèle de contrat lié à cette tâche.', 'No contract template linked to this task.')); setSendingContract(null); return; }
                                       const { data: tmpl } = await supabase.from('contract_templates').select('docuseal_template_id').eq('id', tmplId).maybeSingle();
-                                      if (!tmpl) { toast.error('Contractsjabloon niet gevonden.'); setSendingContract(null); return; }
+                                      if (!tmpl) { toast.error(t3('Contractsjabloon niet gevonden.', 'Modèle de contrat introuvable.', 'Contract template not found.')); setSendingContract(null); return; }
                                       const { data: { session: sess } } = await supabase.auth.getSession();
                                       if (!sess) { setSendingContract(null); return; }
                                       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=create-submission`, {
