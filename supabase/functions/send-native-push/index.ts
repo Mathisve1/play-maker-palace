@@ -136,7 +136,7 @@ async function sendPush(
   });
 
   const text = await res.text();
-  return { ok: res.status >= 200 && res.status < 300, status: res.status, body: text };
+  return { ok: res.status >= 200 && res.status < 300, status: res.status, body: text, audience };
 }
 
 // ── Templates ─────────────────────────────────────────────────────
