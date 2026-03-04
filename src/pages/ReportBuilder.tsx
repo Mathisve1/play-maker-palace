@@ -707,7 +707,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
               </div>
               <div className="flex-1 text-right">
                 <p className="text-sm">{format(new Date(), 'dd MMMM yyyy', { locale: nl })}</p>
-                <p className="text-xs text-muted-foreground">Datum</p>
+                <p className="text-xs text-muted-foreground">{t3('Datum', 'Date', 'Date')}</p>
               </div>
             </div>
           </div>

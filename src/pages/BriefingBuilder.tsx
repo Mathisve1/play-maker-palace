@@ -765,7 +765,7 @@ const BriefingBuilder = () => {
               <Input
                 value={briefingTitle}
                 onChange={e => setBriefingTitle(e.target.value)}
-                placeholder="Briefing titel"
+                placeholder={t3('Briefing titel', 'Titre du briefing', 'Briefing title')}
                 className="text-xl font-heading font-semibold border-none shadow-none px-0 focus-visible:ring-0 h-auto"
               />
             </div>

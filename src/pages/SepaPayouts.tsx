@@ -483,7 +483,7 @@ const SepaPayouts = () => {
           .select('*')
           .eq('batch_id', batchId);
         if (!data || data.length === 0) {
-          toast.error('Geen items in batch');
+          toast.error(t3('Geen items in batch', 'Aucun élément dans le lot', 'No items in batch'));
           return;
         }
         items = data as SepaBatchItem[];
