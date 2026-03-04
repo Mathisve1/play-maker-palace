@@ -311,7 +311,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
             <div className="flex gap-2 mb-2">
               <input
                 type="email"
-                placeholder="E-mailadres"
+                placeholder={t3('E-mailadres', 'Adresse e-mail', 'Email address')}
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
                 className="flex-1 px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
