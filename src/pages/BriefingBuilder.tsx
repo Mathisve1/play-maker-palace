@@ -246,8 +246,8 @@ const SortableBlock = ({
       {/* Map Overview */}
       {block.type === 'map_overview' && (
         <div className="space-y-2">
-          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder="Titel (bv. Plattegrond evenement)" className="bg-background/60 text-sm" />
-          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder="Beschrijving of instructies" className="bg-background/60 text-sm min-h-[40px]" rows={2} />
+          <Input value={block.title || ''} onChange={e => onUpdate(groupId, block.id, { title: e.target.value })} placeholder={language === 'fr' ? 'Titre (ex. Plan de l\'événement)' : language === 'en' ? 'Title (e.g. Event map)' : 'Titel (bv. Plattegrond evenement)'} className="bg-background/60 text-sm" />
+          <Textarea value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder={language === 'fr' ? 'Description ou instructions' : language === 'en' ? 'Description or instructions' : 'Beschrijving of instructies'} className="bg-background/60 text-sm min-h-[40px]" rows={2} />
         </div>
       )}
     </div>
