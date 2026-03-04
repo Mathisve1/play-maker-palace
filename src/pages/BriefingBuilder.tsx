@@ -224,7 +224,7 @@ const SortableBlock = ({
           {(block.materials || []).map((mat, idx) => (
             <div key={idx} className="flex items-center gap-2">
               <Package className="w-3.5 h-3.5 opacity-40 shrink-0" />
-              <Input value={mat} onChange={e => onUpdateMaterial(groupId, block.id, idx, e.target.value)} placeholder={`Materiaal ${idx + 1}`} className="bg-background/60 text-sm flex-1" />
+              <Input value={mat} onChange={e => onUpdateMaterial(groupId, block.id, idx, e.target.value)} placeholder={`${language === 'fr' ? 'Matériel' : language === 'en' ? 'Material' : 'Materiaal'} ${idx + 1}`} className="bg-background/60 text-sm flex-1" />
               <button onClick={() => onRemoveMaterial(groupId, block.id, idx)} className="p-1 opacity-40 hover:opacity-100 hover:text-destructive"><X className="w-3 h-3" /></button>
             </div>
           ))}
