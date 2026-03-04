@@ -933,7 +933,7 @@ const ExternalPartners = () => {
                   <div>
                     <Label>{t3('Taak', 'Tâche', 'Task')}</Label>
                     <Select value={ticketTaskId} onValueChange={setTicketTaskId}>
-                      <SelectTrigger><SelectValue placeholder={nl ? 'Selecteer taak...' : 'Select task...'} /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t3('Selecteer taak...', 'Sélectionner une tâche...', 'Select task...')} /></SelectTrigger>
                       <SelectContent>
                         {partnerTasks.filter(t => t.partner_acceptance_status === 'accepted').map(t => (
                           <SelectItem key={t.id} value={t.id}>{t.title}{t.event_title ? ` (${t.event_title})` : ''}</SelectItem>
