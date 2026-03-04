@@ -6,6 +6,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Localized reminder templates
+function buildReminder(lang: string, clubName: string, tasks: any[]) {
+  const l = lang || 'nl';
+
+  if (l === 'fr') {
+    const title = `📋 Rappel : demain chez ${clubName}`;
+    const message = tasks.length === 1
+      ? `Vous êtes planifié(e) demain pour "${tasks[0].title}"${tasks[0].start_time ? ` à ${tasks[0].start_time}` : ''}${tasks[0].location ? ` (${tasks[0].location})` : ''}.`
+      : `Vous avez ${tasks.length} tâches demain : ${tasks.map(t => t.title).join(', ')}.`;
+    return { title, message };
+  }
+
+  if (l === 'en') {
+    const title = `📋 Reminder: tomorrow at ${clubName}`;
+    const message = tasks.length === 1
+      ? `You're scheduled tomorrow for "${tasks[0].title}"${tasks[0].start_time ? ` at ${tasks[0].start_time}` : ''}${tasks[0].location ? ` (${tasks[0].location})` : ''}.`
+      : `You have ${tasks.length} tasks tomorrow: ${tasks.map(t => t.title).join(', ')}.`;
+    return { title, message };
+  }
+
+  // Default: nl
+  const title = `📋 Herinnering: morgen bij ${clubName}`;
+  const message = tasks.length === 1
+    ? `Je bent morgen ingepland voor "${tasks[0].title}"${tasks[0].start_time ? ` om ${tasks[0].start_time}` : ''}${tasks[0].location ? ` (${tasks[0].location})` : ''}.`
+    : `Je hebt morgen ${tasks.length} taken: ${tasks.map(t => t.title).join(', ')}.`;
+  return { title, message };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -26,14 +54,12 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Calculate tomorrow's date (in Europe/Brussels timezone)
+    // Calculate tomorrow's date (Brussels timezone)
     const now = new Date();
-    // Offset for CET/CEST (approximate: +1 or +2)
-    const brusselsOffset = now.getTimezoneOffset() === 0 ? 1 : 1; // Edge runs in UTC
-    const brusselsNow = new Date(now.getTime() + brusselsOffset * 60 * 60 * 1000);
+    const brusselsNow = new Date(now.getTime() + 1 * 60 * 60 * 1000);
     const tomorrow = new Date(brusselsNow);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
     console.log(`Checking reminders for tasks on ${tomorrowStr}`);
 
@@ -68,11 +94,11 @@ serve(async (req) => {
       );
     }
 
-    // Get volunteer profiles with player IDs
+    // Get volunteer profiles with player IDs AND language preference
     const volunteerIds = [...new Set(signups.map(s => s.volunteer_id))];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, onesignal_player_id, full_name')
+      .select('id, onesignal_player_id, full_name, language')
       .in('id', volunteerIds)
       .not('onesignal_player_id', 'is', null);
 
@@ -94,7 +120,7 @@ serve(async (req) => {
 
     const planMap = new Map((plans || []).map((p: any) => [p.id, p.clubs?.name || 'Club']));
 
-    // Group signups by volunteer to send one notification per person
+    // Group signups by volunteer
     const byVolunteer: Record<string, { tasks: typeof tomorrowTasks; clubName: string }> = {};
     for (const signup of signups) {
       const profile = profileMap.get(signup.volunteer_id);
@@ -116,15 +142,8 @@ serve(async (req) => {
       const profile = profileMap.get(volunteerId);
       if (!profile?.onesignal_player_id) continue;
 
-      // Build notification message
-      const taskSummary = volTasks.length === 1
-        ? `${volTasks[0].title}${volTasks[0].start_time ? ` om ${volTasks[0].start_time}` : ''}`
-        : `${volTasks.length} taken ingepland`;
-
-      const title = `📋 Herinnering: morgen bij ${clubName}`;
-      const message = volTasks.length === 1
-        ? `Je bent morgen ingepland voor "${volTasks[0].title}"${volTasks[0].start_time ? ` om ${volTasks[0].start_time}` : ''}${volTasks[0].location ? ` (${volTasks[0].location})` : ''}.`
-        : `Je hebt morgen ${volTasks.length} taken: ${volTasks.map(t => t.title).join(', ')}.`;
+      // Build notification in the volunteer's preferred language
+      const { title, message } = buildReminder(profile.language, clubName, volTasks);
 
       try {
         const pushRes = await fetch('https://api.onesignal.com/notifications', {
@@ -136,15 +155,15 @@ serve(async (req) => {
           body: JSON.stringify({
             app_id: onesignalAppId,
             include_subscription_ids: [profile.onesignal_player_id],
-            headings: { en: title, nl: title },
-            contents: { en: message, nl: message },
+            headings: { en: title },
+            contents: { en: message },
             url: '/volunteer',
           }),
         });
 
         if (pushRes.ok) {
           sent++;
-          console.log(`Push sent to ${profile.full_name || volunteerId}`);
+          console.log(`Push sent to ${profile.full_name || volunteerId} (${profile.language || 'nl'})`);
         } else {
           failed++;
           const err = await pushRes.text();
@@ -155,7 +174,7 @@ serve(async (req) => {
         console.error(`Push error for ${volunteerId}:`, e);
       }
 
-      // Also create in-app notification
+      // Also create in-app notification in the user's language
       await supabase.from('notifications').insert({
         user_id: volunteerId,
         type: 'monthly_reminder',
