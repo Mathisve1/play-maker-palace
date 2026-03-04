@@ -526,12 +526,12 @@ const ExternalPartners = () => {
                   if (v === 'tracking' && trackingRecords.length === 0 && selectedTaskForDetail) fetchTracking(selectedPartner);
                 }}>
                   <TabsList className={`w-full grid ${selectedTaskForDetail ? 'grid-cols-3' : 'grid-cols-1'}`}>
-                    <TabsTrigger value="overview" className="gap-1"><Eye className="w-3.5 h-3.5" />{nl ? 'Overzicht' : 'Overview'}</TabsTrigger>
+                    <TabsTrigger value="overview" className="gap-1"><Eye className="w-3.5 h-3.5" />{t3('Overzicht', 'Aperçu', 'Overview')}</TabsTrigger>
                     {selectedTaskForDetail && (
-                      <TabsTrigger value="members" className="gap-1"><Users className="w-3.5 h-3.5" />{nl ? 'Medewerkers' : 'Members'}</TabsTrigger>
+                      <TabsTrigger value="members" className="gap-1"><Users className="w-3.5 h-3.5" />{t3('Medewerkers', 'Membres', 'Members')}</TabsTrigger>
                     )}
                     {selectedTaskForDetail && (
-                      <TabsTrigger value="tracking" className="gap-1"><ClipboardList className="w-3.5 h-3.5" />{nl ? 'Opvolging' : 'Tracking'}</TabsTrigger>
+                      <TabsTrigger value="tracking" className="gap-1"><ClipboardList className="w-3.5 h-3.5" />{t3('Opvolging', 'Suivi', 'Tracking')}</TabsTrigger>
                     )}
                   </TabsList>
 
