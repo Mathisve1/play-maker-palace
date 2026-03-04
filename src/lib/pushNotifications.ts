@@ -39,7 +39,7 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
 
   try {
     // Register push service worker
-    const registration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/push/' });
+    const registration = await navigator.serviceWorker.register('/push-sw.js');
     await navigator.serviceWorker.ready;
 
     const applicationServerKey = new Uint8Array(urlBase64ToUint8Array(VAPID_PUBLIC_KEY));
