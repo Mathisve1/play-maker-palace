@@ -471,11 +471,10 @@ const CommandCenter = () => {
   const typeCounts = items.reduce((acc, i) => { acc[i.type] = (acc[i.type] || 0) + 1; return acc; }, {} as Record<string, number>);
 
   const actionLabel = (item: ActionItem) => {
-    const nl = language === 'nl';
-    if (item.type === 'enrollment') return nl ? 'Goedkeuren' : 'Approve';
-    if (item.type === 'task_signup' || item.type === 'day_signup') return nl ? 'Toekennen' : 'Assign';
-    if (item.type === 'contract') return nl ? 'Contract versturen' : 'Send contract';
-    if (item.type === 'ticket') return nl ? 'Ticket genereren' : 'Generate ticket';
+    if (item.type === 'enrollment') return t3('Goedkeuren', 'Approuver', 'Approve');
+    if (item.type === 'task_signup' || item.type === 'day_signup') return t3('Toekennen', 'Attribuer', 'Assign');
+    if (item.type === 'contract') return t3('Contract versturen', 'Envoyer le contrat', 'Send contract');
+    if (item.type === 'ticket') return t3('Ticket genereren', 'Générer le ticket', 'Generate ticket');
     return '';
   };
 
