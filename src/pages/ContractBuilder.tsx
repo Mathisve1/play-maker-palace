@@ -643,7 +643,7 @@ const ContractBuilder = () => {
         await supabase.from('contract_templates').update({ template_data: blocks as any, name: templateName.trim() }).eq('id', editingTemplateId);
       }
 
-      toast.success('Contractsjabloon succesvol opgeslagen!');
+      toast.success(t3('Contractsjabloon succesvol opgeslagen!', 'Modèle de contrat enregistré avec succès!', 'Contract template saved successfully!'));
       navigate('/club-dashboard');
     } catch (err: any) {
       toast.error(err.message || 'Opslaan mislukt');
