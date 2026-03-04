@@ -1111,7 +1111,7 @@ const ReportingDashboard = () => {
                   {aiMessages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
                       <Bot className="w-12 h-12 mb-3 opacity-30" />
-                      <p className="text-sm">Stel een vraag om te beginnen...</p>
+                      <p className="text-sm">{L.aiEmpty}</p>
                     </div>
                   )}
                   {aiMessages.map((msg, i) => (
