@@ -151,3 +151,77 @@ export async function markPushPromptSeen(): Promise<void> {
     .update({ push_prompt_seen: true } as any)
     .eq('id', user.id);
 }
+
+/**
+ * Auto-resubscribe: if the user has push_notifications_enabled=true
+ * but no active subscription in push_subscriptions, silently re-register.
+ * This handles cases where subscriptions were cleared (e.g. VAPID key rotation).
+ */
+export async function autoResubscribeIfNeeded(): Promise<void> {
+  if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('push_notifications_enabled')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.push_notifications_enabled) return;
+
+    // Check if there's already a subscription in the DB
+    const { data: subs } = await supabase
+      .from('push_subscriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1);
+
+    if (subs && subs.length > 0) return; // Already has subscription
+
+    console.log('[Push] Auto-resubscribing — profile has push enabled but no subscription found');
+
+    // Re-register service worker and subscribe
+    const registration = await navigator.serviceWorker.register('/push-sw.js');
+    await navigator.serviceWorker.ready;
+
+    const applicationServerKey = new Uint8Array(urlBase64ToUint8Array(VAPID_PUBLIC_KEY));
+
+    let subscription = await registration.pushManager.getSubscription();
+    // If existing subscription has wrong key, unsubscribe first
+    if (subscription) {
+      await subscription.unsubscribe();
+    }
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey,
+    });
+
+    const subJson = subscription.toJSON();
+    const endpoint = subJson.endpoint || '';
+    const p256dh = subJson.keys?.p256dh || '';
+    const auth = subJson.keys?.auth || '';
+
+    if (!endpoint || !p256dh || !auth) return;
+
+    await supabase
+      .from('push_subscriptions')
+      .upsert(
+        {
+          user_id: user.id,
+          endpoint,
+          p256dh,
+          auth,
+          user_agent: navigator.userAgent,
+        },
+        { onConflict: 'user_id,endpoint' }
+      );
+
+    console.log('[Push] ✅ Auto-resubscribed successfully');
+  } catch (err) {
+    console.error('[Push] Auto-resubscribe error:', err);
+  }
+}

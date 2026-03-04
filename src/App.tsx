@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import IOSInstallOverlay from "@/components/IOSInstallOverlay";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
+import { autoResubscribeIfNeeded } from "@/lib/pushNotifications";
 
 import RequireAuth from "./components/RequireAuth";
 import { Loader2 } from "lucide-react";
@@ -65,7 +66,11 @@ const PageLoader = () => (
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Push service worker registered on-demand via PushPermissionBanner / profile toggle
+  // Auto-resubscribe push if user has push enabled but subscription was cleared
+  useEffect(() => {
+    const timer = setTimeout(() => autoResubscribeIfNeeded(), 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
   <QueryClientProvider client={queryClient}>
