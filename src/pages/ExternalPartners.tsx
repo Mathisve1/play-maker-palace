@@ -684,7 +684,7 @@ const ExternalPartners = () => {
                                             disabled={invitingMemberId === member.id}
                                           >
                                             {invitingMemberId === member.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3 mr-0.5" />}
-                                            {nl ? 'Uitnodigen' : 'Invite'}
+                                            {t3('Uitnodigen', 'Inviter', 'Invite')}
                                           </Button>
                                         )}
                                         {member?.user_id && (
