@@ -40,11 +40,11 @@ interface ActionItem {
 }
 
 const typeConfig = {
-  enrollment: { icon: Users, color: 'text-yellow-600 bg-yellow-500/10', label: { nl: 'Inschrijving goedkeuren', en: 'Approve enrollment' } },
-  task_signup: { icon: UserCheck, color: 'text-blue-600 bg-blue-500/10', label: { nl: 'Taak-aanmelding toekennen', en: 'Assign task signup' } },
-  day_signup: { icon: Clock, color: 'text-orange-600 bg-orange-500/10', label: { nl: 'Dag-aanmelding toekennen', en: 'Assign day signup' } },
-  contract: { icon: FileSignature, color: 'text-indigo-600 bg-indigo-500/10', label: { nl: 'Contract versturen', en: 'Send contract' } },
-  ticket: { icon: Ticket, color: 'text-purple-600 bg-purple-500/10', label: { nl: 'Ticket genereren', en: 'Generate ticket' } },
+  enrollment: { icon: Users, color: 'text-yellow-600 bg-yellow-500/10', label: { nl: 'Inschrijving goedkeuren', fr: 'Approuver l\'inscription', en: 'Approve enrollment' } },
+  task_signup: { icon: UserCheck, color: 'text-blue-600 bg-blue-500/10', label: { nl: 'Taak-aanmelding toekennen', fr: 'Attribuer l\'inscription', en: 'Assign task signup' } },
+  day_signup: { icon: Clock, color: 'text-orange-600 bg-orange-500/10', label: { nl: 'Dag-aanmelding toekennen', fr: 'Attribuer l\'inscription jour', en: 'Assign day signup' } },
+  contract: { icon: FileSignature, color: 'text-indigo-600 bg-indigo-500/10', label: { nl: 'Contract versturen', fr: 'Envoyer le contrat', en: 'Send contract' } },
+  ticket: { icon: Ticket, color: 'text-purple-600 bg-purple-500/10', label: { nl: 'Ticket genereren', fr: 'Générer le ticket', en: 'Generate ticket' } },
 };
 
 const CommandCenter = () => {
