@@ -338,7 +338,7 @@ const Chat = () => {
       setRecordingTime(0);
       recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
     } catch {
-      toast.error('Microfoon niet beschikbaar');
+      toast.error(language === 'nl' ? 'Microfoon niet beschikbaar' : language === 'fr' ? 'Microphone non disponible' : 'Microphone not available');
     }
   };
 
