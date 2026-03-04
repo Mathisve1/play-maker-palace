@@ -767,7 +767,7 @@ const SepaPayouts = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">€{totalAmount.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">Totaalbedrag geselecteerd</p>
+                <p className="text-xs text-muted-foreground">{t3('Totaalbedrag geselecteerd', 'Montant total sélectionné', 'Total amount selected')}</p>
               </div>
             </div>
           </motion.div>
