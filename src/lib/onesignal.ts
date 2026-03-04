@@ -54,7 +54,7 @@ export async function initOneSignal() {
     try {
       await OneSignalModule.init({
         appId: ONESIGNAL_APP_ID,
-        safari_web_id: 'web.onesignal.auto.00b75e31-4d41-4106-ab79-a5c68121f393',
+        safari_web_id: 'web.onesignal.auto.69a0d04c-4cfa-4f80-8d34-652264ce8748',
         allowLocalhostAsSecureOrigin: true,
         serviceWorkerPath: '/push/OneSignalSDKWorker.js',
         serviceWorkerUpdaterPath: '/push/OneSignalSDKUpdaterWorker.js',
