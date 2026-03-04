@@ -732,7 +732,7 @@ const ExternalPartners = () => {
                           ) : (() => {
                             const taskRecords = trackingRecords.filter(r => r.task_title === selectedTaskForDetail.title);
                             return taskRecords.length === 0 ? (
-                              <p className="text-sm text-muted-foreground">{nl ? 'Nog geen gegevens beschikbaar voor deze taak.' : 'No data available for this task yet.'}</p>
+                              <p className="text-sm text-muted-foreground">{t3('Nog geen gegevens beschikbaar voor deze taak.', 'Pas encore de données pour cette tâche.', 'No data available for this task yet.')}</p>
                             ) : (
                               <div className="overflow-x-auto">
                                 <table className="w-full text-xs">
