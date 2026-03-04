@@ -451,7 +451,7 @@ const ExternalPartners = () => {
     if (!clubId) return;
     const { error } = await supabase.from('external_partners').delete().eq('id', partnerId);
     if (error) toast.error(error.message);
-    else { toast.success(nl ? 'Partner verwijderd.' : 'Partner deleted.'); setSelectedPartner(null); await fetchPartners(clubId); }
+    else { toast.success(t3('Partner verwijderd.', 'Partenaire supprimé.', 'Partner deleted.')); setSelectedPartner(null); await fetchPartners(clubId); }
   };
 
   const handleExportAttendees = async (accessId: string, eventTitle: string) => {
