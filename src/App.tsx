@@ -1,57 +1,65 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
-// BottomTabBar removed - replaced by sidebar navigation
 import IOSInstallOverlay from "@/components/IOSInstallOverlay";
 import { initOneSignal } from "@/lib/onesignal";
 import RequireAuth from "./components/RequireAuth";
-import VolunteerLanding from "./pages/VolunteerLanding";
-import ClubsLanding from "./pages/ClubsLanding";
-import Login from "./pages/Login";
-import ClubLogin from "./pages/ClubLogin";
-import ClubSignup from "./pages/ClubSignup";
-import Signup from "./pages/Signup";
-import VolunteerDashboard from "./pages/VolunteerDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import TaskDetail from "./pages/TaskDetail";
-import Chat from "./pages/Chat";
-import ClubOwnerDashboard from "./pages/ClubOwnerDashboard";
-import ClubInviteAccept from "./pages/ClubInviteAccept";
-import PaymentsOverview from "./pages/PaymentsOverview";
-import ContractBuilder from "./pages/ContractBuilder";
-import BriefingBuilder from "./pages/BriefingBuilder";
-import ComplianceDashboard from "./pages/ComplianceDashboard";
-import LoyaltyPrograms from "./pages/LoyaltyPrograms";
-import TicketingDashboard from "./pages/TicketingDashboard";
-import TicketScanner from "./pages/TicketScanner";
-import SepaPayouts from "./pages/SepaPayouts";
-import AcademyBuilder from "./pages/AcademyBuilder";
-import PhysicalTrainings from "./pages/PhysicalTrainings";
-import VolunteerTraining from "./pages/VolunteerTraining";
-import CertificateBuilder from "./pages/CertificateBuilder";
-import ExternalPartners from "./pages/ExternalPartners";
-import PartnerLogin from "./pages/PartnerLogin";
-import PartnerDashboard from "./pages/PartnerDashboard";
-import ReportingDashboard from "./pages/ReportingDashboard";
-import ReportBuilder from "./pages/ReportBuilder";
-import EventsManager from "./pages/EventsManager";
-import ZonePlanning from "./pages/ZonePlanning";
-import PlanningOverview from "./pages/PlanningOverview";
-import MonthlyPlanning from "./pages/MonthlyPlanning";
-import SafetyDashboard from "./pages/SafetyDashboard";
-import SafetyOverview from "./pages/SafetyOverview";
-import SafetyEventHub from "./pages/SafetyEventHub";
-import SafetyClosing from "./pages/SafetyClosing";
-import Community from "./pages/Community";
-import CommunityClubDetail from "./pages/CommunityClubDetail";
-import CommunityPartnerDetail from "./pages/CommunityPartnerDetail";
-import CommandCenter from "./pages/CommandCenter";
-import VolunteerHelp from "./pages/VolunteerHelp";
-import NotFound from "./pages/NotFound";
+import { Loader2 } from "lucide-react";
+
+// Lazy-loaded pages
+const VolunteerLanding = lazy(() => import("./pages/VolunteerLanding"));
+const ClubsLanding = lazy(() => import("./pages/ClubsLanding"));
+const Login = lazy(() => import("./pages/Login"));
+const ClubLogin = lazy(() => import("./pages/ClubLogin"));
+const ClubSignup = lazy(() => import("./pages/ClubSignup"));
+const Signup = lazy(() => import("./pages/Signup"));
+const VolunteerDashboard = lazy(() => import("./pages/VolunteerDashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const TaskDetail = lazy(() => import("./pages/TaskDetail"));
+const Chat = lazy(() => import("./pages/Chat"));
+const ClubOwnerDashboard = lazy(() => import("./pages/ClubOwnerDashboard"));
+const ClubInviteAccept = lazy(() => import("./pages/ClubInviteAccept"));
+const PaymentsOverview = lazy(() => import("./pages/PaymentsOverview"));
+const ContractBuilder = lazy(() => import("./pages/ContractBuilder"));
+const BriefingBuilder = lazy(() => import("./pages/BriefingBuilder"));
+const ComplianceDashboard = lazy(() => import("./pages/ComplianceDashboard"));
+const LoyaltyPrograms = lazy(() => import("./pages/LoyaltyPrograms"));
+const TicketingDashboard = lazy(() => import("./pages/TicketingDashboard"));
+const TicketScanner = lazy(() => import("./pages/TicketScanner"));
+const SepaPayouts = lazy(() => import("./pages/SepaPayouts"));
+const AcademyBuilder = lazy(() => import("./pages/AcademyBuilder"));
+const PhysicalTrainings = lazy(() => import("./pages/PhysicalTrainings"));
+const VolunteerTraining = lazy(() => import("./pages/VolunteerTraining"));
+const CertificateBuilder = lazy(() => import("./pages/CertificateBuilder"));
+const ExternalPartners = lazy(() => import("./pages/ExternalPartners"));
+const PartnerLogin = lazy(() => import("./pages/PartnerLogin"));
+const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
+const ReportingDashboard = lazy(() => import("./pages/ReportingDashboard"));
+const ReportBuilder = lazy(() => import("./pages/ReportBuilder"));
+const EventsManager = lazy(() => import("./pages/EventsManager"));
+const ZonePlanning = lazy(() => import("./pages/ZonePlanning"));
+const PlanningOverview = lazy(() => import("./pages/PlanningOverview"));
+const MonthlyPlanning = lazy(() => import("./pages/MonthlyPlanning"));
+const SafetyDashboard = lazy(() => import("./pages/SafetyDashboard"));
+const SafetyOverview = lazy(() => import("./pages/SafetyOverview"));
+const SafetyEventHub = lazy(() => import("./pages/SafetyEventHub"));
+const SafetyClosing = lazy(() => import("./pages/SafetyClosing"));
+const Community = lazy(() => import("./pages/Community"));
+const CommunityClubDetail = lazy(() => import("./pages/CommunityClubDetail"));
+const CommunityPartnerDetail = lazy(() => import("./pages/CommunityPartnerDetail"));
+const CommandCenter = lazy(() => import("./pages/CommandCenter"));
+const VolunteerHelp = lazy(() => import("./pages/VolunteerHelp"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const PageLoader = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
