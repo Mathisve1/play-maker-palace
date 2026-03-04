@@ -821,23 +821,23 @@ const ReportingDashboard = () => {
                 <Select value={selectedCompType} onValueChange={setSelectedCompType}><SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="all">{L.allTypes}</SelectItem><SelectItem value="fixed">{L.fixed}</SelectItem><SelectItem value="hourly">{L.hourly}</SelectItem></SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Locatie</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.location}</label>
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle locaties</SelectItem>{uniqueLocations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent></Select>
+                  <SelectContent><SelectItem value="all">{L.allLocations}</SelectItem>{uniqueLocations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Taakstatus</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.taskStatus}</label>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle statussen</SelectItem><SelectItem value="open">Open</SelectItem><SelectItem value="closed">Gesloten</SelectItem></SelectContent></Select>
+                  <SelectContent><SelectItem value="all">{L.allStatuses}</SelectItem><SelectItem value="open">{L.open}</SelectItem><SelectItem value="closed">{L.closed}</SelectItem></SelectContent></Select>
               </div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Grafiektype</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.chartType}</label>
                 <Select value={chartType} onValueChange={(v) => setChartType(v as ChartType)}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="bar">Staafdiagram</SelectItem><SelectItem value="line">Lijndiagram</SelectItem><SelectItem value="area">Vlakdiagram</SelectItem><SelectItem value="pie">Taartdiagram</SelectItem></SelectContent></Select>
+                  <SelectContent><SelectItem value="bar">{L.bar}</SelectItem><SelectItem value="line">{L.line}</SelectItem><SelectItem value="area">{L.area}</SelectItem><SelectItem value="pie">{L.pie}</SelectItem></SelectContent></Select>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">Betalingsstatus</label>
+              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.paymentStatus}</label>
                 <Select value={selectedPaymentStatus} onValueChange={setSelectedPaymentStatus}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Alle statussen</SelectItem><SelectItem value="paid">Betaald</SelectItem><SelectItem value="pending">Openstaand</SelectItem><SelectItem value="failed">Mislukt</SelectItem></SelectContent></Select>
+                  <SelectContent><SelectItem value="all">{L.allStatuses}</SelectItem><SelectItem value="paid">{L.paid}</SelectItem><SelectItem value="pending">{L.pending}</SelectItem><SelectItem value="failed">{L.failed}</SelectItem></SelectContent></Select>
               </div>
               <div className="space-y-1"><label className="text-xs text-muted-foreground">Partner filter</label>
                 <Select value={selectedPartnerFilter} onValueChange={setSelectedPartnerFilter}><SelectTrigger><SelectValue /></SelectTrigger>
