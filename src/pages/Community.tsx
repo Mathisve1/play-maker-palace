@@ -186,12 +186,12 @@ const Community = () => {
       await supabase.from('club_follows').delete().eq('user_id', currentUserId).eq('club_id', clubId);
       setFollowingIds(prev => { const n = new Set(prev); n.delete(clubId); return n; });
       setClubs(prev => prev.map(c => c.id === clubId ? { ...c, is_following: false } : c));
-      toast.success('Club ontvolgd');
+      toast.success(cl.unfollowed);
     } else {
       await supabase.from('club_follows').insert({ user_id: currentUserId, club_id: clubId });
       setFollowingIds(prev => new Set(prev).add(clubId));
       setClubs(prev => prev.map(c => c.id === clubId ? { ...c, is_following: true } : c));
-      toast.success('Club gevolgd! Je ziet nu hun taken in je feed.');
+      toast.success(cl.followed);
     }
     setTogglingFollow(null);
   };
