@@ -9,6 +9,17 @@ async function getOneSignalModule() {
   return import('react-onesignal').then(m => m.default).catch(() => null);
 }
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function getSubscriptionIdWithRetry(OneSignalModule: any, retries = 10, delayMs = 300): Promise<string | null> {
+  for (let i = 0; i < retries; i++) {
+    const id = OneSignalModule?.User?.PushSubscription?.id;
+    if (id) return id;
+    await wait(delayMs);
+  }
+  return null;
+}
+
 export async function initOneSignal() {
   if (!ONESIGNAL_APP_ID) {
     console.warn('OneSignal App ID not configured');
@@ -47,14 +58,14 @@ export async function initOneSignal() {
         await OneSignalModule.login(user.id).catch(() => null);
       }
 
-      OneSignalModule.User.PushSubscription.addEventListener('change', async (event) => {
-        const playerId = event.current?.id || OneSignalModule.User.PushSubscription.id;
+      OneSignalModule.User.PushSubscription.addEventListener('change', async (event: any) => {
+        const playerId = event?.current?.id || event?.current?.subscriptionId || OneSignalModule.User.PushSubscription.id;
         if (playerId) {
           await linkPlayerIdToProfile(playerId);
         }
       });
 
-      const currentId = OneSignalModule.User.PushSubscription.id;
+      const currentId = await getSubscriptionIdWithRetry(OneSignalModule);
       if (currentId) {
         await linkPlayerIdToProfile(currentId);
       }
@@ -77,7 +88,7 @@ export async function syncOneSignalUser(userIdOverride?: string) {
   if (!userId) return;
 
   await OneSignalModule.login(userId).catch(() => null);
-  const currentId = OneSignalModule.User.PushSubscription.id;
+  const currentId = await getSubscriptionIdWithRetry(OneSignalModule);
   if (currentId) {
     await linkPlayerIdToProfile(currentId);
   }
