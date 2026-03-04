@@ -419,7 +419,7 @@ const SafetyDashboard = () => {
     setPendingIncidentId(inc.id);
     setStep2Mode(true);
     setShowIncidentGrid(false);
-    toast.success('⚡ Melding direct verstuurd met GPS!');
+    toast.success(t3('⚡ Melding direct verstuurd met GPS!', '⚡ Signalement envoyé avec GPS !', '⚡ Report sent instantly with GPS!'));
     setReporting(false);
   };
 
