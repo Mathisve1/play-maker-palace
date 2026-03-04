@@ -366,7 +366,7 @@ const CommandCenter = () => {
         }
       } else if (item.type === 'day_signup') {
         await supabase.from('monthly_day_signups').update({ status: 'assigned' }).eq('id', item.source_id);
-        toast.success(language === 'nl' ? 'Toegekend!' : 'Assigned!');
+        toast.success(t3('Toegekend!', 'Attribué !', 'Assigned!'));
       } else if (item.type === 'ticket') {
         if (item.id.startsWith('tkt-')) {
           // Monthly day signup ticket
