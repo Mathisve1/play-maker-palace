@@ -1284,7 +1284,7 @@ const AcademyBuilder = () => {
                   else if (type === 'subheading') { defaultStyle.fontSize = 'lg'; defaultStyle.bold = true; }
                   updateModuleBlocks(targetIdx, [...modules[targetIdx].blocks, { id: crypto.randomUUID(), type, value: '', style: defaultStyle }]);
                 } else {
-                  toast.error('Open eerst een module');
+                  toast.error(language === 'fr' ? 'Ouvrez d\'abord un module' : language === 'en' ? 'Open a module first' : 'Open eerst een module');
                 }
               }} />
             </div>
