@@ -31,7 +31,7 @@ serve(async (req) => {
   }
 
   try {
-    const { type, user_id, title, message, url, data } = await req.json();
+    const { type, user_id, title, message, url, data, broadcast } = await req.json();
 
     const onesignalAppId = Deno.env.get('ONESIGNAL_APP_ID');
     const onesignalApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY');
@@ -47,7 +47,62 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user profile with language preference and player ID
+    // === BROADCAST MODE: send to ALL subscribed devices ===
+    if (broadcast) {
+      const finalTitle = title || '📢 De 12e Man';
+      const finalMessage = message || 'Je hebt een nieuwe melding.';
+
+      const pushPayload: any = {
+        app_id: onesignalAppId,
+        included_segments: ['Subscribed Users'],
+        headings: { en: finalTitle, nl: finalTitle, fr: finalTitle },
+        contents: { en: finalMessage, nl: finalMessage, fr: finalMessage },
+      };
+      if (url) pushPayload.url = url;
+      if (data) pushPayload.data = data;
+
+      const pushRes = await fetch('https://api.onesignal.com/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Key ${onesignalApiKey}`,
+        },
+        body: JSON.stringify(pushPayload),
+      });
+
+      const pushResult = await pushRes.json();
+      console.log('OneSignal broadcast result:', JSON.stringify(pushResult));
+
+      // Create in-app notification for all users with profiles
+      const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .not('onesignal_player_id', 'is', null);
+
+      if (allProfiles && allProfiles.length > 0) {
+        const inAppNotifs = allProfiles.map((p: any) => ({
+          user_id: p.id,
+          type: type || 'broadcast',
+          title: finalTitle,
+          message: finalMessage,
+        }));
+        await supabase.from('notifications').insert(inAppNotifs);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, mode: 'broadcast', result: pushResult }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // === SINGLE USER MODE ===
+    if (!user_id) {
+      return new Response(
+        JSON.stringify({ error: 'user_id or broadcast=true required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('onesignal_player_id, full_name, language')
@@ -63,7 +118,6 @@ serve(async (req) => {
 
     const lang = profile.language || 'nl';
 
-    // Use provided title/message or fall back to templates
     let finalTitle = title;
     let finalMessage = message;
 
@@ -73,7 +127,6 @@ serve(async (req) => {
       finalMessage = tpl.message;
     }
 
-    // Send push via OneSignal
     const pushPayload: any = {
       app_id: onesignalAppId,
       include_subscription_ids: [profile.onesignal_player_id],
@@ -96,7 +149,6 @@ serve(async (req) => {
     const pushResult = await pushRes.json();
     console.log('OneSignal push result:', JSON.stringify(pushResult));
 
-    // Also create in-app notification in the user's language
     await supabase.from('notifications').insert({
       user_id,
       type: type || 'general',
