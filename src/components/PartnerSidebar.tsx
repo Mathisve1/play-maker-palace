@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, ClipboardList, LogOut,
+  LayoutDashboard, Users, ClipboardList, LogOut, Settings, User,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -15,9 +15,10 @@ interface PartnerSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onLogout: () => void;
+  onOpenProfile: () => void;
 }
 
-const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout }: PartnerSidebarProps) => {
+const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout, onOpenProfile }: PartnerSidebarProps) => {
   const { setOpenMobile } = useSidebar();
   const { language } = useLanguage();
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
@@ -49,13 +50,27 @@ const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout }: Part
               <SidebarMenuItem>
                 <SidebarMenuButton isActive={activeTab === 'tasks'} onClick={() => handleNav('tasks')} className="min-h-[48px]">
                   <ClipboardList className="w-5 h-5" />
-                   <span>{t3('Taken', 'Tâches', 'Tasks')}</span>
-                 </SidebarMenuButton>
-               </SidebarMenuItem>
-               <SidebarMenuItem>
-                 <SidebarMenuButton isActive={activeTab === 'members'} onClick={() => handleNav('members')} className="min-h-[48px]">
-                   <Users className="w-5 h-5" />
-                   <span>{t3('Medewerkers', 'Collaborateurs', 'Staff')}</span>
+                  <span>{t3('Taken', 'Tâches', 'Tasks')}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'members'} onClick={() => handleNav('members')} className="min-h-[48px]">
+                  <Users className="w-5 h-5" />
+                  <span>{t3('Medewerkers', 'Collaborateurs', 'Staff')}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>{t3('Instellingen', 'Paramètres', 'Settings')}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="min-h-[48px]">
+                  <Settings className="w-5 h-5" />
+                  <span>{t3('Profiel & meldingen', 'Profil & notifications', 'Profile & notifications')}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import PushPermissionBanner from './PushPermissionBanner';
+import { syncOneSignalUser } from '@/lib/onesignal';
 
 interface RequireAuthProps {
   children: React.ReactNode;
@@ -20,6 +21,22 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
   const [authenticated, setAuthenticated] = useState(false);
   const [checked, setChecked] = useState(false);
 
+  const ensureProfileExists = async (sessionUser: { id: string; email?: string | null; user_metadata?: Record<string, any> }) => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', sessionUser.id)
+      .maybeSingle();
+
+    if (profile) return;
+
+    await supabase.from('profiles').insert({
+      id: sessionUser.id,
+      email: sessionUser.email || null,
+      full_name: (sessionUser.user_metadata?.full_name as string) || null,
+    } as any);
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -29,15 +46,23 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       if (!session) {
         navigate(redirectTo, { replace: true });
       } else {
+        await ensureProfileExists(session.user);
+        await syncOneSignalUser(session.user.id);
         setAuthenticated(true);
       }
       setChecked(true);
     };
     check();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session && !cancelled) {
         navigate(redirectTo, { replace: true });
+        return;
+      }
+
+      if (session && !cancelled) {
+        await ensureProfileExists(session.user);
+        await syncOneSignalUser(session.user.id);
       }
     });
 
