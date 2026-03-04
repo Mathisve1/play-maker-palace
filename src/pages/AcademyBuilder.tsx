@@ -973,7 +973,7 @@ const AcademyBuilder = () => {
   };
 
   const handleGenerateAI = async (target: 'global' | string) => {
-    if (!modules.length) { toast.error('Voeg eerst modules met inhoud toe.'); return; }
+    if (!modules.length) { toast.error(l.noTrainings.includes('Nog') ? 'Voeg eerst modules met inhoud toe.' : l.noTrainings.includes('Aucune') ? 'Ajoutez d\'abord des modules avec du contenu.' : 'Add modules with content first.'); return; }
     setGeneratingAI(true);
     try {
       const content = target === 'global'
