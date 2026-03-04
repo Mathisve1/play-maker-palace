@@ -18,28 +18,41 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error, data } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success(language === 'nl' ? 'Ingelogd!' : language === 'fr' ? 'Connecté !' : 'Logged in!');
-      // Check if user is a partner admin
-      const { data: partnerAdmins } = await supabase
-        .from('partner_admins')
-        .select('id')
-        .eq('user_id', data.user.id);
-      if (partnerAdmins && partnerAdmins.length > 0) {
-        navigate('/partner-dashboard');
+
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast.error(error.message);
         return;
       }
-      // Check if user is a club_owner
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', data.user.id);
+
+      toast.success(language === 'nl' ? 'Ingelogd!' : language === 'fr' ? 'Connecté !' : 'Logged in!');
+
+      const userId = data.user?.id ?? (await supabase.auth.getUser()).data.user?.id ?? null;
+      if (!userId) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
+      const [partnerAdminsRes, rolesRes] = await Promise.allSettled([
+        supabase.from('partner_admins').select('id').eq('user_id', userId),
+        supabase.from('user_roles').select('role').eq('user_id', userId),
+      ]);
+
+      const partnerAdmins = partnerAdminsRes.status === 'fulfilled' ? partnerAdminsRes.value.data : null;
+      if (partnerAdmins && partnerAdmins.length > 0) {
+        navigate('/partner-dashboard', { replace: true });
+        return;
+      }
+
+      const roles = rolesRes.status === 'fulfilled' ? rolesRes.value.data : null;
       const isClubOwner = roles?.some(r => r.role === 'club_owner');
-      navigate(isClubOwner ? '/club-dashboard' : '/dashboard');
+      navigate(isClubOwner ? '/club-dashboard' : '/dashboard', { replace: true });
+    } catch (err) {
+      console.error('Login redirect error:', err);
+      navigate('/dashboard', { replace: true });
+    } finally {
+      setLoading(false);
     }
   };
 
