@@ -448,7 +448,7 @@ const SepaPayouts = () => {
         }
       );
     }
-    toast.success('SEPA XML gedownload!');
+    toast.success(t3('SEPA XML gedownload!', 'SEPA XML téléchargé !', 'SEPA XML downloaded!'));
     init();
   };
 
