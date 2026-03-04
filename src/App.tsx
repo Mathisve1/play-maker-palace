@@ -109,6 +109,7 @@ const App = () => {
             <Route path="/community" element={<Community />} />
             <Route path="/community/club/:clubId" element={<CommunityClubDetail />} />
             <Route path="/community/partner/:partnerId" element={<CommunityPartnerDetail />} />
+            <Route path="/help" element={<VolunteerHelp />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <IOSInstallOverlay />
