@@ -229,11 +229,11 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
     }
 
     if (sent === selected.length) {
-      toast.success(`Bericht verstuurd naar ${sent} vrijwilliger${sent > 1 ? 's' : ''}!`);
+      toast.success(t3(`Bericht verstuurd naar ${sent} vrijwilliger${sent > 1 ? 's' : ''}!`, `Message envoyé à ${sent} bénévole${sent > 1 ? 's' : ''}!`, `Message sent to ${sent} volunteer${sent > 1 ? 's' : ''}!`));
     } else if (sent > 0) {
-      toast.warning(`${sent} van ${selected.length} berichten verstuurd.`);
+      toast.warning(t3(`${sent} van ${selected.length} berichten verstuurd.`, `${sent} sur ${selected.length} messages envoyés.`, `${sent} of ${selected.length} messages sent.`));
     } else {
-      toast.error('Geen berichten konden worden verstuurd.');
+      toast.error(t3('Geen berichten konden worden verstuurd.', 'Aucun message n\'a pu être envoyé.', 'No messages could be sent.'));
     }
 
     setSending(false);
