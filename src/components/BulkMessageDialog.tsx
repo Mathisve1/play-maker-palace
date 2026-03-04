@@ -143,7 +143,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
     const ext = file.name.split('.').pop();
     const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage.from('chat-attachments').upload(path, file);
-    if (error) { toast.error('Upload mislukt'); return null; }
+    if (error) { toast.error(t3('Upload mislukt', 'Échec du téléchargement', 'Upload failed')); return null; }
     const { data: { publicUrl } } = supabase.storage.from('chat-attachments').getPublicUrl(path);
     return { url: publicUrl, type: getAttachmentCategory(file.type), name: file.name };
   };
