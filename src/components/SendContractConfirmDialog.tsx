@@ -111,9 +111,10 @@ const formatDate = (dateStr: string | null, lang: Language) => {
   return new Date(dateStr).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-const formatDateLong = (dateStr: string | null) => {
+const formatDateLong = (dateStr: string | null, lang: Language) => {
   if (!dateStr) return null;
-  return new Date(dateStr).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+  const locale = lang === 'nl' ? 'nl-BE' : lang === 'fr' ? 'fr-BE' : 'en-GB';
+  return new Date(dateStr).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 const formatTime = (dateStr: string | null, lang: Language) => {
