@@ -1129,7 +1129,7 @@ const SafetyDashboard = () => {
             )}
             {isLive && (
               <Badge variant={highPriorityCount > 0 ? 'destructive' : 'secondary'}>
-                {activeIncidents.length} actief{highPriorityCount > 0 && ` · ${highPriorityCount} hoog`}
+                {activeIncidents.length} {t3('actief', 'actifs', 'active')}{highPriorityCount > 0 && ` · ${highPriorityCount} ${t3('hoog', 'élevé', 'high')}`}
               </Badge>
             )}
             {isLive && (
