@@ -715,7 +715,7 @@ const ContractBuilder = () => {
           )}
           {showTemplateSelector && existingTemplates.length === 0 && (
             <div className="absolute left-0 top-full mt-1 w-56 bg-card border border-border rounded-xl shadow-lg z-50 p-4">
-              <p className="text-xs text-muted-foreground text-center">Geen opgeslagen sjablonen.</p>
+              <p className="text-xs text-muted-foreground text-center">{t3('Geen opgeslagen sjablonen.', 'Aucun modèle enregistré.', 'No saved templates.')}</p>
             </div>
           )}
         </div>
