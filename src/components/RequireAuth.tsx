@@ -31,6 +31,11 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
         navigate(redirectTo, { replace: true });
       } else {
         setAuthenticated(true);
+        // Auto-prompt push permission once after login
+        if (!pushPrompted.current) {
+          pushPrompted.current = true;
+          autoPromptPushPermission();
+        }
       }
       setChecked(true);
     };
