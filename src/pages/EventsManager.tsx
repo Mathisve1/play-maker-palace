@@ -548,13 +548,13 @@ const EventsManager = () => {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-sm">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div>
-                <h2 className="text-lg font-heading font-semibold text-foreground">{nl ? 'Evenement verwijderen' : 'Delete event'}</h2>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">{nl ? 'Weet je zeker dat je dit evenement wilt verwijderen? Alle groepen en taken worden ook verwijderd.' : 'Are you sure? All groups and tasks will also be deleted.'}</p>
-              <div className="flex justify-end gap-3">
-                <button onClick={() => setConfirmDeleteEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
-                <button onClick={() => handleDeleteEvent(confirmDeleteEvent)} disabled={deletingEvent === confirmDeleteEvent} className="px-5 py-2 text-sm rounded-xl bg-destructive text-destructive-foreground font-medium hover:opacity-90 disabled:opacity-50">
-                  {deletingEvent === confirmDeleteEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : (nl ? 'Verwijderen' : 'Delete')}
+                 <h2 className="text-lg font-heading font-semibold text-foreground">{t3('Evenement verwijderen', 'Supprimer l\'événement', 'Delete event')}</h2>
+               </div>
+               <p className="text-sm text-muted-foreground mb-6">{t3('Weet je zeker dat je dit evenement wilt verwijderen? Alle groepen en taken worden ook verwijderd.', 'Êtes-vous sûr? Tous les groupes et tâches seront supprimés.', 'Are you sure? All groups and tasks will also be deleted.')}</p>
+               <div className="flex justify-end gap-3">
+                 <button onClick={() => setConfirmDeleteEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
+                 <button onClick={() => handleDeleteEvent(confirmDeleteEvent)} disabled={deletingEvent === confirmDeleteEvent} className="px-5 py-2 text-sm rounded-xl bg-destructive text-destructive-foreground font-medium hover:opacity-90 disabled:opacity-50">
+                   {deletingEvent === confirmDeleteEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Verwijderen', 'Supprimer', 'Delete')}
                 </button>
               </div>
             </motion.div>
