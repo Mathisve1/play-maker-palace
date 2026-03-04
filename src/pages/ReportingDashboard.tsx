@@ -555,9 +555,9 @@ const ReportingDashboard = () => {
     const total = kpis.totalAssigned;
     if (total === 0) return [];
     return [
-      { name: 'Aanwezig', value: kpis.totalCheckedIn },
+      { name: L.present, value: kpis.totalCheckedIn },
       { name: 'No-show', value: kpis.totalNoShows },
-      { name: 'Onbekend', value: Math.max(0, total - kpis.totalCheckedIn - kpis.totalNoShows) },
+      { name: L.unknown, value: Math.max(0, total - kpis.totalCheckedIn - kpis.totalNoShows) },
     ];
   }, [kpis]);
 
