@@ -845,7 +845,7 @@ const MonthlyPlanning = () => {
                             if (task.compensation_type === 'daily') finalAmount = task.daily_rate || 0;
                             else finalAmount = finalHours * (task.hourly_rate || 0);
                             await supabase.from('monthly_day_signups').update({ club_reported_hours: finalHours, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' }).eq('id', ds.id);
-                            toast.success(`${ds.volunteer_name}: ${finalHours}u bevestigd (€${finalAmount.toFixed(2)})`);
+                            toast.success(`${ds.volunteer_name}: ${finalHours}${t3('u', 'h', 'h')} ${t3('bevestigd', 'confirmé', 'confirmed')} (€${finalAmount.toFixed(2)})`);
                             setDaySignups(prev => prev.map(s => s.id === ds.id ? { ...s, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' } : s));
                           }}>
                             <CheckCircle className="w-3.5 h-3.5 mr-1" /> Akkoord ({ds.volunteer_reported_hours}u)
