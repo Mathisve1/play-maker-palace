@@ -626,7 +626,7 @@ const BriefingBuilder = () => {
         waypoints: (b.waypoints || []).map(wp => ({ ...wp, id: uid() })),
       })),
     })));
-    toast.success('Briefing gedupliceerd — sla op om te bewaren');
+    toast.success(t3('Briefing gedupliceerd — sla op om te bewaren', 'Briefing dupliqué — enregistrez pour conserver', 'Briefing duplicated — save to keep'));
   };
 
   const switchBriefing = async (bId: string) => {
