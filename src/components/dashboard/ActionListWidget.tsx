@@ -132,7 +132,7 @@ export const ActionListWidget = ({ clubId, language }: ActionListWidgetProps) =>
       )}
 
       <div className="flex items-center justify-end mt-2 text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-        {language === 'nl' ? 'Bekijk actielijst' : 'View action list'} <ChevronRight className="w-3 h-3 ml-0.5" />
+        {language === 'nl' ? 'Bekijk actielijst' : language === 'fr' ? 'Voir la liste' : 'View action list'} <ChevronRight className="w-3 h-3 ml-0.5" />
       </div>
     </div>
   );

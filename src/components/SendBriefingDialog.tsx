@@ -125,7 +125,7 @@ const SendBriefingDialog = ({ open, onOpenChange, volunteers, onSend, language, 
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
-                      {v.full_name || v.email || 'Vrijwilliger'}
+                      {v.full_name || v.email || (language === 'nl' ? 'Vrijwilliger' : language === 'fr' ? 'Bénévole' : 'Volunteer')}
                     </p>
                     {v.full_name && v.email && (
                       <p className="text-xs text-muted-foreground truncate">{v.email}</p>

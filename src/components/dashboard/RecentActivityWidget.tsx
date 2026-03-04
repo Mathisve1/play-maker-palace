@@ -96,7 +96,7 @@ export const RecentActivityWidget = ({ clubId, language }: RecentActivityWidgetP
         </div>
       ) : items.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-4">
-          {language === 'nl' ? 'Nog geen activiteit.' : 'No activity yet.'}
+          {language === 'nl' ? 'Nog geen activiteit.' : language === 'fr' ? 'Aucune activité.' : 'No activity yet.'}
         </p>
       ) : (
         <div className="space-y-1">

@@ -222,7 +222,7 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
 
           return {
             volunteerId: gv.volunteer_id,
-            volunteerName: prof?.full_name || prof?.email || 'Onbekend',
+            volunteerName: prof?.full_name || prof?.email || (language === 'nl' ? 'Onbekend' : language === 'fr' ? 'Inconnu' : 'Unknown'),
             blocks: volBlocks,
             totalBlocks: groupBlocks.length,
             completedBlocks: volBlocks.filter(b => b.completed).length,
