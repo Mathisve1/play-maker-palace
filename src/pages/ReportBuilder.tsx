@@ -703,7 +703,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
               </div>
               <div className="flex-1 text-center">
                 <div className="border-b border-foreground/30 pb-1 mb-1 h-12" />
-                <p className="text-xs text-muted-foreground">Handtekening</p>
+                <p className="text-xs text-muted-foreground">{t3('Handtekening', 'Signature', 'Signature')}</p>
               </div>
               <div className="flex-1 text-right">
                 <p className="text-sm">{format(new Date(), 'dd MMMM yyyy', { locale: nl })}</p>
