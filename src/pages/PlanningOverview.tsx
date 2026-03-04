@@ -350,7 +350,7 @@ const PlanningOverview = () => {
                     <h2 className="text-base font-heading font-semibold text-foreground">{event.title}</h2>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       {event.event_date && (
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(event.event_date).toLocaleDateString(nl ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(event.event_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       )}
                       {event.location && (
                         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{event.location}</span>
