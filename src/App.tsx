@@ -66,7 +66,11 @@ const PageLoader = () => (
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Push service worker registered on-demand via PushPermissionBanner / profile toggle
+  // Auto-resubscribe push if user has push enabled but subscription was cleared
+  useEffect(() => {
+    const timer = setTimeout(() => autoResubscribeIfNeeded(), 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
   <QueryClientProvider client={queryClient}>
