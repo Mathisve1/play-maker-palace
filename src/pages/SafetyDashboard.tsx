@@ -558,7 +558,7 @@ const SafetyDashboard = () => {
         totalChecklistDone,
       });
 
-      doc.save(`veiligheidsrapport-${eventTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+      doc.save(`${t3('veiligheidsrapport', 'rapport-securite', 'safety-report')}-${eventTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`);
       toast.success('Veiligheidsrapport gedownload!');
     } catch (err: any) {
       toast.error(err.message || 'Fout bij rapport generatie');
