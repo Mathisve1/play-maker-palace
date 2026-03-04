@@ -274,7 +274,7 @@ const VolunteerSidebar = ({
       <SidebarFooter className="p-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => handleExternalNav('https://docs.lovable.dev')} className="min-h-[48px] text-muted-foreground">
+            <SidebarMenuButton onClick={() => handleExternalNav('/help')} className="min-h-[48px] text-muted-foreground">
               <HelpCircle className="w-5 h-5" />
               <span>{l.help}</span>
             </SidebarMenuButton>

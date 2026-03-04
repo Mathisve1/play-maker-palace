@@ -49,6 +49,7 @@ import Community from "./pages/Community";
 import CommunityClubDetail from "./pages/CommunityClubDetail";
 import CommunityPartnerDetail from "./pages/CommunityPartnerDetail";
 import CommandCenter from "./pages/CommandCenter";
+import VolunteerHelp from "./pages/VolunteerHelp";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -108,6 +109,7 @@ const App = () => {
             <Route path="/community" element={<Community />} />
             <Route path="/community/club/:clubId" element={<CommunityClubDetail />} />
             <Route path="/community/partner/:partnerId" element={<CommunityPartnerDetail />} />
+            <Route path="/help" element={<VolunteerHelp />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <IOSInstallOverlay />
