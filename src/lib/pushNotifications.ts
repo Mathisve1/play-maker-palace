@@ -41,7 +41,7 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
     const registration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/push/' });
     await navigator.serviceWorker.ready;
 
-    const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    const applicationServerKey = new Uint8Array(urlBase64ToUint8Array(VAPID_PUBLIC_KEY));
 
     // Reuse existing subscription when possible; if key changed, resubscribe.
     let subscription = await registration.pushManager.getSubscription();
