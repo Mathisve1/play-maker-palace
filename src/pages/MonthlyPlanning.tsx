@@ -299,7 +299,7 @@ const MonthlyPlanning = () => {
       club_id: clubId,
       year: viewYear,
       month: viewMonth,
-      title: `${MONTH_NAMES_NL[viewMonth - 1]} ${viewYear}`,
+      title: `${MONTH_NAMES[language]?.[viewMonth - 1] || MONTH_NAMES.nl[viewMonth - 1]} ${viewYear}`,
       created_by: user.id,
       status: 'draft',
     }).select().single();
