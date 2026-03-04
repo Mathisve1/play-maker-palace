@@ -755,7 +755,7 @@ const SepaPayouts = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{selected.size}</p>
-                <p className="text-xs text-muted-foreground">Geselecteerd</p>
+                <p className="text-xs text-muted-foreground">{t3('Geselecteerd', 'Sélectionnés', 'Selected')}</p>
               </div>
             </div>
           </motion.div>
