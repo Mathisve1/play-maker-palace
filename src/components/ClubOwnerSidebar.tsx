@@ -165,7 +165,7 @@ const ClubOwnerSidebar = ({
 
         {(onOpenSettings || onOpenMembers) && (
           <SidebarGroup>
-            <SidebarGroupLabel>Instellingen</SidebarGroupLabel>
+            <SidebarGroupLabel>{t3('Instellingen', 'Paramètres', 'Settings')}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {onOpenMembers && (
