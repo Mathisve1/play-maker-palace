@@ -197,7 +197,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
 
   const handleRemoveMember = async (memberId: string, userId: string) => {
     if (userId === currentUserId) {
-      toast.error('Je kunt jezelf niet verwijderen');
+      toast.error(t3('Je kunt jezelf niet verwijderen', 'Vous ne pouvez pas vous supprimer', 'You cannot remove yourself'));
       return;
     }
     const { error } = await supabase
