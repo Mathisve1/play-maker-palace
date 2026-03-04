@@ -872,7 +872,7 @@ const ExternalPartners = () => {
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={newPartner.external_payroll} onCheckedChange={c => setNewPartner(p => ({ ...p, external_payroll: !!c }))} id="payroll" />
-              <Label htmlFor="payroll" className="cursor-pointer">{nl ? 'Externe Payroll (medewerkers hebben al een contract)' : 'External Payroll (members have existing contracts)'}</Label>
+              <Label htmlFor="payroll" className="cursor-pointer">{t3('Externe Payroll (medewerkers hebben al een contract)', 'Paie externe (les membres ont déjà un contrat)', 'External Payroll (members have existing contracts)')}</Label>
             </div>
             <Button onClick={handleCreatePartner} disabled={creating || !newPartner.name.trim()} className="w-full">
               {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
