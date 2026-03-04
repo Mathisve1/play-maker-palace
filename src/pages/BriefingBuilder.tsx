@@ -117,11 +117,11 @@ const SortableBlock = ({
       {/* Time Slot */}
       {block.type === 'time_slot' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Input type="time" value={block.start_time || ''} onChange={e => onUpdate(groupId, block.id, { start_time: e.target.value })} placeholder="Starttijd" className="bg-background/60 text-sm" />
-          <Input type="time" value={block.end_time || ''} onChange={e => onUpdate(groupId, block.id, { end_time: e.target.value })} placeholder="Eindtijd" className="bg-background/60 text-sm" />
-          <Input value={block.location || ''} onChange={e => onUpdate(groupId, block.id, { location: e.target.value })} placeholder="Locatie" className="bg-background/60 text-sm" />
+          <Input type="time" value={block.start_time || ''} onChange={e => onUpdate(groupId, block.id, { start_time: e.target.value })} placeholder={language === 'fr' ? 'Heure de début' : language === 'en' ? 'Start time' : 'Starttijd'} className="bg-background/60 text-sm" />
+          <Input type="time" value={block.end_time || ''} onChange={e => onUpdate(groupId, block.id, { end_time: e.target.value })} placeholder={language === 'fr' ? 'Heure de fin' : language === 'en' ? 'End time' : 'Eindtijd'} className="bg-background/60 text-sm" />
+          <Input value={block.location || ''} onChange={e => onUpdate(groupId, block.id, { location: e.target.value })} placeholder={language === 'fr' ? 'Lieu' : language === 'en' ? 'Location' : 'Locatie'} className="bg-background/60 text-sm" />
           <div className="sm:col-span-3">
-            <Input value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder="Beschrijving" className="bg-background/60 text-sm" />
+            <Input value={block.description || ''} onChange={e => onUpdate(groupId, block.id, { description: e.target.value })} placeholder={language === 'fr' ? 'Description' : language === 'en' ? 'Description' : 'Beschrijving'} className="bg-background/60 text-sm" />
           </div>
         </div>
       )}
