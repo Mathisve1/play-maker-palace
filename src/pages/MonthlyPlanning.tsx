@@ -303,9 +303,9 @@ const MonthlyPlanning = () => {
       created_by: user.id,
       status: 'draft',
     }).select().single();
-    if (error) { toast.error('Kon plan niet aanmaken'); return; }
+    if (error) { toast.error(t3('Kon plan niet aanmaken', 'Impossible de créer le plan', 'Could not create plan')); return; }
     setPlan(data as unknown as MonthlyPlan);
-    toast.success('Maandplan aangemaakt!');
+    toast.success(t3('Maandplan aangemaakt!', 'Plan mensuel créé !', 'Monthly plan created!'));
   };
 
   const addOrUpdateTask = async () => {
