@@ -241,9 +241,9 @@ const PlanningOverview = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-            {task.task_date && (
-              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(task.task_date).toLocaleDateString(nl ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>
+           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+             {task.task_date && (
+               <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>
             )}
             {task.location && (
               <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{task.location}</span>
