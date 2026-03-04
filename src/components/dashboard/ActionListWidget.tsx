@@ -123,7 +123,7 @@ export const ActionListWidget = ({ clubId, language }: ActionListWidgetProps) =>
                 <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${cfg.color}`}>
                   <Icon className="w-3 h-3" />
                 </div>
-                <span className="text-xs text-foreground flex-1">{cfg.label[language]}</span>
+                <span className="text-xs text-foreground flex-1">{cfg.label[language] || cfg.label.en}</span>
                 <span className="text-xs font-semibold text-foreground">{count}</span>
               </div>
             );
