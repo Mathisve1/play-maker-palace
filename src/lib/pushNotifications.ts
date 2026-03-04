@@ -38,20 +38,24 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
   }
 
   try {
-    // Register push service worker
+    // Register push service worker and force update
     const registration = await navigator.serviceWorker.register('/push-sw.js');
+    await registration.update();
     await navigator.serviceWorker.ready;
 
-    const applicationServerKey = new Uint8Array(urlBase64ToUint8Array(VAPID_PUBLIC_KEY));
+    const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
 
-    // Reuse existing subscription when possible; if key changed, resubscribe.
-    let subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
-      });
+    // Always unsubscribe first to clear any stale/mismatched VAPID subscriptions
+    const existingSub = await registration.pushManager.getSubscription();
+    if (existingSub) {
+      console.log('[Push] Removing existing subscription before re-subscribing');
+      try { await existingSub.unsubscribe(); } catch (e) { console.warn('[Push] Unsubscribe old failed:', e); }
     }
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: new Uint8Array(applicationServerKey) as BufferSource,
+    });
 
     const subJson = subscription.toJSON();
     const endpoint = subJson.endpoint || '';
