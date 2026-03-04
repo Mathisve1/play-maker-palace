@@ -180,7 +180,7 @@ const ClubOwnerSidebar = ({
                   <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => { onOpenSettings(); setOpenMobile(false); }} className="min-h-[48px]">
                       <Settings className="w-5 h-5" />
-                      <span>Instellingen</span>
+                      <span>{t3('Instellingen', 'Paramètres', 'Settings')}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
