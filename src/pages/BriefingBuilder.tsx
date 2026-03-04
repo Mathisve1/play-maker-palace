@@ -199,7 +199,7 @@ const SortableBlock = ({
                 max={10}
                 value={block.zone_visible_depth ?? ''}
                 onChange={e => onUpdate(groupId, block.id, { zone_visible_depth: e.target.value ? parseInt(e.target.value) : null })}
-                placeholder="Alles"
+                placeholder={language === 'fr' ? 'Tout' : language === 'en' ? 'All' : 'Alles'}
                 className="bg-background/60 text-sm w-20"
               />
               <span className="text-[10px] text-muted-foreground">
