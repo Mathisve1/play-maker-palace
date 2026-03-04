@@ -32,24 +32,15 @@ function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   return result;
 }
 
-// ── VAPID using jose library ──────────────────────────────────────
+// ── VAPID auth header using jose ──────────────────────────────────
 
 async function createVapidAuth(
   audience: string,
   subject: string,
   vapidPubB64: string,
-  vapidPrivB64: string,
+  privateJwk: any,
 ): Promise<string> {
-  const pub = b64urlDecode(vapidPubB64);
-  const jwk = {
-    kty: 'EC',
-    crv: 'P-256',
-    x: b64url(pub.slice(1, 33)),
-    y: b64url(pub.slice(33, 65)),
-    d: vapidPrivB64,
-  };
-
-  const key = await importJWK(jwk, 'ES256');
+  const key = await importJWK(privateJwk, 'ES256');
 
   const jwt = await new SignJWT({})
     .setProtectedHeader({ typ: 'JWT', alg: 'ES256' })
@@ -85,15 +76,12 @@ async function encryptPayload(p256dhB64: string, authB64: string, payload: Uint8
 
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // IKM
   const keyInfoInput = concatBytes(enc.encode('WebPush: info\0'), uaPub, localPubRaw);
   const ikm = await hkdf(authSecret, ecdhSecret, keyInfoInput, 32);
 
-  // CEK + Nonce
   const cek = await hkdf(salt, ikm, enc.encode('Content-Encoding: aes128gcm\0'), 16);
   const nonce = await hkdf(salt, ikm, enc.encode('Content-Encoding: nonce\0'), 12);
 
-  // Pad payload with delimiter 0x02 (last record)
   const padded = concatBytes(payload, new Uint8Array([2]));
 
   const aesKey = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
@@ -101,7 +89,6 @@ async function encryptPayload(p256dhB64: string, authB64: string, payload: Uint8
     { name: 'AES-GCM', iv: nonce }, aesKey, padded
   ));
 
-  // aes128gcm header: salt(16) | rs(4) | idlen(1) | keyid(65) | ciphertext
   const header = new Uint8Array(16 + 4 + 1 + localPubRaw.length);
   header.set(salt, 0);
   new DataView(header.buffer).setUint32(16, 4096);
@@ -116,12 +103,12 @@ async function encryptPayload(p256dhB64: string, authB64: string, payload: Uint8
 async function sendPush(
   endpoint: string, p256dh: string, auth: string,
   payloadObj: Record<string, unknown>,
-  vapidPub: string, vapidPriv: string, vapidSubject: string
+  vapidPub: string, privateJwk: any, vapidSubject: string
 ): Promise<{ ok: boolean; status: number; body: string }> {
   const url = new URL(endpoint);
   const audience = `${url.protocol}//${url.host}`;
 
-  const authorization = await createVapidAuth(audience, vapidSubject, vapidPub, vapidPriv);
+  const authorization = await createVapidAuth(audience, vapidSubject, vapidPub, privateJwk);
   const body = await encryptPayload(p256dh, auth, new TextEncoder().encode(JSON.stringify(payloadObj)));
 
   const res = await fetch(endpoint, {
@@ -136,7 +123,7 @@ async function sendPush(
   });
 
   const text = await res.text();
-  return { ok: res.status >= 200 && res.status < 300, status: res.status, body: text, audience };
+  return { ok: res.status >= 200 && res.status < 300, status: res.status, body: text };
 }
 
 // ── Templates ─────────────────────────────────────────────────────
@@ -170,12 +157,13 @@ serve(async (req) => {
     const { type, user_id, title, message, url, data, broadcast } = await req.json();
 
     const vapidPub = Deno.env.get('VAPID_PUBLIC_KEY')!;
-    const vapidPriv = Deno.env.get('VAPID_PRIVATE_KEY')!;
-    if (!vapidPub || !vapidPriv) {
+    const vapidPrivJwkStr = Deno.env.get('VAPID_PRIVATE_JWK')!;
+    if (!vapidPub || !vapidPrivJwkStr) {
       return new Response(JSON.stringify({ error: 'VAPID keys not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    const privateJwk = JSON.parse(vapidPrivJwkStr);
     const vapidSubject = 'mailto:info@de12eman.be';
     const sbUrl = Deno.env.get('SUPABASE_URL')!;
     const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -195,7 +183,7 @@ serve(async (req) => {
       for (const sub of (subs || [])) {
         if (pMap.get(sub.user_id)?.push_notifications_enabled === false) continue;
         try {
-          const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard' }, vapidPub, vapidPriv, vapidSubject);
+          const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard' }, vapidPub, privateJwk, vapidSubject);
           details.push({ status: r.status, body: r.body?.slice(0, 100) });
           if (r.ok) sent++; else {
             failed++;
@@ -246,7 +234,7 @@ serve(async (req) => {
         const details: any[] = [];
         for (const sub of subs) {
           try {
-            const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard' }, vapidPub, vapidPriv, vapidSubject);
+            const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard' }, vapidPub, privateJwk, vapidSubject);
             details.push({ status: r.status, body: r.body?.slice(0, 200) });
             if (r.ok) ok = true;
             else if (r.status === 410 || r.status === 404) await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
