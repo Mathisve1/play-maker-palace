@@ -32,7 +32,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Logo mag maximaal 5MB zijn');
+      toast.error(t3('Logo mag maximaal 5MB zijn', 'Le logo ne peut pas dépasser 5 Mo', 'Logo must be max 5MB'));
       return;
     }
     setLogoFile(file);
