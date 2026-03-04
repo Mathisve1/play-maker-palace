@@ -581,7 +581,7 @@ const EventsManager = () => {
                  <div className="flex justify-end gap-3 pt-2">
                    <button type="button" onClick={() => setEditingEvent(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
                   <button type="submit" disabled={savingEvent} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
-                    {savingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : (nl ? 'Opslaan' : 'Save')}
+                    {savingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Opslaan', 'Enregistrer', 'Save')}
                   </button>
                 </div>
               </form>
