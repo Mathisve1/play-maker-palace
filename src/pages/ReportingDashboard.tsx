@@ -1131,7 +1131,7 @@ const ReportingDashboard = () => {
                   <div ref={aiEndRef} />
                 </div>
                 <div className="flex gap-2">
-                  <Textarea placeholder="Stel je vraag..." value={aiQuestion} onChange={e => setAiQuestion(e.target.value)}
+                  <Textarea placeholder={L.aiPlaceholder} value={aiQuestion} onChange={e => setAiQuestion(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAiQuestion(); } }}
                     className="min-h-[44px] max-h-[100px] resize-none" rows={1} />
                   <Button onClick={handleAiQuestion} disabled={aiLoading || !aiQuestion.trim()} size="icon" className="shrink-0"><Send className="w-4 h-4" /></Button>
