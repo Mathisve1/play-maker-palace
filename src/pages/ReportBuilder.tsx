@@ -504,7 +504,7 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
         prompt: aiPrompt,
       });
       setAiPrompt('');
-      toast.success('AI grafiek toegevoegd!');
+      toast.success(t3('AI grafiek toegevoegd!', 'Graphique IA ajouté !', 'AI chart added!'));
     } catch (e: any) {
       console.error('AI chart error:', e);
       toast.error('Kon geen grafiek genereren. Probeer een andere vraag.');
