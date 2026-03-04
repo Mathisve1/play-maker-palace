@@ -80,6 +80,7 @@ const SepaPayouts = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
 
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState('');
   const [clubId, setClubId] = useState<string | null>(null);
