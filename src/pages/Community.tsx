@@ -294,7 +294,7 @@ const Community = () => {
               <div className="mb-10">
                 <div className="flex items-center gap-2 mb-4">
                   <Heart className="w-5 h-5 text-primary fill-primary" />
-                  <h2 className="text-xl font-bold font-heading">Jouw clubs</h2>
+                  <h2 className="text-xl font-bold font-heading">{cl.yourClubs}</h2>
                   <Badge variant="secondary" className="ml-2">{followedClubs.length}</Badge>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
