@@ -600,9 +600,9 @@ const BriefingBuilder = () => {
         if (exists) return prev.map(b => b.id === bId ? { ...b, title: briefingTitle } : b);
         return [...prev, { id: bId!, title: briefingTitle }];
       });
-      toast.success('Briefing opgeslagen!');
+      toast.success(t3('Briefing opgeslagen!', 'Briefing enregistré !', 'Briefing saved!'));
     } catch (err: any) {
-      toast.error(err.message || 'Error saving briefing');
+      toast.error(err.message || t3('Fout bij opslaan', 'Erreur lors de la sauvegarde', 'Error saving briefing'));
     } finally {
       setSaving(false);
     }
