@@ -542,9 +542,9 @@ const ExternalPartners = () => {
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
                           <Handshake className="w-4 h-4" />
-                          {nl ? `Toegewezen taken (${partnerTasks.length})` : `Assigned tasks (${partnerTasks.length})`}
+                          {t3(`Toegewezen taken (${partnerTasks.length})`, `Tâches assignées (${partnerTasks.length})`, `Assigned tasks (${partnerTasks.length})`)}
                         </CardTitle>
-                        <p className="text-xs text-muted-foreground">{nl ? 'Klik op een taak om medewerkers en opvolging te bekijken.' : 'Click a task to view members and tracking.'}</p>
+                        <p className="text-xs text-muted-foreground">{t3('Klik op een taak om medewerkers en opvolging te bekijken.', 'Cliquez sur une tâche pour voir les membres et le suivi.', 'Click a task to view members and tracking.')}</p>
                       </CardHeader>
                       <CardContent>
                         {partnerTasks.length === 0 ? (
