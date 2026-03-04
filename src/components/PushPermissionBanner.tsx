@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { markPushPromptSeen, setPushPreference } from '@/lib/onesignal';
+import { markPushPromptSeen, setPushPreference } from '@/lib/pushNotifications';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 

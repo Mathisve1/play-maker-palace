@@ -6,7 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Localized reminder templates
 function buildReminder(lang: string, clubName: string, tasks: any[]) {
   const l = lang || 'nl';
 
@@ -14,7 +13,7 @@ function buildReminder(lang: string, clubName: string, tasks: any[]) {
     const title = `📋 Rappel : demain chez ${clubName}`;
     const message = tasks.length === 1
       ? `Vous êtes planifié(e) demain pour "${tasks[0].title}"${tasks[0].start_time ? ` à ${tasks[0].start_time}` : ''}${tasks[0].location ? ` (${tasks[0].location})` : ''}.`
-      : `Vous avez ${tasks.length} tâches demain : ${tasks.map(t => t.title).join(', ')}.`;
+      : `Vous avez ${tasks.length} tâches demain : ${tasks.map((t: any) => t.title).join(', ')}.`;
     return { title, message };
   }
 
@@ -22,15 +21,14 @@ function buildReminder(lang: string, clubName: string, tasks: any[]) {
     const title = `📋 Reminder: tomorrow at ${clubName}`;
     const message = tasks.length === 1
       ? `You're scheduled tomorrow for "${tasks[0].title}"${tasks[0].start_time ? ` at ${tasks[0].start_time}` : ''}${tasks[0].location ? ` (${tasks[0].location})` : ''}.`
-      : `You have ${tasks.length} tasks tomorrow: ${tasks.map(t => t.title).join(', ')}.`;
+      : `You have ${tasks.length} tasks tomorrow: ${tasks.map((t: any) => t.title).join(', ')}.`;
     return { title, message };
   }
 
-  // Default: nl
   const title = `📋 Herinnering: morgen bij ${clubName}`;
   const message = tasks.length === 1
     ? `Je bent morgen ingepland voor "${tasks[0].title}"${tasks[0].start_time ? ` om ${tasks[0].start_time}` : ''}${tasks[0].location ? ` (${tasks[0].location})` : ''}.`
-    : `Je hebt morgen ${tasks.length} taken: ${tasks.map(t => t.title).join(', ')}.`;
+    : `Je hebt morgen ${tasks.length} taken: ${tasks.map((t: any) => t.title).join(', ')}.`;
   return { title, message };
 }
 
@@ -42,16 +40,6 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const onesignalAppId = Deno.env.get('ONESIGNAL_APP_ID');
-    const onesignalApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY');
-
-    if (!onesignalAppId || !onesignalApiKey) {
-      return new Response(
-        JSON.stringify({ error: 'OneSignal not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Calculate tomorrow's date (Brussels timezone)
@@ -63,7 +51,6 @@ serve(async (req) => {
 
     console.log(`Checking reminders for tasks on ${tomorrowStr}`);
 
-    // Find all plan tasks for tomorrow
     const { data: tomorrowTasks, error: tasksError } = await supabase
       .from('monthly_plan_tasks')
       .select('id, title, start_time, location, plan_id')
@@ -77,9 +64,8 @@ serve(async (req) => {
       );
     }
 
-    const taskIds = tomorrowTasks.map(t => t.id);
+    const taskIds = tomorrowTasks.map((t: any) => t.id);
 
-    // Find all day signups for these tasks
     const { data: signups, error: signupsError } = await supabase
       .from('monthly_day_signups')
       .select('id, volunteer_id, plan_task_id')
@@ -94,25 +80,25 @@ serve(async (req) => {
       );
     }
 
-    // Get volunteer profiles with player IDs AND language preference
-    const volunteerIds = [...new Set(signups.map(s => s.volunteer_id))];
+    const volunteerIds = [...new Set(signups.map((s: any) => s.volunteer_id))];
+
+    // Get profiles with language
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, onesignal_player_id, full_name, language')
-      .in('id', volunteerIds)
-      .not('onesignal_player_id', 'is', null);
+      .select('id, full_name, language')
+      .in('id', volunteerIds);
 
     if (!profiles || profiles.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'No volunteers with push subscriptions', date: tomorrowStr }),
+        JSON.stringify({ message: 'No volunteer profiles found', date: tomorrowStr }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const profileMap = new Map(profiles.map(p => [p.id, p]));
+    const profileMap = new Map(profiles.map((p: any) => [p.id, p]));
 
     // Get plan info for club names
-    const planIds = [...new Set(tomorrowTasks.map(t => t.plan_id))];
+    const planIds = [...new Set(tomorrowTasks.map((t: any) => t.plan_id))];
     const { data: plans } = await supabase
       .from('monthly_plans')
       .select('id, club_id, clubs(name)')
@@ -123,64 +109,52 @@ serve(async (req) => {
     // Group signups by volunteer
     const byVolunteer: Record<string, { tasks: typeof tomorrowTasks; clubName: string }> = {};
     for (const signup of signups) {
-      const profile = profileMap.get(signup.volunteer_id);
-      if (!profile?.onesignal_player_id) continue;
-
-      const task = tomorrowTasks.find(t => t.id === signup.plan_task_id);
+      const task = tomorrowTasks.find((t: any) => t.id === signup.plan_task_id);
       if (!task) continue;
-
       if (!byVolunteer[signup.volunteer_id]) {
         byVolunteer[signup.volunteer_id] = { tasks: [], clubName: planMap.get(task.plan_id) || 'Club' };
       }
       byVolunteer[signup.volunteer_id].tasks.push(task);
     }
 
+    // Send push via send-native-push for each volunteer
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
     let sent = 0;
     let failed = 0;
 
     for (const [volunteerId, { tasks: volTasks, clubName }] of Object.entries(byVolunteer)) {
       const profile = profileMap.get(volunteerId);
-      if (!profile?.onesignal_player_id) continue;
+      if (!profile) continue;
 
-      // Build notification in the volunteer's preferred language
       const { title, message } = buildReminder(profile.language, clubName, volTasks);
 
       try {
-        const pushRes = await fetch('https://api.onesignal.com/notifications', {
+        const pushRes = await fetch(`${supabaseUrl}/functions/v1/send-native-push`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Key ${onesignalApiKey}`,
+            'Authorization': `Bearer ${supabaseAnonKey}`,
           },
           body: JSON.stringify({
-            app_id: onesignalAppId,
-            include_subscription_ids: [profile.onesignal_player_id],
-            headings: { en: title },
-            contents: { en: message },
+            user_id: volunteerId,
+            type: 'monthly_reminder',
+            title,
+            message,
             url: '/volunteer',
           }),
         });
 
         if (pushRes.ok) {
           sent++;
-          console.log(`Push sent to ${profile.full_name || volunteerId} (${profile.language || 'nl'})`);
+          console.log(`Reminder sent to ${profile.full_name || volunteerId}`);
         } else {
           failed++;
-          const err = await pushRes.text();
-          console.error(`Push failed for ${volunteerId}:`, err);
+          console.error(`Reminder failed for ${volunteerId}:`, await pushRes.text());
         }
       } catch (e) {
         failed++;
-        console.error(`Push error for ${volunteerId}:`, e);
+        console.error(`Reminder error for ${volunteerId}:`, e);
       }
-
-      // Also create in-app notification in the user's language
-      await supabase.from('notifications').insert({
-        user_id: volunteerId,
-        type: 'monthly_reminder',
-        title,
-        message,
-      });
     }
 
     return new Response(
