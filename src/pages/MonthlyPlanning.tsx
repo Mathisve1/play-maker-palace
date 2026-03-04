@@ -253,9 +253,9 @@ const MonthlyPlanning = () => {
         // Update local barcode from ticket
         const barcode = data.barcode || signup.ticket_barcode;
         setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, ticket_barcode: barcode } : s));
-        toast.success('Ticket gegenereerd!');
+        toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
       } else {
-        toast.error(data?.error || 'Ticket genereren mislukt');
+        toast.error(data?.error || t3('Ticket genereren mislukt', 'Échec de la génération du ticket', 'Ticket generation failed'));
       }
     } catch (e: any) {
       toast.error(e.message);
