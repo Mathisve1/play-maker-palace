@@ -1447,7 +1447,7 @@ const SafetyDashboard = () => {
                   {activeIncidents.length === 0 && (
                     <div className="text-center py-8">
                       <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
-                      <p className="text-muted-foreground text-sm">{isLive ? 'Geen actieve incidenten' : 'Wacht op GO LIVE'}</p>
+                      <p className="text-muted-foreground text-sm">{isLive ? t3('Geen actieve incidenten', 'Aucun incident actif', 'No active incidents') : t3('Wacht op GO LIVE', 'En attente de GO LIVE', 'Waiting for GO LIVE')}</p>
                     </div>
                   )}
                 </div>
