@@ -328,14 +328,14 @@ const MonthlyPlanning = () => {
 
     if (editingTask) {
       const { error } = await supabase.from('monthly_plan_tasks').update(payload).eq('id', editingTask.id);
-      if (error) { toast.error('Update mislukt'); return; }
+      if (error) { toast.error(t3('Update mislukt', 'Mise à jour échouée', 'Update failed')); return; }
       setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...payload } : t));
-      toast.success('Taak bijgewerkt');
+      toast.success(t3('Taak bijgewerkt', 'Tâche mise à jour', 'Task updated'));
     } else {
       const { data, error } = await supabase.from('monthly_plan_tasks').insert(payload).select().single();
-      if (error) { toast.error('Taak toevoegen mislukt'); return; }
+      if (error) { toast.error(t3('Taak toevoegen mislukt', 'Échec de l\'ajout', 'Failed to add task')); return; }
       setTasks(prev => [...prev, data as unknown as PlanTask]);
-      toast.success('Taak toegevoegd');
+      toast.success(t3('Taak toegevoegd', 'Tâche ajoutée', 'Task added'));
     }
     setShowAddTask(false);
     setEditingTask(null);
