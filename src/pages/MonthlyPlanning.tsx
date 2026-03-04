@@ -604,7 +604,7 @@ const MonthlyPlanning = () => {
                             <div key={t.id} className={`text-[10px] sm:text-xs px-1 py-0.5 rounded truncate ${categoryColor(t.category)}`}
                               onClick={(e) => { e.stopPropagation(); openEditTask(t); }}>{t.title}</div>
                           ))}
-                          {dayTasks.length > 3 && <div className="text-[10px] text-muted-foreground px-1">+{dayTasks.length - 3} meer</div>}
+                          {dayTasks.length > 3 && <div className="text-[10px] text-muted-foreground px-1">+{dayTasks.length - 3} {t3('meer', 'plus', 'more')}</div>}
                         </div>
                       </div>
                     );
