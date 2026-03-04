@@ -522,7 +522,7 @@ const MonthlyPlanning = () => {
                 try {
                   const res = await supabase.functions.invoke('monthly-planning-demo', { body: { club_id: clubId, action: 'create' } });
                   if (res.error) throw new Error(res.error.message);
-                  toast.success('Demo maandplan aangemaakt! Pagina wordt herladen...');
+                  toast.success(t3('Demo maandplan aangemaakt! Pagina wordt herladen...', 'Plan de démo créé ! La page se recharge...', 'Demo plan created! Page reloading...'));
                   setTimeout(() => window.location.reload(), 2000);
                 } catch (err: any) { toast.error(err.message); }
                 setDemoLoading(false);
