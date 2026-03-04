@@ -409,7 +409,7 @@ const ExternalPartners = () => {
       // If member has user_id, use it; otherwise use a placeholder
       const volunteerId = member.user_id;
       if (!volunteerId) {
-        toast.error(nl ? 'Deze medewerker heeft nog geen vrijwilligersaccount. Stuur eerst een uitnodiging.' : 'This member has no volunteer account yet. Send an invitation first.');
+        toast.error(t3('Deze medewerker heeft nog geen vrijwilligersaccount. Stuur eerst een uitnodiging.', 'Ce membre n\'a pas encore de compte bénévole. Envoyez d\'abord une invitation.', 'This member has no volunteer account yet. Send an invitation first.'));
         setSendingTicket(false);
         return;
       }
