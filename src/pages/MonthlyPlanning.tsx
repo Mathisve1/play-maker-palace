@@ -939,11 +939,11 @@ const MonthlyPlanning = () => {
                  <div><Label>{t3('Geschatte uren', 'Heures estimées', 'Estimated hours')}</Label><Input type="number" value={taskForm.estimated_hours} onChange={e => setTaskForm(f => ({ ...f, estimated_hours: e.target.value }))} /></div>
               </div>
             )}
-            <div><Label>Aantal plaatsen</Label><Input type="number" value={taskForm.spots_available} onChange={e => setTaskForm(f => ({ ...f, spots_available: e.target.value }))} /></div>
-            <div><Label>Beschrijving</Label><Textarea value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} placeholder="Extra info over de taak..." rows={2} /></div>
-            <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowAddTask(false)}>Annuleren</Button>
-              <Button className="flex-1" onClick={addOrUpdateTask} disabled={!taskForm.title}>{editingTask ? 'Opslaan' : 'Toevoegen'}</Button>
+             <div><Label>{t3('Aantal plaatsen', 'Nombre de places', 'Number of spots')}</Label><Input type="number" value={taskForm.spots_available} onChange={e => setTaskForm(f => ({ ...f, spots_available: e.target.value }))} /></div>
+             <div><Label>{t3('Beschrijving', 'Description', 'Description')}</Label><Textarea value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} placeholder={t3('Extra info over de taak...', 'Informations supplémentaires...', 'Additional task info...')} rows={2} /></div>
+             <div className="flex gap-3 pt-2">
+               <Button variant="outline" className="flex-1" onClick={() => setShowAddTask(false)}>{t3('Annuleren', 'Annuler', 'Cancel')}</Button>
+               <Button className="flex-1" onClick={addOrUpdateTask} disabled={!taskForm.title}>{editingTask ? t3('Opslaan', 'Enregistrer', 'Save') : t3('Toevoegen', 'Ajouter', 'Add')}</Button>
             </div>
           </div>
         </DialogContent>
