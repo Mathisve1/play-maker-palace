@@ -302,7 +302,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Info className="w-3.5 h-3.5" />
-            Dynamische variabelen
+            {t3('Dynamische variabelen', 'Variables dynamiques', 'Dynamic variables')}
             {showVars ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
           {showVars && (
