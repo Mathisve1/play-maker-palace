@@ -268,13 +268,13 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" />
-              Ontvangers ({selectedVolunteers.size}/{volunteers.length})
+              {t3('Ontvangers', 'Destinataires', 'Recipients')} ({selectedVolunteers.size}/{volunteers.length})
             </h3>
             <button
               onClick={toggleAll}
               className="text-xs text-primary hover:underline"
             >
-              {selectedVolunteers.size === volunteers.length ? 'Deselecteer alles' : 'Selecteer alles'}
+              {selectedVolunteers.size === volunteers.length ? t3('Deselecteer alles', 'Tout désélectionner', 'Deselect all') : t3('Selecteer alles', 'Tout sélectionner', 'Select all')}
             </button>
           </div>
           <div className="space-y-1 max-h-32 overflow-y-auto">
