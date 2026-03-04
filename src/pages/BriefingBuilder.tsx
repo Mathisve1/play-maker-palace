@@ -209,10 +209,10 @@ const SortableBlock = ({
           )}
           <p className="text-[10px] text-muted-foreground">
             {block.zone_mode === 'personalized'
-              ? 'Elke vrijwilliger ziet enkel zijn eigen zone-toewijzing, wristband-kleur en materialen.'
+              ? (language === 'fr' ? 'Chaque bénévole voit uniquement sa zone assignée, couleur de bracelet et matériaux.' : language === 'en' ? 'Each volunteer sees only their assigned zone, wristband color and materials.' : 'Elke vrijwilliger ziet enkel zijn eigen zone-toewijzing, wristband-kleur en materialen.')
               : block.zone_visible_depth
-                ? `Zones worden getoond tot niveau ${block.zone_visible_depth} (bv. Zone > Sectie).`
-                : 'Alle zones, subzones, capaciteiten en wristband-info worden getoond.'}
+                ? (language === 'fr' ? `Les zones sont affichées jusqu'au niveau ${block.zone_visible_depth}.` : language === 'en' ? `Zones shown up to level ${block.zone_visible_depth}.` : `Zones worden getoond tot niveau ${block.zone_visible_depth} (bv. Zone > Sectie).`)
+                : (language === 'fr' ? 'Toutes les zones, sous-zones, capacités et infos de bracelets sont affichées.' : language === 'en' ? 'All zones, sub-zones, capacities and wristband info are shown.' : 'Alle zones, subzones, capaciteiten en wristband-info worden getoond.')}
           </p>
         </div>
       )}
