@@ -840,7 +840,7 @@ const ContractBuilder = () => {
                 {fieldsOpen && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-0.5 overflow-hidden">
                     {/* Basic fields */}
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-2 pb-1">Basis</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-2 pb-1">{t3('Basis', 'Base', 'Basic')}</p>
                     {mergeFields.filter(f => f.group === 'basic').map(field => (
                       <div
                         key={field.name}
