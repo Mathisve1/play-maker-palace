@@ -357,7 +357,7 @@ const EventsManager = () => {
     setDeletingTask(taskId);
     const { error } = await (supabase as any).from('tasks').delete().eq('id', taskId);
     if (error) toast.error(error.message);
-    else { toast.success(nl ? 'Taak verwijderd!' : 'Task deleted!'); setTasks(prev => prev.filter(t => t.id !== taskId)); }
+    else { toast.success(t3('Taak verwijderd!', 'Tâche supprimée!', 'Task deleted!')); setTasks(prev => prev.filter(t => t.id !== taskId)); }
     setDeletingTask(null);
     setConfirmDeleteTask(null);
   };
