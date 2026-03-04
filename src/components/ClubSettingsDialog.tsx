@@ -126,7 +126,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Sport</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t3('Sport', 'Sport', 'Sport')}</label>
               <input type="text" value={sport} onChange={e => setSport(e.target.value)} maxLength={100} className={inputClass} />
             </div>
             <div>
