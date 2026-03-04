@@ -477,9 +477,9 @@ const MonthlyPlanning = () => {
 
   const approvalBadge = (status: string) => {
     switch (status) {
-      case 'approved': return <Badge className="bg-green-600 text-[10px]">Goedgekeurd</Badge>;
-      case 'rejected': return <Badge variant="destructive" className="text-[10px]">Afgewezen</Badge>;
-      default: return <Badge variant="secondary" className="text-[10px]">Wacht op goedkeuring</Badge>;
+      case 'approved': return <Badge className="bg-green-600 text-[10px]">{t3('Goedgekeurd', 'Approuvé', 'Approved')}</Badge>;
+      case 'rejected': return <Badge variant="destructive" className="text-[10px]">{t3('Afgewezen', 'Refusé', 'Rejected')}</Badge>;
+      default: return <Badge variant="secondary" className="text-[10px]">{t3('Wacht op goedkeuring', 'En attente d\'approbation', 'Awaiting approval')}</Badge>;
     }
   };
 
