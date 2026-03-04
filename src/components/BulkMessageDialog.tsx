@@ -399,7 +399,7 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
               className="flex items-center gap-1.5 text-xs text-primary hover:underline"
             >
               <Eye className="w-3.5 h-3.5" />
-              {showPreview ? 'Verberg voorbeeld' : 'Voorbeeld bekijken'}
+              {showPreview ? t3('Verberg voorbeeld', 'Masquer l\'aperçu', 'Hide preview') : t3('Voorbeeld bekijken', 'Voir l\'aperçu', 'Preview')}
             </button>
             {showPreview && previewVolunteer && (
               <div className="mt-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
