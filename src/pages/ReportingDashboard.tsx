@@ -972,7 +972,7 @@ const ReportingDashboard = () => {
                     <TableCell className="text-center"><Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-300">{v.totalCheckedIn}</Badge></TableCell>
                     <TableCell className="text-center">{v.noShows > 0 ? <Badge variant="destructive">{v.noShows}</Badge> : <span className="text-muted-foreground">0</span>}</TableCell>
                     <TableCell className="text-center">
-                      <Badge variant={v.reliabilityScore >= 80 ? 'default' : v.reliabilityScore >= 50 ? 'secondary' : 'destructive'}>
+                     <Badge variant={v.reliabilityScore >= 80 ? 'default' : v.reliabilityScore >= 50 ? 'secondary' : 'destructive'}>
                         {v.reliabilityScore}%
                       </Badge>
                     </TableCell>
