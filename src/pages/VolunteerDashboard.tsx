@@ -526,7 +526,7 @@ const VolunteerDashboard = () => {
       else if (contract.status === 'completed' && contract.document_url) { window.open(contract.document_url, '_blank'); }
       else { setActiveTab('contracts'); }
     } else {
-      toast.info(language === 'nl' ? 'Het contract is nog niet verstuurd door de club.' : 'The contract has not been sent yet.');
+      toast.info(language === 'nl' ? 'Het contract is nog niet verstuurd door de club.' : language === 'fr' ? 'Le contrat n\'a pas encore été envoyé par le club.' : 'The contract has not been sent yet.');
     }
   };
 
@@ -540,9 +540,9 @@ const VolunteerDashboard = () => {
       const data = await resp.json();
       if (resp.ok && data.success) {
         setMyContracts(prev => prev.map(c => c.id === contractId ? { ...c, status: data.status, document_url: data.document_url || c.document_url } : c));
-        if (data.status === 'completed') { toast.success('Contract is ondertekend!'); } else { toast.info('Contract is nog in afwachting.'); }
+        if (data.status === 'completed') { toast.success(language === 'nl' ? 'Contract is ondertekend!' : language === 'fr' ? 'Contrat signé !' : 'Contract signed!'); } else { toast.info(language === 'nl' ? 'Contract is nog in afwachting.' : language === 'fr' ? 'Contrat en attente.' : 'Contract still pending.'); }
       }
-    } catch { toast.error('Kon de status niet ophalen.'); }
+    } catch { toast.error(language === 'nl' ? 'Kon de status niet ophalen.' : language === 'fr' ? 'Impossible de récupérer le statut.' : 'Could not fetch status.'); }
     setCheckingContract(null);
   };
 
@@ -855,7 +855,7 @@ const VolunteerDashboard = () => {
         <div className="max-w-5xl mx-auto space-y-4">
           <h1 className="text-2xl font-heading font-bold text-foreground mb-2">Tickets</h1>
           {myTickets.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen tickets.' : 'No tickets.'}</p></div>
+            <div className="text-center py-16 text-muted-foreground"><Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen tickets.' : language === 'fr' ? 'Aucun ticket.' : 'No tickets.'}</p></div>
           ) : (
             myTickets.map((ticket, i) => (
               <motion.div key={ticket.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
@@ -868,11 +868,11 @@ const VolunteerDashboard = () => {
                     </div>
                     <div className="shrink-0">
                       {ticket.status === 'checked_in' ? (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-foreground"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Ingecheckt' : 'Checked in'}</span>
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-foreground"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Ingecheckt' : language === 'fr' ? 'Enregistré' : 'Checked in'}</span>
                       ) : ticket.status === 'sent' ? (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><Ticket className="w-3.5 h-3.5" />{language === 'nl' ? 'Geldig' : 'Valid'}</span>
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><Ticket className="w-3.5 h-3.5" />{language === 'nl' ? 'Geldig' : language === 'fr' ? 'Valide' : 'Valid'}</span>
                       ) : (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In afwachting' : 'Pending'}</span>
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In afwachting' : language === 'fr' ? 'En attente' : 'Pending'}</span>
                       )}
                     </div>
                   </div>
@@ -899,9 +899,9 @@ const VolunteerDashboard = () => {
       {/* ===== LOYALTY TAB ===== */}
       {activeTab === 'loyalty' && (
         <div className="max-w-5xl mx-auto space-y-4">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{language === 'nl' ? 'Loyaliteit' : 'Loyalty'}</h1>
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'}</h1>
           {loyaltyPrograms.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground"><Gift className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen programma\'s.' : 'No programs.'}</p></div>
+            <div className="text-center py-16 text-muted-foreground"><Gift className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>{language === 'nl' ? 'Geen programma\'s.' : language === 'fr' ? 'Aucun programme.' : 'No programs.'}</p></div>
           ) : (
             loyaltyPrograms.map((program, i) => {
               const enrollment = loyaltyEnrollments[program.id];
@@ -918,9 +918,9 @@ const VolunteerDashboard = () => {
                     </div>
                     <div className="shrink-0">
                       {!enrollment ? (
-                        <button onClick={() => handleEnrollLoyalty(program.id)} disabled={enrollingProgram === program.id} className="px-3 py-1.5 text-xs rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
-                          {language === 'nl' ? 'Deelnemen' : 'Join'}
-                        </button>
+                         <button onClick={() => handleEnrollLoyalty(program.id)} disabled={enrollingProgram === program.id} className="px-3 py-1.5 text-xs rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
+                           {language === 'nl' ? 'Deelnemen' : language === 'fr' ? 'Rejoindre' : 'Join'}
+                         </button>
                       ) : (
                         <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-muted text-muted-foreground">
                           {isPointsBased ? `${enrollment.points_earned}/${program.required_points}` : `${enrollment.tasks_completed}/${program.required_tasks}`}
@@ -1016,7 +1016,7 @@ const VolunteerDashboard = () => {
 
               {sepaPayouts.length > 0 && (
                 <>
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-2"><Banknote className="w-4 h-4 text-primary" />{language === 'nl' ? 'SEPA Vergoedingen' : 'SEPA Payments'}</h3>
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-2"><Banknote className="w-4 h-4 text-primary" />{language === 'nl' ? 'SEPA Vergoedingen' : language === 'fr' ? 'Remboursements SEPA' : 'SEPA Payments'}</h3>
                   {sepaPayouts.map((payout, i) => {
                     const isExported = ['downloaded', 'signed'].includes(payout.batch_status);
                     const isPending = ['pending', 'awaiting_signature'].includes(payout.batch_status);
@@ -1025,17 +1025,17 @@ const VolunteerDashboard = () => {
                         className={`bg-card rounded-2xl p-5 shadow-sm border ${payout.error_flag ? 'border-destructive/30' : 'border-border'}`}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{payout.task_title || 'Taak'}</p>
+                            <p className="text-sm font-medium text-foreground truncate">{payout.task_title || (language === 'nl' ? 'Taak' : language === 'fr' ? 'Tâche' : 'Task')}</p>
                             {payout.club_name && <p className="text-xs text-muted-foreground">{payout.club_name}</p>}
                             <p className="text-lg font-heading font-bold text-foreground mt-1">€{payout.amount.toFixed(2)}</p>
                           </div>
                           <div className="shrink-0">
                             {payout.error_flag ? (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive"><AlertTriangle className="w-3.5 h-3.5" />{payout.error_message || 'Fout'}</span>
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive"><AlertTriangle className="w-3.5 h-3.5" />{payout.error_message || (language === 'nl' ? 'Fout' : language === 'fr' ? 'Erreur' : 'Error')}</span>
                             ) : isExported ? (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Geëxporteerd' : 'Exported'}</span>
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary"><CheckCircle className="w-3.5 h-3.5" />{language === 'nl' ? 'Geëxporteerd' : language === 'fr' ? 'Exporté' : 'Exported'}</span>
                             ) : (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In verwerking' : 'Processing'}</span>
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground"><Clock className="w-3.5 h-3.5" />{language === 'nl' ? 'In verwerking' : language === 'fr' ? 'En cours' : 'Processing'}</span>
                             )}
                           </div>
                         </div>

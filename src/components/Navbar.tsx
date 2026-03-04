@@ -42,7 +42,7 @@ const Navbar = () => {
             to="/community" 
             className={`text-sm font-medium transition-colors ${isCommunityPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            Community
+            {language === 'nl' ? 'Community' : language === 'fr' ? 'Communauté' : 'Community'}
           </Link>
 
           {/* Language switcher */}
@@ -110,7 +110,7 @@ const Navbar = () => {
             <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
               <Link to="/" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{t.nav.volunteers}</Link>
               <Link to="/clubs" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{t.nav.clubs}</Link>
-              <Link to="/community" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">Community</Link>
+              <Link to="/community" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{language === 'nl' ? 'Community' : language === 'fr' ? 'Communauté' : 'Community'}</Link>
               <div className="flex gap-2 py-2">
                 {(['nl', 'fr', 'en'] as Language[]).map(lang => (
                   <button

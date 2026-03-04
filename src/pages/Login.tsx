@@ -8,7 +8,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 const Login = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +23,7 @@ const Login = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Logged in!');
+      toast.success(language === 'nl' ? 'Ingelogd!' : language === 'fr' ? 'Connecté !' : 'Logged in!');
       // Check if user is a partner admin
       const { data: partnerAdmins } = await supabase
         .from('partner_admins')

@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import Logo from '@/components/Logo';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface ClubWithStats {
   id: string;
@@ -26,8 +27,73 @@ interface ClubWithStats {
   is_following: boolean;
 }
 
+const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
+  nl: {
+    badge: 'Community',
+    heroTitle: 'Ontdek sportclubs',
+    heroSubtitle: 'Volg jouw favoriete clubs en krijg hun taken op je feed. Ontdek partners en evenementen.',
+    searchPlaceholder: 'Zoek op naam, sport of locatie...',
+    all: 'Alles',
+    yourClubs: 'Jouw clubs',
+    otherClubs: 'Andere clubs',
+    allClubs: 'Alle clubs',
+    noClubs: 'Geen clubs gevonden',
+    unfollowed: 'Club ontvolgd',
+    followed: 'Club gevolgd! Je ziet nu hun taken in je feed.',
+    following: 'Volgend',
+    unfollow: 'Ontvolgen',
+    follow: 'Volgen',
+    view: 'Bekijken',
+    tasks: 'taken',
+    volunteers: 'vrijwilligers',
+    events: 'events',
+  },
+  fr: {
+    badge: 'Communauté',
+    heroTitle: 'Découvrez les clubs sportifs',
+    heroSubtitle: 'Suivez vos clubs préférés et recevez leurs tâches dans votre fil. Découvrez les partenaires et événements.',
+    searchPlaceholder: 'Rechercher par nom, sport ou lieu...',
+    all: 'Tout',
+    yourClubs: 'Vos clubs',
+    otherClubs: 'Autres clubs',
+    allClubs: 'Tous les clubs',
+    noClubs: 'Aucun club trouvé',
+    unfollowed: 'Club non suivi',
+    followed: 'Club suivi ! Vous verrez leurs tâches dans votre fil.',
+    following: 'Suivi',
+    unfollow: 'Ne plus suivre',
+    follow: 'Suivre',
+    view: 'Voir',
+    tasks: 'tâches',
+    volunteers: 'bénévoles',
+    events: 'événements',
+  },
+  en: {
+    badge: 'Community',
+    heroTitle: 'Discover sports clubs',
+    heroSubtitle: 'Follow your favourite clubs and get their tasks in your feed. Discover partners and events.',
+    searchPlaceholder: 'Search by name, sport or location...',
+    all: 'All',
+    yourClubs: 'Your clubs',
+    otherClubs: 'Other clubs',
+    allClubs: 'All clubs',
+    noClubs: 'No clubs found',
+    unfollowed: 'Club unfollowed',
+    followed: 'Club followed! You will now see their tasks in your feed.',
+    following: 'Following',
+    unfollow: 'Unfollow',
+    follow: 'Follow',
+    view: 'View',
+    tasks: 'tasks',
+    volunteers: 'volunteers',
+    events: 'events',
+  },
+};
+
 const Community = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const cl = communityLabels[language];
   const [clubs, setClubs] = useState<ClubWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -120,12 +186,12 @@ const Community = () => {
       await supabase.from('club_follows').delete().eq('user_id', currentUserId).eq('club_id', clubId);
       setFollowingIds(prev => { const n = new Set(prev); n.delete(clubId); return n; });
       setClubs(prev => prev.map(c => c.id === clubId ? { ...c, is_following: false } : c));
-      toast.success('Club ontvolgd');
+      toast.success(cl.unfollowed);
     } else {
       await supabase.from('club_follows').insert({ user_id: currentUserId, club_id: clubId });
       setFollowingIds(prev => new Set(prev).add(clubId));
       setClubs(prev => prev.map(c => c.id === clubId ? { ...c, is_following: true } : c));
-      toast.success('Club gevolgd! Je ziet nu hun taken in je feed.');
+      toast.success(cl.followed);
     }
     setTogglingFollow(null);
   };
@@ -160,13 +226,13 @@ const Community = () => {
           >
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-4">
               <Sparkles className="w-4 h-4" />
-              Community
+              {cl.badge}
             </div>
             <h1 className="text-3xl md:text-4xl font-bold font-heading mb-3">
-              Ontdek sportclubs
+              {cl.heroTitle}
             </h1>
             <p className="text-muted-foreground text-lg mb-8">
-              Volg jouw favoriete clubs en krijg hun taken op je feed. Ontdek partners en evenementen.
+              {cl.heroSubtitle}
             </p>
           </motion.div>
 
@@ -180,7 +246,7 @@ const Community = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Zoek op naam, sport of locatie..."
+                placeholder={cl.searchPlaceholder}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10 h-12 text-base rounded-xl border-border/50 bg-card shadow-card"
@@ -191,10 +257,10 @@ const Community = () => {
                 <button
                   onClick={() => setFilterSport(null)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    !filterSport ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                   !filterSport ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
                 >
-                  Alles
+                  {cl.all}
                 </button>
                 {sports.map(s => (
                   <button
@@ -228,7 +294,7 @@ const Community = () => {
               <div className="mb-10">
                 <div className="flex items-center gap-2 mb-4">
                   <Heart className="w-5 h-5 text-primary fill-primary" />
-                  <h2 className="text-xl font-bold font-heading">Jouw clubs</h2>
+                  <h2 className="text-xl font-bold font-heading">{cl.yourClubs}</h2>
                   <Badge variant="secondary" className="ml-2">{followedClubs.length}</Badge>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -244,14 +310,14 @@ const Community = () => {
               <div className="flex items-center gap-2 mb-4">
                 <Building2 className="w-5 h-5 text-muted-foreground" />
                 <h2 className="text-xl font-bold font-heading">
-                  {followedClubs.length > 0 ? 'Andere clubs' : 'Alle clubs'}
+                  {followedClubs.length > 0 ? cl.otherClubs : cl.allClubs}
                 </h2>
                 <Badge variant="outline" className="ml-2">{otherClubs.length}</Badge>
               </div>
               {otherClubs.length === 0 && filtered.length === 0 ? (
                 <div className="text-center py-16 text-muted-foreground">
                   <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>Geen clubs gevonden</p>
+                  <p>{cl.noClubs}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -277,6 +343,8 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
   toggling: string | null;
 }) => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const cl = communityLabels[language];
 
   return (
     <motion.div
@@ -291,7 +359,7 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
         {club.is_following && (
           <div className="absolute top-3 left-3">
             <Badge className="bg-primary/90 text-primary-foreground text-[10px] gap-1">
-              <Heart className="w-3 h-3 fill-current" /> Volgend
+              <Heart className="w-3 h-3 fill-current" /> {cl.following}
             </Badge>
           </div>
         )}
@@ -331,13 +399,13 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
         {/* Stats */}
         <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5 text-primary" /> {club.task_count} taken
+            <Calendar className="w-3.5 h-3.5 text-primary" /> {club.task_count} {cl.tasks}
           </span>
           <span className="flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-secondary" /> {club.volunteer_count} vrijwilligers
+            <Users className="w-3.5 h-3.5 text-secondary" /> {club.volunteer_count} {cl.volunteers}
           </span>
           <span className="flex items-center gap-1">
-            <Trophy className="w-3.5 h-3.5 text-accent" /> {club.event_count} events
+            <Trophy className="w-3.5 h-3.5 text-accent" /> {club.event_count} {cl.events}
           </span>
         </div>
 
@@ -352,11 +420,11 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
           >
             {club.is_following ? (
               <>
-                <HeartOff className="w-3.5 h-3.5" /> Ontvolgen
+                <HeartOff className="w-3.5 h-3.5" /> {cl.unfollow}
               </>
             ) : (
               <>
-                <Heart className="w-3.5 h-3.5" /> Volgen
+                <Heart className="w-3.5 h-3.5" /> {cl.follow}
               </>
             )}
           </Button>
@@ -366,7 +434,7 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
             className="h-9 text-xs gap-1 rounded-xl"
             onClick={() => navigate(`/community/club/${club.id}`)}
           >
-            Bekijken <ArrowRight className="w-3.5 h-3.5" />
+            {cl.view} <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
