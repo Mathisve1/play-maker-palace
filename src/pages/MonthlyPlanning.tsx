@@ -699,7 +699,7 @@ const MonthlyPlanning = () => {
                           {approvalBadge(e.approval_status)}
                           {e.approval_status === 'approved' && (
                             <Badge variant={e.contract_status === 'signed' ? 'default' : 'secondary'}>
-                              {e.contract_status === 'signed' ? 'Contract getekend' : e.contract_status === 'sent' ? 'Verstuurd' : 'Wacht op contract'}
+                              {e.contract_status === 'signed' ? t3('Contract getekend', 'Contrat signé', 'Contract signed') : e.contract_status === 'sent' ? t3('Verstuurd', 'Envoyé', 'Sent') : t3('Wacht op contract', 'En attente du contrat', 'Awaiting contract')}
                             </Badge>
                           )}
                         </div>
