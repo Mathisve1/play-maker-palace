@@ -1006,7 +1006,7 @@ const ReportingDashboard = () => {
               </TableRow></TableHeader>
               <TableBody>
                 {taskReports.length === 0 ? (
-                  <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Geen data gevonden</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">{L.noDataFound}</TableCell></TableRow>
                 ) : taskReports.map(t => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.title}</TableCell>
