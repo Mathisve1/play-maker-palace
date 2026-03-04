@@ -187,7 +187,7 @@ const EventsManager = () => {
       event_date: newEvent.event_date || null, location: locationStr,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(nl ? 'Evenement aangemaakt!' : 'Event created!'); setEvents(prev => [data, ...prev]); setShowCreateEvent(false); setNewEvent({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' }); }
+    else if (data) { toast.success(t3('Evenement aangemaakt!', 'Événement créé!', 'Event created!')); setEvents(prev => [data, ...prev]); setShowCreateEvent(false); setNewEvent({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' }); }
     setCreatingEvent(false);
   };
 
