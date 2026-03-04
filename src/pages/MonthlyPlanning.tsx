@@ -821,9 +821,9 @@ const MonthlyPlanning = () => {
             {/* Hour confirmations - club side */}
             {daySignups.filter(ds => ds.checked_in_at && ds.volunteer_approved && !ds.club_approved).length > 0 && (
               <Card>
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> Uren bevestigen</CardTitle></CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground mb-3">Deze vrijwilligers hebben hun uren gerapporteerd. Bevestig of pas aan.</p>
+                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> {t3('Uren bevestigen', 'Confirmer les heures', 'Confirm hours')}</CardTitle></CardHeader>
+                 <CardContent>
+                   <p className="text-xs text-muted-foreground mb-3">{t3('Deze vrijwilligers hebben hun uren gerapporteerd. Bevestig of pas aan.', 'Ces bénévoles ont rapporté leurs heures. Confirmez ou ajustez.', 'These volunteers reported their hours. Confirm or adjust.')}</p>
                   <div className="space-y-2">
                     {daySignups.filter(ds => ds.checked_in_at && ds.volunteer_approved && !ds.club_approved).map(ds => {
                       const task = tasks.find(t => t.id === ds.plan_task_id);
