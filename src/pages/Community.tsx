@@ -26,8 +26,73 @@ interface ClubWithStats {
   is_following: boolean;
 }
 
+const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
+  nl: {
+    badge: 'Community',
+    heroTitle: 'Ontdek sportclubs',
+    heroSubtitle: 'Volg jouw favoriete clubs en krijg hun taken op je feed. Ontdek partners en evenementen.',
+    searchPlaceholder: 'Zoek op naam, sport of locatie...',
+    all: 'Alles',
+    yourClubs: 'Jouw clubs',
+    otherClubs: 'Andere clubs',
+    allClubs: 'Alle clubs',
+    noClubs: 'Geen clubs gevonden',
+    unfollowed: 'Club ontvolgd',
+    followed: 'Club gevolgd! Je ziet nu hun taken in je feed.',
+    following: 'Volgend',
+    unfollow: 'Ontvolgen',
+    follow: 'Volgen',
+    view: 'Bekijken',
+    tasks: 'taken',
+    volunteers: 'vrijwilligers',
+    events: 'events',
+  },
+  fr: {
+    badge: 'Communauté',
+    heroTitle: 'Découvrez les clubs sportifs',
+    heroSubtitle: 'Suivez vos clubs préférés et recevez leurs tâches dans votre fil. Découvrez les partenaires et événements.',
+    searchPlaceholder: 'Rechercher par nom, sport ou lieu...',
+    all: 'Tout',
+    yourClubs: 'Vos clubs',
+    otherClubs: 'Autres clubs',
+    allClubs: 'Tous les clubs',
+    noClubs: 'Aucun club trouvé',
+    unfollowed: 'Club non suivi',
+    followed: 'Club suivi ! Vous verrez leurs tâches dans votre fil.',
+    following: 'Suivi',
+    unfollow: 'Ne plus suivre',
+    follow: 'Suivre',
+    view: 'Voir',
+    tasks: 'tâches',
+    volunteers: 'bénévoles',
+    events: 'événements',
+  },
+  en: {
+    badge: 'Community',
+    heroTitle: 'Discover sports clubs',
+    heroSubtitle: 'Follow your favourite clubs and get their tasks in your feed. Discover partners and events.',
+    searchPlaceholder: 'Search by name, sport or location...',
+    all: 'All',
+    yourClubs: 'Your clubs',
+    otherClubs: 'Other clubs',
+    allClubs: 'All clubs',
+    noClubs: 'No clubs found',
+    unfollowed: 'Club unfollowed',
+    followed: 'Club followed! You will now see their tasks in your feed.',
+    following: 'Following',
+    unfollow: 'Unfollow',
+    follow: 'Follow',
+    view: 'View',
+    tasks: 'tasks',
+    volunteers: 'volunteers',
+    events: 'events',
+  },
+};
+
 const Community = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const cl = communityLabels[language];
   const [clubs, setClubs] = useState<ClubWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
