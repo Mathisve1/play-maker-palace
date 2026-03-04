@@ -221,7 +221,7 @@ const MonthlyPlanning = () => {
       .eq('id', signupId);
     if (error) { toast.error(error.message); return; }
     setDaySignups(prev => prev.map(s => s.id === signupId ? { ...s, status: 'assigned' } : s));
-    toast.success('Vrijwilliger toegekend aan deze dag!');
+    toast.success(t3('Vrijwilliger toegekend aan deze dag!', 'Bénévole attribué à ce jour !', 'Volunteer assigned to this day!'));
   };
 
   const rejectDaySignup = async (signupId: string) => {
