@@ -853,7 +853,7 @@ const ExternalPartners = () => {
                   <SelectItem value="andere">{t3('Andere...', 'Autre...', 'Other...')}</SelectItem>
                 </SelectContent>
               </Select>
-              {newPartner.category === 'andere' && <Input className="mt-2" value={newPartner.custom_category} onChange={e => setNewPartner(p => ({ ...p, custom_category: e.target.value }))} placeholder={nl ? 'Specificeer categorie...' : 'Specify category...'} />}
+              {newPartner.category === 'andere' && <Input className="mt-2" value={newPartner.custom_category} onChange={e => setNewPartner(p => ({ ...p, custom_category: e.target.value }))} placeholder={t3('Specificeer categorie...', 'Spécifiez la catégorie...', 'Specify category...')} />}
             </div>
             <div><Label>{nl ? 'Contactpersoon' : 'Contact name'}</Label><Input value={newPartner.contact_name} onChange={e => setNewPartner(p => ({ ...p, contact_name: e.target.value }))} /></div>
             <div><Label>E-mail</Label><Input type="email" value={newPartner.contact_email} onChange={e => setNewPartner(p => ({ ...p, contact_email: e.target.value }))} /></div>
