@@ -300,8 +300,8 @@ const PlanningOverview = () => {
         {showPostDemoCta && (
           <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-foreground">🎉 {nl ? 'Demo is aangemaakt!' : 'Demo created!'}</p>
-              <p className="text-xs text-muted-foreground mt-1">{nl ? 'Wil je leren hoe je dit zelf kunt opzetten?' : 'Want to learn how to set this up yourself?'}</p>
+               <p className="text-sm font-semibold text-foreground">🎉 {t3('Demo is aangemaakt!', 'Démo créée!', 'Demo created!')}</p>
+               <p className="text-xs text-muted-foreground mt-1">{t3('Wil je leren hoe je dit zelf kunt opzetten?', 'Voulez-vous apprendre à le configurer?', 'Want to learn how to set this up yourself?')}</p>
             </div>
             <button onClick={() => { setShowPostDemoCta(false); setShowTour(true); }}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
