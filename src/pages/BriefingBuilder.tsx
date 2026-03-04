@@ -267,6 +267,7 @@ const DroppableGroup = ({ id, children }: { id: string; children: React.ReactNod
 // ─── Main Component ───
 const BriefingBuilder = () => {
   const { language } = useLanguage();
+  const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const taskId = searchParams.get('taskId');
