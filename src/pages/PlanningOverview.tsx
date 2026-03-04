@@ -313,17 +313,17 @@ const PlanningOverview = () => {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
           <TabsList className="w-full grid grid-cols-3 h-12">
-            <TabsTrigger value="events" className="flex items-center gap-2 text-sm">
-              <Calendar className="w-4 h-4" />
-              {nl ? 'Event Planning' : 'Event Planning'}
-            </TabsTrigger>
-            <TabsTrigger value="loose" className="flex items-center gap-2 text-sm">
-              <ClipboardList className="w-4 h-4" />
-              {nl ? 'Losse Taken' : 'Standalone Tasks'}
-            </TabsTrigger>
-            <TabsTrigger value="monthly" className="flex items-center gap-2 text-sm">
-              <CalendarDays className="w-4 h-4" />
-              {nl ? 'Maandplanning' : 'Monthly Planning'}
+             <TabsTrigger value="events" className="flex items-center gap-2 text-sm">
+               <Calendar className="w-4 h-4" />
+               Event Planning
+             </TabsTrigger>
+             <TabsTrigger value="loose" className="flex items-center gap-2 text-sm">
+               <ClipboardList className="w-4 h-4" />
+               {t3('Losse Taken', 'Tâches libres', 'Standalone Tasks')}
+             </TabsTrigger>
+             <TabsTrigger value="monthly" className="flex items-center gap-2 text-sm">
+               <CalendarDays className="w-4 h-4" />
+               {t3('Maandplanning', 'Planning mensuel', 'Monthly Planning')}
             </TabsTrigger>
           </TabsList>
 
