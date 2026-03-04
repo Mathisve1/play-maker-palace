@@ -337,7 +337,7 @@ const TaskDetail = () => {
       toast.error(updateError.message);
     } else {
       setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : prev);
-      toast.success('Profielfoto bijgewerkt!');
+      toast.success(language === 'fr' ? 'Photo de profil mise à jour !' : language === 'en' ? 'Profile photo updated!' : 'Profielfoto bijgewerkt!');
     }
     setUploadingAvatar(false);
   };
