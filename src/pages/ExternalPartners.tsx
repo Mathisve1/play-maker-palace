@@ -754,7 +754,7 @@ const ExternalPartners = () => {
                                             </Badge>
                                           ) : (
                                             <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">
-                                              <Clock className="w-2.5 h-2.5 mr-0.5" />{nl ? 'Niet ingecheckt' : 'Not checked in'}
+                                              <Clock className="w-2.5 h-2.5 mr-0.5" />{t3('Niet ingecheckt', 'Non enregistré', 'Not checked in')}
                                             </Badge>
                                           )}
                                         </td>
