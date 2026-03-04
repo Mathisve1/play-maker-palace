@@ -679,7 +679,7 @@ const SepaPayouts = () => {
       );
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Flag failed');
-      toast.success(flag ? 'Transactie gemarkeerd als fout.' : 'Fout-markering verwijderd.');
+      toast.success(flag ? t3('Transactie gemarkeerd als fout.', 'Transaction marquée comme erreur.', 'Transaction flagged as error.') : t3('Fout-markering verwijderd.', 'Marqueur d\'erreur supprimé.', 'Error flag removed.'));
       // Update local state
       setBatchItems(prev => {
         const updated = { ...prev };
