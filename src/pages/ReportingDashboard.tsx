@@ -752,7 +752,7 @@ const ReportingDashboard = () => {
 
   // ── Chart renderer ─────────────────────────────────────────────
   const renderChart = (data: any[], dataKeys: string[], xKey: string) => {
-    if (!data.length) return <p className="text-sm text-muted-foreground text-center py-8">Geen data beschikbaar</p>;
+    if (!data.length) return <p className="text-sm text-muted-foreground text-center py-8">{L.noData}</p>;
     switch (chartType) {
       case 'line':
         return (<ResponsiveContainer width="100%" height={300}><LineChart data={data}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey={xKey} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} /><Legend />{dataKeys.map((k, i) => <Line key={k} type="monotone" dataKey={k} stroke={COLORS[i % COLORS.length]} strokeWidth={2} />)}</LineChart></ResponsiveContainer>);
