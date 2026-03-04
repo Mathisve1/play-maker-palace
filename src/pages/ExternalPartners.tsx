@@ -493,7 +493,7 @@ const ExternalPartners = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => setSelectedPartner(null)}>
-                <ArrowLeft className="w-4 h-4 mr-1" />{nl ? 'Terug' : 'Back'}
+                <ArrowLeft className="w-4 h-4 mr-1" />{t3('Terug', 'Retour', 'Back')}
               </Button>
               <h2 className="text-xl font-heading font-semibold flex-1">{selectedPartner.name}</h2>
               <Badge className={categoryColors[selectedPartner.category]}>
