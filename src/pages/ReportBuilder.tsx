@@ -61,6 +61,8 @@ const ReportBuilder = () => {
   const [clubId, setClubId] = useState<string | null>(null);
   const [clubName, setClubName] = useState('');
   const [clubLogo, setClubLogo] = useState<string | null>(null);
+  const { language } = useLanguage();
+  const t3 = (nlS: string, fr: string, en: string) => language === 'nl' ? nlS : language === 'fr' ? fr : en;
   const [widgets, setWidgets] = useState<ReportWidget[]>([
     { id: genId(), type: 'title', data: { text: 'Bestuursrapport', subtitle: format(new Date(), 'MMMM yyyy', { locale: nl }) } },
   ]);
