@@ -909,7 +909,7 @@ const ContractBuilder = () => {
               <div className="px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 mb-2">
                 <p className="text-[10px] text-green-700 dark:text-green-400 leading-relaxed">
                   <ShieldCheck className="w-3 h-3 inline mr-1 -mt-0.5" />
-                  Artikelen met een <strong>groen label</strong> zijn essentieel volgens de Vrijwilligerswet en worden aanbevolen in elk contract.
+                  {t3('Artikelen met een', 'Les articles avec un', 'Articles with a')} <strong>{t3('groen label', 'label vert', 'green label')}</strong> {t3('zijn essentieel volgens de Vrijwilligerswet en worden aanbevolen in elk contract.', 'sont essentiels selon la Loi sur le bénévolat et recommandés dans chaque contrat.', 'are essential under the Volunteer Act and recommended in every contract.')}
                 </p>
               </div>
 
