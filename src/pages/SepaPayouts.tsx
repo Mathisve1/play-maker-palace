@@ -578,7 +578,7 @@ const SepaPayouts = () => {
   };
 
   const handleRollback = async (batchId: string) => {
-    if (!confirm('Weet je zeker dat je deze batch wilt terugdraaien? Je moet eerst een annuleringsverklaring ondertekenen.')) return;
+    if (!confirm(t3('Weet je zeker dat je deze batch wilt terugdraaien? Je moet eerst een annuleringsverklaring ondertekenen.', 'Êtes-vous sûr de vouloir annuler ce lot ? Vous devez d\'abord signer une déclaration d\'annulation.', 'Are you sure you want to roll back this batch? You must first sign a cancellation declaration.'))) return;
     setRollingBack(batchId);
     setRollbackBatchId(batchId);
     try {
