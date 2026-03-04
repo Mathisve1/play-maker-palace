@@ -164,9 +164,9 @@ serve(async (req) => {
     // Debug mode: return the current runtime keys for verification
     if (body.debug_keys === true) {
       return new Response(JSON.stringify({
-        vapid_pub_prefix: vapidPub?.substring(0, 20) || 'NOT SET',
+        vapid_pub: vapidPub || 'NOT SET',
         vapid_priv_is_json: vapidPrivJwkStr ? vapidPrivJwkStr.startsWith('{') : false,
-        vapid_priv_prefix: vapidPrivJwkStr?.substring(0, 30) || 'NOT SET',
+        vapid_priv_full: vapidPrivJwkStr || 'NOT SET',
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
