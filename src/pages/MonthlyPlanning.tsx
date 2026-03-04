@@ -626,7 +626,7 @@ const MonthlyPlanning = () => {
                     <Select value={plan.contract_template_id || ''} onValueChange={async (v) => {
                       await supabase.from('monthly_plans').update({ contract_template_id: v || null }).eq('id', plan.id);
                       setPlan(prev => prev ? { ...prev, contract_template_id: v || null } : null);
-                      toast.success('Sjabloon gekoppeld');
+                      toast.success(t3('Sjabloon gekoppeld', 'Modèle lié', 'Template linked'));
                     }}>
                       <SelectTrigger className="w-[200px]"><SelectValue placeholder="Kies sjabloon..." /></SelectTrigger>
                       <SelectContent>{contractTemplates.map(ct => <SelectItem key={ct.id} value={ct.id}>{ct.name}</SelectItem>)}</SelectContent>
