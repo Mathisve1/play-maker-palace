@@ -83,6 +83,7 @@ const Signup = () => {
           bank_consent_given: true,
           bank_consent_date: new Date().toISOString(),
           bank_consent_text: consentText,
+          language: formData.language || language,
         } as any)
         .eq('id', userId);
 
