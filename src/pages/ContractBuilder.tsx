@@ -698,7 +698,7 @@ const ContractBuilder = () => {
           {showTemplateSelector && existingTemplates.length > 0 && (
             <div className="absolute left-0 top-full mt-1 w-64 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
               <div className="p-2 border-b border-border">
-                <p className="text-xs font-semibold text-muted-foreground px-2">Opgeslagen sjablonen</p>
+                <p className="text-xs font-semibold text-muted-foreground px-2">{t3('Opgeslagen sjablonen', 'Modèles enregistrés', 'Saved templates')}</p>
               </div>
               <div className="max-h-48 overflow-y-auto p-1">
                 {existingTemplates.map(t => (
