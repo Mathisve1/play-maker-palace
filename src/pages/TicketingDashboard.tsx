@@ -397,7 +397,7 @@ const TicketingDashboard = () => {
       });
       if (error) throw error;
       if (data?.success) {
-        toast.success('Ticket & uitnodiging verstuurd via e-mail');
+        toast.success(language === 'nl' ? 'Ticket & uitnodiging verstuurd via e-mail' : language === 'fr' ? 'Ticket & invitation envoyés par e-mail' : 'Ticket & invitation sent via email');
       } else {
         toast.error(data?.error || labels.error);
       }
