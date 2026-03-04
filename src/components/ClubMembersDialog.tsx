@@ -352,8 +352,8 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
-                      {member.profile?.full_name || 'Onbekend'}
-                      {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">(jij)</span>}
+                      {member.profile?.full_name || t3('Onbekend', 'Inconnu', 'Unknown')}
+                      {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">({t3('jij', 'vous', 'you')})</span>}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{member.profile?.email}</p>
                   </div>
