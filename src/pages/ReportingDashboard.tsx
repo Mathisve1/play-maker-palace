@@ -718,7 +718,7 @@ const ReportingDashboard = () => {
     doc.setFontSize(8);
     volunteerReports.slice(0, 10).forEach(v => {
       if (y > 275) { doc.addPage(); y = 20; }
-      doc.text(`${v.name}: ${v.totalAssigned} taken, ${v.totalCheckedIn} ingecheckt, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)}, betrouwbaarheid ${v.reliabilityScore}%`, 14, y);
+      doc.text(`${v.name}: ${v.totalAssigned} ${L.tasks.toLowerCase()}, ${v.totalCheckedIn} ${L.checkedIn.toLowerCase()}, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)}, ${L.reliability.toLowerCase()} ${v.reliabilityScore}%`, 14, y);
       y += 4.5;
     });
 
