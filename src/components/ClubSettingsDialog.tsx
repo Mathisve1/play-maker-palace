@@ -80,7 +80,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Club gegevens bijgewerkt!');
+      toast.success(t3('Club gegevens bijgewerkt!', 'Informations du club mises à jour!', 'Club details updated!'));
       onUpdated({ name: name.trim(), sport: sport.trim() || null, location: location.trim() || null, logo_url: logoUrl });
       onClose();
     }
