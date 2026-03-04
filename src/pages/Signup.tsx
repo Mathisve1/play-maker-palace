@@ -9,7 +9,7 @@ import Logo from '@/components/Logo';
 import { OnboardingForm } from '@/components/OnboardingForm';
 
 const Signup = () => {
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
 
   // Step 0 = account creation, Step 1 = onboarding
@@ -83,6 +83,7 @@ const Signup = () => {
           bank_consent_given: true,
           bank_consent_date: new Date().toISOString(),
           bank_consent_text: consentText,
+          language: formData.language || language,
         } as any)
         .eq('id', userId);
 
@@ -175,6 +176,7 @@ const Signup = () => {
               language={language}
               onComplete={handleOnboardingComplete}
               saving={loading}
+              onLanguageChange={(lang) => setLanguage(lang)}
             />
           )}
         </div>

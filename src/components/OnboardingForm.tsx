@@ -74,12 +74,14 @@ interface OnboardingFormData {
   bic: string;
   bankHolderName: string;
   bankConsentGiven: boolean;
+  language: 'nl' | 'fr' | 'en';
 }
 
 interface OnboardingFormProps {
   language: 'nl' | 'fr' | 'en';
   onComplete: (data: OnboardingFormData) => void;
   saving?: boolean;
+  onLanguageChange?: (lang: 'nl' | 'fr' | 'en') => void;
 }
 
 const labels = {
@@ -206,12 +208,13 @@ const labels = {
 };
 
 const steps = [
+  { id: 0, label: 'Language' },
   { id: 1, label: 'Personal' },
   { id: 2, label: 'Photo' },
   { id: 3, label: 'Bank' },
 ];
 
-export function OnboardingForm({ language, onComplete, saving }: OnboardingFormProps) {
+export function OnboardingForm({ language, onComplete, saving, onLanguageChange }: OnboardingFormProps) {
   const l = labels[language];
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -227,6 +230,7 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
     bic: '',
     bankHolderName: '',
     bankConsentGiven: false,
+    language: language,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showBankDropdown, setShowBankDropdown] = useState(false);
@@ -250,15 +254,18 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
     const errs: Record<string, string> = {};
 
     if (step === 0) {
+      // Language step - always valid
+    }
+    if (step === 1) {
       if (!formData.fullName.trim()) errs.fullName = 'Verplicht';
       if (!formData.dateOfBirth) errs.dateOfBirth = 'Verplicht';
       if (!formData.phone.trim()) errs.phone = 'Verplicht';
     }
-    if (step === 1) {
+    if (step === 2) {
       if (!formData.avatarFile && !formData.avatarPreview) errs.avatar = l.photoRequired;
       if (!formData.identityConfirmed) errs.identityConfirmed = (l as any).identityRequired || 'Required';
     }
-    if (step === 2) {
+    if (step === 3) {
       if (!formData.iban.replace(/\s/g, '')) errs.iban = 'Verplicht';
       if (!formData.ibanConfirm.replace(/\s/g, '')) errs.ibanConfirm = 'Verplicht';
       if (formData.iban.replace(/\s/g, '') !== formData.ibanConfirm.replace(/\s/g, '')) errs.ibanConfirm = l.ibanMismatch;
@@ -352,6 +359,54 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
           <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="text-center mb-6">
               <div className="w-12 h-12 rounded-2xl bg-primary/10 mx-auto flex items-center justify-center mb-3">
+                <span className="text-2xl">🌍</span>
+              </div>
+              <h2 className="text-lg font-heading font-bold text-foreground">
+                {formData.language === 'nl' ? 'Kies je taal' : formData.language === 'fr' ? 'Choisissez votre langue' : 'Choose your language'}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {formData.language === 'nl' ? 'Je kunt dit later wijzigen in je profiel.' : formData.language === 'fr' ? 'Vous pouvez changer cela plus tard dans votre profil.' : 'You can change this later in your profile.'}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {([
+                { code: 'nl' as const, flag: '🇧🇪', label: 'Nederlands', desc: 'Gebruik de app in het Nederlands' },
+                { code: 'fr' as const, flag: '🇫🇷', label: 'Français', desc: 'Utilisez l\'application en français' },
+                { code: 'en' as const, flag: '🇬🇧', label: 'English', desc: 'Use the app in English' },
+              ]).map(lang => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => {
+                    update('language', lang.code);
+                    onLanguageChange?.(lang.code);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all",
+                    formData.language === lang.code
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-border bg-card hover:bg-muted/50"
+                  )}
+                >
+                  <span className="text-3xl">{lang.flag}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{lang.label}</p>
+                    <p className="text-xs text-muted-foreground">{lang.desc}</p>
+                  </div>
+                  {formData.language === lang.code && (
+                    <CheckIcon className="w-5 h-5 text-primary shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {currentStep === 1 && (
+          <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 mx-auto flex items-center justify-center mb-3">
                 <User className="w-6 h-6 text-primary" />
               </div>
               <h2 className="text-lg font-heading font-bold text-foreground">{l.step1}</h2>
@@ -396,7 +451,7 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
           </div>
         )}
 
-        {currentStep === 1 && (
+        {currentStep === 2 && (
           <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="text-center mb-4">
               <div className="w-12 h-12 rounded-2xl bg-primary/10 mx-auto flex items-center justify-center mb-3">
@@ -462,7 +517,7 @@ export function OnboardingForm({ language, onComplete, saving }: OnboardingFormP
           </div>
         )}
 
-        {currentStep === 2 && (
+        {currentStep === 3 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="text-center mb-4">
               <div className="w-12 h-12 rounded-2xl bg-primary/10 mx-auto flex items-center justify-center mb-3">

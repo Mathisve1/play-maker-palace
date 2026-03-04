@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard, BarChart3, Edit3 } from 'lucide-react';
@@ -148,6 +149,8 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [bankConsentText, setBankConsentText] = useState<string | null>(null);
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
   const [connectingStripe, setConnectingStripe] = useState(false);
+  const [profileLanguage, setProfileLanguage] = useState<'nl' | 'fr' | 'en'>(language);
+  const { setLanguage: setGlobalLanguage } = useLanguage();
   
 
   const { data: compliance, loading: complianceLoading, refresh: refreshCompliance } = useComplianceData(userId);
@@ -158,7 +161,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       setLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_url, phone, bio, date_of_birth, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, stripe_account_id')
+        .select('full_name, email, avatar_url, phone, bio, date_of_birth, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, stripe_account_id, language')
         .eq('id', userId)
         .maybeSingle();
 
@@ -175,6 +178,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
         setBankConsentDate(data.bank_consent_date);
         setBankConsentText(data.bank_consent_text);
         setStripeAccountId(data.stripe_account_id);
+        if ((data as any).language) setProfileLanguage((data as any).language);
       }
       setLoading(false);
     };
@@ -235,6 +239,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       bank_consent_date: bankConsentGiven && !bankConsentDate ? now : bankConsentDate,
       bank_consent_text: bankConsentGiven ? consentText : null,
       avatar_url: avatarUrl,
+      language: profileLanguage,
     };
 
     const { error } = await supabase
@@ -388,6 +393,38 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
               rows={3}
               maxLength={500}
             />
+          </div>
+        </div>
+
+        {/* Language preference */}
+        <div className="space-y-3 mt-6 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <span>🌍</span>
+            {language === 'nl' ? 'Taalvoorkeur' : language === 'fr' ? 'Préférence de langue' : 'Language preference'}
+          </h3>
+          <div className="flex gap-2">
+            {([
+              { code: 'nl' as const, flag: '🇧🇪', label: 'NL' },
+              { code: 'fr' as const, flag: '🇫🇷', label: 'FR' },
+              { code: 'en' as const, flag: '🇬🇧', label: 'EN' },
+            ]).map(lang => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => {
+                  setProfileLanguage(lang.code);
+                  setGlobalLanguage(lang.code);
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all ${
+                  profileLanguage === lang.code
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border bg-card text-foreground hover:bg-muted/50'
+                }`}
+              >
+                <span>{lang.flag}</span>
+                <span>{lang.label}</span>
+              </button>
+            ))}
           </div>
         </div>
 
