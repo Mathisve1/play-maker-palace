@@ -666,7 +666,7 @@ const ExternalPartners = () => {
                                             </Badge>
                                           ) : member && !member.user_id ? (
                                             <Badge variant="outline" className="text-[10px] gap-0.5 border-amber-500/40 text-amber-700 dark:text-amber-400">
-                                              <UserX className="w-2.5 h-2.5" />{nl ? 'Geen account' : 'No account'}
+                                              <UserX className="w-2.5 h-2.5" />{t3('Geen account', 'Pas de compte', 'No account')}
                                             </Badge>
                                           ) : null}
                                         </div>
