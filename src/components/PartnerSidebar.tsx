@@ -49,13 +49,13 @@ const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout }: Part
               <SidebarMenuItem>
                 <SidebarMenuButton isActive={activeTab === 'tasks'} onClick={() => handleNav('tasks')} className="min-h-[48px]">
                   <ClipboardList className="w-5 h-5" />
-                  <span>Taken</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'members'} onClick={() => handleNav('members')} className="min-h-[48px]">
-                  <Users className="w-5 h-5" />
-                  <span>Medewerkers</span>
+                   <span>{t3('Taken', 'Tâches', 'Tasks')}</span>
+                 </SidebarMenuButton>
+               </SidebarMenuItem>
+               <SidebarMenuItem>
+                 <SidebarMenuButton isActive={activeTab === 'members'} onClick={() => handleNav('members')} className="min-h-[48px]">
+                   <Users className="w-5 h-5" />
+                   <span>{t3('Medewerkers', 'Collaborateurs', 'Staff')}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
