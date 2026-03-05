@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ShieldCheck, Clock, AlertTriangle, Search } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';

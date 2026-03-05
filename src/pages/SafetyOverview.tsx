@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import { Card, CardContent } from '@/components/ui/card';
