@@ -81,12 +81,16 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     };
   }, [navigate, redirectTo]);
 
-  if (!checked || !authenticatedUserId) {
+  if (!checked) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (!authenticatedUserId) {
+    return <Navigate to={redirectTo} replace />;
   }
 
   return (
