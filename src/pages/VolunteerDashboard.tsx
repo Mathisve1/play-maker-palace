@@ -472,10 +472,9 @@ const VolunteerDashboard = () => {
 
   // ===== HANDLERS =====
   const handleSignup = async (taskId: string) => {
+    if (!currentUserId) return;
     setSigningUp(taskId);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const { error } = await supabase.from('task_signups').insert({ task_id: taskId, volunteer_id: session.user.id });
+    const { error } = await supabase.from('task_signups').insert({ task_id: taskId, volunteer_id: currentUserId });
     if (error) { toast.error(error.message); } else {
       toast.success(t.volunteer.step3Title + '!');
       setSignups(prev => [...prev, { task_id: taskId, status: 'pending' }]);
