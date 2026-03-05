@@ -89,6 +89,7 @@ const MonthlyPlanning = () => {
   const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
   const [generatingTicketIds, setGeneratingTicketIds] = useState<Set<string>>(new Set());
   const [sendingTicketEmailIds, setSendingTicketEmailIds] = useState<Set<string>>(new Set());
+  const [checkingOutIds, setCheckingOutIds] = useState<Set<string>>(new Set());
   const [taskForm, setTaskForm] = useState({
     title: '', category: 'Algemeen', description: '', location: '',
     start_time: '09:00', end_time: '17:00', compensation_type: 'daily',
