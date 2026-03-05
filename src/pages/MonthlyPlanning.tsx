@@ -149,14 +149,18 @@ const MonthlyPlanning = () => {
   const approveEnrollment = async (enrollmentId: string) => {
     const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
+    const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'approved' } : e));
     toast.success(t3('Inschrijving goedgekeurd!', 'Inscription approuvée !', 'Enrollment approved!'));
+    if (enr) sendPush({ userId: enr.volunteer_id, title: '✅ Inschrijving goedgekeurd', message: `Je inschrijving is goedgekeurd! Je kunt nu je contract ondertekenen.`, url: '/dashboard', type: 'enrollment_approved' });
   };
   const rejectEnrollment = async (enrollmentId: string) => {
     const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' } as any).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
+    const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'rejected' } : e));
     toast.success(t3('Inschrijving afgewezen.', 'Inscription refusée.', 'Enrollment rejected.'));
+    if (enr) sendPush({ userId: enr.volunteer_id, title: '❌ Inschrijving afgewezen', message: `Je inschrijving is helaas afgewezen.`, url: '/dashboard', type: 'enrollment_rejected' });
   };
   const assignDaySignup = async (signupId: string) => {
     const { error } = await supabase.from('monthly_day_signups').update({ status: 'assigned' }).eq('id', signupId);
