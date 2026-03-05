@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +41,7 @@ interface EventOption {
 }
 
 const StressTestContent = () => {
+  const navigate = useNavigate();
   const clubCtx = useOptionalClubContext();
   const clubId = clubCtx?.clubId;
   const [running, setRunning] = useState(false);
@@ -51,16 +53,35 @@ const StressTestContent = () => {
 
   useEffect(() => {
     const loadEvents = async () => {
-      if (!clubId) { setLoadingEvents(false); return; }
-      const { data } = await supabase
+      if (!clubId) {
+        setEvents([]);
+        setEventId('');
+        setLoadingEvents(false);
+        return;
+      }
+
+      setLoadingEvents(true);
+      const { data, error } = await supabase
         .from('events')
         .select('id, title, club_id')
         .eq('club_id', clubId)
         .order('created_at', { ascending: false })
         .limit(20);
-      setEvents(data || []);
+
+      if (error) {
+        toast.error(`Events laden mislukt: ${error.message}`);
+        setEvents([]);
+        setEventId('');
+        setLoadingEvents(false);
+        return;
+      }
+
+      const loadedEvents = data || [];
+      setEvents(loadedEvents);
+      setEventId(prev => (loadedEvents.some(ev => ev.id === prev) ? prev : loadedEvents[0]?.id || ''));
       setLoadingEvents(false);
     };
+
     loadEvents();
   }, [clubId]);
 
@@ -140,7 +161,10 @@ const StressTestContent = () => {
   if (!clubId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Geen club gevonden. Log in als club-eigenaar.</p>
+        <div className="text-center space-y-3">
+          <p className="text-muted-foreground">Geen clubcontext gevonden. Log eerst in via Club Login.</p>
+          <Button variant="outline" onClick={() => navigate('/club-login')}>Naar Club Login</Button>
+        </div>
       </div>
     );
   }
@@ -168,13 +192,19 @@ const StressTestContent = () => {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" /> Events laden...
               </div>
+            ) : events.length === 0 ? (
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <p className="text-sm text-muted-foreground">Geen events gevonden voor je club.</p>
+                <Button variant="outline" size="sm" onClick={() => navigate('/events-manager')}>
+                  Eerst event aanmaken
+                </Button>
+              </div>
             ) : (
               <select
                 value={eventId}
                 onChange={e => setEventId(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm"
               >
-                <option value="">— Kies een event —</option>
                 {events.map(ev => (
                   <option key={ev.id} value={ev.id}>{ev.title}</option>
                 ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import PushPermissionBanner from './PushPermissionBanner';
@@ -37,10 +37,18 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
 
     const check = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<{ data: { session: null } }>((resolve) =>
+            setTimeout(() => resolve({ data: { session: null } }), 4000)
+          ),
+        ]);
+
+        const session = sessionResult.data?.session ?? null;
         if (cancelled) return;
 
         if (!session) {
+          setAuthenticatedUserId(null);
           navigate(redirectTo, { replace: true });
           return;
         }
@@ -81,12 +89,16 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     };
   }, [navigate, redirectTo]);
 
-  if (!checked || !authenticatedUserId) {
+  if (!checked) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (!authenticatedUserId) {
+    return <Navigate to={redirectTo} replace />;
   }
 
   return (
