@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useClubContext } from '@/contexts/ClubContext';
+import { useOptionalClubContext } from '@/contexts/ClubContext';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { toast } from 'sonner';
 import { Zap, Trash2, CheckCircle2, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
@@ -33,20 +33,39 @@ interface StressResults {
   };
 }
 
-const StressTest = () => {
-  const { clubId } = useClubContext();
+interface EventOption {
+  id: string;
+  title: string;
+  club_id: string;
+}
+
+const StressTestContent = () => {
+  const clubCtx = useOptionalClubContext();
+  const clubId = clubCtx?.clubId;
   const [running, setRunning] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const [results, setResults] = useState<StressResults | null>(null);
   const [eventId, setEventId] = useState('');
+  const [events, setEvents] = useState<EventOption[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      if (!clubId) { setLoadingEvents(false); return; }
+      const { data } = await supabase
+        .from('events')
+        .select('id, title, club_id')
+        .eq('club_id', clubId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      setEvents(data || []);
+      setLoadingEvents(false);
+    };
+    loadEvents();
+  }, [clubId]);
 
   const runTest = async () => {
-    if (!clubId) return;
-    if (!eventId.trim()) {
-      toast.error('Vul eerst een Event ID in (van een bestaand safety-event)');
-      return;
-    }
-
+    if (!clubId || !eventId) return;
     setRunning(true);
     setResults(null);
 
@@ -55,7 +74,7 @@ const StressTest = () => {
       if (!session) throw new Error('Niet ingelogd');
 
       const resp = await supabase.functions.invoke('stress-test', {
-        body: { club_id: clubId, event_id: eventId.trim() },
+        body: { club_id: clubId, event_id: eventId },
       });
 
       if (resp.error) throw new Error(resp.error.message);
@@ -118,92 +137,113 @@ const StressTest = () => {
     );
   };
 
-  return (
-    <ClubPageLayout>
-      <div className="max-w-4xl mx-auto space-y-6 p-4">
-        <div className="flex items-center gap-3">
-          <Zap className="w-6 h-6 text-primary" />
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Stress Test — 450 Vrijwilligers</h1>
-            <p className="text-sm text-muted-foreground">
-              Simuleert 450 gelijktijdige checklist-updates, realtime broadcasts, incident-meldingen en status-updates.
-            </p>
-          </div>
-        </div>
+  if (!clubId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Geen club gevonden. Log in als club-eigenaar.</p>
+      </div>
+    );
+  }
 
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <div>
-              <label className="text-sm font-medium text-foreground">Event ID</label>
-              <p className="text-xs text-muted-foreground mb-1">
-                Gebruik het ID van een bestaand safety-event (bijv. uit de simulatie)
-              </p>
-              <input
-                type="text"
+  return (
+    <div className="max-w-4xl mx-auto space-y-6 p-4">
+      <div className="flex items-center gap-3">
+        <Zap className="w-6 h-6 text-primary" />
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Stress Test — 450 Vrijwilligers</h1>
+          <p className="text-sm text-muted-foreground">
+            Simuleert 450 gelijktijdige checklist-updates, realtime broadcasts, incident-meldingen en status-updates.
+          </p>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div>
+            <label className="text-sm font-medium text-foreground">Selecteer event</label>
+            <p className="text-xs text-muted-foreground mb-1">
+              Kies een bestaand safety-event om de stress test op uit te voeren
+            </p>
+            {loadingEvents ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" /> Events laden...
+              </div>
+            ) : (
+              <select
                 value={eventId}
                 onChange={e => setEventId(e.target.value)}
-                placeholder="bijv. a1b2c3d4-..."
-                className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm font-mono"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={runTest} disabled={running || !eventId.trim()} className="gap-2">
-                {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                {running ? 'Test loopt...' : 'Start stress test'}
-              </Button>
-              <Button variant="outline" onClick={cleanup} disabled={cleaning} className="gap-2">
-                {cleaning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                Opruimen
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {results && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <PhaseCard title="📋 Checklist completions (450x)" data={results.phases.checklist_completions} />
-              <PhaseCard title="📡 Realtime broadcasts (450x)" data={results.phases.realtime_broadcasts} />
-              <PhaseCard title="🚨 Incident reports (100x)" data={results.phases.incident_reports} />
-              <PhaseCard title="🔄 Status updates (200x)" data={results.phases.status_updates} />
-            </div>
-
-            {results.summary && (
-              <Card className={
-                results.summary.verdict.startsWith('✅') ? 'border-emerald-500/50 bg-emerald-500/5' :
-                results.summary.verdict.startsWith('⚠️') ? 'border-yellow-500/50 bg-yellow-500/5' :
-                'border-destructive/50 bg-destructive/5'
-              }>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    {results.summary.verdict.startsWith('✅') ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> :
-                     results.summary.verdict.startsWith('⚠️') ? <AlertTriangle className="w-6 h-6 text-yellow-500" /> :
-                     <XCircle className="w-6 h-6 text-destructive" />}
-                    <p className="text-sm font-bold text-foreground">{results.summary.verdict}</p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Totaal operaties</span>
-                      <p className="font-mono font-bold text-lg">{results.summary.total_operations}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Totale tijd</span>
-                      <p className="font-mono font-bold text-lg">{(results.summary.total_duration_ms / 1000).toFixed(1)}s</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Ops/sec</span>
-                      <p className="font-mono font-bold text-lg">{results.summary.overall_ops_per_second}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm"
+              >
+                <option value="">— Kies een event —</option>
+                {events.map(ev => (
+                  <option key={ev.id} value={ev.id}>{ev.title}</option>
+                ))}
+              </select>
             )}
-          </>
-        )}
-      </div>
-    </ClubPageLayout>
+          </div>
+
+          <div className="flex gap-2">
+            <Button onClick={runTest} disabled={running || !eventId} className="gap-2">
+              {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+              {running ? 'Test loopt...' : 'Start stress test'}
+            </Button>
+            <Button variant="outline" onClick={cleanup} disabled={cleaning} className="gap-2">
+              {cleaning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Opruimen
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {results && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <PhaseCard title="📋 Checklist completions (450x)" data={results.phases.checklist_completions} />
+            <PhaseCard title="📡 Realtime broadcasts (450x)" data={results.phases.realtime_broadcasts} />
+            <PhaseCard title="🚨 Incident reports (100x)" data={results.phases.incident_reports} />
+            <PhaseCard title="🔄 Status updates (200x)" data={results.phases.status_updates} />
+          </div>
+
+          {results.summary && (
+            <Card className={
+              results.summary.verdict.startsWith('✅') ? 'border-emerald-500/50' :
+              results.summary.verdict.startsWith('⚠️') ? 'border-yellow-500/50' :
+              'border-destructive/50'
+            }>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 mb-3">
+                  {results.summary.verdict.startsWith('✅') ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> :
+                   results.summary.verdict.startsWith('⚠️') ? <AlertTriangle className="w-6 h-6 text-yellow-500" /> :
+                   <XCircle className="w-6 h-6 text-destructive" />}
+                  <p className="text-sm font-bold text-foreground">{results.summary.verdict}</p>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Totaal operaties</span>
+                    <p className="font-mono font-bold text-lg">{results.summary.total_operations}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Totale tijd</span>
+                    <p className="font-mono font-bold text-lg">{(results.summary.total_duration_ms / 1000).toFixed(1)}s</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Ops/sec</span>
+                    <p className="font-mono font-bold text-lg">{results.summary.overall_ops_per_second}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
   );
 };
+
+const StressTest = () => (
+  <ClubPageLayout>
+    <StressTestContent />
+  </ClubPageLayout>
+);
 
 export default StressTest;
