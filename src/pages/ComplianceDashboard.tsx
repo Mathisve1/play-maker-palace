@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ShieldCheck, Clock, AlertTriangle, Search } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
@@ -86,6 +87,7 @@ const ComplianceDashboard = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const t = labels[language];
+  const { clubId: contextClubId } = useClubContext();
 
   const [loading, setLoading] = useState(true);
   const [volunteers, setVolunteers] = useState<VolunteerEntry[]>([]);
@@ -95,35 +97,13 @@ const ComplianceDashboard = () => {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-
-      // Get club
-      let activeClubId: string | null = null;
-      const { data: club } = await supabase
-        .from('clubs')
-        .select('id')
-        .eq('owner_id', session.user.id)
-        .maybeSingle();
-
-      if (club) {
-        activeClubId = club.id;
-      } else {
-        const { data: membership } = await supabase
-          .from('club_members')
-          .select('club_id')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        activeClubId = membership?.club_id || null;
-      }
-
-      if (!activeClubId) { setLoading(false); return; }
+      if (!contextClubId) { setLoading(false); return; }
 
       // Get all tasks for this club
       const { data: tasks } = await supabase
         .from('tasks')
         .select('id')
-        .eq('club_id', activeClubId);
+        .eq('club_id', contextClubId);
 
       if (!tasks || tasks.length === 0) { setLoading(false); return; }
 
@@ -152,7 +132,7 @@ const ComplianceDashboard = () => {
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [contextClubId]);
 
   const filtered = volunteers.filter(v => {
     if (!searchQuery) return true;

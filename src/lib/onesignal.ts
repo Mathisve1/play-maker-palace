@@ -40,13 +40,18 @@ async function getCurrentSubscriptionId(OneSignalModule: any): Promise<string | 
   return null;
 }
 
-async function getSubscriptionIdWithRetry(OneSignalModule: any, retries = 30, delayMs = 500): Promise<string | null> {
+async function getSubscriptionIdWithRetry(OneSignalModule: any, retries = 10, delayMs = 500): Promise<string | null> {
   for (let i = 0; i < retries; i++) {
     const id = await getCurrentSubscriptionId(OneSignalModule);
     if (id) return id;
+    // Bail out early if permission is denied — no point retrying
+    const permission = typeof Notification !== 'undefined' ? Notification.permission : 'unknown';
+    if (permission === 'denied') {
+      console.log('[OneSignal] Permission denied, stopping retries');
+      return null;
+    }
     if (i % 5 === 0) {
       const optedIn = OneSignalModule?.User?.PushSubscription?.optedIn;
-      const permission = typeof Notification !== 'undefined' ? Notification.permission : 'unknown';
       console.log(`[OneSignal] Retry ${i}/${retries} - optedIn: ${optedIn}, permission: ${permission}`);
     }
     await wait(delayMs);

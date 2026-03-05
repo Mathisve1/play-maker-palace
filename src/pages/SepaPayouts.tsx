@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
@@ -79,6 +80,7 @@ const validateIban = (iban: string): boolean => {
 const SepaPayouts = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { clubId: contextClubId, clubInfo, userId: contextUserId } = useClubContext();
 
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [loading, setLoading] = useState(true);
@@ -112,46 +114,20 @@ const SepaPayouts = () => {
 
   useEffect(() => {
     init();
-  }, []);
+  }, [contextClubId]);
 
   const init = async () => {
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/club-login'); return; }
-    setCurrentUserId(session.user.id);
-
-    // Find club
-    const { data: club } = await supabase
-      .from('clubs')
-      .select('id, name')
-      .eq('owner_id', session.user.id)
-      .maybeSingle();
-
-    let resolvedClubId = club?.id;
-    let resolvedClubName = club?.name || '';
-
-    if (!resolvedClubId) {
-      const { data: membership } = await supabase
-        .from('club_members')
-        .select('club_id')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      if (membership) {
-        resolvedClubId = membership.club_id;
-        const { data: c } = await supabase.from('clubs').select('name').eq('id', membership.club_id).single();
-        resolvedClubName = c?.name || '';
-      }
-    }
-
-    if (!resolvedClubId) { navigate('/club-login'); return; }
-    setClubId(resolvedClubId);
-    setClubName(resolvedClubName);
+    if (!contextClubId || !contextUserId) { setLoading(false); return; }
+    setCurrentUserId(contextUserId);
+    setClubId(contextClubId);
+    setClubName(clubInfo?.name || '');
 
     // Fetch tasks with expense reimbursement
     const { data: tasks } = await supabase
       .from('tasks')
       .select('id, title, task_date, expense_amount, compensation_type')
-      .eq('club_id', resolvedClubId)
+      .eq('club_id', contextClubId!)
       .eq('expense_reimbursement', true);
 
     if (!tasks || tasks.length === 0) { setLoading(false); return; }
@@ -224,7 +200,7 @@ const SepaPayouts = () => {
     const { data: batchHistory } = await supabase
       .from('sepa_batches')
       .select('id, batch_reference, batch_message, total_amount, item_count, status, created_at, signer_name, docuseal_document_url')
-      .eq('club_id', resolvedClubId)
+      .eq('club_id', contextClubId!)
       .order('created_at', { ascending: false })
       .limit(20);
 
