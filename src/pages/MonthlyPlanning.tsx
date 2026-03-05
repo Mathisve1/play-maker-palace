@@ -190,6 +190,7 @@ const MonthlyPlanning = () => {
       if (data?.success) {
         setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, ticket_barcode: data.barcode || signup.ticket_barcode } : s));
         toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
+        sendPush({ userId: signup.volunteer_id, title: '🎫 Ticket ontvangen', message: `Je ticket is klaar! Bekijk het in je dashboard.`, url: '/dashboard', type: 'ticket_generated' });
       } else { toast.error(data?.error || t3('Ticket genereren mislukt', 'Échec de la génération du ticket', 'Ticket generation failed')); }
     } catch (e: any) { toast.error(e.message); }
     setGeneratingTicketIds(prev => { const n = new Set(prev); n.delete(signup.id); return n; });
