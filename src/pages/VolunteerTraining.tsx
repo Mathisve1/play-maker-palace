@@ -143,6 +143,7 @@ const VolunteerTraining = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const l = labels[language];
+  const { userId: contextUserId } = useOptionalClubContext() || { userId: null };
 
   const [loading, setLoading] = useState(true);
   const [training, setTraining] = useState<{ id: string; title: string; description: string | null; club_id: string; clubs?: { name: string } } | null>(null);
