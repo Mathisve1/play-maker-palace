@@ -683,7 +683,8 @@ const ReportingDashboard = () => {
   useEffect(() => { aiEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [aiMessages]);
 
   // ── PDF export ─────────────────────────────────────────────────
-  const exportPDF = () => {
+  const exportPDF = async () => {
+    const { default: jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text(L.pdfTitle, 14, 20);

@@ -570,6 +570,9 @@ const ContractBuilder = () => {
       const printEl = printRef.current;
       if (!printEl) throw new Error('Canvas niet gevonden');
 
+      const { default: html2canvas } = await import('html2canvas');
+      const { default: jsPDF } = await import('jspdf');
+
       const canvas = await html2canvas(printEl, {
         scale: 2,
         useCORS: true,

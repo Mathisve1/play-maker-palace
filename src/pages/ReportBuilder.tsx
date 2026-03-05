@@ -517,6 +517,9 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
     if (!canvasRef.current) return;
     setExporting(true);
     try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { default: jsPDF } = await import('jspdf');
+
       const canvas = await html2canvas(canvasRef.current, {
         scale: 2, useCORS: true, backgroundColor: '#ffffff',
         logging: false, windowWidth: 900,
