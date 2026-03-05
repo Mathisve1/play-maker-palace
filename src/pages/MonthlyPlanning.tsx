@@ -593,9 +593,10 @@ const MonthlyPlanning = () => {
             <MonthlyDaySignups
               pendingSignups={pendingDaySignups} assignedSignups={assignedDaySignups}
               tasks={tasks} language={language} generatingTicketIds={generatingTicketIds}
-              sendingTicketEmailIds={sendingTicketEmailIds} t3={t3}
+              sendingTicketEmailIds={sendingTicketEmailIds} checkingOutIds={checkingOutIds} t3={t3}
               onAssign={assignDaySignup} onReject={rejectDaySignup}
               onGenerateTicket={generateTicketForSignup} onSendTicketEmail={sendTicketEmail}
+              onCheckout={checkoutSignup}
             />
 
             <MonthlyHourConfirmation
@@ -604,6 +605,8 @@ const MonthlyPlanning = () => {
               onConfirmHours={handleConfirmHours}
               onGeneratePayout={generateMonthlyPayout}
               onExportSepa={() => navigate('/sepa-payouts')}
+              onEscalateDispute={escalateDispute}
+              onResolveDispute={resolveDispute}
             />
           </>
         ) : null}
