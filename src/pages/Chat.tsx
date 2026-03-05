@@ -120,7 +120,7 @@ const Chat = () => {
       // Club member initiating chat with a specific volunteer
       if (taskId && volunteerId) {
         const targetVolunteerId = volunteerId;
-        const targetClubOwnerId = clubOwnerId || session.user.id;
+        const targetClubOwnerId = clubOwnerId || contextUserId;
 
         const { data: existing } = await supabase
           .from('conversations')
