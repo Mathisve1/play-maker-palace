@@ -34,17 +34,25 @@ const ClubLogin = () => {
         return;
       }
 
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
+      const [{ data: ownedClubs }, { data: memberships }] = await Promise.all([
+        supabase
+          .from('clubs')
+          .select('id')
+          .eq('owner_id', userId)
+          .limit(1),
+        supabase
+          .from('club_members')
+          .select('club_id')
+          .eq('user_id', userId)
+          .limit(1),
+      ]);
 
-      const isClubOwner = roles?.some(r => r.role === 'club_owner');
-      if (!isClubOwner) {
+      const hasClubAccess = Boolean((ownedClubs?.length ?? 0) > 0 || (memberships?.length ?? 0) > 0);
+      if (!hasClubAccess) {
         toast.error(t3(
-          'Dit account is geen club-eigenaar. Gebruik de vrijwilligers login.',
-          'Ce compte n\'est pas propriétaire de club. Utilisez la connexion bénévole.',
-          'This account is not a club owner. Use the volunteer login.'
+          'Dit account heeft geen toegang tot een club. Gebruik de vrijwilligers login.',
+          'Ce compte n\'a pas accès à un club. Utilisez la connexion bénévole.',
+          'This account has no club access. Use the volunteer login.'
         ));
         await supabase.auth.signOut();
         return;
