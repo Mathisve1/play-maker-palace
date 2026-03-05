@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { sendPush } from '@/lib/sendPush';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
