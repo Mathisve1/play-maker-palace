@@ -68,17 +68,17 @@ export const ClubProvider = ({ children, authenticatedUserId }: { children: Reac
     }
 
     const ownedClub = ownedRes.data?.[0];
+    const membership = membershipRes.data?.[0];
     if (ownedClub) {
       setClubId(ownedClub.id);
       setClubInfo(ownedClub);
       setIsOwner(true);
-    } else if (membershipRes.data?.club_id) {
-      setMemberRole((membershipRes.data.role as any) || 'medewerker');
-      // Need to fetch club info
+    } else if (membership?.club_id) {
+      setMemberRole((membership.role as any) || 'medewerker');
       const { data: c } = await supabase
         .from('clubs')
         .select('id, name, logo_url, sport, location')
-        .eq('id', membershipRes.data.club_id)
+        .eq('id', membership.club_id)
         .maybeSingle();
       if (c) {
         setClubId(c.id);

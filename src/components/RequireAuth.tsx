@@ -4,21 +4,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import PushPermissionBanner from './PushPermissionBanner';
 import { syncOneSignalUser } from '@/lib/onesignal';
+import { ClubProvider } from '@/contexts/ClubContext';
 
 interface RequireAuthProps {
   children: React.ReactNode;
   redirectTo?: string;
 }
 
-/**
- * Central auth guard component.
- * Wraps any page that requires authentication.
- * Redirects to login if no active session.
- * Listens to auth state changes and redirects on sign-out.
- */
 const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
   const navigate = useNavigate();
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
 
   const ensureProfileExists = async (sessionUser: { id: string; email?: string | null; user_metadata?: Record<string, any> }) => {
@@ -53,7 +48,8 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
         await ensureProfileExists(session.user);
         if (cancelled) return;
 
-        setAuthenticated(true);
+        setAuthenticatedUserId(session.user.id);
+        // Fire-and-forget OneSignal sync
         void syncOneSignalUser(session.user.id).catch((error) => {
           console.error('OneSignal sync failed:', error);
         });
@@ -71,7 +67,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
 
       if (session && !cancelled) {
         await ensureProfileExists(session.user);
-        setAuthenticated(true);
+        setAuthenticatedUserId(session.user.id);
         setChecked(true);
         void syncOneSignalUser(session.user.id).catch((error) => {
           console.error('OneSignal sync failed:', error);
@@ -85,7 +81,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     };
   }, [navigate, redirectTo]);
 
-  if (!checked || !authenticated) {
+  if (!checked || !authenticatedUserId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -94,10 +90,10 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
   }
 
   return (
-    <>
+    <ClubProvider authenticatedUserId={authenticatedUserId}>
       <PushPermissionBanner />
       {children}
-    </>
+    </ClubProvider>
   );
 };
 
