@@ -2775,6 +2775,7 @@ export type Database = {
           compensation_type: string
           contract_template_id: string | null
           created_at: string
+          daily_rate: number | null
           description: string | null
           end_time: string | null
           estimated_hours: number | null
@@ -2808,6 +2809,7 @@ export type Database = {
           compensation_type?: string
           contract_template_id?: string | null
           created_at?: string
+          daily_rate?: number | null
           description?: string | null
           end_time?: string | null
           estimated_hours?: number | null
@@ -2841,6 +2843,7 @@ export type Database = {
           compensation_type?: string
           contract_template_id?: string | null
           created_at?: string
+          daily_rate?: number | null
           description?: string | null
           end_time?: string | null
           estimated_hours?: number | null
