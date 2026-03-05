@@ -102,7 +102,7 @@ const ComplianceDashboard = () => {
       const { data: tasks } = await supabase
         .from('tasks')
         .select('id')
-        .eq('club_id', activeClubId);
+        .eq('club_id', contextClubId);
 
       if (!tasks || tasks.length === 0) { setLoading(false); return; }
 

@@ -140,17 +140,11 @@ const EventsManager = () => {
     return () => window.removeEventListener('tour-action', handler);
   }, [events, eventGroups]);
 
+  const { clubId: contextClubId, userId: contextUserId } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-
-      const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
-      let cId = ownedClubs?.[0]?.id || null;
-      if (!cId) {
-        const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
-        cId = memberships?.[0]?.club_id || null;
-      }
+      const cId = contextClubId;
       if (!cId) { setLoading(false); return; }
       setClubId(cId);
 
@@ -173,7 +167,7 @@ const EventsManager = () => {
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [contextClubId]);
 
   const buildLocationString = () => {
     const parts: string[] = [];

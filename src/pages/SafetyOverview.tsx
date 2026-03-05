@@ -23,6 +23,7 @@ const SafetyOverview = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+  const { clubId: contextClubId } = useClubContext();
 
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,31 +32,21 @@ const SafetyOverview = () => {
   const [showConfig, setShowConfig] = useState(false);
 
   useEffect(() => {
+    if (!contextClubId) { setLoading(false); return; }
+    setClubId(contextClubId);
+
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { data: membership } = await supabase
-        .from('club_members')
-        .select('club_id')
-        .eq('user_id', session.user.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (!membership) { setLoading(false); return; }
-      setClubId(membership.club_id);
-
       const { data } = await supabase
         .from('events')
         .select('id, title, event_date, location, status')
-        .eq('club_id', membership.club_id)
+        .eq('club_id', contextClubId)
         .neq('status', 'on_hold')
         .order('event_date', { ascending: false });
 
       setEvents(data || []);
       setLoading(false);
     })();
-  }, []);
+  }, [contextClubId]);
 
   const now = new Date();
   const upcoming = useMemo(() => events.filter(e => !e.event_date || new Date(e.event_date) >= now), [events]);
