@@ -150,7 +150,7 @@ const Chat = () => {
           .from('conversations')
           .select('id')
           .eq('task_id', taskId)
-          .eq('volunteer_id', session.user.id)
+          .eq('volunteer_id', contextUserId)
           .maybeSingle();
 
         if (existing) {
