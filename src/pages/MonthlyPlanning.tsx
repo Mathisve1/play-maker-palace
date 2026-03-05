@@ -556,6 +556,10 @@ const MonthlyPlanning = () => {
                     {copyingTasks ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />}
                     {t3('Kopieer vorige maand', 'Copier le mois précédent', 'Copy previous month')}
                   </Button>
+                  <Button variant="outline" onClick={loadLooseTasks}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    {t3('Importeer taak', 'Importer tâche', 'Import task')}
+                  </Button>
                   <div className="flex items-center gap-2">
                     <Label className="text-sm whitespace-nowrap">{t3('Contractsjabloon:', 'Modèle de contrat :', 'Contract template:')}</Label>
                     <Select value={plan.contract_template_id || ''} onValueChange={async (v) => {
