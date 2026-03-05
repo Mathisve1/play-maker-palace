@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sendPushToFollowers } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -187,7 +188,11 @@ const EventsManager = () => {
       event_date: newEvent.event_date || null, location: locationStr,
     }).select('*').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(t3('Evenement aangemaakt!', 'Événement créé!', 'Event created!')); setEvents(prev => [data, ...prev]); setShowCreateEvent(false); setNewEvent({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' }); }
+    else if (data) {
+      toast.success(t3('Evenement aangemaakt!', 'Événement créé!', 'Event created!'));
+      setEvents(prev => [data, ...prev]); setShowCreateEvent(false); setNewEvent({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' });
+      if (clubId) sendPushToFollowers({ clubId, title: '🆕 Nieuw evenement', message: `"${data.title}" is aangemaakt. Bekijk het in de community!`, url: '/community', type: 'club_new_event' });
+    }
     setCreatingEvent(false);
   };
 
@@ -201,7 +206,11 @@ const EventsManager = () => {
       spots_available: newTask.spots_available,
     }).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(t3('Taak aangemaakt!', 'Tâche créée!', 'Task created!')); setTasks(prev => [...prev, data]); setShowCreateTask(false); setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1 }); }
+    else if (data) {
+      toast.success(t3('Taak aangemaakt!', 'Tâche créée!', 'Task created!'));
+      setTasks(prev => [...prev, data]); setShowCreateTask(false); setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1 });
+      if (clubId) sendPushToFollowers({ clubId, title: '🆕 Nieuwe taak', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/community', type: 'club_new_task' });
+    }
     setCreatingTask(false);
   };
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -148,26 +149,34 @@ const MonthlyPlanning = () => {
   const approveEnrollment = async (enrollmentId: string) => {
     const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
+    const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'approved' } : e));
     toast.success(t3('Inschrijving goedgekeurd!', 'Inscription approuvée !', 'Enrollment approved!'));
+    if (enr) sendPush({ userId: enr.volunteer_id, title: '✅ Inschrijving goedgekeurd', message: `Je inschrijving is goedgekeurd! Je kunt nu je contract ondertekenen.`, url: '/dashboard', type: 'enrollment_approved' });
   };
   const rejectEnrollment = async (enrollmentId: string) => {
     const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' } as any).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
+    const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'rejected' } : e));
     toast.success(t3('Inschrijving afgewezen.', 'Inscription refusée.', 'Enrollment rejected.'));
+    if (enr) sendPush({ userId: enr.volunteer_id, title: '❌ Inschrijving afgewezen', message: `Je inschrijving is helaas afgewezen.`, url: '/dashboard', type: 'enrollment_rejected' });
   };
   const assignDaySignup = async (signupId: string) => {
     const { error } = await supabase.from('monthly_day_signups').update({ status: 'assigned' }).eq('id', signupId);
     if (error) { toast.error(error.message); return; }
+    const ds = daySignups.find(s => s.id === signupId);
     setDaySignups(prev => prev.map(s => s.id === signupId ? { ...s, status: 'assigned' } : s));
     toast.success(t3('Vrijwilliger toegekend aan deze dag!', 'Bénévole attribué à ce jour !', 'Volunteer assigned to this day!'));
+    if (ds) sendPush({ userId: ds.volunteer_id, title: '✅ Dag toegekend', message: `Je dag-aanmelding is bevestigd!`, url: '/dashboard', type: 'day_assigned' });
   };
   const rejectDaySignup = async (signupId: string) => {
     const { error } = await supabase.from('monthly_day_signups').update({ status: 'rejected' }).eq('id', signupId);
     if (error) { toast.error(error.message); return; }
+    const ds = daySignups.find(s => s.id === signupId);
     setDaySignups(prev => prev.map(s => s.id === signupId ? { ...s, status: 'rejected' } : s));
     toast.success(t3('Dag-aanmelding afgewezen.', 'Inscription journalière refusée.', 'Day signup rejected.'));
+    if (ds) sendPush({ userId: ds.volunteer_id, title: '❌ Dag-aanmelding afgewezen', message: `Je dag-aanmelding is helaas afgewezen.`, url: '/dashboard', type: 'day_rejected' });
   };
 
   const generateTicketForSignup = async (signup: DaySignupClub) => {
@@ -181,6 +190,7 @@ const MonthlyPlanning = () => {
       if (data?.success) {
         setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, ticket_barcode: data.barcode || signup.ticket_barcode } : s));
         toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
+        sendPush({ userId: signup.volunteer_id, title: '🎫 Ticket ontvangen', message: `Je ticket is klaar! Bekijk het in je dashboard.`, url: '/dashboard', type: 'ticket_generated' });
       } else { toast.error(data?.error || t3('Ticket genereren mislukt', 'Échec de la génération du ticket', 'Ticket generation failed')); }
     } catch (e: any) { toast.error(e.message); }
     setGeneratingTicketIds(prev => { const n = new Set(prev); n.delete(signup.id); return n; });
@@ -359,6 +369,7 @@ const MonthlyPlanning = () => {
     await supabase.from('monthly_day_signups').update({ club_reported_hours: finalHours, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' }).eq('id', ds.id);
     toast.success(`${ds.volunteer_name}: ${finalHours}${t3('u', 'h', 'h')} ${t3('bevestigd', 'confirmé', 'confirmed')} (€${finalAmount.toFixed(2)})`);
     setDaySignups(prev => prev.map(s => s.id === ds.id ? { ...s, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' } : s));
+    sendPush({ userId: ds.volunteer_id, title: '✅ Uren bevestigd', message: `Je uren (${finalHours}u — €${finalAmount.toFixed(2)}) zijn bevestigd door de club.`, url: '/dashboard', type: 'hours_confirmed' });
   };
 
   return (

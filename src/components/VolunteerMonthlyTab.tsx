@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { sendPush, sendPushToClub } from '@/lib/sendPush';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -232,6 +233,12 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
     const { error } = await supabase.from('monthly_enrollments').insert({ plan_id: planId, volunteer_id: userId });
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Ingeschreven! Wacht op goedkeuring van de club.' : 'Enrolled! Waiting for club approval.');
+    // Notify club of new enrollment
+    const plan = plans.find(p => p.id === planId);
+    if (plan) {
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+      sendPushToClub({ clubId: plan.club_id, title: '📋 Nieuwe inschrijving', message: `${profile?.full_name || 'Een vrijwilliger'} heeft zich ingeschreven voor "${plan.title}".`, url: '/command-center', type: 'new_enrollment' });
+    }
     loadData();
   };
 
@@ -244,6 +251,13 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
     });
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Aangemeld! Wacht op bevestiging van de club.' : 'Signed up! Waiting for club confirmation.');
+    // Notify club of day signup
+    const task = tasks.find(t => t.id === planTaskId);
+    const plan = plans.find(p => task && p.id === task.plan_id);
+    if (plan) {
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+      sendPushToClub({ clubId: plan.club_id, title: '📅 Nieuwe dag-aanmelding', message: `${profile?.full_name || 'Een vrijwilliger'} heeft zich aangemeld voor ${task?.title || 'een taak'}.`, url: '/command-center', type: 'new_day_signup' });
+    }
     loadData();
   };
 
@@ -256,6 +270,13 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
       .eq('id', selectedSignup.id);
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Uren gerapporteerd!' : 'Hours reported!');
+    // Notify club
+    const task = tasks.find(t => t.id === selectedSignup.plan_task_id);
+    const plan = plans.find(p => task && p.id === task.plan_id);
+    if (plan) {
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+      sendPushToClub({ clubId: plan.club_id, title: '⏰ Uren gerapporteerd', message: `${profile?.full_name || 'Een vrijwilliger'} rapporteerde ${hours}u.`, url: '/monthly-planning', type: 'hours_reported' });
+    }
     setShowHoursDialog(false); setSelectedSignup(null); setHoursInput('');
     loadData();
   };

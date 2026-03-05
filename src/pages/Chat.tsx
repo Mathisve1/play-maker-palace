@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Send, MessageCircle, Check, CheckCheck, Paperclip, X, Image, FileText, Music, Loader2, Mic, Square } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
+import { sendPush } from '@/lib/sendPush';
 
 interface Conversation {
   id: string;
@@ -393,6 +394,13 @@ const Chat = () => {
       setNewMessage('');
       clearAttachment();
       await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', activeConversation);
+      // Push notification to recipient
+      const convo = conversations.find(c => c.id === activeConversation);
+      if (convo) {
+        const recipientId = convo.volunteer_id === userId ? convo.club_owner_id : convo.volunteer_id;
+        const senderName = participantNames[userId] || 'Iemand';
+        sendPush({ userId: recipientId, title: '💬 Nieuw bericht', message: `${senderName}: ${(newMessage.trim() || attachment?.name || '').slice(0, 80)}`, url: `/chat?taskId=${convo.task_id}`, type: 'chat_message' });
+      }
     }
     setSending(false);
   };

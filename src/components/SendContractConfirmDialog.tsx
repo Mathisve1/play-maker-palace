@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { sendPush } from '@/lib/sendPush';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -425,6 +426,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
       const result = await resp.json();
       if (resp.ok && result.success) {
         toast.success(l.success);
+        sendPush({ userId: volunteer.id, title: '📝 Contract ontvangen', message: `Je hebt een nieuw contract om te ondertekenen voor "${task.title}".`, url: '/dashboard', type: 'contract_received' });
         onSent();
         onOpenChange(false);
       } else {

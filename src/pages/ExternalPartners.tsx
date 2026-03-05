@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -441,6 +442,11 @@ const ExternalPartners = () => {
       toast.error(error.message?.includes('duplicate') ? t3('Dit evenement is al opengesteld.', 'Cet événement est déjà ouvert.', 'Event already added.') : error.message);
     } else {
       toast.success(t3('Evenement opengesteld!', 'Accès à l\'événement ajouté!', 'Event access added!'));
+      // Notify partner admins
+      const { data: admins } = await supabase.from('partner_admins').select('user_id').eq('partner_id', selectedPartner.id);
+      for (const a of admins || []) {
+        sendPush({ userId: a.user_id, title: '🎉 Event toegang', message: `Jullie organisatie heeft toegang gekregen tot een nieuw evenement.`, url: '/partner-dashboard', type: 'event_access' });
+      }
       setShowAddEvent(false); setSelectedEventId(''); setMaxSpots('');
       handleSelectPartner(selectedPartner);
     }
