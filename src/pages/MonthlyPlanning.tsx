@@ -52,10 +52,12 @@ interface Enrollment {
 }
 interface DaySignupClub {
   id: string; enrollment_id: string; plan_task_id: string; volunteer_id: string;
-  status: string; checked_in_at: string | null; hour_status: string;
-  volunteer_reported_hours: number | null; club_reported_hours: number | null;
+  status: string; checked_in_at: string | null; checked_out_at: string | null;
+  hour_status: string; volunteer_reported_hours: number | null; club_reported_hours: number | null;
   volunteer_approved: boolean; club_approved: boolean; final_hours: number | null;
   final_amount: number | null; ticket_barcode: string | null;
+  dispute_status: string; dispute_escalated_at: string | null;
+  club_reported_checkout: string | null; volunteer_reported_checkout: string | null;
   volunteer_name?: string; volunteer_email?: string;
 }
 
@@ -87,6 +89,10 @@ const MonthlyPlanning = () => {
   const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
   const [generatingTicketIds, setGeneratingTicketIds] = useState<Set<string>>(new Set());
   const [sendingTicketEmailIds, setSendingTicketEmailIds] = useState<Set<string>>(new Set());
+  const [checkingOutIds, setCheckingOutIds] = useState<Set<string>>(new Set());
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [looseTasks, setLooseTasks] = useState<any[]>([]);
+  const [importingTaskIds, setImportingTaskIds] = useState<Set<string>>(new Set());
   const [taskForm, setTaskForm] = useState({
     title: '', category: 'Algemeen', description: '', location: '',
     start_time: '09:00', end_time: '17:00', compensation_type: 'daily',
@@ -207,6 +213,90 @@ const MonthlyPlanning = () => {
       else { toast.error(data?.error || t3('Versturen mislukt', 'Échec de l\'envoi', 'Sending failed')); }
     } catch (e: any) { toast.error(e.message); }
     setSendingTicketEmailIds(prev => { const n = new Set(prev); n.delete(signup.id); return n; });
+  };
+
+  const checkoutSignup = async (signup: DaySignupClub) => {
+    if (!clubId || !plan) return;
+    setCheckingOutIds(prev => new Set(prev).add(signup.id));
+    try {
+      const { data, error } = await supabase.functions.invoke('ticketing-scan', {
+        body: { barcode: signup.ticket_barcode, club_id: clubId, action: 'checkout' },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setDaySignups(prev => prev.map(s => s.id === signup.id ? {
+          ...s, checked_out_at: data.checked_out_at, hour_status: 'checkout_pending',
+          club_reported_hours: data.hours_worked, club_approved: true,
+          club_reported_checkout: data.checked_out_at,
+        } : s));
+        toast.success(`${signup.volunteer_name}: ${t3('uitgecheckt', 'sorti', 'checked out')} (${data.hours_worked?.toFixed(1)}${t3('u', 'h', 'h')})`);
+      } else { toast.error(data?.error || 'Checkout failed'); }
+    } catch (e: any) { toast.error(e.message); }
+    setCheckingOutIds(prev => { const n = new Set(prev); n.delete(signup.id); return n; });
+  };
+
+  const escalateDispute = async (signup: DaySignupClub) => {
+    const now = new Date().toISOString();
+    await supabase.from('monthly_day_signups').update({ dispute_status: 'escalated', dispute_escalated_at: now } as any).eq('id', signup.id);
+    setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, dispute_status: 'escalated', dispute_escalated_at: now } : s));
+    toast.success(t3('Geschil geëscaleerd. Auto-resolutie in 48u.', 'Litige escaladé. Résolution auto dans 48h.', 'Dispute escalated. Auto-resolve in 48h.'));
+    sendPush({ userId: signup.volunteer_id, title: '⚠️ Geschil geëscaleerd', message: 'Het geschil over je uren is geëscaleerd. Na 48u wordt het gemiddelde toegepast.', url: '/dashboard', type: 'dispute_escalated' });
+  };
+
+  const resolveDispute = async (signup: DaySignupClub, task: PlanTask) => {
+    const clubH = signup.club_reported_hours || 0;
+    const volH = signup.volunteer_reported_hours || 0;
+    // Calculate max hours from task times
+    let maxHours = 24;
+    if (task.start_time && task.end_time) {
+      const [sh, sm] = task.start_time.split(':').map(Number);
+      const [eh, em] = task.end_time.split(':').map(Number);
+      maxHours = (eh * 60 + em - sh * 60 - sm) / 60;
+    }
+    const avgHours = Math.min((clubH + volH) / 2, maxHours);
+    const finalAmount = avgHours * (task.hourly_rate || 0);
+    
+    await supabase.from('monthly_day_signups').update({
+      final_hours: avgHours, final_amount: finalAmount,
+      hour_status: 'confirmed', dispute_status: 'resolved',
+      club_approved: true, volunteer_approved: true,
+    } as any).eq('id', signup.id);
+    
+    setDaySignups(prev => prev.map(s => s.id === signup.id ? {
+      ...s, final_hours: avgHours, final_amount: finalAmount,
+      hour_status: 'confirmed', dispute_status: 'resolved',
+      club_approved: true, volunteer_approved: true,
+    } : s));
+    toast.success(`${signup.volunteer_name}: ${avgHours.toFixed(1)}${t3('u', 'h', 'h')} (gemiddelde) — €${finalAmount.toFixed(2)}`);
+    sendPush({ userId: signup.volunteer_id, title: '✅ Geschil opgelost', message: `Het gemiddelde (${avgHours.toFixed(1)}u — €${finalAmount.toFixed(2)}) is toegepast.`, url: '/dashboard', type: 'dispute_resolved' });
+  };
+
+  const loadLooseTasks = async () => {
+    if (!clubId) return;
+    const { data } = await supabase.from('tasks').select('id, title, task_date, location, compensation_type, hourly_rate, spots_available')
+      .eq('club_id', clubId).order('task_date', { ascending: false }).limit(50);
+    setLooseTasks((data || []) as any);
+    setShowImportDialog(true);
+  };
+
+  const importTaskToPlan = async (looseTask: any) => {
+    if (!plan) return;
+    setImportingTaskIds(prev => new Set(prev).add(looseTask.id));
+    const taskDate = looseTask.task_date || `${viewYear}-${String(viewMonth).padStart(2, '0')}-01`;
+    const { data, error } = await supabase.from('monthly_plan_tasks').insert({
+      plan_id: plan.id, task_date: taskDate, title: looseTask.title,
+      category: 'Andere', location: looseTask.location || null,
+      start_time: '09:00', end_time: '17:00',
+      compensation_type: looseTask.compensation_type || 'daily',
+      daily_rate: 25, hourly_rate: looseTask.hourly_rate || null,
+      spots_available: looseTask.spots_available || 3,
+    }).select().single();
+    if (error) { toast.error(error.message); }
+    else {
+      setTasks(prev => [...prev, data as unknown as PlanTask]);
+      toast.success(`"${looseTask.title}" ${t3('geïmporteerd', 'importé', 'imported')}`);
+    }
+    setImportingTaskIds(prev => { const n = new Set(prev); n.delete(looseTask.id); return n; });
   };
 
   const createPlan = async () => {
@@ -466,6 +556,10 @@ const MonthlyPlanning = () => {
                     {copyingTasks ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />}
                     {t3('Kopieer vorige maand', 'Copier le mois précédent', 'Copy previous month')}
                   </Button>
+                  <Button variant="outline" onClick={loadLooseTasks}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    {t3('Importeer taak', 'Importer tâche', 'Import task')}
+                  </Button>
                   <div className="flex items-center gap-2">
                     <Label className="text-sm whitespace-nowrap">{t3('Contractsjabloon:', 'Modèle de contrat :', 'Contract template:')}</Label>
                     <Select value={plan.contract_template_id || ''} onValueChange={async (v) => {
@@ -534,9 +628,10 @@ const MonthlyPlanning = () => {
             <MonthlyDaySignups
               pendingSignups={pendingDaySignups} assignedSignups={assignedDaySignups}
               tasks={tasks} language={language} generatingTicketIds={generatingTicketIds}
-              sendingTicketEmailIds={sendingTicketEmailIds} t3={t3}
+              sendingTicketEmailIds={sendingTicketEmailIds} checkingOutIds={checkingOutIds} t3={t3}
               onAssign={assignDaySignup} onReject={rejectDaySignup}
               onGenerateTicket={generateTicketForSignup} onSendTicketEmail={sendTicketEmail}
+              onCheckout={checkoutSignup}
             />
 
             <MonthlyHourConfirmation
@@ -545,6 +640,8 @@ const MonthlyPlanning = () => {
               onConfirmHours={handleConfirmHours}
               onGeneratePayout={generateMonthlyPayout}
               onExportSepa={() => navigate('/sepa-payouts')}
+              onEscalateDispute={escalateDispute}
+              onResolveDispute={resolveDispute}
             />
           </>
         ) : null}
@@ -601,6 +698,33 @@ const MonthlyPlanning = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Import Task Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t3('Bestaande taak importeren', 'Importer une tâche existante', 'Import existing task')}</DialogTitle>
+            <DialogDescription>{t3('Selecteer een losse taak om toe te voegen aan dit maandplan.', 'Sélectionnez une tâche à ajouter au plan mensuel.', 'Select a task to add to this monthly plan.')}</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-80 overflow-y-auto space-y-2">
+            {looseTasks.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">{t3('Geen losse taken gevonden.', 'Aucune tâche trouvée.', 'No tasks found.')}</p>
+            ) : looseTasks.map(lt => (
+              <div key={lt.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 transition-colors">
+                <div>
+                  <p className="text-sm font-medium">{lt.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {lt.task_date ? new Date(lt.task_date).toLocaleDateString(language === 'fr' ? 'fr-BE' : 'nl-BE', { day: 'numeric', month: 'short' }) : '—'}
+                    {lt.location && ` · ${lt.location}`}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => importTaskToPlan(lt)} disabled={importingTaskIds.has(lt.id)}>
+                  {importingTaskIds.has(lt.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
       {contractVolunteer && plan?.contract_template_id && (
         <SendContractConfirmDialog
           open={!!contractVolunteer}

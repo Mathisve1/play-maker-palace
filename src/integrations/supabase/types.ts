@@ -1082,8 +1082,11 @@ export type Database = {
       hour_confirmations: {
         Row: {
           club_approved: boolean
+          club_reported_checkout: string | null
           club_reported_hours: number | null
           created_at: string
+          dispute_escalated_at: string | null
+          dispute_status: string
           final_amount: number | null
           final_hours: number | null
           id: string
@@ -1092,12 +1095,16 @@ export type Database = {
           updated_at: string
           volunteer_approved: boolean
           volunteer_id: string
+          volunteer_reported_checkout: string | null
           volunteer_reported_hours: number | null
         }
         Insert: {
           club_approved?: boolean
+          club_reported_checkout?: string | null
           club_reported_hours?: number | null
           created_at?: string
+          dispute_escalated_at?: string | null
+          dispute_status?: string
           final_amount?: number | null
           final_hours?: number | null
           id?: string
@@ -1106,12 +1113,16 @@ export type Database = {
           updated_at?: string
           volunteer_approved?: boolean
           volunteer_id: string
+          volunteer_reported_checkout?: string | null
           volunteer_reported_hours?: number | null
         }
         Update: {
           club_approved?: boolean
+          club_reported_checkout?: string | null
           club_reported_hours?: number | null
           created_at?: string
+          dispute_escalated_at?: string | null
+          dispute_status?: string
           final_amount?: number | null
           final_hours?: number | null
           id?: string
@@ -1120,6 +1131,7 @@ export type Database = {
           updated_at?: string
           volunteer_approved?: boolean
           volunteer_id?: string
+          volunteer_reported_checkout?: string | null
           volunteer_reported_hours?: number | null
         }
         Relationships: [
@@ -1311,8 +1323,11 @@ export type Database = {
           checked_in_at: string | null
           checked_out_at: string | null
           club_approved: boolean
+          club_reported_checkout: string | null
           club_reported_hours: number | null
           created_at: string
+          dispute_escalated_at: string | null
+          dispute_status: string
           enrollment_id: string
           final_amount: number | null
           final_hours: number | null
@@ -1323,14 +1338,18 @@ export type Database = {
           ticket_barcode: string | null
           volunteer_approved: boolean
           volunteer_id: string
+          volunteer_reported_checkout: string | null
           volunteer_reported_hours: number | null
         }
         Insert: {
           checked_in_at?: string | null
           checked_out_at?: string | null
           club_approved?: boolean
+          club_reported_checkout?: string | null
           club_reported_hours?: number | null
           created_at?: string
+          dispute_escalated_at?: string | null
+          dispute_status?: string
           enrollment_id: string
           final_amount?: number | null
           final_hours?: number | null
@@ -1341,14 +1360,18 @@ export type Database = {
           ticket_barcode?: string | null
           volunteer_approved?: boolean
           volunteer_id: string
+          volunteer_reported_checkout?: string | null
           volunteer_reported_hours?: number | null
         }
         Update: {
           checked_in_at?: string | null
           checked_out_at?: string | null
           club_approved?: boolean
+          club_reported_checkout?: string | null
           club_reported_hours?: number | null
           created_at?: string
+          dispute_escalated_at?: string | null
+          dispute_status?: string
           enrollment_id?: string
           final_amount?: number | null
           final_hours?: number | null
@@ -1359,6 +1382,7 @@ export type Database = {
           ticket_barcode?: string | null
           volunteer_approved?: boolean
           volunteer_id?: string
+          volunteer_reported_checkout?: string | null
           volunteer_reported_hours?: number | null
         }
         Relationships: [

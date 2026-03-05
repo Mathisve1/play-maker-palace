@@ -54,6 +54,7 @@ interface DaySignup {
   plan_task_id: string;
   status: string;
   checked_in_at: string | null;
+  checked_out_at: string | null;
   hour_status: string;
   volunteer_reported_hours: number | null;
   club_reported_hours: number | null;
@@ -62,6 +63,10 @@ interface DaySignup {
   final_hours: number | null;
   final_amount: number | null;
   ticket_barcode: string | null;
+  dispute_status: string;
+  dispute_escalated_at: string | null;
+  club_reported_checkout: string | null;
+  volunteer_reported_checkout: string | null;
 }
 
 interface Enrollment {
@@ -188,6 +193,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   const [daySignups, setDaySignups] = useState<DaySignup[]>([]);
   const [loading, setLoading] = useState(true);
   const [showHoursDialog, setShowHoursDialog] = useState(false);
+  const [showCheckoutConfirm, setShowCheckoutConfirm] = useState(false);
   const [selectedSignup, setSelectedSignup] = useState<DaySignup | null>(null);
   const [selectedTask, setSelectedTask] = useState<PlanTask | null>(null);
   const [hoursInput, setHoursInput] = useState('');
@@ -270,13 +276,51 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
       .eq('id', selectedSignup.id);
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Uren gerapporteerd!' : 'Hours reported!');
-    // Notify club
     const task = tasks.find(t => t.id === selectedSignup.plan_task_id);
     const plan = plans.find(p => task && p.id === task.plan_id);
     if (plan) {
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
       sendPushToClub({ clubId: plan.club_id, title: '⏰ Uren gerapporteerd', message: `${profile?.full_name || 'Een vrijwilliger'} rapporteerde ${hours}u.`, url: '/monthly-planning', type: 'hours_reported' });
     }
+    setShowHoursDialog(false); setSelectedSignup(null); setHoursInput('');
+    loadData();
+  };
+
+  const confirmCheckout = async (agree: boolean) => {
+    if (!selectedSignup) return;
+    if (agree) {
+      // Volunteer agrees with club's checkout time
+      const hours = selectedSignup.club_reported_hours || 0;
+      const task = tasks.find(t => t.id === selectedSignup.plan_task_id);
+      const rate = task?.hourly_rate || 0;
+      const finalAmount = hours * rate;
+      await supabase.from('monthly_day_signups').update({
+        volunteer_approved: true, volunteer_reported_hours: hours,
+        volunteer_reported_checkout: selectedSignup.club_reported_checkout,
+        final_hours: hours, final_amount: finalAmount,
+        hour_status: 'confirmed', dispute_status: 'none',
+      } as any).eq('id', selectedSignup.id);
+      toast.success(language === 'nl' ? `Akkoord: ${hours.toFixed(1)}u — €${finalAmount.toFixed(2)}` : `Agreed: ${hours.toFixed(1)}h — €${finalAmount.toFixed(2)}`);
+    } else {
+      // Volunteer disputes — opens dispute
+      await supabase.from('monthly_day_signups').update({
+        dispute_status: 'open', hour_status: 'disputed',
+      } as any).eq('id', selectedSignup.id);
+      toast.info(language === 'nl' ? 'Geschil geopend. Bespreek via chat met de club.' : 'Dispute opened. Discuss via chat with the club.');
+    }
+    setShowCheckoutConfirm(false); setSelectedSignup(null);
+    loadData();
+  };
+
+  const submitDisputeHours = async () => {
+    if (!selectedSignup || !hoursInput) return;
+    const hours = Number(hoursInput);
+    if (isNaN(hours) || hours <= 0) return;
+    await supabase.from('monthly_day_signups').update({
+      volunteer_reported_hours: hours, volunteer_approved: true,
+      volunteer_reported_checkout: new Date().toISOString(),
+    } as any).eq('id', selectedSignup.id);
+    toast.success(language === 'nl' ? 'Jouw uren ingediend voor het geschil.' : 'Your hours submitted for the dispute.');
     setShowHoursDialog(false); setSelectedSignup(null); setHoursInput('');
     loadData();
   };
@@ -430,7 +474,10 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                       const d = new Date(t.task_date);
                       const signup = getSignup(t.id);
                       const isPast = d < new Date(new Date().toISOString().split('T')[0]);
-                      const needsHourReport = isPast && signup?.checked_in_at && !signup.volunteer_approved;
+                      const isHourly = t.compensation_type === 'hourly';
+                      const needsCheckoutConfirm = signup?.hour_status === 'checkout_pending' && !signup.volunteer_approved && isHourly;
+                      const needsHourReport = isPast && signup?.checked_in_at && !signup.volunteer_approved && !needsCheckoutConfirm && t.compensation_type !== 'hourly';
+                      const needsDisputeInput = signup?.dispute_status === 'escalated' && !signup.volunteer_reported_hours;
                       const notCheckedIn = isPast && !signup?.checked_in_at;
 
                       return (
@@ -467,6 +514,27 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                                 )}
                               </>
                             ) : null}
+                            {needsCheckoutConfirm && (
+                              <div className="flex flex-col gap-1">
+                                <p className="text-[10px] text-muted-foreground">{language === 'nl' ? `Club zegt: ${signup!.club_reported_hours?.toFixed(1)}u` : `Club says: ${signup!.club_reported_hours?.toFixed(1)}h`}</p>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="outline" className="h-6 text-[10px] text-green-700" onClick={() => { setSelectedSignup(signup!); confirmCheckout(true); }}>
+                                    <CheckCircle className="w-3 h-3 mr-0.5" /> {language === 'nl' ? 'Akkoord' : 'Agree'}
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-6 text-[10px] text-destructive" onClick={() => { setSelectedSignup(signup!); confirmCheckout(false); }}>
+                                    <XCircle className="w-3 h-3 mr-0.5" /> {language === 'nl' ? 'Betwist' : 'Dispute'}
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                            {needsDisputeInput && (
+                              <Button size="sm" variant="outline" className="h-7 text-xs text-destructive" onClick={() => {
+                                setSelectedSignup(signup!); setSelectedTask(t);
+                                setHoursInput(''); setShowHoursDialog(true);
+                              }}>
+                                <AlertTriangle className="w-3 h-3 mr-1" /> {language === 'nl' ? 'Jouw uren invoeren' : 'Enter your hours'}
+                              </Button>
+                            )}
                             {needsHourReport && (
                               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
                                 setSelectedSignup(signup!); setSelectedTask(t);
@@ -475,9 +543,15 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                                 <Clock className="w-3 h-3 mr-1" /> {l.confirmHours}
                               </Button>
                             )}
-                            {signup?.volunteer_approved && (
+                            {signup?.dispute_status === 'open' && (
+                              <Badge variant="destructive" className="text-[10px]">{language === 'nl' ? 'Geschil open' : 'Dispute open'}</Badge>
+                            )}
+                            {signup?.dispute_status === 'escalated' && (
+                              <Badge variant="destructive" className="text-[10px]">⚠️ {language === 'nl' ? 'Geëscaleerd' : 'Escalated'}</Badge>
+                            )}
+                            {signup?.volunteer_approved && signup?.hour_status === 'confirmed' && (
                               <Badge variant="outline" className="text-[10px] text-green-600 border-green-200">
-                                <CheckCircle className="w-3 h-3 mr-0.5" /> {signup.final_hours ? `${signup.final_hours}u ✓` : l.hoursConfirmed}
+                                <CheckCircle className="w-3 h-3 mr-0.5" /> {signup.final_hours ? `${signup.final_hours.toFixed(1)}u ✓` : l.hoursConfirmed}
                               </Badge>
                             )}
                           </div>
@@ -582,9 +656,14 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
               <label className="text-sm text-muted-foreground">{l.reportHours}</label>
               <Input type="number" step="0.5" min="0.5" max="24" value={hoursInput} onChange={e => setHoursInput(e.target.value)} className="mt-1" />
             </div>
+            {selectedSignup?.dispute_status === 'escalated' && selectedSignup?.club_reported_hours && (
+              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+                {language === 'nl' ? `Club rapporteerde: ${selectedSignup.club_reported_hours.toFixed(1)}u. Voer jouw uren in. Het gemiddelde wordt na 48u automatisch toegepast.` : `Club reported: ${selectedSignup.club_reported_hours.toFixed(1)}h. Enter your hours. Average will be applied after 48h.`}
+              </p>
+            )}
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setShowHoursDialog(false)}>Annuleren</Button>
-              <Button className="flex-1" onClick={submitHours} disabled={!hoursInput || Number(hoursInput) <= 0}>{l.submit}</Button>
+              <Button className="flex-1" onClick={selectedSignup?.dispute_status === 'escalated' ? submitDisputeHours : submitHours} disabled={!hoursInput || Number(hoursInput) <= 0}>{l.submit}</Button>
             </div>
           </div>
         </DialogContent>

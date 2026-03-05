@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json();
-    const { barcode, club_id } = body;
+    const { barcode, club_id, action } = body;
 
     if (!barcode || !club_id) {
       return new Response(
@@ -39,6 +39,80 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // ── CHECKOUT action ──
+    if (action === "checkout") {
+      if (barcode.startsWith("MP-")) {
+        const { data: daySignup, error: dsError } = await serviceClient
+          .from("monthly_day_signups")
+          .select("id, volunteer_id, plan_task_id, checked_in_at, checked_out_at")
+          .eq("ticket_barcode", barcode)
+          .maybeSingle();
+
+        if (dsError || !daySignup) {
+          return new Response(JSON.stringify({ success: false, error: "Barcode niet gevonden" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (!daySignup.checked_in_at) {
+          return new Response(JSON.stringify({ success: false, error: "Nog niet ingecheckt" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (daySignup.checked_out_at) {
+          return new Response(JSON.stringify({ success: false, status: "already_checked_out", checked_out_at: daySignup.checked_out_at }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const now = new Date().toISOString();
+        const { error: updateError } = await serviceClient
+          .from("monthly_day_signups")
+          .update({ checked_out_at: now, club_reported_checkout: now, hour_status: "checkout_pending" })
+          .eq("id", daySignup.id);
+
+        if (updateError) {
+          return new Response(JSON.stringify({ success: false, error: updateError.message }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        // Calculate hours worked
+        const checkedIn = new Date(daySignup.checked_in_at);
+        const checkedOut = new Date(now);
+        const hoursWorked = Math.round(((checkedOut.getTime() - checkedIn.getTime()) / 3600000) * 100) / 100;
+
+        // Auto-set club_reported_hours
+        await serviceClient.from("monthly_day_signups")
+          .update({ club_reported_hours: hoursWorked, club_approved: true })
+          .eq("id", daySignup.id);
+
+        const [profileRes, taskRes] = await Promise.all([
+          serviceClient.from("profiles").select("full_name").eq("id", daySignup.volunteer_id).maybeSingle(),
+          serviceClient.from("monthly_plan_tasks").select("title, task_date").eq("id", daySignup.plan_task_id).maybeSingle(),
+        ]);
+
+        // Send push to volunteer to confirm checkout time
+        try {
+          const pushPayload = {
+            user_id: daySignup.volunteer_id,
+            title: "⏰ Bevestig je uitchecktijd",
+            message: `Je bent uitgecheckt om ${new Date(now).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })} voor "${taskRes.data?.title || "taak"}". Bevestig of betwist dit.`,
+            url: "/dashboard",
+            type: "checkout_confirm",
+          };
+          await serviceClient.functions.invoke("send-native-push", { body: pushPayload });
+        } catch (_) { /* non-critical */ }
+
+        return new Response(JSON.stringify({
+          success: true, status: "checked_out",
+          volunteer_name: profileRes.data?.full_name || "Onbekend",
+          task_title: taskRes.data?.title || "",
+          checked_out_at: now,
+          hours_worked: hoursWorked,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Standard VT- ticket checkout
+      return new Response(JSON.stringify({ success: false, error: "Checkout voor VT-tickets niet ondersteund" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // ── Check if this is a monthly planning barcode (MP- prefix) ──
     if (barcode.startsWith("MP-")) {
@@ -55,29 +129,24 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Already checked in?
       if (daySignup.checked_in_at) {
         const { data: profile } = await serviceClient.from("profiles").select("full_name, avatar_url").eq("id", daySignup.volunteer_id).maybeSingle();
         const { data: planTask } = await serviceClient.from("monthly_plan_tasks").select("title, category, task_date").eq("id", daySignup.plan_task_id).maybeSingle();
         return new Response(
           JSON.stringify({
-            success: false,
-            status: "already_checked_in",
+            success: false, status: "already_checked_in",
             volunteer_name: profile?.full_name || "Onbekend",
             avatar_url: profile?.avatar_url || null,
             task_title: planTask?.title || "",
             event_title: `Maandplanning - ${planTask?.category || ""}`,
             checked_in_at: daySignup.checked_in_at,
             group_name: planTask?.category || null,
-            wristband_color: null,
-            wristband_label: null,
-            materials_note: null,
+            wristband_color: null, wristband_label: null, materials_note: null,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Check in
       const now = new Date().toISOString();
       const { error: updateError } = await serviceClient
         .from("monthly_day_signups")
@@ -98,16 +167,14 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({
-          success: true,
-          status: "checked_in",
+          success: true, status: "checked_in",
           volunteer_name: profileRes.data?.full_name || "Onbekend",
           avatar_url: profileRes.data?.avatar_url || null,
           task_title: taskRes.data?.title || "",
           event_title: `Maandplanning - ${taskRes.data?.category || ""}`,
           checked_in_at: now,
           group_name: taskRes.data?.category || null,
-          wristband_color: null,
-          wristband_label: null,
+          wristband_color: null, wristband_label: null,
           materials_note: `Datum: ${taskRes.data?.task_date || ""}`,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -124,16 +191,11 @@ Deno.serve(async (req) => {
 
     if (ticketError || !ticket) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          status: "unknown",
-          error: "Ongeldig ticket - barcode niet gevonden",
-        }),
+        JSON.stringify({ success: false, status: "unknown", error: "Ongeldig ticket - barcode niet gevonden" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Fetch profile, task (with event_group_id), event in parallel
     const [profileRes, taskRes, eventRes] = await Promise.all([
       serviceClient.from("profiles").select("full_name, avatar_url").eq("id", ticket.volunteer_id).maybeSingle(),
       ticket.task_id ? serviceClient.from("tasks").select("title, event_group_id").eq("id", ticket.task_id).maybeSingle() : Promise.resolve({ data: null }),
@@ -145,7 +207,6 @@ Deno.serve(async (req) => {
     const taskTitle = taskRes.data?.title || "";
     const eventTitle = eventRes.data?.title || "";
 
-    // Fetch event_group wristband info if task belongs to a group
     let wristbandColor: string | null = null;
     let wristbandLabel: string | null = null;
     let materialsNote: string | null = null;
@@ -173,24 +234,18 @@ Deno.serve(async (req) => {
       materials_note: materialsNote,
     };
 
-    // Check if already checked in
     if (ticket.status === "checked_in") {
       return new Response(
         JSON.stringify({
-          success: false,
-          status: "already_checked_in",
-          volunteer_name: volunteerName,
-          avatar_url: avatarUrl,
-          task_title: taskTitle,
-          checked_in_at: ticket.checked_in_at,
-          error: "Al ingecheckt",
-          ...materialPayload,
+          success: false, status: "already_checked_in",
+          volunteer_name: volunteerName, avatar_url: avatarUrl,
+          task_title: taskTitle, checked_in_at: ticket.checked_in_at,
+          error: "Al ingecheckt", ...materialPayload,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Update ticket to checked_in
     const now = new Date().toISOString();
     const { error: updateError } = await serviceClient
       .from("volunteer_tickets")
@@ -204,26 +259,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Log the scan
     serviceClient.from("ticketing_logs").insert({
-      club_id,
-      action: "scan_checkin",
+      club_id, action: "scan_checkin",
       request_payload: { barcode },
       response_payload: { volunteer_id: ticket.volunteer_id, task_id: ticket.task_id },
-      status: "success",
-      volunteer_ticket_id: ticket.id,
+      status: "success", volunteer_ticket_id: ticket.id,
     });
 
     return new Response(
       JSON.stringify({
-        success: true,
-        status: "checked_in",
-        volunteer_name: volunteerName,
-        avatar_url: avatarUrl,
-        task_title: taskTitle,
-        event_title: eventTitle,
-        checked_in_at: now,
-        ...materialPayload,
+        success: true, status: "checked_in",
+        volunteer_name: volunteerName, avatar_url: avatarUrl,
+        task_title: taskTitle, event_title: eventTitle,
+        checked_in_at: now, ...materialPayload,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
