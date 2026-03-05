@@ -474,7 +474,10 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                       const d = new Date(t.task_date);
                       const signup = getSignup(t.id);
                       const isPast = d < new Date(new Date().toISOString().split('T')[0]);
-                      const needsHourReport = isPast && signup?.checked_in_at && !signup.volunteer_approved;
+                      const isHourly = t.compensation_type === 'hourly';
+                      const needsCheckoutConfirm = signup?.hour_status === 'checkout_pending' && !signup.volunteer_approved && isHourly;
+                      const needsHourReport = isPast && signup?.checked_in_at && !signup.volunteer_approved && !needsCheckoutConfirm && t.compensation_type !== 'hourly';
+                      const needsDisputeInput = signup?.dispute_status === 'escalated' && !signup.volunteer_reported_hours;
                       const notCheckedIn = isPast && !signup?.checked_in_at;
 
                       return (
