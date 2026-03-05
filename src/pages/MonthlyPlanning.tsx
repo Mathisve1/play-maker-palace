@@ -279,15 +279,17 @@ const MonthlyPlanning = () => {
     setShowImportDialog(true);
   };
 
-  const importTaskToPlan = async (looseTask: { id: string; title: string; event_date: string | null; location: string | null }) => {
+  const importTaskToPlan = async (looseTask: any) => {
     if (!plan) return;
     setImportingTaskIds(prev => new Set(prev).add(looseTask.id));
-    const taskDate = looseTask.event_date || `${viewYear}-${String(viewMonth).padStart(2, '0')}-01`;
+    const taskDate = looseTask.task_date || `${viewYear}-${String(viewMonth).padStart(2, '0')}-01`;
     const { data, error } = await supabase.from('monthly_plan_tasks').insert({
       plan_id: plan.id, task_date: taskDate, title: looseTask.title,
       category: 'Andere', location: looseTask.location || null,
-      start_time: '09:00', end_time: '17:00', compensation_type: 'daily',
-      daily_rate: 25, spots_available: 3,
+      start_time: '09:00', end_time: '17:00',
+      compensation_type: looseTask.compensation_type || 'daily',
+      daily_rate: 25, hourly_rate: looseTask.hourly_rate || null,
+      spots_available: looseTask.spots_available || 3,
     }).select().single();
     if (error) { toast.error(error.message); }
     else {
