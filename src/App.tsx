@@ -55,6 +55,7 @@ const CommunityClubDetail = lazy(() => import("./pages/CommunityClubDetail"));
 const CommunityPartnerDetail = lazy(() => import("./pages/CommunityPartnerDetail"));
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
 const VolunteerHelp = lazy(() => import("./pages/VolunteerHelp"));
+const StressTest = lazy(() => import("./pages/StressTest"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -125,6 +126,7 @@ const App = () => {
             <Route path="/community/club/:clubId" element={<RequireAuth><CommunityClubDetail /></RequireAuth>} />
             <Route path="/community/partner/:partnerId" element={<RequireAuth><CommunityPartnerDetail /></RequireAuth>} />
             <Route path="/help" element={<RequireAuth><VolunteerHelp /></RequireAuth>} />
+            <Route path="/stress-test" element={<RequireAuth redirectTo="/club-login"><StressTest /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
