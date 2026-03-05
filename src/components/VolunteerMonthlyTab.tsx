@@ -276,13 +276,51 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
       .eq('id', selectedSignup.id);
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Uren gerapporteerd!' : 'Hours reported!');
-    // Notify club
     const task = tasks.find(t => t.id === selectedSignup.plan_task_id);
     const plan = plans.find(p => task && p.id === task.plan_id);
     if (plan) {
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
       sendPushToClub({ clubId: plan.club_id, title: '⏰ Uren gerapporteerd', message: `${profile?.full_name || 'Een vrijwilliger'} rapporteerde ${hours}u.`, url: '/monthly-planning', type: 'hours_reported' });
     }
+    setShowHoursDialog(false); setSelectedSignup(null); setHoursInput('');
+    loadData();
+  };
+
+  const confirmCheckout = async (agree: boolean) => {
+    if (!selectedSignup) return;
+    if (agree) {
+      // Volunteer agrees with club's checkout time
+      const hours = selectedSignup.club_reported_hours || 0;
+      const task = tasks.find(t => t.id === selectedSignup.plan_task_id);
+      const rate = task?.hourly_rate || 0;
+      const finalAmount = hours * rate;
+      await supabase.from('monthly_day_signups').update({
+        volunteer_approved: true, volunteer_reported_hours: hours,
+        volunteer_reported_checkout: selectedSignup.club_reported_checkout,
+        final_hours: hours, final_amount: finalAmount,
+        hour_status: 'confirmed', dispute_status: 'none',
+      } as any).eq('id', selectedSignup.id);
+      toast.success(language === 'nl' ? `Akkoord: ${hours.toFixed(1)}u — €${finalAmount.toFixed(2)}` : `Agreed: ${hours.toFixed(1)}h — €${finalAmount.toFixed(2)}`);
+    } else {
+      // Volunteer disputes — opens dispute
+      await supabase.from('monthly_day_signups').update({
+        dispute_status: 'open', hour_status: 'disputed',
+      } as any).eq('id', selectedSignup.id);
+      toast.info(language === 'nl' ? 'Geschil geopend. Bespreek via chat met de club.' : 'Dispute opened. Discuss via chat with the club.');
+    }
+    setShowCheckoutConfirm(false); setSelectedSignup(null);
+    loadData();
+  };
+
+  const submitDisputeHours = async () => {
+    if (!selectedSignup || !hoursInput) return;
+    const hours = Number(hoursInput);
+    if (isNaN(hours) || hours <= 0) return;
+    await supabase.from('monthly_day_signups').update({
+      volunteer_reported_hours: hours, volunteer_approved: true,
+      volunteer_reported_checkout: new Date().toISOString(),
+    } as any).eq('id', selectedSignup.id);
+    toast.success(language === 'nl' ? 'Jouw uren ingediend voor het geschil.' : 'Your hours submitted for the dispute.');
     setShowHoursDialog(false); setSelectedSignup(null); setHoursInput('');
     loadData();
   };
