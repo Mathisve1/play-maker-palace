@@ -193,6 +193,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   const [daySignups, setDaySignups] = useState<DaySignup[]>([]);
   const [loading, setLoading] = useState(true);
   const [showHoursDialog, setShowHoursDialog] = useState(false);
+  const [showCheckoutConfirm, setShowCheckoutConfirm] = useState(false);
   const [selectedSignup, setSelectedSignup] = useState<DaySignup | null>(null);
   const [selectedTask, setSelectedTask] = useState<PlanTask | null>(null);
   const [hoursInput, setHoursInput] = useState('');
