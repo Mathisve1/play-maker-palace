@@ -3,6 +3,7 @@ import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Button } from '@/components/ui/button';
