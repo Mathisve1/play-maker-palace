@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Send, MessageCircle, Check, CheckCheck, Paperclip, X, Image, FileText, Music, Loader2, Mic, Square } from 'lucide-react';
@@ -97,17 +98,18 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { userId: contextUserId } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-      setUserId(session.user.id);
+      if (!contextUserId) return;
+      setUserId(contextUserId);
 
       // Determine user role for back navigation
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', session.user.id)
+        .eq('user_id', contextUserId)
         .maybeSingle();
       setUserRole(roleData?.role || 'volunteer');
 
@@ -118,7 +120,7 @@ const Chat = () => {
       // Club member initiating chat with a specific volunteer
       if (taskId && volunteerId) {
         const targetVolunteerId = volunteerId;
-        const targetClubOwnerId = clubOwnerId || session.user.id;
+        const targetClubOwnerId = clubOwnerId || contextUserId;
 
         const { data: existing } = await supabase
           .from('conversations')
@@ -148,7 +150,7 @@ const Chat = () => {
           .from('conversations')
           .select('id')
           .eq('task_id', taskId)
-          .eq('volunteer_id', session.user.id)
+          .eq('volunteer_id', contextUserId)
           .maybeSingle();
 
         if (existing) {
@@ -158,7 +160,7 @@ const Chat = () => {
             .from('conversations')
             .insert({
               task_id: taskId,
-              volunteer_id: session.user.id,
+              volunteer_id: contextUserId,
               club_owner_id: clubOwnerId,
             })
             .select('id')
@@ -184,7 +186,7 @@ const Chat = () => {
           .select('conversation_id')
           .in('conversation_id', convoIds)
           .eq('read', false)
-          .neq('sender_id', session.user.id);
+          .neq('sender_id', contextUserId);
 
         const unreadCounts: Record<string, number> = {};
         unreadMessages?.forEach(m => {
@@ -201,7 +203,7 @@ const Chat = () => {
           participantIds.add(c.volunteer_id);
           participantIds.add(c.club_owner_id);
         });
-        participantIds.delete(session.user.id);
+        participantIds.delete(contextUserId);
 
         if (participantIds.size > 0) {
           const { data: profiles } = await supabase
@@ -221,7 +223,7 @@ const Chat = () => {
       setLoading(false);
     };
     init();
-  }, [navigate, searchParams]);
+  }, [contextUserId, searchParams]);
 
   // Load messages when active conversation changes
   useEffect(() => {

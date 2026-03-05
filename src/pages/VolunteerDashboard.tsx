@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, Users, Search, CheckCircle, Heart, MessageCircle, FileSignature, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Gift, Ticket, Banknote, Award, TrendingUp, Star } from 'lucide-react';
@@ -171,14 +172,15 @@ const VolunteerDashboard = () => {
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
   // ===== ALL EXISTING DATA FETCHING & HANDLERS =====
+  const { userId: contextUserId2 } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-      setCurrentUserId(session.user.id);
+      if (!contextUserId2) return;
+      setCurrentUserId(contextUserId2);
 
       // Parallel batch 1: profile, tasks, events, signups, payments, sepa, contracts, tickets, loyalty, certs, follows
-      const uid = session.user.id;
+      const uid = contextUserId2;
       const [
         profileRes, tasksRes, eventsRes, signupsRes,
         paymentsRes, sepaRes, contractsRes, ticketsRes,
@@ -375,7 +377,7 @@ const VolunteerDashboard = () => {
       if (!alreadyPrompted) {
         const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
         const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-        const { data: existingDecls } = await supabase.from('compliance_declarations').select('id').eq('volunteer_id', session.user.id).eq('declaration_year', prevYear).eq('declaration_month', prevMonth).limit(1);
+        const { data: existingDecls } = await supabase.from('compliance_declarations').select('id').eq('volunteer_id', contextUserId2!).eq('declaration_year', prevYear).eq('declaration_month', prevMonth).limit(1);
         if (!existingDecls || existingDecls.length === 0) {
           setShowComplianceDialog(true);
           localStorage.setItem(complianceKey, 'true');
@@ -383,10 +385,8 @@ const VolunteerDashboard = () => {
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => { if (!session) navigate('/login'); });
     init();
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [contextUserId2]);
 
   // Auto-redirect volunteer to live safety event from any tab (realtime + fallback polling)
   useEffect(() => {
