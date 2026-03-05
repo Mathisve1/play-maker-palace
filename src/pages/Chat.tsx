@@ -223,7 +223,7 @@ const Chat = () => {
       setLoading(false);
     };
     init();
-  }, [navigate, searchParams]);
+  }, [contextUserId, searchParams]);
 
   // Load messages when active conversation changes
   useEffect(() => {
