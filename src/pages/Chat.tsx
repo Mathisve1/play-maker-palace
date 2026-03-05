@@ -160,7 +160,7 @@ const Chat = () => {
             .from('conversations')
             .insert({
               task_id: taskId,
-              volunteer_id: session.user.id,
+              volunteer_id: contextUserId,
               club_owner_id: clubOwnerId,
             })
             .select('id')
