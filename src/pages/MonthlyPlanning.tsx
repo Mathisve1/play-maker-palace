@@ -212,6 +212,62 @@ const MonthlyPlanning = () => {
     setSendingTicketEmailIds(prev => { const n = new Set(prev); n.delete(signup.id); return n; });
   };
 
+  const checkoutSignup = async (signup: DaySignupClub) => {
+    if (!clubId || !plan) return;
+    setCheckingOutIds(prev => new Set(prev).add(signup.id));
+    try {
+      const { data, error } = await supabase.functions.invoke('ticketing-scan', {
+        body: { barcode: signup.ticket_barcode, club_id: clubId, action: 'checkout' },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setDaySignups(prev => prev.map(s => s.id === signup.id ? {
+          ...s, checked_out_at: data.checked_out_at, hour_status: 'checkout_pending',
+          club_reported_hours: data.hours_worked, club_approved: true,
+          club_reported_checkout: data.checked_out_at,
+        } : s));
+        toast.success(`${signup.volunteer_name}: ${t3('uitgecheckt', 'sorti', 'checked out')} (${data.hours_worked?.toFixed(1)}${t3('u', 'h', 'h')})`);
+      } else { toast.error(data?.error || 'Checkout failed'); }
+    } catch (e: any) { toast.error(e.message); }
+    setCheckingOutIds(prev => { const n = new Set(prev); n.delete(signup.id); return n; });
+  };
+
+  const escalateDispute = async (signup: DaySignupClub) => {
+    const now = new Date().toISOString();
+    await supabase.from('monthly_day_signups').update({ dispute_status: 'escalated', dispute_escalated_at: now } as any).eq('id', signup.id);
+    setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, dispute_status: 'escalated', dispute_escalated_at: now } : s));
+    toast.success(t3('Geschil geëscaleerd. Auto-resolutie in 48u.', 'Litige escaladé. Résolution auto dans 48h.', 'Dispute escalated. Auto-resolve in 48h.'));
+    sendPush({ userId: signup.volunteer_id, title: '⚠️ Geschil geëscaleerd', message: 'Het geschil over je uren is geëscaleerd. Na 48u wordt het gemiddelde toegepast.', url: '/dashboard', type: 'dispute_escalated' });
+  };
+
+  const resolveDispute = async (signup: DaySignupClub, task: PlanTask) => {
+    const clubH = signup.club_reported_hours || 0;
+    const volH = signup.volunteer_reported_hours || 0;
+    // Calculate max hours from task times
+    let maxHours = 24;
+    if (task.start_time && task.end_time) {
+      const [sh, sm] = task.start_time.split(':').map(Number);
+      const [eh, em] = task.end_time.split(':').map(Number);
+      maxHours = (eh * 60 + em - sh * 60 - sm) / 60;
+    }
+    const avgHours = Math.min((clubH + volH) / 2, maxHours);
+    const finalAmount = avgHours * (task.hourly_rate || 0);
+    
+    await supabase.from('monthly_day_signups').update({
+      final_hours: avgHours, final_amount: finalAmount,
+      hour_status: 'confirmed', dispute_status: 'resolved',
+      club_approved: true, volunteer_approved: true,
+    } as any).eq('id', signup.id);
+    
+    setDaySignups(prev => prev.map(s => s.id === signup.id ? {
+      ...s, final_hours: avgHours, final_amount: finalAmount,
+      hour_status: 'confirmed', dispute_status: 'resolved',
+      club_approved: true, volunteer_approved: true,
+    } : s));
+    toast.success(`${signup.volunteer_name}: ${avgHours.toFixed(1)}${t3('u', 'h', 'h')} (gemiddelde) — €${finalAmount.toFixed(2)}`);
+    sendPush({ userId: signup.volunteer_id, title: '✅ Geschil opgelost', message: `Het gemiddelde (${avgHours.toFixed(1)}u — €${finalAmount.toFixed(2)}) is toegepast.`, url: '/dashboard', type: 'dispute_resolved' });
+  };
+
   const createPlan = async () => {
     if (!clubId) return;
     const { data: { user } } = await supabase.auth.getUser();
