@@ -275,10 +275,9 @@ const VolunteerTraining = () => {
     setScore(correct);
 
     if (correct >= globalPassingScore) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && training) {
+      if (contextUserId && training) {
         await supabase.from('volunteer_certificates').insert({
-          volunteer_id: session.user.id,
+          volunteer_id: contextUserId,
           training_id: training.id,
           club_id: training.club_id,
           score: correct,
