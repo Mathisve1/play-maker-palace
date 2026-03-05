@@ -698,7 +698,33 @@ const MonthlyPlanning = () => {
         </DialogContent>
       </Dialog>
 
-      {contractVolunteer && plan?.contract_template_id && (
+      {/* Import Task Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t3('Bestaande taak importeren', 'Importer une tâche existante', 'Import existing task')}</DialogTitle>
+            <DialogDescription>{t3('Selecteer een losse taak om toe te voegen aan dit maandplan.', 'Sélectionnez une tâche à ajouter au plan mensuel.', 'Select a task to add to this monthly plan.')}</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-80 overflow-y-auto space-y-2">
+            {looseTasks.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">{t3('Geen losse taken gevonden.', 'Aucune tâche trouvée.', 'No tasks found.')}</p>
+            ) : looseTasks.map(lt => (
+              <div key={lt.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 transition-colors">
+                <div>
+                  <p className="text-sm font-medium">{lt.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {lt.task_date ? new Date(lt.task_date).toLocaleDateString(language === 'fr' ? 'fr-BE' : 'nl-BE', { day: 'numeric', month: 'short' }) : '—'}
+                    {lt.location && ` · ${lt.location}`}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => importTaskToPlan(lt)} disabled={importingTaskIds.has(lt.id)}>
+                  {importingTaskIds.has(lt.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
         <SendContractConfirmDialog
           open={!!contractVolunteer}
           onOpenChange={(open) => { if (!open) setContractVolunteer(null); }}
