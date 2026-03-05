@@ -167,14 +167,14 @@ const VolunteerTraining = () => {
   useEffect(() => { if (trainingId) loadTraining(trainingId); }, [trainingId]);
 
   const loadTraining = async (id: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/login'); return; }
+    const uid = contextUserId;
+    if (!uid) { navigate('/login'); return; }
 
     const [tRes, mRes, qRes, certRes] = await Promise.all([
       supabase.from('academy_trainings').select('*, clubs(name)').eq('id', id).single(),
       supabase.from('training_modules').select('*').eq('training_id', id).order('sort_order'),
       supabase.from('training_quizzes').select('*').eq('training_id', id),
-      supabase.from('volunteer_certificates').select('id').eq('training_id', id).eq('volunteer_id', session.user.id).limit(1),
+      supabase.from('volunteer_certificates').select('id').eq('training_id', id).eq('volunteer_id', uid).limit(1),
     ]);
 
     setTraining(tRes.data as any);
