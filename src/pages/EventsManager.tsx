@@ -154,12 +154,16 @@ const EventsManager = () => {
       if (!cId) { setLoading(false); return; }
       setClubId(cId);
 
-      const [evRes, taskRes] = await Promise.all([
+      const [evRes, taskRes, tmplRes, mpRes] = await Promise.all([
         (supabase as any).from('events').select('*').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
         (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').eq('club_id', cId).order('task_date', { ascending: true }),
+        supabase.from('contract_templates').select('id, name').eq('club_id', cId).order('name'),
+        supabase.from('monthly_plans').select('id, title, month, year, status').eq('club_id', cId).eq('status', 'open').order('year', { ascending: false }),
       ]);
       setEvents(evRes.data || []);
       setTasks(taskRes.data || []);
+      setContractTemplates(tmplRes.data || []);
+      setMonthlyPlans((mpRes.data || []).map((p: any) => ({ id: p.id, title: p.title, month: p.month, year: p.year })));
 
       if (evRes.data?.length) {
         const eventIds = evRes.data.map((e: any) => e.id);
