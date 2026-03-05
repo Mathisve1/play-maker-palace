@@ -113,34 +113,28 @@ const PhysicalTrainings = () => {
   const [newEventSpots, setNewEventSpots] = useState(30);
   const [newEventCertDesignId, setNewEventCertDesignId] = useState('');
 
-  useEffect(() => { init(); }, []);
+  const { clubId: contextClubId } = useClubContext();
 
-  const init = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/club-login'); return; }
+  useEffect(() => {
+    if (!contextClubId) return;
+    const init = async () => {
+      const cid = contextClubId;
+      setClubId(cid);
 
-    let cid: string | null = null;
-    const { data: ownClub } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id).maybeSingle();
-    if (ownClub) cid = ownClub.id;
-    else {
-      const { data: membership } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1).maybeSingle();
-      if (membership) cid = membership.club_id;
-    }
-    if (!cid) { navigate('/club-dashboard'); return; }
-    setClubId(cid);
+      // Parallel: trainings + certificate designs + events
+      const [tData, designsData] = await Promise.all([
+        supabase.from('academy_trainings').select('id, title').eq('club_id', cid).order('title'),
+        (supabase as any).from('certificate_designs').select('id, name').eq('club_id', cid),
+      ]);
+      setTrainings((tData.data || []) as Training[]);
+      setCertDesigns((designsData.data || []) as { id: string; name: string }[]);
+      if (designsData.data && designsData.data.length > 0) setSelectedDesignId(designsData.data[0].id);
 
-    // Load trainings for dropdown
-    const { data: tData } = await supabase.from('academy_trainings').select('id, title').eq('club_id', cid).order('title');
-    setTrainings((tData || []) as Training[]);
-
-    // Load certificate designs
-    const { data: designsData } = await (supabase as any).from('certificate_designs').select('id, name').eq('club_id', cid);
-    setCertDesigns((designsData || []) as { id: string; name: string }[]);
-    if (designsData && designsData.length > 0) setSelectedDesignId(designsData[0].id);
-
-    await loadAllEvents(cid);
-    setLoading(false);
-  };
+      await loadAllEvents(cid);
+      setLoading(false);
+    };
+    init();
+  }, [contextClubId]);
 
   const loadAllEvents = async (cid: string) => {
     const { data: evData } = await supabase
