@@ -180,7 +180,7 @@ const Community = () => {
       setLoading(false);
     };
     load();
-  }, []);
+  }, [contextUserId]);
 
   const toggleFollow = async (clubId: string) => {
     if (!currentUserId) {
