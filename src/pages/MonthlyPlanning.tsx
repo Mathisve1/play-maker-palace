@@ -52,10 +52,12 @@ interface Enrollment {
 }
 interface DaySignupClub {
   id: string; enrollment_id: string; plan_task_id: string; volunteer_id: string;
-  status: string; checked_in_at: string | null; hour_status: string;
-  volunteer_reported_hours: number | null; club_reported_hours: number | null;
+  status: string; checked_in_at: string | null; checked_out_at: string | null;
+  hour_status: string; volunteer_reported_hours: number | null; club_reported_hours: number | null;
   volunteer_approved: boolean; club_approved: boolean; final_hours: number | null;
   final_amount: number | null; ticket_barcode: string | null;
+  dispute_status: string; dispute_escalated_at: string | null;
+  club_reported_checkout: string | null; volunteer_reported_checkout: string | null;
   volunteer_name?: string; volunteer_email?: string;
 }
 
