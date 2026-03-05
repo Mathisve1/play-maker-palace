@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import {
   ArrowLeft, BarChart3, Download, Filter, Loader2, PieChart, TrendingUp, Users,
   Calendar, Euro, AlertTriangle, CheckCircle2, XCircle, ClipboardCheck, Send,
