@@ -535,9 +535,9 @@ const VolunteerDashboard = () => {
 
   const handleCheckContractStatus = async (contractId: string) => {
     setCheckingContract(contractId);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=check-status`;
       const resp = await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ signature_request_id: contractId }) });
       const data = await resp.json();
