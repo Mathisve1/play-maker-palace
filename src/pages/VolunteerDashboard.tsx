@@ -377,7 +377,7 @@ const VolunteerDashboard = () => {
       if (!alreadyPrompted) {
         const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
         const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-        const { data: existingDecls } = await supabase.from('compliance_declarations').select('id').eq('volunteer_id', session.user.id).eq('declaration_year', prevYear).eq('declaration_month', prevMonth).limit(1);
+        const { data: existingDecls } = await supabase.from('compliance_declarations').select('id').eq('volunteer_id', contextUserId2!).eq('declaration_year', prevYear).eq('declaration_month', prevMonth).limit(1);
         if (!existingDecls || existingDecls.length === 0) {
           setShowComplianceDialog(true);
           localStorage.setItem(complianceKey, 'true');
