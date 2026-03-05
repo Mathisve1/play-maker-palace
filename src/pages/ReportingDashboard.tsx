@@ -23,7 +23,7 @@ import { format, subMonths, isWithinInterval, parseISO, isSameMonth, getDay } fr
 import { cn } from '@/lib/utils';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
+// jsPDF is lazy-loaded when needed for PDF export
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart as RechartsPie, Pie, Cell, LineChart, Line, Legend, AreaChart, Area

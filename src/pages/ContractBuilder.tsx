@@ -16,8 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import ClubPageLayout from '@/components/ClubPageLayout';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+// html2canvas and jsPDF are lazy-loaded when needed for PDF export
 
 // ─── Block Types (shared) ────────────────────────────────
 import { ContractBlock, BlockType } from '@/types/contract';

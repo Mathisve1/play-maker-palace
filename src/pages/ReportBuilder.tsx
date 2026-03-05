@@ -18,8 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { format, subMonths, parseISO, isWithinInterval, isSameMonth, getDay } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+// jsPDF and html2canvas are lazy-loaded when needed for PDF export
 import Logo from '@/components/Logo';
 import { useLanguage } from '@/i18n/LanguageContext';
 import {
