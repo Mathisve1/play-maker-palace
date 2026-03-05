@@ -186,7 +186,7 @@ const Chat = () => {
           .select('conversation_id')
           .in('conversation_id', convoIds)
           .eq('read', false)
-          .neq('sender_id', session.user.id);
+          .neq('sender_id', contextUserId);
 
         const unreadCounts: Record<string, number> = {};
         unreadMessages?.forEach(m => {
