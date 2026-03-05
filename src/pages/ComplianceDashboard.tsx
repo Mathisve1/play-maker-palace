@@ -86,6 +86,7 @@ const ComplianceDashboard = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const t = labels[language];
+  const { clubId: contextClubId } = useClubContext();
 
   const [loading, setLoading] = useState(true);
   const [volunteers, setVolunteers] = useState<VolunteerEntry[]>([]);
@@ -95,29 +96,7 @@ const ComplianceDashboard = () => {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-
-      // Get club
-      let activeClubId: string | null = null;
-      const { data: club } = await supabase
-        .from('clubs')
-        .select('id')
-        .eq('owner_id', session.user.id)
-        .maybeSingle();
-
-      if (club) {
-        activeClubId = club.id;
-      } else {
-        const { data: membership } = await supabase
-          .from('club_members')
-          .select('club_id')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        activeClubId = membership?.club_id || null;
-      }
-
-      if (!activeClubId) { setLoading(false); return; }
+      if (!contextClubId) { setLoading(false); return; }
 
       // Get all tasks for this club
       const { data: tasks } = await supabase
