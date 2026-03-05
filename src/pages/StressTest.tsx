@@ -192,13 +192,19 @@ const StressTestContent = () => {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" /> Events laden...
               </div>
+            ) : events.length === 0 ? (
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <p className="text-sm text-muted-foreground">Geen events gevonden voor je club.</p>
+                <Button variant="outline" size="sm" onClick={() => navigate('/events-manager')}>
+                  Eerst event aanmaken
+                </Button>
+              </div>
             ) : (
               <select
                 value={eventId}
                 onChange={e => setEventId(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm"
               >
-                <option value="">— Kies een event —</option>
                 {events.map(ev => (
                   <option key={ev.id} value={ev.id}>{ev.title}</option>
                 ))}
