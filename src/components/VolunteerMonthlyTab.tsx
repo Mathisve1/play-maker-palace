@@ -251,6 +251,13 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
     });
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Aangemeld! Wacht op bevestiging van de club.' : 'Signed up! Waiting for club confirmation.');
+    // Notify club of day signup
+    const task = tasks.find(t => t.id === planTaskId);
+    const plan = plans.find(p => task && p.id === task.plan_id);
+    if (plan) {
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+      sendPushToClub({ clubId: plan.club_id, title: '📅 Nieuwe dag-aanmelding', message: `${profile?.full_name || 'Een vrijwilliger'} heeft zich aangemeld voor ${task?.title || 'een taak'}.`, url: '/command-center', type: 'new_day_signup' });
+    }
     loadData();
   };
 
