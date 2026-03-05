@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Send, MessageCircle, Check, CheckCheck, Paperclip, X, Image, FileText, Music, Loader2, Mic, Square } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
+import { sendPush } from '@/lib/sendPush';
 
 interface Conversation {
   id: string;
