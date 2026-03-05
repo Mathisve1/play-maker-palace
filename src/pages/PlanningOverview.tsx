@@ -136,7 +136,7 @@ const PlanningOverview = () => {
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [contextClubId]);
 
   const hasDemoEvent = events.some(e => e.title === 'Demo Voetbalwedstrijd 2026');
   const looseTasks = tasks.filter(t => !t.event_id);

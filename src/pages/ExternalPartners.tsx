@@ -153,7 +153,7 @@ const ExternalPartners = () => {
       setLoading(false);
     };
     init();
-  }, []);
+  }, [contextClubId]);
 
   const fetchPartners = async (cid: string) => {
     const { data: links } = await supabase.from('partner_clubs').select('partner_id').eq('club_id', cid);

@@ -239,7 +239,7 @@ const LoyaltyPrograms = () => {
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [contextClubId]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
