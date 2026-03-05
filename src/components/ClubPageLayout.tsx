@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useClubContext } from '@/contexts/ClubContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import EditProfileDialog from '@/components/EditProfileDialog';
@@ -16,65 +17,11 @@ interface ClubPageLayoutProps {
 const ClubPageLayout = ({ children }: ClubPageLayoutProps) => {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
-  const [memberRole, setMemberRole] = useState<'bestuurder' | 'beheerder' | 'medewerker'>('medewerker');
-  const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
-  const [clubId, setClubId] = useState<string | null>(null);
-  const [clubInfo, setClubInfo] = useState<{ name: string; logo_url: string | null; sport?: string | null; location?: string | null } | null>(null);
+  const { userId, clubId, clubInfo, profile, isOwner, memberRole, loading, updateProfile, updateClubInfo } = useClubContext();
 
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/club-login'); return; }
-
-      const uid = session.user.id;
-      setUserId(uid);
-
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('full_name, email, avatar_url')
-        .eq('id', uid)
-        .maybeSingle();
-      if (prof) setProfile({ full_name: prof.full_name || '', email: prof.email || '', avatar_url: prof.avatar_url });
-
-      const { data: club } = await supabase
-        .from('clubs')
-        .select('id, name, logo_url, sport, location')
-        .eq('owner_id', uid)
-        .maybeSingle();
-
-      if (club) {
-        setClubId(club.id);
-        setClubInfo({ name: club.name, logo_url: club.logo_url, sport: club.sport, location: club.location });
-        setIsOwner(true);
-      } else {
-        const { data: membership } = await supabase
-          .from('club_members')
-          .select('club_id, role')
-          .eq('user_id', uid)
-          .maybeSingle();
-        if (membership?.club_id) {
-          setMemberRole(membership.role as any);
-          const { data: c } = await supabase
-            .from('clubs')
-            .select('id, name, logo_url, sport, location')
-            .eq('id', membership.club_id)
-            .maybeSingle();
-          if (c) {
-            setClubId(c.id);
-            setClubInfo({ name: c.name, logo_url: c.logo_url, sport: c.sport, location: c.location });
-          }
-        }
-      }
-      setLoading(false);
-    })();
-  }, [navigate]);
 
   if (loading) {
     return (
@@ -107,7 +54,7 @@ const ClubPageLayout = ({ children }: ClubPageLayoutProps) => {
           userId={userId}
           language={language}
           onProfileUpdated={(p) => {
-            setProfile({ full_name: p.full_name || '', email: p.email || '', avatar_url: p.avatar_url });
+            updateProfile({ full_name: p.full_name || '', email: p.email || '', avatar_url: p.avatar_url });
           }}
         />
       )}
@@ -117,7 +64,7 @@ const ClubPageLayout = ({ children }: ClubPageLayoutProps) => {
           clubInfo={{ name: clubInfo.name, sport: clubInfo.sport || null, location: clubInfo.location || null, logo_url: clubInfo.logo_url }}
           onClose={() => setShowSettings(false)}
           onUpdated={(info) => {
-            setClubInfo({ ...clubInfo, ...info });
+            updateClubInfo(info);
             setShowSettings(false);
           }}
         />
