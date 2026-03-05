@@ -161,7 +161,10 @@ const StressTestContent = () => {
   if (!clubId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Geen club gevonden. Log in als club-eigenaar.</p>
+        <div className="text-center space-y-3">
+          <p className="text-muted-foreground">Geen clubcontext gevonden. Log eerst in via Club Login.</p>
+          <Button variant="outline" onClick={() => navigate('/club-login')}>Naar Club Login</Button>
+        </div>
       </div>
     );
   }
