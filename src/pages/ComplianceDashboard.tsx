@@ -132,7 +132,7 @@ const ComplianceDashboard = () => {
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [contextClubId]);
 
   const filtered = volunteers.filter(v => {
     if (!searchQuery) return true;
