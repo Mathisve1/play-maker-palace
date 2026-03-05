@@ -79,9 +79,9 @@ const PlanningOverview = () => {
 
       // Fetch events, tasks, and monthly plans
       const [evRes, taskRes, monthlyRes] = await Promise.all([
-        (supabase as any).from('events').select('id, title, event_date, location').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', cId).order('task_date', { ascending: true }),
-        supabase.from('monthly_plans').select('id, year, month, title, status').eq('club_id', cId).order('year', { ascending: false }).order('month', { ascending: false }),
+        (supabase as any).from('events').select('id, title, event_date, location').eq('club_id', contextClubId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
+        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', contextClubId).order('task_date', { ascending: true }),
+        supabase.from('monthly_plans').select('id, year, month, title, status').eq('club_id', contextClubId).order('year', { ascending: false }).order('month', { ascending: false }),
       ]);
 
       setEvents(evRes.data || []);

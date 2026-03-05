@@ -198,11 +198,11 @@ const LoyaltyPrograms = () => {
       setClubId(contextClubId);
 
       // Load programs
-      const { data: programsData } = await (supabase as any).from('loyalty_programs').select('*').eq('club_id', cId).order('created_at', { ascending: false });
+      const { data: programsData } = await (supabase as any).from('loyalty_programs').select('*').eq('club_id', contextClubId).order('created_at', { ascending: false });
       setPrograms(programsData || []);
 
       // Load club tasks
-      const { data: tasksData } = await (supabase as any).from('tasks').select('id, title, loyalty_eligible, loyalty_points').eq('club_id', cId);
+      const { data: tasksData } = await (supabase as any).from('tasks').select('id, title, loyalty_eligible, loyalty_points').eq('club_id', contextClubId);
       setClubTasks(tasksData || []);
 
       // Load excluded tasks per program
