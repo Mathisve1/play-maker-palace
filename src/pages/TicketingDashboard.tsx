@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { ArrowLeft, CalendarDays, Radio, Ticket, Loader2, Send, Users, QrCode, Mail, CheckCircle2, AlertCircle, Search, UserCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -122,24 +123,16 @@ const TicketingDashboard = () => {
   const [liveSearch, setLiveSearch] = useState('');
   const [manualCheckingIds, setManualCheckingIds] = useState<Set<string>>(new Set());
 
-  // Load club & events & monthly plans
+  const { clubId: contextClubId } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/club-login'); return; }
-
-      const { data: clubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id).limit(1);
-      let cid = clubs?.[0]?.id;
-      if (!cid) {
-        const { data: members } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1);
-        cid = members?.[0]?.club_id;
-      }
-      if (!cid) { navigate('/club-dashboard'); return; }
-      setClubId(cid);
+      if (!contextClubId) { navigate('/club-dashboard'); return; }
+      setClubId(contextClubId);
 
       const [evtsRes, plansRes] = await Promise.all([
-        supabase.from('events').select('id, title, event_date').eq('club_id', cid).order('event_date', { ascending: false }),
-        supabase.from('monthly_plans').select('id, title, month, year').eq('club_id', cid).eq('status', 'published').order('year', { ascending: false }).order('month', { ascending: false }),
+        supabase.from('events').select('id, title, event_date').eq('club_id', contextClubId).order('event_date', { ascending: false }),
+        supabase.from('monthly_plans').select('id, title, month, year').eq('club_id', contextClubId).eq('status', 'published').order('year', { ascending: false }).order('month', { ascending: false }),
       ]);
       setEvents(evtsRes.data || []);
       setMonthlyPlans((plansRes.data || []) as any);
@@ -147,7 +140,7 @@ const TicketingDashboard = () => {
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [contextClubId]);
 
   // Handle selection change - detect if monthly plan
   const handleSelectChange = (value: string) => {

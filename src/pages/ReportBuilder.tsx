@@ -18,8 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { format, subMonths, parseISO, isWithinInterval, isSameMonth, getDay } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+// jsPDF and html2canvas are lazy-loaded when needed for PDF export
 import Logo from '@/components/Logo';
 import { useLanguage } from '@/i18n/LanguageContext';
 import {
@@ -518,6 +517,9 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
     if (!canvasRef.current) return;
     setExporting(true);
     try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { default: jsPDF } = await import('jspdf');
+
       const canvas = await html2canvas(canvasRef.current, {
         scale: 2, useCORS: true, backgroundColor: '#ffffff',
         logging: false, windowWidth: 900,

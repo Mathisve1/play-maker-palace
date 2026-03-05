@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2, BookOpen, Shield, CalendarDays, ClipboardList, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
@@ -69,25 +70,18 @@ const PlanningOverview = () => {
   const [monthlyDemoLoading, setMonthlyDemoLoading] = useState(false);
   const [monthlyDemoDeleteLoading, setMonthlyDemoDeleteLoading] = useState(false);
 
+  const { clubId: contextClubId } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-
-      const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
-      let cId = ownedClubs?.[0]?.id || null;
-      if (!cId) {
-        const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
-        cId = memberships?.[0]?.club_id || null;
-      }
-      if (!cId) { setLoading(false); return; }
-      setClubId(cId);
+      if (!contextClubId) { setLoading(false); return; }
+      setClubId(contextClubId);
 
       // Fetch events, tasks, and monthly plans
       const [evRes, taskRes, monthlyRes] = await Promise.all([
-        (supabase as any).from('events').select('id, title, event_date, location').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', cId).order('task_date', { ascending: true }),
-        supabase.from('monthly_plans').select('id, year, month, title, status').eq('club_id', cId).order('year', { ascending: false }).order('month', { ascending: false }),
+        (supabase as any).from('events').select('id, title, event_date, location').eq('club_id', contextClubId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
+        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', contextClubId).order('task_date', { ascending: true }),
+        supabase.from('monthly_plans').select('id, year, month, title, status').eq('club_id', contextClubId).order('year', { ascending: false }).order('month', { ascending: false }),
       ]);
 
       setEvents(evRes.data || []);
@@ -142,7 +136,7 @@ const PlanningOverview = () => {
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [contextClubId]);
 
   const hasDemoEvent = events.some(e => e.title === 'Demo Voetbalwedstrijd 2026');
   const looseTasks = tasks.filter(t => !t.event_id);

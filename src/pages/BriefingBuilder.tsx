@@ -21,7 +21,7 @@ import {
   Clock, FileText, Coffee, CheckSquare, Phone, Route, PenLine, Package,
   Layers, Image as ImageIcon, MapPin,
 } from 'lucide-react';
-import jsPDF from 'jspdf';
+// jsPDF is lazy-loaded when needed for PDF export
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

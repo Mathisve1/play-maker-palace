@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Gift, Users, Pencil, ArrowLeft, ToggleLeft, ToggleRight, Star, X, Check } from 'lucide-react';
@@ -189,26 +190,19 @@ const LoyaltyPrograms = () => {
   // Task exclusion management
   const [managingExclusions, setManagingExclusions] = useState<string | null>(null);
 
+  const { clubId: contextClubId } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-
-      const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
-      let cId = ownedClubs?.[0]?.id || null;
-      if (!cId) {
-        const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
-        cId = memberships?.[0]?.club_id || null;
-      }
-      if (!cId) { navigate('/club-dashboard'); return; }
-      setClubId(cId);
+      if (!contextClubId) { navigate('/club-dashboard'); return; }
+      setClubId(contextClubId);
 
       // Load programs
-      const { data: programsData } = await (supabase as any).from('loyalty_programs').select('*').eq('club_id', cId).order('created_at', { ascending: false });
+      const { data: programsData } = await (supabase as any).from('loyalty_programs').select('*').eq('club_id', contextClubId).order('created_at', { ascending: false });
       setPrograms(programsData || []);
 
       // Load club tasks
-      const { data: tasksData } = await (supabase as any).from('tasks').select('id, title, loyalty_eligible, loyalty_points').eq('club_id', cId);
+      const { data: tasksData } = await (supabase as any).from('tasks').select('id, title, loyalty_eligible, loyalty_points').eq('club_id', contextClubId);
       setClubTasks(tasksData || []);
 
       // Load excluded tasks per program
@@ -245,7 +239,7 @@ const LoyaltyPrograms = () => {
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [contextClubId]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
