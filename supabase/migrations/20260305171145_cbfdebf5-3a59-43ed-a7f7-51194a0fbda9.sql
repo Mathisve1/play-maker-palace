@@ -1,0 +1,1 @@
+UPDATE public.club_members SET role = 'bestuurder' WHERE user_id = '0d66233b-d936-49d8-9e83-181c1765cb7c' AND club_id = 'a06fa3d7-ca0a-48a5-9269-9c0a0ffdc1a3';
