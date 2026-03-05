@@ -104,41 +104,45 @@ const Community = () => {
   const [togglingFollow, setTogglingFollow] = useState<string | null>(null);
   const [sports, setSports] = useState<string[]>([]);
 
+  const { userId: contextUserId } = useClubContext();
+
   useEffect(() => {
     const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) setCurrentUserId(session.user.id);
+      if (contextUserId) setCurrentUserId(contextUserId);
 
-      // Fetch clubs
-      const { data: clubsData } = await supabase.from('clubs').select('*');
+      // Parallel: clubs, follows, all tasks (for counts)
+      const [clubsRes, followsRes] = await Promise.all([
+        supabase.from('clubs').select('*'),
+        contextUserId
+          ? supabase.from('club_follows').select('club_id').eq('user_id', contextUserId)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const clubsData = clubsRes.data;
       if (!clubsData) { setLoading(false); return; }
 
-      // Fetch follows
-      let followSet = new Set<string>();
-      if (session) {
-        const { data: follows } = await supabase.from('club_follows').select('club_id').eq('user_id', session.user.id);
-        followSet = new Set(follows?.map(f => f.club_id) || []);
-        setFollowingIds(followSet);
-      }
+      const followSet = new Set<string>(followsRes.data?.map((f: any) => f.club_id) || []);
+      setFollowingIds(followSet);
 
-      // Fetch stats per club
       const clubIds = clubsData.map(c => c.id);
-      
-      // Tasks count
-      const { data: tasksData } = await supabase.from('tasks').select('club_id').in('club_id', clubIds).eq('status', 'open');
-      const taskCounts: Record<string, number> = {};
-      tasksData?.forEach(t => { taskCounts[t.club_id] = (taskCounts[t.club_id] || 0) + 1; });
 
-      // Unique volunteers (via signups)
-      const { data: signupsData } = await supabase.from('task_signups').select('task_id, volunteer_id');
-      const volunteerSets: Record<string, Set<string>> = {};
-      const taskClubMap: Record<string, string> = {};
-      tasksData?.forEach(t => { taskClubMap[t.club_id] = t.club_id; });
-      // We need task->club mapping for all tasks
-      const { data: allTasks } = await supabase.from('tasks').select('id, club_id').in('club_id', clubIds);
+      // Parallel batch 2: tasks, signups, events, partners
+      const [tasksRes, signupsRes, eventsRes, partnersRes, allTasksRes] = await Promise.all([
+        supabase.from('tasks').select('club_id').in('club_id', clubIds).eq('status', 'open'),
+        supabase.from('task_signups').select('task_id, volunteer_id'),
+        (supabase as any).from('events').select('club_id').in('club_id', clubIds),
+        supabase.from('external_partners').select('club_id').in('club_id', clubIds),
+        supabase.from('tasks').select('id, club_id').in('club_id', clubIds),
+      ]);
+
+      const taskCounts: Record<string, number> = {};
+      tasksRes.data?.forEach(t => { taskCounts[t.club_id] = (taskCounts[t.club_id] || 0) + 1; });
+
       const fullTaskClubMap: Record<string, string> = {};
-      allTasks?.forEach(t => { fullTaskClubMap[t.id] = t.club_id; });
-      signupsData?.forEach(s => {
+      allTasksRes.data?.forEach((t: any) => { fullTaskClubMap[t.id] = t.club_id; });
+
+      const volunteerSets: Record<string, Set<string>> = {};
+      signupsRes.data?.forEach((s: any) => {
         const cid = fullTaskClubMap[s.task_id];
         if (cid) {
           if (!volunteerSets[cid]) volunteerSets[cid] = new Set();
@@ -146,15 +150,11 @@ const Community = () => {
         }
       });
 
-      // Events count
-      const { data: eventsData } = await (supabase as any).from('events').select('club_id').in('club_id', clubIds);
       const eventCounts: Record<string, number> = {};
-      eventsData?.forEach((e: any) => { eventCounts[e.club_id] = (eventCounts[e.club_id] || 0) + 1; });
+      eventsRes.data?.forEach((e: any) => { eventCounts[e.club_id] = (eventCounts[e.club_id] || 0) + 1; });
 
-      // Partners count
-      const { data: partnersData } = await supabase.from('external_partners').select('club_id').in('club_id', clubIds);
       const partnerCounts: Record<string, number> = {};
-      partnersData?.forEach(p => { partnerCounts[p.club_id] = (partnerCounts[p.club_id] || 0) + 1; });
+      partnersRes.data?.forEach((p: any) => { partnerCounts[p.club_id] = (partnerCounts[p.club_id] || 0) + 1; });
 
       const enriched: ClubWithStats[] = clubsData.map(c => ({
         ...c,
