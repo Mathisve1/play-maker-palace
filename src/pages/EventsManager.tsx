@@ -192,6 +192,23 @@ const EventsManager = () => {
     return parts.join(', ') || null;
   };
 
+  const buildTaskLocationString = () => {
+    const parts: string[] = [];
+    if (newTask.street.trim()) {
+      parts.push(newTask.street.trim() + (newTask.number.trim() ? ' ' + newTask.number.trim() : ''));
+    }
+    if (newTask.postalCode.trim() || newTask.city.trim()) {
+      parts.push([newTask.postalCode.trim(), newTask.city.trim()].filter(Boolean).join(' '));
+    }
+    if (newTask.country.trim() && newTask.country.trim() !== 'België') {
+      parts.push(newTask.country.trim());
+    }
+    if (newTask.locationNote.trim()) {
+      parts.push('(' + newTask.locationNote.trim() + ')');
+    }
+    return parts.join(', ') || null;
+  };
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !newEvent.title.trim()) return;
@@ -210,19 +227,56 @@ const EventsManager = () => {
     setCreatingEvent(false);
   };
 
+  const resetNewTask = () => setNewTask({
+    title: '', description: '', task_date: '', spots_available: 1,
+    street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '',
+    start_time: '', end_time: '', briefing_time: '', briefing_location: '', notes: '',
+    compensation_type: 'none', expense_amount: '', hourly_rate: '', estimated_hours: '', daily_rate: '',
+    contract_template_id: '', add_to_monthly_plan: false,
+  });
+
   const handleCreateLooseTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !newTask.title.trim()) return;
     setCreatingTask(true);
-    const { data, error } = await (supabase as any).from('tasks').insert({
+    const locationStr = buildTaskLocationString();
+    const insertData: Record<string, unknown> = {
       club_id: clubId, title: newTask.title.trim(), description: newTask.description.trim() || null,
-      task_date: newTask.task_date || null, location: newTask.location.trim() || null,
+      task_date: newTask.task_date || null, location: locationStr,
       spots_available: newTask.spots_available,
-    }).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
-    if (error) toast.error(error.message);
+      start_time: newTask.start_time || null, end_time: newTask.end_time || null,
+      briefing_time: newTask.briefing_time || null, briefing_location: newTask.briefing_location.trim() || null,
+      notes: newTask.notes.trim() || null,
+      contract_template_id: newTask.contract_template_id || null,
+      compensation_type: newTask.compensation_type === 'none' ? 'fixed' : newTask.compensation_type,
+      expense_reimbursement: newTask.compensation_type === 'fixed' && newTask.expense_amount ? true : false,
+      expense_amount: newTask.compensation_type === 'fixed' && newTask.expense_amount ? parseFloat(newTask.expense_amount) : null,
+      hourly_rate: newTask.compensation_type === 'hourly' && newTask.hourly_rate ? parseFloat(newTask.hourly_rate) : null,
+      estimated_hours: newTask.compensation_type === 'hourly' && newTask.estimated_hours ? parseFloat(newTask.estimated_hours) : null,
+      daily_rate: newTask.compensation_type === 'daily' && newTask.daily_rate ? parseFloat(newTask.daily_rate) : null,
+    };
+    const { data, error } = await (supabase as any).from('tasks').insert(insertData).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
+    if (error) { toast.error(error.message); }
     else if (data) {
+      if (newTask.add_to_monthly_plan && selectedMonthlyPlanId) {
+        const compType = newTask.compensation_type === 'none' ? 'fixed' : newTask.compensation_type;
+        await (supabase as any).from('monthly_plan_tasks').insert({
+          plan_id: selectedMonthlyPlanId,
+          title: newTask.title.trim(),
+          description: newTask.description.trim() || null,
+          task_date: newTask.task_date ? newTask.task_date.slice(0, 10) : new Date().toISOString().slice(0, 10),
+          location: locationStr,
+          spots_available: newTask.spots_available,
+          start_time: newTask.start_time || null,
+          end_time: newTask.end_time || null,
+          compensation_type: compType,
+          hourly_rate: compType === 'hourly' && newTask.hourly_rate ? parseFloat(newTask.hourly_rate) : null,
+          estimated_hours: compType === 'hourly' && newTask.estimated_hours ? parseFloat(newTask.estimated_hours) : null,
+          daily_rate: compType === 'daily' && newTask.daily_rate ? parseFloat(newTask.daily_rate) : null,
+        });
+      }
       toast.success(t3('Taak aangemaakt!', 'Tâche créée!', 'Task created!'));
-      setTasks(prev => [...prev, data]); setShowCreateTask(false); setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1 });
+      setTasks(prev => [...prev, data]); setShowCreateTask(false); resetNewTask(); setSelectedMonthlyPlanId('');
       if (clubId) sendPushToFollowers({ clubId, title: '🆕 Nieuwe taak', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/community', type: 'club_new_task' });
     }
     setCreatingTask(false);
