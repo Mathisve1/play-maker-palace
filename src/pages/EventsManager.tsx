@@ -554,15 +554,100 @@ const EventsManager = () => {
               onSubmit={handleCreateLooseTask} className="bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden">
                <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{t3('Nieuwe losse taak', 'Nouvelle tâche libre', 'New loose task')}</h2>
                <div className="grid gap-4 sm:grid-cols-2">
+                 {/* Title & Description */}
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required maxLength={200} value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
+
+                 {/* Date & Spots */}
                  <div><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={newTask.task_date} onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
-                 <div><label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label><input type="text" value={newTask.location} onChange={e => setNewTask(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
                  <div><label className={labelClass}>{t3('Plaatsen', 'Places', 'Spots')}</label><input type="number" min={1} value={newTask.spots_available} onChange={e => setNewTask(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
+
+                 {/* Location (multi-field) */}
+                 <div className="sm:col-span-2">
+                   <label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label>
+                   <div className="grid gap-3 sm:grid-cols-4">
+                     <div className="sm:col-span-3"><input type="text" placeholder={t3('Straat', 'Rue', 'Street')} maxLength={200} value={newTask.street} onChange={e => setNewTask(p => ({ ...p, street: e.target.value }))} className={inputClass} /></div>
+                     <div><input type="text" placeholder={t3('Nr.', 'N°', 'No.')} maxLength={20} value={newTask.number} onChange={e => setNewTask(p => ({ ...p, number: e.target.value }))} className={inputClass} /></div>
+                     <div><input type="text" placeholder={t3('Postcode', 'Code postal', 'Postal code')} maxLength={10} value={newTask.postalCode} onChange={e => setNewTask(p => ({ ...p, postalCode: e.target.value }))} className={inputClass} /></div>
+                     <div><input type="text" placeholder={t3('Stad', 'Ville', 'City')} maxLength={100} value={newTask.city} onChange={e => setNewTask(p => ({ ...p, city: e.target.value }))} className={inputClass} /></div>
+                     <div><input type="text" placeholder={t3('Land', 'Pays', 'Country')} maxLength={60} value={newTask.country} onChange={e => setNewTask(p => ({ ...p, country: e.target.value }))} className={inputClass} /></div>
+                     <div><input type="text" placeholder={t3('Extra info (bv. zaal, ingang...)', 'Info supplémentaire', 'Extra info')} maxLength={200} value={newTask.locationNote} onChange={e => setNewTask(p => ({ ...p, locationNote: e.target.value }))} className={inputClass} /></div>
+                   </div>
+                 </div>
+
+                 {/* Times */}
+                 <div><label className={labelClass}>{t3('Starttijd', 'Heure de début', 'Start time')}</label><input type="datetime-local" value={newTask.start_time} onChange={e => setNewTask(p => ({ ...p, start_time: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Eindtijd', 'Heure de fin', 'End time')}</label><input type="datetime-local" value={newTask.end_time} onChange={e => setNewTask(p => ({ ...p, end_time: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Briefing tijd', 'Heure de briefing', 'Briefing time')}</label><input type="datetime-local" value={newTask.briefing_time} onChange={e => setNewTask(p => ({ ...p, briefing_time: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Briefing locatie', 'Lieu de briefing', 'Briefing location')}</label><input type="text" maxLength={300} value={newTask.briefing_location} onChange={e => setNewTask(p => ({ ...p, briefing_location: e.target.value }))} className={inputClass} /></div>
+
+                 {/* Notes */}
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Notities', 'Notes', 'Notes')}</label><input type="text" maxLength={500} value={newTask.notes} onChange={e => setNewTask(p => ({ ...p, notes: e.target.value }))} className={inputClass} /></div>
+
+                 {/* Compensation */}
+                 <div className="sm:col-span-2">
+                   <label className={labelClass}>{t3('Vergoeding', 'Rémunération', 'Compensation')}</label>
+                   <div className="flex flex-wrap gap-2 mt-1">
+                     {(['none', 'fixed', 'hourly', 'daily'] as const).map(ct => (
+                       <button key={ct} type="button" onClick={() => setNewTask(p => ({ ...p, compensation_type: ct }))}
+                         className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${newTask.compensation_type === ct ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
+                         {ct === 'none' ? t3('Geen', 'Aucune', 'None') : ct === 'fixed' ? t3('Vast bedrag', 'Montant fixe', 'Fixed amount') : ct === 'hourly' ? t3('Uurloon', 'Taux horaire', 'Hourly rate') : t3('Dagvergoeding', 'Indemnité journalière', 'Daily rate')}
+                       </button>
+                     ))}
+                   </div>
+                 </div>
+                 {newTask.compensation_type === 'fixed' && (
+                   <div><label className={labelClass}>{t3('Bedrag (€)', 'Montant (€)', 'Amount (€)')}</label><input type="number" min={0} step={0.01} value={newTask.expense_amount} onChange={e => setNewTask(p => ({ ...p, expense_amount: e.target.value }))} className={inputClass} /></div>
+                 )}
+                 {newTask.compensation_type === 'hourly' && (
+                   <>
+                     <div><label className={labelClass}>{t3('Uurloon (€)', 'Taux horaire (€)', 'Hourly rate (€)')}</label><input type="number" min={0} step={0.01} value={newTask.hourly_rate} onChange={e => setNewTask(p => ({ ...p, hourly_rate: e.target.value }))} className={inputClass} /></div>
+                     <div><label className={labelClass}>{t3('Geschatte uren', 'Heures estimées', 'Estimated hours')}</label><input type="number" min={0} step={0.5} value={newTask.estimated_hours} onChange={e => setNewTask(p => ({ ...p, estimated_hours: e.target.value }))} className={inputClass} /></div>
+                   </>
+                 )}
+                 {newTask.compensation_type === 'daily' && (
+                   <div><label className={labelClass}>{t3('Dagvergoeding (€)', 'Indemnité journalière (€)', 'Daily rate (€)')}</label><input type="number" min={0} step={0.01} value={newTask.daily_rate} onChange={e => setNewTask(p => ({ ...p, daily_rate: e.target.value }))} className={inputClass} /></div>
+                 )}
+                 {newTask.compensation_type === 'hourly' && (
+                   <div className="sm:col-span-2">
+                     <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+                       ⏱️ {t3('Bij uurloon wordt het klokkingsysteem (check-in/out) automatisch geactiveerd.', 'Avec un taux horaire, le système de pointage (check-in/out) est automatiquement activé.', 'With hourly rate, the clock-in/out system is automatically activated.')}
+                     </p>
+                   </div>
+                 )}
+
+                 {/* Contract template */}
+                 {contractTemplates.length > 0 && (
+                   <div className="sm:col-span-2">
+                     <label className={labelClass}>{t3('Contractsjabloon', 'Modèle de contrat', 'Contract template')}</label>
+                     <select value={newTask.contract_template_id} onChange={e => setNewTask(p => ({ ...p, contract_template_id: e.target.value }))} className={inputClass}>
+                       <option value="">{t3('Geen sjabloon', 'Aucun modèle', 'No template')}</option>
+                       {contractTemplates.map(tmpl => <option key={tmpl.id} value={tmpl.id}>{tmpl.name}</option>)}
+                     </select>
+                   </div>
+                 )}
+
+                 {/* Monthly plan link */}
+                 {monthlyPlans.length > 0 && (
+                   <div className="sm:col-span-2 bg-muted/30 rounded-xl p-4 border border-border">
+                     <label className="flex items-center gap-2 cursor-pointer">
+                       <input type="checkbox" checked={newTask.add_to_monthly_plan} onChange={e => { setNewTask(p => ({ ...p, add_to_monthly_plan: e.target.checked })); if (!e.target.checked) setSelectedMonthlyPlanId(''); }} className="w-4 h-4 rounded border-input accent-primary" />
+                       <span className="text-sm font-medium text-foreground">{t3('Toevoegen aan maandplanning', 'Ajouter au planning mensuel', 'Add to monthly plan')}</span>
+                     </label>
+                     {newTask.add_to_monthly_plan && (
+                       <div className="mt-3">
+                         <select value={selectedMonthlyPlanId} onChange={e => setSelectedMonthlyPlanId(e.target.value)} className={inputClass}>
+                           <option value="">{t3('Selecteer maandplanning...', 'Sélectionnez le planning...', 'Select monthly plan...')}</option>
+                           {monthlyPlans.map(mp => <option key={mp.id} value={mp.id}>{mp.title} ({mp.month}/{mp.year})</option>)}
+                         </select>
+                       </div>
+                     )}
+                   </div>
+                 )}
                </div>
                <div className="flex justify-end gap-3 mt-6">
-                 <button type="button" onClick={() => setShowCreateTask(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
-                 <button type="submit" disabled={creatingTask || !newTask.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
+                 <button type="button" onClick={() => { setShowCreateTask(false); resetNewTask(); }} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
+                 <button type="submit" disabled={creatingTask || !newTask.title.trim() || (newTask.add_to_monthly_plan && !selectedMonthlyPlanId)} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
                    {creatingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Aanmaken', 'Créer', 'Create')}
                 </button>
               </div>
