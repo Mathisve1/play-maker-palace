@@ -172,14 +172,15 @@ const VolunteerDashboard = () => {
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
   // ===== ALL EXISTING DATA FETCHING & HANDLERS =====
+  const { userId: contextUserId2 } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-      setCurrentUserId(session.user.id);
+      if (!contextUserId2) return;
+      setCurrentUserId(contextUserId2);
 
       // Parallel batch 1: profile, tasks, events, signups, payments, sepa, contracts, tickets, loyalty, certs, follows
-      const uid = session.user.id;
+      const uid = contextUserId2;
       const [
         profileRes, tasksRes, eventsRes, signupsRes,
         paymentsRes, sepaRes, contractsRes, ticketsRes,
