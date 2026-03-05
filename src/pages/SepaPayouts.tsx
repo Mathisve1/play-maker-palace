@@ -127,7 +127,7 @@ const SepaPayouts = () => {
     const { data: tasks } = await supabase
       .from('tasks')
       .select('id, title, task_date, expense_amount, compensation_type')
-      .eq('club_id', resolvedClubId)
+      .eq('club_id', contextClubId!)
       .eq('expense_reimbursement', true);
 
     if (!tasks || tasks.length === 0) { setLoading(false); return; }
