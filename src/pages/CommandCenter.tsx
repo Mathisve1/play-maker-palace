@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
