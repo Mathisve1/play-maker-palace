@@ -98,11 +98,12 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { userId: contextUserId } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-      setUserId(session.user.id);
+      if (!contextUserId) return;
+      setUserId(contextUserId);
 
       // Determine user role for back navigation
       const { data: roleData } = await supabase
