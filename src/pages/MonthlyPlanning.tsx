@@ -725,6 +725,7 @@ const MonthlyPlanning = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {contractVolunteer && plan?.contract_template_id && (
         <SendContractConfirmDialog
           open={!!contractVolunteer}
           onOpenChange={(open) => { if (!open) setContractVolunteer(null); }}
