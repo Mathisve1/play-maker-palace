@@ -200,7 +200,7 @@ const SepaPayouts = () => {
     const { data: batchHistory } = await supabase
       .from('sepa_batches')
       .select('id, batch_reference, batch_message, total_amount, item_count, status, created_at, signer_name, docuseal_document_url')
-      .eq('club_id', resolvedClubId)
+      .eq('club_id', contextClubId!)
       .order('created_at', { ascending: false })
       .limit(20);
 
