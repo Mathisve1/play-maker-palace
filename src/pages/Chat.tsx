@@ -203,7 +203,7 @@ const Chat = () => {
           participantIds.add(c.volunteer_id);
           participantIds.add(c.club_owner_id);
         });
-        participantIds.delete(session.user.id);
+        participantIds.delete(contextUserId);
 
         if (participantIds.size > 0) {
           const { data: profiles } = await supabase
