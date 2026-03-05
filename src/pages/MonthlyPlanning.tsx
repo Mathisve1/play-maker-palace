@@ -3,6 +3,7 @@ import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Button } from '@/components/ui/button';
@@ -99,21 +100,12 @@ const MonthlyPlanning = () => {
     daily_rate: '25', hourly_rate: '5', estimated_hours: '8', spots_available: '3',
   });
 
-  // Load club
+  const { clubId: contextClubId } = useClubContext();
+
+  // Sync clubId from context
   useEffect(() => {
-    const loadClub = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/club-login'); return; }
-      const { data: club } = await supabase.from('clubs').select('id').eq('owner_id', user.id).maybeSingle();
-      if (!club) {
-        const { data: member } = await supabase.from('club_members').select('club_id').eq('user_id', user.id).limit(1).maybeSingle();
-        if (member) setClubId(member.club_id);
-      } else {
-        setClubId(club.id);
-      }
-    };
-    loadClub();
-  }, [navigate]);
+    if (contextClubId) setClubId(contextClubId);
+  }, [contextClubId]);
 
   // Load plan + tasks + enrollments
   useEffect(() => {

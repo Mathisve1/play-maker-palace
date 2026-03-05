@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -94,11 +95,11 @@ const ZonePlanning = () => {
   const [volunteerSafetyRoles, setVolunteerSafetyRoles] = useState<VolunteerSafetyRole[]>([]);
   const [eventId, setEventId] = useState<string | null>(null);
 
+  const { userId: contextUserId } = useClubContext();
+
   const fetchData = useCallback(async () => {
-    if (!taskId) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/login'); return; }
-    setUserId(session.user.id);
+    if (!taskId || !contextUserId) return;
+    setUserId(contextUserId);
 
     const [taskRes, zoneRes, signupRes] = await Promise.all([
       (supabase as any).from('tasks').select('id, title, task_date, location, event_id').eq('id', taskId).maybeSingle(),

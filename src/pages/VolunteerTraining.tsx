@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useOptionalClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Award, Video, FileText, Sparkles, Image as ImageIcon, HelpCircle } from 'lucide-react';
@@ -143,6 +144,7 @@ const VolunteerTraining = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const l = labels[language];
+  const { userId: contextUserId } = useOptionalClubContext() || { userId: null };
 
   const [loading, setLoading] = useState(true);
   const [training, setTraining] = useState<{ id: string; title: string; description: string | null; club_id: string; clubs?: { name: string } } | null>(null);
@@ -166,14 +168,14 @@ const VolunteerTraining = () => {
   useEffect(() => { if (trainingId) loadTraining(trainingId); }, [trainingId]);
 
   const loadTraining = async (id: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/login'); return; }
+    const uid = contextUserId;
+    if (!uid) { navigate('/login'); return; }
 
     const [tRes, mRes, qRes, certRes] = await Promise.all([
       supabase.from('academy_trainings').select('*, clubs(name)').eq('id', id).single(),
       supabase.from('training_modules').select('*').eq('training_id', id).order('sort_order'),
       supabase.from('training_quizzes').select('*').eq('training_id', id),
-      supabase.from('volunteer_certificates').select('id').eq('training_id', id).eq('volunteer_id', session.user.id).limit(1),
+      supabase.from('volunteer_certificates').select('id').eq('training_id', id).eq('volunteer_id', uid).limit(1),
     ]);
 
     setTraining(tRes.data as any);
@@ -274,10 +276,9 @@ const VolunteerTraining = () => {
     setScore(correct);
 
     if (correct >= globalPassingScore) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && training) {
+      if (contextUserId && training) {
         await supabase.from('volunteer_certificates').insert({
-          volunteer_id: session.user.id,
+          volunteer_id: contextUserId,
           training_id: training.id,
           club_id: training.club_id,
           score: correct,

@@ -12,6 +12,7 @@ import {
   Wand2, Bot, MessageSquare, CalendarDays, MapPin, UserCheck, QrCode, Send
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { useClubContext } from '@/contexts/ClubContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -768,26 +769,22 @@ const AcademyBuilder = () => {
   const [generatingTraining, setGeneratingTraining] = useState(false);
   const [aiReplaceMode, setAiReplaceMode] = useState(true);
 
-  useEffect(() => { init(); }, []);
+  const { clubId: contextClubId } = useClubContext();
 
-  const init = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/club-login'); return; }
-    const { data: ownClub } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id).maybeSingle();
-    let cid: string | null = null;
-    if (ownClub) { cid = ownClub.id; }
-    else {
-      const { data: membership } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1).maybeSingle();
-      if (membership) { cid = membership.club_id; }
-      else { navigate('/club-dashboard'); return; }
-    }
-    setClubId(cid!);
-    await loadTrainings(cid!);
-    // Load certificate designs
-    const { data: designsData } = await (supabase as any).from('certificate_designs').select('id, name').eq('club_id', cid!);
-    setCertDesigns((designsData || []) as { id: string; name: string }[]);
-    setLoading(false);
-  };
+  useEffect(() => {
+    if (!contextClubId) return;
+    const init = async () => {
+      setClubId(contextClubId);
+      const [trainingsRes, designsRes] = await Promise.all([
+        supabase.from('academy_trainings').select('*').eq('club_id', contextClubId).order('created_at', { ascending: false }),
+        (supabase as any).from('certificate_designs').select('id, name').eq('club_id', contextClubId),
+      ]);
+      setTrainings((trainingsRes.data as Training[]) || []);
+      setCertDesigns((designsRes.data || []) as { id: string; name: string }[]);
+      setLoading(false);
+    };
+    init();
+  }, [contextClubId]);
 
   const loadTrainings = async (cid: string) => {
     const { data } = await supabase.from('academy_trainings').select('*').eq('club_id', cid).order('created_at', { ascending: false });

@@ -462,40 +462,23 @@ const ClubOwnerDashboard = () => {
       setClubInfo({ name: activeClub.name, sport: activeClub.sport, location: activeClub.location, logo_url: activeClub.logo_url });
       setClubStripeId(activeClub.stripe_account_id || null);
 
-      // Fetch contract templates
-      const { data: templatesData } = await supabase
-        .from('contract_templates')
-        .select('id, name')
-        .eq('club_id', activeClub.id)
-        .order('created_at', { ascending: false });
-      setContractTemplates(templatesData || []);
+      // Parallel: contract templates, trainings, partners, events, tasks
+      const [templatesRes, trainingsRes, partnersRes, eventsRes, tasksRes] = await Promise.all([
+        supabase.from('contract_templates').select('id, name').eq('club_id', activeClub.id).order('created_at', { ascending: false }),
+        supabase.from('academy_trainings').select('id, title').eq('club_id', activeClub.id).eq('is_published', true).order('title'),
+        supabase.from('external_partners').select('id, name, external_payroll').eq('club_id', activeClub.id).order('name'),
+        (supabase as any).from('events').select('*').eq('club_id', activeClub.id).order('event_date', { ascending: true }),
+        supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)').eq('club_id', activeClub.id).order('task_date', { ascending: true }),
+      ]);
 
-      // Fetch academy trainings for this club
-      const { data: trainingsData } = await supabase
-        .from('academy_trainings')
-        .select('id, title')
-        .eq('club_id', activeClub.id)
-        .eq('is_published', true)
-        .order('title');
-      setAcademyTrainings(trainingsData || []);
-
-      // Fetch external partners for this club
-      const { data: partnersData } = await supabase
-        .from('external_partners')
-        .select('id, name, external_payroll')
-        .eq('club_id', activeClub.id)
-        .order('name');
-      setExternalPartners(partnersData || []);
-
-      const { data: eventsData } = await (supabase as any)
-        .from('events')
-        .select('*')
-        .eq('club_id', activeClub.id)
-        .order('event_date', { ascending: true });
-      setEvents(eventsData || []);
+      setContractTemplates(templatesRes.data || []);
+      setAcademyTrainings(trainingsRes.data || []);
+      setExternalPartners(partnersRes.data || []);
+      setEvents(eventsRes.data || []);
 
       // Fetch event groups
-      if (eventsData && eventsData.length > 0) {
+      const eventsData = eventsRes.data || [];
+      if (eventsData.length > 0) {
         const eventIds = eventsData.map((e: any) => e.id);
         const { data: groupsData } = await (supabase as any)
           .from('event_groups')
@@ -505,14 +488,8 @@ const ClubOwnerDashboard = () => {
         setEventGroups(groupsData || []);
       }
 
-      // Fetch tasks (includes event tasks and loose tasks)
-      const { data: tasksData } = await supabase
-        .from('tasks')
-        .select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)')
-        .eq('club_id', activeClub.id)
-        .order('task_date', { ascending: true });
-
       // Add event_id and event_group_id from a separate query since types might not be updated
+      const tasksData = tasksRes.data;
       if (tasksData) {
         const { data: taskExtras } = await (supabase as any)
           .from('tasks')
@@ -531,11 +508,14 @@ const ClubOwnerDashboard = () => {
 
       if (tasksData && tasksData.length > 0) {
         const taskIds = tasksData.map(t => t.id);
-        const { data: signupsData } = await supabase
-          .from('task_signups')
-          .select('id, task_id, volunteer_id, status, signed_up_at')
-          .in('task_id', taskIds);
+        // Parallel: signups, payments, signatures
+        const [signupsRes, paymentsRes, sigsRes] = await Promise.all([
+          supabase.from('task_signups').select('id, task_id, volunteer_id, status, signed_up_at').in('task_id', taskIds),
+          supabase.from('volunteer_payments').select('task_id, volunteer_id, status, stripe_receipt_url, paid_at').eq('club_id', activeClub.id),
+          supabase.from('signature_requests').select('id, task_id, volunteer_id, status, document_url').in('task_id', taskIds),
+        ]);
 
+        const signupsData = signupsRes.data;
         if (signupsData && signupsData.length > 0) {
           const volunteerIds = [...new Set(signupsData.map(s => s.volunteer_id))];
           const { data: profiles } = await supabase
@@ -564,25 +544,17 @@ const ClubOwnerDashboard = () => {
           fetchBatchComplianceData(volunteerIds).then(setComplianceMap).catch(console.error);
         }
 
-        // Fetch payments
-        const { data: paymentsData } = await supabase
-          .from('volunteer_payments')
-          .select('task_id, volunteer_id, status, stripe_receipt_url, paid_at')
-          .eq('club_id', activeClub.id);
-        if (paymentsData) {
+        // Process payments
+        if (paymentsRes.data) {
           const payMap: Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }> = {};
-          paymentsData.forEach(p => { payMap[`${p.task_id}-${p.volunteer_id}`] = { status: p.status, receipt_url: p.stripe_receipt_url, paid_at: p.paid_at }; });
+          paymentsRes.data.forEach(p => { payMap[`${p.task_id}-${p.volunteer_id}`] = { status: p.status, receipt_url: p.stripe_receipt_url, paid_at: p.paid_at }; });
           setVolunteerPayments(payMap);
         }
 
-        // Fetch signatures
-        const { data: sigsData } = await supabase
-          .from('signature_requests')
-          .select('id, task_id, volunteer_id, status, document_url')
-          .in('task_id', taskIds);
-        if (sigsData) {
+        // Process signatures
+        if (sigsRes.data) {
           const sigMap: Record<string, { status: string; document_url?: string | null; id?: string }> = {};
-          sigsData.forEach(s => { sigMap[`${s.task_id}-${s.volunteer_id}`] = { status: s.status, document_url: s.document_url, id: s.id }; });
+          sigsRes.data.forEach(s => { sigMap[`${s.task_id}-${s.volunteer_id}`] = { status: s.status, document_url: s.document_url, id: s.id }; });
           setSignatureStatuses(sigMap);
         }
       }

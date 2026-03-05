@@ -472,10 +472,9 @@ const VolunteerDashboard = () => {
 
   // ===== HANDLERS =====
   const handleSignup = async (taskId: string) => {
+    if (!currentUserId) return;
     setSigningUp(taskId);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const { error } = await supabase.from('task_signups').insert({ task_id: taskId, volunteer_id: session.user.id });
+    const { error } = await supabase.from('task_signups').insert({ task_id: taskId, volunteer_id: currentUserId });
     if (error) { toast.error(error.message); } else {
       toast.success(t.volunteer.step3Title + '!');
       setSignups(prev => [...prev, { task_id: taskId, status: 'pending' }]);
@@ -485,9 +484,8 @@ const VolunteerDashboard = () => {
   };
 
   const handleCancelSignup = async (taskId: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const { error } = await supabase.from('task_signups').delete().eq('task_id', taskId).eq('volunteer_id', session.user.id);
+    if (!currentUserId) return;
+    const { error } = await supabase.from('task_signups').delete().eq('task_id', taskId).eq('volunteer_id', currentUserId);
     if (error) { toast.error(error.message); } else {
       setSignups(prev => prev.filter(s => s.task_id !== taskId));
       setSignupCounts(prev => ({ ...prev, [taskId]: Math.max((prev[taskId] || 1) - 1, 0) }));
@@ -537,9 +535,9 @@ const VolunteerDashboard = () => {
 
   const handleCheckContractStatus = async (contractId: string) => {
     setCheckingContract(contractId);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=check-status`;
       const resp = await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ signature_request_id: contractId }) });
       const data = await resp.json();
