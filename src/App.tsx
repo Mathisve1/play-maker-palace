@@ -126,6 +126,7 @@ const App = () => {
             <Route path="/community/club/:clubId" element={<RequireAuth><CommunityClubDetail /></RequireAuth>} />
             <Route path="/community/partner/:partnerId" element={<RequireAuth><CommunityPartnerDetail /></RequireAuth>} />
             <Route path="/help" element={<RequireAuth><VolunteerHelp /></RequireAuth>} />
+            <Route path="/stress-test" element={<RequireAuth redirectTo="/club-login"><StressTest /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
