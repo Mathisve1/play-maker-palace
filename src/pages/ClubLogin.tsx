@@ -34,29 +34,8 @@ const ClubLogin = () => {
         return;
       }
 
-      const [{ data: ownedClubs }, { data: memberships }] = await Promise.all([
-        supabase
-          .from('clubs')
-          .select('id')
-          .eq('owner_id', userId)
-          .limit(1),
-        supabase
-          .from('club_members')
-          .select('club_id')
-          .eq('user_id', userId)
-          .limit(1),
-      ]);
-
-      const hasClubAccess = Boolean((ownedClubs?.length ?? 0) > 0 || (memberships?.length ?? 0) > 0);
-      if (!hasClubAccess) {
-        toast.error(t3(
-          'Dit account heeft geen toegang tot een club. Gebruik de vrijwilligers login.',
-          'Ce compte n\'a pas accès à un club. Utilisez la connexion bénévole.',
-          'This account has no club access. Use the volunteer login.'
-        ));
-        await supabase.auth.signOut();
-        return;
-      }
+      // Toegangscontrole gebeurt in de beveiligde pagina's/context.
+      // Hier blokkeren we geen login meer op queryresultaten om false negatives te vermijden.
 
       toast.success(t3('Ingelogd!', 'Connecté !', 'Logged in!'));
       navigate('/club-dashboard', { replace: true });
