@@ -41,6 +41,7 @@ interface EventOption {
 }
 
 const StressTestContent = () => {
+  const navigate = useNavigate();
   const clubCtx = useOptionalClubContext();
   const clubId = clubCtx?.clubId;
   const [running, setRunning] = useState(false);
@@ -52,16 +53,35 @@ const StressTestContent = () => {
 
   useEffect(() => {
     const loadEvents = async () => {
-      if (!clubId) { setLoadingEvents(false); return; }
-      const { data } = await supabase
+      if (!clubId) {
+        setEvents([]);
+        setEventId('');
+        setLoadingEvents(false);
+        return;
+      }
+
+      setLoadingEvents(true);
+      const { data, error } = await supabase
         .from('events')
         .select('id, title, club_id')
         .eq('club_id', clubId)
         .order('created_at', { ascending: false })
         .limit(20);
-      setEvents(data || []);
+
+      if (error) {
+        toast.error(`Events laden mislukt: ${error.message}`);
+        setEvents([]);
+        setEventId('');
+        setLoadingEvents(false);
+        return;
+      }
+
+      const loadedEvents = data || [];
+      setEvents(loadedEvents);
+      setEventId(prev => (loadedEvents.some(ev => ev.id === prev) ? prev : loadedEvents[0]?.id || ''));
       setLoadingEvents(false);
     };
+
     loadEvents();
   }, [clubId]);
 
