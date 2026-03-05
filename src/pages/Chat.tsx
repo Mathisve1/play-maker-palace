@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Send, MessageCircle, Check, CheckCheck, Paperclip, X, Image, FileText, Music, Loader2, Mic, Square } from 'lucide-react';

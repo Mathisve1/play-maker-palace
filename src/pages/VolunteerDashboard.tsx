@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, Users, Search, CheckCircle, Heart, MessageCircle, FileSignature, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Gift, Ticket, Banknote, Award, TrendingUp, Star } from 'lucide-react';
