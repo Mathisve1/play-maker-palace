@@ -247,20 +247,12 @@ const ReportingDashboard = () => {
   const [selectedVolunteerProfile, setSelectedVolunteerProfile] = useState<VolunteerReport | null>(null);
 
   // ── Init ────────────────────────────────────────────────────────
+  const { clubId: contextClubId } = useClubContext();
+
   useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/club-login'); return; }
-      const { data: clubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id).limit(1);
-      let cid = clubs?.[0]?.id;
-      if (!cid) {
-        const { data: members } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1);
-        cid = members?.[0]?.club_id;
-      }
-      if (!cid) { navigate('/club-dashboard'); return; }
-      setClubId(cid);
-    })();
-  }, [navigate]);
+    if (!contextClubId) return;
+    setClubId(contextClubId);
+  }, [contextClubId]);
 
   // ── Load data ──────────────────────────────────────────────────
   useEffect(() => {

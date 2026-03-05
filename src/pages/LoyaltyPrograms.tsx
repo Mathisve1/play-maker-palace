@@ -190,19 +190,12 @@ const LoyaltyPrograms = () => {
   // Task exclusion management
   const [managingExclusions, setManagingExclusions] = useState<string | null>(null);
 
+  const { clubId: contextClubId } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-
-      const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
-      let cId = ownedClubs?.[0]?.id || null;
-      if (!cId) {
-        const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
-        cId = memberships?.[0]?.club_id || null;
-      }
-      if (!cId) { navigate('/club-dashboard'); return; }
-      setClubId(cId);
+      if (!contextClubId) { navigate('/club-dashboard'); return; }
+      setClubId(contextClubId);
 
       // Load programs
       const { data: programsData } = await (supabase as any).from('loyalty_programs').select('*').eq('club_id', cId).order('created_at', { ascending: false });

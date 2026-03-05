@@ -139,28 +139,16 @@ const ExternalPartners = () => {
   const [trackingRecords, setTrackingRecords] = useState<TrackingRecord[]>([]);
   const [loadingTracking, setLoadingTracking] = useState(false);
 
+  const { clubId: contextClubId, clubInfo } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-
-      const { data: ownedClubs } = await supabase.from('clubs').select('id, name').eq('owner_id', session.user.id);
-      let cid = ownedClubs?.[0]?.id;
-      let cname = ownedClubs?.[0]?.name || '';
-      if (!cid) {
-        const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
-        cid = memberships?.[0]?.club_id;
-        if (cid) {
-          const { data: c } = await supabase.from('clubs').select('name').eq('id', cid).maybeSingle();
-          cname = c?.name || '';
-        }
-      }
-      if (!cid) { navigate('/club-dashboard'); return; }
-      setClubId(cid);
-      setClubName(cname);
-      await fetchPartners(cid);
+      if (!contextClubId) { navigate('/club-dashboard'); return; }
+      setClubId(contextClubId);
+      setClubName(clubInfo?.name || '');
+      await fetchPartners(contextClubId);
       
-      const { data: evts } = await supabase.from('events').select('id, title, event_date').eq('club_id', cid).order('event_date', { ascending: false });
+      const { data: evts } = await supabase.from('events').select('id, title, event_date').eq('club_id', contextClubId).order('event_date', { ascending: false });
       setEvents(evts || []);
       setLoading(false);
     };

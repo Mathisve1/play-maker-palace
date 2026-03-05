@@ -70,19 +70,12 @@ const PlanningOverview = () => {
   const [monthlyDemoLoading, setMonthlyDemoLoading] = useState(false);
   const [monthlyDemoDeleteLoading, setMonthlyDemoDeleteLoading] = useState(false);
 
+  const { clubId: contextClubId } = useClubContext();
+
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-
-      const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
-      let cId = ownedClubs?.[0]?.id || null;
-      if (!cId) {
-        const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
-        cId = memberships?.[0]?.club_id || null;
-      }
-      if (!cId) { setLoading(false); return; }
-      setClubId(cId);
+      if (!contextClubId) { setLoading(false); return; }
+      setClubId(contextClubId);
 
       // Fetch events, tasks, and monthly plans
       const [evRes, taskRes, monthlyRes] = await Promise.all([
