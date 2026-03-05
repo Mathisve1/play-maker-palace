@@ -271,6 +271,32 @@ const MonthlyPlanning = () => {
     sendPush({ userId: signup.volunteer_id, title: '✅ Geschil opgelost', message: `Het gemiddelde (${avgHours.toFixed(1)}u — €${finalAmount.toFixed(2)}) is toegepast.`, url: '/dashboard', type: 'dispute_resolved' });
   };
 
+  const loadLooseTasks = async () => {
+    if (!clubId) return;
+    const { data } = await supabase.from('tasks').select('id, title, event_date, location')
+      .eq('club_id', clubId).order('event_date', { ascending: false }).limit(50);
+    setLooseTasks(data || []);
+    setShowImportDialog(true);
+  };
+
+  const importTaskToPlan = async (looseTask: { id: string; title: string; event_date: string | null; location: string | null }) => {
+    if (!plan) return;
+    setImportingTaskIds(prev => new Set(prev).add(looseTask.id));
+    const taskDate = looseTask.event_date || `${viewYear}-${String(viewMonth).padStart(2, '0')}-01`;
+    const { data, error } = await supabase.from('monthly_plan_tasks').insert({
+      plan_id: plan.id, task_date: taskDate, title: looseTask.title,
+      category: 'Andere', location: looseTask.location || null,
+      start_time: '09:00', end_time: '17:00', compensation_type: 'daily',
+      daily_rate: 25, spots_available: 3,
+    }).select().single();
+    if (error) { toast.error(error.message); }
+    else {
+      setTasks(prev => [...prev, data as unknown as PlanTask]);
+      toast.success(`"${looseTask.title}" ${t3('geïmporteerd', 'importé', 'imported')}`);
+    }
+    setImportingTaskIds(prev => { const n = new Set(prev); n.delete(looseTask.id); return n; });
+  };
+
   const createPlan = async () => {
     if (!clubId) return;
     const { data: { user } } = await supabase.auth.getUser();
