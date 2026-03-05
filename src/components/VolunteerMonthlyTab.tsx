@@ -514,6 +514,27 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                                 )}
                               </>
                             ) : null}
+                            {needsCheckoutConfirm && (
+                              <div className="flex flex-col gap-1">
+                                <p className="text-[10px] text-muted-foreground">{language === 'nl' ? `Club zegt: ${signup!.club_reported_hours?.toFixed(1)}u` : `Club says: ${signup!.club_reported_hours?.toFixed(1)}h`}</p>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="outline" className="h-6 text-[10px] text-green-700" onClick={() => { setSelectedSignup(signup!); confirmCheckout(true); }}>
+                                    <CheckCircle className="w-3 h-3 mr-0.5" /> {language === 'nl' ? 'Akkoord' : 'Agree'}
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-6 text-[10px] text-destructive" onClick={() => { setSelectedSignup(signup!); confirmCheckout(false); }}>
+                                    <XCircle className="w-3 h-3 mr-0.5" /> {language === 'nl' ? 'Betwist' : 'Dispute'}
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                            {needsDisputeInput && (
+                              <Button size="sm" variant="outline" className="h-7 text-xs text-destructive" onClick={() => {
+                                setSelectedSignup(signup!); setSelectedTask(t);
+                                setHoursInput(''); setShowHoursDialog(true);
+                              }}>
+                                <AlertTriangle className="w-3 h-3 mr-1" /> {language === 'nl' ? 'Jouw uren invoeren' : 'Enter your hours'}
+                              </Button>
+                            )}
                             {needsHourReport && (
                               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
                                 setSelectedSignup(signup!); setSelectedTask(t);
@@ -522,9 +543,15 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                                 <Clock className="w-3 h-3 mr-1" /> {l.confirmHours}
                               </Button>
                             )}
-                            {signup?.volunteer_approved && (
+                            {signup?.dispute_status === 'open' && (
+                              <Badge variant="destructive" className="text-[10px]">{language === 'nl' ? 'Geschil open' : 'Dispute open'}</Badge>
+                            )}
+                            {signup?.dispute_status === 'escalated' && (
+                              <Badge variant="destructive" className="text-[10px]">⚠️ {language === 'nl' ? 'Geëscaleerd' : 'Escalated'}</Badge>
+                            )}
+                            {signup?.volunteer_approved && signup?.hour_status === 'confirmed' && (
                               <Badge variant="outline" className="text-[10px] text-green-600 border-green-200">
-                                <CheckCircle className="w-3 h-3 mr-0.5" /> {signup.final_hours ? `${signup.final_hours}u ✓` : l.hoursConfirmed}
+                                <CheckCircle className="w-3 h-3 mr-0.5" /> {signup.final_hours ? `${signup.final_hours.toFixed(1)}u ✓` : l.hoursConfirmed}
                               </Badge>
                             )}
                           </div>
