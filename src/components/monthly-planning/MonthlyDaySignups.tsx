@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Ticket, Mail, UserCheck, UserX, Loader2 } from 'lucide-react';
+import { Clock, Ticket, Mail, UserCheck, UserX, Loader2, LogOut } from 'lucide-react';
 
 interface PlanTask {
   id: string;
@@ -10,6 +10,7 @@ interface PlanTask {
   start_time: string | null;
   end_time: string | null;
   location: string | null;
+  compensation_type: string;
 }
 
 interface DaySignupClub {
@@ -19,6 +20,10 @@ interface DaySignupClub {
   volunteer_id: string;
   status: string;
   ticket_barcode: string | null;
+  checked_in_at: string | null;
+  checked_out_at: string | null;
+  hour_status: string;
+  dispute_status: string;
   volunteer_name?: string;
   volunteer_email?: string;
 }
@@ -30,17 +35,19 @@ interface MonthlyDaySignupsProps {
   language: string;
   generatingTicketIds: Set<string>;
   sendingTicketEmailIds: Set<string>;
+  checkingOutIds: Set<string>;
   t3: (nl: string, fr: string, en: string) => string;
   onAssign: (id: string) => void;
   onReject: (id: string) => void;
   onGenerateTicket: (signup: DaySignupClub) => void;
   onSendTicketEmail: (signup: DaySignupClub) => void;
+  onCheckout: (signup: DaySignupClub) => void;
 }
 
 const MonthlyDaySignups = ({
   pendingSignups, assignedSignups, tasks, language,
-  generatingTicketIds, sendingTicketEmailIds, t3,
-  onAssign, onReject, onGenerateTicket, onSendTicketEmail,
+  generatingTicketIds, sendingTicketEmailIds, checkingOutIds, t3,
+  onAssign, onReject, onGenerateTicket, onSendTicketEmail, onCheckout,
 }: MonthlyDaySignupsProps) => {
   const locale = language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE';
 
@@ -99,6 +106,9 @@ const MonthlyDaySignups = ({
                 if (!task) return null;
                 const d = new Date(task.task_date);
                 const hasTicket = !!ds.ticket_barcode;
+                const isCheckedIn = !!ds.checked_in_at;
+                const isCheckedOut = !!ds.checked_out_at;
+                const isHourly = task.compensation_type === 'hourly';
                 return (
                   <div key={ds.id} className="flex items-center gap-3 p-3 rounded-lg border">
                     <div className="text-center min-w-[40px]">
@@ -107,22 +117,32 @@ const MonthlyDaySignups = ({
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <Badge className="bg-green-600 text-[10px]">{t3('Toegekend', 'Attribué', 'Assigned')}</Badge>
                         {hasTicket && <Badge variant="outline" className="text-[10px]">Ticket: {ds.ticket_barcode}</Badge>}
+                        {isCheckedIn && <Badge variant="outline" className="text-[10px] border-green-300 text-green-700">✓ {t3('Ingecheckt', 'Enregistré', 'Checked in')}</Badge>}
+                        {isCheckedOut && <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">⏹ {t3('Uitgecheckt', 'Sorti', 'Checked out')}</Badge>}
+                        {ds.dispute_status === 'open' && <Badge variant="destructive" className="text-[10px]">{t3('Geschil', 'Litige', 'Dispute')}</Badge>}
+                        {ds.dispute_status === 'escalated' && <Badge variant="destructive" className="text-[10px]">⚠️ {t3('Geëscaleerd', 'Escaladé', 'Escalated')}</Badge>}
                       </div>
                     </div>
-                    <div className="flex gap-1.5 shrink-0">
+                    <div className="flex gap-1.5 shrink-0 flex-wrap">
                       {!hasTicket && (
                         <Button size="sm" variant="outline" className="gap-1" onClick={() => onGenerateTicket(ds)} disabled={generatingTicketIds.has(ds.id)}>
                           {generatingTicketIds.has(ds.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ticket className="w-3.5 h-3.5" />}
-                          {t3('Ticket genereren', 'Générer ticket', 'Generate ticket')}
+                          {t3('Ticket', 'Ticket', 'Ticket')}
                         </Button>
                       )}
-                      {hasTicket && ds.volunteer_email && (
+                      {hasTicket && ds.volunteer_email && !isCheckedIn && (
                         <Button size="sm" variant="outline" className="gap-1" onClick={() => onSendTicketEmail(ds)} disabled={sendingTicketEmailIds.has(ds.id)}>
                           {sendingTicketEmailIds.has(ds.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                          {t3('E-mail ticket', 'E-mail ticket', 'Email ticket')}
+                          {t3('E-mail', 'E-mail', 'Email')}
+                        </Button>
+                      )}
+                      {isCheckedIn && !isCheckedOut && isHourly && (
+                        <Button size="sm" variant="outline" className="gap-1 text-orange-700" onClick={() => onCheckout(ds)} disabled={checkingOutIds.has(ds.id)}>
+                          {checkingOutIds.has(ds.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
+                          {t3('Uitklokken', 'Pointer sortie', 'Clock out')}
                         </Button>
                       )}
                     </div>

@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Euro, CheckCircle, Banknote, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Clock, Euro, CheckCircle, Banknote, Loader2, AlertTriangle, MessageCircle } from 'lucide-react';
 
 interface PlanTask {
   id: string;
@@ -9,6 +10,8 @@ interface PlanTask {
   compensation_type: string;
   daily_rate: number | null;
   hourly_rate: number | null;
+  start_time: string | null;
+  end_time: string | null;
 }
 
 interface DaySignupClub {
@@ -16,12 +19,18 @@ interface DaySignupClub {
   plan_task_id: string;
   volunteer_id: string;
   checked_in_at: string | null;
+  checked_out_at: string | null;
   hour_status: string;
   volunteer_reported_hours: number | null;
+  club_reported_hours: number | null;
   club_approved: boolean;
   volunteer_approved: boolean;
   final_hours: number | null;
   final_amount: number | null;
+  dispute_status: string;
+  dispute_escalated_at: string | null;
+  club_reported_checkout: string | null;
+  volunteer_reported_checkout: string | null;
   volunteer_name?: string;
 }
 
@@ -34,18 +43,111 @@ interface MonthlyHourConfirmationProps {
   onConfirmHours: (signup: DaySignupClub, task: PlanTask) => void;
   onGeneratePayout: () => void;
   onExportSepa: () => void;
+  onEscalateDispute?: (signup: DaySignupClub) => void;
+  onResolveDispute?: (signup: DaySignupClub, task: PlanTask) => void;
 }
 
 const MonthlyHourConfirmation = ({
   daySignups, tasks, language, generatingPayout, t3,
-  onConfirmHours, onGeneratePayout, onExportSepa,
+  onConfirmHours, onGeneratePayout, onExportSepa, onEscalateDispute, onResolveDispute,
 }: MonthlyHourConfirmationProps) => {
   const locale = language === 'fr' ? 'fr-BE' : language === 'en' ? 'en-GB' : 'nl-BE';
-  const pendingConfirmation = daySignups.filter(ds => ds.checked_in_at && ds.volunteer_approved && !ds.club_approved);
+  
+  // Pending: checked in, volunteer approved hours, club hasn't approved yet
+  const pendingConfirmation = daySignups.filter(ds => ds.checked_in_at && ds.volunteer_approved && !ds.club_approved && ds.dispute_status === 'none');
+  
+  // Disputes: open or escalated
+  const disputes = daySignups.filter(ds => ds.dispute_status === 'open' || ds.dispute_status === 'escalated');
+  
+  // Checkout pending: volunteer needs to confirm checkout time
+  const checkoutPending = daySignups.filter(ds => ds.hour_status === 'checkout_pending' && !ds.volunteer_approved);
+  
   const confirmedSignups = daySignups.filter(ds => ds.hour_status === 'confirmed');
+
+  const formatTime = (iso: string | null) => {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <>
+      {/* Checkout pending confirmation */}
+      {checkoutPending.length > 0 && (
+        <Card className="border-orange-300">
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4 text-orange-600" /> {t3('Wacht op uitcheck-bevestiging', 'En attente de confirmation de sortie', 'Awaiting checkout confirmation')} ({checkoutPending.length})</CardTitle></CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">{t3('Deze vrijwilligers moeten hun uitchecktijd bevestigen.', 'Ces bénévoles doivent confirmer leur heure de sortie.', 'These volunteers need to confirm their checkout time.')}</p>
+            <div className="space-y-2">
+              {checkoutPending.map(ds => {
+                const task = tasks.find(t => t.id === ds.plan_task_id);
+                if (!task) return null;
+                return (
+                  <div key={ds.id} className="flex items-center gap-3 p-3 rounded-lg border bg-orange-50 dark:bg-orange-900/10">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t3('Ingecheckt', 'Enregistré', 'Checked in')}: {formatTime(ds.checked_in_at)} · {t3('Uitgecheckt', 'Sorti', 'Checked out')}: {formatTime(ds.checked_out_at)}
+                        {ds.club_reported_hours && ` · ${ds.club_reported_hours.toFixed(1)}${t3('u', 'h', 'h')}`}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-orange-600 border-orange-300 text-[10px]">{t3('Wacht op vrijwilliger', 'Attente bénévole', 'Awaiting volunteer')}</Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Disputes */}
+      {disputes.length > 0 && (
+        <Card className="border-destructive/50">
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-destructive" /> {t3('Geschillen', 'Litiges', 'Disputes')} ({disputes.length})</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {disputes.map(ds => {
+                const task = tasks.find(t => t.id === ds.plan_task_id);
+                if (!task) return null;
+                const isEscalated = ds.dispute_status === 'escalated';
+                const escalatedAt = ds.dispute_escalated_at ? new Date(ds.dispute_escalated_at) : null;
+                const hoursUntilAuto = escalatedAt ? Math.max(0, 48 - ((Date.now() - escalatedAt.getTime()) / 3600000)) : null;
+                
+                return (
+                  <div key={ds.id} className="p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {t3('Club', 'Club', 'Club')}: {formatTime(ds.club_reported_checkout)} ({ds.club_reported_hours?.toFixed(1) || '?'}h) · 
+                          {t3('Vrijwilliger', 'Bénévole', 'Volunteer')}: {formatTime(ds.volunteer_reported_checkout)} ({ds.volunteer_reported_hours?.toFixed(1) || '?'}h)
+                        </p>
+                        {isEscalated && hoursUntilAuto !== null && hoursUntilAuto > 0 && (
+                          <p className="text-xs text-destructive mt-1">
+                            ⏰ {t3(`Auto-resolutie in ${Math.ceil(hoursUntilAuto)}u`, `Résolution auto dans ${Math.ceil(hoursUntilAuto)}h`, `Auto-resolve in ${Math.ceil(hoursUntilAuto)}h`)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-1.5">
+                        {!isEscalated && onEscalateDispute && (
+                          <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => onEscalateDispute(ds)}>
+                            <AlertTriangle className="w-3.5 h-3.5" /> {t3('Escaleer', 'Escalader', 'Escalate')}
+                          </Button>
+                        )}
+                        {isEscalated && hoursUntilAuto !== null && hoursUntilAuto <= 0 && onResolveDispute && (
+                          <Button size="sm" variant="outline" className="gap-1" onClick={() => onResolveDispute(ds, task)}>
+                            <CheckCircle className="w-3.5 h-3.5" /> {t3('Gemiddelde toepassen', 'Appliquer la moyenne', 'Apply average')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {pendingConfirmation.length > 0 && (
         <Card>
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> {t3('Uren bevestigen', 'Confirmer les heures', 'Confirm hours')}</CardTitle></CardHeader>
