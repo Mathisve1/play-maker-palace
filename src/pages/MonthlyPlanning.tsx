@@ -91,7 +91,7 @@ const MonthlyPlanning = () => {
   const [sendingTicketEmailIds, setSendingTicketEmailIds] = useState<Set<string>>(new Set());
   const [checkingOutIds, setCheckingOutIds] = useState<Set<string>>(new Set());
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [looseTasks, setLooseTasks] = useState<{ id: string; title: string; event_date: string | null; location: string | null }[]>([]);
+  const [looseTasks, setLooseTasks] = useState<any[]>([]);
   const [importingTaskIds, setImportingTaskIds] = useState<Set<string>>(new Set());
   const [taskForm, setTaskForm] = useState({
     title: '', category: 'Algemeen', description: '', location: '',
