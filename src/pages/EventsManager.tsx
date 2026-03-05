@@ -206,7 +206,11 @@ const EventsManager = () => {
       spots_available: newTask.spots_available,
     }).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(t3('Taak aangemaakt!', 'Tâche créée!', 'Task created!')); setTasks(prev => [...prev, data]); setShowCreateTask(false); setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1 }); }
+    else if (data) {
+      toast.success(t3('Taak aangemaakt!', 'Tâche créée!', 'Task created!'));
+      setTasks(prev => [...prev, data]); setShowCreateTask(false); setNewTask({ title: '', description: '', task_date: '', location: '', spots_available: 1 });
+      if (clubId) sendPushToFollowers({ clubId, title: '🆕 Nieuwe taak', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/community', type: 'club_new_task' });
+    }
     setCreatingTask(false);
   };
 
