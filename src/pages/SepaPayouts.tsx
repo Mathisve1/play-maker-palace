@@ -80,6 +80,7 @@ const validateIban = (iban: string): boolean => {
 const SepaPayouts = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { clubId: contextClubId, clubInfo, userId: contextUserId } = useClubContext();
 
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [loading, setLoading] = useState(true);
@@ -113,40 +114,14 @@ const SepaPayouts = () => {
 
   useEffect(() => {
     init();
-  }, []);
+  }, [contextClubId]);
 
   const init = async () => {
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/club-login'); return; }
-    setCurrentUserId(session.user.id);
-
-    // Find club
-    const { data: club } = await supabase
-      .from('clubs')
-      .select('id, name')
-      .eq('owner_id', session.user.id)
-      .maybeSingle();
-
-    let resolvedClubId = club?.id;
-    let resolvedClubName = club?.name || '';
-
-    if (!resolvedClubId) {
-      const { data: membership } = await supabase
-        .from('club_members')
-        .select('club_id')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      if (membership) {
-        resolvedClubId = membership.club_id;
-        const { data: c } = await supabase.from('clubs').select('name').eq('id', membership.club_id).single();
-        resolvedClubName = c?.name || '';
-      }
-    }
-
-    if (!resolvedClubId) { navigate('/club-login'); return; }
-    setClubId(resolvedClubId);
-    setClubName(resolvedClubName);
+    if (!contextClubId || !contextUserId) { setLoading(false); return; }
+    setCurrentUserId(contextUserId);
+    setClubId(contextClubId);
+    setClubName(clubInfo?.name || '');
 
     // Fetch tasks with expense reimbursement
     const { data: tasks } = await supabase
