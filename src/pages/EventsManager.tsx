@@ -49,8 +49,18 @@ const EventsManager = () => {
 
   // Create loose task
   const [showCreateTask, setShowCreateTask] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', description: '', task_date: '', location: '', spots_available: 1 });
+  const [newTask, setNewTask] = useState({
+    title: '', description: '', task_date: '', spots_available: 1,
+    street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '',
+    start_time: '', end_time: '', briefing_time: '', briefing_location: '', notes: '',
+    compensation_type: 'none' as 'none' | 'fixed' | 'hourly' | 'daily',
+    expense_amount: '', hourly_rate: '', estimated_hours: '', daily_rate: '',
+    contract_template_id: '', add_to_monthly_plan: false,
+  });
   const [creatingTask, setCreatingTask] = useState(false);
+  const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [monthlyPlans, setMonthlyPlans] = useState<{ id: string; title: string; month: number; year: number }[]>([]);
+  const [selectedMonthlyPlanId, setSelectedMonthlyPlanId] = useState('');
 
   // Event management
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
