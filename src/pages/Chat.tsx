@@ -109,7 +109,7 @@ const Chat = () => {
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', session.user.id)
+        .eq('user_id', contextUserId)
         .maybeSingle();
       setUserRole(roleData?.role || 'volunteer');
 
