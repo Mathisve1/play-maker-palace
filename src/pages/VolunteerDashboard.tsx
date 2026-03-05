@@ -385,10 +385,8 @@ const VolunteerDashboard = () => {
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => { if (!session) navigate('/login'); });
     init();
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [contextUserId2]);
 
   // Auto-redirect volunteer to live safety event from any tab (realtime + fallback polling)
   useEffect(() => {
