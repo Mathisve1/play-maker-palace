@@ -37,10 +37,18 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
 
     const check = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<{ data: { session: null } }>((resolve) =>
+            setTimeout(() => resolve({ data: { session: null } }), 4000)
+          ),
+        ]);
+
+        const session = sessionResult.data?.session ?? null;
         if (cancelled) return;
 
         if (!session) {
+          setAuthenticatedUserId(null);
           navigate(redirectTo, { replace: true });
           return;
         }
