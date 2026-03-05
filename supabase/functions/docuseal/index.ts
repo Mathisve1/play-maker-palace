@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
                 .update(updatePayload)
                 .eq("id", sigReq.id);
 
-              // Notify the club owner
+              // Notify the club owner (in-app)
               await adminClient.from("notifications").insert({
                 user_id: sigReq.club_owner_id,
                 title: "Contract ondertekend",
@@ -74,6 +74,22 @@ Deno.serve(async (req) => {
                 type: "contract_signed",
                 metadata: { task_id: sigReq.task_id, signature_request_id: sigReq.id },
               });
+
+              // Send push notification to club owner
+              try {
+                const pushUrl = `${supabaseUrl}/functions/v1/send-native-push`;
+                await fetch(pushUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceRoleKey}` },
+                  body: JSON.stringify({
+                    user_id: sigReq.club_owner_id,
+                    title: '📝 Contract ondertekend',
+                    message: 'Een vrijwilliger heeft het contract ondertekend.',
+                    url: '/command-center',
+                    type: 'contract_signed',
+                  }),
+                });
+              } catch (e) { console.warn('Push notification failed:', e); }
 
               console.log("Webhook: Updated signature request", sigReq.id, "to completed, document_url:", documentUrl);
             } else {
