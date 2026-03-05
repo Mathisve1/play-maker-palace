@@ -484,9 +484,8 @@ const VolunteerDashboard = () => {
   };
 
   const handleCancelSignup = async (taskId: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const { error } = await supabase.from('task_signups').delete().eq('task_id', taskId).eq('volunteer_id', session.user.id);
+    if (!currentUserId) return;
+    const { error } = await supabase.from('task_signups').delete().eq('task_id', taskId).eq('volunteer_id', currentUserId);
     if (error) { toast.error(error.message); } else {
       setSignups(prev => prev.filter(s => s.task_id !== taskId));
       setSignupCounts(prev => ({ ...prev, [taskId]: Math.max((prev[taskId] || 1) - 1, 0) }));
