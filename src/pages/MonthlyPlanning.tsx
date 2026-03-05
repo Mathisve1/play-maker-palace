@@ -369,6 +369,7 @@ const MonthlyPlanning = () => {
     await supabase.from('monthly_day_signups').update({ club_reported_hours: finalHours, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' }).eq('id', ds.id);
     toast.success(`${ds.volunteer_name}: ${finalHours}${t3('u', 'h', 'h')} ${t3('bevestigd', 'confirmé', 'confirmed')} (€${finalAmount.toFixed(2)})`);
     setDaySignups(prev => prev.map(s => s.id === ds.id ? { ...s, club_approved: true, final_hours: finalHours, final_amount: finalAmount, hour_status: 'confirmed' } : s));
+    sendPush({ userId: ds.volunteer_id, title: '✅ Uren bevestigd', message: `Je uren (${finalHours}u — €${finalAmount.toFixed(2)}) zijn bevestigd door de club.`, url: '/dashboard', type: 'hours_confirmed' });
   };
 
   return (

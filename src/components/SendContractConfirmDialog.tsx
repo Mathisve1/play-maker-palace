@@ -426,6 +426,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
       const result = await resp.json();
       if (resp.ok && result.success) {
         toast.success(l.success);
+        sendPush({ userId: volunteer.id, title: '📝 Contract ontvangen', message: `Je hebt een nieuw contract om te ondertekenen voor "${task.title}".`, url: '/dashboard', type: 'contract_received' });
         onSent();
         onOpenChange(false);
       } else {

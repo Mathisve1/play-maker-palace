@@ -263,6 +263,13 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
       .eq('id', selectedSignup.id);
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Uren gerapporteerd!' : 'Hours reported!');
+    // Notify club
+    const task = tasks.find(t => t.id === selectedSignup.plan_task_id);
+    const plan = plans.find(p => task && p.id === task.plan_id);
+    if (plan) {
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+      sendPushToClub({ clubId: plan.club_id, title: '⏰ Uren gerapporteerd', message: `${profile?.full_name || 'Een vrijwilliger'} rapporteerde ${hours}u.`, url: '/monthly-planning', type: 'hours_reported' });
+    }
     setShowHoursDialog(false); setSelectedSignup(null); setHoursInput('');
     loadData();
   };
