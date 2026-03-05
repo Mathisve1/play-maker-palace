@@ -656,9 +656,14 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
               <label className="text-sm text-muted-foreground">{l.reportHours}</label>
               <Input type="number" step="0.5" min="0.5" max="24" value={hoursInput} onChange={e => setHoursInput(e.target.value)} className="mt-1" />
             </div>
+            {selectedSignup?.dispute_status === 'escalated' && selectedSignup?.club_reported_hours && (
+              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+                {language === 'nl' ? `Club rapporteerde: ${selectedSignup.club_reported_hours.toFixed(1)}u. Voer jouw uren in. Het gemiddelde wordt na 48u automatisch toegepast.` : `Club reported: ${selectedSignup.club_reported_hours.toFixed(1)}h. Enter your hours. Average will be applied after 48h.`}
+              </p>
+            )}
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setShowHoursDialog(false)}>Annuleren</Button>
-              <Button className="flex-1" onClick={submitHours} disabled={!hoursInput || Number(hoursInput) <= 0}>{l.submit}</Button>
+              <Button className="flex-1" onClick={selectedSignup?.dispute_status === 'escalated' ? submitDisputeHours : submitHours} disabled={!hoursInput || Number(hoursInput) <= 0}>{l.submit}</Button>
             </div>
           </div>
         </DialogContent>
