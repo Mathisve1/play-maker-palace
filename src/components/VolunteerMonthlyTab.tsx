@@ -54,6 +54,7 @@ interface DaySignup {
   plan_task_id: string;
   status: string;
   checked_in_at: string | null;
+  checked_out_at: string | null;
   hour_status: string;
   volunteer_reported_hours: number | null;
   club_reported_hours: number | null;
@@ -62,6 +63,10 @@ interface DaySignup {
   final_hours: number | null;
   final_amount: number | null;
   ticket_barcode: string | null;
+  dispute_status: string;
+  dispute_escalated_at: string | null;
+  club_reported_checkout: string | null;
+  volunteer_reported_checkout: string | null;
 }
 
 interface Enrollment {
