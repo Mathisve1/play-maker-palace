@@ -26,26 +26,26 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return detectBrowserLanguage();
   });
 
-  // Sync language from profile on auth state change
+  // Sync language from profile on auth — deferred and non-blocking
   useEffect(() => {
     let cancelled = false;
-    const syncFromProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session || cancelled) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('language')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      if (data?.language && SUPPORTED_LANGUAGES.includes(data.language as Language) && !cancelled) {
-        setLanguageState(data.language as Language);
-        localStorage.setItem('de12eman-lang', data.language);
-      }
-    };
-    syncFromProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) syncFromProfile();
+      if (!session || cancelled) return;
+      // Defer profile language sync to avoid blocking initial render
+      requestAnimationFrame(() => {
+        supabase
+          .from('profiles')
+          .select('language')
+          .eq('id', session.user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.language && SUPPORTED_LANGUAGES.includes(data.language as Language) && !cancelled) {
+              setLanguageState(data.language as Language);
+              localStorage.setItem('de12eman-lang', data.language);
+            }
+          });
+      });
     });
 
     return () => {

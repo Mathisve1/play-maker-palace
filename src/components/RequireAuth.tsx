@@ -69,20 +69,8 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
         if (cancelled) return;
 
         if (session?.user) {
-          await setAuthenticated(session.user);
+          setAuthenticated(session.user);
           return;
-        }
-
-        // No cached session — verify with server
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (cancelled) return;
-          if (user) {
-            await setAuthenticated(user);
-            return;
-          }
-        } catch (e) {
-          console.warn('RequireAuth: getUser failed', e);
         }
 
         // Genuinely no session
