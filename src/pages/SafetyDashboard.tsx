@@ -592,7 +592,7 @@ const SafetyDashboard = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const res = await supabase.functions.invoke('simulate-event', {
-        body: { club_id: clubId, action: 'delete' },
+        body: { club_id: clubId, action: 'delete', title: eventTitle },
       });
       if (res.error) throw res.error;
       toast.success(t3('Simulatie data verwijderd!', 'Données de simulation supprimées !', 'Simulation data deleted!'));
