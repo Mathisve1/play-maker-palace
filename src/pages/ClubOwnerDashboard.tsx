@@ -523,13 +523,13 @@ const ClubOwnerDashboard = () => {
       }
 
       // Fetch monthly planning KPI counts
-      await refreshKPIs(activeClub.id);
+      await refreshKPIs(clubId);
 
       setLoading(false);
     };
 
     init();
-  }, [navigate, refreshKPIs]);
+  }, [contextLoading, clubId, currentUserId, refreshKPIs]);
 
   // --- Handlers ---
 
