@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEMO_EVENT_TITLE = "SIMULATIE: FC Harelbeke vs KV Kortrijk";
+const DEFAULT_DEMO_TITLE = "SIMULATIE: FC Harelbeke vs KV Kortrijk";
 const VOLUNTEER_TEST_EMAIL = "vaneeckhoutmathis4@gmail.com";
 
 // 35 dummy volunteer names
@@ -39,8 +39,9 @@ Deno.serve(async (req) => {
     if (authErr || !user) throw new Error("Unauthorized");
 
     const supabase = createClient(supabaseUrl, serviceKey);
-    const { club_id, action } = await req.json();
+    const { club_id, action, title: customTitle } = await req.json();
     if (!club_id) throw new Error("club_id required");
+    const DEMO_EVENT_TITLE = customTitle || DEFAULT_DEMO_TITLE;
 
     // ═══════════════════════════════════════════
     // DELETE MODE — clean up all demo data
