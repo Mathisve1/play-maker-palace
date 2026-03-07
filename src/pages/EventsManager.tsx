@@ -1076,12 +1076,12 @@ const EventsManager = () => {
                                 <span>{task.spots_available} {nl ? 'plaatsen' : 'spots'}</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button data-tour={ei === 0 && gi === 0 ? 'btn-zones-first' : undefined} onClick={() => setZoneDialogTask({ id: task.id, title: task.title })} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zones beheren' : 'Manage zones'}>
-                                <Layers className="w-3.5 h-3.5" />
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button data-tour={ei === 0 && gi === 0 ? 'btn-zones-first' : undefined} onClick={() => setZoneDialogTask({ id: task.id, title: task.title })} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors border border-border" title={nl ? 'Zones beheren' : 'Manage zones'}>
+                                <Layers className="w-3.5 h-3.5" /> {nl ? 'Zones' : 'Zones'}
                               </button>
-                              <button onClick={() => navigate(`/planning/${task.id}`)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Zone planning' : 'Zone planning'}>
-                                <LayoutGrid className="w-3.5 h-3.5" />
+                              <button onClick={() => navigate(`/planning/${task.id}`)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors border border-border" title={nl ? 'Kanban planning' : 'Kanban planning'}>
+                                <LayoutGrid className="w-3.5 h-3.5" /> {nl ? 'Planning' : 'Planning'}
                               </button>
                             </div>
                           </div>
