@@ -1426,7 +1426,7 @@ const ClubOwnerDashboard = () => {
         language={language}
       />
 
-      <EditProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} userId={currentUserId} language={language} onProfileUpdated={(p) => setProfile({ full_name: p.full_name || '', email: p.email || '' })} />
+      <EditProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} userId={currentUserId} language={language} onProfileUpdated={() => { /* handled by ClubContext */ }} />
       {bulkMessageTask && <BulkMessageDialog taskId={bulkMessageTask.taskId} taskTitle={bulkMessageTask.taskTitle} clubOwnerId={currentUserId} volunteers={bulkMessageTask.volunteers} onClose={() => setBulkMessageTask(null)} />}
       {briefingProgressTaskId && <BriefingProgressDialog open={!!briefingProgressTaskId} onOpenChange={(open) => { if (!open) setBriefingProgressTaskId(null); }} taskId={briefingProgressTaskId} language={language} />}
       <TaskPickerDialog open={showBriefingTaskPicker} onOpenChange={setShowBriefingTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Briefing aanmaken' : language === 'fr' ? 'Créer un briefing' : 'Create briefing'} onSelect={(taskId) => { const task = tasks.find(t => t.id === taskId); if (task) navigate(`/briefing-builder?taskId=${taskId}&clubId=${task.club_id || clubId}`); }} />
