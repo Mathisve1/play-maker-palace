@@ -439,26 +439,23 @@ const ClubOwnerDashboard = () => {
       setExternalPartners(partnersRes.data || []);
       setEvents(eventsRes.data || []);
 
-      // Fetch event groups
       const eventsData = eventsRes.data || [];
-      if (eventsData.length > 0) {
-        const eventIds = eventsData.map((e: any) => e.id);
-        const { data: groupsData } = await (supabase as any)
-          .from('event_groups')
-          .select('*')
-          .in('event_id', eventIds)
-          .order('sort_order', { ascending: true });
-        setEventGroups(groupsData || []);
-      }
-
-      // Add event_id and event_group_id from a separate query since types might not be updated
       const tasksData = tasksRes.data;
+
+      // Parallel: event groups + task extras + KPIs (instead of sequential)
+      const [groupsRes, taskExtrasRes] = await Promise.all([
+        eventsData.length > 0
+          ? (supabase as any).from('event_groups').select('*').in('event_id', eventsData.map((e: any) => e.id)).order('sort_order', { ascending: true })
+          : Promise.resolve({ data: [] }),
+        tasksData && tasksData.length > 0
+          ? (supabase as any).from('tasks').select('id, event_id, event_group_id').eq('club_id', clubId)
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      setEventGroups(groupsRes.data || []);
+
       if (tasksData) {
-        const { data: taskExtras } = await (supabase as any)
-          .from('tasks')
-          .select('id, event_id, event_group_id')
-          .eq('club_id', clubId);
-        const extraMap = new Map((taskExtras || []).map((t: any) => [t.id, t]));
+        const extraMap = new Map((taskExtrasRes.data || []).map((t: any) => [t.id, t]));
         const enrichedTasks = tasksData.map(t => ({
           ...t,
           event_id: (extraMap.get(t.id) as any)?.event_id || null,
