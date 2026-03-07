@@ -34,74 +34,92 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
 
   useEffect(() => {
     let cancelled = false;
+    let initialAuthResolved = false;
+
+    const setAuthenticated = async (sessionUser: { id: string; email?: string | null; user_metadata?: Record<string, any> }) => {
+      await ensureProfileExists(sessionUser);
+      if (cancelled) return;
+
+      setAuthenticatedUserId(sessionUser.id);
+      setChecked(true);
+      void syncOneSignalUser(sessionUser.id).catch((error) => {
+        console.error('OneSignal sync failed:', error);
+      });
+    };
+
+    const setUnauthenticated = () => {
+      if (cancelled) return;
+      setAuthenticatedUserId(null);
+      setChecked(true);
+      navigate(redirectTo, { replace: true });
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return;
+
+      if (session?.user) {
+        await setAuthenticated(session.user);
+        return;
+      }
+
+      // Ignore transient null sessions during bootstrap; only react to real sign-outs after init.
+      if (!initialAuthResolved) return;
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        setUnauthenticated();
+      }
+    });
 
     const check = async () => {
       try {
-        // Try getSession with generous timeout; on timeout, wait for onAuthStateChange instead
         let session: any = null;
+
         try {
           const sessionResult = await Promise.race([
             supabase.auth.getSession(),
-            new Promise<null>((_, reject) =>
-              setTimeout(() => reject(new Error('timeout')), 8000)
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), 10000)
             ),
           ]);
           session = (sessionResult as any)?.data?.session ?? null;
         } catch {
-          // Timeout — don't redirect yet, let onAuthStateChange handle it
-          console.warn('RequireAuth: getSession timed out, waiting for auth state change...');
-          return;
+          console.warn('RequireAuth: getSession timed out, trying getUser fallback...');
         }
 
         if (cancelled) return;
 
-        if (!session) {
-          // Double-check with getUser as fallback before redirecting
-          try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user && !cancelled) {
-              await ensureProfileExists(user);
-              setAuthenticatedUserId(user.id);
-              setChecked(true);
-              return;
-            }
-          } catch {}
+        if (session?.user) {
+          await setAuthenticated(session.user);
+          return;
+        }
 
+        try {
+          const userResult = await Promise.race([
+            supabase.auth.getUser(),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), 10000)
+            ),
+          ]);
+
+          const user = (userResult as any)?.data?.user ?? null;
           if (cancelled) return;
-          setAuthenticatedUserId(null);
-          navigate(redirectTo, { replace: true });
+
+          if (user) {
+            await setAuthenticated(user);
+            return;
+          }
+        } catch {
+          console.warn('RequireAuth: getUser timed out, waiting for auth state change...');
           return;
         }
 
-        await ensureProfileExists(session.user);
         if (cancelled) return;
-
-        setAuthenticatedUserId(session.user.id);
-        // Fire-and-forget OneSignal sync
-        void syncOneSignalUser(session.user.id).catch((error) => {
-          console.error('OneSignal sync failed:', error);
-        });
+        setUnauthenticated();
       } finally {
-        if (!cancelled) setChecked(true);
+        initialAuthResolved = true;
       }
     };
-    check();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!session && !cancelled) {
-        navigate(redirectTo, { replace: true });
-        return;
-      }
-
-      if (session && !cancelled) {
-        await ensureProfileExists(session.user);
-        setAuthenticatedUserId(session.user.id);
-        setChecked(true);
-        void syncOneSignalUser(session.user.id).catch((error) => {
-          console.error('OneSignal sync failed:', error);
-        });
-      }
-    });
+    void check();
 
     return () => {
       cancelled = true;
