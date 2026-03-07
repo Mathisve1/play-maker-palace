@@ -55,32 +55,31 @@ interface VolunteerZoneAssignment {
   volunteer_id: string; zone_id: string;
 }
 
-// ── Alarm sound — urgent siren effect (wee-woo) ──
+// ── Alarm sound — fire alarm style (loud repeating hi-lo klaxon) ──
 const playAlarm = () => {
   try {
     const ctx = new AudioContext();
     const gain = ctx.createGain();
     gain.connect(ctx.destination);
-    gain.gain.setValueAtTime(0.9, ctx.currentTime);
+    gain.gain.setValueAtTime(1.0, ctx.currentTime);
 
-    // 3 siren sweeps: low→high→low
-    const sweepDuration = 0.4;
-    for (let i = 0; i < 3; i++) {
+    const pulseLength = 0.15;
+    const totalPulses = 8; // rapid hi-lo pulses like a fire alarm
+
+    for (let i = 0; i < totalPulses; i++) {
       const osc = ctx.createOscillator();
       osc.connect(gain);
-      osc.type = 'sawtooth';
-      const start = ctx.currentTime + i * sweepDuration;
-      // Sweep from 600Hz → 1400Hz
-      osc.frequency.setValueAtTime(600, start);
-      osc.frequency.linearRampToValueAtTime(1400, start + sweepDuration * 0.5);
-      osc.frequency.linearRampToValueAtTime(600, start + sweepDuration);
+      osc.type = 'square';
+      const start = ctx.currentTime + i * pulseLength;
+      // Alternate between high (2400Hz) and low (1800Hz)
+      osc.frequency.setValueAtTime(i % 2 === 0 ? 2400 : 1800, start);
       osc.start(start);
-      osc.stop(start + sweepDuration);
+      osc.stop(start + pulseLength * 0.85);
     }
 
-    // Fade out at the end
-    gain.gain.setValueAtTime(0.9, ctx.currentTime + sweepDuration * 2.5);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + sweepDuration * 3);
+    const totalDuration = totalPulses * pulseLength;
+    gain.gain.setValueAtTime(1.0, ctx.currentTime + totalDuration - 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + totalDuration);
   } catch { /* silent fallback */ }
 };
 
