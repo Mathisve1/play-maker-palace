@@ -27,7 +27,7 @@ const SYSTEM_PROMPT = `Je bent de AI-assistent van het De 12e Man-platform — e
 - Organisatienota/contract is wettelijk verplicht (Art. 4).
 - Minderjarigen: specifieke regels rond toestemming ouders en arbeidsrecht.
 
-## PLATFORM-FUNCTIES (Volunteero)
+## PLATFORM-FUNCTIES (De 12e Man)
 
 ### Evenementenbeheer
 - **Events Manager**: Aanmaken van evenementen met groepen (teams), taken en zones.
