@@ -1005,11 +1005,66 @@ const EventsManager = () => {
                           <button data-tour={ei === 0 && gi === 0 ? 'btn-add-task-group' : undefined} onClick={() => { setAddingTaskToGroup({ eventId: event.id, groupId: group.id }); setGroupTaskForm({ title: '', task_date: '', location: event.location || '', spots_available: 1 }); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={nl ? 'Taak toevoegen' : 'Add task'}>
                             <Plus className="w-3.5 h-3.5" />
                           </button>
-                          <button onClick={() => handleDeleteGroup(group.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                                <MoreHorizontal className="w-3.5 h-3.5" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => handleStartEditGroup(group)}>
+                                <Pencil className="w-4 h-4 mr-2" /> {nl ? 'Bewerken' : 'Edit'}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDuplicateGroup(group)}>
+                                <Copy className="w-4 h-4 mr-2" /> {nl ? 'Dupliceren' : 'Duplicate'}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleDeleteGroup(group.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                <Trash2 className="w-4 h-4 mr-2" /> {nl ? 'Verwijderen' : 'Delete'}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
+
+                      {/* Inline edit group form */}
+                      {editingGroup === group.id && (
+                        <div className="p-4 border-b border-border bg-muted/30 space-y-3">
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className={labelClass}>{nl ? 'Groepsnaam' : 'Group name'} *</label>
+                              <input type="text" value={editGroupForm.name} onChange={e => setEditGroupForm(p => ({ ...p, name: e.target.value }))} className={inputClass} autoFocus />
+                            </div>
+                            <div>
+                              <label className={labelClass}>{nl ? 'Kleur' : 'Color'}</label>
+                              <div className="flex gap-1.5 flex-wrap mt-1">
+                                {GROUP_COLORS.map(c => (
+                                  <button key={c} type="button" onClick={() => setEditGroupForm(p => ({ ...p, color: c }))} className={`w-6 h-6 rounded-full border-2 transition-transform ${editGroupForm.color === c ? 'border-foreground scale-110' : 'border-transparent'}`} style={{ backgroundColor: c }} />
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className={labelClass}>{nl ? 'Polsbandkleur' : 'Wristband color'}</label>
+                              <input type="text" value={editGroupForm.wristband_color} onChange={e => setEditGroupForm(p => ({ ...p, wristband_color: e.target.value }))} className={inputClass} placeholder={nl ? 'bv. Blauw' : 'e.g. Blue'} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>{nl ? 'Polsbandlabel' : 'Wristband label'}</label>
+                              <input type="text" value={editGroupForm.wristband_label} onChange={e => setEditGroupForm(p => ({ ...p, wristband_label: e.target.value }))} className={inputClass} placeholder={nl ? 'bv. STEWARD' : 'e.g. STEWARD'} />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className={labelClass}>{nl ? 'Materiaal notitie' : 'Materials note'}</label>
+                              <input type="text" value={editGroupForm.materials_note} onChange={e => setEditGroupForm(p => ({ ...p, materials_note: e.target.value }))} className={inputClass} placeholder={nl ? 'bv. Fluohesje, walkietalkie' : 'e.g. Safety vest, walkie-talkie'} />
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <button type="button" onClick={() => setEditingGroup(null)} className="px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
+                            <button type="button" onClick={() => handleSaveEditGroup(group.id)} disabled={savingGroup || !editGroupForm.name.trim()} className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground disabled:opacity-50">
+                              {savingGroup ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (nl ? 'Opslaan' : 'Save')}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="divide-y divide-border">
                         {groupTasks.map((task) => (
                           <div key={task.id} className="px-4 py-3 flex items-center gap-3">
