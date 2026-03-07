@@ -39,8 +39,9 @@ Deno.serve(async (req) => {
     if (authErr || !user) throw new Error("Unauthorized");
 
     const supabase = createClient(supabaseUrl, serviceKey);
-    const { club_id, action } = await req.json();
+    const { club_id, action, title: customTitle } = await req.json();
     if (!club_id) throw new Error("club_id required");
+    const DEMO_EVENT_TITLE = customTitle || DEFAULT_DEMO_TITLE;
 
     // ═══════════════════════════════════════════
     // DELETE MODE — clean up all demo data
