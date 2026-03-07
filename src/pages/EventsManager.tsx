@@ -868,6 +868,9 @@ const EventsManager = () => {
                 <button onClick={() => navigate(`/safety/${event.id}`)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors touch-target">
                   <Radio className="w-3.5 h-3.5" /> Control Room
                 </button>
+                <button onClick={() => setSafetyConfigEvent({ eventId: event.id, clubId: event.club_id })} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-accent transition-colors touch-target">
+                  <Shield className="w-3.5 h-3.5" /> {nl ? 'Safety Rollen' : 'Safety Roles'}
+                </button>
               </div>
 
               <DropdownMenu>
@@ -882,9 +885,6 @@ const EventsManager = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleDuplicateEvent(event.id)} disabled={duplicatingEvent === event.id}>
                     {duplicatingEvent === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />} {nl ? 'Dupliceren' : 'Duplicate'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSafetyConfigEvent({ eventId: event.id, clubId: event.club_id })}>
-                    <Shield className="w-4 h-4 mr-2" /> Safety
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => handleToggleHoldEvent(event.id)} disabled={togglingHold === event.id} className="text-yellow-600 dark:text-yellow-400 focus:text-yellow-600 dark:focus:text-yellow-400">
