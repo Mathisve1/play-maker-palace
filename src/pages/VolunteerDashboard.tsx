@@ -186,14 +186,14 @@ const VolunteerDashboard = () => {
       if (!contextUserId2) return;
       setCurrentUserId(contextUserId2);
 
-      // Parallel batch 1: profile, tasks, events, signups, payments, sepa, contracts, tickets, loyalty, certs, follows
+      // Parallel batch 1: tasks, events, signups, payments, sepa, contracts, tickets, loyalty, certs, follows
+      // Profile is already provided by ClubContext — no need to re-fetch
       const uid = contextUserId2;
       const [
-        profileRes, tasksRes, eventsRes, signupsRes,
+        tasksRes, eventsRes, signupsRes,
         paymentsRes, sepaRes, contractsRes, ticketsRes,
         loyaltyRes, certsRes, followsRes,
       ] = await Promise.all([
-        supabase.from('profiles').select('full_name, email, avatar_url, phone, bio, date_of_birth').eq('id', uid).maybeSingle(),
         supabase.from('tasks').select('*, clubs(name, sport, location)').eq('status', 'open').order('task_date', { ascending: true }),
         (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').neq('status', 'on_hold').order('event_date', { ascending: true }),
         supabase.from('task_signups').select('task_id, status').eq('volunteer_id', uid),
@@ -206,9 +206,8 @@ const VolunteerDashboard = () => {
         supabase.from('club_follows').select('club_id').eq('user_id', uid),
       ]);
 
-      const profileData = profileRes.data;
-      setProfile(profileData);
-      if (profileData && !profileData.full_name && !profileData.phone && !profileData.bio) {
+      // Check first login from context profile
+      if (contextProfile && !contextProfile.full_name) {
         setIsFirstLogin(true);
         setShowProfileDialog(true);
       }
