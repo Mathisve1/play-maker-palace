@@ -1,0 +1,1 @@
+UPDATE public.events SET title = 'Club Brugge vs KAA Gent' WHERE id = '6ab91733-3726-4841-8e05-c7da4b63f342';
