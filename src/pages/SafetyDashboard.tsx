@@ -610,11 +610,11 @@ const SafetyDashboard = () => {
     try {
       // First delete
       await supabase.functions.invoke('simulate-event', {
-        body: { club_id: clubId, action: 'delete' },
+        body: { club_id: clubId, action: 'delete', title: eventTitle },
       });
       // Then create new
       const res = await supabase.functions.invoke('simulate-event', {
-        body: { club_id: clubId },
+        body: { club_id: clubId, title: eventTitle },
       });
       if (res.error) throw res.error;
       const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
