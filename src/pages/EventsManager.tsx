@@ -96,6 +96,11 @@ const EventsManager = () => {
   const [zoneDialogTask, setZoneDialogTask] = useState<{ id: string; title: string } | null>(null);
   const [safetyConfigEvent, setSafetyConfigEvent] = useState<{ eventId: string; clubId: string } | null>(null);
 
+  // Edit group
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [editGroupForm, setEditGroupForm] = useState({ name: '', color: '', wristband_color: '', wristband_label: '', materials_note: '' });
+  const [savingGroup, setSavingGroup] = useState(false);
+
   const nl = language === 'nl';
   const fr = language === 'fr';
   const t3 = (nlS: string, frS: string, enS: string) => nl ? nlS : fr ? frS : enS;
