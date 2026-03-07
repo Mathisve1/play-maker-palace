@@ -16,6 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskZoneDialog from '@/components/TaskZoneDialog';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
 
 interface EventData {
   id: string; club_id: string; title: string; description: string | null;
