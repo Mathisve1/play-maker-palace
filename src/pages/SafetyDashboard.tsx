@@ -309,12 +309,12 @@ const SafetyDashboard = () => {
                 return prev;
               });
             }
-            if (inc.priority === 'high') {
-              if (audioEnabled) playAlarm();
-              setFlashRed(true);
-              if (flashTimeout.current) clearTimeout(flashTimeout.current);
-              flashTimeout.current = setTimeout(() => setFlashRed(false), 2000);
-            }
+            // All incidents trigger alarm + flash
+            if (audioEnabled) playAlarm();
+            setFlashRed(true);
+            if (flashTimeout.current) clearTimeout(flashTimeout.current);
+            // Keep red flash visible for 4 seconds
+            flashTimeout.current = setTimeout(() => setFlashRed(false), 4000);
           } else if (payload.eventType === 'UPDATE') {
             setIncidents(prev => prev.map(i => i.id === payload.new.id ? payload.new as SafetyIncident : i));
           } else if (payload.eventType === 'DELETE') {
