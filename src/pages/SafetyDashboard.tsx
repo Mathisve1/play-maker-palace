@@ -55,20 +55,25 @@ interface VolunteerZoneAssignment {
   volunteer_id: string; zone_id: string;
 }
 
-// ── Alarm sound helper ──
+// ── Alarm sound helper — 3 loud beeps ──
 const playAlarm = () => {
   try {
     const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'square';
-    gain.gain.value = 0.3;
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-    osc.stop(ctx.currentTime + 0.8);
+    const playBeep = (startTime: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 1200;
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.8, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.25);
+      osc.start(startTime);
+      osc.stop(startTime + 0.3);
+    };
+    playBeep(ctx.currentTime);
+    playBeep(ctx.currentTime + 0.35);
+    playBeep(ctx.currentTime + 0.7);
   } catch { /* silent fallback */ }
 };
 
@@ -132,6 +137,22 @@ const SafetyDashboard = () => {
   const [teamIncidents, setTeamIncidents] = useState<SafetyIncident[]>([]);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; avatar_url: string | null; roleName: string }[]>([]);
   const flashTimeout = useRef<NodeJS.Timeout>();
+  const testFiredRef = useRef(false);
+
+  // ONE-TIME test: fire alarm at 30s and 2min after mount, then never again
+  useEffect(() => {
+    if (testFiredRef.current) return;
+    testFiredRef.current = true;
+    const triggerTest = () => {
+      playAlarm();
+      setFlashRed(true);
+      if (flashTimeout.current) clearTimeout(flashTimeout.current);
+      flashTimeout.current = setTimeout(() => setFlashRed(false), 4000);
+    };
+    const t1 = setTimeout(triggerTest, 30_000);
+    const t2 = setTimeout(triggerTest, 120_000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
     if (entering && ref.current) {
@@ -304,12 +325,12 @@ const SafetyDashboard = () => {
                 return prev;
               });
             }
-            if (inc.priority === 'high') {
-              if (audioEnabled) playAlarm();
-              setFlashRed(true);
-              if (flashTimeout.current) clearTimeout(flashTimeout.current);
-              flashTimeout.current = setTimeout(() => setFlashRed(false), 2000);
-            }
+            // All incidents trigger alarm + flash
+            if (audioEnabled) playAlarm();
+            setFlashRed(true);
+            if (flashTimeout.current) clearTimeout(flashTimeout.current);
+            // Keep red flash visible for 4 seconds
+            flashTimeout.current = setTimeout(() => setFlashRed(false), 4000);
           } else if (payload.eventType === 'UPDATE') {
             setIncidents(prev => prev.map(i => i.id === payload.new.id ? payload.new as SafetyIncident : i));
           } else if (payload.eventType === 'DELETE') {
@@ -1100,12 +1121,15 @@ const SafetyDashboard = () => {
   return (
     <ClubPageLayout>
       <div className={`relative min-h-screen transition-colors ${flashRed ? 'animate-pulse' : ''}`}>
-        {/* Flash overlay */}
+        {/* Flash overlay — pulsing red */}
         <AnimatePresence>
           {flashRed && (
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 0.15 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-destructive z-50 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.1, 0.35, 0.1, 0.35, 0.1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-red-600 z-50 pointer-events-none"
             />
           )}
         </AnimatePresence>
