@@ -63,7 +63,16 @@ const PageLoader = () => (
   </div>
 );
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,      // 5 min — data is fresh, no refetch
+      gcTime: 30 * 60 * 1000,         // 30 min — keep in cache after unmount
+      refetchOnWindowFocus: false,     // don't refetch on tab switch
+      retry: 1,                        // single retry on failure
+    },
+  },
+});
 
 const App = () => {
   // Auto-resubscribe push if user has push enabled but subscription was cleared

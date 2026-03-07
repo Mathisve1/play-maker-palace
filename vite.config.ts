@@ -38,25 +38,59 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         globIgnores: ['**/push/**', '**/OneSignal*'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // Skip waiting so new SW activates immediately
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
+          // Auth — always network (tokens)
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/auth\//,
             handler: 'NetworkOnly',
           },
+          // API data — stale-while-revalidate for instant cached responses
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\//,
-            handler: 'NetworkFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'api-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+              expiration: { maxEntries: 100, maxAgeSeconds: 600 },
             },
           },
+          // Google Fonts stylesheets — stale-while-revalidate
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          // Google Fonts files — cache-first (immutable)
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Avatars — cache-first
           {
             urlPattern: /^https:\/\/api\.dicebear\.com\//,
             handler: 'CacheFirst',
             options: {
               cacheName: 'avatar-cache',
               expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
+            },
+          },
+          // External images — cache-first
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'image-cache',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
         ],
