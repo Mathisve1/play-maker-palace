@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import MonthlyPlanningKPIs from '@/components/MonthlyPlanningKPIs';
 import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3 } from 'lucide-react';
-import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import DashboardLayout from '@/components/DashboardLayout';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
@@ -17,22 +16,24 @@ import { WidgetRenderer } from '@/components/dashboard/WidgetRenderer';
 import { EditTaskDialog } from '@/components/dashboard/EditTaskDialog';
 import { DeleteConfirmDialog } from '@/components/dashboard/DeleteConfirmDialog';
 import { EditEventDialog } from '@/components/dashboard/EditEventDialog';
-
-import ClubSettingsDialog from '@/components/ClubSettingsDialog';
-import ClubMembersDialog from '@/components/ClubMembersDialog';
-import NotificationBell from '@/components/NotificationBell';
-import ContractTemplatesDialog from '@/components/ContractTemplatesDialog';
-import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
-import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
-import BulkMessageDialog from '@/components/BulkMessageDialog';
-import BriefingProgressDialog from '@/components/BriefingProgressDialog';
-import TaskPickerDialog from '@/components/TaskPickerDialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import EditProfileDialog from '@/components/EditProfileDialog';
 import ComplianceBadge from '@/components/ComplianceBadge';
 import { fetchBatchComplianceData, ComplianceStatus } from '@/hooks/useComplianceData';
 import { Language } from '@/i18n/translations';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+// Lazy-load heavy dialog components (only loaded when user opens them)
+const HourConfirmationDialog = lazy(() => import('@/components/HourConfirmationDialog'));
+const ClubSettingsDialog = lazy(() => import('@/components/ClubSettingsDialog'));
+const ClubMembersDialog = lazy(() => import('@/components/ClubMembersDialog'));
+const NotificationBell = lazy(() => import('@/components/NotificationBell'));
+const ContractTemplatesDialog = lazy(() => import('@/components/ContractTemplatesDialog'));
+const VolunteerProfileDialog = lazy(() => import('@/components/VolunteerProfileDialog'));
+const SendContractConfirmDialog = lazy(() => import('@/components/SendContractConfirmDialog'));
+const BulkMessageDialog = lazy(() => import('@/components/BulkMessageDialog'));
+const BriefingProgressDialog = lazy(() => import('@/components/BriefingProgressDialog'));
+const TaskPickerDialog = lazy(() => import('@/components/TaskPickerDialog'));
+const EditProfileDialog = lazy(() => import('@/components/EditProfileDialog'));
 
 interface VolunteerProfile {
   id: string;
@@ -1355,31 +1356,53 @@ const ClubOwnerDashboard = () => {
         )}
       </main>
 
-      {/* Dialogs */}
-      {showSettings && clubId && clubInfo && (
-        <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => { /* updates handled by ClubContext refresh */ }} />
-      )}
-      {showMembers && clubId && (
-        <ClubMembersDialog clubId={clubId} currentUserId={currentUserId} isOwner={isOwner} currentUserRole={myClubRole} onClose={() => setShowMembers(false)} />
-      )}
-      {showTemplates && clubId && (
-        <ContractTemplatesDialog clubId={clubId} language={language} onClose={() => { setShowTemplates(false); supabase.from('contract_templates').select('id, name').eq('club_id', clubId).order('created_at', { ascending: false }).then(({ data }) => setContractTemplates(data || [])); }} />
-      )}
-      <VolunteerProfileDialog volunteer={selectedVolunteer?.volunteer || null} open={!!selectedVolunteer} onOpenChange={(open) => !open && setSelectedVolunteer(null)} language={language} signupStatus={selectedVolunteer?.signupStatus} signedUpAt={selectedVolunteer?.signedUpAt} />
-      {contractConfirm && contractConfirm.volunteer && (
-        <SendContractConfirmDialog
-          open={!!contractConfirm}
-          onOpenChange={(open) => !open && setContractConfirm(null)}
-          volunteer={{ id: contractConfirm.volunteer.id, full_name: contractConfirm.volunteer.full_name, email: contractConfirm.volunteer.email, phone: contractConfirm.volunteer.phone, bank_iban: contractConfirm.volunteer.bank_iban, bank_holder_name: contractConfirm.volunteer.bank_holder_name }}
-          task={{ id: contractConfirm.task.id, title: contractConfirm.task.title, task_date: contractConfirm.task.task_date, location: contractConfirm.task.location, contract_template_id: contractConfirm.task.contract_template_id }}
-          clubId={clubId || undefined}
-          clubName={clubInfo?.name}
-          language={language}
-          onSent={() => { const key = `${contractConfirm.task.id}-${contractConfirm.volunteer!.id}`; setSignatureStatuses(prev => ({ ...prev, [key]: { status: 'pending' } })); setContractConfirm(null); }}
-        />
-      )}
+      {/* Dialogs — wrapped in Suspense for lazy-loaded components */}
+      <Suspense fallback={null}>
+        {showSettings && clubId && clubInfo && (
+          <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => { /* updates handled by ClubContext refresh */ }} />
+        )}
+        {showMembers && clubId && (
+          <ClubMembersDialog clubId={clubId} currentUserId={currentUserId} isOwner={isOwner} currentUserRole={myClubRole} onClose={() => setShowMembers(false)} />
+        )}
+        {showTemplates && clubId && (
+          <ContractTemplatesDialog clubId={clubId} language={language} onClose={() => { setShowTemplates(false); supabase.from('contract_templates').select('id, name').eq('club_id', clubId).order('created_at', { ascending: false }).then(({ data }) => setContractTemplates(data || [])); }} />
+        )}
+        <VolunteerProfileDialog volunteer={selectedVolunteer?.volunteer || null} open={!!selectedVolunteer} onOpenChange={(open) => !open && setSelectedVolunteer(null)} language={language} signupStatus={selectedVolunteer?.signupStatus} signedUpAt={selectedVolunteer?.signedUpAt} />
+        {contractConfirm && contractConfirm.volunteer && (
+          <SendContractConfirmDialog
+            open={!!contractConfirm}
+            onOpenChange={(open) => !open && setContractConfirm(null)}
+            volunteer={{ id: contractConfirm.volunteer.id, full_name: contractConfirm.volunteer.full_name, email: contractConfirm.volunteer.email, phone: contractConfirm.volunteer.phone, bank_iban: contractConfirm.volunteer.bank_iban, bank_holder_name: contractConfirm.volunteer.bank_holder_name }}
+            task={{ id: contractConfirm.task.id, title: contractConfirm.task.title, task_date: contractConfirm.task.task_date, location: contractConfirm.task.location, contract_template_id: contractConfirm.task.contract_template_id }}
+            clubId={clubId || undefined}
+            clubName={clubInfo?.name}
+            language={language}
+            onSent={() => { const key = `${contractConfirm.task.id}-${contractConfirm.volunteer!.id}`; setSignatureStatuses(prev => ({ ...prev, [key]: { status: 'pending' } })); setContractConfirm(null); }}
+          />
+        )}
 
-      {/* Edit Task Dialog */}
+        <EditProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} userId={currentUserId} language={language} onProfileUpdated={() => { /* handled by ClubContext */ }} />
+        {bulkMessageTask && <BulkMessageDialog taskId={bulkMessageTask.taskId} taskTitle={bulkMessageTask.taskTitle} clubOwnerId={currentUserId} volunteers={bulkMessageTask.volunteers} onClose={() => setBulkMessageTask(null)} />}
+        {briefingProgressTaskId && <BriefingProgressDialog open={!!briefingProgressTaskId} onOpenChange={(open) => { if (!open) setBriefingProgressTaskId(null); }} taskId={briefingProgressTaskId} language={language} />}
+        <TaskPickerDialog open={showBriefingTaskPicker} onOpenChange={setShowBriefingTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Briefing aanmaken' : language === 'fr' ? 'Créer un briefing' : 'Create briefing'} onSelect={(taskId) => { const task = tasks.find(t => t.id === taskId); if (task) navigate(`/briefing-builder?taskId=${taskId}&clubId=${task.club_id || clubId}`); }} />
+        <TaskPickerDialog open={showProgressTaskPicker} onOpenChange={setShowProgressTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Opvolging bekijken' : language === 'fr' ? 'Voir le suivi' : 'View follow-up'} onSelect={(taskId) => setBriefingProgressTaskId(taskId)} />
+        {hourConfirmOpen && (
+          <HourConfirmationDialog
+            open={!!hourConfirmOpen}
+            onOpenChange={(open) => { if (!open) setHourConfirmOpen(null); }}
+            taskId={hourConfirmOpen.taskId}
+            volunteerId={hourConfirmOpen.volunteerId}
+            volunteerName={hourConfirmOpen.volunteerName}
+            hourlyRate={hourConfirmOpen.hourlyRate}
+            estimatedHours={hourConfirmOpen.estimatedHours}
+            role="club"
+            language={language}
+            onOpenChat={() => { setHourConfirmOpen(null); navigate(`/chat?taskId=${hourConfirmOpen.taskId}&clubOwnerId=${currentUserId}&volunteerId=${hourConfirmOpen.volunteerId}`); }}
+          />
+        )}
+      </Suspense>
+
+      {/* Non-lazy dialogs */}
       <EditTaskDialog
         task={editingTask}
         onClose={() => setEditingTask(null)}
@@ -1390,7 +1413,6 @@ const ClubOwnerDashboard = () => {
         language={language}
       />
 
-      {/* Delete Task Confirmation */}
       <DeleteConfirmDialog
         open={!!confirmDeleteTask}
         onClose={() => setConfirmDeleteTask(null)}
@@ -1402,7 +1424,6 @@ const ClubOwnerDashboard = () => {
         deleteLabel={dt.delete}
       />
 
-      {/* Delete Event Confirmation */}
       <DeleteConfirmDialog
         open={!!confirmDeleteEvent}
         onClose={() => setConfirmDeleteEvent(null)}
@@ -1414,7 +1435,6 @@ const ClubOwnerDashboard = () => {
         deleteLabel={dt.delete}
       />
 
-      {/* Edit Event Dialog */}
       <EditEventDialog
         event={editingEvent}
         onClose={() => setEditingEvent(null)}
@@ -1423,26 +1443,6 @@ const ClubOwnerDashboard = () => {
         }}
         language={language}
       />
-
-      <EditProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} userId={currentUserId} language={language} onProfileUpdated={() => { /* handled by ClubContext */ }} />
-      {bulkMessageTask && <BulkMessageDialog taskId={bulkMessageTask.taskId} taskTitle={bulkMessageTask.taskTitle} clubOwnerId={currentUserId} volunteers={bulkMessageTask.volunteers} onClose={() => setBulkMessageTask(null)} />}
-      {briefingProgressTaskId && <BriefingProgressDialog open={!!briefingProgressTaskId} onOpenChange={(open) => { if (!open) setBriefingProgressTaskId(null); }} taskId={briefingProgressTaskId} language={language} />}
-      <TaskPickerDialog open={showBriefingTaskPicker} onOpenChange={setShowBriefingTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Briefing aanmaken' : language === 'fr' ? 'Créer un briefing' : 'Create briefing'} onSelect={(taskId) => { const task = tasks.find(t => t.id === taskId); if (task) navigate(`/briefing-builder?taskId=${taskId}&clubId=${task.club_id || clubId}`); }} />
-      <TaskPickerDialog open={showProgressTaskPicker} onOpenChange={setShowProgressTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Opvolging bekijken' : language === 'fr' ? 'Voir le suivi' : 'View follow-up'} onSelect={(taskId) => setBriefingProgressTaskId(taskId)} />
-      {hourConfirmOpen && (
-        <HourConfirmationDialog
-          open={!!hourConfirmOpen}
-          onOpenChange={(open) => { if (!open) setHourConfirmOpen(null); }}
-          taskId={hourConfirmOpen.taskId}
-          volunteerId={hourConfirmOpen.volunteerId}
-          volunteerName={hourConfirmOpen.volunteerName}
-          hourlyRate={hourConfirmOpen.hourlyRate}
-          estimatedHours={hourConfirmOpen.estimatedHours}
-          role="club"
-          language={language}
-          onOpenChat={() => { setHourConfirmOpen(null); navigate(`/chat?taskId=${hourConfirmOpen.taskId}&clubOwnerId=${currentUserId}&volunteerId=${hourConfirmOpen.volunteerId}`); }}
-        />
-      )}
     </DashboardLayout>
   );
 };

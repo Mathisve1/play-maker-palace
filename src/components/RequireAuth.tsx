@@ -44,12 +44,6 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       void syncOneSignalUser(sessionUser.id).catch(() => {});
     };
 
-    // FAST PATH: Try synchronous cached session first (avoids network round-trip)
-    const cachedSession = (supabase.auth as any)?.currentSession;
-    if (cachedSession?.user) {
-      setAuthenticated(cachedSession.user);
-    }
-
     // Set up the listener FIRST so it catches any auth events during init
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
@@ -68,35 +62,33 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       }
     });
 
-    // Then do the imperative check (if not already resolved by cache)
-    if (!cachedSession?.user) {
-      const check = async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (cancelled) return;
+    // Imperative check — getSession reads from memory/localStorage first, fast path
+    const check = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (cancelled) return;
 
-          if (session?.user) {
-            setAuthenticated(session.user);
-            return;
-          }
+        if (session?.user) {
+          setAuthenticated(session.user);
+          return;
+        }
 
-          // Genuinely no session
-          if (cancelled) return;
+        // Genuinely no session
+        if (cancelled) return;
+        setAuthenticatedUserId(null);
+        setChecked(true);
+        navigate(redirectTo, { replace: true });
+      } catch (e) {
+        console.error('RequireAuth: unexpected error', e);
+        if (!cancelled) {
           setAuthenticatedUserId(null);
           setChecked(true);
           navigate(redirectTo, { replace: true });
-        } catch (e) {
-          console.error('RequireAuth: unexpected error', e);
-          if (!cancelled) {
-            setAuthenticatedUserId(null);
-            setChecked(true);
-            navigate(redirectTo, { replace: true });
-          }
         }
-      };
+      }
+    };
 
-      void check();
-    }
+    void check();
 
     return () => {
       cancelled = true;
