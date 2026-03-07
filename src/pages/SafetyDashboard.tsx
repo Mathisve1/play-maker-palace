@@ -55,25 +55,32 @@ interface VolunteerZoneAssignment {
   volunteer_id: string; zone_id: string;
 }
 
-// ── Alarm sound helper — 3 loud beeps ──
+// ── Alarm sound — urgent siren effect (wee-woo) ──
 const playAlarm = () => {
   try {
     const ctx = new AudioContext();
-    const playBeep = (startTime: number) => {
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.9, ctx.currentTime);
+
+    // 3 siren sweeps: low→high→low
+    const sweepDuration = 0.4;
+    for (let i = 0; i < 3; i++) {
       const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
       osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 1200;
-      osc.type = 'square';
-      gain.gain.setValueAtTime(0.8, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.25);
-      osc.start(startTime);
-      osc.stop(startTime + 0.3);
-    };
-    playBeep(ctx.currentTime);
-    playBeep(ctx.currentTime + 0.35);
-    playBeep(ctx.currentTime + 0.7);
+      osc.type = 'sawtooth';
+      const start = ctx.currentTime + i * sweepDuration;
+      // Sweep from 600Hz → 1400Hz
+      osc.frequency.setValueAtTime(600, start);
+      osc.frequency.linearRampToValueAtTime(1400, start + sweepDuration * 0.5);
+      osc.frequency.linearRampToValueAtTime(600, start + sweepDuration);
+      osc.start(start);
+      osc.stop(start + sweepDuration);
+    }
+
+    // Fade out at the end
+    gain.gain.setValueAtTime(0.9, ctx.currentTime + sweepDuration * 2.5);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + sweepDuration * 3);
   } catch { /* silent fallback */ }
 };
 
