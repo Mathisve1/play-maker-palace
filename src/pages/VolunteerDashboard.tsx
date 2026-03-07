@@ -140,7 +140,6 @@ const VolunteerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [signingUp, setSigningUp] = useState<string | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
@@ -171,22 +170,30 @@ const VolunteerDashboard = () => {
 
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
-  // ===== ALL EXISTING DATA FETCHING & HANDLERS =====
-  const { userId: contextUserId2 } = useClubContext();
+  // ===== Use ClubContext instead of re-fetching auth/profile =====
+  const { userId: contextUserId2, profile: contextProfile } = useClubContext();
+  const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
+
+  // Sync profile from context on mount
+  useEffect(() => {
+    if (contextProfile) {
+      setProfile({ full_name: contextProfile.full_name, email: contextProfile.email, avatar_url: contextProfile.avatar_url });
+    }
+  }, [contextProfile]);
 
   useEffect(() => {
     const init = async () => {
       if (!contextUserId2) return;
       setCurrentUserId(contextUserId2);
 
-      // Parallel batch 1: profile, tasks, events, signups, payments, sepa, contracts, tickets, loyalty, certs, follows
+      // Parallel batch 1: tasks, events, signups, payments, sepa, contracts, tickets, loyalty, certs, follows
+      // Profile is already provided by ClubContext — no need to re-fetch
       const uid = contextUserId2;
       const [
-        profileRes, tasksRes, eventsRes, signupsRes,
+        tasksRes, eventsRes, signupsRes,
         paymentsRes, sepaRes, contractsRes, ticketsRes,
         loyaltyRes, certsRes, followsRes,
       ] = await Promise.all([
-        supabase.from('profiles').select('full_name, email, avatar_url, phone, bio, date_of_birth').eq('id', uid).maybeSingle(),
         supabase.from('tasks').select('*, clubs(name, sport, location)').eq('status', 'open').order('task_date', { ascending: true }),
         (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').neq('status', 'on_hold').order('event_date', { ascending: true }),
         supabase.from('task_signups').select('task_id, status').eq('volunteer_id', uid),
@@ -199,9 +206,8 @@ const VolunteerDashboard = () => {
         supabase.from('club_follows').select('club_id').eq('user_id', uid),
       ]);
 
-      const profileData = profileRes.data;
-      setProfile(profileData);
-      if (profileData && !profileData.full_name && !profileData.phone && !profileData.bio) {
+      // Check first login from context profile
+      if (contextProfile && !contextProfile.full_name) {
         setIsFirstLogin(true);
         setShowProfileDialog(true);
       }
@@ -211,11 +217,14 @@ const VolunteerDashboard = () => {
         let enrichedTasks = tasksRes.data || [];
         if (enrichedTasks.length > 0) {
           const taskIds = enrichedTasks.map(t => t.id);
-          const [taskExtrasRes, signupCountRes, likeCountRes, myLikeRes] = await Promise.all([
+          // All task enrichment + training event filter in one parallel batch
+          const [taskExtrasRes, signupCountRes, likeCountRes, myLikeRes, trainingEventsRes] = await Promise.all([
             (supabase as any).from('tasks').select('id, event_id, event_group_id').in('id', taskIds),
             supabase.from('task_signups').select('task_id').in('task_id', taskIds),
             supabase.from('task_likes').select('task_id').in('task_id', taskIds),
             supabase.from('task_likes').select('task_id').eq('user_id', uid),
+            // Pre-fetch all training events to filter tasks in JS (eliminates sequential round)
+            (supabase as any).from('events').select('id').eq('event_type', 'training'),
           ]);
 
           const extraMap = new Map((taskExtrasRes.data || []).map((t: any) => [t.id, t]));
@@ -225,12 +234,7 @@ const VolunteerDashboard = () => {
             event_group_id: (extraMap.get(t.id) as any)?.event_group_id || null,
           }));
 
-          const trainingEventIds = new Set<string>();
-          const eventIdsToCheck = [...new Set(enrichedTasks.filter(t => t.event_id).map(t => t.event_id!))] as string[];
-          if (eventIdsToCheck.length > 0) {
-            const { data: trainingEvents } = await (supabase as any).from('events').select('id').eq('event_type', 'training').in('id', eventIdsToCheck);
-            (trainingEvents || []).forEach((e: any) => trainingEventIds.add(e.id));
-          }
+          const trainingEventIds = new Set<string>((trainingEventsRes.data || []).map((e: any) => e.id));
           enrichedTasks = enrichedTasks.filter(t => !t.event_id || !trainingEventIds.has(t.event_id));
 
           if (signupCountRes.data) {
