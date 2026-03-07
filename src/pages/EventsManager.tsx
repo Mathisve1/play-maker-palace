@@ -378,6 +378,54 @@ const EventsManager = () => {
     toast.success(t3('Groep verwijderd!', 'Groupe supprimé!', 'Group deleted!'));
   };
 
+  const handleStartEditGroup = (group: EventGroup) => {
+    setEditingGroup(group.id);
+    setEditGroupForm({
+      name: group.name,
+      color: group.color,
+      wristband_color: group.wristband_color || '',
+      wristband_label: group.wristband_label || '',
+      materials_note: group.materials_note || '',
+    });
+  };
+
+  const handleSaveEditGroup = async (groupId: string) => {
+    setSavingGroup(true);
+    const { error } = await (supabase as any).from('event_groups').update({
+      name: editGroupForm.name.trim(),
+      color: editGroupForm.color,
+      wristband_color: editGroupForm.wristband_color.trim() || null,
+      wristband_label: editGroupForm.wristband_label.trim() || null,
+      materials_note: editGroupForm.materials_note.trim() || null,
+    }).eq('id', groupId);
+    if (error) toast.error(error.message);
+    else {
+      setEventGroups(prev => prev.map(g => g.id === groupId ? { ...g, name: editGroupForm.name.trim(), color: editGroupForm.color, wristband_color: editGroupForm.wristband_color.trim() || null, wristband_label: editGroupForm.wristband_label.trim() || null, materials_note: editGroupForm.materials_note.trim() || null } : g));
+      toast.success(t3('Groep bijgewerkt!', 'Groupe mis à jour!', 'Group updated!'));
+      setEditingGroup(null);
+    }
+    setSavingGroup(false);
+  };
+
+  const handleDuplicateGroup = async (group: EventGroup) => {
+    const newColor = GROUP_COLORS[(GROUP_COLORS.indexOf(group.color) + 1) % GROUP_COLORS.length];
+    const maxOrder = eventGroups.filter(g => g.event_id === group.event_id).reduce((m, g) => Math.max(m, g.sort_order), 0);
+    const { data, error } = await (supabase as any).from('event_groups').insert({
+      event_id: group.event_id,
+      name: group.name + ' (kopie)',
+      color: newColor,
+      sort_order: maxOrder + 1,
+      wristband_color: group.wristband_color,
+      wristband_label: group.wristband_label,
+      materials_note: group.materials_note,
+    }).select('*').maybeSingle();
+    if (error) toast.error(error.message);
+    else if (data) {
+      setEventGroups(prev => [...prev, data]);
+      toast.success(t3('Groep gedupliceerd!', 'Groupe dupliqué!', 'Group duplicated!'));
+    }
+  };
+
   const handleStartEditEvent = (event: EventData) => {
     setEditingEvent(event);
     setEditEventForm({ title: event.title, description: event.description || '', event_date: event.event_date ? new Date(event.event_date).toISOString().slice(0, 16) : '', location: event.location || '' });
