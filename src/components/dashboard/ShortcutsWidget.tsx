@@ -10,17 +10,17 @@ interface ShortcutsWidgetProps {
 }
 
 const shortcuts = [
-  { icon: Calendar, path: '/events-manager', label: { nl: 'Evenementen', en: 'Events', fr: 'Événements' }, color: 'text-primary bg-primary/10' },
-  { icon: ClipboardList, path: '/planning?tab=monthly', label: { nl: 'Maandplanning', en: 'Monthly Planning', fr: 'Planning mensuel' }, color: 'text-blue-600 bg-blue-500/10' },
-  { icon: Shield, path: '/safety', label: { nl: 'Safety', en: 'Safety', fr: 'Sécurité' }, color: 'text-green-600 bg-green-500/10' },
+  { icon: Calendar, path: '/events-manager', label: { nl: 'Evenementen & Taken', en: 'Events & Tasks', fr: 'Événements & Tâches' }, color: 'text-primary bg-primary/10' },
+  { icon: ClipboardList, path: '/planning', label: { nl: 'Planning', en: 'Planning', fr: 'Planning' }, color: 'text-blue-600 bg-blue-500/10' },
+  { icon: Shield, path: '/safety', label: { nl: 'Safety & Security', en: 'Safety & Security', fr: 'Sécurité' }, color: 'text-green-600 bg-green-500/10' },
   { icon: MessageCircle, path: '/chat', label: { nl: 'Berichten', en: 'Messages', fr: 'Messages' }, color: 'text-purple-600 bg-purple-500/10' },
-  { icon: BarChart3, path: '/reporting', label: { nl: 'Rapportage', en: 'Reporting', fr: 'Rapports' }, color: 'text-orange-600 bg-orange-500/10' },
+  { icon: BarChart3, path: '/reporting', label: { nl: 'Rapportering', en: 'Reporting', fr: 'Rapports' }, color: 'text-orange-600 bg-orange-500/10' },
   { icon: Users, path: '/compliance', label: { nl: 'Compliance', en: 'Compliance', fr: 'Conformité' }, color: 'text-teal-600 bg-teal-500/10' },
   { icon: FileSignature, path: '/contract-builder', label: { nl: 'Contracten', en: 'Contracts', fr: 'Contrats' }, color: 'text-indigo-600 bg-indigo-500/10' },
   { icon: Ticket, path: '/ticketing', label: { nl: 'Ticketing', en: 'Ticketing', fr: 'Billetterie' }, color: 'text-pink-600 bg-pink-500/10' },
-  { icon: Gift, path: '/loyalty', label: { nl: 'Loyalty', en: 'Loyalty', fr: 'Fidélité' }, color: 'text-amber-600 bg-amber-500/10' },
-  { icon: Handshake, path: '/partners', label: { nl: 'Partners', en: 'Partners', fr: 'Partenaires' }, color: 'text-cyan-600 bg-cyan-500/10' },
-  { icon: GraduationCap, path: '/academy', label: { nl: 'Academy', en: 'Academy', fr: 'Académie' }, color: 'text-emerald-600 bg-emerald-500/10' },
+  { icon: Gift, path: '/loyalty', label: { nl: 'Loyaliteit', en: 'Loyalty', fr: 'Fidélité' }, color: 'text-amber-600 bg-amber-500/10' },
+  { icon: Handshake, path: '/external-partners', label: { nl: 'Partners', en: 'Partners', fr: 'Partenaires' }, color: 'text-cyan-600 bg-cyan-500/10' },
+  { icon: GraduationCap, path: '/academy', label: { nl: 'Academie', en: 'Academy', fr: 'Académie' }, color: 'text-emerald-600 bg-emerald-500/10' },
 ];
 
 export const ShortcutsWidget = ({ language }: ShortcutsWidgetProps) => {
