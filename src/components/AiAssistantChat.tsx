@@ -26,7 +26,6 @@ export default function AiAssistantChat() {
 
   // Hide AI chat on live safety event pages (volunteer lockdown mode)
   const isSafetyEventPage = /^\/safety\/[^/]+/.test(location.pathname);
-  if (isSafetyEventPage) return null;
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
