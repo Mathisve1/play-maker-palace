@@ -1,0 +1,1 @@
+UPDATE public.events SET event_date = now() + interval '7 days' WHERE id = '5483fb98-ede6-4ae9-855a-9bf0763333e0';
