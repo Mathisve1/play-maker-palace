@@ -210,7 +210,7 @@ const PlanningOverview = () => {
       });
       if (res.error) throw new Error(res.error.message);
       toast.success(t3('Maandplanning demo verwijderd!', 'Démo planning mensuelle supprimée!', 'Monthly demo deleted!'));
-      setTimeout(() => window.location.reload(), 1000);
+      await refreshData();
     } catch (err: any) {
       toast.error(err.message);
     }
