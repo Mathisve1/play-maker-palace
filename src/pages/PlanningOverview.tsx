@@ -176,7 +176,7 @@ const PlanningOverview = () => {
       });
       if (res.error) throw new Error(res.error.message);
       toast.success(t3('Demo data verwijderd!', 'Données démo supprimées!', 'Demo data deleted!'));
-      setTimeout(() => window.location.reload(), 1000);
+      await refreshData();
     } catch (err: any) {
       toast.error(err.message);
     }
