@@ -35,15 +35,12 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
   useEffect(() => {
     let cancelled = false;
 
-    const setAuthenticated = async (sessionUser: { id: string; email?: string | null; user_metadata?: Record<string, any> }) => {
-      try {
-        await ensureProfileExists(sessionUser);
-      } catch (e) {
-        console.warn('RequireAuth: ensureProfileExists failed', e);
-      }
+    const setAuthenticated = (sessionUser: { id: string; email?: string | null; user_metadata?: Record<string, any> }) => {
       if (cancelled) return;
       setAuthenticatedUserId(sessionUser.id);
       setChecked(true);
+      // Non-blocking: profile creation and push sync happen in background
+      void ensureProfileExists(sessionUser).catch(e => console.warn('RequireAuth: ensureProfileExists failed', e));
       void syncOneSignalUser(sessionUser.id).catch(() => {});
     };
 
@@ -52,7 +49,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       if (cancelled) return;
 
       if (session?.user) {
-        await setAuthenticated(session.user);
+        setAuthenticated(session.user);
         return;
       }
 
@@ -72,20 +69,8 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
         if (cancelled) return;
 
         if (session?.user) {
-          await setAuthenticated(session.user);
+          setAuthenticated(session.user);
           return;
-        }
-
-        // No cached session — verify with server
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (cancelled) return;
-          if (user) {
-            await setAuthenticated(user);
-            return;
-          }
-        } catch (e) {
-          console.warn('RequireAuth: getUser failed', e);
         }
 
         // Genuinely no session
