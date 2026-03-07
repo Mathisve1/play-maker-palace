@@ -112,6 +112,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     <ClubProvider authenticatedUserId={authenticatedUserId}>
       <PushPermissionBanner />
       {children}
+      <AiAssistantChat />
     </ClubProvider>
   );
 };
