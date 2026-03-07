@@ -137,6 +137,22 @@ const SafetyDashboard = () => {
   const [teamIncidents, setTeamIncidents] = useState<SafetyIncident[]>([]);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; avatar_url: string | null; roleName: string }[]>([]);
   const flashTimeout = useRef<NodeJS.Timeout>();
+  const testFiredRef = useRef(false);
+
+  // ONE-TIME test: fire alarm at 30s and 2min after mount, then never again
+  useEffect(() => {
+    if (testFiredRef.current) return;
+    testFiredRef.current = true;
+    const triggerTest = () => {
+      playAlarm();
+      setFlashRed(true);
+      if (flashTimeout.current) clearTimeout(flashTimeout.current);
+      flashTimeout.current = setTimeout(() => setFlashRed(false), 4000);
+    };
+    const t1 = setTimeout(triggerTest, 30_000);
+    const t2 = setTimeout(triggerTest, 120_000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
     if (entering && ref.current) {
