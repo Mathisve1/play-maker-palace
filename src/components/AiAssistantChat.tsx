@@ -216,6 +216,8 @@ export default function AiAssistantChat() {
     }
   };
 
+  if (isSafetyEventPage) return null;
+
   if (!open) {
     return (
       <button
