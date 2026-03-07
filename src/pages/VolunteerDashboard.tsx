@@ -217,11 +217,14 @@ const VolunteerDashboard = () => {
         let enrichedTasks = tasksRes.data || [];
         if (enrichedTasks.length > 0) {
           const taskIds = enrichedTasks.map(t => t.id);
-          const [taskExtrasRes, signupCountRes, likeCountRes, myLikeRes] = await Promise.all([
+          // All task enrichment + training event filter in one parallel batch
+          const [taskExtrasRes, signupCountRes, likeCountRes, myLikeRes, trainingEventsRes] = await Promise.all([
             (supabase as any).from('tasks').select('id, event_id, event_group_id').in('id', taskIds),
             supabase.from('task_signups').select('task_id').in('task_id', taskIds),
             supabase.from('task_likes').select('task_id').in('task_id', taskIds),
             supabase.from('task_likes').select('task_id').eq('user_id', uid),
+            // Pre-fetch all training events to filter tasks in JS (eliminates sequential round)
+            (supabase as any).from('events').select('id').eq('event_type', 'training'),
           ]);
 
           const extraMap = new Map((taskExtrasRes.data || []).map((t: any) => [t.id, t]));
@@ -231,12 +234,7 @@ const VolunteerDashboard = () => {
             event_group_id: (extraMap.get(t.id) as any)?.event_group_id || null,
           }));
 
-          const trainingEventIds = new Set<string>();
-          const eventIdsToCheck = [...new Set(enrichedTasks.filter(t => t.event_id).map(t => t.event_id!))] as string[];
-          if (eventIdsToCheck.length > 0) {
-            const { data: trainingEvents } = await (supabase as any).from('events').select('id').eq('event_type', 'training').in('id', eventIdsToCheck);
-            (trainingEvents || []).forEach((e: any) => trainingEventIds.add(e.id));
-          }
+          const trainingEventIds = new Set<string>((trainingEventsRes.data || []).map((e: any) => e.id));
           enrichedTasks = enrichedTasks.filter(t => !t.event_id || !trainingEventIds.has(t.event_id));
 
           if (signupCountRes.data) {
