@@ -565,12 +565,7 @@ const ClubOwnerDashboard = () => {
       setLoading(false);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) navigate('/login');
-    });
-
     init();
-    return () => subscription.unsubscribe();
   }, [navigate, refreshKPIs]);
 
   // --- Handlers ---
