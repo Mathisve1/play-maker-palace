@@ -302,15 +302,15 @@ const ClubOwnerDashboard = () => {
   const dt = dashboardT[language];
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
+  // Use ClubContext instead of re-fetching auth/profile/club
+  const { userId: contextUserId, clubId: contextClubId, clubInfo: contextClubInfo, profile: contextProfile, isOwner: contextIsOwner, memberRole: contextMemberRole, loading: contextLoading } = useClubContext();
+
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [signups, setSignups] = useState<Record<string, Signup[]>>({});
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [updatingSignup, setUpdatingSignup] = useState<string | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
-  const [clubId, setClubId] = useState<string | null>(null);
-  const [clubInfo, setClubInfo] = useState<{ name: string; sport: string | null; location: string | null; logo_url: string | null } | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
+  const [clubStripeId, setClubStripeId] = useState<string | null>(null);
   const [myClubRole, setMyClubRole] = useState<'bestuurder' | 'beheerder' | 'medewerker'>('medewerker');
   const [showSettings, setShowSettings] = useState(false);
   const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteer: VolunteerProfile; signupStatus: string; signedUpAt: string } | null>(null);
