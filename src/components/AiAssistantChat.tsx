@@ -21,7 +21,13 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant
 
 export default function AiAssistantChat() {
   const { language } = useLanguage();
+  const location = useLocation();
   const nl = language === "nl";
+
+  // Hide AI chat on live safety event pages (volunteer lockdown mode)
+  const isSafetyEventPage = /^\/safety\/[^/]+/.test(location.pathname);
+  if (isSafetyEventPage) return null;
+
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
