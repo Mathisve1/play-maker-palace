@@ -305,12 +305,19 @@ const ClubOwnerDashboard = () => {
   // Use ClubContext instead of re-fetching auth/profile/club
   const { userId: contextUserId, clubId: contextClubId, clubInfo: contextClubInfo, profile: contextProfile, isOwner: contextIsOwner, memberRole: contextMemberRole, loading: contextLoading } = useClubContext();
 
+  // Aliases from ClubContext — eliminates 3-5 sequential auth/profile/club queries
+  const clubId = contextClubId;
+  const profile = contextProfile;
+  const clubInfo = contextClubInfo ? { name: contextClubInfo.name, sport: contextClubInfo.sport || null, location: contextClubInfo.location || null, logo_url: contextClubInfo.logo_url } : null;
+  const isOwner = contextIsOwner;
+  const myClubRole = contextMemberRole;
+  const currentUserId = contextUserId || '';
+
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [signups, setSignups] = useState<Record<string, Signup[]>>({});
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [updatingSignup, setUpdatingSignup] = useState<string | null>(null);
-  const [clubStripeId, setClubStripeId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteer: VolunteerProfile; signupStatus: string; signedUpAt: string } | null>(null);
   const [showMembers, setShowMembers] = useState(false);
