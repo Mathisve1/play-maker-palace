@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { Bot, X, Send, Loader2, Plus, Trash2, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -20,7 +21,12 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant
 
 export default function AiAssistantChat() {
   const { language } = useLanguage();
+  const location = useLocation();
   const nl = language === "nl";
+
+  // Hide AI chat on live safety event pages (volunteer lockdown mode)
+  const isSafetyEventPage = /^\/safety\/[^/]+/.test(location.pathname);
+
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -209,6 +215,8 @@ export default function AiAssistantChat() {
       send();
     }
   };
+
+  if (isSafetyEventPage) return null;
 
   if (!open) {
     return (
