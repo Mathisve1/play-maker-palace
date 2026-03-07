@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import MonthlyPlanningKPIs from '@/components/MonthlyPlanningKPIs';
 import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3 } from 'lucide-react';
-import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import DashboardLayout from '@/components/DashboardLayout';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
@@ -17,22 +16,24 @@ import { WidgetRenderer } from '@/components/dashboard/WidgetRenderer';
 import { EditTaskDialog } from '@/components/dashboard/EditTaskDialog';
 import { DeleteConfirmDialog } from '@/components/dashboard/DeleteConfirmDialog';
 import { EditEventDialog } from '@/components/dashboard/EditEventDialog';
-
-import ClubSettingsDialog from '@/components/ClubSettingsDialog';
-import ClubMembersDialog from '@/components/ClubMembersDialog';
-import NotificationBell from '@/components/NotificationBell';
-import ContractTemplatesDialog from '@/components/ContractTemplatesDialog';
-import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
-import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
-import BulkMessageDialog from '@/components/BulkMessageDialog';
-import BriefingProgressDialog from '@/components/BriefingProgressDialog';
-import TaskPickerDialog from '@/components/TaskPickerDialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import EditProfileDialog from '@/components/EditProfileDialog';
 import ComplianceBadge from '@/components/ComplianceBadge';
 import { fetchBatchComplianceData, ComplianceStatus } from '@/hooks/useComplianceData';
 import { Language } from '@/i18n/translations';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+// Lazy-load heavy dialog components (only loaded when user opens them)
+const HourConfirmationDialog = lazy(() => import('@/components/HourConfirmationDialog'));
+const ClubSettingsDialog = lazy(() => import('@/components/ClubSettingsDialog'));
+const ClubMembersDialog = lazy(() => import('@/components/ClubMembersDialog'));
+const NotificationBell = lazy(() => import('@/components/NotificationBell'));
+const ContractTemplatesDialog = lazy(() => import('@/components/ContractTemplatesDialog'));
+const VolunteerProfileDialog = lazy(() => import('@/components/VolunteerProfileDialog'));
+const SendContractConfirmDialog = lazy(() => import('@/components/SendContractConfirmDialog'));
+const BulkMessageDialog = lazy(() => import('@/components/BulkMessageDialog'));
+const BriefingProgressDialog = lazy(() => import('@/components/BriefingProgressDialog'));
+const TaskPickerDialog = lazy(() => import('@/components/TaskPickerDialog'));
+const EditProfileDialog = lazy(() => import('@/components/EditProfileDialog'));
 
 interface VolunteerProfile {
   id: string;
