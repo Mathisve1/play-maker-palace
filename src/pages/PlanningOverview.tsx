@@ -72,71 +72,73 @@ const PlanningOverview = () => {
 
   const { clubId: contextClubId } = useClubContext();
 
-  useEffect(() => {
-    const init = async () => {
-      if (!contextClubId) { setLoading(false); return; }
-      setClubId(contextClubId);
+  const refreshData = useCallback(async () => {
+    if (!contextClubId) { setLoading(false); return; }
+    setClubId(contextClubId);
 
-      // Fetch events, tasks, and monthly plans
-      const [evRes, taskRes, monthlyRes] = await Promise.all([
-        (supabase as any).from('events').select('id, title, event_date, location').eq('club_id', contextClubId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', contextClubId).order('task_date', { ascending: true }),
-        supabase.from('monthly_plans').select('id, year, month, title, status').eq('club_id', contextClubId).order('year', { ascending: false }).order('month', { ascending: false }),
+    const [evRes, taskRes, monthlyRes] = await Promise.all([
+      (supabase as any).from('events').select('id, title, event_date, location').eq('club_id', contextClubId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
+      (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', contextClubId).order('task_date', { ascending: true }),
+      supabase.from('monthly_plans').select('id, year, month, title, status').eq('club_id', contextClubId).order('year', { ascending: false }).order('month', { ascending: false }),
+    ]);
+
+    setEvents(evRes.data || []);
+
+    const allTasks = taskRes.data || [];
+    if (allTasks.length) {
+      const taskIds = allTasks.map((t: any) => t.id);
+      const [zoneRes, signupRes] = await Promise.all([
+        (supabase as any).from('task_zones').select('id, task_id').in('task_id', taskIds),
+        (supabase as any).from('task_signups').select('id, task_id').in('task_id', taskIds).eq('status', 'assigned'),
       ]);
-
-      setEvents(evRes.data || []);
-
-      // Enrich tasks with zone/signup counts
-      const allTasks = taskRes.data || [];
-      if (allTasks.length) {
-        const taskIds = allTasks.map((t: any) => t.id);
-        const [zoneRes, signupRes] = await Promise.all([
-          (supabase as any).from('task_zones').select('id, task_id').in('task_id', taskIds),
-          (supabase as any).from('task_signups').select('id, task_id').in('task_id', taskIds).eq('status', 'assigned'),
-        ]);
-        const zones = zoneRes.data || [];
-        const signups = signupRes.data || [];
-        const zoneIds = zones.map((z: any) => z.id);
-        let assignmentMap: Record<string, number> = {};
-        if (zoneIds.length) {
-          const { data: assignments } = await (supabase as any).from('task_zone_assignments').select('id, zone_id').in('zone_id', zoneIds);
-          const zoneToTask: Record<string, string> = {};
-          zones.forEach((z: any) => { zoneToTask[z.id] = z.task_id; });
-          (assignments || []).forEach((a: any) => {
-            const tId = zoneToTask[a.zone_id];
-            if (tId) assignmentMap[tId] = (assignmentMap[tId] || 0) + 1;
-          });
-        }
-        const enriched: TaskWithZones[] = allTasks.map((t: any) => ({
-          ...t,
-          zone_count: zones.filter((z: any) => z.task_id === t.id).length,
-          signup_count: signups.filter((s: any) => s.task_id === t.id).length,
-          assignment_count: assignmentMap[t.id] || 0,
-        }));
-        setTasks(enriched);
+      const zones = zoneRes.data || [];
+      const signups = signupRes.data || [];
+      const zoneIds = zones.map((z: any) => z.id);
+      let assignmentMap: Record<string, number> = {};
+      if (zoneIds.length) {
+        const { data: assignments } = await (supabase as any).from('task_zone_assignments').select('id, zone_id').in('zone_id', zoneIds);
+        const zoneToTask: Record<string, string> = {};
+        zones.forEach((z: any) => { zoneToTask[z.id] = z.task_id; });
+        (assignments || []).forEach((a: any) => {
+          const tId = zoneToTask[a.zone_id];
+          if (tId) assignmentMap[tId] = (assignmentMap[tId] || 0) + 1;
+        });
       }
+      const enriched: TaskWithZones[] = allTasks.map((t: any) => ({
+        ...t,
+        zone_count: zones.filter((z: any) => z.task_id === t.id).length,
+        signup_count: signups.filter((s: any) => s.task_id === t.id).length,
+        assignment_count: assignmentMap[t.id] || 0,
+      }));
+      setTasks(enriched);
+    } else {
+      setTasks([]);
+    }
 
-      // Enrich monthly plans with counts
-      const plans = monthlyRes.data || [];
-      if (plans.length) {
-        const planIds = plans.map((p: any) => p.id);
-        const [taskCountRes, enrollCountRes] = await Promise.all([
-          supabase.from('monthly_plan_tasks').select('id, plan_id').in('plan_id', planIds),
-          supabase.from('monthly_enrollments').select('id, plan_id').in('plan_id', planIds),
-        ]);
-        const planTasks = taskCountRes.data || [];
-        const planEnrolls = enrollCountRes.data || [];
-        setMonthlyPlans(plans.map((p: any) => ({
-          ...p,
-          task_count: planTasks.filter((t: any) => t.plan_id === p.id).length,
-          enrollment_count: planEnrolls.filter((e: any) => e.plan_id === p.id).length,
-        })));
-      }
+    const plans = monthlyRes.data || [];
+    if (plans.length) {
+      const planIds = plans.map((p: any) => p.id);
+      const [taskCountRes, enrollCountRes] = await Promise.all([
+        supabase.from('monthly_plan_tasks').select('id, plan_id').in('plan_id', planIds),
+        supabase.from('monthly_enrollments').select('id, plan_id').in('plan_id', planIds),
+      ]);
+      const planTasks = taskCountRes.data || [];
+      const planEnrolls = enrollCountRes.data || [];
+      setMonthlyPlans(plans.map((p: any) => ({
+        ...p,
+        task_count: planTasks.filter((t: any) => t.plan_id === p.id).length,
+        enrollment_count: planEnrolls.filter((e: any) => e.plan_id === p.id).length,
+      })));
+    } else {
+      setMonthlyPlans([]);
+    }
 
-      setLoading(false);
-    };
-    init();
+    setLoading(false);
   }, [contextClubId]);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   const hasDemoEvent = events.some(e => e.title === 'Demo Voetbalwedstrijd 2026');
   const looseTasks = tasks.filter(t => !t.event_id);
