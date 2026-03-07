@@ -183,20 +183,36 @@ const VolunteerDashboard = () => {
 
   useEffect(() => {
     const init = async () => {
-      if (!contextUserId2) return;
-      setCurrentUserId(contextUserId2);
+      // Use contextUserId directly — don't wait for ClubContext to fully load
+      const uid = contextUserId2 || '';
+      if (!uid) return;
+      setCurrentUserId(uid);
 
-      // Parallel batch 1: tasks, events, signups, payments, sepa, contracts, tickets, loyalty, certs, follows
-      // Profile is already provided by ClubContext — no need to re-fetch
-      const uid = contextUserId2;
+      // ===== CRITICAL PATH: Tasks + signups (show UI fast) =====
+      const [tasksRes, signupsRes] = await Promise.all([
+        supabase.from('tasks').select('*, clubs(name, sport, location)').eq('status', 'open').order('task_date', { ascending: true }),
+        supabase.from('task_signups').select('task_id, status').eq('volunteer_id', uid),
+      ]);
+
+      // Process tasks immediately so UI renders
+      if (!tasksRes.error && tasksRes.data) {
+        setTasks(tasksRes.data);
+        setSignups(signupsRes.data || []);
+        setLoading(false); // ← UI visible NOW
+      }
+
+      // Check first login from context profile
+      if (contextProfile && !contextProfile.full_name) {
+        setIsFirstLogin(true);
+        setShowProfileDialog(true);
+      }
+
+      // ===== DEFERRED PATH: Everything else loads in background =====
       const [
-        tasksRes, eventsRes, signupsRes,
-        paymentsRes, sepaRes, contractsRes, ticketsRes,
+        eventsRes, paymentsRes, sepaRes, contractsRes, ticketsRes,
         loyaltyRes, certsRes, followsRes,
       ] = await Promise.all([
-        supabase.from('tasks').select('*, clubs(name, sport, location)').eq('status', 'open').order('task_date', { ascending: true }),
         (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').neq('status', 'on_hold').order('event_date', { ascending: true }),
-        supabase.from('task_signups').select('task_id, status').eq('volunteer_id', uid),
         supabase.from('volunteer_payments').select('id, task_id, amount, currency, status, paid_at, created_at, stripe_receipt_url').eq('volunteer_id', uid).order('created_at', { ascending: false }),
         (supabase as any).from('sepa_batch_items').select('id, amount, status, created_at, error_flag, error_message, batch_id, task_id, volunteer_id').eq('volunteer_id', uid).order('created_at', { ascending: false }),
         supabase.from('signature_requests').select('id, task_id, status, signing_url, document_url, created_at, updated_at').eq('volunteer_id', uid).order('created_at', { ascending: false }),
@@ -206,50 +222,42 @@ const VolunteerDashboard = () => {
         supabase.from('club_follows').select('club_id').eq('user_id', uid),
       ]);
 
-      // Check first login from context profile
-      if (contextProfile && !contextProfile.full_name) {
-        setIsFirstLogin(true);
-        setShowProfileDialog(true);
-      }
+      // ===== Task enrichment (only if we have tasks) =====
+      const enrichedTasks = tasksRes.data || [];
+      if (enrichedTasks.length > 0) {
+        const taskIds = enrichedTasks.map(t => t.id);
+        const [taskExtrasRes, signupCountRes, likeCountRes, myLikeRes, trainingEventsRes] = await Promise.all([
+          (supabase as any).from('tasks').select('id, event_id, event_group_id').in('id', taskIds),
+          supabase.from('task_signups').select('task_id').in('task_id', taskIds),
+          supabase.from('task_likes').select('task_id').in('task_id', taskIds),
+          supabase.from('task_likes').select('task_id').eq('user_id', uid),
+          (supabase as any).from('events').select('id').eq('event_type', 'training'),
+        ]);
 
-      // Process tasks
-      if (!tasksRes.error) {
-        let enrichedTasks = tasksRes.data || [];
-        if (enrichedTasks.length > 0) {
-          const taskIds = enrichedTasks.map(t => t.id);
-          // All task enrichment + training event filter in one parallel batch
-          const [taskExtrasRes, signupCountRes, likeCountRes, myLikeRes, trainingEventsRes] = await Promise.all([
-            (supabase as any).from('tasks').select('id, event_id, event_group_id').in('id', taskIds),
-            supabase.from('task_signups').select('task_id').in('task_id', taskIds),
-            supabase.from('task_likes').select('task_id').in('task_id', taskIds),
-            supabase.from('task_likes').select('task_id').eq('user_id', uid),
-            // Pre-fetch all training events to filter tasks in JS (eliminates sequential round)
-            (supabase as any).from('events').select('id').eq('event_type', 'training'),
-          ]);
+        const extraMap = new Map((taskExtrasRes.data || []).map((t: any) => [t.id, t]));
+        let finalTasks = enrichedTasks.map(t => ({
+          ...t,
+          event_id: (extraMap.get(t.id) as any)?.event_id || null,
+          event_group_id: (extraMap.get(t.id) as any)?.event_group_id || null,
+        }));
 
-          const extraMap = new Map((taskExtrasRes.data || []).map((t: any) => [t.id, t]));
-          enrichedTasks = enrichedTasks.map(t => ({
-            ...t,
-            event_id: (extraMap.get(t.id) as any)?.event_id || null,
-            event_group_id: (extraMap.get(t.id) as any)?.event_group_id || null,
-          }));
+        const trainingEventIds = new Set<string>((trainingEventsRes.data || []).map((e: any) => e.id));
+        finalTasks = finalTasks.filter(t => !t.event_id || !trainingEventIds.has(t.event_id));
+        setTasks(finalTasks);
 
-          const trainingEventIds = new Set<string>((trainingEventsRes.data || []).map((e: any) => e.id));
-          enrichedTasks = enrichedTasks.filter(t => !t.event_id || !trainingEventIds.has(t.event_id));
-
-          if (signupCountRes.data) {
-            const counts: Record<string, number> = {};
-            signupCountRes.data.forEach(s => { counts[s.task_id] = (counts[s.task_id] || 0) + 1; });
-            setSignupCounts(counts);
-          }
-          if (likeCountRes.data) {
-            const lCounts: Record<string, number> = {};
-            likeCountRes.data.forEach(l => { lCounts[l.task_id] = (lCounts[l.task_id] || 0) + 1; });
-            setLikeCounts(lCounts);
-          }
-          if (myLikeRes.data) { setMyLikes(new Set(myLikeRes.data.map(l => l.task_id))); }
+        if (signupCountRes.data) {
+          const counts: Record<string, number> = {};
+          signupCountRes.data.forEach(s => { counts[s.task_id] = (counts[s.task_id] || 0) + 1; });
+          setSignupCounts(counts);
         }
-        setTasks(enrichedTasks);
+        if (likeCountRes.data) {
+          const lCounts: Record<string, number> = {};
+          likeCountRes.data.forEach(l => { lCounts[l.task_id] = (lCounts[l.task_id] || 0) + 1; });
+          setLikeCounts(lCounts);
+        }
+        if (myLikeRes.data) { setMyLikes(new Set(myLikeRes.data.map(l => l.task_id))); }
+      } else {
+        setLoading(false);
       }
 
       // Process events

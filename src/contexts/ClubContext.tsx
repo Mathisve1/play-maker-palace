@@ -49,9 +49,13 @@ export const ClubProvider = ({ children, authenticatedUserId }: { children: Reac
   const [profile, setProfile] = useState<ProfileInfo | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [memberRole, setMemberRole] = useState<'bestuurder' | 'beheerder' | 'medewerker'>('medewerker');
-  const [loading, setLoading] = useState(true);
+  // Start as false — don't block children rendering while data loads
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   const load = useCallback(async () => {
+    if (!initialized) setLoading(true);
+
     // Parallel: profile + owned clubs + memberships
     const [profileRes, ownedRes, membershipRes] = await Promise.all([
       supabase.from('profiles').select('full_name, email, avatar_url').eq('id', userId).maybeSingle(),
@@ -87,7 +91,8 @@ export const ClubProvider = ({ children, authenticatedUserId }: { children: Reac
     }
 
     setLoading(false);
-  }, [userId]);
+    setInitialized(true);
+  }, [userId, initialized]);
 
   useEffect(() => {
     load();
