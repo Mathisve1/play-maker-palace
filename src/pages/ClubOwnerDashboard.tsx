@@ -566,6 +566,7 @@ const ClubOwnerDashboard = () => {
     };
 
     init();
+  }, [navigate, refreshKPIs]);
 
   // --- Handlers ---
 
