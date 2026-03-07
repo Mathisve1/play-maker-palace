@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import MonthlyPlanningKPIs from '@/components/MonthlyPlanningKPIs';
@@ -301,27 +302,32 @@ const ClubOwnerDashboard = () => {
   const dt = dashboardT[language];
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
+  // Use ClubContext instead of re-fetching auth/profile/club
+  const { userId: contextUserId, clubId: contextClubId, clubInfo: contextClubInfo, profile: contextProfile, isOwner: contextIsOwner, memberRole: contextMemberRole, loading: contextLoading } = useClubContext();
+
+  // Aliases from ClubContext — eliminates 3-5 sequential auth/profile/club queries
+  const clubId = contextClubId;
+  const profile = contextProfile;
+  const clubInfo = contextClubInfo ? { name: contextClubInfo.name, sport: contextClubInfo.sport || null, location: contextClubInfo.location || null, logo_url: contextClubInfo.logo_url } : null;
+  const isOwner = contextIsOwner;
+  const myClubRole = contextMemberRole;
+  const currentUserId = contextUserId || '';
+
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [signups, setSignups] = useState<Record<string, Signup[]>>({});
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [updatingSignup, setUpdatingSignup] = useState<string | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
-  const [clubId, setClubId] = useState<string | null>(null);
-  const [clubInfo, setClubInfo] = useState<{ name: string; sport: string | null; location: string | null; logo_url: string | null } | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
-  const [myClubRole, setMyClubRole] = useState<'bestuurder' | 'beheerder' | 'medewerker'>('medewerker');
+  const [clubStripeId, setClubStripeId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteer: VolunteerProfile; signupStatus: string; signedUpAt: string } | null>(null);
   const [showMembers, setShowMembers] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState('');
   const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [volunteerPayments, setVolunteerPayments] = useState<Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }>>({});
   const [signatureStatuses, setSignatureStatuses] = useState<Record<string, { status: string; document_url?: string | null; id?: string }>>({});
   const [volunteerStripeIds, setVolunteerStripeIds] = useState<Record<string, string | null>>({});
-  const [clubStripeId, setClubStripeId] = useState<string | null>(null);
   const [sendingPayment, setSendingPayment] = useState<string | null>(null);
   const [sendingContract, setSendingContract] = useState<string | null>(null);
   const [contractConfirm, setContractConfirm] = useState<{ volunteer: Signup['volunteer']; task: Task } | null>(null);
@@ -378,97 +384,54 @@ const ClubOwnerDashboard = () => {
   const refreshKPIs = useCallback(async (cid: string) => {
     const { data: publishedPlans } = await supabase
       .from('monthly_plans')
-      .select('id, contract_template_id')
+      .select('id')
       .eq('club_id', cid)
       .eq('status', 'published');
 
-    if (publishedPlans && publishedPlans.length > 0) {
-      const planIds = publishedPlans.map(p => p.id);
-      const { data: enrollments } = await supabase
-        .from('monthly_enrollments')
-        .select('id, plan_id, approval_status')
-        .in('plan_id', planIds);
-      const enrs = enrollments || [];
-      setPendingEnrollmentCount(enrs.filter(e => e.approval_status === 'pending').length);
-
-      const approvedEnrIds = enrs.filter(e => e.approval_status === 'approved').map(e => e.id);
-      if (approvedEnrIds.length > 0) {
-        const { data: daySignups } = await supabase
-          .from('monthly_day_signups')
-          .select('id, status, ticket_barcode')
-          .in('enrollment_id', approvedEnrIds);
-        const ds = daySignups || [];
-        setPendingDaySignupCount(ds.filter(d => d.status === 'pending').length);
-        setPendingTicketCount(ds.filter(d => d.status === 'assigned' && !d.ticket_barcode).length);
-      } else {
-        setPendingDaySignupCount(0);
-        setPendingTicketCount(0);
-      }
-    } else {
+    if (!publishedPlans || publishedPlans.length === 0) {
       setPendingEnrollmentCount(0);
+      setPendingDaySignupCount(0);
+      setPendingTicketCount(0);
+      return;
+    }
+
+    const planIds = publishedPlans.map(p => p.id);
+    const { data: enrollments } = await supabase
+      .from('monthly_enrollments')
+      .select('id, approval_status')
+      .in('plan_id', planIds);
+    const enrs = enrollments || [];
+    setPendingEnrollmentCount(enrs.filter(e => e.approval_status === 'pending').length);
+
+    const approvedEnrIds = enrs.filter(e => e.approval_status === 'approved').map(e => e.id);
+    if (approvedEnrIds.length > 0) {
+      const { data: daySignups } = await supabase
+        .from('monthly_day_signups')
+        .select('id, status, ticket_barcode')
+        .in('enrollment_id', approvedEnrIds);
+      const ds = daySignups || [];
+      setPendingDaySignupCount(ds.filter(d => d.status === 'pending').length);
+      setPendingTicketCount(ds.filter(d => d.status === 'assigned' && !d.ticket_barcode).length);
+    } else {
       setPendingDaySignupCount(0);
       setPendingTicketCount(0);
     }
   }, []);
 
   useEffect(() => {
+    if (contextLoading || !clubId || !currentUserId) return;
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-      setCurrentUserId(session.user.id);
+      // Fetch stripe_account_id for the club
+      const { data: clubRow } = await supabase.from('clubs').select('stripe_account_id').eq('id', clubId).maybeSingle();
+      setClubStripeId(clubRow?.stripe_account_id || null);
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name, email')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      setProfile(profileData);
-
-      const { data: ownedClubs } = await supabase
-        .from('clubs')
-        .select('id, name, sport, location, logo_url, stripe_account_id')
-        .eq('owner_id', session.user.id);
-
-      let activeClub = ownedClubs?.[0] || null;
-      let ownerFlag = !!activeClub;
-
-      if (!activeClub) {
-        const { data: memberships } = await supabase
-          .from('club_members')
-          .select('club_id, role')
-          .eq('user_id', session.user.id);
-
-        if (memberships && memberships.length > 0) {
-          const { data: club } = await supabase
-            .from('clubs')
-            .select('id, name, sport, location, logo_url, stripe_account_id')
-            .eq('id', memberships[0].club_id)
-            .maybeSingle();
-          activeClub = club;
-          setMyClubRole(memberships[0].role as 'bestuurder' | 'beheerder' | 'medewerker');
-        }
-      } else {
-        setMyClubRole('bestuurder');
-      }
-
-      setIsOwner(ownerFlag);
-
-      if (!activeClub) {
-        setLoading(false);
-        return;
-      }
-
-      setClubId(activeClub.id);
-      setClubInfo({ name: activeClub.name, sport: activeClub.sport, location: activeClub.location, logo_url: activeClub.logo_url });
-      setClubStripeId(activeClub.stripe_account_id || null);
-
-      // Parallel: contract templates, trainings, partners, events, tasks
+      // Parallel: contract templates, trainings, partners, events, tasks, stripe info
       const [templatesRes, trainingsRes, partnersRes, eventsRes, tasksRes] = await Promise.all([
-        supabase.from('contract_templates').select('id, name').eq('club_id', activeClub.id).order('created_at', { ascending: false }),
-        supabase.from('academy_trainings').select('id, title').eq('club_id', activeClub.id).eq('is_published', true).order('title'),
-        supabase.from('external_partners').select('id, name, external_payroll').eq('club_id', activeClub.id).order('name'),
-        (supabase as any).from('events').select('*').eq('club_id', activeClub.id).order('event_date', { ascending: true }),
-        supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)').eq('club_id', activeClub.id).order('task_date', { ascending: true }),
+        supabase.from('contract_templates').select('id, name').eq('club_id', clubId).order('created_at', { ascending: false }),
+        supabase.from('academy_trainings').select('id, title').eq('club_id', clubId).eq('is_published', true).order('title'),
+        supabase.from('external_partners').select('id, name, external_payroll').eq('club_id', clubId).order('name'),
+        (supabase as any).from('events').select('*').eq('club_id', clubId).order('event_date', { ascending: true }),
+        supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)').eq('club_id', clubId).order('task_date', { ascending: true }),
       ]);
 
       setContractTemplates(templatesRes.data || []);
@@ -476,26 +439,23 @@ const ClubOwnerDashboard = () => {
       setExternalPartners(partnersRes.data || []);
       setEvents(eventsRes.data || []);
 
-      // Fetch event groups
       const eventsData = eventsRes.data || [];
-      if (eventsData.length > 0) {
-        const eventIds = eventsData.map((e: any) => e.id);
-        const { data: groupsData } = await (supabase as any)
-          .from('event_groups')
-          .select('*')
-          .in('event_id', eventIds)
-          .order('sort_order', { ascending: true });
-        setEventGroups(groupsData || []);
-      }
-
-      // Add event_id and event_group_id from a separate query since types might not be updated
       const tasksData = tasksRes.data;
+
+      // Parallel: event groups + task extras + KPIs (instead of sequential)
+      const [groupsRes, taskExtrasRes] = await Promise.all([
+        eventsData.length > 0
+          ? (supabase as any).from('event_groups').select('*').in('event_id', eventsData.map((e: any) => e.id)).order('sort_order', { ascending: true })
+          : Promise.resolve({ data: [] }),
+        tasksData && tasksData.length > 0
+          ? (supabase as any).from('tasks').select('id, event_id, event_group_id').eq('club_id', clubId)
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      setEventGroups(groupsRes.data || []);
+
       if (tasksData) {
-        const { data: taskExtras } = await (supabase as any)
-          .from('tasks')
-          .select('id, event_id, event_group_id')
-          .eq('club_id', activeClub.id);
-        const extraMap = new Map((taskExtras || []).map((t: any) => [t.id, t]));
+        const extraMap = new Map((taskExtrasRes.data || []).map((t: any) => [t.id, t]));
         const enrichedTasks = tasksData.map(t => ({
           ...t,
           event_id: (extraMap.get(t.id) as any)?.event_id || null,
@@ -511,7 +471,7 @@ const ClubOwnerDashboard = () => {
         // Parallel: signups, payments, signatures
         const [signupsRes, paymentsRes, sigsRes] = await Promise.all([
           supabase.from('task_signups').select('id, task_id, volunteer_id, status, signed_up_at').in('task_id', taskIds),
-          supabase.from('volunteer_payments').select('task_id, volunteer_id, status, stripe_receipt_url, paid_at').eq('club_id', activeClub.id),
+          supabase.from('volunteer_payments').select('task_id, volunteer_id, status, stripe_receipt_url, paid_at').eq('club_id', clubId),
           supabase.from('signature_requests').select('id, task_id, volunteer_id, status, document_url').in('task_id', taskIds),
         ]);
 
@@ -559,14 +519,15 @@ const ClubOwnerDashboard = () => {
         }
       }
 
-      // Fetch monthly planning KPI counts
-      await refreshKPIs(activeClub.id);
-
       setLoading(false);
     };
 
+    // Fire KPIs in parallel with init (non-blocking)
+    refreshKPIs(clubId);
     init();
-  }, [navigate, refreshKPIs]);
+
+    init();
+  }, [contextLoading, clubId, currentUserId, refreshKPIs]);
 
   // --- Handlers ---
 
@@ -1396,7 +1357,7 @@ const ClubOwnerDashboard = () => {
 
       {/* Dialogs */}
       {showSettings && clubId && clubInfo && (
-        <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => setClubInfo(info)} />
+        <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => { /* updates handled by ClubContext refresh */ }} />
       )}
       {showMembers && clubId && (
         <ClubMembersDialog clubId={clubId} currentUserId={currentUserId} isOwner={isOwner} currentUserRole={myClubRole} onClose={() => setShowMembers(false)} />
@@ -1463,7 +1424,7 @@ const ClubOwnerDashboard = () => {
         language={language}
       />
 
-      <EditProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} userId={currentUserId} language={language} onProfileUpdated={(p) => setProfile({ full_name: p.full_name || '', email: p.email || '' })} />
+      <EditProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} userId={currentUserId} language={language} onProfileUpdated={() => { /* handled by ClubContext */ }} />
       {bulkMessageTask && <BulkMessageDialog taskId={bulkMessageTask.taskId} taskTitle={bulkMessageTask.taskTitle} clubOwnerId={currentUserId} volunteers={bulkMessageTask.volunteers} onClose={() => setBulkMessageTask(null)} />}
       {briefingProgressTaskId && <BriefingProgressDialog open={!!briefingProgressTaskId} onOpenChange={(open) => { if (!open) setBriefingProgressTaskId(null); }} taskId={briefingProgressTaskId} language={language} />}
       <TaskPickerDialog open={showBriefingTaskPicker} onOpenChange={setShowBriefingTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Briefing aanmaken' : language === 'fr' ? 'Créer un briefing' : 'Create briefing'} onSelect={(taskId) => { const task = tasks.find(t => t.id === taskId); if (task) navigate(`/briefing-builder?taskId=${taskId}&clubId=${task.club_id || clubId}`); }} />
