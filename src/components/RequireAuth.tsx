@@ -49,7 +49,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       if (cancelled) return;
 
       if (session?.user) {
-        await setAuthenticated(session.user);
+        setAuthenticated(session.user);
         return;
       }
 
