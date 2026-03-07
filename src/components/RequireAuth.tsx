@@ -37,17 +37,37 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
 
     const check = async () => {
       try {
-        const sessionResult = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<{ data: { session: null } }>((resolve) =>
-            setTimeout(() => resolve({ data: { session: null } }), 4000)
-          ),
-        ]);
+        // Try getSession with generous timeout; on timeout, wait for onAuthStateChange instead
+        let session: any = null;
+        try {
+          const sessionResult = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<null>((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), 8000)
+            ),
+          ]);
+          session = (sessionResult as any)?.data?.session ?? null;
+        } catch {
+          // Timeout — don't redirect yet, let onAuthStateChange handle it
+          console.warn('RequireAuth: getSession timed out, waiting for auth state change...');
+          return;
+        }
 
-        const session = sessionResult.data?.session ?? null;
         if (cancelled) return;
 
         if (!session) {
+          // Double-check with getUser as fallback before redirecting
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && !cancelled) {
+              await ensureProfileExists(user);
+              setAuthenticatedUserId(user.id);
+              setChecked(true);
+              return;
+            }
+          } catch {}
+
+          if (cancelled) return;
           setAuthenticatedUserId(null);
           navigate(redirectTo, { replace: true });
           return;
