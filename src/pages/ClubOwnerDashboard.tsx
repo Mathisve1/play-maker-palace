@@ -457,7 +457,7 @@ const ClubOwnerDashboard = () => {
         const { data: taskExtras } = await (supabase as any)
           .from('tasks')
           .select('id, event_id, event_group_id')
-          .eq('club_id', activeClub.id);
+          .eq('club_id', clubId);
         const extraMap = new Map((taskExtras || []).map((t: any) => [t.id, t]));
         const enrichedTasks = tasksData.map(t => ({
           ...t,
