@@ -318,7 +318,7 @@ const ClubOwnerDashboard = () => {
   const [signups, setSignups] = useState<Record<string, Signup[]>>({});
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [updatingSignup, setUpdatingSignup] = useState<string | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
+  const [clubStripeId, setClubStripeId] = useState<string | null>(null);
   const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteer: VolunteerProfile; signupStatus: string; signedUpAt: string } | null>(null);
   const [showMembers, setShowMembers] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
