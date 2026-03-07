@@ -140,7 +140,6 @@ const VolunteerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [signingUp, setSigningUp] = useState<string | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
