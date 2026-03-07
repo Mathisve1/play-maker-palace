@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEMO_EVENT_TITLE = "SIMULATIE: FC Harelbeke vs KV Kortrijk";
+const DEFAULT_DEMO_TITLE = "SIMULATIE: FC Harelbeke vs KV Kortrijk";
 const VOLUNTEER_TEST_EMAIL = "vaneeckhoutmathis4@gmail.com";
 
 // 35 dummy volunteer names
