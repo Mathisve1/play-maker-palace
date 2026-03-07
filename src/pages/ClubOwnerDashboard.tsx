@@ -1359,7 +1359,7 @@ const ClubOwnerDashboard = () => {
 
       {/* Dialogs */}
       {showSettings && clubId && clubInfo && (
-        <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => setClubInfo(info)} />
+        <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => { /* updates handled by ClubContext refresh */ }} />
       )}
       {showMembers && clubId && (
         <ClubMembersDialog clubId={clubId} currentUserId={currentUserId} isOwner={isOwner} currentUserRole={myClubRole} onClose={() => setShowMembers(false)} />
