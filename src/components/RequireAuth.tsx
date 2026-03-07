@@ -64,7 +64,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
 
       // Ignore transient null sessions during bootstrap; only react to real sign-outs after init.
       if (!initialAuthResolved) return;
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      if (event === 'SIGNED_OUT') {
         setUnauthenticated();
       }
     });
