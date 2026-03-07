@@ -55,20 +55,25 @@ interface VolunteerZoneAssignment {
   volunteer_id: string; zone_id: string;
 }
 
-// ── Alarm sound helper ──
+// ── Alarm sound helper — 3 loud beeps ──
 const playAlarm = () => {
   try {
     const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'square';
-    gain.gain.value = 0.3;
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-    osc.stop(ctx.currentTime + 0.8);
+    const playBeep = (startTime: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 1200;
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.8, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.25);
+      osc.start(startTime);
+      osc.stop(startTime + 0.3);
+    };
+    playBeep(ctx.currentTime);
+    playBeep(ctx.currentTime + 0.35);
+    playBeep(ctx.currentTime + 0.7);
   } catch { /* silent fallback */ }
 };
 
