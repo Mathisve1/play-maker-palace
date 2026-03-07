@@ -9,13 +9,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
-  PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen,
+  PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskZoneDialog from '@/components/TaskZoneDialog';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface EventData {
   id: string; club_id: string; title: string; description: string | null;
@@ -855,29 +859,42 @@ const EventsManager = () => {
           <div className="border-t border-border px-5 pb-5">
             {event.description && <p className="text-sm text-muted-foreground mt-3 mb-4">{event.description}</p>}
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 mt-3 mb-4 flex-wrap">
-              <button data-tour={ei === 0 ? 'btn-add-group' : undefined} onClick={() => { setAddingGroupToEvent(event.id); setNewGroupName(''); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                <Plus className="w-3.5 h-3.5" /> {nl ? 'Groep toevoegen' : 'Add group'}
-              </button>
-              <button onClick={() => handleStartEditEvent(event)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                <Pencil className="w-3.5 h-3.5" /> {nl ? 'Bewerken' : 'Edit'}
-              </button>
-              <button onClick={() => handleDuplicateEvent(event.id)} disabled={duplicatingEvent === event.id} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
-                {duplicatingEvent === event.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />} {nl ? 'Dupliceren' : 'Duplicate'}
-              </button>
-              <button onClick={() => handleToggleHoldEvent(event.id)} disabled={togglingHold === event.id} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10 transition-colors disabled:opacity-50">
-                {event.status === 'on_hold' ? <PlayCircle className="w-3.5 h-3.5" /> : <PauseCircle className="w-3.5 h-3.5" />} {event.status === 'on_hold' ? (nl ? 'Heractiveren' : 'Reactivate') : (nl ? 'On hold' : 'On hold')}
-              </button>
-              <button onClick={() => setConfirmDeleteEvent(event.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors">
-                <Trash2 className="w-3.5 h-3.5" /> {nl ? 'Verwijderen' : 'Delete'}
-              </button>
-              <button onClick={() => setSafetyConfigEvent({ eventId: event.id, clubId: event.club_id })} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-foreground hover:bg-primary/10 hover:text-primary transition-colors">
-                <Shield className="w-3.5 h-3.5" /> Safety
-              </button>
-              <button onClick={() => navigate(`/safety/${event.id}`)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                <Radio className="w-3.5 h-3.5" /> Control Room
-              </button>
+            {/* Floating Action Bar */}
+            <div className="sticky bottom-0 z-20 mt-4 -mx-5 -mb-5 px-4 py-3 bg-card/95 backdrop-blur-sm border-t border-border flex items-center justify-between gap-2 rounded-b-2xl">
+              <div className="flex items-center gap-2">
+                <button data-tour={ei === 0 ? 'btn-add-group' : undefined} onClick={() => { setAddingGroupToEvent(event.id); setNewGroupName(''); }} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors touch-target">
+                  <Plus className="w-3.5 h-3.5" /> {nl ? 'Groep toevoegen' : 'Add group'}
+                </button>
+                <button onClick={() => navigate(`/safety/${event.id}`)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors touch-target">
+                  <Radio className="w-3.5 h-3.5" /> Control Room
+                </button>
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted text-muted-foreground hover:text-foreground hover:bg-accent transition-colors touch-target">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => handleStartEditEvent(event)}>
+                    <Pencil className="w-4 h-4 mr-2" /> {nl ? 'Bewerken' : 'Edit'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDuplicateEvent(event.id)} disabled={duplicatingEvent === event.id}>
+                    {duplicatingEvent === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />} {nl ? 'Dupliceren' : 'Duplicate'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSafetyConfigEvent({ eventId: event.id, clubId: event.club_id })}>
+                    <Shield className="w-4 h-4 mr-2" /> Safety
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleToggleHoldEvent(event.id)} disabled={togglingHold === event.id} className="text-yellow-600 dark:text-yellow-400 focus:text-yellow-600 dark:focus:text-yellow-400">
+                    {event.status === 'on_hold' ? <PlayCircle className="w-4 h-4 mr-2" /> : <PauseCircle className="w-4 h-4 mr-2" />} {event.status === 'on_hold' ? (nl ? 'Heractiveren' : 'Reactivate') : (nl ? 'On hold' : 'On hold')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setConfirmDeleteEvent(event.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                    <Trash2 className="w-4 h-4 mr-2" /> {nl ? 'Verwijderen' : 'Delete'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Add group inline */}
