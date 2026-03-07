@@ -425,13 +425,13 @@ const ClubOwnerDashboard = () => {
       const { data: clubRow } = await supabase.from('clubs').select('stripe_account_id').eq('id', clubId).maybeSingle();
       setClubStripeId(clubRow?.stripe_account_id || null);
 
-      // Parallel: contract templates, trainings, partners, events, tasks
+      // Parallel: contract templates, trainings, partners, events, tasks, stripe info
       const [templatesRes, trainingsRes, partnersRes, eventsRes, tasksRes] = await Promise.all([
-        supabase.from('contract_templates').select('id, name').eq('club_id', activeClub.id).order('created_at', { ascending: false }),
-        supabase.from('academy_trainings').select('id, title').eq('club_id', activeClub.id).eq('is_published', true).order('title'),
-        supabase.from('external_partners').select('id, name, external_payroll').eq('club_id', activeClub.id).order('name'),
-        (supabase as any).from('events').select('*').eq('club_id', activeClub.id).order('event_date', { ascending: true }),
-        supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)').eq('club_id', activeClub.id).order('task_date', { ascending: true }),
+        supabase.from('contract_templates').select('id, name').eq('club_id', clubId).order('created_at', { ascending: false }),
+        supabase.from('academy_trainings').select('id, title').eq('club_id', clubId).eq('is_published', true).order('title'),
+        supabase.from('external_partners').select('id, name, external_payroll').eq('club_id', clubId).order('name'),
+        (supabase as any).from('events').select('*').eq('club_id', clubId).order('event_date', { ascending: true }),
+        supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)').eq('club_id', clubId).order('task_date', { ascending: true }),
       ]);
 
       setContractTemplates(templatesRes.data || []);
