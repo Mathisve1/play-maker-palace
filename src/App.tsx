@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import IOSInstallOverlay from "@/components/IOSInstallOverlay";
-import PushPermissionBanner from "@/components/PushPermissionBanner";
 import { autoResubscribeIfNeeded } from "@/lib/pushNotifications";
 
 import RequireAuth from "./components/RequireAuth";
