@@ -378,34 +378,35 @@ const ClubOwnerDashboard = () => {
   const refreshKPIs = useCallback(async (cid: string) => {
     const { data: publishedPlans } = await supabase
       .from('monthly_plans')
-      .select('id, contract_template_id')
+      .select('id')
       .eq('club_id', cid)
       .eq('status', 'published');
 
-    if (publishedPlans && publishedPlans.length > 0) {
-      const planIds = publishedPlans.map(p => p.id);
-      const { data: enrollments } = await supabase
-        .from('monthly_enrollments')
-        .select('id, plan_id, approval_status')
-        .in('plan_id', planIds);
-      const enrs = enrollments || [];
-      setPendingEnrollmentCount(enrs.filter(e => e.approval_status === 'pending').length);
-
-      const approvedEnrIds = enrs.filter(e => e.approval_status === 'approved').map(e => e.id);
-      if (approvedEnrIds.length > 0) {
-        const { data: daySignups } = await supabase
-          .from('monthly_day_signups')
-          .select('id, status, ticket_barcode')
-          .in('enrollment_id', approvedEnrIds);
-        const ds = daySignups || [];
-        setPendingDaySignupCount(ds.filter(d => d.status === 'pending').length);
-        setPendingTicketCount(ds.filter(d => d.status === 'assigned' && !d.ticket_barcode).length);
-      } else {
-        setPendingDaySignupCount(0);
-        setPendingTicketCount(0);
-      }
-    } else {
+    if (!publishedPlans || publishedPlans.length === 0) {
       setPendingEnrollmentCount(0);
+      setPendingDaySignupCount(0);
+      setPendingTicketCount(0);
+      return;
+    }
+
+    const planIds = publishedPlans.map(p => p.id);
+    const { data: enrollments } = await supabase
+      .from('monthly_enrollments')
+      .select('id, approval_status')
+      .in('plan_id', planIds);
+    const enrs = enrollments || [];
+    setPendingEnrollmentCount(enrs.filter(e => e.approval_status === 'pending').length);
+
+    const approvedEnrIds = enrs.filter(e => e.approval_status === 'approved').map(e => e.id);
+    if (approvedEnrIds.length > 0) {
+      const { data: daySignups } = await supabase
+        .from('monthly_day_signups')
+        .select('id, status, ticket_barcode')
+        .in('enrollment_id', approvedEnrIds);
+      const ds = daySignups || [];
+      setPendingDaySignupCount(ds.filter(d => d.status === 'pending').length);
+      setPendingTicketCount(ds.filter(d => d.status === 'assigned' && !d.ticket_barcode).length);
+    } else {
       setPendingDaySignupCount(0);
       setPendingTicketCount(0);
     }
