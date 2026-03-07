@@ -158,9 +158,9 @@ const PlanningOverview = () => {
         body: { club_id: clubId, action: 'create' },
       });
       if (res.error) throw new Error(res.error.message);
-      toast.success(t3('Demo aangemaakt! Pagina wordt herladen...', 'Démo créée! Rechargement...', 'Demo created! Reloading...'));
+      toast.success(t3('Demo aangemaakt!', 'Démo créée!', 'Demo created!'));
       setShowPostDemoCta(true);
-      setTimeout(() => window.location.reload(), 2500);
+      await refreshData();
     } catch (err: any) {
       toast.error(err.message);
     }
