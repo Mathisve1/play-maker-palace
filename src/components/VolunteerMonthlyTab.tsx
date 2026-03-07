@@ -200,7 +200,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   const [showTicket, setShowTicket] = useState<string | null>(null);
 
   const { data: complianceData } = useComplianceData(userId);
-  const totalEarned = complianceData.totalIncome;
+  const totalEarned = complianceData?.totalIncome ?? 0;
   const compliancePercentage = (totalEarned / YEARLY_CAP) * 100;
   const isBlocked = totalEarned >= YEARLY_CAP;
   const isWarning = compliancePercentage >= 80 && !isBlocked;
