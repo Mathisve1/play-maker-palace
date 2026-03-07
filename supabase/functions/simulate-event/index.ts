@@ -7,6 +7,20 @@ const corsHeaders = {
 };
 
 const DEMO_EVENT_TITLE = "SIMULATIE: FC Harelbeke vs KV Kortrijk";
+const VOLUNTEER_TEST_EMAIL = "vaneeckhoutmathis4@gmail.com";
+
+// 35 dummy volunteer names
+const DUMMY_NAMES = [
+  "Jan Peeters", "Marie Janssens", "Pieter De Smet", "An Willems",
+  "Tom Claes", "Eva Martens", "Koen Jacobs", "Lisa Vermeersch",
+  "Bart Wouters", "Sara Maes", "Nico Van Damme", "Julie Hermans",
+  "Kevin Mertens", "Sofie De Wolf", "Jens Vandenberghe", "Laura Peeters",
+  "Wout Stevens", "Eline Bogaert", "Robbe Lenaerts", "Charlotte Devos",
+  "Stijn De Cock", "Nathalie Claeys", "Dieter Verhoeven", "Elien Baert",
+  "Simon Vanhove", "Anja Michiels", "Thomas Desmedt", "Griet Vandewalle",
+  "Bram Goossens", "Lies Declerck", "Joris Van Hoeck", "Kim Segers",
+  "Yannick Coppens", "Hanne Buysse", "Thibault Lemaire",
+];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -57,6 +71,9 @@ Deno.serve(async (req) => {
         await supabase.from("safety_incidents").delete().eq("event_id", eventId);
         await supabase.from("safety_zones").delete().eq("event_id", eventId);
 
+        // Closing tasks
+        await supabase.from("closing_tasks").delete().eq("event_id", eventId);
+
         // Task data
         const { data: eventTasks } = await supabase.from("tasks").select("id").eq("event_id", eventId);
         const taskIds = (eventTasks || []).map((t: any) => t.id);
@@ -67,6 +84,10 @@ Deno.serve(async (req) => {
           await supabase.from("task_zones").delete().in("task_id", taskIds);
           await supabase.from("task_signups").delete().in("task_id", taskIds);
           await supabase.from("hour_confirmations").delete().in("task_id", taskIds);
+
+          // Volunteer safety roles
+          await supabase.from("volunteer_safety_roles").delete().eq("event_id", eventId);
+
           await supabase.from("tasks").delete().in("id", taskIds);
         }
 
@@ -98,44 +119,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get all club volunteers (profiles via task_signups for this club)
-    const { data: clubMembers } = await supabase
-      .from("club_members")
-      .select("user_id")
-      .eq("club_id", club_id);
+    // ── Find the volunteer test account ──
+    const { data: testProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", VOLUNTEER_TEST_EMAIL)
+      .maybeSingle();
+    const testVolunteerId = testProfile?.id || null;
 
-    // Gather dummy volunteer IDs (exclude the current user)
+    // ── Gather dummy volunteer IDs ──
     const dummyIds: string[] = [];
-    
-    // Get profiles that have signed up for tasks in this club before
-    const { data: prevSignups } = await supabase
-      .from("task_signups")
-      .select("volunteer_id, tasks!inner(club_id)")
-      .eq("tasks.club_id", club_id)
-      .limit(100);
-
     const seenIds = new Set<string>();
     seenIds.add(user.id);
-    for (const s of prevSignups || []) {
-      if (!seenIds.has(s.volunteer_id)) {
-        seenIds.add(s.volunteer_id);
-        dummyIds.push(s.volunteer_id);
-      }
-    }
+    if (testVolunteerId) seenIds.add(testVolunteerId);
 
-    // Also check profiles table for demo volunteers
-    const demoNames = [
-      "Jan Peeters", "Marie Janssens", "Pieter De Smet", "An Willems",
-      "Tom Claes", "Eva Martens", "Koen Jacobs", "Lisa Vermeersch",
-      "Bart Wouters", "Sara Maes", "Nico Van Damme", "Julie Hermans",
-      "Kevin Mertens", "Sofie De Wolf", "Jens Vandenberghe", "Laura Peeters",
-      "Wout Stevens", "Eline Bogaert", "Robbe Lenaerts", "Charlotte Devos",
-    ];
-
+    // Get profiles that match demo names
     const { data: demoProfiles } = await supabase
       .from("profiles")
       .select("id")
-      .in("full_name", demoNames);
+      .in("full_name", DUMMY_NAMES);
 
     for (const p of demoProfiles || []) {
       if (!seenIds.has(p.id)) {
@@ -144,15 +146,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Create event (today, for immediate testing)
+    // Also check existing club members / previous signups
+    const { data: prevSignups } = await supabase
+      .from("task_signups")
+      .select("volunteer_id, tasks!inner(club_id)")
+      .eq("tasks.club_id", club_id)
+      .limit(100);
+
+    for (const s of prevSignups || []) {
+      if (!seenIds.has(s.volunteer_id)) {
+        seenIds.add(s.volunteer_id);
+        dummyIds.push(s.volunteer_id);
+      }
+    }
+
+    // ── Create event ──
     const { data: event, error: evErr } = await supabase
       .from("events")
       .insert({
         club_id,
         title: DEMO_EVENT_TITLE,
-        description: "Automatisch gegenereerd simulatie-scenario. Duurt max 5 minuten. Kan meerdere keren worden herhaald.",
+        description: "Automatisch gegenereerd simulatie-scenario met 35 vrijwilligers (30 ingeschreven). Duurt max 5 minuten.",
         event_date: new Date().toISOString(),
-        location: "Stadion De Mol, Harelbeke",
+        location: "Stadion De Mol, Harelbekestraat 30, 8530 Harelbeke",
         status: "open",
         event_type: "event",
         is_live: false,
@@ -162,13 +178,14 @@ Deno.serve(async (req) => {
     if (evErr) throw evErr;
     const eventId = event.id;
 
-    // Create groups
+    // ── Create groups ──
     const groupDefs = [
-      { name: "Stewards", color: "#3b82f6", wristband_color: "Blauw", wristband_label: "STEWARD", materials_note: "Fluohesje, oortje, walkietalkie" },
+      { name: "Stewards Tribune", color: "#3b82f6", wristband_color: "Blauw", wristband_label: "STEWARD", materials_note: "Fluohesje, oortje, walkietalkie" },
       { name: "Parking", color: "#f59e0b", wristband_color: "Geel", wristband_label: "PARKING", materials_note: "Fluohesje, zaklamp" },
       { name: "Catering", color: "#10b981", wristband_color: "Groen", wristband_label: "CATERING", materials_note: "Schort, handschoenen" },
       { name: "EHBO", color: "#ef4444", wristband_color: "Rood", wristband_label: "EHBO", materials_note: "EHBO-kit, AED" },
       { name: "Security", color: "#8b5cf6", wristband_color: "Paars", wristband_label: "SECURITY", materials_note: "Detectiepoort, fouilleerhandschoenen" },
+      { name: "VIP & Ontvangst", color: "#ec4899", wristband_color: "Roze", wristband_label: "VIP", materials_note: "Naamkaartje, walkietalkie" },
     ];
 
     const { data: groups } = await supabase
@@ -182,22 +199,33 @@ Deno.serve(async (req) => {
     const groupMap: Record<string, string> = {};
     groups?.forEach((g: any) => { groupMap[g.name] = g.id; });
 
-    // Create tasks
+    // ── Create tasks (total spots = 35, 30 will be filled) ──
     const now = new Date();
     const taskDefs = [
-      { group: "Stewards", title: "Thuisvak bewaking", location: "Tribune A", spots: 4, startH: 0, endH: 3 },
-      { group: "Stewards", title: "Bezoekersvak bewaking", location: "Tribune B", spots: 3, startH: 0, endH: 3 },
+      // Stewards Tribune — 12 spots across 3 tasks
+      { group: "Stewards Tribune", title: "Noord tribune bewaking", location: "Noord tribune", spots: 4, startH: 0, endH: 3 },
+      { group: "Stewards Tribune", title: "Zuid tribune bewaking", location: "Zuid tribune", spots: 5, startH: 0, endH: 3 },
+      { group: "Stewards Tribune", title: "Hoofdtribune bewaking", location: "Hoofdtribune", spots: 3, startH: 0, endH: 3 },
+      // Parking — 5 spots
       { group: "Parking", title: "Parking A begeleiding", location: "Parking A", spots: 3, startH: -1, endH: 1 },
       { group: "Parking", title: "Parking B begeleiding", location: "Parking B", spots: 2, startH: -1, endH: 1 },
+      // Catering — 6 spots
       { group: "Catering", title: "Drankbar hoofdtribune", location: "Hoofdtribune bar", spots: 3, startH: 0, endH: 4 },
       { group: "Catering", title: "Foodtruck esplanade", location: "Esplanade", spots: 3, startH: -1, endH: 4 },
+      // EHBO — 3 spots
       { group: "EHBO", title: "EHBO-post standby", location: "Medische post", spots: 2, startH: 0, endH: 3 },
+      { group: "EHBO", title: "EHBO mobiel team", location: "Rondlopend", spots: 1, startH: 0, endH: 3 },
+      // Security — 5 spots
       { group: "Security", title: "Toegangscontrole Noord", location: "Ingang Noord", spots: 3, startH: -1, endH: 2 },
       { group: "Security", title: "Toegangscontrole Zuid", location: "Ingang Zuid", spots: 2, startH: -1, endH: 2 },
+      // VIP — 4 spots
+      { group: "VIP & Ontvangst", title: "VIP-lounge ontvangst", location: "VIP-zone", spots: 2, startH: -1, endH: 3 },
+      { group: "VIP & Ontvangst", title: "Sponsors begeleiding", location: "Tribune lounge", spots: 2, startH: 0, endH: 3 },
     ];
+    // Total spots: 4+5+3+3+2+3+3+2+1+3+2+2+2 = 35
 
-    // Tasks assigned to the current user (only tribune/steward + catering)
-    const mathisTasks = ["Thuisvak bewaking", "Drankbar hoofdtribune"];
+    // The volunteer test account is assigned to "Zuid tribune bewaking" (full zuid tribune)
+    const testAccountTask = "Zuid tribune bewaking";
 
     const insertedTasks: any[] = [];
     for (const td of taskDefs) {
@@ -217,23 +245,38 @@ Deno.serve(async (req) => {
       if (task) insertedTasks.push({ ...task, group: td.group, spots: td.spots });
     }
 
-    // Assign volunteers to tasks
+    // ── Assign volunteers (30 out of 35 spots filled) ──
     let dummyIdx = 0;
     const taskVolunteerMap: Record<string, string[]> = {};
+    const unfilledSpots = 5; // 5 spots stay empty
+    let spotsSkipped = 0;
 
     for (const task of insertedTasks) {
       const vols: string[] = [];
-      const isMathisTask = mathisTasks.includes(task.title);
+      const isTestTask = task.title === testAccountTask;
 
-      // Assign Mathis first if applicable
-      if (isMathisTask) {
-        await supabase.from("task_signups").insert({ task_id: task.id, volunteer_id: user.id, status: "assigned" });
-        vols.push(user.id);
+      // Assign test account to Zuid tribune
+      if (isTestTask && testVolunteerId) {
+        await supabase.from("task_signups").insert({ task_id: task.id, volunteer_id: testVolunteerId, status: "assigned" });
+        vols.push(testVolunteerId);
       }
 
-      // Fill remaining spots with dummies
-      const remaining = task.spots - (isMathisTask ? 1 : 0);
-      for (let i = 0; i < remaining && dummyIds.length > 0; i++) {
+      // Fill remaining spots (leave some empty for the 30/35 ratio)
+      const alreadyAssigned = isTestTask && testVolunteerId ? 1 : 0;
+      const totalSpotsForTask = task.spots - alreadyAssigned;
+
+      for (let i = 0; i < totalSpotsForTask; i++) {
+        // Skip some spots to reach 30/35 filled (skip 5 total across all tasks)
+        if (spotsSkipped < unfilledSpots && dummyIds.length > 0) {
+          // Skip one spot per task for the last few tasks
+          const remainingTasks = insertedTasks.length - insertedTasks.indexOf(task);
+          if (remainingTasks <= unfilledSpots - spotsSkipped) {
+            spotsSkipped++;
+            continue;
+          }
+        }
+
+        if (dummyIds.length === 0) break;
         const vid = dummyIds[dummyIdx % dummyIds.length];
         dummyIdx++;
         const { error } = await supabase.from("task_signups").insert({ task_id: task.id, volunteer_id: vid, status: "assigned" });
@@ -242,28 +285,32 @@ Deno.serve(async (req) => {
       taskVolunteerMap[task.id] = vols;
     }
 
-    // Safety zones — linked to event groups
+    // ── Safety zones ──
     const zoneGroupMap: Record<string, string> = {
-      "Hoofdtribune": "Stewards",
-      "Bezoekersvak": "Stewards",
+      "Noord Tribune": "Stewards Tribune",
+      "Zuid Tribune": "Stewards Tribune",
+      "Hoofdtribune": "Stewards Tribune",
       "Parking": "Parking",
       "Esplanade": "Catering",
       "Ingang Noord": "Security",
       "Ingang Zuid": "Security",
+      "VIP-zone": "VIP & Ontvangst",
     };
 
-    const zoneNames = [
+    const safetyZoneDefs = [
+      { name: "Noord Tribune", color: "#3b82f6" },
+      { name: "Zuid Tribune", color: "#06b6d4" },
       { name: "Hoofdtribune", color: "#22c55e" },
-      { name: "Bezoekersvak", color: "#3b82f6" },
       { name: "Parking", color: "#f59e0b" },
       { name: "Esplanade", color: "#8b5cf6" },
       { name: "Ingang Noord", color: "#ec4899" },
-      { name: "Ingang Zuid", color: "#06b6d4" },
+      { name: "Ingang Zuid", color: "#f97316" },
+      { name: "VIP-zone", color: "#e11d48" },
     ];
 
     const { data: zones } = await supabase
       .from("safety_zones")
-      .insert(zoneNames.map((z, i) => ({
+      .insert(safetyZoneDefs.map((z, i) => ({
         event_id: eventId, club_id, name: z.name, color: z.color, sort_order: i, status: "normal",
         event_group_id: groupMap[zoneGroupMap[z.name]] || null,
         checklist_active: true,
@@ -273,7 +320,7 @@ Deno.serve(async (req) => {
     const zoneMap: Record<string, string> = {};
     zones?.forEach((z: any) => { zoneMap[z.name] = z.id; });
 
-    // Incident types (idempotent)
+    // ── Incident types (idempotent) ──
     const typesDef = [
       { label: "Medisch", icon: "Heart", color: "#ef4444", default_priority: "medium" },
       { label: "Brand", icon: "Flame", color: "#f97316", default_priority: "high" },
@@ -294,14 +341,16 @@ Deno.serve(async (req) => {
     const typeMap: Record<string, string> = {};
     finalTypes?.forEach((t: any) => { typeMap[t.label] = t.id; });
 
-    // Checklist items
+    // ── Checklist items per zone ──
     const checklistPerZone: Record<string, string[]> = {
-      "Hoofdtribune": ["Zitjes gecontroleerd", "Nooduitgangen vrij", "Camera's operationeel"],
-      "Bezoekersvak": ["Hekwerk geïnspecteerd", "Nooduitgangen vrij", "Stewards op positie"],
-      "Parking": ["Verkeersroutes gemarkeerd", "Brandblussers gecontroleerd"],
-      "Esplanade": ["Foodtrucks gekeurd", "Looppaden vrij"],
+      "Noord Tribune": ["Zitjes gecontroleerd op schade", "Nooduitgangen vrij en gemarkeerd", "Camera's operationeel"],
+      "Zuid Tribune": ["Zitjes gecontroleerd", "Nooduitgangen vrij", "Stewards op positie", "Hekwerk geïnspecteerd"],
+      "Hoofdtribune": ["Tribunes schoongemaakt", "Noodverlichting getest", "Geluidsinstallatie getest"],
+      "Parking": ["Verkeersroutes gemarkeerd", "Brandblussers gecontroleerd", "Parkeerplaatsen aangeduid"],
+      "Esplanade": ["Foodtrucks gekeurd", "Looppaden vrij", "Afvalbakken geplaatst"],
       "Ingang Noord": ["Fouilleerteam gebrieft", "Detectiepoorten getest", "Wachtlijnen opgesteld"],
-      "Ingang Zuid": ["Scanners getest", "Nooduitgang gemarkeerd"],
+      "Ingang Zuid": ["Scanners getest", "Nooduitgang gemarkeerd", "Signalisatie geplaatst"],
+      "VIP-zone": ["AED-locatie gemarkeerd", "Bar & catering klaar", "Gastenlijst gecontroleerd"],
     };
 
     const checklistInserts: any[] = [];
@@ -322,12 +371,15 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════
     // Return immediately, run simulation in background
     // ═══════════════════════════════════════════
+    const totalAssigned = Object.values(taskVolunteerMap).flat().length;
     const response = new Response(
       JSON.stringify({
         event_id: eventId,
         tasks_created: insertedTasks.length,
-        volunteers_assigned: Object.values(taskVolunteerMap).flat().length,
-        message: "Simulatie gestart! Checklists worden de komende minuut voltooid. Klik daarna op GO LIVE om incidenten te triggeren.",
+        volunteers_assigned: totalAssigned,
+        total_spots: 35,
+        test_account_assigned: testVolunteerId ? "Zuid tribune bewaking" : "Test account niet gevonden",
+        message: `Simulatie gestart! ${totalAssigned}/35 vrijwilligers ingeschreven. Checklists worden de komende minuut voltooid (behalve Zuid Tribune). Klik daarna op GO LIVE om incidenten te triggeren.`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -336,24 +388,16 @@ Deno.serve(async (req) => {
     // BACKGROUND SIMULATION (~5 min max)
     // ═══════════════════════════════════════════
     (async () => {
-      const allChecklistIds = (insertedChecklist || []).map((ci: any) => ci.id);
-      const allDummyVols = dummyIds.slice(0, 15);
+      const allDummyVols = dummyIds.slice(0, 20);
       const randomDummy = () => allDummyVols[Math.floor(Math.random() * allDummyVols.length)] || user.id;
 
-      // Determine which checklist items belong to the user's zones vs dummy zones
-      // User is assigned to Stewards + Catering → zones: Hoofdtribune, Bezoekersvak, Esplanade
-      const userGroupNames = ["Stewards", "Catering"];
-      const userZoneNames = Object.entries(zoneGroupMap)
-        .filter(([_, grp]) => userGroupNames.includes(grp))
-        .map(([zoneName]) => zoneName);
-      const userZoneIds = new Set(userZoneNames.map(n => zoneMap[n]).filter(Boolean));
-
-      // Split checklist items: user's zones vs dummy zones
+      // Determine which checklist items belong to the test account's zone (Zuid Tribune) — leave those for manual testing
+      const testZoneId = zoneMap["Zuid Tribune"];
       const dummyChecklistIds = (insertedChecklist || [])
-        .filter((ci: any) => !userZoneIds.has(ci.zone_id))
+        .filter((ci: any) => ci.zone_id !== testZoneId)
         .map((ci: any) => ci.id);
 
-      // ── Phase 1 (0-60s): Complete ONLY dummy zone checklists gradually ──
+      // ── Phase 1 (0-60s): Complete all checklists EXCEPT Zuid Tribune ──
       if (dummyChecklistIds.length > 0) {
         const delay = Math.floor(60000 / dummyChecklistIds.length);
         for (const cid of dummyChecklistIds) {
@@ -369,9 +413,9 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── Phase 2 (60s-180s): Wait for GO LIVE ──
+      // ── Phase 2: Wait for GO LIVE (poll every 5s, max 3 min) ──
       let liveDetected = false;
-      for (let i = 0; i < 36; i++) { // 36 × 5s = 3 min max
+      for (let i = 0; i < 36; i++) {
         await new Promise(r => setTimeout(r, 5000));
         const { data: ev } = await supabase.from("events").select("is_live").eq("id", eventId).single();
         if (ev?.is_live) { liveDetected = true; break; }
@@ -382,12 +426,15 @@ Deno.serve(async (req) => {
         return;
       }
 
-      // ── Phase 3 (after GO LIVE, ~2 min): Simulate activity ──
-      
-      // 3a: Other volunteers report hour confirmations (task "completions")
-      const dummyTaskIds = insertedTasks.filter(t => !mathisTasks.includes(t.title)).map(t => t.id);
+      // ── Phase 3 (after GO LIVE): Simulate activity ──
+
+      // 3a: Dummy volunteers report hour confirmations
+      const dummyTaskIds = insertedTasks
+        .filter(t => t.title !== testAccountTask)
+        .map(t => t.id);
+
       for (const taskId of dummyTaskIds) {
-        const vols = (taskVolunteerMap[taskId] || []).filter(v => v !== user.id);
+        const vols = (taskVolunteerMap[taskId] || []).filter(v => v !== user.id && v !== testVolunteerId);
         for (const vid of vols.slice(0, 2)) {
           await new Promise(r => setTimeout(r, 3000));
           try {
@@ -402,16 +449,18 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 3b: Simulate incidents (8 incidents over ~90 seconds)
+      // 3b: Simulate 10 incidents over ~2 minutes (some near Zuid Tribune for testing)
       const incidents = [
-        { delay: 5000, type: "Medisch", zone: "Hoofdtribune", priority: "medium", desc: "Bezoeker flauwgevallen bij rij 12", lat: 50.8558, lng: 3.3070 },
-        { delay: 12000, type: "Diefstal", zone: "Parking", priority: "low", desc: "Gestolen rugzak gemeld bij parking A", lat: 50.8545, lng: 3.3055 },
-        { delay: 10000, type: "Agressie", zone: "Ingang Noord", priority: "high", desc: "Vechtpartij bij ingang Noord", lat: 50.8563, lng: 3.3080 },
+        { delay: 5000, type: "Medisch", zone: "Noord Tribune", priority: "medium", desc: "Bezoeker flauwgevallen bij rij 12", lat: 50.8558, lng: 3.3070 },
+        { delay: 10000, type: "Diefstal", zone: "Parking", priority: "low", desc: "Gestolen rugzak gemeld bij parking A", lat: 50.8545, lng: 3.3055 },
+        { delay: 10000, type: "Agressie", zone: "Zuid Tribune", priority: "high", desc: "Vechtpartij in vak Z3 — stewards ter plaatse", lat: 50.8555, lng: 3.3075 },
         { delay: 12000, type: "Medisch", zone: "Esplanade", priority: "medium", desc: "Snijwond bij vrijwilliger foodtruck", lat: 50.8550, lng: 3.3065 },
-        { delay: 15000, type: "Verdacht pakket", zone: "Hoofdtribune", priority: "high", desc: "Onbeheerde tas naast zitplaats A14", lat: 50.8560, lng: 3.3075 },
-        { delay: 10000, type: "Brand", zone: "Esplanade", priority: "high", desc: "Rookontwikkeling bij foodtruck", lat: 50.8548, lng: 3.3060 },
-        { delay: 12000, type: "Agressie", zone: "Bezoekersvak", priority: "medium", desc: "Verbale escalatie tussen supporters", lat: 50.8555, lng: 3.3085 },
-        { delay: 14000, type: "Evacuatie", zone: "Bezoekersvak", priority: "high", desc: "Gedeeltelijke evacuatie tribune B", lat: 50.8554, lng: 3.3088 },
+        { delay: 10000, type: "Verdacht pakket", zone: "Zuid Tribune", priority: "high", desc: "Onbeheerde tas onder zitplaats Z14", lat: 50.8556, lng: 3.3076 },
+        { delay: 12000, type: "Brand", zone: "Esplanade", priority: "high", desc: "Rookontwikkeling bij foodtruck zone C", lat: 50.8548, lng: 3.3060 },
+        { delay: 10000, type: "Agressie", zone: "Ingang Noord", priority: "medium", desc: "Verbale escalatie bij toegangscontrole", lat: 50.8563, lng: 3.3080 },
+        { delay: 10000, type: "Medisch", zone: "Zuid Tribune", priority: "medium", desc: "Hyperventilatie bij bezoeker vak Z7", lat: 50.8554, lng: 3.3074 },
+        { delay: 12000, type: "Evacuatie", zone: "Noord Tribune", priority: "high", desc: "Gedeeltelijke evacuatie noord vereist", lat: 50.8557, lng: 3.3088 },
+        { delay: 10000, type: "Diefstal", zone: "VIP-zone", priority: "low", desc: "Portefeuille vermist bij VIP-bar", lat: 50.8560, lng: 3.3072 },
       ];
 
       for (const inc of incidents) {
@@ -431,10 +480,10 @@ Deno.serve(async (req) => {
         } catch (e) { console.error("Incident err:", e); }
       }
 
-      // 3c: Some dummies also complete their task signups (mark as "completed")
+      // 3c: Some dummies complete their signups
       await new Promise(r => setTimeout(r, 5000));
       for (const taskId of dummyTaskIds.slice(0, 3)) {
-        const vols = (taskVolunteerMap[taskId] || []).filter(v => v !== user.id);
+        const vols = (taskVolunteerMap[taskId] || []).filter(v => v !== user.id && v !== testVolunteerId);
         for (const vid of vols.slice(0, 1)) {
           try {
             await supabase.from("task_signups").update({ status: "completed" }).eq("task_id", taskId).eq("volunteer_id", vid);
