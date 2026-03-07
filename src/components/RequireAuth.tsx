@@ -34,26 +34,20 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
 
   useEffect(() => {
     let cancelled = false;
-    let initialAuthResolved = false;
 
     const setAuthenticated = async (sessionUser: { id: string; email?: string | null; user_metadata?: Record<string, any> }) => {
-      await ensureProfileExists(sessionUser);
+      try {
+        await ensureProfileExists(sessionUser);
+      } catch (e) {
+        console.warn('RequireAuth: ensureProfileExists failed', e);
+      }
       if (cancelled) return;
-
       setAuthenticatedUserId(sessionUser.id);
       setChecked(true);
-      void syncOneSignalUser(sessionUser.id).catch((error) => {
-        console.error('OneSignal sync failed:', error);
-      });
+      void syncOneSignalUser(sessionUser.id).catch(() => {});
     };
 
-    const setUnauthenticated = () => {
-      if (cancelled) return;
-      setAuthenticatedUserId(null);
-      setChecked(true);
-      navigate(redirectTo, { replace: true });
-    };
-
+    // Set up the listener FIRST so it catches any auth events during init
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
 
@@ -62,29 +56,19 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
         return;
       }
 
-      // Ignore transient null sessions during bootstrap; only react to real sign-outs after init.
-      if (!initialAuthResolved) return;
+      // Only redirect on explicit sign-out, never on transient null sessions
       if (event === 'SIGNED_OUT') {
-        setUnauthenticated();
+        if (cancelled) return;
+        setAuthenticatedUserId(null);
+        setChecked(true);
+        navigate(redirectTo, { replace: true });
       }
     });
 
+    // Then do the imperative check
     const check = async () => {
       try {
-        let session: any = null;
-
-        try {
-          const sessionResult = await Promise.race([
-            supabase.auth.getSession(),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('timeout')), 10000)
-            ),
-          ]);
-          session = (sessionResult as any)?.data?.session ?? null;
-        } catch {
-          console.warn('RequireAuth: getSession timed out, trying getUser fallback...');
-        }
-
+        const { data: { session } } = await supabase.auth.getSession();
         if (cancelled) return;
 
         if (session?.user) {
@@ -92,30 +76,30 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
           return;
         }
 
+        // No cached session — verify with server
         try {
-          const userResult = await Promise.race([
-            supabase.auth.getUser(),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('timeout')), 10000)
-            ),
-          ]);
-
-          const user = (userResult as any)?.data?.user ?? null;
+          const { data: { user } } = await supabase.auth.getUser();
           if (cancelled) return;
-
           if (user) {
             await setAuthenticated(user);
             return;
           }
-        } catch {
-          console.warn('RequireAuth: getUser timed out, waiting for auth state change...');
-          return;
+        } catch (e) {
+          console.warn('RequireAuth: getUser failed', e);
         }
 
+        // Genuinely no session
         if (cancelled) return;
-        setUnauthenticated();
-      } finally {
-        initialAuthResolved = true;
+        setAuthenticatedUserId(null);
+        setChecked(true);
+        navigate(redirectTo, { replace: true });
+      } catch (e) {
+        console.error('RequireAuth: unexpected error', e);
+        if (!cancelled) {
+          setAuthenticatedUserId(null);
+          setChecked(true);
+          navigate(redirectTo, { replace: true });
+        }
       }
     };
 
