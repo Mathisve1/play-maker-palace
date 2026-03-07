@@ -59,15 +59,14 @@ const ClubOwnerSidebar = ({
         const taskIds = tasks.map(t => t.id);
         countPromises.push(
           supabase.from('task_signups').select('id', { count: 'exact', head: true }).in('task_id', taskIds).eq('status', 'pending')
-            .then(r => r.count || 0)
+            .then(r => r.count || 0) as Promise<number>
         );
       }
 
       if (plans && plans.length > 0) {
         const planIds = plans.map(p => p.id);
-        // Fetch enrollments once, count pending + get approved IDs in JS
         countPromises.push(
-          supabase.from('monthly_enrollments').select('id, approval_status').in('plan_id', planIds)
+          (supabase.from('monthly_enrollments').select('id, approval_status').in('plan_id', planIds)
             .then(async (r) => {
               const enrs = r.data || [];
               const pendingCount = enrs.filter(e => e.approval_status === 'pending').length;
