@@ -170,8 +170,16 @@ const VolunteerDashboard = () => {
 
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
-  // ===== ALL EXISTING DATA FETCHING & HANDLERS =====
-  const { userId: contextUserId2 } = useClubContext();
+  // ===== Use ClubContext instead of re-fetching auth/profile =====
+  const { userId: contextUserId2, profile: contextProfile } = useClubContext();
+  const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
+
+  // Sync profile from context on mount
+  useEffect(() => {
+    if (contextProfile) {
+      setProfile({ full_name: contextProfile.full_name, email: contextProfile.email, avatar_url: contextProfile.avatar_url });
+    }
+  }, [contextProfile]);
 
   useEffect(() => {
     const init = async () => {
