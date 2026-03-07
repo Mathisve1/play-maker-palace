@@ -419,55 +419,11 @@ const ClubOwnerDashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (contextLoading || !clubId || !currentUserId) return;
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-      setCurrentUserId(session.user.id);
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name, email')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      setProfile(profileData);
-
-      const { data: ownedClubs } = await supabase
-        .from('clubs')
-        .select('id, name, sport, location, logo_url, stripe_account_id')
-        .eq('owner_id', session.user.id);
-
-      let activeClub = ownedClubs?.[0] || null;
-      let ownerFlag = !!activeClub;
-
-      if (!activeClub) {
-        const { data: memberships } = await supabase
-          .from('club_members')
-          .select('club_id, role')
-          .eq('user_id', session.user.id);
-
-        if (memberships && memberships.length > 0) {
-          const { data: club } = await supabase
-            .from('clubs')
-            .select('id, name, sport, location, logo_url, stripe_account_id')
-            .eq('id', memberships[0].club_id)
-            .maybeSingle();
-          activeClub = club;
-          setMyClubRole(memberships[0].role as 'bestuurder' | 'beheerder' | 'medewerker');
-        }
-      } else {
-        setMyClubRole('bestuurder');
-      }
-
-      setIsOwner(ownerFlag);
-
-      if (!activeClub) {
-        setLoading(false);
-        return;
-      }
-
-      setClubId(activeClub.id);
-      setClubInfo({ name: activeClub.name, sport: activeClub.sport, location: activeClub.location, logo_url: activeClub.logo_url });
-      setClubStripeId(activeClub.stripe_account_id || null);
+      // Fetch stripe_account_id for the club
+      const { data: clubRow } = await supabase.from('clubs').select('stripe_account_id').eq('id', clubId).maybeSingle();
+      setClubStripeId(clubRow?.stripe_account_id || null);
 
       // Parallel: contract templates, trainings, partners, events, tasks
       const [templatesRes, trainingsRes, partnersRes, eventsRes, tasksRes] = await Promise.all([
