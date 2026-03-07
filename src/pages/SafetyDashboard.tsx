@@ -1105,12 +1105,15 @@ const SafetyDashboard = () => {
   return (
     <ClubPageLayout>
       <div className={`relative min-h-screen transition-colors ${flashRed ? 'animate-pulse' : ''}`}>
-        {/* Flash overlay */}
+        {/* Flash overlay — pulsing red */}
         <AnimatePresence>
           {flashRed && (
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 0.15 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-destructive z-50 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.1, 0.35, 0.1, 0.35, 0.1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-red-600 z-50 pointer-events-none"
             />
           )}
         </AnimatePresence>
