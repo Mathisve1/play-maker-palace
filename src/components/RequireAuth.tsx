@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import PushPermissionBanner from './PushPermissionBanner';
 import { syncOneSignalUser } from '@/lib/onesignal';
 import { ClubProvider } from '@/contexts/ClubContext';
+import AiAssistantChat from './AiAssistantChat';
 
 interface RequireAuthProps {
   children: React.ReactNode;
