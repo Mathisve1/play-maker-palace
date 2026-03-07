@@ -9,9 +9,9 @@ interface LogoProps {
 }
 
 const sizes = {
-  sm: 'w-8 h-8',
-  md: 'w-10 h-10',
-  lg: 'w-14 h-14',
+  sm: { className: 'w-8 h-8', px: 32 },
+  md: { className: 'w-10 h-10', px: 40 },
+  lg: { className: 'w-14 h-14', px: 56 },
 };
 
 const textSizes = {
@@ -21,9 +21,18 @@ const textSizes = {
 };
 
 const Logo = ({ size = 'sm', showText = true, linkTo = '/', className = '' }: LogoProps) => {
+  const s = sizes[size];
   const content = (
     <div className={`flex items-center gap-2 ${className}`}>
-      <img src={logo} alt="De12eMan logo" className={`${sizes[size]} object-contain`} />
+      <img
+        src={logo}
+        alt="De12eMan logo"
+        className={`${s.className} object-contain`}
+        width={s.px}
+        height={s.px}
+        loading={size === 'lg' ? 'eager' : 'lazy'}
+        decoding="async"
+      />
       {showText && <span className={`font-heading font-bold ${textSizes[size]} text-foreground`}>De12eMan</span>}
     </div>
   );
