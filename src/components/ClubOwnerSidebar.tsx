@@ -77,7 +77,7 @@ const ClubOwnerSidebar = ({
                 dayCount = count || 0;
               }
               return pendingCount + dayCount;
-            })
+            }) as Promise<number>)
         );
       }
 
