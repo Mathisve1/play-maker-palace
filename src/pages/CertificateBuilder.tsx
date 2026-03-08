@@ -172,7 +172,7 @@ const CertificateBuilder = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm(l.deleteConfirm)) return;
-    await (supabase as any).from('certificate_designs').delete().eq('id', id);
+    await supabase.from('certificate_designs').delete().eq('id', id);
     toast.success(l.deleted);
     if (clubId) await loadDesigns(clubId);
   };

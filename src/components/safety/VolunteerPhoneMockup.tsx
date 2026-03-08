@@ -103,7 +103,7 @@ const VolunteerPhoneMockup = ({
     if (selectedZone) updates.zone_id = selectedZone;
 
     if (Object.keys(updates).length > 0) {
-      await (supabase as any).from('safety_incidents').update(updates).eq('id', sentIncidentId);
+      await supabase.from('safety_incidents').update(updates).eq('id', sentIncidentId);
     }
 
     setSending(false);

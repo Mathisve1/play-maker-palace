@@ -119,7 +119,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
     if (photo_url) updates.photo_url = photo_url;
     if (taskNote.trim()) updates.note = taskNote.trim();
 
-    const { error } = await (supabase as any).from('closing_tasks').update(updates).eq('id', taskId);
+    const { error } = await supabase.from('closing_tasks').update(updates).eq('id', taskId);
     if (error) {
       toast.error(error.message);
     } else {

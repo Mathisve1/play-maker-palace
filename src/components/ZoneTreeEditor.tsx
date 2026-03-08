@@ -80,7 +80,7 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
   };
 
   const handleToggleVisibility = async (zone: Zone) => {
-    const { error } = await (supabase as any).from('task_zones').update({ is_visible: !zone.is_visible }).eq('id', zone.id);
+    const { error } = await supabase.from('task_zones').update({ is_visible: !zone.is_visible }).eq('id', zone.id);
     if (!error) setZones(prev => prev.map(z => z.id === zone.id ? { ...z, is_visible: !z.is_visible } : z));
   };
 

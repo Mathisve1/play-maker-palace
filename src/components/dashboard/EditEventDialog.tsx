@@ -45,7 +45,7 @@ export const EditEventDialog = ({ event, onClose, onSaved, language }: EditEvent
     e.preventDefault();
     if (!event) return;
     setSaving(true);
-    const { error } = await (supabase as any).from('events').update({
+    const { error } = await supabase.from('events').update({
       title: form.title.trim(), description: form.description.trim() || null,
       event_date: form.event_date || null, location: form.location.trim() || null,
     }).eq('id', event.id);

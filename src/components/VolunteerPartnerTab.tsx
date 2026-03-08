@@ -96,7 +96,7 @@ const VolunteerPartnerTab = ({ language, userId, navigate }: Props) => {
 
         // Fetch assignments for these partner_member ids
         const memberIds = parsed.map((m: any) => m.id);
-        const { data: assignData } = await (supabase as any)
+        const { data: assignData } = await supabase
           .from('partner_task_assignments')
           .select('id, task_id, partner_member_id, created_at')
           .in('partner_member_id', memberIds)

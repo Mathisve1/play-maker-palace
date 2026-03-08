@@ -21,7 +21,7 @@ const SafetyClosing = () => {
   useEffect(() => {
     (async () => {
       if (!eventId) return;
-      const { data: ev } = await (supabase as any)
+      const { data: ev } = await supabase
         .from('events')
         .select('club_id, title, is_live, status')
         .eq('id', eventId)
