@@ -1098,6 +1098,10 @@ const ReportingDashboard = () => {
           </TabsContent>
 
 
+          <TabsContent value="api" className="space-y-4 mt-4">
+            <ReportingApiTab />
+          </TabsContent>
+
           <TabsContent value="ai" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
