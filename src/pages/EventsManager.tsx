@@ -289,12 +289,12 @@ const EventsManager = () => {
   const handleAddGroup = async (eventId: string) => {
     if (!newGroupName.trim()) return;
     const groups = eventGroups.filter(g => g.event_id === eventId);
-    const { data, error } = await (supabase as any).from('event_groups').insert({
+    const { data, error } = await supabase.from('event_groups').insert({
       event_id: eventId, name: newGroupName.trim(), color: GROUP_COLORS[groups.length % GROUP_COLORS.length], sort_order: groups.length,
       wristband_color: newGroupWristbandColor.trim() || null,
       wristband_label: newGroupWristbandLabel.trim() || null,
       materials_note: newGroupMaterialsNote.trim() || null,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       toast.success(t3('Groep aangemaakt!', 'Groupe créé!', 'Group created!'));
