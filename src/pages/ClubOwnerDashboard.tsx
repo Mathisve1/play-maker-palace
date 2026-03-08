@@ -565,7 +565,7 @@ const ClubOwnerDashboard = () => {
     e.preventDefault();
     if (!clubId || !newEvent.title.trim()) return;
     setCreatingEvent(true);
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('events')
       .insert({
         club_id: clubId,
