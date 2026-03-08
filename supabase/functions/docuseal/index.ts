@@ -261,6 +261,7 @@ Deno.serve(async (req) => {
                 }
               }
             }
+            } // close seasonContract else
           }
         }
       }
