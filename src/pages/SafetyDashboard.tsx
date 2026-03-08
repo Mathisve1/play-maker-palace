@@ -502,7 +502,7 @@ const SafetyDashboard = () => {
   // ── GO LIVE ──
   const handleGoLive = async () => {
     if (!eventId) return;
-    await (supabase as any).from('events').update({ is_live: true }).eq('id', eventId);
+    await supabase.from('events').update({ is_live: true } as any).eq('id', eventId);
     setIsLive(true);
     toast.success(t3('🚀 Event is LIVE! Vrijwilligers kunnen nu incidenten melden.', '🚀 L\'événement est EN DIRECT ! Les bénévoles peuvent signaler.', '🚀 Event is LIVE! Volunteers can now report incidents.'));
   };
