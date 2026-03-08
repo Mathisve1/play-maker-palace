@@ -648,7 +648,7 @@ const ClubOwnerDashboard = () => {
     if (!sourceEvent) { setDuplicatingEvent(null); return; }
 
     // 1. Create new event (copy without date)
-    const { data: newEvt, error: evtErr } = await (supabase as any)
+    const { data: newEvt, error: evtErr } = await supabase
       .from('events')
       .insert({
         club_id: clubId,
