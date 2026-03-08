@@ -311,13 +311,13 @@ const VolunteerDashboard = () => {
           ? supabase.from('clubs').select('id, name').in('id', Array.from(enrichClubIds))
           : Promise.resolve({ data: [] as any[] }),
         enrichEventIds.size > 0
-          ? (supabase as any).from('events').select('id, title').in('id', Array.from(enrichEventIds))
+          ? supabase.from('events').select('id, title').in('id', Array.from(enrichEventIds))
           : Promise.resolve({ data: [] as any[] }),
         batchIds.size > 0
-          ? (supabase as any).from('sepa_batches').select('id, status, batch_reference, club_id').in('id', Array.from(batchIds))
+          ? supabase.from('sepa_batches').select('id, status, batch_reference, club_id').in('id', Array.from(batchIds))
           : Promise.resolve({ data: [] as any[] }),
         programIds.length > 0
-          ? (supabase as any).from('loyalty_enrollments').select('*').eq('volunteer_id', uid).in('program_id', programIds)
+          ? supabase.from('loyalty_enrollments').select('*').eq('volunteer_id', uid).in('program_id', programIds)
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
