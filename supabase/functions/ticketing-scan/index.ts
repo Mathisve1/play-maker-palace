@@ -5,6 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const PROEF_LIMIT = 3; // First 3 check-ins = proefperiode, 4th = actief
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -40,7 +42,141 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // ── CHECKOUT action ──
+    // ══════════════════════════════════════════════════════════════
+    // ── SEASON CONTRACT BARCODE (SC- prefix) ─────────────────────
+    // ══════════════════════════════════════════════════════════════
+    if (barcode.startsWith("SC-")) {
+      const { data: contract, error: scErr } = await serviceClient
+        .from("season_contracts")
+        .select("id, volunteer_id, club_id, status, checkin_count, volunteer_status, template_id, season_id")
+        .eq("barcode", barcode)
+        .maybeSingle();
+
+      if (scErr || !contract) {
+        return new Response(JSON.stringify({ success: false, error: "Ongeldig seizoensticket" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Verify club
+      if (contract.club_id !== club_id) {
+        return new Response(JSON.stringify({ success: false, error: "Ticket hoort niet bij deze club" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Get volunteer info + template info in parallel
+      const [profileRes, templateRes] = await Promise.all([
+        serviceClient.from("profiles").select("full_name, avatar_url").eq("id", contract.volunteer_id).maybeSingle(),
+        serviceClient.from("season_contract_templates").select("name, category").eq("id", contract.template_id).maybeSingle(),
+      ]);
+
+      const volunteerName = profileRes.data?.full_name || "Onbekend";
+      const avatarUrl = profileRes.data?.avatar_url || null;
+      const templateName = templateRes.data?.name || "";
+      const category = templateRes.data?.category || "";
+
+      // ── CHECKOUT for season ──
+      if (action === "checkout") {
+        // Find the latest open checkin (no check_out_at)
+        const { data: openCheckin } = await serviceClient
+          .from("season_checkins")
+          .select("id, checked_in_at")
+          .eq("season_contract_id", contract.id)
+          .is("checked_out_at", null)
+          .order("checked_in_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!openCheckin) {
+          return new Response(JSON.stringify({ success: false, error: "Nog niet ingecheckt" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const now = new Date().toISOString();
+        const hoursWorked = Math.round(((new Date(now).getTime() - new Date(openCheckin.checked_in_at).getTime()) / 3600000) * 100) / 100;
+
+        await serviceClient.from("season_checkins")
+          .update({ checked_out_at: now, hours_worked: hoursWorked })
+          .eq("id", openCheckin.id);
+
+        return new Response(JSON.stringify({
+          success: true, status: "checked_out",
+          volunteer_name: volunteerName, avatar_url: avatarUrl,
+          task_title: templateName, event_title: `Seizoen - ${category}`,
+          checked_out_at: now, hours_worked: hoursWorked,
+          checkin_count: contract.checkin_count, volunteer_status: contract.volunteer_status,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // ── CHECK-IN for season ──
+      // Check if already checked in today (no checkout)
+      const { data: todayOpen } = await serviceClient
+        .from("season_checkins")
+        .select("id, checked_in_at")
+        .eq("season_contract_id", contract.id)
+        .is("checked_out_at", null)
+        .limit(1)
+        .maybeSingle();
+
+      if (todayOpen) {
+        return new Response(JSON.stringify({
+          success: false, status: "already_checked_in",
+          volunteer_name: volunteerName, avatar_url: avatarUrl,
+          task_title: templateName, event_title: `Seizoen - ${category}`,
+          checked_in_at: todayOpen.checked_in_at,
+          checkin_count: contract.checkin_count, volunteer_status: contract.volunteer_status,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const now = new Date().toISOString();
+      const newCount = (contract.checkin_count || 0) + 1;
+
+      // Insert checkin record
+      await serviceClient.from("season_checkins").insert({
+        season_contract_id: contract.id,
+        volunteer_id: contract.volunteer_id,
+        club_id: contract.club_id,
+        checked_in_at: now,
+      });
+
+      // Update checkin count + auto 4-keer-regel
+      const newVolunteerStatus = newCount >= (PROEF_LIMIT + 1) ? "actief" : "proef";
+      await serviceClient.from("season_contracts")
+        .update({ checkin_count: newCount, volunteer_status: newVolunteerStatus })
+        .eq("id", contract.id);
+
+      // If transitioning from proef to actief, send notification
+      if (newCount === PROEF_LIMIT + 1 && contract.volunteer_status === "proef") {
+        try {
+          // Notify club owner
+          const { data: club } = await serviceClient.from("clubs").select("owner_id").eq("id", club_id).maybeSingle();
+          if (club?.owner_id) {
+            await serviceClient.from("notifications").insert({
+              user_id: club.owner_id,
+              title: "🎉 Vrijwilliger actief",
+              message: `${volunteerName} heeft de proefperiode voltooid (4e check-in) en is nu actief/betalend.`,
+              type: "season_activated",
+            });
+          }
+        } catch (_) { /* non-critical */ }
+      }
+
+      return new Response(JSON.stringify({
+        success: true, status: "checked_in",
+        volunteer_name: volunteerName, avatar_url: avatarUrl,
+        task_title: templateName, event_title: `Seizoen - ${category}`,
+        checked_in_at: now,
+        checkin_count: newCount, volunteer_status: newVolunteerStatus,
+        proef_remaining: Math.max(0, PROEF_LIMIT - newCount + 1),
+        group_name: category, wristband_color: null, wristband_label: null,
+        materials_note: newVolunteerStatus === "proef"
+          ? `Proefperiode: ${newCount}/${PROEF_LIMIT + 1}`
+          : "✅ Actief/Betalend",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ── CHECKOUT action (MP- prefix) ─────────────────────────────
+    // ══════════════════════════════════════════════════════════════
     if (action === "checkout") {
       if (barcode.startsWith("MP-")) {
         const { data: daySignup, error: dsError } = await serviceClient
@@ -73,12 +209,10 @@ Deno.serve(async (req) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
 
-        // Calculate hours worked
         const checkedIn = new Date(daySignup.checked_in_at);
         const checkedOut = new Date(now);
         const hoursWorked = Math.round(((checkedOut.getTime() - checkedIn.getTime()) / 3600000) * 100) / 100;
 
-        // Auto-set club_reported_hours
         await serviceClient.from("monthly_day_signups")
           .update({ club_reported_hours: hoursWorked, club_approved: true })
           .eq("id", daySignup.id);
@@ -88,33 +222,32 @@ Deno.serve(async (req) => {
           serviceClient.from("monthly_plan_tasks").select("title, task_date").eq("id", daySignup.plan_task_id).maybeSingle(),
         ]);
 
-        // Send push to volunteer to confirm checkout time
         try {
-          const pushPayload = {
-            user_id: daySignup.volunteer_id,
-            title: "⏰ Bevestig je uitchecktijd",
-            message: `Je bent uitgecheckt om ${new Date(now).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })} voor "${taskRes.data?.title || "taak"}". Bevestig of betwist dit.`,
-            url: "/dashboard",
-            type: "checkout_confirm",
-          };
-          await serviceClient.functions.invoke("send-native-push", { body: pushPayload });
+          await serviceClient.functions.invoke("send-native-push", {
+            body: {
+              user_id: daySignup.volunteer_id,
+              title: "⏰ Bevestig je uitchecktijd",
+              message: `Je bent uitgecheckt om ${new Date(now).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })} voor "${taskRes.data?.title || "taak"}". Bevestig of betwist dit.`,
+              url: "/dashboard", type: "checkout_confirm",
+            },
+          });
         } catch (_) { /* non-critical */ }
 
         return new Response(JSON.stringify({
           success: true, status: "checked_out",
           volunteer_name: profileRes.data?.full_name || "Onbekend",
           task_title: taskRes.data?.title || "",
-          checked_out_at: now,
-          hours_worked: hoursWorked,
+          checked_out_at: now, hours_worked: hoursWorked,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      // Standard VT- ticket checkout
       return new Response(JSON.stringify({ success: false, error: "Checkout voor VT-tickets niet ondersteund" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ── Check if this is a monthly planning barcode (MP- prefix) ──
+    // ══════════════════════════════════════════════════════════════
+    // ── MONTHLY PLANNING BARCODE (MP- prefix) ────────────────────
+    // ══════════════════════════════════════════════════════════════
     if (barcode.startsWith("MP-")) {
       const { data: daySignup, error: dsError } = await serviceClient
         .from("monthly_day_signups")
@@ -181,7 +314,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Standard VT- ticket flow ──
+    // ══════════════════════════════════════════════════════════════
+    // ── STANDARD VT- TICKET FLOW ─────────────────────────────────
+    // ══════════════════════════════════════════════════════════════
     const { data: ticket, error: ticketError } = await serviceClient
       .from("volunteer_tickets")
       .select("id, volunteer_id, task_id, event_id, status, checked_in_at, barcode")
