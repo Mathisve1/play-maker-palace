@@ -178,10 +178,10 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Location Options ──
   const addLocationOption = async () => {
     if (!newOptionLabel.trim() || !selectedLevelId) return;
-    const { data, error } = await (supabase as any).from('safety_location_options').insert({
+    const { data, error } = await supabase.from('safety_location_options').insert({
       level_id: selectedLevelId, label: newOptionLabel.trim(),
       sort_order: locationOptions.filter(o => o.level_id === selectedLevelId).length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { setLocationOptions(prev => [...prev, data]); setNewOptionLabel(''); toast.success(t3('Optie toegevoegd', 'Option ajoutée', 'Option added')); }
   };
