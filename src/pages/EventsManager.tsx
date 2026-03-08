@@ -435,10 +435,10 @@ const EventsManager = () => {
     e.preventDefault();
     if (!editingEvent) return;
     setSavingEvent(true);
-    const { error } = await (supabase as any).from('events').update({
+    const { error } = await supabase.from('events').update({
       title: editEventForm.title.trim(), description: editEventForm.description.trim() || null,
       event_date: editEventForm.event_date || null, location: editEventForm.location.trim() || null,
-    }).eq('id', editingEvent.id);
+    } as any).eq('id', editingEvent.id);
     if (error) toast.error(error.message);
     else {
       toast.success(t3('Evenement bijgewerkt!', 'Événement mis à jour!', 'Event updated!'));
