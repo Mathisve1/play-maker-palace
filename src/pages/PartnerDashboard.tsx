@@ -394,6 +394,19 @@ const PartnerDashboard = () => {
           </div>
         )}
 
+        {activeTab === 'dashboard' && (
+          <PartnerDashboardHome tasks={clubTasks} memberCount={members.length} />
+        )}
+
+        {activeTab === 'attendance' && partner && (
+          <PartnerAttendanceTab
+            partnerId={partner.id}
+            tasks={clubTasks}
+            members={members}
+            clubId={selectedClubId}
+          />
+        )}
+
         {activeTab === 'tasks' && (
           <div className="space-y-4">
             {clubTasks.length === 0 ? (
