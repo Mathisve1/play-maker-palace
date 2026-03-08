@@ -46,4 +46,10 @@ export const mergeFieldLabels: Record<string, string> = {
   'Ondernemingsnummer': 'Ondernemingsnummer organisatie',
   'VerzekeringPolis': 'Polisnummer BA-verzekering',
   'Verzekeraar': 'Naam verzekeringsmaatschappij',
+  // Season-specific fields
+  'SeizoenNaam': 'Naam van het seizoen (bv. Seizoen 2026-2027)',
+  'SeizoenStart': 'Startdatum seizoen',
+  'SeizoenEinde': 'Einddatum seizoen',
+  'Rol': 'Rol/functie vrijwilliger',
+  'RolOmschrijving': 'Gedetailleerde omschrijving van de rol',
 };

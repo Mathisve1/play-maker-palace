@@ -12,6 +12,7 @@ import {
   ShieldCheck, AlertTriangle, CheckCircle2, Gavel, X, CalendarDays
 } from 'lucide-react';
 import { belgianVolunteerArticles, essentialArticleIds, defaultTemplateArticleIds, LawArticle } from '@/data/belgianVolunteerLaw';
+import { seasonTemplateGenerators, seasonTemplateNames } from '@/data/seasonContractTemplates';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -44,6 +45,14 @@ const mergeFields = [
   { name: 'Locatie', label: 'Locatie', group: 'basic' },
   { name: 'Uren', label: 'Werkuren', group: 'basic' },
   { name: 'Onkostenvergoeding', label: 'Bedrag vergoeding', group: 'basic' },
+  // Season-specific
+  { name: 'SeizoenNaam', label: 'Naam seizoen', group: 'season' },
+  { name: 'SeizoenStart', label: 'Startdatum seizoen', group: 'season' },
+  { name: 'SeizoenEinde', label: 'Einddatum seizoen', group: 'season' },
+  { name: 'Rol', label: 'Rol/functie', group: 'season' },
+  { name: 'RolOmschrijving', label: 'Omschrijving rol', group: 'season' },
+  { name: 'MaxDagPlafond', label: 'Max. dagvergoeding', group: 'season' },
+  { name: 'MaxJaarPlafond', label: 'Max. jaarvergoeding', group: 'season' },
   // Monthly-specific
   { name: 'Maandperiode', label: 'Maand + jaar', group: 'monthly' },
   { name: 'Startdatum', label: 'Startdatum maandcontract', group: 'monthly' },
@@ -51,8 +60,6 @@ const mergeFields = [
   { name: 'Compensatietype', label: 'Type vergoeding (dag/uur)', group: 'monthly' },
   { name: 'Dagvergoeding', label: 'Dagvergoeding bedrag', group: 'monthly' },
   { name: 'Uurvergoeding', label: 'Uurvergoeding bedrag', group: 'monthly' },
-  { name: 'MaxDagPlafond', label: 'Max. dagvergoeding (wettelijk)', group: 'monthly' },
-  { name: 'MaxJaarPlafond', label: 'Max. jaarvergoeding (wettelijk)', group: 'monthly' },
   // Identification
   { name: 'Geboortedatum', label: 'Geboortedatum', group: 'identity' },
   { name: 'Rijksregisternummer', label: 'Rijksregisternummer', group: 'identity' },
@@ -335,6 +342,7 @@ const ContractBuilder = () => {
   const [blocksOpen, setBlocksOpen] = useState(true);
   const [lawArticlesOpen, setLawArticlesOpen] = useState(true);
   const [clausulesOpen, setClausulesOpen] = useState(true);
+  const [seasonClausulesOpen, setSeasonClausulesOpen] = useState(false);
   const [contractColors, setContractColors] = useState({ primary: '#1a5632', accent: '#e8742e', bg: '#ffffff' });
   const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null);
   const [clubData, setClubData] = useState<{ name: string; logo_url: string | null; owner_name: string | null } | null>(null);
@@ -417,8 +425,9 @@ const ContractBuilder = () => {
   const selectedBlock = blocks.find(b => b.id === selectedBlockId) || null;
 
   const lawArticles = belgianVolunteerArticles.filter(a => a.category === 'wet');
-  const clausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && !a.id.startsWith('clausule_maand'));
+  const clausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && !a.id.startsWith('clausule_maand') && !a.id.startsWith('clausule_seizoen') && !a.id.startsWith('clausule_rol'));
   const monthlyClausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && a.id.startsWith('clausule_maand'));
+  const seasonClausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && (a.id.startsWith('clausule_seizoen') || a.id.startsWith('clausule_rol')));
 
   // ─── Block Operations ──────────────────────────────────
 
@@ -471,6 +480,20 @@ const ContractBuilder = () => {
     setBlocks(getMonthlyContractBlocks());
     setTemplateName(prev => prev || t3('Maandelijkse Vrijwilligersovereenkomst', 'Convention mensuelle de bénévolat', 'Monthly Volunteer Agreement'));
     toast.success(t3('Maandcontract gegenereerd met alle vereiste clausules (looptijd, rooster, afrekening, GDPR, cumulatie).', 'Contrat mensuel généré avec toutes les clauses requises.', 'Monthly contract generated with all required clauses.'));
+  };
+
+  const [showSeasonPicker, setShowSeasonPicker] = useState(false);
+
+  const handleGenerateSeasonContract = (category: string) => {
+    if (blocks.length > 3) {
+      if (!confirm(t3('Dit vervangt alle huidige blokken met een seizoenscontract. Doorgaan?', 'Cela remplacera tous les blocs par un contrat saisonnier. Continuer?', 'This will replace all blocks with a season contract. Continue?'))) return;
+    }
+    const generator = seasonTemplateGenerators[category];
+    if (!generator) return;
+    setBlocks(generator());
+    setTemplateName(prev => prev || `Seizoenscontract – ${seasonTemplateNames[category]}`);
+    setShowSeasonPicker(false);
+    toast.success(t3(`Seizoenscontract "${seasonTemplateNames[category]}" gegenereerd met alle vereiste clausules.`, `Contrat saisonnier "${seasonTemplateNames[category]}" généré.`, `Season contract "${seasonTemplateNames[category]}" generated.`));
   };
 
   const handleLoadTemplate = async (templateId: string) => {
@@ -728,13 +751,30 @@ const ContractBuilder = () => {
           <Sparkles className="w-3.5 h-3.5" />
            {t3('Standaard Contract', 'Contrat standard', 'Standard Contract')}
         </button>
-        <button
-          onClick={handleGenerateMonthlyContract}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
-        >
-          <CalendarDays className="w-3.5 h-3.5" />
-          {t3('Maandcontract', 'Contrat mensuel', 'Monthly Contract')}
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowSeasonPicker(!showSeasonPicker)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-600 text-white text-xs font-medium hover:bg-orange-700 transition-colors"
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            {t3('Seizoenscontract', 'Contrat saisonnier', 'Season Contract')}
+          </button>
+          {showSeasonPicker && (
+            <div className="absolute left-0 top-full mt-1 w-72 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+              <div className="p-2 border-b border-border">
+                <p className="text-xs font-semibold text-muted-foreground px-2">{t3('Kies een seizoenssjabloon', 'Choisir un modèle saisonnier', 'Choose a season template')}</p>
+              </div>
+              <div className="p-1">
+                {Object.entries(seasonTemplateNames).map(([key, name]) => (
+                  <button key={key} onClick={() => handleGenerateSeasonContract(key)}
+                    className="w-full text-left px-3 py-2.5 text-xs rounded-lg hover:bg-muted transition-colors text-foreground">
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <input
             type="text"
@@ -785,8 +825,16 @@ const ContractBuilder = () => {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
             >
               <CalendarDays className="w-3.5 h-3.5" />
-              {t3('Maandcontract (compleet)', 'Contrat mensuel (complet)', 'Monthly Contract (complete)')}
+              {t3('Maandcontract', 'Contrat mensuel', 'Monthly Contract')}
             </button>
+            <p className="text-[10px] font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider px-1 pt-2">{t3('Seizoenscontracten', 'Contrats saisonniers', 'Season Contracts')}</p>
+            {Object.entries(seasonTemplateNames).map(([key, name]) => (
+              <button key={key} onClick={() => handleGenerateSeasonContract(key)}
+                className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-foreground hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors border border-transparent hover:border-orange-200 dark:hover:border-orange-800">
+                <CalendarDays className="w-3 h-3 text-orange-600" />
+                {name}
+              </button>
+            ))}
           </div>
 
           {/* Tabs */}
@@ -881,6 +929,27 @@ const ContractBuilder = () => {
                         </div>
                       </div>
                     ))}
+                    {/* Season fields */}
+                    <p className="text-[10px] font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider px-3 pt-3 pb-1 flex items-center gap-1">
+                      <CalendarDays className="w-3 h-3" /> {t3('Seizoenscontract', 'Contrat saisonnier', 'Season Contract')}
+                    </p>
+                    {mergeFields.filter(f => f.group === 'season').map(field => (
+                      <div
+                        key={field.name}
+                        draggable
+                        onDragStart={e => handleDragStart(e, { type: 'field', payload: field.name })}
+                        onClick={() => addFieldBlock(field.name)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-grab active:cursor-grabbing hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors border border-transparent hover:border-orange-200 dark:hover:border-orange-800 group"
+                      >
+                        <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 transition-colors">
+                          <Hash className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{field.label}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono">{`{{${field.name}}}`}</p>
+                        </div>
+                      </div>
+                    ))}
                     {/* Identity fields */}
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">{t3('Identificatie & juridisch', 'Identification & juridique', 'Identification & Legal')}</p>
                     {mergeFields.filter(f => f.group === 'identity').map(field => (
@@ -956,6 +1025,19 @@ const ContractBuilder = () => {
                   </div>
                   <div className="space-y-1">
                     {monthlyClausules.map(article => (
+                      <ArticleItem key={article.id} article={article} />
+                    ))}
+                  </div>
+                </>
+              )}
+              {seasonClausules.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider mt-3">
+                    <CalendarDays className="w-3 h-3" />
+                    {t3('Seizoenscontract clausules', 'Clauses contrat saisonnier', 'Season Contract Clauses')}
+                  </div>
+                  <div className="space-y-1">
+                    {seasonClausules.map(article => (
                       <ArticleItem key={article.id} article={article} />
                     ))}
                   </div>
