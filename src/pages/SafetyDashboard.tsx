@@ -493,10 +493,10 @@ const SafetyDashboard = () => {
 
   // ── Control room: update incident ──
   const handleUpdateIncident = async (incidentId: string, status: string) => {
-    await (supabase as any).from('safety_incidents').update({
+    await supabase.from('safety_incidents').update({
       status, updated_at: new Date().toISOString(),
       ...(status === 'opgelost' ? { resolved_by: userId, resolved_at: new Date().toISOString() } : {}),
-    }).eq('id', incidentId);
+    } as any).eq('id', incidentId);
   };
 
   // ── GO LIVE ──
