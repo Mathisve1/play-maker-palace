@@ -184,7 +184,7 @@ const HourConfirmationDialog = ({
           insertData.volunteer_approved = true;
         }
 
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from('hour_confirmations')
           .insert(insertData)
           .select('*')
