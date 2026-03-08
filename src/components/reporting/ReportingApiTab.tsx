@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -11,8 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Key, Plus, Trash2, Copy, Play, BookOpen, Code2, TestTube, Loader2, RefreshCw } from 'lucide-react';
-import { format } from 'date-fns';
+import {
+  Key, Plus, Trash2, Copy, Play, BookOpen, TestTube, Loader2, RefreshCw,
+  Activity, BarChart3, Clock, AlertTriangle, CheckCircle2, Hash
+} from 'lucide-react';
+import { format, subDays, startOfDay } from 'date-fns';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, Legend
+} from 'recharts';
 
 interface ApiKey {
   id: string;
@@ -21,6 +28,18 @@ interface ApiKey {
   is_active: boolean;
   last_used_at: string | null;
   calls_this_hour: number;
+  created_at: string;
+}
+
+interface UsageLog {
+  id: string;
+  api_key_id: string;
+  resource: string;
+  format: string;
+  status_code: number;
+  response_rows: number;
+  duration_ms: number | null;
+  ip_address: string | null;
   created_at: string;
 }
 
@@ -37,10 +56,16 @@ const RESOURCES = [
   { value: 'partners', label: 'Partners', desc: 'Externe partners' },
 ];
 
-const L = {
+const CHART_COLORS = [
+  'hsl(var(--primary))', 'hsl(var(--chart-2, 160 60% 45%))',
+  'hsl(var(--chart-3, 30 80% 55%))', 'hsl(var(--chart-4, 280 65% 60%))',
+  'hsl(var(--chart-5, 340 75% 55%))', '#6366f1', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6',
+];
+
+const T = {
   nl: {
     title: 'Club Data API', subtitle: 'Koppel jouw clubdata aan externe tools via een beveiligde REST API.',
-    keys: 'API Keys', docs: 'Documentatie', tester: 'Live Tester',
+    keys: 'API Keys', docs: 'Documentatie', tester: 'Live Tester', usage: 'Gebruik & Monitoring',
     newKey: 'Nieuwe key', keyName: 'Key naam', generate: 'Genereren',
     prefix: 'Prefix', name: 'Naam', status: 'Status', lastUsed: 'Laatst gebruikt',
     calls: 'Calls/uur', created: 'Aangemaakt', actions: 'Acties',
@@ -50,10 +75,15 @@ const L = {
     resource: 'Resource', format: 'Formaat', test: 'Test', testing: 'Testen...',
     noKeys: 'Nog geen API keys. Maak er een aan om te beginnen.',
     rateLimit: 'Rate limit: 100 calls per uur per key',
+    totalCalls: 'Totaal calls', successRate: 'Slagingspercentage', avgDuration: 'Gem. duur',
+    rateLimited: 'Rate limited', last7Days: 'Laatste 7 dagen', callsPerDay: 'Calls per dag',
+    callsPerResource: 'Calls per resource', recentLogs: 'Recente API calls',
+    time: 'Tijd', statusCode: 'Status', rows: 'Rijen', duration: 'Duur', ip: 'IP',
+    noLogs: 'Nog geen API calls geregistreerd.', refresh: 'Vernieuwen',
   },
   fr: {
     title: 'API de données club', subtitle: 'Connectez vos données club à des outils externes via une API REST sécurisée.',
-    keys: 'Clés API', docs: 'Documentation', tester: 'Testeur',
+    keys: 'Clés API', docs: 'Documentation', tester: 'Testeur', usage: 'Utilisation & Monitoring',
     newKey: 'Nouvelle clé', keyName: 'Nom de la clé', generate: 'Générer',
     prefix: 'Préfixe', name: 'Nom', status: 'Statut', lastUsed: 'Dernier usage',
     calls: 'Appels/h', created: 'Créé', actions: 'Actions',
@@ -63,10 +93,15 @@ const L = {
     resource: 'Ressource', format: 'Format', test: 'Tester', testing: 'Test...',
     noKeys: 'Pas encore de clés API. Créez-en une pour commencer.',
     rateLimit: 'Limite: 100 appels par heure par clé',
+    totalCalls: 'Total appels', successRate: 'Taux de réussite', avgDuration: 'Durée moy.',
+    rateLimited: 'Limité', last7Days: '7 derniers jours', callsPerDay: 'Appels par jour',
+    callsPerResource: 'Appels par ressource', recentLogs: 'Appels API récents',
+    time: 'Heure', statusCode: 'Statut', rows: 'Lignes', duration: 'Durée', ip: 'IP',
+    noLogs: 'Aucun appel API enregistré.', refresh: 'Rafraîchir',
   },
   en: {
     title: 'Club Data API', subtitle: 'Connect your club data to external tools via a secure REST API.',
-    keys: 'API Keys', docs: 'Documentation', tester: 'Live Tester',
+    keys: 'API Keys', docs: 'Documentation', tester: 'Live Tester', usage: 'Usage & Monitoring',
     newKey: 'New key', keyName: 'Key name', generate: 'Generate',
     prefix: 'Prefix', name: 'Name', status: 'Status', lastUsed: 'Last used',
     calls: 'Calls/hr', created: 'Created', actions: 'Actions',
@@ -76,18 +111,25 @@ const L = {
     resource: 'Resource', format: 'Format', test: 'Test', testing: 'Testing...',
     noKeys: 'No API keys yet. Create one to get started.',
     rateLimit: 'Rate limit: 100 calls per hour per key',
+    totalCalls: 'Total calls', successRate: 'Success rate', avgDuration: 'Avg. duration',
+    rateLimited: 'Rate limited', last7Days: 'Last 7 days', callsPerDay: 'Calls per day',
+    callsPerResource: 'Calls per resource', recentLogs: 'Recent API calls',
+    time: 'Time', statusCode: 'Status', rows: 'Rows', duration: 'Duration', ip: 'IP',
+    noLogs: 'No API calls logged yet.', refresh: 'Refresh',
   },
 };
 
 const ReportingApiTab = () => {
   const { clubId, userId } = useClubContext();
   const { language } = useLanguage();
-  const t = L[language] || L.nl;
+  const t = T[language] || T.nl;
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [newKeyName, setNewKeyName] = useState('');
   const [generating, setGenerating] = useState(false);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [logs, setLogs] = useState<UsageLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
 
   // Tester state
   const [testResource, setTestResource] = useState('tasks');
@@ -107,7 +149,62 @@ const ReportingApiTab = () => {
     setLoading(false);
   };
 
-  useEffect(() => { loadKeys(); }, [clubId]);
+  const loadLogs = async () => {
+    if (!clubId) return;
+    setLogsLoading(true);
+    const since = subDays(new Date(), 7).toISOString();
+    const { data } = await supabase
+      .from('api_usage_logs')
+      .select('*')
+      .eq('club_id', clubId)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    setLogs((data as any) || []);
+    setLogsLoading(false);
+  };
+
+  useEffect(() => {
+    loadKeys();
+    loadLogs();
+  }, [clubId]);
+
+  // Computed stats
+  const stats = useMemo(() => {
+    const total = logs.length;
+    const successful = logs.filter(l => l.status_code === 200).length;
+    const rateLimited = logs.filter(l => l.status_code === 429).length;
+    const avgDuration = total > 0
+      ? Math.round(logs.filter(l => l.duration_ms).reduce((s, l) => s + (l.duration_ms || 0), 0) / total)
+      : 0;
+    const successRate = total > 0 ? Math.round((successful / total) * 100) : 100;
+    return { total, successful, rateLimited, avgDuration, successRate };
+  }, [logs]);
+
+  // Calls per day chart
+  const callsPerDay = useMemo(() => {
+    const days: Record<string, number> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = format(subDays(new Date(), i), 'dd/MM');
+      days[d] = 0;
+    }
+    for (const log of logs) {
+      const d = format(new Date(log.created_at), 'dd/MM');
+      if (days[d] !== undefined) days[d]++;
+    }
+    return Object.entries(days).map(([day, calls]) => ({ day, calls }));
+  }, [logs]);
+
+  // Calls per resource chart
+  const callsPerResource = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const log of logs) {
+      counts[log.resource] = (counts[log.resource] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [logs]);
 
   const generateKey = async () => {
     if (!clubId || !userId) return;
@@ -148,16 +245,13 @@ const ReportingApiTab = () => {
     }
     setTestLoading(true);
     setTestResult(null);
-    const activeKey = keys.find(k => k.is_active);
-    if (!activeKey) return;
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const baseUrl = `https://${projectId}.supabase.co/functions/v1/club-data-api`;
-      // We can't use the real key from the table (we only have prefix), so we need to explain
+      const bUrl = `https://${projectId}.supabase.co/functions/v1/club-data-api`;
       setTestResult(
         `// Gebruik de volgende URL om data op te halen:\n\n` +
         `curl -H "Authorization: Bearer <jouw-api-key>" \\\n` +
-        `  "${baseUrl}?resource=${testResource}&format=${testFormat}&limit=10"\n\n` +
+        `  "${bUrl}?resource=${testResource}&format=${testFormat}&limit=10"\n\n` +
         `// Vervang <jouw-api-key> door de key die je bij het aanmaken hebt gekopieerd.`
       );
     } catch (err) {
@@ -167,10 +261,169 @@ const ReportingApiTab = () => {
   };
 
   const baseUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/club-data-api`;
+  const keyNameMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    keys.forEach(k => { m[k.id] = `${k.key_prefix}... (${k.name})`; });
+    return m;
+  }, [keys]);
 
   return (
     <div className="space-y-6">
-      {/* Key Management */}
+      {/* ── Usage KPIs ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10"><Hash className="w-5 h-5 text-primary" /></div>
+            <div>
+              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-xs text-muted-foreground">{t.totalCalls}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10"><CheckCircle2 className="w-5 h-5 text-primary" /></div>
+            <div>
+              <p className="text-2xl font-bold">{stats.successRate}%</p>
+              <p className="text-xs text-muted-foreground">{t.successRate}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10"><Clock className="w-5 h-5 text-primary" /></div>
+            <div>
+              <p className="text-2xl font-bold">{stats.avgDuration}ms</p>
+              <p className="text-xs text-muted-foreground">{t.avgDuration}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-destructive/10"><AlertTriangle className="w-5 h-5 text-destructive" /></div>
+            <div>
+              <p className="text-2xl font-bold">{stats.rateLimited}</p>
+              <p className="text-xs text-muted-foreground">{t.rateLimited}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Charts ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-primary" /> {t.callsPerDay}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">{t.last7Days}</p>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={callsPerDay}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="day" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="calls" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="w-4 h-4 text-primary" /> {t.callsPerResource}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[200px]">
+              {callsPerResource.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={callsPerResource}
+                      cx="50%" cy="50%"
+                      innerRadius={50} outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    >
+                      {callsPerResource.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  {t.noLogs}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Recent Logs Table ── */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="w-5 h-5 text-primary" /> {t.recentLogs}
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={loadLogs} disabled={logsLoading}>
+              <RefreshCw className={`w-4 h-4 ${logsLoading ? 'animate-spin' : ''}`} /> {t.refresh}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {logs.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">{t.noLogs}</p>
+          ) : (
+            <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.time}</TableHead>
+                    <TableHead>Key</TableHead>
+                    <TableHead>{t.resource}</TableHead>
+                    <TableHead>{t.format}</TableHead>
+                    <TableHead>{t.statusCode}</TableHead>
+                    <TableHead>{t.rows}</TableHead>
+                    <TableHead>{t.duration}</TableHead>
+                    <TableHead>{t.ip}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.slice(0, 50).map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-xs whitespace-nowrap">{format(new Date(log.created_at), 'dd/MM HH:mm:ss')}</TableCell>
+                      <TableCell className="text-xs font-mono">{keyNameMap[log.api_key_id] || log.api_key_id.slice(0, 8)}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-xs">{log.resource}</Badge></TableCell>
+                      <TableCell className="text-xs uppercase">{log.format}</TableCell>
+                      <TableCell>
+                        <Badge variant={log.status_code === 200 ? 'default' : log.status_code === 429 ? 'destructive' : 'secondary'}>
+                          {log.status_code}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">{log.response_rows}</TableCell>
+                      <TableCell className="text-xs">{log.duration_ms != null ? `${log.duration_ms}ms` : '—'}</TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground">{log.ip_address || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Key Management ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -257,7 +510,7 @@ const ReportingApiTab = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Documentation */}
+      {/* ── Documentation ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -292,6 +545,10 @@ const ReportingApiTab = () => {
                     <li><code>limit</code> — Max aantal resultaten (standaard & max: 1000)</li>
                     <li><code>offset</code> — Paginatie offset</li>
                   </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-1">Rate Limiting</h4>
+                  <p className="text-xs text-muted-foreground">Max 100 calls per uur per API key. Bij overschrijding ontvang je een <code>429</code> status code. Alle calls worden gelogd voor monitoring.</p>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-1">Beschikbare Resources</h4>
@@ -370,7 +627,7 @@ print(df.head())`}
         </CardContent>
       </Card>
 
-      {/* Live Tester */}
+      {/* ── Live Tester ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">

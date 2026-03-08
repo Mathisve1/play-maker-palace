@@ -30,6 +30,7 @@ function csvResp(rows: Record<string, unknown>[]) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const startTime = Date.now();
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -59,10 +60,21 @@ Deno.serve(async (req) => {
     const sameWindow = windowStart && (now.getTime() - windowStart.getTime()) < 3600_000;
 
     if (sameWindow && keyRow.calls_this_hour >= 100) {
+      // Log rate-limited call
+      await supabase.from("api_usage_logs").insert({
+        club_id: keyRow.club_id,
+        api_key_id: keyRow.id,
+        resource: "rate_limited",
+        format: "json",
+        status_code: 429,
+        response_rows: 0,
+        duration_ms: Date.now() - startTime,
+        ip_address: req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || null,
+      });
       return jsonResp({ error: "Rate limit exceeded. Max 100 calls per hour." }, 429);
     }
 
-    // Update usage
+    // Update usage counters
     await supabase
       .from("club_api_keys")
       .update({
@@ -82,6 +94,7 @@ Deno.serve(async (req) => {
     const offset = parseInt(url.searchParams.get("offset") || "0");
 
     if (!resource) {
+      await logUsage(supabase, keyRow, "discovery", format, 200, 0, startTime, req);
       return jsonResp({
         available_resources: [
           "volunteers", "tasks", "events", "signups", "payments",
@@ -111,7 +124,6 @@ Deno.serve(async (req) => {
         break;
       }
       case "volunteers": {
-        // Get unique volunteer profiles via task signups for this club's tasks
         const { data: taskData } = await supabase.from("tasks").select("id").eq("club_id", clubId);
         const taskIds = (taskData || []).map((t: any) => t.id);
         if (taskIds.length === 0) break;
@@ -153,7 +165,6 @@ Deno.serve(async (req) => {
         break;
       }
       case "compliance": {
-        // Get volunteer ids for this club, then their declarations
         const { data: taskData } = await supabase.from("tasks").select("id").eq("club_id", clubId);
         const taskIds = (taskData || []).map((t: any) => t.id);
         if (taskIds.length === 0) break;
@@ -189,11 +200,41 @@ Deno.serve(async (req) => {
         break;
       }
       default:
+        await logUsage(supabase, keyRow, resource, format, 400, 0, startTime, req);
         return jsonResp({ error: `Unknown resource: ${resource}. Use ?resource without value to see available resources.` }, 400);
     }
+
+    // Log successful call
+    await logUsage(supabase, keyRow, resource, format, 200, rows.length, startTime, req);
 
     return format === "csv" ? csvResp(rows) : jsonResp({ data: rows, count: rows.length, resource, offset, limit });
   } catch (err) {
     return jsonResp({ error: "Internal server error", details: String(err) }, 500);
   }
 });
+
+async function logUsage(
+  supabase: any,
+  keyRow: { id: string; club_id: string },
+  resource: string,
+  format: string,
+  statusCode: number,
+  responseRows: number,
+  startTime: number,
+  req: Request,
+) {
+  try {
+    await supabase.from("api_usage_logs").insert({
+      club_id: keyRow.club_id,
+      api_key_id: keyRow.id,
+      resource,
+      format,
+      status_code: statusCode,
+      response_rows: responseRows,
+      duration_ms: Date.now() - startTime,
+      ip_address: req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || null,
+    });
+  } catch (_) {
+    // Don't fail the request if logging fails
+  }
+}
