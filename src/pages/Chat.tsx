@@ -403,16 +403,22 @@ const Chat = () => {
     return participantNames[otherId] || 'Onbekend';
   };
 
+  const { profile: contextProfile } = useClubContext();
+  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
+
   // Determine sidebar based on role
   const sidebarEl = isOwner ? (
-    <ClubOwnerSidebar />
+    <ClubOwnerSidebar
+      profile={contextProfile ? { full_name: contextProfile.full_name, email: contextProfile.email, avatar_url: contextProfile.avatar_url } : null}
+      onLogout={handleLogout}
+    />
   ) : (
     <VolunteerSidebar
       activeTab="dashboard"
       setActiveTab={() => navigate('/dashboard')}
-      profile={null}
+      profile={contextProfile ? { full_name: contextProfile.full_name, email: contextProfile.email, avatar_url: contextProfile.avatar_url } : null}
       language={language}
-      onLogout={async () => { await supabase.auth.signOut(); navigate('/login'); }}
+      onLogout={handleLogout}
       onOpenProfile={() => {}}
       counts={{}}
     />
