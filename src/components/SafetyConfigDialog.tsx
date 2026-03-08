@@ -133,10 +133,10 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Checklist Items ──
   const addChecklistItem = async () => {
     if (!newChecklistDesc.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_checklist_items').insert({
+    const { data, error } = await supabase.from('safety_checklist_items').insert({
       event_id: eventId, club_id: clubId, description: newChecklistDesc.trim(),
       zone_id: newChecklistZone || null, sort_order: checklistItems.length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { setChecklistItems(prev => [...prev, data]); setNewChecklistDesc(''); setNewChecklistZone(''); toast.success(t3('Checklist item toegevoegd', 'Élément ajouté', 'Checklist item added')); }
   };
