@@ -171,7 +171,7 @@ const EventsManager = () => {
 
       if (evRes.data?.length) {
         const eventIds = evRes.data.map((e: any) => e.id);
-        const { data: groups } = await (supabase as any).from('event_groups').select('*').in('event_id', eventIds).order('sort_order');
+        const { data: groups } = await supabase.from('event_groups').select('*').in('event_id', eventIds).order('sort_order');
         setEventGroups(groups || []);
       }
       setLoading(false);
