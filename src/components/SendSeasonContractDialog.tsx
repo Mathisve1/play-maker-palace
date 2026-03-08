@@ -99,17 +99,26 @@ const SendSeasonContractDialog = ({ open, onClose, clubId, seasonId, language, v
         }
 
         // Call edge function to create DocuSeal submission
-        const { data: fnData, error: fnError } = await supabase.functions.invoke('docuseal', {
-          body: {
-            action: 'create-season-submission',
-            template_id: selectedTemplate,
-            season_id: seasonId,
-            club_id: clubId,
-            volunteer_id: vol.id,
-            volunteer_email: vol.email,
-            volunteer_name: vol.full_name,
-          },
-        });
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docuseal?action=create-season-submission`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              template_id: selectedTemplate,
+              season_id: seasonId,
+              club_id: clubId,
+              volunteer_id: vol.id,
+              volunteer_email: vol.email,
+              volunteer_name: vol.full_name,
+            }),
+          }
+        );
+        const fnData = await response.json();
 
         if (fnError) throw new Error(fnError.message);
         if (fnData?.error) throw new Error(fnData.error);
