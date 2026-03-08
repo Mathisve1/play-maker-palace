@@ -251,14 +251,14 @@ const SafetyDashboard = () => {
       }
 
       // Fetch task zones (hierarchy) for this event's tasks
-      const { data: eventTasks } = await (supabase as any).from('tasks').select('id').eq('event_id', eventId);
+      const { data: eventTasks } = await supabase.from('tasks').select('id').eq('event_id', eventId);
       const taskIds = (eventTasks || []).map((t: any) => t.id);
       if (taskIds.length > 0) {
         const [tzRes, tzaRes] = await Promise.all([
-          (supabase as any).from('task_zones').select('id, name, parent_id').in('task_id', taskIds),
-          (supabase as any).from('task_zone_assignments').select('volunteer_id, zone_id').in('zone_id',
+          supabase.from('task_zones').select('id, name, parent_id').in('task_id', taskIds),
+          supabase.from('task_zone_assignments').select('volunteer_id, zone_id').in('zone_id',
             // We need zone IDs first - fetch all
-            (await (supabase as any).from('task_zones').select('id').in('task_id', taskIds)).data?.map((z: any) => z.id) || []
+            (await supabase.from('task_zones').select('id').in('task_id', taskIds)).data?.map((z: any) => z.id) || []
           ),
         ]);
         setTaskZones(tzRes.data || []);
