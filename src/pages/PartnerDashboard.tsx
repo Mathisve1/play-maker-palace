@@ -65,7 +65,7 @@ const PartnerDashboard = () => {
   const [assignMembers, setAssignMembers] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
   const nl = language === 'nl';
-  const [activeTab, setActiveTab] = useState('tasks');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
 
