@@ -129,9 +129,9 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   const handleSaveTemplate = async () => {
     if (!editTemplateName.trim() || editItems.length === 0) return;
 
-    const { data: tmpl, error } = await (supabase as any).from('closing_templates').insert({
+    const { data: tmpl, error } = await supabase.from('closing_templates').insert({
       club_id: clubId, name: editTemplateName.trim(),
-    }).select('*').single();
+    } as any).select('*').single();
     if (error || !tmpl) { toast.error(error?.message || 'Error'); return; }
 
     const itemInserts = editItems.map((item, i) => ({
