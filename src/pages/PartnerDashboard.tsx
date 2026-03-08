@@ -267,7 +267,7 @@ const PartnerDashboard = () => {
 
   const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (loading) return <DashboardLayout sidebar={<PartnerSidebar partnerName="" activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} onOpenProfile={() => {}} />}><DashboardSkeleton /></DashboardLayout>;
   if (!partner) return null;
 
   const selectedClub = clubs.find(c => c.id === selectedClubId);
