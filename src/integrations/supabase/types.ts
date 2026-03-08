@@ -2114,6 +2114,30 @@ export type Database = {
           },
         ]
       }
+      reminder_logs: {
+        Row: {
+          id: string
+          reference_id: string
+          reminder_type: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          reference_id: string
+          reminder_type: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          reference_id?: string
+          reminder_type?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       safety_checklist_items: {
         Row: {
           club_id: string
