@@ -741,7 +741,7 @@ const ClubOwnerDashboard = () => {
   };
 
   const handleDeleteGroup = async (groupId: string) => {
-    const { error } = await (supabase as any).from('event_groups').delete().eq('id', groupId);
+    const { error } = await supabase.from('event_groups').delete().eq('id', groupId);
     if (error) {
       toast.error(error.message);
     } else {
