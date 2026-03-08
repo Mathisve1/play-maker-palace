@@ -7,7 +7,7 @@ import {
   ArrowLeft, BarChart3, Download, Filter, Loader2, PieChart, TrendingUp, Users,
   Calendar, Euro, AlertTriangle, CheckCircle2, XCircle, ClipboardCheck, Send,
   Bot, Sparkles, CreditCard, Hash, Target, Percent, Clock, MapPin, FileText,
-  Handshake, Shield, FileDown
+  Handshake, Shield, FileDown, Code2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ import ReportingFinancialTab from '@/components/reporting/ReportingFinancialTab'
 import ReportingPartnersTab from '@/components/reporting/ReportingPartnersTab';
 import ReportingComplianceTab from '@/components/reporting/ReportingComplianceTab';
 import ReportingSeasonTab from '@/components/reporting/ReportingSeasonTab';
+import ReportingApiTab from '@/components/reporting/ReportingApiTab';
 import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
@@ -893,6 +894,7 @@ const ReportingDashboard = () => {
               <TabsTrigger value="partners" className="gap-1.5 text-xs sm:text-sm"><Handshake className="w-3.5 h-3.5" />{L.partners}</TabsTrigger>
               <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><Shield className="w-3.5 h-3.5" />{L.compliance}</TabsTrigger>
               <TabsTrigger value="season" className="gap-1.5 text-xs sm:text-sm"><Calendar className="w-3.5 h-3.5" />Seizoen</TabsTrigger>
+              <TabsTrigger value="api" className="gap-1.5 text-xs sm:text-sm"><Code2 className="w-3.5 h-3.5" />API</TabsTrigger>
               <TabsTrigger value="ai" className="gap-1.5 text-xs sm:text-sm"><Bot className="w-3.5 h-3.5" />AI</TabsTrigger>
             </TabsList>
           </div>
@@ -1095,6 +1097,10 @@ const ReportingDashboard = () => {
             {clubId && <ReportingSeasonTab clubId={clubId} language={language} />}
           </TabsContent>
 
+
+          <TabsContent value="api" className="space-y-4 mt-4">
+            <ReportingApiTab />
+          </TabsContent>
 
           <TabsContent value="ai" className="space-y-4 mt-4">
             <Card>

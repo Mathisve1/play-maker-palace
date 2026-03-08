@@ -625,6 +625,63 @@ export type Database = {
           },
         ]
       }
+      club_api_keys: {
+        Row: {
+          api_key: string
+          calls_this_hour: number
+          club_id: string
+          created_at: string
+          created_by: string | null
+          hour_window_start: string | null
+          id: string
+          is_active: boolean
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+        }
+        Insert: {
+          api_key?: string
+          calls_this_hour?: number
+          club_id: string
+          created_at?: string
+          created_by?: string | null
+          hour_window_start?: string | null
+          id?: string
+          is_active?: boolean
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+        }
+        Update: {
+          api_key?: string
+          calls_this_hour?: number
+          club_id?: string
+          created_at?: string
+          created_by?: string | null
+          hour_window_start?: string | null
+          id?: string
+          is_active?: boolean
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_api_keys_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_api_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_follows: {
         Row: {
           club_id: string
