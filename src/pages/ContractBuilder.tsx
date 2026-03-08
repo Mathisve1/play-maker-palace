@@ -751,13 +751,30 @@ const ContractBuilder = () => {
           <Sparkles className="w-3.5 h-3.5" />
            {t3('Standaard Contract', 'Contrat standard', 'Standard Contract')}
         </button>
-        <button
-          onClick={handleGenerateMonthlyContract}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
-        >
-          <CalendarDays className="w-3.5 h-3.5" />
-          {t3('Maandcontract', 'Contrat mensuel', 'Monthly Contract')}
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowSeasonPicker(!showSeasonPicker)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-600 text-white text-xs font-medium hover:bg-orange-700 transition-colors"
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            {t3('Seizoenscontract', 'Contrat saisonnier', 'Season Contract')}
+          </button>
+          {showSeasonPicker && (
+            <div className="absolute left-0 top-full mt-1 w-72 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+              <div className="p-2 border-b border-border">
+                <p className="text-xs font-semibold text-muted-foreground px-2">{t3('Kies een seizoenssjabloon', 'Choisir un modèle saisonnier', 'Choose a season template')}</p>
+              </div>
+              <div className="p-1">
+                {Object.entries(seasonTemplateNames).map(([key, name]) => (
+                  <button key={key} onClick={() => handleGenerateSeasonContract(key)}
+                    className="w-full text-left px-3 py-2.5 text-xs rounded-lg hover:bg-muted transition-colors text-foreground">
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <input
             type="text"
