@@ -99,9 +99,9 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Zones ──
   const addZone = async () => {
     if (!newZoneName.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_zones').insert({
+    const { data, error } = await supabase.from('safety_zones').insert({
       event_id: eventId, club_id: clubId, name: newZoneName.trim(), color: newZoneColor, sort_order: zones.length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { setZones(prev => [...prev, data]); setNewZoneName(''); setNewZoneColor('#3b82f6'); toast.success(t3('Zone toegevoegd', 'Zone ajoutée', 'Zone added')); }
   };
