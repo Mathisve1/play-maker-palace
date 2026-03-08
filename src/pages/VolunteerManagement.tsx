@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -8,9 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, QrCode, ChevronRight } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
+import CreateSeasonDialog from '@/components/CreateSeasonDialog';
+import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
 
 interface VolunteerRow {
   id: string;
@@ -34,16 +37,15 @@ const VolunteerManagement = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [activeSeason, setActiveSeason] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => {
-    if (!clubId) return;
-    loadData();
-  }, [clubId]);
+  // Dialogs
+  const [showCreateSeason, setShowCreateSeason] = useState(false);
+  const [showSendContract, setShowSendContract] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const loadData = async () => {
-    if (!clubId) return;
-    setLoading(true);
+  // Auto-create season on first load
+  const ensureSeason = useCallback(async () => {
+    if (!clubId) return null;
 
-    // Get active season
     const { data: seasons } = await supabase
       .from('seasons')
       .select('id, name, start_date, end_date')
@@ -51,44 +53,70 @@ const VolunteerManagement = () => {
       .eq('is_active', true)
       .limit(1);
 
-    const season = seasons?.[0];
+    if (seasons?.[0]) return seasons[0];
+
+    // Auto-create current sport season (July-June)
+    const now = new Date();
+    const startYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+    const endYear = startYear + 1;
+    const name = `Seizoen ${startYear}-${endYear}`;
+
+    const { data: created, error } = await supabase
+      .from('seasons')
+      .insert({
+        club_id: clubId,
+        name,
+        start_date: `${startYear}-07-01`,
+        end_date: `${endYear}-06-30`,
+        is_active: true,
+      })
+      .select('id, name, start_date, end_date')
+      .single();
+
+    if (error) {
+      console.error('Auto-create season error:', error);
+      return null;
+    }
+
+    toast.success(t(`${name} automatisch aangemaakt`, `${name} créée automatiquement`, `${name} auto-created`));
+    return created;
+  }, [clubId]);
+
+  const loadData = useCallback(async () => {
+    if (!clubId) return;
+    setLoading(true);
+
+    const season = await ensureSeason();
     if (season) {
       setActiveSeason({ id: season.id, name: season.name });
     }
 
-    // Get all contracts for this club
-    const { data: contracts } = await supabase
-      .from('season_contracts')
-      .select('id, volunteer_id, status, template_id')
-      .eq('club_id', clubId);
+    // Parallel: contracts, templates, check-ins, club members
+    const [contractsRes, templatesRes, checkInsRes, membersRes] = await Promise.all([
+      supabase.from('season_contracts').select('id, volunteer_id, status, template_id').eq('club_id', clubId),
+      supabase.from('season_contract_templates').select('id, name, category').or(`club_id.eq.${clubId},is_system.eq.true`),
+      season
+        ? supabase.from('volunteer_check_ins').select('volunteer_id').eq('club_id', clubId).eq('season_id', season.id)
+        : Promise.resolve({ data: [] as any[] }),
+      supabase.from('club_members').select('user_id').eq('club_id', clubId),
+    ]);
 
-    // Get templates
-    const { data: templates } = await supabase
-      .from('season_contract_templates')
-      .select('id, name, category')
-      .or(`club_id.eq.${clubId},is_system.eq.true`);
-
-    // Get check-ins for the active season
-    const checkInQuery = supabase
-      .from('volunteer_check_ins')
-      .select('volunteer_id')
-      .eq('club_id', clubId);
-    
-    if (season) {
-      checkInQuery.eq('season_id', season.id);
-    }
-    const { data: checkIns } = await checkInQuery;
+    const contracts = contractsRes.data || [];
+    const templates = templatesRes.data || [];
+    const checkIns = (checkInsRes as any).data || [];
+    const members = membersRes.data || [];
 
     // Count check-ins per volunteer
     const checkInCounts: Record<string, number> = {};
-    (checkIns || []).forEach(ci => {
+    checkIns.forEach((ci: any) => {
       checkInCounts[ci.volunteer_id] = (checkInCounts[ci.volunteer_id] || 0) + 1;
     });
 
-    // Get unique volunteer IDs
+    // Get unique volunteer IDs (from contracts, check-ins, and members)
     const volunteerIds = [...new Set([
-      ...(contracts || []).map(c => c.volunteer_id),
+      ...contracts.map(c => c.volunteer_id),
       ...Object.keys(checkInCounts),
+      ...members.map(m => m.user_id),
     ])];
 
     if (volunteerIds.length === 0) {
@@ -97,16 +125,15 @@ const VolunteerManagement = () => {
       return;
     }
 
-    // Fetch profiles
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, full_name, email, avatar_url')
       .in('id', volunteerIds);
 
-    const templateMap = new Map((templates || []).map(t => [t.id, t]));
+    const templateMap = new Map(templates.map(t => [t.id, t]));
 
     const rows: VolunteerRow[] = (profiles || []).map(p => {
-      const volContracts = (contracts || [])
+      const volContracts = contracts
         .filter(c => c.volunteer_id === p.id)
         .map(c => {
           const tmpl = templateMap.get(c.template_id);
@@ -133,7 +160,11 @@ const VolunteerManagement = () => {
 
     setVolunteers(rows.sort((a, b) => b.check_in_count - a.check_in_count));
     setLoading(false);
-  };
+  }, [clubId, ensureSeason]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const categoryLabels: Record<string, string> = {
     steward: 'Steward',
@@ -163,6 +194,27 @@ const VolunteerManagement = () => {
     trial: volunteers.filter(v => !v.is_paying).length,
   }), [volunteers]);
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(v => v.id)));
+    }
+  };
+
+  const openSendDialog = (ids?: string[]) => {
+    if (ids) setSelectedIds(new Set(ids));
+    setShowSendContract(true);
+  };
+
   return (
     <ClubPageLayout>
       <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-6">
@@ -173,13 +225,32 @@ const VolunteerManagement = () => {
               <Users className="w-6 h-6 text-primary" />
               {t('Vrijwilligersbeheer', 'Gestion des bénévoles', 'Volunteer Management')}
             </h1>
-            {activeSeason && (
-              <p className="text-sm text-muted-foreground mt-1">{activeSeason.name}</p>
+            {activeSeason ? (
+              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                <CalendarDays className="w-3.5 h-3.5" />
+                {activeSeason.name}
+                <button onClick={() => setShowCreateSeason(true)} className="text-primary hover:underline text-xs">
+                  {t('Wijzig', 'Modifier', 'Change')}
+                </button>
+              </p>
+            ) : (
+              <Button variant="outline" size="sm" className="mt-1" onClick={() => setShowCreateSeason(true)}>
+                <Plus className="w-4 h-4 mr-1" />
+                {t('Seizoen aanmaken', 'Créer saison', 'Create season')}
+              </Button>
             )}
           </div>
-          <Button variant="outline" size="sm" onClick={loadData}>
-            {t('Vernieuwen', 'Actualiser', 'Refresh')}
-          </Button>
+          <div className="flex gap-2">
+            {selectedIds.size > 0 && (
+              <Button onClick={() => openSendDialog()} className="gap-2">
+                <Send className="w-4 h-4" />
+                {t(`Contract versturen (${selectedIds.size})`, `Envoyer contrat (${selectedIds.size})`, `Send contract (${selectedIds.size})`)}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={loadData}>
+              {t('Vernieuwen', 'Actualiser', 'Refresh')}
+            </Button>
+          </div>
         </div>
 
         {/* KPI Cards */}
@@ -236,6 +307,21 @@ const VolunteerManagement = () => {
           </Select>
         </div>
 
+        {/* Bulk action bar */}
+        {filtered.length > 0 && (
+          <div className="flex items-center gap-3 text-sm">
+            <Checkbox
+              checked={selectedIds.size === filtered.length && filtered.length > 0}
+              onCheckedChange={toggleSelectAll}
+            />
+            <span className="text-muted-foreground">
+              {selectedIds.size > 0
+                ? t(`${selectedIds.size} geselecteerd`, `${selectedIds.size} sélectionné(s)`, `${selectedIds.size} selected`)
+                : t('Alles selecteren', 'Tout sélectionner', 'Select all')}
+            </span>
+          </div>
+        )}
+
         {/* Volunteer List */}
         {loading ? (
           <div className="text-center py-16 text-muted-foreground">
@@ -246,16 +332,22 @@ const VolunteerManagement = () => {
           <div className="text-center py-16 text-muted-foreground">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p>{t('Geen vrijwilligers gevonden', 'Aucun bénévole trouvé', 'No volunteers found')}</p>
-            {!activeSeason && (
-              <p className="text-xs mt-2">{t('Maak eerst een seizoen aan om te beginnen.', 'Créez d\'abord une saison pour commencer.', 'Create a season first to get started.')}</p>
-            )}
           </div>
         ) : (
           <div className="space-y-2">
             {filtered.map((vol, i) => (
               <motion.div key={vol.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
-                className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow">
+                className={`bg-card rounded-2xl p-4 border shadow-sm hover:shadow-md transition-shadow ${
+                  selectedIds.has(vol.id) ? 'border-primary/40 bg-primary/5' : 'border-border'
+                }`}>
                 <div className="flex items-center gap-4">
+                  {/* Checkbox */}
+                  <Checkbox
+                    checked={selectedIds.has(vol.id)}
+                    onCheckedChange={() => toggleSelect(vol.id)}
+                    className="shrink-0"
+                  />
+
                   {/* Avatar */}
                   <Avatar className="h-11 w-11 shrink-0">
                     {vol.avatar_url && <AvatarImage src={vol.avatar_url} alt={vol.full_name} />}
@@ -301,7 +393,16 @@ const VolunteerManagement = () => {
                     ))}
                   </div>
 
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  {/* Send contract button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 gap-1.5 text-xs"
+                    onClick={(e) => { e.stopPropagation(); openSendDialog([vol.id]); }}
+                  >
+                    <FileSignature className="w-3.5 h-3.5" />
+                    <span className="hidden lg:inline">{t('Contract', 'Contrat', 'Contract')}</span>
+                  </Button>
                 </div>
 
                 {/* Mobile contract badges */}
@@ -321,6 +422,31 @@ const VolunteerManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Dialogs */}
+      {clubId && (
+        <>
+          <CreateSeasonDialog
+            open={showCreateSeason}
+            onClose={() => setShowCreateSeason(false)}
+            clubId={clubId}
+            language={language}
+            onCreated={loadData}
+          />
+          {activeSeason && (
+            <SendSeasonContractDialog
+              open={showSendContract}
+              onClose={() => { setShowSendContract(false); setSelectedIds(new Set()); }}
+              clubId={clubId}
+              seasonId={activeSeason.id}
+              language={language}
+              volunteers={filtered.map(v => ({ id: v.id, full_name: v.full_name, email: v.email, avatar_url: v.avatar_url }))}
+              preSelectedIds={[...selectedIds]}
+              onSent={loadData}
+            />
+          )}
+        </>
+      )}
     </ClubPageLayout>
   );
 };
