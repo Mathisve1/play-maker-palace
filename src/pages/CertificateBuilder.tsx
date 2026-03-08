@@ -159,9 +159,9 @@ const CertificateBuilder = () => {
     };
 
     if (editingDesign?.id) {
-      await (supabase as any).from('certificate_designs').update(payload).eq('id', editingDesign.id);
+      await supabase.from('certificate_designs').update(payload).eq('id', editingDesign.id);
     } else {
-      await (supabase as any).from('certificate_designs').insert(payload);
+      await supabase.from('certificate_designs').insert(payload);
     }
 
     toast.success(l.saved);
