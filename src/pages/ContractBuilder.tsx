@@ -482,7 +482,20 @@ const ContractBuilder = () => {
     toast.success(t3('Maandcontract gegenereerd met alle vereiste clausules (looptijd, rooster, afrekening, GDPR, cumulatie).', 'Contrat mensuel généré avec toutes les clauses requises.', 'Monthly contract generated with all required clauses.'));
   };
 
-  const handleLoadTemplate = async (templateId: string) => {
+  const [showSeasonPicker, setShowSeasonPicker] = useState(false);
+
+  const handleGenerateSeasonContract = (category: string) => {
+    if (blocks.length > 3) {
+      if (!confirm(t3('Dit vervangt alle huidige blokken met een seizoenscontract. Doorgaan?', 'Cela remplacera tous les blocs par un contrat saisonnier. Continuer?', 'This will replace all blocks with a season contract. Continue?'))) return;
+    }
+    const generator = seasonTemplateGenerators[category];
+    if (!generator) return;
+    setBlocks(generator());
+    setTemplateName(prev => prev || `Seizoenscontract – ${seasonTemplateNames[category]}`);
+    setShowSeasonPicker(false);
+    toast.success(t3(`Seizoenscontract "${seasonTemplateNames[category]}" gegenereerd met alle vereiste clausules.`, `Contrat saisonnier "${seasonTemplateNames[category]}" généré.`, `Season contract "${seasonTemplateNames[category]}" generated.`));
+  };
+
     if (blocks.length > 3) {
       if (!confirm(t3('Dit vervangt alle huidige blokken. Doorgaan?', 'Cela remplacera tous les blocs actuels. Continuer?', 'This will replace all current blocks. Continue?'))) return;
     }
