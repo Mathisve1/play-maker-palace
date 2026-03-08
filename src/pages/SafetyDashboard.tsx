@@ -295,7 +295,7 @@ const SafetyDashboard = () => {
                     roleName: (roleMap.get(teamVols.find((v: any) => v.volunteer_id === p.id)?.safety_role_id) as any)?.name || '',
                   })));
                   // Fetch incidents reported by team members
-                  const { data: tIncidents } = await (supabase as any).from('safety_incidents')
+                  const { data: tIncidents } = await supabase.from('safety_incidents')
                     .select('*').eq('event_id', eventId).in('reporter_id', teamIds).order('created_at', { ascending: false });
                   setTeamIncidents(tIncidents || []);
                 }
