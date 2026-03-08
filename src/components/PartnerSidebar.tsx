@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, ClipboardList, LogOut, Settings, User,
+  LayoutDashboard, Users, ClipboardList, LogOut, Settings, UserCheck,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -48,9 +48,21 @@ const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout, onOpen
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'dashboard'} onClick={() => handleNav('dashboard')} className="min-h-[48px]">
+                  <LayoutDashboard className="w-5 h-5" />
+                  <span>Dashboard</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton isActive={activeTab === 'tasks'} onClick={() => handleNav('tasks')} className="min-h-[48px]">
                   <ClipboardList className="w-5 h-5" />
                   <span>{t3('Taken', 'Tâches', 'Tasks')}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'attendance'} onClick={() => handleNav('attendance')} className="min-h-[48px]">
+                  <UserCheck className="w-5 h-5" />
+                  <span>{t3('Aanwezigheid', 'Présences', 'Attendance')}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
