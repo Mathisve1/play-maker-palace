@@ -2521,6 +2521,7 @@ export type Database = {
           club_id: string | null
           created_at: string
           description: string | null
+          docuseal_template_id: number | null
           id: string
           is_system: boolean
           name: string
@@ -2532,6 +2533,7 @@ export type Database = {
           club_id?: string | null
           created_at?: string
           description?: string | null
+          docuseal_template_id?: number | null
           id?: string
           is_system?: boolean
           name: string
@@ -2543,6 +2545,7 @@ export type Database = {
           club_id?: string | null
           created_at?: string
           description?: string | null
+          docuseal_template_id?: number | null
           id?: string
           is_system?: boolean
           name?: string
