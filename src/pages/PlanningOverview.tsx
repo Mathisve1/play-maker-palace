@@ -77,8 +77,8 @@ const PlanningOverview = () => {
     setClubId(contextClubId);
 
     const [evRes, taskRes, monthlyRes] = await Promise.all([
-      (supabase as any).from('events').select('id, title, event_date, location').eq('club_id', contextClubId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-      (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', contextClubId).order('task_date', { ascending: true }),
+      supabase.from('events').select('id, title, event_date, location').eq('club_id', contextClubId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
+      supabase.from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', contextClubId).order('task_date', { ascending: true }),
       supabase.from('monthly_plans').select('id, year, month, title, status').eq('club_id', contextClubId).order('year', { ascending: false }).order('month', { ascending: false }),
     ]);
 
@@ -88,15 +88,15 @@ const PlanningOverview = () => {
     if (allTasks.length) {
       const taskIds = allTasks.map((t: any) => t.id);
       const [zoneRes, signupRes] = await Promise.all([
-        (supabase as any).from('task_zones').select('id, task_id').in('task_id', taskIds),
-        (supabase as any).from('task_signups').select('id, task_id').in('task_id', taskIds).eq('status', 'assigned'),
+        supabase.from('task_zones').select('id, task_id').in('task_id', taskIds),
+        supabase.from('task_signups').select('id, task_id').in('task_id', taskIds).eq('status', 'assigned'),
       ]);
       const zones = zoneRes.data || [];
       const signups = signupRes.data || [];
       const zoneIds = zones.map((z: any) => z.id);
       let assignmentMap: Record<string, number> = {};
       if (zoneIds.length) {
-        const { data: assignments } = await (supabase as any).from('task_zone_assignments').select('id, zone_id').in('zone_id', zoneIds);
+        const { data: assignments } = await supabase.from('task_zone_assignments').select('id, zone_id').in('zone_id', zoneIds);
         const zoneToTask: Record<string, string> = {};
         zones.forEach((z: any) => { zoneToTask[z.id] = z.task_id; });
         (assignments || []).forEach((a: any) => {

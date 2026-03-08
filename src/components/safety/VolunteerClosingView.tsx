@@ -42,7 +42,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('closing_tasks')
         .select('id, description, requires_photo, requires_note, status, photo_url, note, sort_order')
         .eq('event_id', eventId)
@@ -119,7 +119,7 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
     if (photo_url) updates.photo_url = photo_url;
     if (taskNote.trim()) updates.note = taskNote.trim();
 
-    const { error } = await (supabase as any).from('closing_tasks').update(updates).eq('id', taskId);
+    const { error } = await supabase.from('closing_tasks').update(updates).eq('id', taskId);
     if (error) {
       toast.error(error.message);
     } else {

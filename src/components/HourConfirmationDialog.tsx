@@ -123,7 +123,7 @@ const HourConfirmationDialog = ({
     if (!open) return;
     const fetchConfirmation = async () => {
       setLoading(true);
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('hour_confirmations')
         .select('*')
         .eq('task_id', taskId)
@@ -162,7 +162,7 @@ const HourConfirmationDialog = ({
           updateData.club_approved = true;
         }
 
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('hour_confirmations')
           .update(updateData)
           .eq('id', confirmation.id);
@@ -184,9 +184,9 @@ const HourConfirmationDialog = ({
           insertData.volunteer_approved = true;
         }
 
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from('hour_confirmations')
-          .insert(insertData)
+          .insert(insertData as any)
           .select('*')
           .maybeSingle();
         if (error) throw error;
@@ -206,7 +206,7 @@ const HourConfirmationDialog = ({
     try {
       const avg = (confirmation.volunteer_reported_hours + confirmation.club_reported_hours) / 2;
       const amount = calculateAmount(avg);
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('hour_confirmations')
         .update({
           final_hours: avg,

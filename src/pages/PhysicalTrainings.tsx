@@ -124,7 +124,7 @@ const PhysicalTrainings = () => {
       // Parallel: trainings + certificate designs + events
       const [tData, designsData] = await Promise.all([
         supabase.from('academy_trainings').select('id, title').eq('club_id', cid).order('title'),
-        (supabase as any).from('certificate_designs').select('id, name').eq('club_id', cid),
+        supabase.from('certificate_designs').select('id, name').eq('club_id', cid),
       ]);
       setTrainings((tData.data || []) as Training[]);
       setCertDesigns((designsData.data || []) as { id: string; name: string }[]);

@@ -36,7 +36,7 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
   const t3 = (nlT: string, frT: string, enT: string) => language === 'fr' ? frT : language === 'en' ? enT : nlT;
 
   const fetchZones = useCallback(async () => {
-    const { data, error } = await (supabase as any).from('task_zones').select('*').eq('task_id', taskId).order('sort_order');
+    const { data, error } = await supabase.from('task_zones').select('*').eq('task_id', taskId).order('sort_order');
     if (!error && data) setZones(data);
     setLoading(false);
   }, [taskId]);
@@ -48,7 +48,7 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
     setSaving(true);
     const parentId = addingTo === 'root' ? null : addingTo;
     const siblings = zones.filter(z => z.parent_id === parentId);
-    const { data, error } = await (supabase as any).from('task_zones').insert({
+    const { data, error } = await supabase.from('task_zones').insert({
       task_id: taskId,
       parent_id: parentId,
       name: newName.trim(),
@@ -69,7 +69,7 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
   };
 
   const handleDelete = async (zoneId: string) => {
-    const { error } = await (supabase as any).from('task_zones').delete().eq('id', zoneId);
+    const { error } = await supabase.from('task_zones').delete().eq('id', zoneId);
     if (error) toast.error(error.message);
     else {
       const removeIds = getDescendantIds(zoneId);
@@ -80,7 +80,7 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
   };
 
   const handleToggleVisibility = async (zone: Zone) => {
-    const { error } = await (supabase as any).from('task_zones').update({ is_visible: !zone.is_visible }).eq('id', zone.id);
+    const { error } = await supabase.from('task_zones').update({ is_visible: !zone.is_visible }).eq('id', zone.id);
     if (!error) setZones(prev => prev.map(z => z.id === zone.id ? { ...z, is_visible: !z.is_visible } : z));
   };
 

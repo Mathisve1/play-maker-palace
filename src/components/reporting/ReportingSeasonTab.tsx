@@ -121,8 +121,8 @@ const ReportingSeasonTab = ({ clubId, language }: Props) => {
   useEffect(() => {
     const load = async () => {
       const [contractsRes, checkinsRes, seasonsRes] = await Promise.all([
-        (supabase as any).from('season_contracts').select('id, volunteer_id, status, checkin_count, volunteer_status, signed_at, season_id').eq('club_id', clubId),
-        (supabase as any).from('season_checkins').select('id, volunteer_id, season_contract_id, checked_in_at, hours_worked').eq('club_id', clubId),
+        supabase.from('season_contracts').select('id, volunteer_id, status, checkin_count, volunteer_status, signed_at, season_id').eq('club_id', clubId),
+        supabase.from('season_checkins').select('id, volunteer_id, season_contract_id, checked_in_at, hours_worked').eq('club_id', clubId),
         supabase.from('seasons').select('id, name, start_date, end_date, is_active').eq('club_id', clubId).order('start_date', { ascending: false }),
       ]);
 

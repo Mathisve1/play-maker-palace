@@ -130,7 +130,7 @@ const Community = () => {
       const [tasksRes, signupsRes, eventsRes, partnersRes, allTasksRes] = await Promise.all([
         supabase.from('tasks').select('club_id').in('club_id', clubIds).eq('status', 'open'),
         supabase.from('task_signups').select('task_id, volunteer_id'),
-        (supabase as any).from('events').select('club_id').in('club_id', clubIds),
+        supabase.from('events').select('club_id').in('club_id', clubIds),
         supabase.from('external_partners').select('club_id').in('club_id', clubIds),
         supabase.from('tasks').select('id, club_id').in('club_id', clubIds),
       ]);

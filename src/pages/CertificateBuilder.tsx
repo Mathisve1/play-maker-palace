@@ -108,7 +108,7 @@ const CertificateBuilder = () => {
   };
 
   const loadDesigns = async (cid: string) => {
-    const { data } = await (supabase as any).from('certificate_designs').select('*').eq('club_id', cid).order('created_at', { ascending: false });
+    const { data } = await supabase.from('certificate_designs').select('*').eq('club_id', cid).order('created_at', { ascending: false });
     setDesigns((data || []) as CertificateDesign[]);
   };
 
@@ -159,9 +159,9 @@ const CertificateBuilder = () => {
     };
 
     if (editingDesign?.id) {
-      await (supabase as any).from('certificate_designs').update(payload).eq('id', editingDesign.id);
+      await supabase.from('certificate_designs').update(payload).eq('id', editingDesign.id);
     } else {
-      await (supabase as any).from('certificate_designs').insert(payload);
+      await supabase.from('certificate_designs').insert(payload);
     }
 
     toast.success(l.saved);
@@ -172,7 +172,7 @@ const CertificateBuilder = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm(l.deleteConfirm)) return;
-    await (supabase as any).from('certificate_designs').delete().eq('id', id);
+    await supabase.from('certificate_designs').delete().eq('id', id);
     toast.success(l.deleted);
     if (clubId) await loadDesigns(clubId);
   };

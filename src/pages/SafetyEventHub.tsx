@@ -21,7 +21,7 @@ const SafetyEventHub = () => {
   useEffect(() => {
     (async () => {
       if (!eventId) return;
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('events')
         .select('title, event_date, location, status, is_live, club_id')
         .eq('id', eventId)
@@ -41,12 +41,12 @@ const SafetyEventHub = () => {
       const [clubRes, profileRes, zonesRes, incTypesRes, incRes, clItemsRes, cpRes, cTasksRes] = await Promise.all([
         supabase.from('clubs').select('name').eq('id', clubId).single(),
         session ? supabase.from('profiles').select('full_name').eq('id', session.user.id).single() : Promise.resolve({ data: null }),
-        (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
-        (supabase as any).from('safety_incident_types').select('*').eq('club_id', clubId),
-        (supabase as any).from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
-        (supabase as any).from('safety_checklist_items').select('*').eq('event_id', eventId),
-        (supabase as any).from('safety_checklist_progress').select('*'),
-        (supabase as any).from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order'),
+        supabase.from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
+        supabase.from('safety_incident_types').select('*').eq('club_id', clubId),
+        supabase.from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
+        supabase.from('safety_checklist_items').select('*').eq('event_id', eventId),
+        supabase.from('safety_checklist_progress').select('*'),
+        supabase.from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order'),
       ]);
 
       const zones = zonesRes.data || [];

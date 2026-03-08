@@ -72,7 +72,7 @@ const VolunteerPhoneMockup = ({
     const userId = session?.session?.user?.id;
     if (!userId) { setSending(false); return; }
 
-    const { data: inc, error } = await (supabase as any).from('safety_incidents').insert({
+    const { data: inc, error } = await supabase.from('safety_incidents').insert({
       event_id: eventId,
       club_id: clubId,
       incident_type_id: type.id,
@@ -103,7 +103,7 @@ const VolunteerPhoneMockup = ({
     if (selectedZone) updates.zone_id = selectedZone;
 
     if (Object.keys(updates).length > 0) {
-      await (supabase as any).from('safety_incidents').update(updates).eq('id', sentIncidentId);
+      await supabase.from('safety_incidents').update(updates).eq('id', sentIncidentId);
     }
 
     setSending(false);

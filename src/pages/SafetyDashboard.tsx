@@ -185,7 +185,7 @@ const SafetyDashboard = () => {
       if (!session || !eventId) { navigate('/login'); return; }
       setUserId(session.user.id);
 
-      const { data: ev } = await (supabase as any).from('events').select('id, club_id, title, is_live, status').eq('id', eventId).maybeSingle();
+      const { data: ev } = await supabase.from('events').select('id, club_id, title, is_live, status').eq('id', eventId).maybeSingle();
       if (!ev) { navigate('/events-manager'); return; }
       setClubId(ev.club_id);
       setEventTitle(ev.title);
@@ -201,7 +201,7 @@ const SafetyDashboard = () => {
       }
 
       const { data: owned } = await supabase.from('clubs').select('id').eq('id', ev.club_id).eq('owner_id', session.user.id);
-      const { data: member } = await (supabase as any).from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
+      const { data: member } = await supabase.from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
       const staff = !!(owned?.length) || ['bestuurder', 'beheerder'].includes(member?.role || '');
       setIsStaff(staff);
 
@@ -222,13 +222,13 @@ const SafetyDashboard = () => {
       }
 
       const [zRes, itRes, incRes, clRes, cpRes, llRes, loRes] = await Promise.all([
-        (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
-        (supabase as any).from('safety_incident_types').select('*').eq('club_id', ev.club_id).order('sort_order'),
-        (supabase as any).from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
-        (supabase as any).from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order'),
-        (supabase as any).from('safety_checklist_progress').select('*'),
-        (supabase as any).from('safety_location_levels').select('*').eq('club_id', ev.club_id).order('sort_order'),
-        (supabase as any).from('safety_location_options').select('*').order('sort_order'),
+        supabase.from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
+        supabase.from('safety_incident_types').select('*').eq('club_id', ev.club_id).order('sort_order'),
+        supabase.from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
+        supabase.from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order'),
+        supabase.from('safety_checklist_progress').select('*'),
+        supabase.from('safety_location_levels').select('*').eq('club_id', ev.club_id).order('sort_order'),
+        supabase.from('safety_location_options').select('*').order('sort_order'),
       ]);
       setZones(zRes.data || []);
       setIncidentTypes(itRes.data || []);
@@ -251,14 +251,14 @@ const SafetyDashboard = () => {
       }
 
       // Fetch task zones (hierarchy) for this event's tasks
-      const { data: eventTasks } = await (supabase as any).from('tasks').select('id').eq('event_id', eventId);
+      const { data: eventTasks } = await supabase.from('tasks').select('id').eq('event_id', eventId);
       const taskIds = (eventTasks || []).map((t: any) => t.id);
       if (taskIds.length > 0) {
         const [tzRes, tzaRes] = await Promise.all([
-          (supabase as any).from('task_zones').select('id, name, parent_id').in('task_id', taskIds),
-          (supabase as any).from('task_zone_assignments').select('volunteer_id, zone_id').in('zone_id',
+          supabase.from('task_zones').select('id, name, parent_id').in('task_id', taskIds),
+          supabase.from('task_zone_assignments').select('volunteer_id, zone_id').in('zone_id',
             // We need zone IDs first - fetch all
-            (await (supabase as any).from('task_zones').select('id').in('task_id', taskIds)).data?.map((z: any) => z.id) || []
+            (await supabase.from('task_zones').select('id').in('task_id', taskIds)).data?.map((z: any) => z.id) || []
           ),
         ]);
         setTaskZones(tzRes.data || []);
@@ -267,19 +267,19 @@ const SafetyDashboard = () => {
 
       // Fetch volunteer's safety role for this event
       if (!staff) {
-        const { data: vsrData } = await (supabase as any).from('volunteer_safety_roles')
+        const { data: vsrData } = await supabase.from('volunteer_safety_roles')
           .select('safety_role_id').eq('event_id', eventId).eq('volunteer_id', session.user.id).maybeSingle();
         if (vsrData?.safety_role_id) {
-          const { data: roleData } = await (supabase as any).from('safety_roles')
+          const { data: roleData } = await supabase.from('safety_roles')
             .select('*').eq('id', vsrData.safety_role_id).maybeSingle();
           if (roleData) {
             setMyRole(roleData);
             // If can_view_team, fetch team members (lower level, same event) and their incidents
             if (roleData.can_view_team) {
-              const { data: allVsr } = await (supabase as any).from('volunteer_safety_roles')
+              const { data: allVsr } = await supabase.from('volunteer_safety_roles')
                 .select('volunteer_id, safety_role_id').eq('event_id', eventId);
               if (allVsr) {
-                const { data: allRoles } = await (supabase as any).from('safety_roles')
+                const { data: allRoles } = await supabase.from('safety_roles')
                   .select('id, level, name, color').eq('club_id', ev.club_id);
                 const roleMap = new Map((allRoles || []).map((r: any) => [r.id, r as { id: string; level: number; name: string; color: string }]));
                 const teamVols = allVsr.filter((v: any) => {
@@ -295,7 +295,7 @@ const SafetyDashboard = () => {
                     roleName: (roleMap.get(teamVols.find((v: any) => v.volunteer_id === p.id)?.safety_role_id) as any)?.name || '',
                   })));
                   // Fetch incidents reported by team members
-                  const { data: tIncidents } = await (supabase as any).from('safety_incidents')
+                  const { data: tIncidents } = await supabase.from('safety_incidents')
                     .select('*').eq('event_id', eventId).in('reporter_id', teamIds).order('created_at', { ascending: false });
                   setTeamIncidents(tIncidents || []);
                 }
@@ -381,12 +381,12 @@ const SafetyDashboard = () => {
     const existing = checklistProgress.find(p => p.checklist_item_id === itemId && p.volunteer_id === userId);
     if (existing) {
       const newVal = !existing.is_completed;
-      await (supabase as any).from('safety_checklist_progress').update({
+      await supabase.from('safety_checklist_progress').update({
         is_completed: newVal, completed_at: newVal ? new Date().toISOString() : null,
       }).eq('id', existing.id);
       setChecklistProgress(prev => prev.map(p => p.id === existing.id ? { ...p, is_completed: newVal } : p));
     } else {
-      const { data } = await (supabase as any).from('safety_checklist_progress').insert({
+      const { data } = await supabase.from('safety_checklist_progress').insert({
         checklist_item_id: itemId, volunteer_id: userId, is_completed: true, completed_at: new Date().toISOString(),
       }).select('*').maybeSingle();
       if (data) setChecklistProgress(prev => [...prev, data]);

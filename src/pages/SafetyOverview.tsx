@@ -89,13 +89,13 @@ const SafetyOverview = () => {
     }
 
     for (const ev of demoEvents) {
-      await (supabase as any).from('safety_incidents').delete().eq('event_id', ev.id);
-      await (supabase as any).from('safety_checklist_progress').delete().in(
+      await supabase.from('safety_incidents').delete().eq('event_id', ev.id);
+      await supabase.from('safety_checklist_progress').delete().in(
         'checklist_item_id',
-        (await (supabase as any).from('safety_checklist_items').select('id').eq('event_id', ev.id)).data?.map((i: any) => i.id) || []
+        (await supabase.from('safety_checklist_items').select('id').eq('event_id', ev.id)).data?.map((i: any) => i.id) || []
       );
-      await (supabase as any).from('safety_checklist_items').delete().eq('event_id', ev.id);
-      await (supabase as any).from('safety_zones').delete().eq('event_id', ev.id);
+      await supabase.from('safety_checklist_items').delete().eq('event_id', ev.id);
+      await supabase.from('safety_zones').delete().eq('event_id', ev.id);
       await supabase.from('events').delete().eq('id', ev.id);
     }
 

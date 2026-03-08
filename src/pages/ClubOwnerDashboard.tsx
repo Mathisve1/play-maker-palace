@@ -432,7 +432,7 @@ const ClubOwnerDashboard = () => {
         supabase.from('contract_templates').select('id, name').eq('club_id', clubId).order('created_at', { ascending: false }),
         supabase.from('academy_trainings').select('id, title').eq('club_id', clubId).eq('is_published', true).order('title'),
         supabase.from('external_partners').select('id, name, external_payroll').eq('club_id', clubId).order('name'),
-        (supabase as any).from('events').select('*').eq('club_id', clubId).order('event_date', { ascending: true }),
+        supabase.from('events').select('*').eq('club_id', clubId).order('event_date', { ascending: true }),
         supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)').eq('club_id', clubId).order('task_date', { ascending: true }),
       ]);
 
@@ -447,10 +447,10 @@ const ClubOwnerDashboard = () => {
       // Parallel: event groups + task extras + KPIs (instead of sequential)
       const [groupsRes, taskExtrasRes] = await Promise.all([
         eventsData.length > 0
-          ? (supabase as any).from('event_groups').select('*').in('event_id', eventsData.map((e: any) => e.id)).order('sort_order', { ascending: true })
+          ? supabase.from('event_groups').select('*').in('event_id', eventsData.map((e: any) => e.id)).order('sort_order', { ascending: true })
           : Promise.resolve({ data: [] }),
         tasksData && tasksData.length > 0
-          ? (supabase as any).from('tasks').select('id, event_id, event_group_id').eq('club_id', clubId)
+          ? supabase.from('tasks').select('id, event_id, event_group_id').eq('club_id', clubId)
           : Promise.resolve({ data: [] }),
       ]);
 
@@ -565,7 +565,7 @@ const ClubOwnerDashboard = () => {
     e.preventDefault();
     if (!clubId || !newEvent.title.trim()) return;
     setCreatingEvent(true);
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('events')
       .insert({
         club_id: clubId,
@@ -623,7 +623,7 @@ const ClubOwnerDashboard = () => {
 
   const handleDeleteEvent = async (eventId: string) => {
     setDeletingEvent(eventId);
-    const { error } = await (supabase as any).from('events').delete().eq('id', eventId);
+    const { error } = await supabase.from('events').delete().eq('id', eventId);
     if (error) {
       toast.error(error.message);
     } else {
@@ -648,7 +648,7 @@ const ClubOwnerDashboard = () => {
     if (!sourceEvent) { setDuplicatingEvent(null); return; }
 
     // 1. Create new event (copy without date)
-    const { data: newEvt, error: evtErr } = await (supabase as any)
+    const { data: newEvt, error: evtErr } = await supabase
       .from('events')
       .insert({
         club_id: clubId,
@@ -666,7 +666,7 @@ const ClubOwnerDashboard = () => {
     const groupMap: Record<string, string> = {}; // old -> new
     const newGroups: EventGroup[] = [];
     for (const g of sourceGroups) {
-      const { data: newG } = await (supabase as any)
+      const { data: newG } = await supabase
         .from('event_groups')
         .insert({ event_id: newEvt.id, name: g.name, color: g.color, sort_order: g.sort_order })
         .select('*')
@@ -684,7 +684,7 @@ const ClubOwnerDashboard = () => {
       const { data: fullTask } = await supabase.from('tasks').select('*').eq('id', t.id).maybeSingle();
       if (fullTask) {
         const newGroupId = t.event_group_id ? groupMap[t.event_group_id] || null : null;
-        const { data: newT } = await (supabase as any)
+        const { data: newT } = await supabase
           .from('tasks')
           .insert({
             club_id: clubId,
@@ -725,7 +725,7 @@ const ClubOwnerDashboard = () => {
     if (!newGroupName.trim()) return;
     const existingGroups = eventGroups.filter(g => g.event_id === eventId);
     const color = GROUP_COLORS[existingGroups.length % GROUP_COLORS.length];
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('event_groups')
       .insert({ event_id: eventId, name: newGroupName.trim(), color, sort_order: existingGroups.length })
       .select('*')
@@ -741,7 +741,7 @@ const ClubOwnerDashboard = () => {
   };
 
   const handleDeleteGroup = async (groupId: string) => {
-    const { error } = await (supabase as any).from('event_groups').delete().eq('id', groupId);
+    const { error } = await supabase.from('event_groups').delete().eq('id', groupId);
     if (error) {
       toast.error(error.message);
     } else {
@@ -784,9 +784,9 @@ const ClubOwnerDashboard = () => {
       assigned_partner_id: newTask.partner_only && newTask.assigned_partner_id ? newTask.assigned_partner_id : null,
     };
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('tasks')
-      .insert(insertData)
+      .insert(insertData as any)
       .select('id, title, description, task_date, location, spots_available, status, club_id, event_id, event_group_id')
       .maybeSingle();
 

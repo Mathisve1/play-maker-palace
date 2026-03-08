@@ -212,12 +212,12 @@ const VolunteerDashboard = () => {
         eventsRes, paymentsRes, sepaRes, contractsRes, ticketsRes,
         loyaltyRes, certsRes, followsRes,
       ] = await Promise.all([
-        (supabase as any).from('events').select('*').is('training_id', null).neq('event_type', 'training').neq('status', 'on_hold').order('event_date', { ascending: true }),
+        supabase.from('events').select('*').is('training_id', null).neq('event_type', 'training').neq('status', 'on_hold').order('event_date', { ascending: true }),
         supabase.from('volunteer_payments').select('id, task_id, amount, currency, status, paid_at, created_at, stripe_receipt_url').eq('volunteer_id', uid).order('created_at', { ascending: false }),
-        (supabase as any).from('sepa_batch_items').select('id, amount, status, created_at, error_flag, error_message, batch_id, task_id, volunteer_id').eq('volunteer_id', uid).order('created_at', { ascending: false }),
+        supabase.from('sepa_batch_items').select('id, amount, status, created_at, error_flag, error_message, batch_id, task_id, volunteer_id').eq('volunteer_id', uid).order('created_at', { ascending: false }),
         supabase.from('signature_requests').select('id, task_id, status, signing_url, document_url, created_at, updated_at').eq('volunteer_id', uid).order('created_at', { ascending: false }),
-        (supabase as any).from('volunteer_tickets').select('id, task_id, event_id, club_id, status, ticket_url, barcode, external_ticket_id, created_at, checked_in_at').eq('volunteer_id', uid).order('created_at', { ascending: false }),
-        (supabase as any).from('loyalty_programs').select('*').eq('is_active', true),
+        supabase.from('volunteer_tickets').select('id, task_id, event_id, club_id, status, ticket_url, barcode, external_ticket_id, created_at, checked_in_at').eq('volunteer_id', uid).order('created_at', { ascending: false }),
+        supabase.from('loyalty_programs').select('*').eq('is_active', true),
         supabase.from('volunteer_certificates').select('training_id').eq('volunteer_id', uid),
         supabase.from('club_follows').select('club_id').eq('user_id', uid),
       ]);
@@ -227,11 +227,11 @@ const VolunteerDashboard = () => {
       if (enrichedTasks.length > 0) {
         const taskIds = enrichedTasks.map(t => t.id);
         const [taskExtrasRes, signupCountRes, likeCountRes, myLikeRes, trainingEventsRes] = await Promise.all([
-          (supabase as any).from('tasks').select('id, event_id, event_group_id').in('id', taskIds),
+          supabase.from('tasks').select('id, event_id, event_group_id').in('id', taskIds),
           supabase.from('task_signups').select('task_id').in('task_id', taskIds),
           supabase.from('task_likes').select('task_id').in('task_id', taskIds),
           supabase.from('task_likes').select('task_id').eq('user_id', uid),
-          (supabase as any).from('events').select('id').eq('event_type', 'training'),
+          supabase.from('events').select('id').eq('event_type', 'training'),
         ]);
 
         const extraMap = new Map((taskExtrasRes.data || []).map((t: any) => [t.id, t]));
@@ -267,7 +267,7 @@ const VolunteerDashboard = () => {
         const allEventIds = allEventsData.map((e: any) => e.id);
         const [clubsRes, groupsRes] = await Promise.all([
           supabase.from('clubs').select('id, name').in('id', clubIds),
-          (supabase as any).from('event_groups').select('*').in('event_id', allEventIds).order('sort_order', { ascending: true }),
+          supabase.from('event_groups').select('*').in('event_id', allEventIds).order('sort_order', { ascending: true }),
         ]);
         const clubMap = new Map(clubsRes.data?.map(c => [c.id, c.name]) || []);
         setEvents(allEventsData.map((e: any) => ({ ...e, club_name: clubMap.get(e.club_id) || '' })));
@@ -311,13 +311,13 @@ const VolunteerDashboard = () => {
           ? supabase.from('clubs').select('id, name').in('id', Array.from(enrichClubIds))
           : Promise.resolve({ data: [] as any[] }),
         enrichEventIds.size > 0
-          ? (supabase as any).from('events').select('id, title').in('id', Array.from(enrichEventIds))
+          ? supabase.from('events').select('id, title').in('id', Array.from(enrichEventIds))
           : Promise.resolve({ data: [] as any[] }),
         batchIds.size > 0
-          ? (supabase as any).from('sepa_batches').select('id, status, batch_reference, club_id').in('id', Array.from(batchIds))
+          ? supabase.from('sepa_batches').select('id, status, batch_reference, club_id').in('id', Array.from(batchIds))
           : Promise.resolve({ data: [] as any[] }),
         programIds.length > 0
-          ? (supabase as any).from('loyalty_enrollments').select('*').eq('volunteer_id', uid).in('program_id', programIds)
+          ? supabase.from('loyalty_enrollments').select('*').eq('volunteer_id', uid).in('program_id', programIds)
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
@@ -517,7 +517,7 @@ const VolunteerDashboard = () => {
   const handleEnrollLoyalty = async (programId: string) => {
     if (!currentUserId) return;
     setEnrollingProgram(programId);
-    const { data, error } = await (supabase as any).from('loyalty_enrollments').insert({ program_id: programId, volunteer_id: currentUserId }).select('*').maybeSingle();
+    const { data, error } = await supabase.from('loyalty_enrollments').insert({ program_id: programId, volunteer_id: currentUserId } as any).select('*').maybeSingle();
     if (error) {
       if (error.code === '23505') { toast.info(language === 'nl' ? 'Je bent al ingeschreven!' : language === 'fr' ? 'Vous êtes déjà inscrit!' : 'You are already enrolled!'); }
       else { toast.error(error.message); }

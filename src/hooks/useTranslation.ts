@@ -27,7 +27,7 @@ export const useTranslatedContent = (
 
     const fetchTranslation = async () => {
       // Check cache first
-      const { data: cached } = await (supabase as any)
+      const { data: cached } = await supabase
         .from('content_translations')
         .select('translated_text, source_hash')
         .eq('source_table', sourceTable)
