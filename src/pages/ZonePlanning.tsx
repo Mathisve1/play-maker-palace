@@ -128,7 +128,7 @@ const ZonePlanning = () => {
 
     if (zoneRes.data?.length) {
       const zoneIds = zoneRes.data.map((z: Zone) => z.id);
-      const { data: assignData } = await (supabase as any).from('task_zone_assignments').select('*').in('zone_id', zoneIds);
+      const { data: assignData } = await supabase.from('task_zone_assignments').select('*').in('zone_id', zoneIds);
       setAssignments(assignData || []);
     }
 
