@@ -172,7 +172,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await (supabase as any).from('closing_tasks').delete().eq('id', taskId);
+    await supabase.from('closing_tasks').delete().eq('id', taskId);
     setClosingTasks(prev => prev.filter(t => t.id !== taskId));
   };
 
