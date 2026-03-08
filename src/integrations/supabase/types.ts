@@ -1938,6 +1938,8 @@ export type Database = {
       partner_task_assignments: {
         Row: {
           assigned_by: string | null
+          checked_in_at: string | null
+          checked_out_at: string | null
           created_at: string
           id: string
           partner_member_id: string
@@ -1945,6 +1947,8 @@ export type Database = {
         }
         Insert: {
           assigned_by?: string | null
+          checked_in_at?: string | null
+          checked_out_at?: string | null
           created_at?: string
           id?: string
           partner_member_id: string
@@ -1952,6 +1956,8 @@ export type Database = {
         }
         Update: {
           assigned_by?: string | null
+          checked_in_at?: string | null
+          checked_out_at?: string | null
           created_at?: string
           id?: string
           partner_member_id?: string
