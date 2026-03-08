@@ -929,6 +929,27 @@ const ContractBuilder = () => {
                         </div>
                       </div>
                     ))}
+                    {/* Season fields */}
+                    <p className="text-[10px] font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider px-3 pt-3 pb-1 flex items-center gap-1">
+                      <CalendarDays className="w-3 h-3" /> {t3('Seizoenscontract', 'Contrat saisonnier', 'Season Contract')}
+                    </p>
+                    {mergeFields.filter(f => f.group === 'season').map(field => (
+                      <div
+                        key={field.name}
+                        draggable
+                        onDragStart={e => handleDragStart(e, { type: 'field', payload: field.name })}
+                        onClick={() => addFieldBlock(field.name)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-grab active:cursor-grabbing hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors border border-transparent hover:border-orange-200 dark:hover:border-orange-800 group"
+                      >
+                        <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 transition-colors">
+                          <Hash className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{field.label}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono">{`{{${field.name}}}`}</p>
+                        </div>
+                      </div>
+                    ))}
                     {/* Identity fields */}
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">{t3('Identificatie & juridisch', 'Identification & juridique', 'Identification & Legal')}</p>
                     {mergeFields.filter(f => f.group === 'identity').map(field => (
