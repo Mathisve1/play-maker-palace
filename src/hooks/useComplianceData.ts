@@ -203,6 +203,12 @@ export const fetchBatchComplianceData = async (
     tasksMap = new Map((tasksData || []).map(t => [t.id, t]));
   }
 
+  // Batch fetch season checkin hours
+  const { data: allSeasonCheckins } = await supabase
+    .from('season_checkins')
+    .select('volunteer_id, hours_worked, checked_in_at')
+    .in('volunteer_id', volunteerIds);
+
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
 
@@ -213,13 +219,19 @@ export const fetchBatchComplianceData = async (
 
     // Internal hours from assigned tasks
     const volSignups = (allSignups || []).filter(s => s.volunteer_id === vid);
-    const internalHours = volSignups.reduce((sum, s) => {
+    let internalHours = volSignups.reduce((sum, s) => {
       const task = tasksMap.get(s.task_id);
       if (!task) return sum;
       const taskDate = task.task_date ? new Date(task.task_date) : (task.start_time ? new Date(task.start_time) : null);
       if (!taskDate || taskDate.getFullYear() !== currentYear) return sum;
       return sum + calculateHours(task.start_time, task.end_time);
     }, 0);
+
+    // Add season checkin hours
+    const volSeasonHours = (allSeasonCheckins || [])
+      .filter(sc => sc.volunteer_id === vid && sc.checked_in_at && new Date(sc.checked_in_at).getFullYear() === currentYear && sc.hours_worked)
+      .reduce((sum, sc) => sum + Number(sc.hours_worked || 0), 0);
+    internalHours += volSeasonHours;
 
     const volDeclarations = (declarations || [])
       .filter((d: any) => d.volunteer_id === vid);
