@@ -88,8 +88,8 @@ const PlanningOverview = () => {
     if (allTasks.length) {
       const taskIds = allTasks.map((t: any) => t.id);
       const [zoneRes, signupRes] = await Promise.all([
-        (supabase as any).from('task_zones').select('id, task_id').in('task_id', taskIds),
-        (supabase as any).from('task_signups').select('id, task_id').in('task_id', taskIds).eq('status', 'assigned'),
+        (supabase).from('task_zones').select('id, task_id').in('task_id', taskIds),
+        supabase.from('task_signups').select('id, task_id').in('task_id', taskIds).eq('status', 'assigned'),
       ]);
       const zones = zoneRes.data || [];
       const signups = signupRes.data || [];
