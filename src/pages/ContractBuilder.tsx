@@ -424,8 +424,9 @@ const ContractBuilder = () => {
   const selectedBlock = blocks.find(b => b.id === selectedBlockId) || null;
 
   const lawArticles = belgianVolunteerArticles.filter(a => a.category === 'wet');
-  const clausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && !a.id.startsWith('clausule_maand'));
+  const clausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && !a.id.startsWith('clausule_maand') && !a.id.startsWith('clausule_seizoen') && !a.id.startsWith('clausule_rol'));
   const monthlyClausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && a.id.startsWith('clausule_maand'));
+  const seasonClausules = belgianVolunteerArticles.filter(a => a.category === 'clausule' && (a.id.startsWith('clausule_seizoen') || a.id.startsWith('clausule_rol')));
 
   // ─── Block Operations ──────────────────────────────────
 
