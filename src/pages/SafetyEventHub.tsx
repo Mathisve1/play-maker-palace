@@ -21,7 +21,7 @@ const SafetyEventHub = () => {
   useEffect(() => {
     (async () => {
       if (!eventId) return;
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('events')
         .select('title, event_date, location, status, is_live, club_id')
         .eq('id', eventId)
