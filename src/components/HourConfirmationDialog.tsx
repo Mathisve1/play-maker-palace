@@ -123,7 +123,7 @@ const HourConfirmationDialog = ({
     if (!open) return;
     const fetchConfirmation = async () => {
       setLoading(true);
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('hour_confirmations')
         .select('*')
         .eq('task_id', taskId)
