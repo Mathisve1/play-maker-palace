@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.push-reminders]
 verify_jwt = false
+
+[functions.club-data-api]
+verify_jwt = false
