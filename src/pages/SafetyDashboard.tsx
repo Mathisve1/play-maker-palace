@@ -511,7 +511,7 @@ const SafetyDashboard = () => {
   const handleCloseEvent = async () => {
     if (!eventId) return;
     setClosingEvent(true);
-    const { error } = await (supabase as any).from('events').update({ is_live: false, status: 'closed' }).eq('id', eventId);
+    const { error } = await supabase.from('events').update({ is_live: false, status: 'closed' } as any).eq('id', eventId);
     if (error) {
       toast.error(error.message);
     } else {
