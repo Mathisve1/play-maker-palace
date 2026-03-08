@@ -330,9 +330,9 @@ const EventsManager = () => {
 
     const groups = eventGroups.filter(g => g.event_id === eventId);
     for (const group of groups) {
-      const { data: newGrp } = await (supabase as any).from('event_groups').insert({
+      const { data: newGrp } = await supabase.from('event_groups').insert({
         event_id: newEv.id, name: group.name, color: group.color, sort_order: group.sort_order,
-      }).select('*').maybeSingle();
+      } as any).select('*').maybeSingle();
       if (newGrp) {
         setEventGroups(prev => [...prev, newGrp]);
         const groupTasks = tasks.filter(t => t.event_group_id === group.id);
