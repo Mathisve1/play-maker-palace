@@ -17,7 +17,6 @@ import DashboardLayout from '@/components/DashboardLayout';
 import PartnerSidebar from '@/components/PartnerSidebar';
 import PartnerDashboardHome from '@/components/partner/PartnerDashboardHome';
 import PartnerAttendanceTab from '@/components/partner/PartnerAttendanceTab';
-import PartnerSidebar from '@/components/PartnerSidebar';
 import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
 
