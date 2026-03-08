@@ -1260,6 +1260,188 @@ Deno.serve(async (req) => {
       }
     }
 
+    // POST create-season-submission: Create DocuSeal submission for season contract
+    if (req.method === "POST" && action === "create-season-submission") {
+      const body = await req.json();
+      const { template_id, season_id, club_id, volunteer_id, volunteer_email, volunteer_name } = body;
+
+      console.log("create-season-submission:", JSON.stringify({ template_id, season_id, club_id, volunteer_id }));
+
+      if (!template_id || !season_id || !club_id || !volunteer_id) {
+        return new Response(JSON.stringify({ error: "Missing required fields" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+      // Get volunteer email if not provided
+      let email = volunteer_email;
+      if (!email) {
+        const { data: volProfile } = await adminClient.from("profiles").select("email").eq("id", volunteer_id).maybeSingle();
+        email = volProfile?.email;
+        if (!email) {
+          const { data: authUser } = await adminClient.auth.admin.getUserById(volunteer_id);
+          email = authUser?.user?.email;
+        }
+      }
+      if (!email) {
+        return new Response(JSON.stringify({ error: "Volunteer email not found" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get template info
+      const { data: tmpl } = await adminClient
+        .from("season_contract_templates")
+        .select("name, category, docuseal_template_id, template_data")
+        .eq("id", template_id)
+        .maybeSingle();
+
+      if (!tmpl) {
+        return new Response(JSON.stringify({ error: "Template not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get season + club info for merge fields
+      const [seasonRes, clubRes, volRes] = await Promise.all([
+        adminClient.from("seasons").select("name, start_date, end_date").eq("id", season_id).maybeSingle(),
+        adminClient.from("clubs").select("name, location, sport").eq("id", club_id).maybeSingle(),
+        adminClient.from("profiles").select("full_name, email, phone, bank_iban").eq("id", volunteer_id).maybeSingle(),
+      ]);
+
+      // Build a simple HTML contract from template content
+      const seasonData = seasonRes.data;
+      const clubData = clubRes.data;
+      const volData = volRes.data;
+
+      const roleName = volunteer_name || volData?.full_name || email;
+      const htmlContent = `
+        <div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:20px;">
+          <h1 style="text-align:center;color:#1a1a1a;">Seizoensovereenkomst – ${tmpl.name}</h1>
+          <p style="text-align:center;color:#6b7280;font-style:italic;">Conform de Wet van 3 juli 2005 betreffende de rechten van vrijwilligers<br/>Verhoogd plafond sportvrijwilligers: €3.233,91/jaar</p>
+          <hr/>
+          <h2>1. Partijen</h2>
+          <p><strong>Organisatie:</strong> ${clubData?.name || 'Club'} ${clubData?.location ? ` – ${clubData.location}` : ''}</p>
+          <p><strong>Vrijwilliger:</strong> ${roleName}</p>
+          ${volData?.email ? `<p><strong>E-mail:</strong> ${volData.email}</p>` : ''}
+          ${volData?.phone ? `<p><strong>Telefoon:</strong> ${volData.phone}</p>` : ''}
+          <hr/>
+          <h2>2. Seizoen</h2>
+          <p><strong>Seizoen:</strong> ${seasonData?.name || 'Huidig seizoen'}</p>
+          <p><strong>Looptijd:</strong> ${seasonData?.start_date ? new Date(seasonData.start_date).toLocaleDateString('nl-BE') : ''} t.e.m. ${seasonData?.end_date ? new Date(seasonData.end_date).toLocaleDateString('nl-BE') : ''}</p>
+          <hr/>
+          <h2>3. Rol</h2>
+          <p><strong>Functie:</strong> ${tmpl.name}</p>
+          <p><strong>Categorie:</strong> ${tmpl.category}</p>
+          <hr/>
+          <h2>4. Proefperiode</h2>
+          <p>De eerste 3 aanwezigheden gelden als proefperiode. Vanaf de 4e aanwezigheid treedt het volledige contract in werking en wordt de vrijwilliger als actief (betalend) beschouwd.</p>
+          <hr/>
+          <h2>5. Kostenvergoeding</h2>
+          <p>De vrijwilliger heeft recht op een kostenvergoeding conform het Koninklijk Besluit. Het maximale jaarplafond bedraagt €3.233,91 (sportvrijwilligers).</p>
+          <hr/>
+          <h2>6. Slotbepalingen</h2>
+          <p>Dit contract wordt beheerst door het Belgisch recht. In geval van geschil zijn de rechtbanken van het arrondissement van de zetel van de organisatie bevoegd.</p>
+          <br/><br/>
+          <p>Opgemaakt op ${new Date().toLocaleDateString('nl-BE')}</p>
+          <br/><br/>
+          <p><strong>Handtekening vrijwilliger:</strong></p>
+        </div>
+      `;
+
+      // Create DocuSeal HTML template
+      const createTemplateResp = await fetch(`${DOCUSEAL_API_URL}/templates/html`, {
+        method: "POST",
+        headers: { "X-Auth-Token": DOCUSEAL_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ html: htmlContent, name: `Seizoen ${tmpl.name} - ${roleName}` }),
+      });
+
+      if (!createTemplateResp.ok) {
+        const errText = await createTemplateResp.text();
+        throw new Error(`DocuSeal template creation failed: ${errText}`);
+      }
+
+      const docuTemplate = await createTemplateResp.json();
+      const docusealTemplateId = docuTemplate.id;
+
+      // Add signature field
+      const documentUuid = docuTemplate.documents?.[0]?.uuid;
+      const submitterUuid = docuTemplate.submitters?.[0]?.uuid;
+      const lastPage = Math.max(0, (docuTemplate.documents?.[0]?.pages?.length || 1) - 1);
+
+      await fetch(`${DOCUSEAL_API_URL}/templates/${docusealTemplateId}`, {
+        method: "PUT",
+        headers: { "X-Auth-Token": DOCUSEAL_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fields: [{
+            uuid: crypto.randomUUID(),
+            submitter_uuid: submitterUuid,
+            name: "Handtekening",
+            type: "signature",
+            required: true,
+            areas: [{ attachment_uuid: documentUuid, page: lastPage, x: 0.1, y: 0.75, w: 0.35, h: 0.08 }],
+          }],
+        }),
+      });
+
+      // Create submission
+      const webhookUrl = `${supabaseUrl}/functions/v1/docuseal?action=webhook`;
+      const submissionResp = await fetch(`${DOCUSEAL_API_URL}/submissions`, {
+        method: "POST",
+        headers: { "X-Auth-Token": DOCUSEAL_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          template_id: docusealTemplateId,
+          send_email: true,
+          submitters: [{ email, name: roleName, role: docuTemplate.submitters?.[0]?.name || "First Party" }],
+          webhook_url: webhookUrl,
+        }),
+      });
+
+      const submissionData = await submissionResp.json();
+      if (!submissionResp.ok) {
+        throw new Error(`DocuSeal submission error: ${JSON.stringify(submissionData)}`);
+      }
+
+      const firstSubmitter = Array.isArray(submissionData) ? submissionData[0] : submissionData;
+      const submissionId = firstSubmitter.submission_id || firstSubmitter.id;
+      const signingUrl = firstSubmitter.embed_src || (firstSubmitter.slug ? `https://docuseal.com/s/${firstSubmitter.slug}` : null);
+
+      // Save to season_contracts
+      const { error: dbError } = await adminClient.from("season_contracts").insert({
+        club_id,
+        season_id,
+        template_id,
+        volunteer_id,
+        status: "sent",
+        docuseal_submission_id: submissionId,
+        signing_url: signingUrl,
+      });
+
+      if (dbError) {
+        console.error("DB insert error:", dbError);
+      }
+
+      // Notify volunteer
+      await adminClient.from("notifications").insert({
+        user_id: volunteer_id,
+        title: "Nieuw seizoenscontract",
+        message: `Je hebt een nieuw seizoenscontract (${tmpl.name}) ontvangen om te ondertekenen.`,
+        type: "contract_sent",
+      });
+
+      console.log("Season contract created:", submissionId, "signing_url:", signingUrl);
+
+      return new Response(JSON.stringify({ success: true, submission_id: submissionId, signing_url: signingUrl }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
