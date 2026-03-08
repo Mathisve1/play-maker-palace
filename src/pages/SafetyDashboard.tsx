@@ -201,7 +201,7 @@ const SafetyDashboard = () => {
       }
 
       const { data: owned } = await supabase.from('clubs').select('id').eq('id', ev.club_id).eq('owner_id', session.user.id);
-      const { data: member } = await (supabase as any).from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
+      const { data: member } = await supabase.from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
       const staff = !!(owned?.length) || ['bestuurder', 'beheerder'].includes(member?.role || '');
       setIsStaff(staff);
 
