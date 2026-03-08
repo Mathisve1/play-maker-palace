@@ -222,13 +222,13 @@ const SafetyDashboard = () => {
       }
 
       const [zRes, itRes, incRes, clRes, cpRes, llRes, loRes] = await Promise.all([
-        (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
-        (supabase as any).from('safety_incident_types').select('*').eq('club_id', ev.club_id).order('sort_order'),
-        (supabase as any).from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
-        (supabase as any).from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order'),
-        (supabase as any).from('safety_checklist_progress').select('*'),
-        (supabase as any).from('safety_location_levels').select('*').eq('club_id', ev.club_id).order('sort_order'),
-        (supabase as any).from('safety_location_options').select('*').order('sort_order'),
+        supabase.from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
+        supabase.from('safety_incident_types').select('*').eq('club_id', ev.club_id).order('sort_order'),
+        supabase.from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
+        supabase.from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order'),
+        supabase.from('safety_checklist_progress').select('*'),
+        supabase.from('safety_location_levels').select('*').eq('club_id', ev.club_id).order('sort_order'),
+        supabase.from('safety_location_options').select('*').order('sort_order'),
       ]);
       setZones(zRes.data || []);
       setIncidentTypes(itRes.data || []);
