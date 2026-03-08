@@ -599,7 +599,7 @@ const SafetyDashboard = () => {
     const newValue = !currentValue;
     // Optimistic update
     setZones(prev => prev.map(z => z.id === zoneId ? { ...z, checklist_active: newValue } : z));
-    const { error } = await (supabase as any).from('safety_zones').update({ checklist_active: newValue }).eq('id', zoneId);
+    const { error } = await supabase.from('safety_zones').update({ checklist_active: newValue } as any).eq('id', zoneId);
     if (error) {
       toast.error(error.message);
       setZones(prev => prev.map(z => z.id === zoneId ? { ...z, checklist_active: currentValue } : z));
