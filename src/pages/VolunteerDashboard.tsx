@@ -470,7 +470,7 @@ const VolunteerDashboard = () => {
         if (document.visibilityState === 'hidden') return;
         const refreshedEventIds = await fetchMyEventIds();
         await checkForLiveEvent(refreshedEventIds);
-      }, 15000);
+      }, 30000);
     };
 
     setupLiveListeners();

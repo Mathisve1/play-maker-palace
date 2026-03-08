@@ -13,9 +13,11 @@ const DashboardLayout = ({ sidebar, children }: DashboardLayoutProps) => {
       <div className="min-h-screen flex w-full bg-background">
         {sidebar}
         <div className="flex-1 flex flex-col min-w-0">
+          {/* Safe area spacer for PWA notch/statusbar */}
+          <div className="bg-card/90 backdrop-blur-xl md:hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }} />
           {/* Mobile header with hamburger trigger */}
           <header
-            className="min-h-14 flex items-center gap-3 border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40 px-4 pt-safe-top md:hidden"
+            className="min-h-14 flex items-center gap-3 border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40 px-4 md:hidden"
           >
             <SidebarTrigger />
             <Logo size="sm" linkTo="/dashboard" />

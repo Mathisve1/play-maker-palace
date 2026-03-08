@@ -6,6 +6,7 @@ import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import MonthlyPlanningKPIs from '@/components/MonthlyPlanningKPIs';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
@@ -848,8 +849,8 @@ const ClubOwnerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background">
+        <DashboardSkeleton />
       </div>
     );
   }

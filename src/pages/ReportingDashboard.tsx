@@ -31,7 +31,9 @@ import {
 import ReportingFinancialTab from '@/components/reporting/ReportingFinancialTab';
 import ReportingPartnersTab from '@/components/reporting/ReportingPartnersTab';
 import ReportingComplianceTab from '@/components/reporting/ReportingComplianceTab';
+import ReportingSeasonTab from '@/components/reporting/ReportingSeasonTab';
 import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 // ── Types ───────────────────────────────────────────────────────
 interface VolunteerReport {
@@ -773,7 +775,7 @@ const ReportingDashboard = () => {
   const aiPresets = [L.aiQ1, L.aiQ2, L.aiQ3, L.aiQ4, L.aiQ5, L.aiQ6, L.aiQ7, L.aiQ8, L.aiQ9, L.aiQ10, L.aiQ11, L.aiQ12];
 
   if (loading) {
-    return (<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>);
+    return (<ClubPageLayout><DashboardSkeleton /></ClubPageLayout>);
   }
 
   return (
@@ -890,6 +892,7 @@ const ReportingDashboard = () => {
               <TabsTrigger value="financial" className="gap-1.5 text-xs sm:text-sm"><Euro className="w-3.5 h-3.5" />{L.financial}</TabsTrigger>
               <TabsTrigger value="partners" className="gap-1.5 text-xs sm:text-sm"><Handshake className="w-3.5 h-3.5" />{L.partners}</TabsTrigger>
               <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><Shield className="w-3.5 h-3.5" />{L.compliance}</TabsTrigger>
+              <TabsTrigger value="season" className="gap-1.5 text-xs sm:text-sm"><Calendar className="w-3.5 h-3.5" />Seizoen</TabsTrigger>
               <TabsTrigger value="ai" className="gap-1.5 text-xs sm:text-sm"><Bot className="w-3.5 h-3.5" />AI</TabsTrigger>
             </TabsList>
           </div>
@@ -1087,7 +1090,12 @@ const ReportingDashboard = () => {
             />
           </TabsContent>
 
-          {/* AI ASSISTANT */}
+          {/* SEASON */}
+          <TabsContent value="season" className="mt-4">
+            {clubId && <ReportingSeasonTab clubId={clubId} language={language} />}
+          </TabsContent>
+
+
           <TabsContent value="ai" className="space-y-4 mt-4">
             <Card>
               <CardHeader>

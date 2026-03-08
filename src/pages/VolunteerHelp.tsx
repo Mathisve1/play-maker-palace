@@ -517,8 +517,10 @@ const VolunteerHelp = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Safe area spacer */}
+      <div className="bg-card/90 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }} />
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b border-border pt-safe-top">
+      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="shrink-0">
             <ArrowLeft className="w-5 h-5" />

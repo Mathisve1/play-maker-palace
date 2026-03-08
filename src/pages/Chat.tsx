@@ -422,8 +422,10 @@ const Chat = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Safe area spacer */}
+      <div className="bg-card/90 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }} />
       {/* Header */}
-      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40 pt-safe-top">
+      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40">
         <div className="px-4 min-h-14 flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
             <button

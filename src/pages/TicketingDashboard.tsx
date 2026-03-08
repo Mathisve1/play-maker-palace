@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 const t = {
   nl: {
@@ -326,7 +327,7 @@ const TicketingDashboard = () => {
           return v;
         }));
       }
-    }, 5000);
+    }, 30000);
 
     return () => {
       supabase.removeChannel(channel);
@@ -488,9 +489,7 @@ const TicketingDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <ClubPageLayout><DashboardSkeleton /></ClubPageLayout>
     );
   }
 
