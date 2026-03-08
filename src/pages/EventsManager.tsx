@@ -354,11 +354,11 @@ const EventsManager = () => {
     setDeletingEvent(eventId);
     const groups = eventGroups.filter(g => g.event_id === eventId);
     for (const g of groups) {
-      await (supabase as any).from('tasks').delete().eq('event_group_id', g.id);
-      await (supabase as any).from('event_groups').delete().eq('id', g.id);
+      await supabase.from('tasks').delete().eq('event_group_id', g.id);
+      await supabase.from('event_groups').delete().eq('id', g.id);
     }
-    await (supabase as any).from('tasks').delete().eq('event_id', eventId).is('event_group_id', null);
-    const { error } = await (supabase as any).from('events').delete().eq('id', eventId);
+    await supabase.from('tasks').delete().eq('event_id', eventId).is('event_group_id', null);
+    const { error } = await supabase.from('events').delete().eq('id', eventId);
     if (error) toast.error(error.message);
     else {
       toast.success(t3('Evenement verwijderd!', 'Événement supprimé!', 'Event deleted!'));
