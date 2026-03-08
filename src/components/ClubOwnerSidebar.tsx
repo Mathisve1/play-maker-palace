@@ -106,6 +106,7 @@ const ClubOwnerSidebar = ({
   ];
 
   const managementItems = [
+    { label: t3('Vrijwilligers', 'Bénévoles', 'Volunteers'), icon: Users, path: '/volunteer-management' },
     { label: t3('SEPA Vergoedingen', 'Indemnités SEPA', 'SEPA Payments'), icon: Banknote, path: '/sepa-payouts' },
     { label: t3('Contracten', 'Contrats', 'Contracts'), icon: FileText, path: '/contract-builder' },
     { label: 'Briefings', icon: ClipboardList, path: '/briefing-builder' },
