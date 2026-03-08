@@ -2515,6 +2515,57 @@ export type Database = {
           },
         ]
       }
+      season_checkins: {
+        Row: {
+          checked_in_at: string
+          checked_out_at: string | null
+          club_id: string
+          created_at: string
+          hours_worked: number | null
+          id: string
+          notes: string | null
+          season_contract_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          checked_in_at?: string
+          checked_out_at?: string | null
+          club_id: string
+          created_at?: string
+          hours_worked?: number | null
+          id?: string
+          notes?: string | null
+          season_contract_id: string
+          volunteer_id: string
+        }
+        Update: {
+          checked_in_at?: string
+          checked_out_at?: string | null
+          club_id?: string
+          created_at?: string
+          hours_worked?: number | null
+          id?: string
+          notes?: string | null
+          season_contract_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_checkins_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "season_checkins_season_contract_id_fkey"
+            columns: ["season_contract_id"]
+            isOneToOne: false
+            referencedRelation: "season_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       season_contract_templates: {
         Row: {
           category: Database["public"]["Enums"]["season_template_category"]
@@ -2564,6 +2615,8 @@ export type Database = {
       }
       season_contracts: {
         Row: {
+          barcode: string | null
+          checkin_count: number
           club_id: string
           created_at: string
           document_url: string | null
@@ -2576,8 +2629,11 @@ export type Database = {
           template_id: string
           updated_at: string
           volunteer_id: string
+          volunteer_status: string
         }
         Insert: {
+          barcode?: string | null
+          checkin_count?: number
           club_id: string
           created_at?: string
           document_url?: string | null
@@ -2590,8 +2646,11 @@ export type Database = {
           template_id: string
           updated_at?: string
           volunteer_id: string
+          volunteer_status?: string
         }
         Update: {
+          barcode?: string | null
+          checkin_count?: number
           club_id?: string
           created_at?: string
           document_url?: string | null
@@ -2604,6 +2663,7 @@ export type Database = {
           template_id?: string
           updated_at?: string
           volunteer_id?: string
+          volunteer_status?: string
         }
         Relationships: [
           {
