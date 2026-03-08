@@ -315,7 +315,7 @@ const LoyaltyPrograms = () => {
 
   const handleDelete = async (programId: string) => {
     setDeleting(true);
-    const { error } = await (supabase as any).from('loyalty_programs').delete().eq('id', programId);
+    const { error } = await supabase.from('loyalty_programs').delete().eq('id', programId);
     if (error) { toast.error(error.message); }
     else {
       toast.success(dt.programDeleted);
