@@ -195,11 +195,11 @@ const ZonePlanning = () => {
       }
     }
 
-    const { data, error } = await (supabase as any).from('task_zone_assignments').insert({
+    const { data, error } = await supabase.from('task_zone_assignments').insert({
       zone_id: zoneId,
       volunteer_id: volunteerId,
       assigned_by: userId,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
 
     if (error) {
       if (error.code === '23505') toast.error(l.alreadyAssigned);
