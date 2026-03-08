@@ -202,7 +202,7 @@ const LoyaltyPrograms = () => {
       setPrograms(programsData || []);
 
       // Load club tasks
-      const { data: tasksData } = await (supabase as any).from('tasks').select('id, title, loyalty_eligible, loyalty_points').eq('club_id', contextClubId);
+      const { data: tasksData } = await supabase.from('tasks').select('id, title, loyalty_eligible, loyalty_points').eq('club_id', contextClubId);
       setClubTasks(tasksData || []);
 
       // Load excluded tasks per program
