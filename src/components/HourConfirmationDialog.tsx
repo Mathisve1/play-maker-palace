@@ -162,7 +162,7 @@ const HourConfirmationDialog = ({
           updateData.club_approved = true;
         }
 
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('hour_confirmations')
           .update(updateData)
           .eq('id', confirmation.id);
