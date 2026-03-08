@@ -149,7 +149,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
     const items = templateItems.filter(i => i.template_id === templateId);
     if (items.length === 0) { toast.error(t3('Geen items in deze template', 'Pas d\'éléments dans ce modèle', 'No items in this template')); return; }
 
-    await (supabase as any).from('closing_tasks').delete().eq('event_id', eventId);
+    await supabase.from('closing_tasks').delete().eq('event_id', eventId);
 
     const inserts = items.map((item, i) => ({
       event_id: eventId, club_id: clubId, template_item_id: item.id,
