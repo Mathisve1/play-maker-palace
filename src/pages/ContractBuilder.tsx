@@ -825,8 +825,16 @@ const ContractBuilder = () => {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
             >
               <CalendarDays className="w-3.5 h-3.5" />
-              {t3('Maandcontract (compleet)', 'Contrat mensuel (complet)', 'Monthly Contract (complete)')}
+              {t3('Maandcontract', 'Contrat mensuel', 'Monthly Contract')}
             </button>
+            <p className="text-[10px] font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider px-1 pt-2">{t3('Seizoenscontracten', 'Contrats saisonniers', 'Season Contracts')}</p>
+            {Object.entries(seasonTemplateNames).map(([key, name]) => (
+              <button key={key} onClick={() => handleGenerateSeasonContract(key)}
+                className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-foreground hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors border border-transparent hover:border-orange-200 dark:hover:border-orange-800">
+                <CalendarDays className="w-3 h-3 text-orange-600" />
+                {name}
+              </button>
+            ))}
           </div>
 
           {/* Tabs */}
