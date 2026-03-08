@@ -185,7 +185,7 @@ const SafetyDashboard = () => {
       if (!session || !eventId) { navigate('/login'); return; }
       setUserId(session.user.id);
 
-      const { data: ev } = await (supabase as any).from('events').select('id, club_id, title, is_live, status').eq('id', eventId).maybeSingle();
+      const { data: ev } = await supabase.from('events').select('id, club_id, title, is_live, status').eq('id', eventId).maybeSingle();
       if (!ev) { navigate('/events-manager'); return; }
       setClubId(ev.club_id);
       setEventTitle(ev.title);
