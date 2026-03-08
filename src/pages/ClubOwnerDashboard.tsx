@@ -684,7 +684,7 @@ const ClubOwnerDashboard = () => {
       const { data: fullTask } = await supabase.from('tasks').select('*').eq('id', t.id).maybeSingle();
       if (fullTask) {
         const newGroupId = t.event_group_id ? groupMap[t.event_group_id] || null : null;
-        const { data: newT } = await (supabase as any)
+        const { data: newT } = await supabase
           .from('tasks')
           .insert({
             club_id: clubId,
