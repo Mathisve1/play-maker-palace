@@ -326,7 +326,7 @@ const TicketingDashboard = () => {
           return v;
         }));
       }
-    }, 5000);
+    }, 30000);
 
     return () => {
       supabase.removeChannel(channel);

@@ -295,7 +295,7 @@ const CommandCenter = () => {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const debouncedLoad = () => {
       if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => loadData(), 1500);
+      debounceTimer = setTimeout(() => loadData(), 1000);
     };
 
     const channel = supabase
