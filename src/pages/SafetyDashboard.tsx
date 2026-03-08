@@ -267,10 +267,10 @@ const SafetyDashboard = () => {
 
       // Fetch volunteer's safety role for this event
       if (!staff) {
-        const { data: vsrData } = await (supabase as any).from('volunteer_safety_roles')
+        const { data: vsrData } = await supabase.from('volunteer_safety_roles')
           .select('safety_role_id').eq('event_id', eventId).eq('volunteer_id', session.user.id).maybeSingle();
         if (vsrData?.safety_role_id) {
-          const { data: roleData } = await (supabase as any).from('safety_roles')
+          const { data: roleData } = await supabase.from('safety_roles')
             .select('*').eq('id', vsrData.safety_role_id).maybeSingle();
           if (roleData) {
             setMyRole(roleData);
