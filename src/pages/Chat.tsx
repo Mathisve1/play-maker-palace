@@ -5,10 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Send, MessageCircle, Check, CheckCheck, Paperclip, X, Image, FileText, Music, Loader2, Mic, Square } from 'lucide-react';
-import Logo from '@/components/Logo';
+import { Send, MessageCircle, Check, CheckCheck, Paperclip, X, FileText, Music, Loader2, Mic, Square } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { sendPush } from '@/lib/sendPush';
+import DashboardLayout from '@/components/DashboardLayout';
+import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
+import VolunteerSidebar from '@/components/VolunteerSidebar';
 
 interface Conversation {
   id: string;
@@ -68,17 +70,14 @@ const chatLabels = {
   },
 };
 
-const langLabels: Record<Language, string> = { nl: 'NL', fr: 'FR', en: 'EN' };
-
 const Chat = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
   const l = chatLabels[language];
 
   const [userId, setUserId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<string | null>(conversationId || null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -98,20 +97,12 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { userId: contextUserId } = useClubContext();
+  const { userId: contextUserId, isOwner } = useClubContext();
 
   useEffect(() => {
     const init = async () => {
       if (!contextUserId) return;
       setUserId(contextUserId);
-
-      // Determine user role for back navigation
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', contextUserId)
-        .maybeSingle();
-      setUserRole(roleData?.role || 'volunteer');
 
       const taskId = searchParams.get('taskId');
       const clubOwnerId = searchParams.get('clubOwnerId');
@@ -412,53 +403,39 @@ const Chat = () => {
     return participantNames[otherId] || 'Onbekend';
   };
 
+  // Determine sidebar based on role
+  const sidebarEl = isOwner ? (
+    <ClubOwnerSidebar />
+  ) : (
+    <VolunteerSidebar
+      activeTab="dashboard"
+      setActiveTab={() => navigate('/dashboard')}
+      profile={null}
+      language={language}
+      onLogout={async () => { await supabase.auth.signOut(); navigate('/login'); }}
+      onOpenProfile={() => {}}
+      counts={{}}
+    />
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+      <DashboardLayout sidebar={sidebarEl}>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Safe area spacer */}
-      <div className="bg-card/90 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }} />
-      {/* Header */}
-      <header className="border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40">
-        <div className="px-4 min-h-14 flex items-center justify-between max-w-4xl mx-auto">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => activeConversation ? setActiveConversation(null) : navigate(userRole === 'club_owner' ? '/club-dashboard' : '/dashboard')}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">{l.back}</span>
-            </button>
-            <h1 className="font-heading font-semibold text-foreground">
-              {activeConversation && otherName ? otherName : l.title}
-            </h1>
-          </div>
-          <Logo size="sm" linkTo="/dashboard" />
-          <div className="flex items-center gap-2">
-            {(['nl', 'fr', 'en'] as Language[]).map(lang => (
-              <button
-                key={lang}
-                onClick={() => setLanguage(lang)}
-                className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                  language === lang ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {langLabels[lang]}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+    <DashboardLayout sidebar={sidebarEl}>
+      <div className="flex flex-col md:flex-row overflow-hidden -m-4 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)]">
         {/* Conversation list */}
-        <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto pb-tab-bar md:pb-0`}>
+        <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto`}>
+          <div className="p-4 border-b border-border">
+            <h2 className="font-heading font-semibold text-foreground">{l.title}</h2>
+          </div>
           {conversations.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <MessageCircle className="w-12 h-12 text-muted-foreground/30 mb-3" />
@@ -505,6 +482,17 @@ const Chat = () => {
             </div>
           ) : (
             <>
+              {/* Active conversation header */}
+              <div className="px-4 py-3 border-b border-border bg-card flex items-center gap-3">
+                <button
+                  onClick={() => setActiveConversation(null)}
+                  className="md:hidden text-sm text-muted-foreground hover:text-foreground"
+                >
+                  ← {l.back}
+                </button>
+                <p className="font-medium text-foreground text-sm">{otherName}</p>
+              </div>
+
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.map(msg => {
@@ -648,7 +636,7 @@ const Chat = () => {
           )}
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
