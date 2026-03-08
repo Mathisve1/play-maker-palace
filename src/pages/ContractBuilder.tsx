@@ -496,6 +496,7 @@ const ContractBuilder = () => {
     toast.success(t3(`Seizoenscontract "${seasonTemplateNames[category]}" gegenereerd met alle vereiste clausules.`, `Contrat saisonnier "${seasonTemplateNames[category]}" généré.`, `Season contract "${seasonTemplateNames[category]}" generated.`));
   };
 
+  const handleLoadTemplate = async (templateId: string) => {
     if (blocks.length > 3) {
       if (!confirm(t3('Dit vervangt alle huidige blokken. Doorgaan?', 'Cela remplacera tous les blocs actuels. Continuer?', 'This will replace all current blocks. Continue?'))) return;
     }
