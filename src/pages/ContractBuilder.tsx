@@ -1030,6 +1030,19 @@ const ContractBuilder = () => {
                   </div>
                 </>
               )}
+              {seasonClausules.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider mt-3">
+                    <CalendarDays className="w-3 h-3" />
+                    {t3('Seizoenscontract clausules', 'Clauses contrat saisonnier', 'Season Contract Clauses')}
+                  </div>
+                  <div className="space-y-1">
+                    {seasonClausules.map(article => (
+                      <ArticleItem key={article.id} article={article} />
+                    ))}
+                  </div>
+                </>
+              )}
             </TabsContent>
           </Tabs>
         </aside>
