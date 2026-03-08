@@ -12,6 +12,7 @@ import {
   ShieldCheck, AlertTriangle, CheckCircle2, Gavel, X, CalendarDays
 } from 'lucide-react';
 import { belgianVolunteerArticles, essentialArticleIds, defaultTemplateArticleIds, LawArticle } from '@/data/belgianVolunteerLaw';
+import { seasonTemplateGenerators, seasonTemplateNames } from '@/data/seasonContractTemplates';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
