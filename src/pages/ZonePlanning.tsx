@@ -211,7 +211,7 @@ const ZonePlanning = () => {
   };
 
   const handleUnassign = async (assignmentId: string) => {
-    const { error } = await (supabase as any).from('task_zone_assignments').delete().eq('id', assignmentId);
+    const { error } = await supabase.from('task_zone_assignments').delete().eq('id', assignmentId);
     if (error) toast.error(error.message);
     else {
       setAssignments(prev => prev.filter(a => a.id !== assignmentId));
