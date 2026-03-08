@@ -1090,7 +1090,12 @@ const ReportingDashboard = () => {
             />
           </TabsContent>
 
-          {/* AI ASSISTANT */}
+          {/* SEASON */}
+          <TabsContent value="season" className="mt-4">
+            {clubId && <ReportingSeasonTab clubId={clubId} language={language} />}
+          </TabsContent>
+
+
           <TabsContent value="ai" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
