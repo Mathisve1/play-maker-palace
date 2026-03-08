@@ -308,11 +308,11 @@ const EventsManager = () => {
     e.preventDefault();
     if (!clubId || !addingTaskToGroup || !groupTaskForm.title.trim()) return;
     setCreatingGroupTask(true);
-    const { data, error } = await (supabase as any).from('tasks').insert({
+    const { data, error } = await supabase.from('tasks').insert({
       club_id: clubId, title: groupTaskForm.title.trim(), task_date: groupTaskForm.task_date || null,
       location: groupTaskForm.location.trim() || null, spots_available: groupTaskForm.spots_available,
       event_id: addingTaskToGroup.eventId, event_group_id: addingTaskToGroup.groupId,
-    }).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
+    } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { toast.success(t3('Taak toegevoegd!', 'Tâche ajoutée!', 'Task added!')); setTasks(prev => [...prev, data]); setAddingTaskToGroup(null); setGroupTaskForm({ title: '', task_date: '', location: '', spots_available: 1 }); }
     setCreatingGroupTask(false);
