@@ -75,12 +75,12 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
       setLoading(true);
       const hasEvent = !!eventId;
       const [zRes, itRes, clRes, llRes, loRes, srRes] = await Promise.all([
-        hasEvent ? (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order') : Promise.resolve({ data: [] }),
-        (supabase as any).from('safety_incident_types').select('*').eq('club_id', clubId).order('sort_order'),
-        hasEvent ? (supabase as any).from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order') : Promise.resolve({ data: [] }),
-        (supabase as any).from('safety_location_levels').select('*').eq('club_id', clubId).order('sort_order'),
-        (supabase as any).from('safety_location_options').select('*').order('sort_order'),
-        (supabase as any).from('safety_roles').select('*').eq('club_id', clubId).order('sort_order'),
+        hasEvent ? supabase.from('safety_zones').select('*').eq('event_id', eventId!).order('sort_order') : Promise.resolve({ data: [] } as any),
+        supabase.from('safety_incident_types').select('*').eq('club_id', clubId).order('sort_order'),
+        hasEvent ? supabase.from('safety_checklist_items').select('*').eq('event_id', eventId!).order('sort_order') : Promise.resolve({ data: [] } as any),
+        supabase.from('safety_location_levels').select('*').eq('club_id', clubId).order('sort_order'),
+        supabase.from('safety_location_options').select('*').order('sort_order'),
+        supabase.from('safety_roles').select('*').eq('club_id', clubId).order('sort_order'),
       ]);
       setZones(zRes.data || []);
       setIncidentTypes(itRes.data || []);
