@@ -867,7 +867,7 @@ const VolunteerDashboard = () => {
 
       {/* ===== TICKETS TAB ===== */}
       {activeTab === 'tickets' && (
-        <VolunteerTicketsTab tickets={myTickets} language={language} profile={profile} />
+        <VolunteerTicketsTab tickets={myTickets} language={language} profile={profile} userId={contextUserId2 || undefined} />
       )}
 
       {/* ===== LOYALTY TAB ===== */}
