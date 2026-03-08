@@ -623,7 +623,7 @@ const ClubOwnerDashboard = () => {
 
   const handleDeleteEvent = async (eventId: string) => {
     setDeletingEvent(eventId);
-    const { error } = await (supabase as any).from('events').delete().eq('id', eventId);
+    const { error } = await supabase.from('events').delete().eq('id', eventId);
     if (error) {
       toast.error(error.message);
     } else {
