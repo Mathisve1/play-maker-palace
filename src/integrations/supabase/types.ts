@@ -2515,6 +2515,158 @@ export type Database = {
           },
         ]
       }
+      season_contract_templates: {
+        Row: {
+          category: Database["public"]["Enums"]["season_template_category"]
+          club_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_system: boolean
+          name: string
+          template_data: Json | null
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["season_template_category"]
+          club_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name: string
+          template_data?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["season_template_category"]
+          club_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          template_data?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_contract_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      season_contracts: {
+        Row: {
+          club_id: string
+          created_at: string
+          document_url: string | null
+          docuseal_submission_id: number | null
+          id: string
+          season_id: string
+          signed_at: string | null
+          signing_url: string | null
+          status: string
+          template_id: string
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          document_url?: string | null
+          docuseal_submission_id?: number | null
+          id?: string
+          season_id: string
+          signed_at?: string | null
+          signing_url?: string | null
+          status?: string
+          template_id: string
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          document_url?: string | null
+          docuseal_submission_id?: number | null
+          id?: string
+          season_id?: string
+          signed_at?: string | null
+          signing_url?: string | null
+          status?: string
+          template_id?: string
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_contracts_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "season_contracts_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "season_contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "season_contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          club_id: string
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          name: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seasons_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sepa_batch_items: {
         Row: {
           amount: number
@@ -3236,6 +3388,70 @@ export type Database = {
           },
         ]
       }
+      volunteer_check_ins: {
+        Row: {
+          check_in_at: string
+          check_out_at: string | null
+          checked_in_by: string | null
+          club_id: string
+          created_at: string
+          id: string
+          method: string
+          note: string | null
+          season_id: string
+          task_id: string | null
+          volunteer_id: string
+        }
+        Insert: {
+          check_in_at?: string
+          check_out_at?: string | null
+          checked_in_by?: string | null
+          club_id: string
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          season_id: string
+          task_id?: string | null
+          volunteer_id: string
+        }
+        Update: {
+          check_in_at?: string
+          check_out_at?: string | null
+          checked_in_by?: string | null
+          club_id?: string
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          season_id?: string
+          task_id?: string | null
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_check_ins_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_check_ins_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_check_ins_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_payments: {
         Row: {
           amount: number
@@ -3448,6 +3664,13 @@ export type Database = {
     Enums: {
       app_role: "admin" | "club_owner" | "volunteer"
       club_role: "bestuurder" | "beheerder" | "medewerker"
+      season_template_category:
+        | "steward"
+        | "bar_catering"
+        | "terrain_material"
+        | "admin_ticketing"
+        | "event_support"
+        | "custom"
       ticket_status: "none" | "sent" | "checked_in"
       ticketing_provider:
         | "eventsquare"
@@ -3589,6 +3812,14 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "club_owner", "volunteer"],
       club_role: ["bestuurder", "beheerder", "medewerker"],
+      season_template_category: [
+        "steward",
+        "bar_catering",
+        "terrain_material",
+        "admin_ticketing",
+        "event_support",
+        "custom",
+      ],
       ticket_status: ["none", "sent", "checked_in"],
       ticketing_provider: [
         "eventsquare",
