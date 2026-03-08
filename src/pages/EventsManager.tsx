@@ -218,10 +218,10 @@ const EventsManager = () => {
     if (!clubId || !newEvent.title.trim()) return;
     setCreatingEvent(true);
     const locationStr = buildLocationString();
-    const { data, error } = await (supabase as any).from('events').insert({
+    const { data, error } = await supabase.from('events').insert({
       club_id: clubId, title: newEvent.title.trim(), description: newEvent.description.trim() || null,
       event_date: newEvent.event_date || null, location: locationStr,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       toast.success(t3('Evenement aangemaakt!', 'Événement créé!', 'Event created!'));
