@@ -18,7 +18,7 @@ const Navbar = () => {
   const isCommunityPage = location.pathname.startsWith('/community');
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass pt-safe-top">
+    <nav className="fixed top-0 left-0 right-0 z-50 glass" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="container mx-auto px-4 min-h-14 flex items-center justify-between">
         <Logo size="sm" linkTo="/" />
 
