@@ -90,7 +90,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
 
       if (tRes.data?.length) {
         const tIds = tRes.data.map((t: any) => t.id);
-        const { data: items } = await (supabase as any).from('closing_template_items').select('*').in('template_id', tIds).order('sort_order');
+        const { data: items } = await supabase.from('closing_template_items').select('*').in('template_id', tIds).order('sort_order');
         setTemplateItems(items || []);
       }
 
