@@ -142,7 +142,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const deleteChecklistItem = async (id: string) => {
-    await (supabase as any).from('safety_checklist_items').delete().eq('id', id);
+    await supabase.from('safety_checklist_items').delete().eq('id', id);
     setChecklistItems(prev => prev.filter(i => i.id !== id));
     toast.success(t3('Item verwijderd', 'Élément supprimé', 'Item deleted'));
   };
