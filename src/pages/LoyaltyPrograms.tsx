@@ -245,7 +245,7 @@ const LoyaltyPrograms = () => {
     e.preventDefault();
     if (!clubId || !newProgram.name.trim() || !newProgram.reward_description.trim()) return;
     setCreating(true);
-    const { data, error } = await (supabase as any).from('loyalty_programs').insert({
+    const { data, error } = await supabase.from('loyalty_programs').insert({
       club_id: clubId,
       name: newProgram.name.trim(),
       description: newProgram.description.trim() || null,
@@ -253,7 +253,7 @@ const LoyaltyPrograms = () => {
       required_tasks: newProgram.required_tasks,
       points_based: newProgram.points_based,
       required_points: newProgram.points_based ? newProgram.required_points : null,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) { toast.error(error.message); }
     else if (data) {
       toast.success(dt.programCreated);
