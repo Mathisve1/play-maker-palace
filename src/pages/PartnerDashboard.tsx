@@ -15,6 +15,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PartnerSidebar from '@/components/PartnerSidebar';
+import PartnerDashboardHome from '@/components/partner/PartnerDashboardHome';
+import PartnerAttendanceTab from '@/components/partner/PartnerAttendanceTab';
+import PartnerSidebar from '@/components/PartnerSidebar';
 import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
 
