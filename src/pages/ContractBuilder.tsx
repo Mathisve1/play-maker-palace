@@ -45,6 +45,14 @@ const mergeFields = [
   { name: 'Locatie', label: 'Locatie', group: 'basic' },
   { name: 'Uren', label: 'Werkuren', group: 'basic' },
   { name: 'Onkostenvergoeding', label: 'Bedrag vergoeding', group: 'basic' },
+  // Season-specific
+  { name: 'SeizoenNaam', label: 'Naam seizoen', group: 'season' },
+  { name: 'SeizoenStart', label: 'Startdatum seizoen', group: 'season' },
+  { name: 'SeizoenEinde', label: 'Einddatum seizoen', group: 'season' },
+  { name: 'Rol', label: 'Rol/functie', group: 'season' },
+  { name: 'RolOmschrijving', label: 'Omschrijving rol', group: 'season' },
+  { name: 'MaxDagPlafond', label: 'Max. dagvergoeding', group: 'season' },
+  { name: 'MaxJaarPlafond', label: 'Max. jaarvergoeding', group: 'season' },
   // Monthly-specific
   { name: 'Maandperiode', label: 'Maand + jaar', group: 'monthly' },
   { name: 'Startdatum', label: 'Startdatum maandcontract', group: 'monthly' },
@@ -52,8 +60,6 @@ const mergeFields = [
   { name: 'Compensatietype', label: 'Type vergoeding (dag/uur)', group: 'monthly' },
   { name: 'Dagvergoeding', label: 'Dagvergoeding bedrag', group: 'monthly' },
   { name: 'Uurvergoeding', label: 'Uurvergoeding bedrag', group: 'monthly' },
-  { name: 'MaxDagPlafond', label: 'Max. dagvergoeding (wettelijk)', group: 'monthly' },
-  { name: 'MaxJaarPlafond', label: 'Max. jaarvergoeding (wettelijk)', group: 'monthly' },
   // Identification
   { name: 'Geboortedatum', label: 'Geboortedatum', group: 'identity' },
   { name: 'Rijksregisternummer', label: 'Rijksregisternummer', group: 'identity' },
