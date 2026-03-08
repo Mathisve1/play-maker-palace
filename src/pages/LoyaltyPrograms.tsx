@@ -288,14 +288,14 @@ const LoyaltyPrograms = () => {
     e.preventDefault();
     if (!editingProgram) return;
     setSavingEdit(true);
-    const { error } = await (supabase as any).from('loyalty_programs').update({
+    const { error } = await supabase.from('loyalty_programs').update({
       name: editForm.name.trim(),
       description: editForm.description.trim() || null,
       reward_description: editForm.reward_description.trim(),
       required_tasks: editForm.required_tasks,
       points_based: editForm.points_based,
       required_points: editForm.points_based ? editForm.required_points : null,
-    }).eq('id', editingProgram.id);
+    } as any).eq('id', editingProgram.id);
     if (error) { toast.error(error.message); }
     else {
       toast.success(dt.programUpdated);
