@@ -22,10 +22,10 @@ const TaskZoneDialog = ({ taskId, taskTitle, language, open, onClose }: TaskZone
   useEffect(() => {
     if (!open) return;
     const load = async () => {
-      const { data } = await (supabase as any).from('tasks').select('zone_signup_mode, zone_visible_depth').eq('id', taskId).maybeSingle();
+      const { data } = await supabase.from('tasks').select('zone_signup_mode, zone_visible_depth').eq('id', taskId).maybeSingle();
       if (data) {
-        setZoneSignupMode(data.zone_signup_mode || 'club_only');
-        setZoneVisibleDepth(data.zone_visible_depth);
+        setZoneSignupMode((data as any).zone_signup_mode || 'club_only');
+        setZoneVisibleDepth((data as any).zone_visible_depth);
       }
       setLoaded(true);
     };
@@ -34,12 +34,12 @@ const TaskZoneDialog = ({ taskId, taskTitle, language, open, onClose }: TaskZone
 
   const handleSignupModeChange = async (mode: string) => {
     setZoneSignupMode(mode);
-    await (supabase as any).from('tasks').update({ zone_signup_mode: mode }).eq('id', taskId);
+    await supabase.from('tasks').update({ zone_signup_mode: mode } as any).eq('id', taskId);
   };
 
   const handleVisibleDepthChange = async (depth: number | null) => {
     setZoneVisibleDepth(depth);
-    await (supabase as any).from('tasks').update({ zone_visible_depth: depth }).eq('id', taskId);
+    await supabase.from('tasks').update({ zone_visible_depth: depth } as any).eq('id', taskId);
   };
 
   if (!open) return null;

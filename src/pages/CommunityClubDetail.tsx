@@ -114,7 +114,7 @@ const CommunityClubDetail = () => {
       const { data: partnersData } = await supabase.from('external_partners').select('id, name, category, logo_url, contact_name').eq('club_id', clubId);
       setPartners(partnersData || []);
 
-      const { data: eventsData } = await (supabase as any).from('events').select('id, title, description, event_date, location, status').eq('club_id', clubId).neq('status', 'on_hold').order('event_date', { ascending: false }).limit(10);
+      const { data: eventsData } = await supabase.from('events').select('id, title, description, event_date, location, status').eq('club_id', clubId).neq('status', 'on_hold').order('event_date', { ascending: false }).limit(10);
       setEvents(eventsData || []);
 
       const { data: allClubTasks } = await supabase.from('tasks').select('id').eq('club_id', clubId);

@@ -241,14 +241,14 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
       return [...prev, { checklist_item_id: itemId, is_completed: newValue }];
     });
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('safety_checklist_progress')
       .upsert({
         checklist_item_id: itemId,
         volunteer_id: userId,
         is_completed: newValue,
         completed_at: newValue ? new Date().toISOString() : null,
-      }, { onConflict: 'checklist_item_id,volunteer_id' });
+      } as any, { onConflict: 'checklist_item_id,volunteer_id' } as any);
 
     if (error) {
       toast.error(error.message);
