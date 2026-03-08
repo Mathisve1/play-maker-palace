@@ -111,7 +111,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
     );
 
     // 2. Get all zones for those events (with event_group_id)
-    const { data: zonesData } = await (supabase as any)
+    const { data: zonesData } = await supabase
       .from('safety_zones')
       .select('id, event_id, name, color, sort_order, event_group_id, checklist_active')
       .in('event_id', eventIds)
