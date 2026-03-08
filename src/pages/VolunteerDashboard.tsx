@@ -900,7 +900,7 @@ const VolunteerDashboard = () => {
 
 
       {activeTab === 'contracts' && (
-        <VolunteerContractsTab contracts={myContracts} language={language} checkingContract={checkingContract} onCheckStatus={handleCheckContractStatus} />
+        <VolunteerContractsTab contracts={myContracts} language={language} checkingContract={checkingContract} onCheckStatus={handleCheckContractStatus} userId={currentUserId} />
       )}
 
       {/* ===== PAYMENTS TAB ===== */}
