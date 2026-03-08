@@ -162,7 +162,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   };
 
   const handleAssignVolunteer = async (taskId: string, volunteerId: string | null) => {
-    const { error } = await (supabase as any).from('closing_tasks').update({
+    const { error } = await supabase.from('closing_tasks').update({
       assigned_volunteer_id: volunteerId || null,
     }).eq('id', taskId);
     if (error) toast.error(error.message);
