@@ -81,7 +81,7 @@ const VolunteerPartnerTab = ({ language, userId, navigate }: Props) => {
   useEffect(() => {
     const load = async () => {
       // Fetch partner memberships
-      const { data: memberData } = await (supabase as any)
+      const { data: memberData } = await supabase
         .from('partner_members')
         .select('id, partner_id, external_partners(id, name, category, logo_url, contact_name, contact_email)')
         .eq('user_id', userId);
