@@ -46,6 +46,57 @@ Deno.serve(async (req) => {
           if (serviceRoleKey) {
             const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+            // Check season_contracts first (new flow)
+            const { data: seasonContract } = await adminClient
+              .from("season_contracts")
+              .select("id, volunteer_id, club_id")
+              .eq("docuseal_submission_id", submissionId)
+              .maybeSingle();
+
+            if (seasonContract) {
+              const scUpdate: Record<string, unknown> = {
+                status: "signed",
+                signed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              };
+              if (documentUrl) scUpdate.document_url = documentUrl;
+
+              await adminClient
+                .from("season_contracts")
+                .update(scUpdate)
+                .eq("id", seasonContract.id);
+
+              // Notify club owner
+              const { data: club } = await adminClient.from("clubs").select("owner_id").eq("id", seasonContract.club_id).maybeSingle();
+              if (club?.owner_id) {
+                await adminClient.from("notifications").insert({
+                  user_id: club.owner_id,
+                  title: "Seizoenscontract ondertekend",
+                  message: "Een vrijwilliger heeft het seizoenscontract ondertekend.",
+                  type: "contract_signed",
+                  metadata: { season_contract_id: seasonContract.id },
+                });
+                try {
+                  const pushUrl = `${supabaseUrl}/functions/v1/send-native-push`;
+                  await fetch(pushUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceRoleKey}` },
+                    body: JSON.stringify({ user_id: club.owner_id, title: '📝 Seizoenscontract ondertekend', message: 'Een vrijwilliger heeft het seizoenscontract ondertekend.', url: '/volunteer-management', type: 'contract_signed' }),
+                  });
+                } catch (e) { console.warn('Push failed:', e); }
+              }
+
+              // Also notify the volunteer
+              await adminClient.from("notifications").insert({
+                user_id: seasonContract.volunteer_id,
+                title: "Contract ondertekend",
+                message: "Je seizoenscontract is succesvol ondertekend.",
+                type: "contract_signed",
+              });
+
+              console.log("Webhook: Updated season_contract", seasonContract.id, "to signed");
+            } else {
+              // Fallback: check signature_requests (old flow)
             const { data: sigReq } = await adminClient
               .from("signature_requests")
               .select("id, volunteer_id, club_owner_id, task_id")
