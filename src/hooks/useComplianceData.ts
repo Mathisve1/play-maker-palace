@@ -82,6 +82,18 @@ export const useComplianceData = (volunteerId: string | null, year?: number, ref
           .reduce((sum, t) => sum + calculateHours(t.start_time, t.end_time), 0);
       }
 
+      // 2b. Season checkin hours
+      const { data: seasonCheckins } = await supabase
+        .from('season_checkins')
+        .select('hours_worked, checked_in_at')
+        .eq('volunteer_id', volunteerId);
+
+      const seasonHours = (seasonCheckins || [])
+        .filter(sc => sc.checked_in_at && new Date(sc.checked_in_at).getFullYear() === currentYear && sc.hours_worked)
+        .reduce((sum, sc) => sum + Number(sc.hours_worked || 0), 0);
+
+      internalHours += seasonHours;
+
       // 3. External income + hours from declarations
       const { data: declarations } = await supabase
         .from('compliance_declarations')
