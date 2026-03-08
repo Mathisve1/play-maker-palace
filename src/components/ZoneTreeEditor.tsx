@@ -48,7 +48,7 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
     setSaving(true);
     const parentId = addingTo === 'root' ? null : addingTo;
     const siblings = zones.filter(z => z.parent_id === parentId);
-    const { data, error } = await (supabase as any).from('task_zones').insert({
+    const { data, error } = await supabase.from('task_zones').insert({
       task_id: taskId,
       parent_id: parentId,
       name: newName.trim(),
