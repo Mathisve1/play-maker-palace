@@ -784,7 +784,7 @@ const ClubOwnerDashboard = () => {
       assigned_partner_id: newTask.partner_only && newTask.assigned_partner_id ? newTask.assigned_partner_id : null,
     };
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('tasks')
       .insert(insertData)
       .select('id, title, description, task_date, location, spots_available, status, club_id, event_id, event_group_id')

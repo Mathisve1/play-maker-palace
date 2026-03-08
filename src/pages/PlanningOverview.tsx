@@ -96,7 +96,7 @@ const PlanningOverview = () => {
       const zoneIds = zones.map((z: any) => z.id);
       let assignmentMap: Record<string, number> = {};
       if (zoneIds.length) {
-        const { data: assignments } = await (supabase as any).from('task_zone_assignments').select('id, zone_id').in('zone_id', zoneIds);
+        const { data: assignments } = await supabase.from('task_zone_assignments').select('id, zone_id').in('zone_id', zoneIds);
         const zoneToTask: Record<string, string> = {};
         zones.forEach((z: any) => { zoneToTask[z.id] = z.task_id; });
         (assignments || []).forEach((a: any) => {

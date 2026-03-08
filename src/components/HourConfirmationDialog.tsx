@@ -206,7 +206,7 @@ const HourConfirmationDialog = ({
     try {
       const avg = (confirmation.volunteer_reported_hours + confirmation.club_reported_hours) / 2;
       const amount = calculateAmount(avg);
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('hour_confirmations')
         .update({
           final_hours: avg,
