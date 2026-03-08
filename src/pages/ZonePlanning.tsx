@@ -172,12 +172,12 @@ const ZonePlanning = () => {
     }
     const existing = volunteerSafetyRoles.find(r => r.volunteer_id === volunteerId && r.event_id === eventId);
     if (existing) {
-      await (supabase as any).from('volunteer_safety_roles').update({ safety_role_id: roleId }).eq('id', existing.id);
+      await supabase.from('volunteer_safety_roles').update({ safety_role_id: roleId } as any).eq('id', existing.id);
       setVolunteerSafetyRoles(prev => prev.map(r => r.id === existing.id ? { ...r, safety_role_id: roleId } : r));
     } else {
-      const { data, error } = await (supabase as any).from('volunteer_safety_roles').insert({
+      const { data, error } = await supabase.from('volunteer_safety_roles').insert({
         event_id: eventId, volunteer_id: volunteerId, safety_role_id: roleId, assigned_by: userId,
-      }).select('*').maybeSingle();
+      } as any).select('*').maybeSingle();
       if (error) { toast.error(error.message); return; }
       if (data) setVolunteerSafetyRoles(prev => [...prev, data]);
     }
