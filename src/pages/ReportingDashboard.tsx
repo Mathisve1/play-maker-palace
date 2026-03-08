@@ -773,7 +773,7 @@ const ReportingDashboard = () => {
   const aiPresets = [L.aiQ1, L.aiQ2, L.aiQ3, L.aiQ4, L.aiQ5, L.aiQ6, L.aiQ7, L.aiQ8, L.aiQ9, L.aiQ10, L.aiQ11, L.aiQ12];
 
   if (loading) {
-    return (<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>);
+    return (<ClubPageLayout><DashboardSkeleton /></ClubPageLayout>);
   }
 
   return (
