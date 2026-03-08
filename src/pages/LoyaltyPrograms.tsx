@@ -208,7 +208,7 @@ const LoyaltyPrograms = () => {
       // Load excluded tasks per program
       if (programsData && programsData.length > 0) {
         const programIds = programsData.map((p: any) => p.id);
-        const { data: exclusions } = await (supabase as any).from('loyalty_program_excluded_tasks').select('*').in('program_id', programIds);
+        const { data: exclusions } = await supabase.from('loyalty_program_excluded_tasks').select('*').in('program_id', programIds);
         if (exclusions) {
           const exMap: Record<string, Set<string>> = {};
           exclusions.forEach((ex: any) => {
