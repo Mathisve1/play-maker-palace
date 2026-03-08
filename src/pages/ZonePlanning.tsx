@@ -115,11 +115,11 @@ const ZonePlanning = () => {
     setEventId(taskEventId);
 
     if (taskEventId) {
-      const { data: ev } = await (supabase as any).from('events').select('club_id').eq('id', taskEventId).maybeSingle();
+      const { data: ev } = await supabase.from('events').select('club_id').eq('id', taskEventId).maybeSingle();
       if (ev?.club_id) {
         const [srRes, vsrRes] = await Promise.all([
-          (supabase as any).from('safety_roles').select('id, name, color, level').eq('club_id', ev.club_id).order('level').order('sort_order'),
-          (supabase as any).from('volunteer_safety_roles').select('*').eq('event_id', taskEventId),
+          supabase.from('safety_roles').select('id, name, color, level').eq('club_id', ev.club_id).order('level').order('sort_order'),
+          supabase.from('volunteer_safety_roles').select('*').eq('event_id', taskEventId),
         ]);
         setSafetyRoles(srRes.data || []);
         setVolunteerSafetyRoles(vsrRes.data || []);
