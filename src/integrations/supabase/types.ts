@@ -118,6 +118,60 @@ export type Database = {
           },
         ]
       }
+      api_usage_logs: {
+        Row: {
+          api_key_id: string
+          club_id: string
+          created_at: string
+          duration_ms: number | null
+          format: string
+          id: string
+          ip_address: string | null
+          resource: string
+          response_rows: number
+          status_code: number
+        }
+        Insert: {
+          api_key_id: string
+          club_id: string
+          created_at?: string
+          duration_ms?: number | null
+          format?: string
+          id?: string
+          ip_address?: string | null
+          resource: string
+          response_rows?: number
+          status_code?: number
+        }
+        Update: {
+          api_key_id?: string
+          club_id?: string
+          created_at?: string
+          duration_ms?: number | null
+          format?: string
+          id?: string
+          ip_address?: string | null
+          resource?: string
+          response_rows?: number
+          status_code?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "club_api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_usage_logs_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       briefing_block_progress: {
         Row: {
           block_id: string
