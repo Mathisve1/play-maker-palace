@@ -410,7 +410,7 @@ const EventsManager = () => {
   const handleDuplicateGroup = async (group: EventGroup) => {
     const newColor = GROUP_COLORS[(GROUP_COLORS.indexOf(group.color) + 1) % GROUP_COLORS.length];
     const maxOrder = eventGroups.filter(g => g.event_id === group.event_id).reduce((m, g) => Math.max(m, g.sort_order), 0);
-    const { data, error } = await (supabase as any).from('event_groups').insert({
+    const { data, error } = await supabase.from('event_groups').insert({
       event_id: group.event_id,
       name: group.name + ' (kopie)',
       color: newColor,
@@ -418,7 +418,7 @@ const EventsManager = () => {
       wristband_color: group.wristband_color,
       wristband_label: group.wristband_label,
       materials_note: group.materials_note,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       setEventGroups(prev => [...prev, data]);
