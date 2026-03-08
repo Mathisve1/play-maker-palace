@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 const t = {
   nl: {

@@ -32,6 +32,7 @@ import ReportingFinancialTab from '@/components/reporting/ReportingFinancialTab'
 import ReportingPartnersTab from '@/components/reporting/ReportingPartnersTab';
 import ReportingComplianceTab from '@/components/reporting/ReportingComplianceTab';
 import VolunteerProfileDialog from '@/components/VolunteerProfileDialog';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 // ── Types ───────────────────────────────────────────────────────
 interface VolunteerReport {
