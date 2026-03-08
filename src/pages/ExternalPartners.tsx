@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
