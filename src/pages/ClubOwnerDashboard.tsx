@@ -447,10 +447,10 @@ const ClubOwnerDashboard = () => {
       // Parallel: event groups + task extras + KPIs (instead of sequential)
       const [groupsRes, taskExtrasRes] = await Promise.all([
         eventsData.length > 0
-          ? (supabase as any).from('event_groups').select('*').in('event_id', eventsData.map((e: any) => e.id)).order('sort_order', { ascending: true })
+          ? supabase.from('event_groups').select('*').in('event_id', eventsData.map((e: any) => e.id)).order('sort_order', { ascending: true })
           : Promise.resolve({ data: [] }),
         tasksData && tasksData.length > 0
-          ? (supabase as any).from('tasks').select('id, event_id, event_group_id').eq('club_id', clubId)
+          ? supabase.from('tasks').select('id, event_id, event_group_id').eq('club_id', clubId)
           : Promise.resolve({ data: [] }),
       ]);
 
