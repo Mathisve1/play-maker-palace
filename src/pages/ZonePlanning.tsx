@@ -165,7 +165,7 @@ const ZonePlanning = () => {
     if (!roleId) {
       const existing = volunteerSafetyRoles.find(r => r.volunteer_id === volunteerId && r.event_id === eventId);
       if (existing) {
-        await (supabase as any).from('volunteer_safety_roles').delete().eq('id', existing.id);
+        await supabase.from('volunteer_safety_roles').delete().eq('id', existing.id);
         setVolunteerSafetyRoles(prev => prev.filter(r => r.id !== existing.id));
       }
       return;
