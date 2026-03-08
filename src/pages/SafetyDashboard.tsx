@@ -381,12 +381,12 @@ const SafetyDashboard = () => {
     const existing = checklistProgress.find(p => p.checklist_item_id === itemId && p.volunteer_id === userId);
     if (existing) {
       const newVal = !existing.is_completed;
-      await (supabase as any).from('safety_checklist_progress').update({
+      await supabase.from('safety_checklist_progress').update({
         is_completed: newVal, completed_at: newVal ? new Date().toISOString() : null,
       }).eq('id', existing.id);
       setChecklistProgress(prev => prev.map(p => p.id === existing.id ? { ...p, is_completed: newVal } : p));
     } else {
-      const { data } = await (supabase as any).from('safety_checklist_progress').insert({
+      const { data } = await supabase.from('safety_checklist_progress').insert({
         checklist_item_id: itemId, volunteer_id: userId, is_completed: true, completed_at: new Date().toISOString(),
       }).select('*').maybeSingle();
       if (data) setChecklistProgress(prev => [...prev, data]);
