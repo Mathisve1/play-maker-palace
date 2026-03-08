@@ -219,7 +219,7 @@ const LoyaltyPrograms = () => {
         }
 
         // Load enrollments
-        const { data: enrollData } = await (supabase as any).from('loyalty_enrollments').select('*').in('program_id', programIds);
+        const { data: enrollData } = await supabase.from('loyalty_enrollments').select('*').in('program_id', programIds);
         if (enrollData && enrollData.length > 0) {
           const volunteerIds = [...new Set(enrollData.map((e: any) => e.volunteer_id))] as string[];
           const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', volunteerIds);
