@@ -115,11 +115,11 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Incident Types ──
   const addIncidentType = async () => {
     if (!newTypeName.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_incident_types').insert({
+    const { data, error } = await supabase.from('safety_incident_types').insert({
       club_id: clubId, label: newTypeName.trim(), color: newTypeColor,
       default_priority: newTypePriority, sort_order: incidentTypes.length,
       emoji: newTypeEmoji || null,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { setIncidentTypes(prev => [...prev, data]); setNewTypeName(''); setNewTypeEmoji(''); toast.success(t3('Incident type toegevoegd', 'Type d\'incident ajouté', 'Incident type added')); }
   };
