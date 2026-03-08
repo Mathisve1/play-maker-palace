@@ -495,7 +495,7 @@ const EventsManager = () => {
     setTogglingHold(eventId);
     const event = events.find(e => e.id === eventId);
     const newStatus = event?.status === 'on_hold' ? 'open' : 'on_hold';
-    const { error } = await (supabase as any).from('events').update({ status: newStatus }).eq('id', eventId);
+    const { error } = await supabase.from('events').update({ status: newStatus } as any).eq('id', eventId);
     if (error) toast.error(error.message);
     else { setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e)); toast.success(newStatus === 'on_hold' ? t3('Evenement on hold gezet', 'Événement mis en attente', 'Event put on hold') : t3('Evenement weer actief', 'Événement réactivé', 'Event reactivated')); }
     setTogglingHold(null);
