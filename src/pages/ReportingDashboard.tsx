@@ -7,7 +7,7 @@ import {
   ArrowLeft, BarChart3, Download, Filter, Loader2, PieChart, TrendingUp, Users,
   Calendar, Euro, AlertTriangle, CheckCircle2, XCircle, ClipboardCheck, Send,
   Bot, Sparkles, CreditCard, Hash, Target, Percent, Clock, MapPin, FileText,
-  Handshake, Shield, FileDown
+  Handshake, Shield, FileDown, Code2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
