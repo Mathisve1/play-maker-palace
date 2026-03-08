@@ -666,7 +666,7 @@ const ClubOwnerDashboard = () => {
     const groupMap: Record<string, string> = {}; // old -> new
     const newGroups: EventGroup[] = [];
     for (const g of sourceGroups) {
-      const { data: newG } = await (supabase as any)
+      const { data: newG } = await supabase
         .from('event_groups')
         .insert({ event_id: newEvt.id, name: g.name, color: g.color, sort_order: g.sort_order })
         .select('*')
