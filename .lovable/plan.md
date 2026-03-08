@@ -1,85 +1,78 @@
 
-# Volledige Audit – Maart 2026
 
-## PWA & Safe Area (urgent - jouw klacht over tekst achter statusbar)
+## Club Data API — Implementatieplan
 
-### P1. Mobile header hoogte telt safe-area-inset-top niet mee
-**Probleem:** `DashboardLayout.tsx` header is `h-14` (56px) met `paddingTop: env(safe-area-inset-top)`. Maar omdat `h-14` de TOTALE hoogte is, wordt de content IN de header samengeperst achter de statusbar (batterij/uur). Hetzelfde geldt voor `Chat.tsx`, `TicketScanner.tsx` en `TicketingDashboard.tsx`.
-**Oplossing:** Verander van vaste `h-14` naar `min-h-14` + `pt-safe-top`, zodat de header GROEIT op iOS/Android PWA. Of gebruik een wrapper-div voor de safe area padding boven de header content.
-
-### P2. Chat pagina mist sidebar-layout
-**Probleem:** Chat gebruikt een eigen header + navigatie ipv `DashboardLayout` of `ClubPageLayout`. Inconsistente ervaring: geen sidebar, geen hamburger menu, terug-knop navigeert naar dashboard maar je verliest sidebar-context.
-**Oplossing:** Chat integreren in `DashboardLayout` met de juiste sidebar per rol.
+### Overzicht
+Een REST API waarmee clubs hun eigen data ophalen via API keys. Toegankelijk voor bestuurders en beheerders. Rate limited op 100 calls/uur per key. Output in JSON of CSV. Volledige inline documentatie in een nieuwe "API" tab op de rapportering-pagina.
 
 ---
 
-## Data & Performance
+### 1. Database migratie
 
-### P3. VolunteerDashboard init() doet 20+ queries sequentieel
-**Probleem:** De `init()` functie in VolunteerDashboard (1188 regels) laadt taken, signups, payments, SEPA, contracten, tickets, loyalty, certificates, follows – allemaal SEQUENTIEEL. Geen `Promise.all()` waar mogelijk. Laadtijd op mobiel is merkbaar.
-**Oplossing:** Groepeer onafhankelijke queries in `Promise.all()` blokken. Splits init in parallelle fasen.
+**Nieuwe tabel `club_api_keys`:**
+- `id` uuid PK
+- `club_id` uuid FK → clubs NOT NULL
+- `api_key` text unique NOT NULL (gen_random_uuid gehashed)
+- `key_prefix` text (eerste 8 chars voor UI display)
+- `name` text (label, bv "Power BI")
+- `is_active` boolean default true
+- `last_used_at` timestamptz nullable
+- `calls_this_hour` int default 0
+- `hour_window_start` timestamptz nullable
+- `created_by` uuid FK → profiles
+- `created_at` timestamptz default now()
 
-### P4. CommandCenter herlaadt ALLES bij elke realtime change
-**Probleem:** Lijn 286-289: elke `task_signups`, `monthly_enrollments`, of `monthly_day_signups` change triggert een volledige `loadData()` – dit doet 10+ queries opnieuw. Bij drukke events kan dit elke seconde triggeren.
-**Oplossing:** Debounce met 500ms, of targeted updates per change type.
+**RLS:** Bestuurder + beheerder van de club mogen CRUD via `has_club_role(auth.uid(), club_id, '{bestuurder,beheerder}')`.
 
-### P5. TicketingDashboard pollt elke 5 seconden
-**Probleem:** Lijn 323-336: een `setInterval(5000)` pollt de volledige tickets-tabel, ook als de tab inactief is. Verspilt resources.
-**Oplossing:** Gebruik `document.visibilityState` check, of vervang polling door pure realtime subscriptions (die al bestaan op lijn 308-321).
+### 2. Edge Function: `club-data-api`
 
-### P6. Volunteer live-event polling elke 3 seconden
-**Probleem:** VolunteerDashboard lijn 439-442: pollt elke 3 seconden voor live events, naast de realtime subscriptions die er al zijn. Overkill.
-**Oplossing:** Verhoog interval naar 15-30 seconden, of verwijder polling en vertrouw op de realtime channels.
+`verify_jwt = false` — authenticatie via Bearer API key.
+
+**Logica:**
+1. Extract `Authorization: Bearer <key>` → lookup in `club_api_keys` where `is_active = true`
+2. Rate limit check: als `calls_this_hour >= 100` en `hour_window_start` binnen huidig uur → 429
+3. Update `last_used_at`, increment `calls_this_hour` (reset als nieuw uur)
+4. Query parameter `resource`: `volunteers`, `tasks`, `events`, `signups`, `payments`, `sepa_batches`, `compliance_declarations`, `season_contracts`, `tickets`, `partners`
+5. Alle queries gefilterd op `club_id` van de key
+6. `format=csv` → CSV output, anders JSON
+7. `from`/`to` datumfilter, `limit`/`offset` paginatie (max 1000)
+
+**Resources mapping:**
+| Resource | Tabel(len) | Join/filter |
+|----------|-----------|-------------|
+| `volunteers` | profiles via task_signups → tasks | tasks.club_id |
+| `tasks` | tasks | club_id |
+| `events` | events | club_id |
+| `signups` | task_signups → tasks | tasks.club_id |
+| `payments` | volunteer_payments | club_id |
+| `sepa_batches` | sepa_batches + sepa_batch_items | club_id |
+| `compliance` | compliance_declarations → profiles | club_id (via task_signups) |
+| `contracts` | season_contracts | club_id |
+| `tickets` | tickets | club_id |
+| `partners` | external_partners | club_id |
+
+### 3. Frontend: ReportingApiTab component
+
+**Nieuw bestand:** `src/components/reporting/ReportingApiTab.tsx`
+
+Drie secties:
+1. **Key Management** — Tabel met bestaande keys (prefix, naam, status, last used, calls). Knoppen: genereer nieuwe key (met naam-input), herroep key. Bij genereren: toon volledige key éénmalig in een dialog.
+2. **Documentatie** — Inline docs met base URL, auth header, alle resources met velden-beschrijving, query parameters, en voorbeeldcode in cURL, JavaScript (fetch), en Python (requests).
+3. **Live Tester** — Dropdown voor resource, optionele datum-range, "Test" knop → response preview in een code block.
+
+### 4. Integratie in ReportingDashboard
+
+Nieuwe tab "API" toevoegen naast de bestaande tabs (overview, volunteers, ..., ai). Alleen zichtbaar voor bestuurder/beheerder rollen.
 
 ---
 
-## UX & Navigatie
+### Bestanden
 
-### P7. Geen loading skeletons, alleen spinners
-**Probleem:** Alle dashboards tonen een centered spinner bij initial load. Op mobiel lijkt het alsof de app "leeg" is tot alles geladen is. Geen visuele hint over de structuur.
-**Oplossing:** Skeleton placeholders voor KPI cards, takenlijst, sidebar content.
+| Actie | Bestand |
+|-------|---------|
+| Nieuw | `supabase/migrations/xxx_club_api_keys.sql` |
+| Nieuw | `supabase/functions/club-data-api/index.ts` |
+| Nieuw | `src/components/reporting/ReportingApiTab.tsx` |
+| Edit | `src/pages/ReportingDashboard.tsx` — tab toevoegen |
+| Edit | `supabase/config.toml` — verify_jwt = false |
 
-### P8. VolunteerDashboard.tsx is 1188 regels – niet gerefactord
-**Probleem:** Vergelijkbaar met ClubOwnerDashboard vóór refactor. Eén component met 30+ state variabelen, init() van 200 regels, en alle tab-renders inline.
-**Oplossing:** Extract `VolunteerDashboardTab`, `VolunteerPaymentsTab`, `VolunteerContractsTab`, etc.
-
-### P9. MonthlyPlanning.tsx is 971 regels
-**Probleem:** Bevat calendar rendering, task CRUD, enrollment management, day signup management, ticket generation, payout generation – alles in 1 component.
-**Oplossing:** Extract `MonthlyCalendar`, `MonthlyEnrollmentList`, `MonthlyDaySignupManager`.
-
-### P10. Duplicate club-finding logic in 8+ pagina's
-**Probleem:** CommandCenter, TicketingDashboard, TicketScanner, MonthlyPlanning, ClubPageLayout – allemaal dupliceren dezelfde "find club by owner_id OR club_members" logica.
-**Oplossing:** Maak een `useClub()` hook die dit centraal afhandelt.
-
----
-
-## Veiligheid & Code Quality
-
-### P11. Veel `(supabase as any)` casts
-**Probleem:** 15+ plekken waar Supabase queries gecast worden naar `any`, wat type safety volledig uitschakelt. Bugs worden niet gevangen door TypeScript.
-**Oplossing:** Database types updaten en proper typeren, of expliciete type assertions gebruiken.
-
-### P12. Auth guard is niet centraal
-**Probleem:** Elke pagina doet een eigen `getSession()` check met redirect. Als er een race condition is of de session expire, krijg je inconsistent gedrag.
-**Oplossing:** Een `<RequireAuth>` wrapper component die sessie centraal controleert.
-
----
-
-## Aanbevolen prioriteit
-
-| # | Upgrade | Impact | Moeite | Gebied |
-|---|---------|--------|--------|--------|
-| P1 | Safe area header fix (PWA statusbar) | **Kritiek** | Klein | PWA |
-| P3 | Parallel queries VolunteerDashboard | Hoog | Medium | Performance |
-| P4 | CommandCenter debounce | Hoog | Klein | Performance |
-| P5 | Ticketing polling optimalisatie | Medium | Klein | Performance |
-| P6 | Volunteer live-event polling reduceren | Medium | Klein | Performance |
-| P7 | Loading skeletons | Medium | Medium | UX |
-| P10 | useClub() hook extracten | Medium | Medium | Code quality |
-| P8 | VolunteerDashboard refactor | Medium | Groot | Code quality |
-| P9 | MonthlyPlanning refactor | Medium | Groot | Code quality |
-| P2 | Chat sidebar-integratie | Laag | Medium | UX |
-| P11 | Supabase type safety | Laag | Medium | Code quality |
-| P12 | Centrale auth guard | Laag | Medium | Security |
-
-Geef aan welke je wilt aanpakken.
