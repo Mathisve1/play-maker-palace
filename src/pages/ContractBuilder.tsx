@@ -342,6 +342,7 @@ const ContractBuilder = () => {
   const [blocksOpen, setBlocksOpen] = useState(true);
   const [lawArticlesOpen, setLawArticlesOpen] = useState(true);
   const [clausulesOpen, setClausulesOpen] = useState(true);
+  const [seasonClausulesOpen, setSeasonClausulesOpen] = useState(false);
   const [contractColors, setContractColors] = useState({ primary: '#1a5632', accent: '#e8742e', bg: '#ffffff' });
   const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null);
   const [clubData, setClubData] = useState<{ name: string; logo_url: string | null; owner_name: string | null } | null>(null);
