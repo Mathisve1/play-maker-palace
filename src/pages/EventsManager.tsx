@@ -391,13 +391,13 @@ const EventsManager = () => {
 
   const handleSaveEditGroup = async (groupId: string) => {
     setSavingGroup(true);
-    const { error } = await (supabase as any).from('event_groups').update({
+    const { error } = await supabase.from('event_groups').update({
       name: editGroupForm.name.trim(),
       color: editGroupForm.color,
       wristband_color: editGroupForm.wristband_color.trim() || null,
       wristband_label: editGroupForm.wristband_label.trim() || null,
       materials_note: editGroupForm.materials_note.trim() || null,
-    }).eq('id', groupId);
+    } as any).eq('id', groupId);
     if (error) toast.error(error.message);
     else {
       setEventGroups(prev => prev.map(g => g.id === groupId ? { ...g, name: editGroupForm.name.trim(), color: editGroupForm.color, wristband_color: editGroupForm.wristband_color.trim() || null, wristband_label: editGroupForm.wristband_label.trim() || null, materials_note: editGroupForm.materials_note.trim() || null } : g));
