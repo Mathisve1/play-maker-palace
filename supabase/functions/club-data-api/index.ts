@@ -33,11 +33,18 @@ Deno.serve(async (req) => {
   const startTime = Date.now();
 
   try {
+    // Accept API key via x-api-key header or Authorization: Bearer <key>
+    const xApiKey = req.headers.get("x-api-key");
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return jsonResp({ error: "Missing API key. Use Authorization: Bearer <key>" }, 401);
+    let apiKey = "";
+    if (xApiKey) {
+      apiKey = xApiKey.trim();
+    } else if (authHeader?.startsWith("Bearer ")) {
+      apiKey = authHeader.replace("Bearer ", "").trim();
     }
-    const apiKey = authHeader.replace("Bearer ", "").trim();
+    if (!apiKey) {
+      return jsonResp({ error: "Missing API key. Use Authorization: Bearer <key> or x-api-key header." }, 401);
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
