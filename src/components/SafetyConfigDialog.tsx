@@ -75,12 +75,12 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
       setLoading(true);
       const hasEvent = !!eventId;
       const [zRes, itRes, clRes, llRes, loRes, srRes] = await Promise.all([
-        hasEvent ? (supabase as any).from('safety_zones').select('*').eq('event_id', eventId).order('sort_order') : Promise.resolve({ data: [] }),
-        (supabase as any).from('safety_incident_types').select('*').eq('club_id', clubId).order('sort_order'),
-        hasEvent ? (supabase as any).from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order') : Promise.resolve({ data: [] }),
-        (supabase as any).from('safety_location_levels').select('*').eq('club_id', clubId).order('sort_order'),
-        (supabase as any).from('safety_location_options').select('*').order('sort_order'),
-        (supabase as any).from('safety_roles').select('*').eq('club_id', clubId).order('sort_order'),
+        hasEvent ? supabase.from('safety_zones').select('*').eq('event_id', eventId!).order('sort_order') : Promise.resolve({ data: [] } as any),
+        supabase.from('safety_incident_types').select('*').eq('club_id', clubId).order('sort_order'),
+        hasEvent ? supabase.from('safety_checklist_items').select('*').eq('event_id', eventId!).order('sort_order') : Promise.resolve({ data: [] } as any),
+        supabase.from('safety_location_levels').select('*').eq('club_id', clubId).order('sort_order'),
+        supabase.from('safety_location_options').select('*').order('sort_order'),
+        supabase.from('safety_roles').select('*').eq('club_id', clubId).order('sort_order'),
       ]);
       setZones(zRes.data || []);
       setIncidentTypes(itRes.data || []);
@@ -99,15 +99,15 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Zones ──
   const addZone = async () => {
     if (!newZoneName.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_zones').insert({
+    const { data, error } = await supabase.from('safety_zones').insert({
       event_id: eventId, club_id: clubId, name: newZoneName.trim(), color: newZoneColor, sort_order: zones.length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { setZones(prev => [...prev, data]); setNewZoneName(''); setNewZoneColor('#3b82f6'); toast.success(t3('Zone toegevoegd', 'Zone ajoutée', 'Zone added')); }
   };
 
   const deleteZone = async (id: string) => {
-    await (supabase as any).from('safety_zones').delete().eq('id', id);
+    await supabase.from('safety_zones').delete().eq('id', id);
     setZones(prev => prev.filter(z => z.id !== id));
     toast.success(t3('Zone verwijderd', 'Zone supprimée', 'Zone deleted'));
   };
@@ -115,17 +115,17 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Incident Types ──
   const addIncidentType = async () => {
     if (!newTypeName.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_incident_types').insert({
+    const { data, error } = await supabase.from('safety_incident_types').insert({
       club_id: clubId, label: newTypeName.trim(), color: newTypeColor,
       default_priority: newTypePriority, sort_order: incidentTypes.length,
       emoji: newTypeEmoji || null,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { setIncidentTypes(prev => [...prev, data]); setNewTypeName(''); setNewTypeEmoji(''); toast.success(t3('Incident type toegevoegd', 'Type d\'incident ajouté', 'Incident type added')); }
   };
 
   const deleteIncidentType = async (id: string) => {
-    await (supabase as any).from('safety_incident_types').delete().eq('id', id);
+    await supabase.from('safety_incident_types').delete().eq('id', id);
     setIncidentTypes(prev => prev.filter(t => t.id !== id));
     toast.success(t3('Incident type verwijderd', 'Type d\'incident supprimé', 'Incident type deleted'));
   };
@@ -133,16 +133,16 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Checklist Items ──
   const addChecklistItem = async () => {
     if (!newChecklistDesc.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_checklist_items').insert({
+    const { data, error } = await supabase.from('safety_checklist_items').insert({
       event_id: eventId, club_id: clubId, description: newChecklistDesc.trim(),
       zone_id: newChecklistZone || null, sort_order: checklistItems.length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { setChecklistItems(prev => [...prev, data]); setNewChecklistDesc(''); setNewChecklistZone(''); toast.success(t3('Checklist item toegevoegd', 'Élément ajouté', 'Checklist item added')); }
   };
 
   const deleteChecklistItem = async (id: string) => {
-    await (supabase as any).from('safety_checklist_items').delete().eq('id', id);
+    await supabase.from('safety_checklist_items').delete().eq('id', id);
     setChecklistItems(prev => prev.filter(i => i.id !== id));
     toast.success(t3('Item verwijderd', 'Élément supprimé', 'Item deleted'));
   };
@@ -150,9 +150,9 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Location Levels ──
   const addLocationLevel = async () => {
     if (!newLevelName.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_location_levels').insert({
+    const { data, error } = await supabase.from('safety_location_levels').insert({
       club_id: clubId, name: newLevelName.trim(), sort_order: locationLevels.length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       setLocationLevels(prev => [...prev, data]);
@@ -163,7 +163,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const deleteLocationLevel = async (id: string) => {
-    await (supabase as any).from('safety_location_levels').delete().eq('id', id);
+    await supabase.from('safety_location_levels').delete().eq('id', id);
     setLocationLevels(prev => prev.filter(l => l.id !== id));
     setLocationOptions(prev => prev.filter(o => o.level_id !== id));
     if (selectedLevelId === id) setSelectedLevelId(locationLevels.find(l => l.id !== id)?.id || null);
@@ -171,23 +171,23 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const toggleLevelRequired = async (id: string, current: boolean) => {
-    await (supabase as any).from('safety_location_levels').update({ is_required: !current }).eq('id', id);
+    await supabase.from('safety_location_levels').update({ is_required: !current } as any).eq('id', id);
     setLocationLevels(prev => prev.map(l => l.id === id ? { ...l, is_required: !current } : l));
   };
 
   // ── Location Options ──
   const addLocationOption = async () => {
     if (!newOptionLabel.trim() || !selectedLevelId) return;
-    const { data, error } = await (supabase as any).from('safety_location_options').insert({
+    const { data, error } = await supabase.from('safety_location_options').insert({
       level_id: selectedLevelId, label: newOptionLabel.trim(),
       sort_order: locationOptions.filter(o => o.level_id === selectedLevelId).length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { setLocationOptions(prev => [...prev, data]); setNewOptionLabel(''); toast.success(t3('Optie toegevoegd', 'Option ajoutée', 'Option added')); }
   };
 
   const deleteLocationOption = async (id: string) => {
-    await (supabase as any).from('safety_location_options').delete().eq('id', id);
+    await supabase.from('safety_location_options').delete().eq('id', id);
     setLocationOptions(prev => prev.filter(o => o.id !== id));
     toast.success(t3('Optie verwijderd', 'Option supprimée', 'Option deleted'));
   };
@@ -195,10 +195,10 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Safety Roles ──
   const addSafetyRole = async () => {
     if (!newRoleName.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_roles').insert({
+    const { data, error } = await supabase.from('safety_roles').insert({
       club_id: clubId, name: newRoleName.trim(), color: newRoleColor,
       level: newRoleLevel, sort_order: safetyRoles.length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       setSafetyRoles(prev => [...prev, data]);
@@ -208,13 +208,13 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const deleteSafetyRole = async (id: string) => {
-    await (supabase as any).from('safety_roles').delete().eq('id', id);
+    await supabase.from('safety_roles').delete().eq('id', id);
     setSafetyRoles(prev => prev.filter(r => r.id !== id));
     toast.success(t3('Rol verwijderd', 'Rôle supprimé', 'Role deleted'));
   };
 
   const toggleRolePermission = async (roleId: string, field: keyof SafetyRole, current: boolean) => {
-    await (supabase as any).from('safety_roles').update({ [field]: !current }).eq('id', roleId);
+    await supabase.from('safety_roles').update({ [field]: !current } as any).eq('id', roleId);
     setSafetyRoles(prev => prev.map(r => r.id === roleId ? { ...r, [field]: !current } : r));
   };
 

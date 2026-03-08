@@ -198,17 +198,17 @@ const LoyaltyPrograms = () => {
       setClubId(contextClubId);
 
       // Load programs
-      const { data: programsData } = await (supabase as any).from('loyalty_programs').select('*').eq('club_id', contextClubId).order('created_at', { ascending: false });
+      const { data: programsData } = await supabase.from('loyalty_programs').select('*').eq('club_id', contextClubId).order('created_at', { ascending: false });
       setPrograms(programsData || []);
 
       // Load club tasks
-      const { data: tasksData } = await (supabase as any).from('tasks').select('id, title, loyalty_eligible, loyalty_points').eq('club_id', contextClubId);
+      const { data: tasksData } = await supabase.from('tasks').select('id, title, loyalty_eligible, loyalty_points').eq('club_id', contextClubId);
       setClubTasks(tasksData || []);
 
       // Load excluded tasks per program
       if (programsData && programsData.length > 0) {
         const programIds = programsData.map((p: any) => p.id);
-        const { data: exclusions } = await (supabase as any).from('loyalty_program_excluded_tasks').select('*').in('program_id', programIds);
+        const { data: exclusions } = await supabase.from('loyalty_program_excluded_tasks').select('*').in('program_id', programIds);
         if (exclusions) {
           const exMap: Record<string, Set<string>> = {};
           exclusions.forEach((ex: any) => {
@@ -219,7 +219,7 @@ const LoyaltyPrograms = () => {
         }
 
         // Load enrollments
-        const { data: enrollData } = await (supabase as any).from('loyalty_enrollments').select('*').in('program_id', programIds);
+        const { data: enrollData } = await supabase.from('loyalty_enrollments').select('*').in('program_id', programIds);
         if (enrollData && enrollData.length > 0) {
           const volunteerIds = [...new Set(enrollData.map((e: any) => e.volunteer_id))] as string[];
           const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', volunteerIds);
@@ -245,7 +245,7 @@ const LoyaltyPrograms = () => {
     e.preventDefault();
     if (!clubId || !newProgram.name.trim() || !newProgram.reward_description.trim()) return;
     setCreating(true);
-    const { data, error } = await (supabase as any).from('loyalty_programs').insert({
+    const { data, error } = await supabase.from('loyalty_programs').insert({
       club_id: clubId,
       name: newProgram.name.trim(),
       description: newProgram.description.trim() || null,
@@ -253,7 +253,7 @@ const LoyaltyPrograms = () => {
       required_tasks: newProgram.required_tasks,
       points_based: newProgram.points_based,
       required_points: newProgram.points_based ? newProgram.required_points : null,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) { toast.error(error.message); }
     else if (data) {
       toast.success(dt.programCreated);
@@ -265,7 +265,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleToggleActive = async (program: LoyaltyProgram) => {
-    const { error } = await (supabase as any).from('loyalty_programs').update({ is_active: !program.is_active }).eq('id', program.id);
+    const { error } = await supabase.from('loyalty_programs').update({ is_active: !program.is_active } as any).eq('id', program.id);
     if (error) { toast.error(error.message); }
     else {
       setPrograms(prev => prev.map(p => p.id === program.id ? { ...p, is_active: !p.is_active } : p));
@@ -288,14 +288,14 @@ const LoyaltyPrograms = () => {
     e.preventDefault();
     if (!editingProgram) return;
     setSavingEdit(true);
-    const { error } = await (supabase as any).from('loyalty_programs').update({
+    const { error } = await supabase.from('loyalty_programs').update({
       name: editForm.name.trim(),
       description: editForm.description.trim() || null,
       reward_description: editForm.reward_description.trim(),
       required_tasks: editForm.required_tasks,
       points_based: editForm.points_based,
       required_points: editForm.points_based ? editForm.required_points : null,
-    }).eq('id', editingProgram.id);
+    } as any).eq('id', editingProgram.id);
     if (error) { toast.error(error.message); }
     else {
       toast.success(dt.programUpdated);
@@ -315,7 +315,7 @@ const LoyaltyPrograms = () => {
 
   const handleDelete = async (programId: string) => {
     setDeleting(true);
-    const { error } = await (supabase as any).from('loyalty_programs').delete().eq('id', programId);
+    const { error } = await supabase.from('loyalty_programs').delete().eq('id', programId);
     if (error) { toast.error(error.message); }
     else {
       toast.success(dt.programDeleted);
@@ -326,7 +326,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleGrantReward = async (enrollment: Enrollment) => {
-    const { error } = await (supabase as any).from('loyalty_enrollments').update({ reward_claimed: true, claimed_at: new Date().toISOString() }).eq('id', enrollment.id);
+    const { error } = await supabase.from('loyalty_enrollments').update({ reward_claimed: true, claimed_at: new Date().toISOString() } as any).eq('id', enrollment.id);
     if (error) { toast.error(error.message); }
     else {
       toast.success(dt.rewardGranted);
@@ -341,7 +341,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleExcludeTask = async (programId: string, taskId: string) => {
-    const { error } = await (supabase as any).from('loyalty_program_excluded_tasks').insert({ program_id: programId, task_id: taskId });
+    const { error } = await supabase.from('loyalty_program_excluded_tasks').insert({ program_id: programId, task_id: taskId } as any);
     if (error) { toast.error(error.message); return; }
     setExcludedTasks(prev => {
       const updated = { ...prev };
@@ -353,7 +353,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleIncludeTask = async (programId: string, taskId: string) => {
-    const { error } = await (supabase as any).from('loyalty_program_excluded_tasks').delete().eq('program_id', programId).eq('task_id', taskId);
+    const { error } = await supabase.from('loyalty_program_excluded_tasks').delete().eq('program_id', programId).eq('task_id', taskId);
     if (error) { toast.error(error.message); return; }
     setExcludedTasks(prev => {
       const updated = { ...prev };

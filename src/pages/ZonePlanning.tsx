@@ -102,9 +102,9 @@ const ZonePlanning = () => {
     setUserId(contextUserId);
 
     const [taskRes, zoneRes, signupRes] = await Promise.all([
-      (supabase as any).from('tasks').select('id, title, task_date, location, event_id').eq('id', taskId).maybeSingle(),
-      (supabase as any).from('task_zones').select('*').eq('task_id', taskId).order('sort_order'),
-      (supabase as any).from('task_signups').select('volunteer_id').eq('task_id', taskId).eq('status', 'assigned'),
+      supabase.from('tasks').select('id, title, task_date, location, event_id').eq('id', taskId).maybeSingle(),
+      supabase.from('task_zones').select('*').eq('task_id', taskId).order('sort_order'),
+      supabase.from('task_signups').select('volunteer_id').eq('task_id', taskId).eq('status', 'assigned'),
     ]);
 
     const taskData = taskRes.data;
@@ -115,11 +115,11 @@ const ZonePlanning = () => {
     setEventId(taskEventId);
 
     if (taskEventId) {
-      const { data: ev } = await (supabase as any).from('events').select('club_id').eq('id', taskEventId).maybeSingle();
+      const { data: ev } = await supabase.from('events').select('club_id').eq('id', taskEventId).maybeSingle();
       if (ev?.club_id) {
         const [srRes, vsrRes] = await Promise.all([
-          (supabase as any).from('safety_roles').select('id, name, color, level').eq('club_id', ev.club_id).order('level').order('sort_order'),
-          (supabase as any).from('volunteer_safety_roles').select('*').eq('event_id', taskEventId),
+          supabase.from('safety_roles').select('id, name, color, level').eq('club_id', ev.club_id).order('level').order('sort_order'),
+          supabase.from('volunteer_safety_roles').select('*').eq('event_id', taskEventId),
         ]);
         setSafetyRoles(srRes.data || []);
         setVolunteerSafetyRoles(vsrRes.data || []);
@@ -128,7 +128,7 @@ const ZonePlanning = () => {
 
     if (zoneRes.data?.length) {
       const zoneIds = zoneRes.data.map((z: Zone) => z.id);
-      const { data: assignData } = await (supabase as any).from('task_zone_assignments').select('*').in('zone_id', zoneIds);
+      const { data: assignData } = await supabase.from('task_zone_assignments').select('*').in('zone_id', zoneIds);
       setAssignments(assignData || []);
     }
 
@@ -165,19 +165,19 @@ const ZonePlanning = () => {
     if (!roleId) {
       const existing = volunteerSafetyRoles.find(r => r.volunteer_id === volunteerId && r.event_id === eventId);
       if (existing) {
-        await (supabase as any).from('volunteer_safety_roles').delete().eq('id', existing.id);
+        await supabase.from('volunteer_safety_roles').delete().eq('id', existing.id);
         setVolunteerSafetyRoles(prev => prev.filter(r => r.id !== existing.id));
       }
       return;
     }
     const existing = volunteerSafetyRoles.find(r => r.volunteer_id === volunteerId && r.event_id === eventId);
     if (existing) {
-      await (supabase as any).from('volunteer_safety_roles').update({ safety_role_id: roleId }).eq('id', existing.id);
+      await supabase.from('volunteer_safety_roles').update({ safety_role_id: roleId } as any).eq('id', existing.id);
       setVolunteerSafetyRoles(prev => prev.map(r => r.id === existing.id ? { ...r, safety_role_id: roleId } : r));
     } else {
-      const { data, error } = await (supabase as any).from('volunteer_safety_roles').insert({
+      const { data, error } = await supabase.from('volunteer_safety_roles').insert({
         event_id: eventId, volunteer_id: volunteerId, safety_role_id: roleId, assigned_by: userId,
-      }).select('*').maybeSingle();
+      } as any).select('*').maybeSingle();
       if (error) { toast.error(error.message); return; }
       if (data) setVolunteerSafetyRoles(prev => [...prev, data]);
     }
@@ -195,11 +195,11 @@ const ZonePlanning = () => {
       }
     }
 
-    const { data, error } = await (supabase as any).from('task_zone_assignments').insert({
+    const { data, error } = await supabase.from('task_zone_assignments').insert({
       zone_id: zoneId,
       volunteer_id: volunteerId,
       assigned_by: userId,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
 
     if (error) {
       if (error.code === '23505') toast.error(l.alreadyAssigned);
@@ -211,7 +211,7 @@ const ZonePlanning = () => {
   };
 
   const handleUnassign = async (assignmentId: string) => {
-    const { error } = await (supabase as any).from('task_zone_assignments').delete().eq('id', assignmentId);
+    const { error } = await supabase.from('task_zone_assignments').delete().eq('id', assignmentId);
     if (error) toast.error(error.message);
     else {
       setAssignments(prev => prev.filter(a => a.id !== assignmentId));

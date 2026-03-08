@@ -159,8 +159,8 @@ const EventsManager = () => {
       setClubId(cId);
 
       const [evRes, taskRes, tmplRes, mpRes] = await Promise.all([
-        (supabase as any).from('events').select('*').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-        (supabase as any).from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').eq('club_id', cId).order('task_date', { ascending: true }),
+        supabase.from('events').select('*').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
+        supabase.from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').eq('club_id', cId).order('task_date', { ascending: true }),
         supabase.from('contract_templates').select('id, name').eq('club_id', cId).order('name'),
         supabase.from('monthly_plans').select('id, title, month, year, status').eq('club_id', cId).eq('status', 'open').order('year', { ascending: false }),
       ]);
@@ -171,7 +171,7 @@ const EventsManager = () => {
 
       if (evRes.data?.length) {
         const eventIds = evRes.data.map((e: any) => e.id);
-        const { data: groups } = await (supabase as any).from('event_groups').select('*').in('event_id', eventIds).order('sort_order');
+        const { data: groups } = await supabase.from('event_groups').select('*').in('event_id', eventIds).order('sort_order');
         setEventGroups(groups || []);
       }
       setLoading(false);
@@ -218,10 +218,10 @@ const EventsManager = () => {
     if (!clubId || !newEvent.title.trim()) return;
     setCreatingEvent(true);
     const locationStr = buildLocationString();
-    const { data, error } = await (supabase as any).from('events').insert({
+    const { data, error } = await supabase.from('events').insert({
       club_id: clubId, title: newEvent.title.trim(), description: newEvent.description.trim() || null,
       event_date: newEvent.event_date || null, location: locationStr,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       toast.success(t3('Evenement aangemaakt!', 'Événement créé!', 'Event created!'));
@@ -259,12 +259,12 @@ const EventsManager = () => {
       estimated_hours: newTask.compensation_type === 'hourly' && newTask.estimated_hours ? parseFloat(newTask.estimated_hours) : null,
       daily_rate: newTask.compensation_type === 'daily' && newTask.daily_rate ? parseFloat(newTask.daily_rate) : null,
     };
-    const { data, error } = await (supabase as any).from('tasks').insert(insertData).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
+    const { data, error } = await supabase.from('tasks').insert(insertData as any).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
     if (error) { toast.error(error.message); }
     else if (data) {
       if (newTask.add_to_monthly_plan && selectedMonthlyPlanId) {
         const compType = newTask.compensation_type === 'none' ? 'fixed' : newTask.compensation_type;
-        await (supabase as any).from('monthly_plan_tasks').insert({
+        await supabase.from('monthly_plan_tasks').insert({
           plan_id: selectedMonthlyPlanId,
           title: newTask.title.trim(),
           description: newTask.description.trim() || null,
@@ -289,12 +289,12 @@ const EventsManager = () => {
   const handleAddGroup = async (eventId: string) => {
     if (!newGroupName.trim()) return;
     const groups = eventGroups.filter(g => g.event_id === eventId);
-    const { data, error } = await (supabase as any).from('event_groups').insert({
+    const { data, error } = await supabase.from('event_groups').insert({
       event_id: eventId, name: newGroupName.trim(), color: GROUP_COLORS[groups.length % GROUP_COLORS.length], sort_order: groups.length,
       wristband_color: newGroupWristbandColor.trim() || null,
       wristband_label: newGroupWristbandLabel.trim() || null,
       materials_note: newGroupMaterialsNote.trim() || null,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       toast.success(t3('Groep aangemaakt!', 'Groupe créé!', 'Group created!'));
@@ -308,11 +308,11 @@ const EventsManager = () => {
     e.preventDefault();
     if (!clubId || !addingTaskToGroup || !groupTaskForm.title.trim()) return;
     setCreatingGroupTask(true);
-    const { data, error } = await (supabase as any).from('tasks').insert({
+    const { data, error } = await supabase.from('tasks').insert({
       club_id: clubId, title: groupTaskForm.title.trim(), task_date: groupTaskForm.task_date || null,
       location: groupTaskForm.location.trim() || null, spots_available: groupTaskForm.spots_available,
       event_id: addingTaskToGroup.eventId, event_group_id: addingTaskToGroup.groupId,
-    }).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
+    } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { toast.success(t3('Taak toegevoegd!', 'Tâche ajoutée!', 'Task added!')); setTasks(prev => [...prev, data]); setAddingTaskToGroup(null); setGroupTaskForm({ title: '', task_date: '', location: '', spots_available: 1 }); }
     setCreatingGroupTask(false);
@@ -322,25 +322,25 @@ const EventsManager = () => {
     setDuplicatingEvent(eventId);
     const event = events.find(e => e.id === eventId);
     if (!event || !clubId) return;
-    const { data: newEv, error } = await (supabase as any).from('events').insert({
+    const { data: newEv, error } = await supabase.from('events').insert({
       club_id: clubId, title: `${event.title} (kopie)`, description: event.description,
       event_date: event.event_date, location: event.location,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error || !newEv) { toast.error(error?.message || 'Failed'); setDuplicatingEvent(null); return; }
 
     const groups = eventGroups.filter(g => g.event_id === eventId);
     for (const group of groups) {
-      const { data: newGrp } = await (supabase as any).from('event_groups').insert({
+      const { data: newGrp } = await supabase.from('event_groups').insert({
         event_id: newEv.id, name: group.name, color: group.color, sort_order: group.sort_order,
-      }).select('*').maybeSingle();
+      } as any).select('*').maybeSingle();
       if (newGrp) {
         setEventGroups(prev => [...prev, newGrp]);
         const groupTasks = tasks.filter(t => t.event_group_id === group.id);
         for (const task of groupTasks) {
-          const { data: newTask } = await (supabase as any).from('tasks').insert({
+          const { data: newTask } = await supabase.from('tasks').insert({
             club_id: clubId, title: task.title, task_date: task.task_date, location: task.location,
             spots_available: task.spots_available, event_id: newEv.id, event_group_id: newGrp.id,
-          }).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
+          } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
           if (newTask) setTasks(prev => [...prev, newTask]);
         }
       }
@@ -354,11 +354,11 @@ const EventsManager = () => {
     setDeletingEvent(eventId);
     const groups = eventGroups.filter(g => g.event_id === eventId);
     for (const g of groups) {
-      await (supabase as any).from('tasks').delete().eq('event_group_id', g.id);
-      await (supabase as any).from('event_groups').delete().eq('id', g.id);
+      await supabase.from('tasks').delete().eq('event_group_id', g.id);
+      await supabase.from('event_groups').delete().eq('id', g.id);
     }
-    await (supabase as any).from('tasks').delete().eq('event_id', eventId).is('event_group_id', null);
-    const { error } = await (supabase as any).from('events').delete().eq('id', eventId);
+    await supabase.from('tasks').delete().eq('event_id', eventId).is('event_group_id', null);
+    const { error } = await supabase.from('events').delete().eq('id', eventId);
     if (error) toast.error(error.message);
     else {
       toast.success(t3('Evenement verwijderd!', 'Événement supprimé!', 'Event deleted!'));
@@ -371,8 +371,8 @@ const EventsManager = () => {
   };
 
   const handleDeleteGroup = async (groupId: string) => {
-    await (supabase as any).from('tasks').delete().eq('event_group_id', groupId);
-    await (supabase as any).from('event_groups').delete().eq('id', groupId);
+    await supabase.from('tasks').delete().eq('event_group_id', groupId);
+    await supabase.from('event_groups').delete().eq('id', groupId);
     setEventGroups(prev => prev.filter(g => g.id !== groupId));
     setTasks(prev => prev.filter(t => t.event_group_id !== groupId));
     toast.success(t3('Groep verwijderd!', 'Groupe supprimé!', 'Group deleted!'));
@@ -391,13 +391,13 @@ const EventsManager = () => {
 
   const handleSaveEditGroup = async (groupId: string) => {
     setSavingGroup(true);
-    const { error } = await (supabase as any).from('event_groups').update({
+    const { error } = await supabase.from('event_groups').update({
       name: editGroupForm.name.trim(),
       color: editGroupForm.color,
       wristband_color: editGroupForm.wristband_color.trim() || null,
       wristband_label: editGroupForm.wristband_label.trim() || null,
       materials_note: editGroupForm.materials_note.trim() || null,
-    }).eq('id', groupId);
+    } as any).eq('id', groupId);
     if (error) toast.error(error.message);
     else {
       setEventGroups(prev => prev.map(g => g.id === groupId ? { ...g, name: editGroupForm.name.trim(), color: editGroupForm.color, wristband_color: editGroupForm.wristband_color.trim() || null, wristband_label: editGroupForm.wristband_label.trim() || null, materials_note: editGroupForm.materials_note.trim() || null } : g));
@@ -410,7 +410,7 @@ const EventsManager = () => {
   const handleDuplicateGroup = async (group: EventGroup) => {
     const newColor = GROUP_COLORS[(GROUP_COLORS.indexOf(group.color) + 1) % GROUP_COLORS.length];
     const maxOrder = eventGroups.filter(g => g.event_id === group.event_id).reduce((m, g) => Math.max(m, g.sort_order), 0);
-    const { data, error } = await (supabase as any).from('event_groups').insert({
+    const { data, error } = await supabase.from('event_groups').insert({
       event_id: group.event_id,
       name: group.name + ' (kopie)',
       color: newColor,
@@ -418,7 +418,7 @@ const EventsManager = () => {
       wristband_color: group.wristband_color,
       wristband_label: group.wristband_label,
       materials_note: group.materials_note,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       setEventGroups(prev => [...prev, data]);
@@ -435,10 +435,10 @@ const EventsManager = () => {
     e.preventDefault();
     if (!editingEvent) return;
     setSavingEvent(true);
-    const { error } = await (supabase as any).from('events').update({
+    const { error } = await supabase.from('events').update({
       title: editEventForm.title.trim(), description: editEventForm.description.trim() || null,
       event_date: editEventForm.event_date || null, location: editEventForm.location.trim() || null,
-    }).eq('id', editingEvent.id);
+    } as any).eq('id', editingEvent.id);
     if (error) toast.error(error.message);
     else {
       toast.success(t3('Evenement bijgewerkt!', 'Événement mis à jour!', 'Event updated!'));
@@ -484,7 +484,7 @@ const EventsManager = () => {
 
   const handleDeleteLooseTask = async (taskId: string) => {
     setDeletingTask(taskId);
-    const { error } = await (supabase as any).from('tasks').delete().eq('id', taskId);
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
     if (error) toast.error(error.message);
     else { toast.success(t3('Taak verwijderd!', 'Tâche supprimée!', 'Task deleted!')); setTasks(prev => prev.filter(t => t.id !== taskId)); }
     setDeletingTask(null);
@@ -495,7 +495,7 @@ const EventsManager = () => {
     setTogglingHold(eventId);
     const event = events.find(e => e.id === eventId);
     const newStatus = event?.status === 'on_hold' ? 'open' : 'on_hold';
-    const { error } = await (supabase as any).from('events').update({ status: newStatus }).eq('id', eventId);
+    const { error } = await supabase.from('events').update({ status: newStatus } as any).eq('id', eventId);
     if (error) toast.error(error.message);
     else { setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e)); toast.success(newStatus === 'on_hold' ? t3('Evenement on hold gezet', 'Événement mis en attente', 'Event put on hold') : t3('Evenement weer actief', 'Événement réactivé', 'Event reactivated')); }
     setTogglingHold(null);
@@ -504,7 +504,7 @@ const EventsManager = () => {
   const handleToggleHoldTask = async (taskId: string, currentStatus: string) => {
     setTogglingHold(taskId);
     const newStatus = currentStatus === 'on_hold' ? 'open' : 'on_hold';
-    const { error } = await (supabase as any).from('tasks').update({ status: newStatus }).eq('id', taskId);
+    const { error } = await supabase.from('tasks').update({ status: newStatus } as any).eq('id', taskId);
     if (error) toast.error(error.message);
     else { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)); toast.success(newStatus === 'on_hold' ? t3('Taak on hold gezet', 'Tâche mise en attente', 'Task put on hold') : t3('Taak weer actief', 'Tâche réactivée', 'Task reactivated')); }
     setTogglingHold(null);

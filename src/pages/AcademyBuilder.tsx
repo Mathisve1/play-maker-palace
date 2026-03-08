@@ -777,7 +777,7 @@ const AcademyBuilder = () => {
       setClubId(contextClubId);
       const [trainingsRes, designsRes] = await Promise.all([
         supabase.from('academy_trainings').select('*').eq('club_id', contextClubId).order('created_at', { ascending: false }),
-        (supabase as any).from('certificate_designs').select('id, name').eq('club_id', contextClubId),
+        supabase.from('certificate_designs').select('id, name').eq('club_id', contextClubId),
       ]);
       setTrainings((trainingsRes.data as Training[]) || []);
       setCertDesigns((designsRes.data || []) as { id: string; name: string }[]);

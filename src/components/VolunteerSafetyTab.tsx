@@ -111,7 +111,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
     );
 
     // 2. Get all zones for those events (with event_group_id)
-    const { data: zonesData } = await (supabase as any)
+    const { data: zonesData } = await supabase
       .from('safety_zones')
       .select('id, event_id, name, color, sort_order, event_group_id, checklist_active')
       .in('event_id', eventIds)
@@ -241,14 +241,14 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
       return [...prev, { checklist_item_id: itemId, is_completed: newValue }];
     });
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('safety_checklist_progress')
       .upsert({
         checklist_item_id: itemId,
         volunteer_id: userId,
         is_completed: newValue,
         completed_at: newValue ? new Date().toISOString() : null,
-      }, { onConflict: 'checklist_item_id,volunteer_id' });
+      } as any, { onConflict: 'checklist_item_id,volunteer_id' } as any);
 
     if (error) {
       toast.error(error.message);

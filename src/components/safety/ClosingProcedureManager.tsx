@@ -72,8 +72,8 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   useEffect(() => {
     const load = async () => {
       const [tRes, ctRes, vRes] = await Promise.all([
-        (supabase as any).from('closing_templates').select('*').eq('club_id', clubId).order('created_at'),
-        (supabase as any).from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order'),
+        supabase.from('closing_templates').select('*').eq('club_id', clubId).order('created_at'),
+        supabase.from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order'),
         supabase.from('task_signups').select('volunteer_id').in('task_id',
           (await supabase.from('tasks').select('id').eq('event_id', eventId)).data?.map(t => t.id) || []
         ),
@@ -90,7 +90,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
 
       if (tRes.data?.length) {
         const tIds = tRes.data.map((t: any) => t.id);
-        const { data: items } = await (supabase as any).from('closing_template_items').select('*').in('template_id', tIds).order('sort_order');
+        const { data: items } = await supabase.from('closing_template_items').select('*').in('template_id', tIds).order('sort_order');
         setTemplateItems(items || []);
       }
 
@@ -129,15 +129,15 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   const handleSaveTemplate = async () => {
     if (!editTemplateName.trim() || editItems.length === 0) return;
 
-    const { data: tmpl, error } = await (supabase as any).from('closing_templates').insert({
+    const { data: tmpl, error } = await supabase.from('closing_templates').insert({
       club_id: clubId, name: editTemplateName.trim(),
-    }).select('*').single();
+    } as any).select('*').single();
     if (error || !tmpl) { toast.error(error?.message || 'Error'); return; }
 
     const itemInserts = editItems.map((item, i) => ({
       template_id: tmpl.id, description: item.description, requires_photo: item.requires_photo, requires_note: item.requires_note, sort_order: i,
     }));
-    const { data: items } = await (supabase as any).from('closing_template_items').insert(itemInserts).select('*');
+    const { data: items } = await supabase.from('closing_template_items').insert(itemInserts as any).select('*');
 
     setTemplates(prev => [...prev, tmpl]);
     setTemplateItems(prev => [...prev, ...(items || [])]);
@@ -149,20 +149,20 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
     const items = templateItems.filter(i => i.template_id === templateId);
     if (items.length === 0) { toast.error(t3('Geen items in deze template', 'Pas d\'éléments dans ce modèle', 'No items in this template')); return; }
 
-    await (supabase as any).from('closing_tasks').delete().eq('event_id', eventId);
+    await supabase.from('closing_tasks').delete().eq('event_id', eventId);
 
     const inserts = items.map((item, i) => ({
       event_id: eventId, club_id: clubId, template_item_id: item.id,
       description: item.description, requires_photo: item.requires_photo, requires_note: item.requires_note, sort_order: i,
     }));
-    const { data, error } = await (supabase as any).from('closing_tasks').insert(inserts).select('*');
+    const { data, error } = await supabase.from('closing_tasks').insert(inserts as any).select('*');
     if (error) { toast.error(error.message); return; }
     setClosingTasks(data || []);
     toast.success(t3(`${items.length} sluitingstaken aangemaakt`, `${items.length} tâches de clôture créées`, `${items.length} closing tasks created`));
   };
 
   const handleAssignVolunteer = async (taskId: string, volunteerId: string | null) => {
-    const { error } = await (supabase as any).from('closing_tasks').update({
+    const { error } = await supabase.from('closing_tasks').update({
       assigned_volunteer_id: volunteerId || null,
     }).eq('id', taskId);
     if (error) toast.error(error.message);
@@ -172,7 +172,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await (supabase as any).from('closing_tasks').delete().eq('id', taskId);
+    await supabase.from('closing_tasks').delete().eq('id', taskId);
     setClosingTasks(prev => prev.filter(t => t.id !== taskId));
   };
 

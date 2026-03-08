@@ -432,12 +432,12 @@ const SafetyDashboard = () => {
     const myZoneArray = Array.from(myZoneIds);
     const autoZoneId = myZoneArray.length === 1 ? myZoneArray[0] : (myZoneArray.length > 0 ? myZoneArray[0] : null);
 
-    const { data: inc, error } = await (supabase as any).from('safety_incidents').insert({
+    const { data: inc, error } = await supabase.from('safety_incidents').insert({
       event_id: eventId, club_id: clubId, incident_type_id: type.id,
       reporter_id: userId, priority: type.default_priority, status: 'nieuw',
       lat, lng,
       zone_id: autoZoneId,
-    }).select('id').single();
+    } as any).select('id').single();
 
     if (error) { toast.error(error.message); setReporting(false); return; }
 
@@ -471,7 +471,7 @@ const SafetyDashboard = () => {
     }
 
     if (Object.keys(updates).length > 0) {
-      await (supabase as any).from('safety_incidents').update(updates).eq('id', pendingIncidentId);
+      await supabase.from('safety_incidents').update(updates as any).eq('id', pendingIncidentId);
     }
 
     toast.success(t3('Details toegevoegd aan melding', 'Détails ajoutés au signalement', 'Details added to report'));
@@ -493,16 +493,16 @@ const SafetyDashboard = () => {
 
   // ── Control room: update incident ──
   const handleUpdateIncident = async (incidentId: string, status: string) => {
-    await (supabase as any).from('safety_incidents').update({
+    await supabase.from('safety_incidents').update({
       status, updated_at: new Date().toISOString(),
       ...(status === 'opgelost' ? { resolved_by: userId, resolved_at: new Date().toISOString() } : {}),
-    }).eq('id', incidentId);
+    } as any).eq('id', incidentId);
   };
 
   // ── GO LIVE ──
   const handleGoLive = async () => {
     if (!eventId) return;
-    await (supabase as any).from('events').update({ is_live: true }).eq('id', eventId);
+    await supabase.from('events').update({ is_live: true } as any).eq('id', eventId);
     setIsLive(true);
     toast.success(t3('🚀 Event is LIVE! Vrijwilligers kunnen nu incidenten melden.', '🚀 L\'événement est EN DIRECT ! Les bénévoles peuvent signaler.', '🚀 Event is LIVE! Volunteers can now report incidents.'));
   };
@@ -511,7 +511,7 @@ const SafetyDashboard = () => {
   const handleCloseEvent = async () => {
     if (!eventId) return;
     setClosingEvent(true);
-    const { error } = await (supabase as any).from('events').update({ is_live: false, status: 'closed' }).eq('id', eventId);
+    const { error } = await supabase.from('events').update({ is_live: false, status: 'closed' } as any).eq('id', eventId);
     if (error) {
       toast.error(error.message);
     } else {
@@ -531,11 +531,11 @@ const SafetyDashboard = () => {
       // Fetch club name
       const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).single();
       // Fetch event date
-      const { data: ev } = await (supabase as any).from('events').select('event_date').eq('id', eventId).single();
+      const { data: ev } = await supabase.from('events').select('event_date').eq('id', eventId).single();
       // Fetch user name
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId!).single();
       // Fetch closing tasks with volunteer names
-      const { data: cTasks } = await (supabase as any).from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order');
+      const { data: cTasks } = await supabase.from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order');
       const volIds = [...new Set((cTasks || []).map((t: any) => t.assigned_volunteer_id).filter(Boolean))] as string[];
       let volMap: Record<string, string> = {};
       if (volIds.length > 0) {
@@ -599,7 +599,7 @@ const SafetyDashboard = () => {
     const newValue = !currentValue;
     // Optimistic update
     setZones(prev => prev.map(z => z.id === zoneId ? { ...z, checklist_active: newValue } : z));
-    const { error } = await (supabase as any).from('safety_zones').update({ checklist_active: newValue }).eq('id', zoneId);
+    const { error } = await supabase.from('safety_zones').update({ checklist_active: newValue } as any).eq('id', zoneId);
     if (error) {
       toast.error(error.message);
       setZones(prev => prev.map(z => z.id === zoneId ? { ...z, checklist_active: currentValue } : z));
@@ -741,7 +741,7 @@ const SafetyDashboard = () => {
   const [hasClosingTasks, setHasClosingTasks] = useState(false);
   useEffect(() => {
     if (!eventClosed || !userId) return;
-    (supabase as any).from('closing_tasks').select('id').eq('event_id', eventId).eq('assigned_volunteer_id', userId).limit(1).then(({ data }: any) => {
+    supabase.from('closing_tasks').select('id').eq('event_id', eventId).eq('assigned_volunteer_id', userId).limit(1).then(({ data }) => {
       setHasClosingTasks((data?.length || 0) > 0);
     });
   }, [eventClosed, userId, eventId]);
