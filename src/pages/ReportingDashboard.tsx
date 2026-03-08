@@ -894,6 +894,7 @@ const ReportingDashboard = () => {
               <TabsTrigger value="partners" className="gap-1.5 text-xs sm:text-sm"><Handshake className="w-3.5 h-3.5" />{L.partners}</TabsTrigger>
               <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><Shield className="w-3.5 h-3.5" />{L.compliance}</TabsTrigger>
               <TabsTrigger value="season" className="gap-1.5 text-xs sm:text-sm"><Calendar className="w-3.5 h-3.5" />Seizoen</TabsTrigger>
+              <TabsTrigger value="api" className="gap-1.5 text-xs sm:text-sm"><Code2 className="w-3.5 h-3.5" />API</TabsTrigger>
               <TabsTrigger value="ai" className="gap-1.5 text-xs sm:text-sm"><Bot className="w-3.5 h-3.5" />AI</TabsTrigger>
             </TabsList>
           </div>
