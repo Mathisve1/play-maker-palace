@@ -397,6 +397,202 @@ export const belgianVolunteerArticles: LawArticle[] = [
       'Rekeninghouder: {{Rekeninghouder}}\n\n' +
       'De vrijwilliger bevestigt dat bovenstaande gegevens correct en actueel zijn en verbindt zich ertoe wijzigingen onmiddellijk door te geven aan de organisatie.',
   },
+
+  // ─── SEIZOENSCONTRACT-SPECIFIEKE CLAUSULES ─────────────
+  {
+    id: 'clausule_seizoen_duur',
+    articleNumber: 'Clausule S1',
+    title: 'Looptijd seizoensovereenkomst',
+    category: 'clausule',
+    summary: 'Specifieke duur en geldigheid van het seizoenscontract (juli-juni).',
+    content:
+      'Deze overeenkomst wordt aangegaan voor het sportseizoen van {{SeizoenStart}} tot en met {{SeizoenEinde}} ({{SeizoenNaam}}).\n' +
+      'De vrijwilliger verbindt zich ertoe beschikbaar te zijn voor taken binnen dit seizoen, volgens de afspraken met de organisatie.\n' +
+      'De overeenkomst eindigt van rechtswege op de einddatum van het seizoen. Vroegtijdige beëindiging door beide partijen is mogelijk mits schriftelijke kennisgeving met een opzegtermijn van 14 dagen.',
+  },
+  {
+    id: 'clausule_seizoen_rol',
+    articleNumber: 'Clausule S2',
+    title: 'Rol en verantwoordelijkheden',
+    category: 'clausule',
+    summary: 'Specifieke taken en verantwoordelijkheden per rol.',
+    content:
+      'De vrijwilliger wordt ingezet als {{Rol}} en neemt de volgende verantwoordelijkheden op:\n' +
+      '{{RolOmschrijving}}\n\n' +
+      'De organisatie voorziet een briefing en eventuele opleiding voorafgaand aan de inzet.\n' +
+      'De exacte inzetmomenten worden per evenement/wedstrijd gecommuniceerd via het digitale platform van de organisatie.',
+  },
+  {
+    id: 'clausule_seizoen_vergoeding',
+    articleNumber: 'Clausule S3',
+    title: 'Seizoensvergoeding',
+    category: 'clausule',
+    summary: 'Kostenvergoeding over het hele seizoen conform sportvrijwilligersregeling.',
+    content:
+      'De vrijwilliger ontvangt een forfaitaire kostenvergoeding voor de geleverde prestaties.\n\n' +
+      'Conform het KB van 21 december 2018 en de specifieke regeling voor sportvrijwilligers gelden de volgende maxima:\n' +
+      '• Dagvergoeding: maximaal {{MaxDagPlafond}} per dag\n' +
+      '• Jaarvergoeding: maximaal {{MaxJaarPlafond}} per jaar (verhoogd plafond sportvrijwilligers: €3.233,91)\n\n' +
+      'De vergoeding wordt uitbetaald via overschrijving op rekeningnummer {{IBAN}} t.n.v. {{Rekeninghouder}}.\n' +
+      'Bij overschrijding van deze bedragen worden de vergoedingen als beroepsinkomsten beschouwd en zijn ze onderworpen aan belastingen en sociale bijdragen.',
+  },
+  {
+    id: 'clausule_seizoen_checkin',
+    articleNumber: 'Clausule S4',
+    title: 'Aanwezigheidsregistratie',
+    category: 'clausule',
+    summary: 'Digitale check-in en check-out procedure.',
+    content:
+      'De vrijwilliger registreert zijn/haar aanwezigheid via het digitale platform van de organisatie (QR-code of handmatige registratie).\n' +
+      'Check-in vindt plaats bij aankomst, check-out bij vertrek. De geregistreerde aanwezigheden vormen de basis voor:\n' +
+      '• de berekening van de kostenvergoeding;\n' +
+      '• de activering van het contract na de proefperiode;\n' +
+      '• de rapportering aan de bevoegde overheden.\n\n' +
+      'Bij verhindering verwittigt de vrijwilliger de organisatie zo snel mogelijk, bij voorkeur 24 uur op voorhand.',
+  },
+  {
+    id: 'clausule_seizoen_proef',
+    articleNumber: 'Clausule S5',
+    title: 'Proefperiode (4-keer-regel)',
+    category: 'clausule',
+    summary: 'Gratis proefperiode van 3 keer, activering vanaf de 4de keer.',
+    content:
+      'De eerste drie (3) aanwezigheden van de vrijwilliger gelden als een vrijblijvende proefperiode.\n' +
+      'Tijdens deze proefperiode:\n' +
+      '• leert de vrijwilliger de organisatie en de taken kennen;\n' +
+      '• is er geen verplichting tot verdere samenwerking;\n' +
+      '• worden er geen kostenvergoedingen uitgekeerd.\n\n' +
+      'Vanaf de vierde (4de) aanwezigheid wordt het seizoenscontract als "actief" beschouwd en gelden alle bepalingen van deze overeenkomst, inclusief de kostenvergoedingsregeling.\n\n' +
+      'Opmerking: Tijdens de huidige testfase worden er nog geen kosten in rekening gebracht.',
+  },
+  {
+    id: 'clausule_seizoen_cumul',
+    articleNumber: 'Clausule S6',
+    title: 'Cumulatie en fiscale verplichtingen (seizoen)',
+    category: 'clausule',
+    summary: 'Cumulatieregels voor het volledige seizoen.',
+    content:
+      'De vrijwilliger verklaart op de hoogte te zijn van de volgende verplichtingen:\n\n' +
+      '1. Werkzoekenden (Art. 11): Het vrijwilligerswerk moet vooraf schriftelijk worden aangegeven bij de RVA/ONEM.\n' +
+      '2. Uitkeringsgerechtigden (Art. 12): De vrijwilliger informeert het bevoegde uitkeringsorgaan vóór aanvang.\n' +
+      '3. Sportvrijwilligers: Het verhoogde jaarplafond (€3.233,91) geldt voor activiteiten bij sportverenigingen.\n' +
+      '4. Overschrijding: Bij overschrijding van het jaarplafond worden alle vergoedingen in dat kalenderjaar als belastbaar inkomen beschouwd.\n\n' +
+      'De organisatie houdt een register bij van alle uitbetaalde vergoedingen per seizoen en per kalenderjaar.',
+  },
+  {
+    id: 'clausule_seizoen_gdpr',
+    articleNumber: 'Clausule S7',
+    title: 'Gegevensbescherming seizoenscontract',
+    category: 'clausule',
+    summary: 'Privacyverklaring specifiek voor seizoensregistratie.',
+    content:
+      'De organisatie verwerkt persoonsgegevens (naam, contactgegevens, rijksregisternummer, bankgegevens, aanwezigheidsdata) voor:\n' +
+      '• de administratie van het vrijwilligerswerk gedurende het seizoen;\n' +
+      '• aanwezigheidsregistratie en -rapportering;\n' +
+      '• de berekening en uitbetaling van kostenvergoedingen;\n' +
+      '• het naleven van wettelijke verplichtingen.\n\n' +
+      'Rechtsgrond: uitvoering van deze overeenkomst (art. 6.1.b AVG) en wettelijke verplichting (art. 6.1.c AVG).\n' +
+      'Bewaartermijn: 7 jaar na het einde van het kalenderjaar.\n' +
+      'De vrijwilliger heeft recht op inzage, rectificatie en wissing van zijn/haar gegevens.',
+  },
+  {
+    id: 'clausule_seizoen_identificatie',
+    articleNumber: 'Clausule S8',
+    title: 'Identificatie vrijwilliger (seizoen)',
+    category: 'clausule',
+    summary: 'Persoonsgegevens voor het seizoenscontract.',
+    content:
+      'De vrijwilliger identificeert zich als volgt:\n' +
+      'Naam: {{Naam}}\n' +
+      'Geboortedatum: {{Geboortedatum}}\n' +
+      'Rijksregisternummer: {{Rijksregisternummer}}\n' +
+      'Adres: {{Adres}}\n' +
+      'E-mail: {{E-mail}}\n' +
+      'Telefoon: {{Telefoon}}\n' +
+      'IBAN: {{IBAN}}\n' +
+      'Rekeninghouder: {{Rekeninghouder}}\n\n' +
+      'De vrijwilliger bevestigt dat bovenstaande gegevens correct en actueel zijn.',
+  },
+
+  // ─── ROLSPECIFIEKE CLAUSULES ───────────────────────────
+  {
+    id: 'clausule_rol_steward',
+    articleNumber: 'Clausule R1',
+    title: 'Steward / Veiligheidsmedewerker – Specifieke bepalingen',
+    category: 'clausule',
+    summary: 'Rolspecifieke clausules voor stewards en veiligheidsmedewerkers.',
+    content:
+      'De vrijwilliger wordt ingezet als Steward / Veiligheidsmedewerker en verbindt zich tot:\n' +
+      '• het naleven van het veiligheidsplan en de evacuatieprocedures van de organisatie;\n' +
+      '• het dragen van de verplichte herkenningstekens (hesje, badge, armband);\n' +
+      '• het opvolgen van instructies van de veiligheidscoördinator;\n' +
+      '• het melden van elk incident aan de verantwoordelijke;\n' +
+      '• het bewaken van toegangen, parkings en/of zones zoals aangeduid.\n\n' +
+      'De organisatie voorziet een verplichte veiligheidsbriefing vóór elk evenement.\n' +
+      'De vrijwilliger onthoudt zich van het gebruik van alcohol of verdovende middelen tijdens de inzet.',
+  },
+  {
+    id: 'clausule_rol_bar',
+    articleNumber: 'Clausule R2',
+    title: 'Bar- en Cateringpersoneel – Specifieke bepalingen',
+    category: 'clausule',
+    summary: 'Rolspecifieke clausules voor barpersoneel en catering.',
+    content:
+      'De vrijwilliger wordt ingezet als Bar-/Cateringmedewerker en verbindt zich tot:\n' +
+      '• het naleven van de FAVV-hygiënevoorschriften (Federaal Agentschap voor de Veiligheid van de Voedselketen);\n' +
+      '• het dragen van aangepaste kledij en beschermingsmiddelen (handschoenen, haarnetje indien van toepassing);\n' +
+      '• de correcte behandeling van voedingswaren en dranken;\n' +
+      '• het verantwoord schenken van alcoholische dranken (geen verkoop aan minderjarigen);\n' +
+      '• het melden van elk hygiëne-incident aan de verantwoordelijke.\n\n' +
+      'De organisatie voorziet de nodige materialen en een werkomgeving die voldoet aan de hygiënenormen.',
+  },
+  {
+    id: 'clausule_rol_terrein',
+    articleNumber: 'Clausule R3',
+    title: 'Terreinverzorger / Materiaalbeheerder – Specifieke bepalingen',
+    category: 'clausule',
+    summary: 'Rolspecifieke clausules voor terreinverzorging en materiaalbeheer.',
+    content:
+      'De vrijwilliger wordt ingezet als Terreinverzorger / Materiaalbeheerder en verbindt zich tot:\n' +
+      '• het correct en veilig gebruik van materialen en gereedschappen;\n' +
+      '• het opvolgen van veiligheidsinstructies bij opbouw en afbraak;\n' +
+      '• het dragen van persoonlijke beschermingsmiddelen (veiligheidsschoenen, handschoenen, helmen indien vereist);\n' +
+      '• het melden van defecten of schade aan materialen;\n' +
+      '• het respecteren van de terreinnormen van de sportfederatie.\n\n' +
+      'De organisatie stelt alle benodigde materialen en beschermingsmiddelen ter beschikking.\n' +
+      'Zware fysieke taken worden enkel uitgevoerd na instructie en met adequate begeleiding.',
+  },
+  {
+    id: 'clausule_rol_admin',
+    articleNumber: 'Clausule R4',
+    title: 'Administratief Medewerker / Ticketing – Specifieke bepalingen',
+    category: 'clausule',
+    summary: 'Rolspecifieke clausules voor administratie en ticketing.',
+    content:
+      'De vrijwilliger wordt ingezet als Administratief Medewerker / Ticketing en verbindt zich tot:\n' +
+      '• de correcte verwerking van persoonsgegevens conform de AVG/GDPR;\n' +
+      '• het vertrouwelijk behandelen van financiële transacties en kassagegevens;\n' +
+      '• het nauwkeurig bijhouden van aanwezigheidslijsten en/of ticketverkoop;\n' +
+      '• het correct afhandelen van klachten en vragen van bezoekers;\n' +
+      '• het afsluiten en overdragen van de kassa aan het einde van de shift.\n\n' +
+      'De organisatie voorziet de nodige apparatuur (laptop, scanner, kassa) en een korte opleiding.\n' +
+      'Kasoverschotten of -tekorten worden gemeld aan de verantwoordelijke.',
+  },
+  {
+    id: 'clausule_rol_event',
+    articleNumber: 'Clausule R5',
+    title: 'Event Support / Allround Helper – Specifieke bepalingen',
+    category: 'clausule',
+    summary: 'Rolspecifieke clausules voor event support en allround helpers.',
+    content:
+      'De vrijwilliger wordt ingezet als Event Support / Allround Helper en kan diverse taken uitvoeren:\n' +
+      '• logistieke ondersteuning bij opbouw, afbraak en inrichting;\n' +
+      '• begeleiding van bezoekers, deelnemers of jeugdleden;\n' +
+      '• promotie, onthaal en informatieverstrekking;\n' +
+      '• runners-taken en andere ad-hoc opdrachten.\n\n' +
+      'De exacte taken worden vooraf gecommuniceerd via de briefing. De vrijwilliger meldt zich bij de coördinator voor specifieke instructies.\n' +
+      'De organisatie garandeert dat geen taken worden opgelegd die buiten de competenties of het comfort van de vrijwilliger vallen.',
+  },
 ];
 
 // Helper: get essential articles
@@ -404,3 +600,19 @@ export const essentialArticleIds = ['art3', 'art4', 'art5', 'art6', 'art10'];
 
 // Helper: get articles for smart default template
 export const defaultTemplateArticleIds = ['art3', 'art4', 'art6', 'art10', 'art8'];
+
+// Helper: get season clausule IDs
+export const seasonClausuleIds = [
+  'clausule_seizoen_duur', 'clausule_seizoen_rol', 'clausule_seizoen_vergoeding',
+  'clausule_seizoen_checkin', 'clausule_seizoen_proef', 'clausule_seizoen_cumul',
+  'clausule_seizoen_gdpr', 'clausule_seizoen_identificatie',
+];
+
+// Helper: role-specific clausule map
+export const roleClausuleMap: Record<string, string> = {
+  steward: 'clausule_rol_steward',
+  bar_catering: 'clausule_rol_bar',
+  terrain_material: 'clausule_rol_terrein',
+  admin_ticketing: 'clausule_rol_admin',
+  event_support: 'clausule_rol_event',
+};
