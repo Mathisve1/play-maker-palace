@@ -195,10 +195,10 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Safety Roles ──
   const addSafetyRole = async () => {
     if (!newRoleName.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_roles').insert({
+    const { data, error } = await supabase.from('safety_roles').insert({
       club_id: clubId, name: newRoleName.trim(), color: newRoleColor,
       level: newRoleLevel, sort_order: safetyRoles.length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       setSafetyRoles(prev => [...prev, data]);
