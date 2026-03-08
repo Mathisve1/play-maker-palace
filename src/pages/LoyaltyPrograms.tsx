@@ -326,7 +326,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleGrantReward = async (enrollment: Enrollment) => {
-    const { error } = await (supabase as any).from('loyalty_enrollments').update({ reward_claimed: true, claimed_at: new Date().toISOString() }).eq('id', enrollment.id);
+    const { error } = await supabase.from('loyalty_enrollments').update({ reward_claimed: true, claimed_at: new Date().toISOString() } as any).eq('id', enrollment.id);
     if (error) { toast.error(error.message); }
     else {
       toast.success(dt.rewardGranted);
