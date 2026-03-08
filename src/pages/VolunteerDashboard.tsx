@@ -227,11 +227,11 @@ const VolunteerDashboard = () => {
       if (enrichedTasks.length > 0) {
         const taskIds = enrichedTasks.map(t => t.id);
         const [taskExtrasRes, signupCountRes, likeCountRes, myLikeRes, trainingEventsRes] = await Promise.all([
-          (supabase as any).from('tasks').select('id, event_id, event_group_id').in('id', taskIds),
+          supabase.from('tasks').select('id, event_id, event_group_id').in('id', taskIds),
           supabase.from('task_signups').select('task_id').in('task_id', taskIds),
           supabase.from('task_likes').select('task_id').in('task_id', taskIds),
           supabase.from('task_likes').select('task_id').eq('user_id', uid),
-          (supabase as any).from('events').select('id').eq('event_type', 'training'),
+          supabase.from('events').select('id').eq('event_type', 'training'),
         ]);
 
         const extraMap = new Map((taskExtrasRes.data || []).map((t: any) => [t.id, t]));
