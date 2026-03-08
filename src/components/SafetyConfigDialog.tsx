@@ -125,7 +125,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const deleteIncidentType = async (id: string) => {
-    await (supabase as any).from('safety_incident_types').delete().eq('id', id);
+    await supabase.from('safety_incident_types').delete().eq('id', id);
     setIncidentTypes(prev => prev.filter(t => t.id !== id));
     toast.success(t3('Incident type verwijderd', 'Type d\'incident supprimé', 'Incident type deleted'));
   };
