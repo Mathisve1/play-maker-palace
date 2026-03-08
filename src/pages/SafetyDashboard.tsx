@@ -531,7 +531,7 @@ const SafetyDashboard = () => {
       // Fetch club name
       const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).single();
       // Fetch event date
-      const { data: ev } = await (supabase as any).from('events').select('event_date').eq('id', eventId).single();
+      const { data: ev } = await supabase.from('events').select('event_date').eq('id', eventId).single();
       // Fetch user name
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId!).single();
       // Fetch closing tasks with volunteer names
