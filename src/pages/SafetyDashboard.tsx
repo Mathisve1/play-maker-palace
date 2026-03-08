@@ -535,7 +535,7 @@ const SafetyDashboard = () => {
       // Fetch user name
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId!).single();
       // Fetch closing tasks with volunteer names
-      const { data: cTasks } = await (supabase as any).from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order');
+      const { data: cTasks } = await supabase.from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order');
       const volIds = [...new Set((cTasks || []).map((t: any) => t.assigned_volunteer_id).filter(Boolean))] as string[];
       let volMap: Record<string, string> = {};
       if (volIds.length > 0) {
