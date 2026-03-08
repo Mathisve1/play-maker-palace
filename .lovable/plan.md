@@ -1,79 +1,85 @@
 
+# Volledige Audit – Maart 2026
 
-# Fase 6 -- Code Quality & Architectuur
+## PWA & Safe Area (urgent - jouw klacht over tekst achter statusbar)
 
-## Overzicht
+### P1. Mobile header hoogte telt safe-area-inset-top niet mee
+**Probleem:** `DashboardLayout.tsx` header is `h-14` (56px) met `paddingTop: env(safe-area-inset-top)`. Maar omdat `h-14` de TOTALE hoogte is, wordt de content IN de header samengeperst achter de statusbar (batterij/uur). Hetzelfde geldt voor `Chat.tsx`, `TicketScanner.tsx` en `TicketingDashboard.tsx`.
+**Oplossing:** Verander van vaste `h-14` naar `min-h-14` + `pt-safe-top`, zodat de header GROEIT op iOS/Android PWA. Of gebruik een wrapper-div voor de safe area padding boven de header content.
 
-Vijf deeltaken die de codebase onderhoudbaar en type-safe maken:
-
-1. **Refactor VolunteerDashboard** (1060 regels) -- opsplitsen in sub-componenten
-2. **Refactor MonthlyPlanning** (739 regels) -- opsplitsen in sub-componenten
-3. **Verwijder alle `(supabase as any)` casts** -- 27 bestanden, 712 matches
-4. **Chat integreren in DashboardLayout** -- met rol-afhankelijke sidebar
-5. **Opschonen useClub hook** -- verwijderen (ClubContext dekt alles)
-
----
-
-## 1. Refactor VolunteerDashboard (1060 regels)
-
-Opsplitsen in logische delen:
-
-| Nieuw component | Verantwoordelijkheid | Regels ca. |
-|---|---|---|
-| `hooks/useVolunteerData.ts` | Alle data-fetching (init, enrichment, compliance check) | ~250 |
-| `hooks/useVolunteerHandlers.ts` | Signup, cancel, like, enroll, contract handlers | ~80 |
-| `VolunteerDashboardHome.tsx` | Dashboard tab: stats, upcoming tasks, activity, compliance | ~150 |
-| `VolunteerTaskFeed.tsx` | "All tasks" + "Mine" tabs: search, events, loose tasks | ~200 |
-
-De hoofdpagina `VolunteerDashboard.tsx` wordt een dunne schil (~200 regels) die hooks aanroept en tabs rendert.
-
-## 2. Refactor MonthlyPlanning (739 regels)
-
-| Nieuw component | Verantwoordelijkheid |
-|---|---|
-| `hooks/useMonthlyPlanningData.ts` | Data loading, plan/tasks/enrollments/signups |
-| `hooks/useMonthlyPlanningActions.ts` | CRUD actions (approve, reject, publish, copy, payout) |
-| `monthly-planning/MonthlyTaskDialog.tsx` | Add/edit task dialog (formulier + validatie) |
-| `monthly-planning/MonthlyPlanHeader.tsx` | Maandnavigatie, plan create/publish, demo knoppen |
-
-Hoofdpagina wordt ~200 regels.
-
-## 3. Verwijder `(supabase as any)` casts
-
-Alle tabellen die nu gecast worden bestaan in `types.ts`:
-- `events`, `event_groups`, `sepa_batch_items`, `sepa_batches`
-- `volunteer_tickets`, `loyalty_programs`, `loyalty_enrollments`, `loyalty_program_excluded_tasks`
-- `task_zones`, `hour_confirmations`, `certificate_designs`
-- `monthly_enrollments` (update cast), `monthly_day_signups`
-
-**Aanpak**: In alle 27 bestanden `(supabase as any).from('table')` vervangen door `supabase.from('table')`. Waar `.update()` of `.insert()` met `as any` gecast wordt op het object, dat object correct typen of een expliciete generic meegeven.
-
-Betrokken bestanden (top-level):
-- `VolunteerDashboard.tsx`, `MonthlyPlanning.tsx`, `LoyaltyPrograms.tsx`
-- `AcademyBuilder.tsx`, `CommandCenter.tsx`, `TicketingDashboard.tsx`
-- `ZoneTreeEditor.tsx`, `HourConfirmationDialog.tsx`, `EventsManager.tsx`
-- `SafetyDashboard.tsx`, `SafetyEventHub.tsx`, `ReportingDashboard.tsx`
-- En ~15 andere componenten
-
-## 4. Chat integreren in DashboardLayout
-
-Chat.tsx gebruikt nu een eigen standalone layout (geen sidebar). Plan:
-- Detecteer gebruikersrol (club_owner vs volunteer) via `useClubContext()`
-- Render `DashboardLayout` met de juiste sidebar (ClubOwnerSidebar of VolunteerSidebar)
-- Behoud de interne conversation-list + message-view structuur
-- Verwijder de standalone header en gebruik de DashboardLayout header
-
-## 5. Opschonen useClub hook
-
-`src/hooks/useClub.ts` dupliceert exact wat `ClubContext` doet. Wordt nergens meer direct gebruikt (alle pagina's gebruiken ClubContext via RequireAuth). Verwijder het bestand.
+### P2. Chat pagina mist sidebar-layout
+**Probleem:** Chat gebruikt een eigen header + navigatie ipv `DashboardLayout` of `ClubPageLayout`. Inconsistente ervaring: geen sidebar, geen hamburger menu, terug-knop navigeert naar dashboard maar je verliest sidebar-context.
+**Oplossing:** Chat integreren in `DashboardLayout` met de juiste sidebar per rol.
 
 ---
 
-## Technische details
+## Data & Performance
 
-- Geen database migraties nodig
-- Geen nieuwe edge functions
-- Puur refactoring: geen functionele wijzigingen
-- Alle bestaande functionaliteit blijft identiek
-- Implementatie in volgorde: eerst `as any` casts verwijderen (basis), dan refactors, dan Chat layout
+### P3. VolunteerDashboard init() doet 20+ queries sequentieel
+**Probleem:** De `init()` functie in VolunteerDashboard (1188 regels) laadt taken, signups, payments, SEPA, contracten, tickets, loyalty, certificates, follows – allemaal SEQUENTIEEL. Geen `Promise.all()` waar mogelijk. Laadtijd op mobiel is merkbaar.
+**Oplossing:** Groepeer onafhankelijke queries in `Promise.all()` blokken. Splits init in parallelle fasen.
 
+### P4. CommandCenter herlaadt ALLES bij elke realtime change
+**Probleem:** Lijn 286-289: elke `task_signups`, `monthly_enrollments`, of `monthly_day_signups` change triggert een volledige `loadData()` – dit doet 10+ queries opnieuw. Bij drukke events kan dit elke seconde triggeren.
+**Oplossing:** Debounce met 500ms, of targeted updates per change type.
+
+### P5. TicketingDashboard pollt elke 5 seconden
+**Probleem:** Lijn 323-336: een `setInterval(5000)` pollt de volledige tickets-tabel, ook als de tab inactief is. Verspilt resources.
+**Oplossing:** Gebruik `document.visibilityState` check, of vervang polling door pure realtime subscriptions (die al bestaan op lijn 308-321).
+
+### P6. Volunteer live-event polling elke 3 seconden
+**Probleem:** VolunteerDashboard lijn 439-442: pollt elke 3 seconden voor live events, naast de realtime subscriptions die er al zijn. Overkill.
+**Oplossing:** Verhoog interval naar 15-30 seconden, of verwijder polling en vertrouw op de realtime channels.
+
+---
+
+## UX & Navigatie
+
+### P7. Geen loading skeletons, alleen spinners
+**Probleem:** Alle dashboards tonen een centered spinner bij initial load. Op mobiel lijkt het alsof de app "leeg" is tot alles geladen is. Geen visuele hint over de structuur.
+**Oplossing:** Skeleton placeholders voor KPI cards, takenlijst, sidebar content.
+
+### P8. VolunteerDashboard.tsx is 1188 regels – niet gerefactord
+**Probleem:** Vergelijkbaar met ClubOwnerDashboard vóór refactor. Eén component met 30+ state variabelen, init() van 200 regels, en alle tab-renders inline.
+**Oplossing:** Extract `VolunteerDashboardTab`, `VolunteerPaymentsTab`, `VolunteerContractsTab`, etc.
+
+### P9. MonthlyPlanning.tsx is 971 regels
+**Probleem:** Bevat calendar rendering, task CRUD, enrollment management, day signup management, ticket generation, payout generation – alles in 1 component.
+**Oplossing:** Extract `MonthlyCalendar`, `MonthlyEnrollmentList`, `MonthlyDaySignupManager`.
+
+### P10. Duplicate club-finding logic in 8+ pagina's
+**Probleem:** CommandCenter, TicketingDashboard, TicketScanner, MonthlyPlanning, ClubPageLayout – allemaal dupliceren dezelfde "find club by owner_id OR club_members" logica.
+**Oplossing:** Maak een `useClub()` hook die dit centraal afhandelt.
+
+---
+
+## Veiligheid & Code Quality
+
+### P11. Veel `(supabase as any)` casts
+**Probleem:** 15+ plekken waar Supabase queries gecast worden naar `any`, wat type safety volledig uitschakelt. Bugs worden niet gevangen door TypeScript.
+**Oplossing:** Database types updaten en proper typeren, of expliciete type assertions gebruiken.
+
+### P12. Auth guard is niet centraal
+**Probleem:** Elke pagina doet een eigen `getSession()` check met redirect. Als er een race condition is of de session expire, krijg je inconsistent gedrag.
+**Oplossing:** Een `<RequireAuth>` wrapper component die sessie centraal controleert.
+
+---
+
+## Aanbevolen prioriteit
+
+| # | Upgrade | Impact | Moeite | Gebied |
+|---|---------|--------|--------|--------|
+| P1 | Safe area header fix (PWA statusbar) | **Kritiek** | Klein | PWA |
+| P3 | Parallel queries VolunteerDashboard | Hoog | Medium | Performance |
+| P4 | CommandCenter debounce | Hoog | Klein | Performance |
+| P5 | Ticketing polling optimalisatie | Medium | Klein | Performance |
+| P6 | Volunteer live-event polling reduceren | Medium | Klein | Performance |
+| P7 | Loading skeletons | Medium | Medium | UX |
+| P10 | useClub() hook extracten | Medium | Medium | Code quality |
+| P8 | VolunteerDashboard refactor | Medium | Groot | Code quality |
+| P9 | MonthlyPlanning refactor | Medium | Groot | Code quality |
+| P2 | Chat sidebar-integratie | Laag | Medium | UX |
+| P11 | Supabase type safety | Laag | Medium | Code quality |
+| P12 | Centrale auth guard | Laag | Medium | Security |
+
+Geef aan welke je wilt aanpakken.
