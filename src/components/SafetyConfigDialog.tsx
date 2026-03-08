@@ -107,7 +107,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const deleteZone = async (id: string) => {
-    await (supabase as any).from('safety_zones').delete().eq('id', id);
+    await supabase.from('safety_zones').delete().eq('id', id);
     setZones(prev => prev.filter(z => z.id !== id));
     toast.success(t3('Zone verwijderd', 'Zone supprimée', 'Zone deleted'));
   };
