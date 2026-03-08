@@ -187,7 +187,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const deleteLocationOption = async (id: string) => {
-    await (supabase as any).from('safety_location_options').delete().eq('id', id);
+    await supabase.from('safety_location_options').delete().eq('id', id);
     setLocationOptions(prev => prev.filter(o => o.id !== id));
     toast.success(t3('Optie verwijderd', 'Option supprimée', 'Option deleted'));
   };
