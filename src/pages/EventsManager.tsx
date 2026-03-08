@@ -264,7 +264,7 @@ const EventsManager = () => {
     else if (data) {
       if (newTask.add_to_monthly_plan && selectedMonthlyPlanId) {
         const compType = newTask.compensation_type === 'none' ? 'fixed' : newTask.compensation_type;
-        await (supabase as any).from('monthly_plan_tasks').insert({
+        await supabase.from('monthly_plan_tasks').insert({
           plan_id: selectedMonthlyPlanId,
           title: newTask.title.trim(),
           description: newTask.description.trim() || null,
