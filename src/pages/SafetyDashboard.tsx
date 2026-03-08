@@ -741,7 +741,7 @@ const SafetyDashboard = () => {
   const [hasClosingTasks, setHasClosingTasks] = useState(false);
   useEffect(() => {
     if (!eventClosed || !userId) return;
-    (supabase as any).from('closing_tasks').select('id').eq('event_id', eventId).eq('assigned_volunteer_id', userId).limit(1).then(({ data }: any) => {
+    supabase.from('closing_tasks').select('id').eq('event_id', eventId).eq('assigned_volunteer_id', userId).limit(1).then(({ data }) => {
       setHasClosingTasks((data?.length || 0) > 0);
     });
   }, [eventClosed, userId, eventId]);
