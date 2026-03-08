@@ -353,7 +353,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleIncludeTask = async (programId: string, taskId: string) => {
-    const { error } = await (supabase as any).from('loyalty_program_excluded_tasks').delete().eq('program_id', programId).eq('task_id', taskId);
+    const { error } = await supabase.from('loyalty_program_excluded_tasks').delete().eq('program_id', programId).eq('task_id', taskId);
     if (error) { toast.error(error.message); return; }
     setExcludedTasks(prev => {
       const updated = { ...prev };
