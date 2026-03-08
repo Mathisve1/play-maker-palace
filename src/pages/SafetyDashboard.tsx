@@ -432,12 +432,12 @@ const SafetyDashboard = () => {
     const myZoneArray = Array.from(myZoneIds);
     const autoZoneId = myZoneArray.length === 1 ? myZoneArray[0] : (myZoneArray.length > 0 ? myZoneArray[0] : null);
 
-    const { data: inc, error } = await (supabase as any).from('safety_incidents').insert({
+    const { data: inc, error } = await supabase.from('safety_incidents').insert({
       event_id: eventId, club_id: clubId, incident_type_id: type.id,
       reporter_id: userId, priority: type.default_priority, status: 'nieuw',
       lat, lng,
       zone_id: autoZoneId,
-    }).select('id').single();
+    } as any).select('id').single();
 
     if (error) { toast.error(error.message); setReporting(false); return; }
 
