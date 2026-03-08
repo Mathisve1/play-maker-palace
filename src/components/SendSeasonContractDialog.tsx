@@ -120,7 +120,7 @@ const SendSeasonContractDialog = ({ open, onClose, clubId, seasonId, language, v
         );
         const fnData = await response.json();
 
-        if (fnError) throw new Error(fnError.message);
+        if (!response.ok) throw new Error(fnData?.error || `HTTP ${response.status}`);
         if (fnData?.error) throw new Error(fnData.error);
 
         sent++;
