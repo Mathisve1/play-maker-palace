@@ -96,7 +96,7 @@ const VolunteerManagement = () => {
       supabase.from('season_contracts').select('id, volunteer_id, status, template_id').eq('club_id', clubId),
       supabase.from('season_contract_templates').select('id, name, category').or(`club_id.eq.${clubId},is_system.eq.true`),
       season
-        ? supabase.from('volunteer_check_ins').select('volunteer_id').eq('club_id', clubId).eq('season_id', season.id)
+        ? supabase.from('season_checkins').select('volunteer_id, season_contract_id').eq('club_id', clubId)
         : Promise.resolve({ data: [] as any[] }),
       supabase.from('club_members').select('user_id').eq('club_id', clubId),
     ]);
