@@ -163,7 +163,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const deleteLocationLevel = async (id: string) => {
-    await (supabase as any).from('safety_location_levels').delete().eq('id', id);
+    await supabase.from('safety_location_levels').delete().eq('id', id);
     setLocationLevels(prev => prev.filter(l => l.id !== id));
     setLocationOptions(prev => prev.filter(o => o.level_id !== id));
     if (selectedLevelId === id) setSelectedLevelId(locationLevels.find(l => l.id !== id)?.id || null);
