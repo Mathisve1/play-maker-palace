@@ -322,10 +322,10 @@ const EventsManager = () => {
     setDuplicatingEvent(eventId);
     const event = events.find(e => e.id === eventId);
     if (!event || !clubId) return;
-    const { data: newEv, error } = await (supabase as any).from('events').insert({
+    const { data: newEv, error } = await supabase.from('events').insert({
       club_id: clubId, title: `${event.title} (kopie)`, description: event.description,
       event_date: event.event_date, location: event.location,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error || !newEv) { toast.error(error?.message || 'Failed'); setDuplicatingEvent(null); return; }
 
     const groups = eventGroups.filter(g => g.event_id === eventId);
