@@ -725,7 +725,7 @@ const ClubOwnerDashboard = () => {
     if (!newGroupName.trim()) return;
     const existingGroups = eventGroups.filter(g => g.event_id === eventId);
     const color = GROUP_COLORS[existingGroups.length % GROUP_COLORS.length];
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('event_groups')
       .insert({ event_id: eventId, name: newGroupName.trim(), color, sort_order: existingGroups.length })
       .select('*')
