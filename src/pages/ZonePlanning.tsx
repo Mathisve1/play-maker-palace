@@ -102,9 +102,9 @@ const ZonePlanning = () => {
     setUserId(contextUserId);
 
     const [taskRes, zoneRes, signupRes] = await Promise.all([
-      (supabase as any).from('tasks').select('id, title, task_date, location, event_id').eq('id', taskId).maybeSingle(),
-      (supabase as any).from('task_zones').select('*').eq('task_id', taskId).order('sort_order'),
-      (supabase as any).from('task_signups').select('volunteer_id').eq('task_id', taskId).eq('status', 'assigned'),
+      supabase.from('tasks').select('id, title, task_date, location, event_id').eq('id', taskId).maybeSingle(),
+      supabase.from('task_zones').select('*').eq('task_id', taskId).order('sort_order'),
+      supabase.from('task_signups').select('volunteer_id').eq('task_id', taskId).eq('status', 'assigned'),
     ]);
 
     const taskData = taskRes.data;
