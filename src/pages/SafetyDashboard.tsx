@@ -276,10 +276,10 @@ const SafetyDashboard = () => {
             setMyRole(roleData);
             // If can_view_team, fetch team members (lower level, same event) and their incidents
             if (roleData.can_view_team) {
-              const { data: allVsr } = await (supabase as any).from('volunteer_safety_roles')
+              const { data: allVsr } = await supabase.from('volunteer_safety_roles')
                 .select('volunteer_id, safety_role_id').eq('event_id', eventId);
               if (allVsr) {
-                const { data: allRoles } = await (supabase as any).from('safety_roles')
+                const { data: allRoles } = await supabase.from('safety_roles')
                   .select('id, level, name, color').eq('club_id', ev.club_id);
                 const roleMap = new Map((allRoles || []).map((r: any) => [r.id, r as { id: string; level: number; name: string; color: string }]));
                 const teamVols = allVsr.filter((v: any) => {
