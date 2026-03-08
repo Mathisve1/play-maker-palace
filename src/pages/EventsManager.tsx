@@ -371,8 +371,8 @@ const EventsManager = () => {
   };
 
   const handleDeleteGroup = async (groupId: string) => {
-    await (supabase as any).from('tasks').delete().eq('event_group_id', groupId);
-    await (supabase as any).from('event_groups').delete().eq('id', groupId);
+    await supabase.from('tasks').delete().eq('event_group_id', groupId);
+    await supabase.from('event_groups').delete().eq('id', groupId);
     setEventGroups(prev => prev.filter(g => g.id !== groupId));
     setTasks(prev => prev.filter(t => t.event_group_id !== groupId));
     toast.success(t3('Groep verwijderd!', 'Groupe supprimé!', 'Group deleted!'));
