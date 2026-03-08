@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PartnerSidebar from '@/components/PartnerSidebar';
+import PartnerDashboardHome from '@/components/partner/PartnerDashboardHome';
+import PartnerAttendanceTab from '@/components/partner/PartnerAttendanceTab';
 import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
 
@@ -62,7 +64,7 @@ const PartnerDashboard = () => {
   const [assignMembers, setAssignMembers] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
   const nl = language === 'nl';
-  const [activeTab, setActiveTab] = useState('tasks');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
 
@@ -390,6 +392,19 @@ const PartnerDashboard = () => {
               ))}
             </div>
           </div>
+        )}
+
+        {activeTab === 'dashboard' && (
+          <PartnerDashboardHome tasks={clubTasks} memberCount={members.length} />
+        )}
+
+        {activeTab === 'attendance' && partner && (
+          <PartnerAttendanceTab
+            partnerId={partner.id}
+            tasks={clubTasks}
+            members={members}
+            clubId={selectedClubId}
+          />
         )}
 
         {activeTab === 'tasks' && (
