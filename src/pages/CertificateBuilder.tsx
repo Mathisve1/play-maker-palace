@@ -108,7 +108,7 @@ const CertificateBuilder = () => {
   };
 
   const loadDesigns = async (cid: string) => {
-    const { data } = await (supabase as any).from('certificate_designs').select('*').eq('club_id', cid).order('created_at', { ascending: false });
+    const { data } = await supabase.from('certificate_designs').select('*').eq('club_id', cid).order('created_at', { ascending: false });
     setDesigns((data || []) as CertificateDesign[]);
   };
 
