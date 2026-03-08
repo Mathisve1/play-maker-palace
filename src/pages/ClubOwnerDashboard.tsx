@@ -848,9 +848,9 @@ const ClubOwnerDashboard = () => {
 
   if (loading) {
     return (
-      <DashboardLayout sidebar={<ClubOwnerSidebar activeTab="dashboard" onTabChange={() => {}} />}>
+      <div className="min-h-screen bg-background">
         <DashboardSkeleton />
-      </DashboardLayout>
+      </div>
     );
   }
 
