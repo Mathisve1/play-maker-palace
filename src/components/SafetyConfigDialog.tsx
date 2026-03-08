@@ -208,7 +208,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const deleteSafetyRole = async (id: string) => {
-    await (supabase as any).from('safety_roles').delete().eq('id', id);
+    await supabase.from('safety_roles').delete().eq('id', id);
     setSafetyRoles(prev => prev.filter(r => r.id !== id));
     toast.success(t3('Rol verwijderd', 'Rôle supprimé', 'Role deleted'));
   };
