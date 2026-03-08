@@ -69,7 +69,7 @@ const ZoneTreeEditor = ({ taskId, language, zoneSignupMode, zoneVisibleDepth, on
   };
 
   const handleDelete = async (zoneId: string) => {
-    const { error } = await (supabase as any).from('task_zones').delete().eq('id', zoneId);
+    const { error } = await supabase.from('task_zones').delete().eq('id', zoneId);
     if (error) toast.error(error.message);
     else {
       const removeIds = getDescendantIds(zoneId);
