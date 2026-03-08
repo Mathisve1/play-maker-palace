@@ -267,7 +267,7 @@ const VolunteerDashboard = () => {
         const allEventIds = allEventsData.map((e: any) => e.id);
         const [clubsRes, groupsRes] = await Promise.all([
           supabase.from('clubs').select('id, name').in('id', clubIds),
-          (supabase as any).from('event_groups').select('*').in('event_id', allEventIds).order('sort_order', { ascending: true }),
+          supabase.from('event_groups').select('*').in('event_id', allEventIds).order('sort_order', { ascending: true }),
         ]);
         const clubMap = new Map(clubsRes.data?.map(c => [c.id, c.name]) || []);
         setEvents(allEventsData.map((e: any) => ({ ...e, club_name: clubMap.get(e.club_id) || '' })));
