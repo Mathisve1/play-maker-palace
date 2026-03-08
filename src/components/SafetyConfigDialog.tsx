@@ -150,9 +150,9 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   // ── Location Levels ──
   const addLocationLevel = async () => {
     if (!newLevelName.trim()) return;
-    const { data, error } = await (supabase as any).from('safety_location_levels').insert({
+    const { data, error } = await supabase.from('safety_location_levels').insert({
       club_id: clubId, name: newLevelName.trim(), sort_order: locationLevels.length,
-    }).select('*').maybeSingle();
+    } as any).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       setLocationLevels(prev => [...prev, data]);
