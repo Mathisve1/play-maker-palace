@@ -309,7 +309,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('generate-xml error:', err);
+      return new Response(JSON.stringify({ error: 'XML generatie mislukt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
   }
 
@@ -379,7 +380,8 @@ Deno.serve(async (req) => {
       let template;
       try { template = JSON.parse(templateText); } catch { template = null; }
       if (!template?.id) {
-        return new Response(JSON.stringify({ error: 'Failed to create template', details: templateText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.error('DocuSeal template creation failed:', templateText);
+        return new Response(JSON.stringify({ error: 'Ondertekeningssjabloon kon niet worden aangemaakt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Create submission
@@ -409,7 +411,8 @@ Deno.serve(async (req) => {
       const submitter = Array.isArray(submission) ? submission[0] : submission;
       
       if (!submitter?.id) {
-        return new Response(JSON.stringify({ error: 'Failed to create submission', details: submissionText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.error('DocuSeal submission creation failed:', submissionText);
+        return new Response(JSON.stringify({ error: 'Ondertekeningsverzoek kon niet worden aangemaakt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Update batch with submission info
@@ -431,7 +434,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('create-signing error:', err);
+      return new Response(JSON.stringify({ error: 'Ondertekening kon niet worden gestart.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
   }
 
@@ -480,7 +484,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('mark-downloaded error:', err);
+      return new Response(JSON.stringify({ error: 'Actie mislukt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
   }
 
@@ -539,7 +544,8 @@ Deno.serve(async (req) => {
       let template;
       try { template = JSON.parse(templateText); } catch { template = null; }
       if (!template?.id) {
-        return new Response(JSON.stringify({ error: 'Failed to create template', details: templateText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.error('DocuSeal rollback template failed:', templateText);
+        return new Response(JSON.stringify({ error: 'Annuleringssjabloon kon niet worden aangemaakt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Create submission
@@ -568,7 +574,8 @@ Deno.serve(async (req) => {
       const submitter = Array.isArray(submission) ? submission[0] : submission;
 
       if (!submitter?.id) {
-        return new Response(JSON.stringify({ error: 'Failed to create submission', details: submissionText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.error('DocuSeal rollback submission failed:', submissionText);
+        return new Response(JSON.stringify({ error: 'Annuleringsverzoek kon niet worden aangemaakt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       return new Response(JSON.stringify({
@@ -578,7 +585,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('create-rollback-signing error:', err);
+      return new Response(JSON.stringify({ error: 'Annulering kon niet worden gestart.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
   }
 
@@ -616,7 +624,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('rollback error:', err);
+      return new Response(JSON.stringify({ error: 'Terugdraaien mislukt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
   }
 
@@ -665,7 +674,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('flag-item error:', err);
+      return new Response(JSON.stringify({ error: 'Markering mislukt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
   }
 

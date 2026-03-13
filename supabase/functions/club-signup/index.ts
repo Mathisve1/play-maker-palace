@@ -6,6 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 255;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -14,6 +18,7 @@ serve(async (req) => {
   try {
     const { email, password, full_name, club_name, sport, location, logo_url } = await req.json();
 
+    // Input validation
     if (!email || !password || !club_name) {
       return new Response(JSON.stringify({ error: "Email, password en clubnaam zijn verplicht." }), {
         status: 400,
@@ -21,21 +26,49 @@ serve(async (req) => {
       });
     }
 
+    if (!validateEmail(email)) {
+      return new Response(JSON.stringify({ error: "Ongeldig e-mailadres." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (password.length < 8 || password.length > 128) {
+      return new Response(JSON.stringify({ error: "Wachtwoord moet tussen 8 en 128 tekens zijn." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (club_name.length > 100) {
+      return new Response(JSON.stringify({ error: "Clubnaam mag maximaal 100 tekens zijn." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const safeName = (full_name || "").substring(0, 100);
+    const safeSport = (sport || "").substring(0, 50) || null;
+    const safeLocation = (location || "").substring(0, 200) || null;
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Create user via admin API
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name: full_name || "" },
+      user_metadata: { full_name: safeName },
     });
 
     if (authError) {
-      return new Response(JSON.stringify({ error: authError.message }), {
+      // Don't expose internal auth error details
+      const userMessage = authError.message?.includes("already been registered")
+        ? "Dit e-mailadres is al geregistreerd."
+        : "Registratie mislukt. Controleer je gegevens.";
+      return new Response(JSON.stringify({ error: userMessage }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -43,7 +76,6 @@ serve(async (req) => {
 
     const userId = authData.user.id;
 
-    // Update role from volunteer to club_owner
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .update({ role: "club_owner" })
@@ -53,14 +85,13 @@ serve(async (req) => {
       console.error("Role update error:", roleError);
     }
 
-    // Create the club with extra fields
     const { error: clubError } = await supabaseAdmin
       .from("clubs")
       .insert({
-        name: club_name,
+        name: club_name.substring(0, 100),
         owner_id: userId,
-        sport: sport || null,
-        location: location || null,
+        sport: safeSport,
+        location: safeLocation,
         logo_url: logo_url || null,
       });
 
@@ -72,7 +103,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error("club-signup error:", err);
+    return new Response(JSON.stringify({ error: "Er is een fout opgetreden. Probeer het opnieuw." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 255;
+}
+
 async function sendAcceptNotification(supabaseAdmin: any, invite: any, acceptorName: string) {
   try {
     const { data: club } = await supabaseAdmin
@@ -76,6 +80,12 @@ serve(async (req: Request) => {
         });
       }
 
+      if (!validateEmail(email)) {
+        return new Response(JSON.stringify({ error: "Ongeldig e-mailadres." }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const resendKey = Deno.env.get("RESEND_API_KEY");
       if (!resendKey) {
         return new Response(JSON.stringify({ error: "Email service niet geconfigureerd." }), {
@@ -133,8 +143,9 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), {
+    } catch (err) {
+      console.error("club-invite send-email error:", err);
+      return new Response(JSON.stringify({ error: "Er is een fout opgetreden." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -168,7 +179,6 @@ serve(async (req: Request) => {
         .eq("id", invite.club_id)
         .maybeSingle();
 
-      // Detect partner invite via URL param
       const urlPartnerId = url.searchParams.get("partner_id");
       let partnerName: string | null = null;
       if (urlPartnerId) {
@@ -190,8 +200,9 @@ serve(async (req: Request) => {
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), {
+    } catch (err) {
+      console.error("club-invite info error:", err);
+      return new Response(JSON.stringify({ error: "Er is een fout opgetreden." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -204,6 +215,18 @@ serve(async (req: Request) => {
       const { token, email, password, full_name, partner_id } = body;
       if (!token || !email || !password) {
         return new Response(JSON.stringify({ error: "Alle velden zijn verplicht." }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!validateEmail(email)) {
+        return new Response(JSON.stringify({ error: "Ongeldig e-mailadres." }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (password.length < 8 || password.length > 128) {
+        return new Response(JSON.stringify({ error: "Wachtwoord moet tussen 8 en 128 tekens zijn." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -222,29 +245,29 @@ serve(async (req: Request) => {
         });
       }
 
-      // Try to create user, if already exists, try to sign in instead
       let userId: string;
+      const safeName = (full_name || "").substring(0, 100);
       const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        user_metadata: { full_name: full_name || "" },
+        user_metadata: { full_name: safeName },
       });
 
       if (authErr) {
-        // If user already exists, try to find them and use their id
         if (authErr.message?.includes("already been registered")) {
           const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
           const existingUser = existingUsers?.users?.find((u: any) => u.email === email);
           if (existingUser) {
             userId = existingUser.id;
           } else {
-            return new Response(JSON.stringify({ error: "Account bestaat al maar kon niet gevonden worden. Probeer in te loggen." }), {
+            return new Response(JSON.stringify({ error: "Account bestaat al. Probeer in te loggen." }), {
               status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
         } else {
-          return new Response(JSON.stringify({ error: authErr.message }), {
+          console.error("Auth error during invite signup:", authErr);
+          return new Response(JSON.stringify({ error: "Registratie mislukt. Controleer je gegevens." }), {
             status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
@@ -254,14 +277,12 @@ serve(async (req: Request) => {
       const isPartnerInvite = !!partner_id;
 
       if (isPartnerInvite) {
-        // Partner invite: add as partner_admin only
         await supabaseAdmin.from("partner_admins").upsert({
           partner_id: partner_id,
           user_id: userId,
           invited_by: invite.invited_by,
         }, { onConflict: "partner_id,user_id" });
       } else {
-        // Club invite: add as club member
         await supabaseAdmin
           .from("user_roles")
           .update({ role: "club_owner" })
@@ -281,13 +302,14 @@ serve(async (req: Request) => {
         .update({ status: "accepted" })
         .eq("id", invite.id);
 
-      await sendAcceptNotification(supabaseAdmin, invite, full_name || email);
+      await sendAcceptNotification(supabaseAdmin, invite, safeName || email);
 
       return new Response(JSON.stringify({ success: true, club_id: invite.club_id, is_partner: isPartnerInvite }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), {
+    } catch (err) {
+      console.error("club-invite signup-and-accept error:", err);
+      return new Response(JSON.stringify({ error: "Er is een fout opgetreden." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -366,8 +388,9 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: true, club_id: invite.club_id, is_partner: isPartnerInvite }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), {
+    } catch (err) {
+      console.error("club-invite accept error:", err);
+      return new Response(JSON.stringify({ error: "Er is een fout opgetreden." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
