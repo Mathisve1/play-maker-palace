@@ -32,7 +32,7 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
   if (permission !== 'granted') {
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false } as any)
+      .update({ push_notifications_enabled: false })
       .eq('id', user.id);
     return { enabled: false, reason: 'denied' };
   }
@@ -87,7 +87,7 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
     // Update profile only after successful subscription persist
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: true, push_prompt_seen: true } as any)
+      .update({ push_notifications_enabled: true, push_prompt_seen: true })
       .eq('id', user.id);
 
     console.log('[Push] ✅ Subscribed successfully');
@@ -96,7 +96,7 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
     console.error('[Push] Subscribe error:', err);
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false } as any)
+      .update({ push_notifications_enabled: false })
       .eq('id', user.id);
     return { enabled: false, reason: 'error' };
   }
