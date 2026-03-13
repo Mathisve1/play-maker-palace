@@ -912,6 +912,7 @@ const EventsManager = () => {
       />
     )}
     </>
+  );
 
   function renderLooseTaskCard(task: Task, i: number) {
     const isOnHold = task.status === 'on_hold';
