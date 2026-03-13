@@ -36,6 +36,10 @@ import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import VolunteerBadges from '@/components/VolunteerBadges';
 import EventGroupChat from '@/components/EventGroupChat';
 import CalendarSyncSection from '@/components/CalendarSyncSection';
+import VolunteerFinancialDashboard from '@/components/VolunteerFinancialDashboard';
+import ReferralSection from '@/components/ReferralSection';
+import SkillsPassport from '@/components/SkillsPassport';
+import MicroLearningsSection from '@/components/MicroLearningsSection';
 
 interface Task {
   id: string;
