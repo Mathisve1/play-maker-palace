@@ -145,7 +145,7 @@ const MonthlyPlanning = () => {
   }, [clubId, viewYear, viewMonth]);
 
   const approveEnrollment = async (enrollmentId: string) => {
-    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', enrollmentId);
+    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'approved' }).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
     const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'approved' } : e));
