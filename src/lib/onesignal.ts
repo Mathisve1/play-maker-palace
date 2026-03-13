@@ -180,7 +180,7 @@ async function linkPlayerIdToProfile(playerId: string) {
 
     const { error } = await supabase
       .from('profiles')
-      .update({ onesignal_player_id: playerId, push_notifications_enabled: true } as any)
+      .update({ onesignal_player_id: playerId, push_notifications_enabled: true })
       .eq('id', user.id);
 
     if (error) {
