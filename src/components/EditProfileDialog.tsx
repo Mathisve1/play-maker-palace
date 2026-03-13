@@ -23,7 +23,6 @@ interface ProfileData {
   bank_consent_given: boolean;
   bank_consent_date: string | null;
   bank_consent_text: string | null;
-  stripe_account_id?: string | null;
 }
 
 interface EditProfileDialogProps {
