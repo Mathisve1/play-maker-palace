@@ -31,6 +31,8 @@ import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab'
 import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
 import OnboardingWizard from '@/components/OnboardingWizard';
+import VolunteerSeasonOverview from '@/components/VolunteerSeasonOverview';
+import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 
 interface Task {
   id: string;
@@ -874,6 +876,20 @@ const VolunteerDashboard = () => {
 
           {/* Compliance badge */}
           {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
+
+          {/* Season Overview */}
+          {currentUserId && <VolunteerSeasonOverview userId={currentUserId} language={language} />}
+
+          {/* Task Preferences & Recommendations */}
+          {currentUserId && (
+            <VolunteerTaskPreferences
+              userId={currentUserId}
+              language={language}
+              tasks={tasks}
+              signedUpTaskIds={new Set(signups.map(s => s.task_id))}
+              onNavigateToTask={(taskId) => navigate(`/task/${taskId}`)}
+            />
+          )}
         </div>
       )}
 

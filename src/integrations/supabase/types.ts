@@ -2221,6 +2221,7 @@ export type Database = {
           language: string
           onesignal_player_id: string | null
           phone: string | null
+          preferences: Json | null
           push_notifications_enabled: boolean
           push_prompt_seen: boolean
           stripe_account_id: string | null
@@ -2244,6 +2245,7 @@ export type Database = {
           language?: string
           onesignal_player_id?: string | null
           phone?: string | null
+          preferences?: Json | null
           push_notifications_enabled?: boolean
           push_prompt_seen?: boolean
           stripe_account_id?: string | null
@@ -2267,6 +2269,7 @@ export type Database = {
           language?: string
           onesignal_player_id?: string | null
           phone?: string | null
+          preferences?: Json | null
           push_notifications_enabled?: boolean
           push_prompt_seen?: boolean
           stripe_account_id?: string | null
