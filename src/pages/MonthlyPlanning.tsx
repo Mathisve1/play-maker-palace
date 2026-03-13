@@ -229,7 +229,7 @@ const MonthlyPlanning = () => {
 
   const escalateDispute = async (signup: DaySignupClub) => {
     const now = new Date().toISOString();
-    await supabase.from('monthly_day_signups').update({ dispute_status: 'escalated', dispute_escalated_at: now } as any).eq('id', signup.id);
+    await supabase.from('monthly_day_signups').update({ dispute_status: 'escalated', dispute_escalated_at: now }).eq('id', signup.id);
     setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, dispute_status: 'escalated', dispute_escalated_at: now } : s));
     toast.success(t3('Geschil geëscaleerd. Auto-resolutie in 48u.', 'Litige escaladé. Résolution auto dans 48h.', 'Dispute escalated. Auto-resolve in 48h.'));
     sendPush({ userId: signup.volunteer_id, title: '⚠️ Geschil geëscaleerd', message: 'Het geschil over je uren is geëscaleerd. Na 48u wordt het gemiddelde toegepast.', url: '/dashboard', type: 'dispute_escalated' });
