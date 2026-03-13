@@ -802,6 +802,24 @@ const TaskDetail = () => {
             </motion.section>
           )}
 
+          {/* Task notes & photos */}
+          {currentUserId && (
+            <TaskNotesSection taskId={id!} userId={currentUserId} language={language} isAssigned={isSignedUp} />
+          )}
+
+          {/* Calendar download */}
+          {isSignedUp && task.task_date && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+              <button
+                onClick={() => downloadTaskIcs(task)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
+              >
+                <Calendar className="w-4 h-4" />
+                {language === 'nl' ? 'Toevoegen aan kalender' : language === 'fr' ? 'Ajouter au calendrier' : 'Add to calendar'}
+              </button>
+            </motion.div>
+          )}
+
           {/* E-signature status */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <SignatureStatus taskId={id!} language={language} />

@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.club-data-api]
 verify_jwt = false
+
+[functions.calendar-feed]
+verify_jwt = false
