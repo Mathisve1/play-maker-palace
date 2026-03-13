@@ -1,85 +1,82 @@
 
-# Volledige Audit – Maart 2026
 
-## PWA & Safe Area (urgent - jouw klacht over tekst achter statusbar)
+## Audit: Productie-gereedheid voor 1000+ gebruikers
 
-### P1. Mobile header hoogte telt safe-area-inset-top niet mee
-**Probleem:** `DashboardLayout.tsx` header is `h-14` (56px) met `paddingTop: env(safe-area-inset-top)`. Maar omdat `h-14` de TOTALE hoogte is, wordt de content IN de header samengeperst achter de statusbar (batterij/uur). Hetzelfde geldt voor `Chat.tsx`, `TicketScanner.tsx` en `TicketingDashboard.tsx`.
-**Oplossing:** Verander van vaste `h-14` naar `min-h-14` + `pt-safe-top`, zodat de header GROEIT op iOS/Android PWA. Of gebruik een wrapper-div voor de safe area padding boven de header content.
-
-### P2. Chat pagina mist sidebar-layout
-**Probleem:** Chat gebruikt een eigen header + navigatie ipv `DashboardLayout` of `ClubPageLayout`. Inconsistente ervaring: geen sidebar, geen hamburger menu, terug-knop navigeert naar dashboard maar je verliest sidebar-context.
-**Oplossing:** Chat integreren in `DashboardLayout` met de juiste sidebar per rol.
+Na een volledige security scan, linter check en codebase analyse zijn er **3 categorieën** issues gevonden: beveiligingslekken (kritiek), data-isolatie (hoog), en code-kwaliteit (medium).
 
 ---
 
-## Data & Performance
+### KRITIEK — Moet gefixt voor launch
 
-### P3. VolunteerDashboard init() doet 20+ queries sequentieel
-**Probleem:** De `init()` functie in VolunteerDashboard (1188 regels) laadt taken, signups, payments, SEPA, contracten, tickets, loyalty, certificates, follows – allemaal SEQUENTIEEL. Geen `Promise.all()` waar mogelijk. Laadtijd op mobiel is merkbaar.
-**Oplossing:** Groepeer onafhankelijke queries in `Promise.all()` blokken. Splits init in parallelle fasen.
+**K1. Cross-club data-lekkage via RLS policies**
+Meerdere tabellen staan toe dat elke ingelogde gebruiker data van ALLE clubs kan lezen:
+- `safety_incidents` — incidenten + GPS-coördinaten + foto's van alle clubs zichtbaar
+- `content_translations` — elke user kan vertalingen van andere clubs overschrijven
+- `briefing_route_waypoints` — elke user kan waypoints van andere clubs wijzigen/verwijderen
+- `monthly_plans` / `monthly_plan_tasks` — compensatietarieven van alle clubs zichtbaar
 
-### P4. CommandCenter herlaadt ALLES bij elke realtime change
-**Probleem:** Lijn 286-289: elke `task_signups`, `monthly_enrollments`, of `monthly_day_signups` change triggert een volledige `loadData()` – dit doet 10+ queries opnieuw. Bij drukke events kan dit elke seconde triggeren.
-**Oplossing:** Debounce met 500ms, of targeted updates per change type.
+**Fix:** RLS policies herschrijven met `has_club_role()` scoping per tabel.
 
-### P5. TicketingDashboard pollt elke 5 seconden
-**Probleem:** Lijn 323-336: een `setInterval(5000)` pollt de volledige tickets-tabel, ook als de tab inactief is. Verspilt resources.
-**Oplossing:** Gebruik `document.visibilityState` check, of vervang polling door pure realtime subscriptions (die al bestaan op lijn 308-321).
+**K2. Publieke data-exposure zonder authenticatie**
+Deze tabellen zijn leesbaar voor niet-ingelogde gebruikers:
+- `volunteer_certificates` — PDF-URLs + scores + verificatiecodes
+- `quiz_questions` — **correcte antwoorden** zichtbaar → certificaten waardeloos
+- `volunteer_skills`, `volunteer_badges`, `task_likes`, `certificate_designs` (handtekening-images)
 
-### P6. Volunteer live-event polling elke 3 seconden
-**Probleem:** VolunteerDashboard lijn 439-442: pollt elke 3 seconden voor live events, naast de realtime subscriptions die er al zijn. Overkill.
-**Oplossing:** Verhoog interval naar 15-30 seconden, of verwijder polling en vertrouw op de realtime channels.
+**Fix:** `USING: true` policies vervangen door `auth.uid() IS NOT NULL`, quiz antwoorden server-side evalueren.
 
----
+**K3. Storage bucket `contract-templates` te open**
+Elke ingelogde gebruiker kan contracttemplates van alle clubs uploaden, lezen én verwijderen.
 
-## UX & Navigatie
+**Fix:** Path-based policies met club-id scoping.
 
-### P7. Geen loading skeletons, alleen spinners
-**Probleem:** Alle dashboards tonen een centered spinner bij initial load. Op mobiel lijkt het alsof de app "leeg" is tot alles geladen is. Geen visuele hint over de structuur.
-**Oplossing:** Skeleton placeholders voor KPI cards, takenlijst, sidebar content.
+**K4. Leaked Password Protection uitgeschakeld**
+Supabase auth controleert niet op gelekte wachtwoorden.
 
-### P8. VolunteerDashboard.tsx is 1188 regels – niet gerefactord
-**Probleem:** Vergelijkbaar met ClubOwnerDashboard vóór refactor. Eén component met 30+ state variabelen, init() van 200 regels, en alle tab-renders inline.
-**Oplossing:** Extract `VolunteerDashboardTab`, `VolunteerPaymentsTab`, `VolunteerContractsTab`, etc.
-
-### P9. MonthlyPlanning.tsx is 971 regels
-**Probleem:** Bevat calendar rendering, task CRUD, enrollment management, day signup management, ticket generation, payout generation – alles in 1 component.
-**Oplossing:** Extract `MonthlyCalendar`, `MonthlyEnrollmentList`, `MonthlyDaySignupManager`.
-
-### P10. Duplicate club-finding logic in 8+ pagina's
-**Probleem:** CommandCenter, TicketingDashboard, TicketScanner, MonthlyPlanning, ClubPageLayout – allemaal dupliceren dezelfde "find club by owner_id OR club_members" logica.
-**Oplossing:** Maak een `useClub()` hook die dit centraal afhandelt.
+**Fix:** Via auth configuratie inschakelen.
 
 ---
 
-## Veiligheid & Code Quality
+### HOOG — Sterk aanbevolen voor launch
 
-### P11. Veel `(supabase as any)` casts
-**Probleem:** 15+ plekken waar Supabase queries gecast worden naar `any`, wat type safety volledig uitschakelt. Bugs worden niet gevangen door TypeScript.
-**Oplossing:** Database types updaten en proper typeren, of expliciete type assertions gebruiken.
+**H1. Edge Functions: geen input validatie**
+Geen email-format, string-lengte, IBAN-format, of bedrag-range validatie. Risico op misbruik bij schaal.
 
-### P12. Auth guard is niet centraal
-**Probleem:** Elke pagina doet een eigen `getSession()` check met redirect. Als er een race condition is of de session expire, krijg je inconsistent gedrag.
-**Oplossing:** Een `<RequireAuth>` wrapper component die sessie centraal controleert.
+**Fix:** Zod schemas toevoegen aan alle edge functions.
+
+**H2. Edge Functions: verbose error messages**
+Interne database-fouten, API-keys en systeemarchitectuur worden naar de client gestuurd.
+
+**Fix:** Generieke foutmeldingen naar client, details alleen server-side loggen.
+
+**H3. Contract templates bewerkbaar door medewerkers**
+UPDATE policy staat `medewerker` (laagste rol) toe om contracttemplates te wijzigen.
+
+**Fix:** UPDATE beperken tot `bestuurder` + `beheerder`.
+
+**H4. Banking data (IBAN) zichtbaar voor clubeigenaars**
+Profiles tabel exposeert bankgegevens via de club-owner SELECT policy.
+
+**Fix:** Aparte `volunteer_banking` tabel of field-level restricties.
 
 ---
 
-## Aanbevolen prioriteit
+### MEDIUM — Code-kwaliteit voor stabiliteit
 
-| # | Upgrade | Impact | Moeite | Gebied |
-|---|---------|--------|--------|--------|
-| P1 | Safe area header fix (PWA statusbar) | **Kritiek** | Klein | PWA |
-| P3 | Parallel queries VolunteerDashboard | Hoog | Medium | Performance |
-| P4 | CommandCenter debounce | Hoog | Klein | Performance |
-| P5 | Ticketing polling optimalisatie | Medium | Klein | Performance |
-| P6 | Volunteer live-event polling reduceren | Medium | Klein | Performance |
-| P7 | Loading skeletons | Medium | Medium | UX |
-| P10 | useClub() hook extracten | Medium | Medium | Code quality |
-| P8 | VolunteerDashboard refactor | Medium | Groot | Code quality |
-| P9 | MonthlyPlanning refactor | Medium | Groot | Code quality |
-| P2 | Chat sidebar-integratie | Laag | Medium | UX |
-| P11 | Supabase type safety | Laag | Medium | Code quality |
-| P12 | Centrale auth guard | Laag | Medium | Security |
+**M1. 1153x `as any` casts in 70 bestanden**
+Type-safety ondermijnd op grote schaal — runtime crashes bij onverwachte data.
 
-Geef aan welke je wilt aanpakken.
+**Fix:** Incrementeel vervangen, prioriteit op database-queries en insert/update operaties.
+
+---
+
+### Implementatievolgorde
+
+| Prio | Items | Geschatte omvang |
+|------|-------|-----------------|
+| 1 | K1-K4 (security) | 4 migraties + auth config |
+| 2 | H1-H4 (hardening) | Edge function updates + 1 migratie |
+| 3 | M1 (type safety) | Incrementeel per bestand |
+
+Totaal: ~12-15 database/edge function wijzigingen om productie-klaar te zijn.
+
