@@ -594,8 +594,6 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
           </div>
         </div>
 
-        {/* Stripe Connect for payments - temporarily disabled, using SEPA only */}
-
         {/* Compliance Status Section */}
         <div className="space-y-3 mt-6 pt-6 border-t border-border">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
