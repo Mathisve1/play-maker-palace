@@ -152,8 +152,6 @@ export default function ReportingFinancialTab({
         <Card><CardHeader><CardTitle className="text-base">Betalingsstatus</CardTitle></CardHeader>
           <CardContent>{paymentStatusPie.length > 0 ? renderPieChart(paymentStatusPie) : <p className="text-sm text-muted-foreground text-center py-8">Geen data</p>}</CardContent></Card>
 
-        <Card><CardHeader><CardTitle className="text-base">Stripe vs SEPA</CardTitle></CardHeader>
-          <CardContent>{paymentMethodPie.length > 0 ? renderPieChart(paymentMethodPie) : <p className="text-sm text-muted-foreground text-center py-8">Geen data</p>}</CardContent></Card>
 
         <Card><CardHeader><CardTitle className="text-base">Kosten per evenement</CardTitle></CardHeader>
           <CardContent>
