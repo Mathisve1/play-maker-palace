@@ -108,7 +108,7 @@ const SYSTEM_PROMPT = `Je bent de AI-assistent van het De 12e Man-platform — e
 
 ### Na het event
 1. Bevestig uren (dual-approval).
-2. Verwerk betalingen via SEPA of Stripe.
+2. Verwerk betalingen via SEPA.
 3. Voer closing procedures uit.
 4. Genereer rapporten.
 
