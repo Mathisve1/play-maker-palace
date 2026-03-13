@@ -61,7 +61,7 @@ const SYSTEM_PROMPT = `Je bent de AI-assistent van het De 12e Man-platform — e
 ### Betalingen
 - **Uurbevestiging**: Dual-approval systeem (vrijwilliger + club).
 - **SEPA Payouts**: Batch-uitbetalingen via XML-export.
-- **Stripe Connect**: Alternatieve betalingsmethode.
+
 
 ### Academy
 - **Online trainingen**: AI-gegenereerde content met quizzen.
