@@ -320,7 +320,7 @@ const ClubOwnerDashboard = () => {
   const [signups, setSignups] = useState<Record<string, Signup[]>>({});
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [updatingSignup, setUpdatingSignup] = useState<string | null>(null);
-  const [_clubStripeId, _setClubStripeId] = useState<string | null>(null); // kept for type compat
+  
   const [showSettings, setShowSettings] = useState(false);
   const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteer: VolunteerProfile; signupStatus: string; signedUpAt: string } | null>(null);
   const [showMembers, setShowMembers] = useState(false);
@@ -329,8 +329,6 @@ const ClubOwnerDashboard = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [volunteerPayments, setVolunteerPayments] = useState<Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }>>({});
   const [signatureStatuses, setSignatureStatuses] = useState<Record<string, { status: string; document_url?: string | null; id?: string }>>({});
-  const [_volunteerStripeIds, _setVolunteerStripeIds] = useState<Record<string, string | null>>({});
-  const [_sendingPayment, _setSendingPayment] = useState<string | null>(null);
   const [sendingContract, setSendingContract] = useState<string | null>(null);
   const [contractConfirm, setContractConfirm] = useState<{ volunteer: Signup['volunteer']; task: Task } | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -423,9 +421,7 @@ const ClubOwnerDashboard = () => {
   useEffect(() => {
     if (contextLoading || !clubId || !currentUserId) return;
     const init = async () => {
-      // Club init (SEPA only, Stripe removed)
-
-      // Parallel: contract templates, trainings, partners, events, tasks, stripe info
+      // Parallel: contract templates, trainings, partners, events, tasks
       const [templatesRes, trainingsRes, partnersRes, eventsRes, tasksRes] = await Promise.all([
         supabase.from('contract_templates').select('id, name').eq('club_id', clubId).order('created_at', { ascending: false }),
         supabase.from('academy_trainings').select('id, title').eq('club_id', clubId).eq('is_published', true).order('title'),
@@ -471,7 +467,7 @@ const ClubOwnerDashboard = () => {
         // Parallel: signups, payments, signatures
         const [signupsRes, paymentsRes, sigsRes] = await Promise.all([
           supabase.from('task_signups').select('id, task_id, volunteer_id, status, signed_up_at').in('task_id', taskIds),
-          supabase.from('volunteer_payments').select('task_id, volunteer_id, status, stripe_receipt_url, paid_at').eq('club_id', clubId),
+          supabase.from('volunteer_payments').select('task_id, volunteer_id, status, paid_at').eq('club_id', clubId),
           supabase.from('signature_requests').select('id, task_id, volunteer_id, status, document_url').in('task_id', taskIds),
         ]);
 
@@ -503,7 +499,7 @@ const ClubOwnerDashboard = () => {
         // Process payments
         if (paymentsRes.data) {
           const payMap: Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }> = {};
-          paymentsRes.data.forEach(p => { payMap[`${p.task_id}-${p.volunteer_id}`] = { status: p.status, receipt_url: p.stripe_receipt_url, paid_at: p.paid_at }; });
+          paymentsRes.data.forEach(p => { payMap[`${p.task_id}-${p.volunteer_id}`] = { status: p.status, paid_at: p.paid_at }; });
           setVolunteerPayments(payMap);
         }
 
@@ -797,7 +793,7 @@ const ClubOwnerDashboard = () => {
     setCreatingTask(false);
   };
 
-  // Stripe payment handler removed - using SEPA only
+  
 
   const handleStartEdit = (task: Task) => {
     setEditingTask(task);

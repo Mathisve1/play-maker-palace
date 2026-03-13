@@ -67,7 +67,7 @@ interface VolunteerPayment {
   status: string;
   paid_at: string | null;
   created_at: string;
-  stripe_receipt_url: string | null;
+  
   task_title?: string;
   club_name?: string;
 }
@@ -213,7 +213,7 @@ const VolunteerDashboard = () => {
         loyaltyRes, certsRes, followsRes,
       ] = await Promise.all([
         supabase.from('events').select('*').is('training_id', null).neq('event_type', 'training').neq('status', 'on_hold').order('event_date', { ascending: true }),
-        supabase.from('volunteer_payments').select('id, task_id, amount, currency, status, paid_at, created_at, stripe_receipt_url').eq('volunteer_id', uid).order('created_at', { ascending: false }),
+        supabase.from('volunteer_payments').select('id, task_id, amount, currency, status, paid_at, created_at').eq('volunteer_id', uid).order('created_at', { ascending: false }),
         supabase.from('sepa_batch_items').select('id, amount, status, created_at, error_flag, error_message, batch_id, task_id, volunteer_id').eq('volunteer_id', uid).order('created_at', { ascending: false }),
         supabase.from('signature_requests').select('id, task_id, status, signing_url, document_url, created_at, updated_at').eq('volunteer_id', uid).order('created_at', { ascending: false }),
         supabase.from('volunteer_tickets').select('id, task_id, event_id, club_id, status, ticket_url, barcode, external_ticket_id, created_at, checked_in_at').eq('volunteer_id', uid).order('created_at', { ascending: false }),

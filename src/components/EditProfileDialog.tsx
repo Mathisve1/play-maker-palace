@@ -23,7 +23,6 @@ interface ProfileData {
   bank_consent_given: boolean;
   bank_consent_date: string | null;
   bank_consent_text: string | null;
-  stripe_account_id?: string | null;
 }
 
 interface EditProfileDialogProps {
@@ -171,8 +170,6 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [bankConsentGiven, setBankConsentGiven] = useState(false);
   const [bankConsentDate, setBankConsentDate] = useState<string | null>(null);
   const [bankConsentText, setBankConsentText] = useState<string | null>(null);
-  const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
-  const [connectingStripe, setConnectingStripe] = useState(false);
   const [profileLanguage, setProfileLanguage] = useState<'nl' | 'fr' | 'en'>(language);
   const { setLanguage: setGlobalLanguage } = useLanguage();
   
@@ -199,7 +196,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       setLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_url, phone, bio, date_of_birth, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, stripe_account_id, language')
+        .select('full_name, email, avatar_url, phone, bio, date_of_birth, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, language')
         .eq('id', userId)
         .maybeSingle();
 
@@ -215,7 +212,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
         setBankConsentGiven(data.bank_consent_given || false);
         setBankConsentDate(data.bank_consent_date);
         setBankConsentText(data.bank_consent_text);
-        setStripeAccountId(data.stripe_account_id);
+        
         if ((data as any).language) setProfileLanguage((data as any).language);
       }
       setLoading(false);
@@ -596,8 +593,6 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
             )}
           </div>
         </div>
-
-        {/* Stripe Connect for payments - temporarily disabled, using SEPA only */}
 
         {/* Compliance Status Section */}
         <div className="space-y-3 mt-6 pt-6 border-t border-border">
