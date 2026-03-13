@@ -143,6 +143,21 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
               <input type="text" value={location} onChange={e => setLocation(e.target.value)} maxLength={200} className={inputClass} />
             </div>
           </div>
+
+          {/* Shift swap toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-border">
+            <div>
+              <p className="text-sm font-medium text-foreground">{t3('Shift-ruil toestaan', 'Autoriser l\'échange de shifts', 'Allow shift swaps')}</p>
+              <p className="text-xs text-muted-foreground">{t3('Vrijwilligers kunnen onderling shifts ruilen (met jouw goedkeuring)', 'Les bénévoles peuvent échanger des shifts entre eux (avec votre approbation)', 'Volunteers can swap shifts among themselves (with your approval)')}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAllowShiftSwaps(!allowShiftSwaps)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${allowShiftSwaps ? 'bg-primary' : 'bg-muted'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${allowShiftSwaps ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
