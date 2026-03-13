@@ -974,10 +974,7 @@ const ClubOwnerDashboard = () => {
                             const payment = volunteerPayments[payKey];
                             const sigInfo = signatureStatuses[payKey];
                             const contractSigned = sigInfo?.status === 'completed';
-                            const volHasStripe = !!volunteerStripeIds[signup.volunteer_id];
                             const isHourly = task.compensation_type === 'hourly';
-                            // Stripe payments temporarily disabled - using SEPA only
-                            const canPay = false; // was: clubStripeId && volHasStripe && contractSigned && (!payment || payment.status === 'failed');
 
                             // Show hour confirmation button for hourly tasks
                             if (isHourly && contractSigned && (!payment || payment.status === 'failed')) {
@@ -998,29 +995,11 @@ const ClubOwnerDashboard = () => {
                               );
                             }
 
-                            if (payment && payment.status === 'succeeded') {
-                              return (
-                                <span className="flex items-center gap-1 text-xs font-medium text-green-600">
-                                  <CheckCircle className="w-3.5 h-3.5" /> Betaald
-                                  {payment.receipt_url && <a href={payment.receipt_url} target="_blank" rel="noopener noreferrer" className="ml-1"><Download className="w-3 h-3" /></a>}
-                                </span>
-                              );
-                            }
-                            if (payment && payment.status === 'processing') {
-                              return <span className="flex items-center gap-1 text-xs text-yellow-600"><Clock className="w-3.5 h-3.5" /> Verwerken</span>;
-                            }
                             if (contractSigned && sigInfo?.document_url) {
                               return (
-                                <div className="flex items-center gap-1">
-                                  <a href={sigInfo.document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors" title="Download ondertekend contract">
-                                    <Download className="w-3 h-3" /> Contract
-                                  </a>
-                                  {canPay && (
-                                    <button onClick={() => handleSendPayment(signup.task_id, signup.volunteer_id)} disabled={sendingPayment === payKey} className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1">
-                                      {sendingPayment === payKey ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Betaal
-                                    </button>
-                                  )}
-                                </div>
+                                <a href={sigInfo.document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors" title="Download ondertekend contract">
+                                  <Download className="w-3 h-3" /> Contract
+                                </a>
                               );
                             }
                             if (!contractSigned) {
@@ -1063,13 +1042,6 @@ const ClubOwnerDashboard = () => {
                                   className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
                                 >
                                   {isSending ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />} Contract
-                                </button>
-                              );
-                            }
-                            if (canPay) {
-                              return (
-                                <button onClick={() => handleSendPayment(signup.task_id, signup.volunteer_id)} disabled={sendingPayment === payKey} className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1">
-                                  {sendingPayment === payKey ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Betaal
                                 </button>
                               );
                             }
