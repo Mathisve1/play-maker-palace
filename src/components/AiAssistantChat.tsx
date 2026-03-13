@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Bot, X, Send, Loader2, Plus, Trash2, MessageSquare } from "lucide-react";
+import { Bot, X, Send, Loader2, Plus, Trash2, MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useOptionalClubContext } from "@/contexts/ClubContext";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  dbId?: string; // ID from ai_messages table
 }
 
 interface Conversation {
@@ -26,7 +27,6 @@ export default function AiAssistantChat() {
   const clubCtx = useOptionalClubContext();
   const nl = language === "nl";
 
-  // Hide AI chat on live safety event pages (volunteer lockdown mode)
   const isSafetyEventPage = /^\/safety\/[^/]+/.test(location.pathname);
 
   const [open, setOpen] = useState(false);
@@ -36,17 +36,16 @@ export default function AiAssistantChat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [feedback, setFeedback] = useState<Record<string, "positive" | "negative">>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Load conversations list
   const loadConversations = useCallback(async () => {
     const { data } = await supabase
       .from("ai_conversations")
@@ -56,14 +55,30 @@ export default function AiAssistantChat() {
     if (data) setConversations(data);
   }, []);
 
-  // Load messages for a conversation
   const loadMessages = useCallback(async (convId: string) => {
     const { data } = await supabase
       .from("ai_messages")
-      .select("role, content")
+      .select("id, role, content")
       .eq("conversation_id", convId)
       .order("created_at", { ascending: true });
-    if (data) setMessages(data as Msg[]);
+    if (data) {
+      setMessages(data.map((m) => ({ role: m.role as "user" | "assistant", content: m.content, dbId: m.id })));
+      // Load existing feedback for these messages
+      const msgIds = data.filter((m) => m.role === "assistant").map((m) => m.id);
+      if (msgIds.length > 0) {
+        const { data: fb } = await supabase
+          .from("ai_message_feedback")
+          .select("message_id, rating")
+          .in("message_id", msgIds);
+        if (fb) {
+          const fbMap: Record<string, "positive" | "negative"> = {};
+          fb.forEach((f: any) => { fbMap[f.message_id] = f.rating; });
+          setFeedback(fbMap);
+        }
+      } else {
+        setFeedback({});
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -89,12 +104,31 @@ export default function AiAssistantChat() {
     return data.id;
   };
 
-  const saveAssistantMessage = async (convId: string, content: string) => {
-    await supabase.from("ai_messages").insert({
-      conversation_id: convId,
-      role: "assistant",
-      content,
-    });
+  const saveAssistantMessage = async (convId: string, content: string): Promise<string | null> => {
+    const { data } = await supabase
+      .from("ai_messages")
+      .insert({ conversation_id: convId, role: "assistant", content })
+      .select("id")
+      .single();
+    return data?.id || null;
+  };
+
+  const submitFeedback = async (messageId: string, rating: "positive" | "negative") => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const existing = feedback[messageId];
+    if (existing === rating) return; // already submitted same rating
+
+    const { error } = await supabase
+      .from("ai_message_feedback")
+      .upsert(
+        { message_id: messageId, user_id: session.user.id, rating },
+        { onConflict: "message_id,user_id" }
+      );
+    if (!error) {
+      setFeedback((prev) => ({ ...prev, [messageId]: rating }));
+    }
   };
 
   const send = async () => {
@@ -129,7 +163,7 @@ export default function AiAssistantChat() {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
-          messages: allMessages,
+          messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           conversationId: convId,
           context: {
             currentPage: location.pathname,
@@ -160,7 +194,7 @@ export default function AiAssistantChat() {
         const snapshot = assistantSoFar;
         setMessages((prev) => {
           const last = prev[prev.length - 1];
-          if (last?.role === "assistant") {
+          if (last?.role === "assistant" && !last.dbId) {
             return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: snapshot } : m));
           }
           return [...prev, { role: "assistant", content: snapshot }];
@@ -193,7 +227,15 @@ export default function AiAssistantChat() {
       }
 
       if (convId && assistantSoFar) {
-        await saveAssistantMessage(convId, assistantSoFar);
+        const savedId = await saveAssistantMessage(convId, assistantSoFar);
+        if (savedId) {
+          // Attach the DB id to the last assistant message
+          setMessages((prev) =>
+            prev.map((m, i) =>
+              i === prev.length - 1 && m.role === "assistant" ? { ...m, dbId: savedId } : m
+            )
+          );
+        }
       }
     } catch (e: any) {
       setMessages((prev) => [
@@ -214,6 +256,7 @@ export default function AiAssistantChat() {
   const startNewChat = () => {
     setActiveConvId(null);
     setMessages([]);
+    setFeedback({});
     setShowHistory(false);
     inputRef.current?.focus();
   };
@@ -338,8 +381,8 @@ export default function AiAssistantChat() {
           <div
             key={i}
             className={cn(
-              "flex",
-              msg.role === "user" ? "justify-end" : "justify-start"
+              "flex flex-col",
+              msg.role === "user" ? "items-end" : "items-start"
             )}
           >
             <div
@@ -358,6 +401,35 @@ export default function AiAssistantChat() {
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               )}
             </div>
+            {/* Feedback buttons for assistant messages with a DB id */}
+            {msg.role === "assistant" && msg.dbId && !loading && (
+              <div className="flex items-center gap-1 mt-1 ml-1">
+                <button
+                  onClick={() => submitFeedback(msg.dbId!, "positive")}
+                  className={cn(
+                    "p-1 rounded-md transition-colors",
+                    feedback[msg.dbId] === "positive"
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground/50 hover:text-primary hover:bg-primary/5"
+                  )}
+                  title={nl ? "Goed antwoord" : "Good answer"}
+                >
+                  <ThumbsUp className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => submitFeedback(msg.dbId!, "negative")}
+                  className={cn(
+                    "p-1 rounded-md transition-colors",
+                    feedback[msg.dbId] === "negative"
+                      ? "text-destructive bg-destructive/10"
+                      : "text-muted-foreground/50 hover:text-destructive hover:bg-destructive/5"
+                  )}
+                  title={nl ? "Slecht antwoord" : "Bad answer"}
+                >
+                  <ThumbsDown className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {loading && messages[messages.length - 1]?.role !== "assistant" && (
