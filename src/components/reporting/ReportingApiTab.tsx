@@ -215,7 +215,7 @@ const ReportingApiTab = () => {
       api_key: apiKey,
       name: newKeyName || 'API Key',
       created_by: userId,
-    } as any);
+    });
     if (error) {
       toast.error(error.message);
     } else {
