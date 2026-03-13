@@ -45,7 +45,7 @@ export function useDashboardLayout(clubId: string | null, userId: string) {
     } else {
       const { data } = await supabase
         .from('dashboard_layouts')
-        .insert({ user_id: userId, club_id: clubId, layout: newLayout as any })
+        .insert({ user_id: userId, club_id: clubId, layout: newLayout as unknown as import('@/integrations/supabase/types').Json })
         .select('id')
         .maybeSingle();
       if (data) setLayoutId(data.id);
