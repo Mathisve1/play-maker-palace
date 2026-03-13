@@ -423,9 +423,7 @@ const ClubOwnerDashboard = () => {
   useEffect(() => {
     if (contextLoading || !clubId || !currentUserId) return;
     const init = async () => {
-      // Fetch stripe_account_id for the club
-      const { data: clubRow } = await supabase.from('clubs').select('stripe_account_id').eq('id', clubId).maybeSingle();
-      setClubStripeId(clubRow?.stripe_account_id || null);
+      // Club init (SEPA only, Stripe removed)
 
       // Parallel: contract templates, trainings, partners, events, tasks, stripe info
       const [templatesRes, trainingsRes, partnersRes, eventsRes, tasksRes] = await Promise.all([
