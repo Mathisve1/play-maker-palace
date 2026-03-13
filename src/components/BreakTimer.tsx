@@ -26,7 +26,7 @@ const BreakTimer = ({ taskId, userId, language }: Props) => {
     // Load today's breaks
     const load = async () => {
       const today = new Date().toISOString().split('T')[0];
-      const { data } = await (supabase as any).from('volunteer_breaks')
+      const { data } = await supabase.from('volunteer_breaks')
         .select('id, started_at, ended_at, duration_minutes')
         .eq('task_id', taskId)
         .eq('volunteer_id', userId)
