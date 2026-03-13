@@ -212,7 +212,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
         setBankConsentGiven(data.bank_consent_given || false);
         setBankConsentDate(data.bank_consent_date);
         setBankConsentText(data.bank_consent_text);
-        setStripeAccountId(data.stripe_account_id);
+        
         if ((data as any).language) setProfileLanguage((data as any).language);
       }
       setLoading(false);
