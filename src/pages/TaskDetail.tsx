@@ -221,6 +221,8 @@ const TaskDetail = () => {
   const [waitlistPosition, setWaitlistPosition] = useState(0);
   const [waitlistCount, setWaitlistCount] = useState(0);
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
+  const [allowShiftSwaps, setAllowShiftSwaps] = useState(false);
+  const [showSwapDialog, setShowSwapDialog] = useState(false);
 
   const l = labels[language];
 
