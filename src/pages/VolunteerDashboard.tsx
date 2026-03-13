@@ -67,7 +67,7 @@ interface VolunteerPayment {
   status: string;
   paid_at: string | null;
   created_at: string;
-  stripe_receipt_url: string | null;
+  
   task_title?: string;
   club_name?: string;
 }
