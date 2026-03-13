@@ -795,22 +795,7 @@ const ClubOwnerDashboard = () => {
     setCreatingTask(false);
   };
 
-  const handleSendPayment = async (taskId: string, volunteerId: string) => {
-    const key = `${taskId}-${volunteerId}`;
-    setSendingPayment(key);
-    try {
-      const { data, error } = await supabase.functions.invoke('stripe-create-transfer', {
-        body: { task_id: taskId, volunteer_id: volunteerId },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success(t3('Betaling aangemaakt!', 'Paiement créé !', 'Payment created!'));
-      setVolunteerPayments(prev => ({ ...prev, [key]: { status: 'processing' } }));
-    } catch (err: any) {
-      toast.error(err.message || t3('Er ging iets mis', 'Une erreur est survenue', 'Something went wrong'));
-    }
-    setSendingPayment(null);
-  };
+  // Stripe payment handler removed - using SEPA only
 
   const handleStartEdit = (task: Task) => {
     setEditingTask(task);
