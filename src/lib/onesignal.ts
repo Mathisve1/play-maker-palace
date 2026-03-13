@@ -212,7 +212,7 @@ export async function setPushPreference(enabled: boolean) {
   // Update DB FIRST for instant UI feedback
   await supabase
     .from('profiles')
-    .update({ push_notifications_enabled: enabled, push_prompt_seen: true } as any)
+    .update({ push_notifications_enabled: enabled, push_prompt_seen: true })
     .eq('id', user.id);
 
   if (!enabled) {
