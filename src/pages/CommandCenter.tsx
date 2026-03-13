@@ -399,7 +399,7 @@ const CommandCenter = () => {
     setProcessing(true);
     try {
       if (item.type === 'enrollment') {
-        await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' } as any).eq('id', item.source_id);
+        await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' }).eq('id', item.source_id);
       } else if (item.type === 'task_signup') {
         await supabase.from('task_signups').update({ status: 'rejected' }).eq('id', item.source_id);
       } else if (item.type === 'day_signup') {
