@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Bot, X, Send, Loader2, Plus, Trash2, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useOptionalClubContext } from "@/contexts/ClubContext";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 
