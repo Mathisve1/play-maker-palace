@@ -129,7 +129,7 @@ export async function unsubscribeFromPush(): Promise<void> {
 
   await supabase
     .from('profiles')
-    .update({ push_notifications_enabled: false } as any)
+    .update({ push_notifications_enabled: false })
     .eq('id', user.id);
 }
 
