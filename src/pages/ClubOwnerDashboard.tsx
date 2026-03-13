@@ -483,6 +483,8 @@ const ClubOwnerDashboard = () => {
             .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date')
             .in('id', volunteerIds);
 
+          const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
           const grouped: Record<string, Signup[]> = {};
           signupsData.forEach(s => {
             const vol = profileMap.get(s.volunteer_id);
