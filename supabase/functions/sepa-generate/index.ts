@@ -674,7 +674,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('flag-item error:', err);
+      return new Response(JSON.stringify({ error: 'Markering mislukt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
   }
 
