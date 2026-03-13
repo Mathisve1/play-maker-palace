@@ -75,7 +75,7 @@ const VolunteerTaskPreferences = ({ userId, language, tasks, signedUpTaskIds, on
     };
     const { error } = await supabase
       .from('profiles')
-      .update({ preferences: prefs } as any)
+      .update({ preferences: prefs })
       .eq('id', userId);
     if (error) toast.error(error.message);
     else {

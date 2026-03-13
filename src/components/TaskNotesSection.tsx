@@ -93,7 +93,7 @@ const TaskNotesSection = ({ taskId, userId, language, isAssigned }: TaskNotesSec
   };
 
   const handleDelete = async (noteId: string) => {
-    const { error } = await (supabase as any).from('task_notes').delete().eq('id', noteId);
+    const { error } = await supabase.from('task_notes').delete().eq('id', noteId);
     if (!error) setNotes(prev => prev.filter(n => n.id !== noteId));
   };
 

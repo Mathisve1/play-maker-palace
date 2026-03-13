@@ -72,7 +72,7 @@ const BreakTimer = ({ taskId, userId, language }: Props) => {
     if (!breakId) return;
     const durationMinutes = Math.max(Math.round(elapsed / 60), 1);
 
-    await (supabase as any).from('volunteer_breaks')
+    await supabase.from('volunteer_breaks')
       .update({ ended_at: new Date().toISOString(), duration_minutes: durationMinutes })
       .eq('id', breakId);
 

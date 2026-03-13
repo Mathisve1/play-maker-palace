@@ -87,7 +87,7 @@ const EventGroupChat = ({ eventId, eventTitle, userId, language }: EventGroupCha
   const handleSend = async () => {
     if (!input.trim()) return;
     setSending(true);
-    const { error } = await (supabase as any).from('event_chats').insert({
+    const { error } = await supabase.from('event_chats').insert({
       event_id: eventId,
       user_id: userId,
       message: input.trim(),

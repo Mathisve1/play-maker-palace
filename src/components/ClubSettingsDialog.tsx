@@ -75,7 +75,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
       }
     }
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('clubs')
       .update({
         name: name.trim(),

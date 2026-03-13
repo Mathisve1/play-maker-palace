@@ -45,7 +45,7 @@ const LiveEventFeed = ({ eventId, language }: Props) => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any).from('event_feed')
+      const { data } = await supabase.from('event_feed')
         .select('*')
         .eq('event_id', eventId)
         .order('pinned', { ascending: false })

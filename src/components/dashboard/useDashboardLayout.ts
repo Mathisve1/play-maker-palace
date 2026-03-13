@@ -58,7 +58,7 @@ export function useDashboardLayout(clubId: string | null, userId: string) {
     if (layoutId) {
       await supabase
         .from('dashboard_layouts')
-        .update({ layout: DEFAULT_LAYOUT as any })
+        .update({ layout: DEFAULT_LAYOUT as unknown as import('@/integrations/supabase/types').Json })
         .eq('id', layoutId);
     }
   }, [clubId, userId, layoutId]);

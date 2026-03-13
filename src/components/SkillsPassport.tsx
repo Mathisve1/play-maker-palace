@@ -83,7 +83,7 @@ const SkillsPassport = ({ userId, language, isOwnProfile = true }: Props) => {
   };
 
   const handleRemoveSkill = async (id: string) => {
-    await (supabase as any).from('volunteer_skills').delete().eq('id', id);
+    await supabase.from('volunteer_skills').delete().eq('id', id);
     setSkills(prev => prev.filter(s => s.id !== id));
   };
 

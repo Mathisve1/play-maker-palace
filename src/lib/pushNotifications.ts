@@ -219,7 +219,7 @@ export async function autoResubscribeIfNeeded(): Promise<void> {
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') {
         console.log('[Push] Auto-resub: permission denied');
-        await supabase.from('profiles').update({ push_notifications_enabled: false } as any).eq('id', user.id);
+        await supabase.from('profiles').update({ push_notifications_enabled: false }).eq('id', user.id);
         return;
       }
     }

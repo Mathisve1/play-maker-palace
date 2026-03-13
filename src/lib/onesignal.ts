@@ -249,7 +249,7 @@ export async function setPushPreference(enabled: boolean) {
     console.warn('[OneSignal] Permission denied or dismissed');
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false } as any)
+      .update({ push_notifications_enabled: false })
       .eq('id', user.id);
     return { enabled: false, reason: 'denied' as const };
   }

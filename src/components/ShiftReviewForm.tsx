@@ -30,7 +30,7 @@ const ShiftReviewForm = ({ taskId, clubId, userId, taskTitle, language, onSubmit
     if (rating === 0) return;
     setSending(true);
 
-    const { error } = await (supabase as any).from('volunteer_reviews').insert({
+    const { error } = await supabase.from('volunteer_reviews').insert({
       task_id: taskId,
       volunteer_id: userId,
       club_id: clubId,

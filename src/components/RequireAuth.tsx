@@ -30,7 +30,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       id: sessionUser.id,
       email: sessionUser.email || null,
       full_name: (sessionUser.user_metadata?.full_name as string) || null,
-    } as any);
+    });
   };
 
   useEffect(() => {
