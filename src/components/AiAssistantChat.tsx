@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Bot, X, Send, Loader2, Plus, Trash2, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useOptionalClubContext } from "@/contexts/ClubContext";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant
 export default function AiAssistantChat() {
   const { language } = useLanguage();
   const location = useLocation();
+  const clubCtx = useOptionalClubContext();
   const nl = language === "nl";
 
   // Hide AI chat on live safety event pages (volunteer lockdown mode)
@@ -126,7 +128,21 @@ export default function AiAssistantChat() {
           Authorization: `Bearer ${session?.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ messages: allMessages, conversationId: convId }),
+        body: JSON.stringify({
+          messages: allMessages,
+          conversationId: convId,
+          context: {
+            currentPage: location.pathname,
+            language,
+            clubId: clubCtx?.clubId || null,
+            clubName: clubCtx?.clubInfo?.name || null,
+            clubSport: clubCtx?.clubInfo?.sport || null,
+            clubLocation: clubCtx?.clubInfo?.location || null,
+            isOwner: clubCtx?.isOwner || false,
+            memberRole: clubCtx?.memberRole || null,
+            userName: clubCtx?.profile?.full_name || null,
+          },
+        }),
       });
 
       if (!resp.ok || !resp.body) {
