@@ -267,7 +267,7 @@ const MonthlyPlanning = () => {
     if (!clubId) return;
     const { data } = await supabase.from('tasks').select('id, title, task_date, location, compensation_type, hourly_rate, spots_available')
       .eq('club_id', clubId).order('task_date', { ascending: false }).limit(50);
-    setLooseTasks((data || []) as any);
+    setLooseTasks(data || []);
     setShowImportDialog(true);
   };
 
