@@ -329,8 +329,8 @@ const ClubOwnerDashboard = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [volunteerPayments, setVolunteerPayments] = useState<Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }>>({});
   const [signatureStatuses, setSignatureStatuses] = useState<Record<string, { status: string; document_url?: string | null; id?: string }>>({});
-  const [volunteerStripeIds, setVolunteerStripeIds] = useState<Record<string, string | null>>({});
-  const [sendingPayment, setSendingPayment] = useState<string | null>(null);
+  const [_volunteerStripeIds, _setVolunteerStripeIds] = useState<Record<string, string | null>>({});
+  const [_sendingPayment, _setSendingPayment] = useState<string | null>(null);
   const [sendingContract, setSendingContract] = useState<string | null>(null);
   const [contractConfirm, setContractConfirm] = useState<{ volunteer: Signup['volunteer']; task: Task } | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
