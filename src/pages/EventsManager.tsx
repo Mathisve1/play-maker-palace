@@ -10,7 +10,9 @@ import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
   PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
+  FileText, Save,
 } from 'lucide-react';
+import EventTemplateDialog from '@/components/EventTemplateDialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskZoneDialog from '@/components/TaskZoneDialog';
@@ -86,6 +88,8 @@ const EventsManager = () => {
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
 
   // Adding task to group
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
@@ -510,6 +514,55 @@ const EventsManager = () => {
     setTogglingHold(null);
   };
 
+  const handleSaveAsTemplate = async (eventId: string) => {
+    setSavingTemplate(eventId);
+    const event = events.find(e => e.id === eventId);
+    if (!event || !clubId) { setSavingTemplate(null); return; }
+    const groups = eventGroups.filter(g => g.event_id === eventId);
+    const templateGroups = groups.map(g => ({
+      name: g.name, color: g.color,
+      wristband_color: g.wristband_color, wristband_label: g.wristband_label,
+      materials_note: g.materials_note,
+      tasks: tasks.filter(t => t.event_group_id === g.id).map(t => ({
+        title: t.title, spots_available: t.spots_available,
+      })),
+    }));
+    const { error } = await (supabase as any).from('event_templates').insert({
+      club_id: clubId, name: event.title, description: event.description,
+      location: event.location, groups: templateGroups,
+    });
+    if (error) toast.error(error.message);
+    else toast.success(t3('Sjabloon opgeslagen!', 'Modèle sauvegardé!', 'Template saved!'));
+    setSavingTemplate(null);
+  };
+
+  const handleCreateFromTemplate = async (template: { name: string; description: string | null; location: string | null; groups: any[] }) => {
+    if (!clubId) return;
+    const { data: newEv, error } = await supabase.from('events').insert({
+      club_id: clubId, title: template.name, description: template.description, location: template.location,
+    } as any).select('*').maybeSingle();
+    if (error || !newEv) { toast.error(error?.message || 'Failed'); return; }
+    for (const group of template.groups) {
+      const { data: newGrp } = await supabase.from('event_groups').insert({
+        event_id: newEv.id, name: group.name, color: group.color, sort_order: template.groups.indexOf(group),
+        wristband_color: group.wristband_color, wristband_label: group.wristband_label,
+        materials_note: group.materials_note,
+      } as any).select('*').maybeSingle();
+      if (newGrp) {
+        setEventGroups(prev => [...prev, newGrp]);
+        for (const task of (group.tasks || [])) {
+          const { data: newTask } = await supabase.from('tasks').insert({
+            club_id: clubId, title: task.title, spots_available: task.spots_available || 1,
+            event_id: newEv.id, event_group_id: newGrp.id,
+          } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
+          if (newTask) setTasks(prev => [...prev, newTask]);
+        }
+      }
+    }
+    setEvents(prev => [newEv, ...prev]);
+    toast.success(t3('Evenement aangemaakt vanuit sjabloon!', 'Événement créé à partir du modèle!', 'Event created from template!'));
+  };
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
@@ -546,6 +599,9 @@ const EventsManager = () => {
                 {nl ? 'Start demo' : 'Start demo'}
               </button>
             )}
+            <button onClick={() => setShowTemplateDialog(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
+              <FileText className="w-4 h-4" /> {t3('Sjablonen', 'Modèles', 'Templates')}
+            </button>
             <button data-tour="btn-new-event" onClick={() => { setShowCreateEvent(true); setShowCreateTask(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
                <CalendarDays className="w-4 h-4" /> {t3('Nieuw evenement', 'Nouvel événement', 'New event')}
              </button>
@@ -846,6 +902,15 @@ const EventsManager = () => {
       )}
     </ClubPageLayout>
     <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
+    {clubId && (
+      <EventTemplateDialog
+        open={showTemplateDialog}
+        onClose={() => setShowTemplateDialog(false)}
+        clubId={clubId}
+        language={language}
+        onCreateFromTemplate={handleCreateFromTemplate}
+      />
+    )}
     </>
   );
 
@@ -938,6 +1003,9 @@ const EventsManager = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleDuplicateEvent(event.id)} disabled={duplicatingEvent === event.id}>
                     {duplicatingEvent === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />} {nl ? 'Dupliceren' : 'Duplicate'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSaveAsTemplate(event.id)} disabled={savingTemplate === event.id}>
+                    {savingTemplate === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} {nl ? 'Opslaan als sjabloon' : 'Save as template'}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => handleToggleHoldEvent(event.id)} disabled={togglingHold === event.id} className="text-yellow-600 dark:text-yellow-400 focus:text-yellow-600 dark:focus:text-yellow-400">
