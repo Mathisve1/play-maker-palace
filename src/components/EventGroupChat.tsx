@@ -44,7 +44,7 @@ const EventGroupChat = ({ eventId, eventTitle, userId, language }: EventGroupCha
       if (data) {
         setMessages(data);
         // Load profiles for unique user IDs
-        const uids = [...new Set(data.map((m: ChatMessage) => m.user_id))];
+        const uids = [...new Set(data.map((m: ChatMessage) => m.user_id))] as string[];
         if (uids.length > 0) {
           const { data: profs } = await supabase.from('profiles').select('id, full_name').in('id', uids);
           if (profs) {
