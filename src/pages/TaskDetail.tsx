@@ -882,6 +882,17 @@ const TaskDetail = () => {
           </div>
         </motion.div>
       </main>
+      {task && showSwapDialog && (
+        <ShiftSwapDialog
+          open={showSwapDialog}
+          onClose={() => setShowSwapDialog(false)}
+          taskId={task.id}
+          taskTitle={task.title}
+          clubId={task.club_id}
+          currentUserId={currentUserId}
+          language={language}
+        />
+      )}
     </div>
   );
 };
