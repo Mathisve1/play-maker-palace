@@ -57,7 +57,7 @@ const BreakTimer = ({ taskId, userId, language }: Props) => {
   }, [onBreak]);
 
   const handleStartBreak = async () => {
-    const { data, error } = await (supabase as any).from('volunteer_breaks').insert({
+    const { data, error } = await supabase.from('volunteer_breaks').insert({
       task_id: taskId,
       volunteer_id: userId,
     }).select('id').single();
