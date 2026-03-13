@@ -196,7 +196,7 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
       setLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_url, phone, bio, date_of_birth, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, stripe_account_id, language')
+        .select('full_name, email, avatar_url, phone, bio, date_of_birth, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, bank_consent_text, language')
         .eq('id', userId)
         .maybeSingle();
 
