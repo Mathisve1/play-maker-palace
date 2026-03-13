@@ -887,11 +887,23 @@ const VolunteerDashboard = () => {
           {/* Season Overview */}
           {currentUserId && <VolunteerSeasonOverview userId={currentUserId} language={language} />}
 
+          {/* Financial Dashboard */}
+          {currentUserId && <VolunteerFinancialDashboard userId={currentUserId} language={language} />}
+
           {/* Badges */}
           {currentUserId && <VolunteerBadges userId={currentUserId} language={language} />}
 
+          {/* Skills Passport */}
+          {currentUserId && <SkillsPassport userId={currentUserId} language={language} />}
+
+          {/* Micro-learnings */}
+          {currentUserId && <MicroLearningsSection userId={currentUserId} language={language} />}
+
           {/* Calendar Sync */}
           {currentUserId && <CalendarSyncSection userId={currentUserId} language={language} />}
+
+          {/* Referral */}
+          {currentUserId && <ReferralSection userId={currentUserId} language={language} />}
 
           {/* Task Preferences & Recommendations */}
           {currentUserId && (
@@ -906,7 +918,6 @@ const VolunteerDashboard = () => {
 
           {/* Event Group Chats */}
           {currentUserId && events.filter(e => {
-            // Only show chat for events where user is assigned
             return tasks.some(t => t.event_id === e.id && signups.some(s => s.task_id === t.id && s.status === 'assigned'));
           }).slice(0, 2).map(event => (
             <EventGroupChat
