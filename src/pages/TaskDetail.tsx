@@ -6,8 +6,9 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Calendar, Users, Clock, Euro, FileText,
-  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered
+  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered, ArrowLeftRight
 } from 'lucide-react';
+import ShiftSwapDialog from '@/components/ShiftSwapDialog';
 import { sendPush } from '@/lib/sendPush';
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
