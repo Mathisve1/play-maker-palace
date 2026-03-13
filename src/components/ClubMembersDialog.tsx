@@ -78,13 +78,18 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         .select('id, full_name, email')
         .in('id', userIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
       setMembers(
-        membersData.map(m => ({
-          ...m,
-          role: m.role as ClubRole,
-          profile: profileMap.get(m.user_id) || null,
-        }))
+        membersData.map(m => {
+          const prof = profileMap.get(m.user_id);
+          return {
+            ...m,
+            role: m.role as ClubRole,
+            profile: prof
+              ? { full_name: prof.full_name || prof.email || null, email: prof.email }
+              : { full_name: null, email: null },
+          };
+        })
       );
     }
 
