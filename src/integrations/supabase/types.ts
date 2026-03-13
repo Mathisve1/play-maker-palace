@@ -4532,6 +4532,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_briefing_club_id_from_block: {
+        Args: { _block_id: string }
+        Returns: string
+      }
       get_partner_club_id: { Args: { _partner_id: string }; Returns: string }
       get_partner_club_ids: { Args: { _partner_id: string }; Returns: string[] }
       get_signup_partner_id: { Args: { _access_id: string }; Returns: string }
@@ -4548,6 +4552,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_club_member: {
+        Args: { _club_id: string; _user_id: string }
         Returns: boolean
       }
       is_partner_admin: {
