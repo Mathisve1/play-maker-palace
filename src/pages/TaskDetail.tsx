@@ -245,37 +245,27 @@ const TaskDetail = () => {
 
       if (!taskData) { setLoading(false); return; }
       setTask(taskData as unknown as Task);
+      setWaitlistEnabled((taskData as any).waitlist_enabled || false);
 
-      // Count signups
-      const { count } = await supabase
-        .from('task_signups')
-        .select('id', { count: 'exact', head: true })
-        .eq('task_id', id!);
-      setSignupCount(count || 0);
+      // Count signups + waitlist + likes in parallel
+      const [signupRes, mySignupRes, likeRes, myLikeRes, waitlistRes, myWaitlistRes] = await Promise.all([
+        supabase.from('task_signups').select('id', { count: 'exact', head: true }).eq('task_id', id!),
+        supabase.from('task_signups').select('id').eq('task_id', id!).eq('volunteer_id', session.user.id).maybeSingle(),
+        supabase.from('task_likes').select('id', { count: 'exact', head: true }).eq('task_id', id!),
+        supabase.from('task_likes').select('id').eq('task_id', id!).eq('user_id', session.user.id).maybeSingle(),
+        (supabase as any).from('task_waitlist').select('id', { count: 'exact', head: true }).eq('task_id', id!),
+        (supabase as any).from('task_waitlist').select('id, position').eq('task_id', id!).eq('volunteer_id', session.user.id).maybeSingle(),
+      ]);
 
-      // Check if user signed up
-      const { data: mySignup } = await supabase
-        .from('task_signups')
-        .select('id')
-        .eq('task_id', id!)
-        .eq('volunteer_id', session.user.id)
-        .maybeSingle();
-      setIsSignedUp(!!mySignup);
-
-      // Fetch likes
-      const { count: lCount } = await supabase
-        .from('task_likes')
-        .select('id', { count: 'exact', head: true })
-        .eq('task_id', id!);
-      setLikeCount(lCount || 0);
-
-      const { data: myLike } = await supabase
-        .from('task_likes')
-        .select('id')
-        .eq('task_id', id!)
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      setIsLiked(!!myLike);
+      setSignupCount(signupRes.count || 0);
+      setIsSignedUp(!!mySignupRes.data);
+      setLikeCount(likeRes.count || 0);
+      setIsLiked(!!myLikeRes.data);
+      setWaitlistCount(waitlistRes.count || 0);
+      if (myWaitlistRes.data) {
+        setIsOnWaitlist(true);
+        setWaitlistPosition(myWaitlistRes.data.position || 1);
+      }
 
       setLoading(false);
     };
