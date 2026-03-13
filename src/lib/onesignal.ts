@@ -199,7 +199,7 @@ export async function markPushPromptSeen() {
 
   await supabase
     .from('profiles')
-    .update({ push_prompt_seen: true } as any)
+    .update({ push_prompt_seen: true })
     .eq('id', user.id);
 }
 
