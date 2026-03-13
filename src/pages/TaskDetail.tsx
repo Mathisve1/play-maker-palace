@@ -828,6 +828,15 @@ const TaskDetail = () => {
                   <CheckCircle className="w-5 h-5" />
                   {l.signedUp}
                 </div>
+                {allowShiftSwaps && signupCount > 1 && (
+                  <button
+                    onClick={() => setShowSwapDialog(true)}
+                    className="px-4 py-3 rounded-2xl text-sm font-medium border border-border text-muted-foreground hover:text-primary hover:border-primary/20 transition-colors"
+                    title={language === 'nl' ? 'Shift ruilen' : 'Swap shift'}
+                  >
+                    <ArrowLeftRight className="w-5 h-5" />
+                  </button>
+                )}
                 <button
                   onClick={handleCancel}
                   className="px-5 py-3 rounded-2xl text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
