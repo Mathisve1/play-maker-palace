@@ -32,7 +32,7 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
   if (permission !== 'granted') {
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false } as any)
+      .update({ push_notifications_enabled: false })
       .eq('id', user.id);
     return { enabled: false, reason: 'denied' };
   }
@@ -87,7 +87,7 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
     // Update profile only after successful subscription persist
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: true, push_prompt_seen: true } as any)
+      .update({ push_notifications_enabled: true, push_prompt_seen: true })
       .eq('id', user.id);
 
     console.log('[Push] ✅ Subscribed successfully');
@@ -96,7 +96,7 @@ export async function subscribeToPush(): Promise<{ enabled: boolean; reason: str
     console.error('[Push] Subscribe error:', err);
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false } as any)
+      .update({ push_notifications_enabled: false })
       .eq('id', user.id);
     return { enabled: false, reason: 'error' };
   }
@@ -129,7 +129,7 @@ export async function unsubscribeFromPush(): Promise<void> {
 
   await supabase
     .from('profiles')
-    .update({ push_notifications_enabled: false } as any)
+    .update({ push_notifications_enabled: false })
     .eq('id', user.id);
 }
 
@@ -152,7 +152,7 @@ export async function markPushPromptSeen(): Promise<void> {
   if (!user?.id) return;
   await supabase
     .from('profiles')
-    .update({ push_prompt_seen: true } as any)
+    .update({ push_prompt_seen: true })
     .eq('id', user.id);
 }
 
@@ -219,7 +219,7 @@ export async function autoResubscribeIfNeeded(): Promise<void> {
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') {
         console.log('[Push] Auto-resub: permission denied');
-        await supabase.from('profiles').update({ push_notifications_enabled: false } as any).eq('id', user.id);
+        await supabase.from('profiles').update({ push_notifications_enabled: false }).eq('id', user.id);
         return;
       }
     }

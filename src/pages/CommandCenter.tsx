@@ -354,7 +354,7 @@ const CommandCenter = () => {
     setProcessing(true);
     try {
       if (item.type === 'enrollment') {
-        await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', item.source_id);
+        await supabase.from('monthly_enrollments').update({ approval_status: 'approved' }).eq('id', item.source_id);
         toast.success(t3('Goedgekeurd!', 'Approuvé !', 'Approved!'));
         sendPush({ userId: item.volunteer_id, title: '✅ Inschrijving goedgekeurd', message: `Je inschrijving voor "${item.context_label}" is goedgekeurd!`, url: '/dashboard', type: 'enrollment_approved' });
       } else if (item.type === 'task_signup') {
@@ -382,7 +382,7 @@ const CommandCenter = () => {
           const barcode = `VT-${item.source_id.slice(0, 8).toUpperCase()}`;
           await supabase.from('volunteer_tickets').insert({
             club_id: clubId, volunteer_id: item.volunteer_id, task_id: item.task_id,
-            barcode, status: 'generated' as any,
+            barcode, status: 'sent',
           });
         }
         toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
@@ -399,7 +399,7 @@ const CommandCenter = () => {
     setProcessing(true);
     try {
       if (item.type === 'enrollment') {
-        await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' } as any).eq('id', item.source_id);
+        await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' }).eq('id', item.source_id);
       } else if (item.type === 'task_signup') {
         await supabase.from('task_signups').update({ status: 'rejected' }).eq('id', item.source_id);
       } else if (item.type === 'day_signup') {
@@ -432,7 +432,7 @@ const CommandCenter = () => {
 
   const handleActionSilent = async (item: ActionItem) => {
     if (item.type === 'enrollment') {
-      await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', item.source_id);
+      await supabase.from('monthly_enrollments').update({ approval_status: 'approved' }).eq('id', item.source_id);
     } else if (item.type === 'task_signup') {
       await supabase.from('task_signups').update({ status: 'assigned' }).eq('id', item.source_id);
     } else if (item.type === 'day_signup') {

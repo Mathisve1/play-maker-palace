@@ -26,7 +26,7 @@ const BreakTimer = ({ taskId, userId, language }: Props) => {
     // Load today's breaks
     const load = async () => {
       const today = new Date().toISOString().split('T')[0];
-      const { data } = await (supabase as any).from('volunteer_breaks')
+      const { data } = await supabase.from('volunteer_breaks')
         .select('id, started_at, ended_at, duration_minutes')
         .eq('task_id', taskId)
         .eq('volunteer_id', userId)
@@ -57,7 +57,7 @@ const BreakTimer = ({ taskId, userId, language }: Props) => {
   }, [onBreak]);
 
   const handleStartBreak = async () => {
-    const { data, error } = await (supabase as any).from('volunteer_breaks').insert({
+    const { data, error } = await supabase.from('volunteer_breaks').insert({
       task_id: taskId,
       volunteer_id: userId,
     }).select('id').single();
@@ -72,7 +72,7 @@ const BreakTimer = ({ taskId, userId, language }: Props) => {
     if (!breakId) return;
     const durationMinutes = Math.max(Math.round(elapsed / 60), 1);
 
-    await (supabase as any).from('volunteer_breaks')
+    await supabase.from('volunteer_breaks')
       .update({ ended_at: new Date().toISOString(), duration_minutes: durationMinutes })
       .eq('id', breakId);
 

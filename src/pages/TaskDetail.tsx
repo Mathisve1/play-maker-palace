@@ -258,7 +258,7 @@ const TaskDetail = () => {
       setWaitlistEnabled((taskData as any).waitlist_enabled || false);
 
       // Check if club allows shift swaps
-      (supabase as any).from('clubs').select('allow_shift_swaps').eq('id', taskData.club_id).maybeSingle().then(({ data: clubData }: any) => {
+      supabase.from('clubs').select('allow_shift_swaps').eq('id', taskData.club_id).maybeSingle().then(({ data: clubData }) => {
         if (clubData) setAllowShiftSwaps(!!clubData.allow_shift_swaps);
       });
 
@@ -268,8 +268,8 @@ const TaskDetail = () => {
         supabase.from('task_signups').select('id').eq('task_id', id!).eq('volunteer_id', session.user.id).maybeSingle(),
         supabase.from('task_likes').select('id', { count: 'exact', head: true }).eq('task_id', id!),
         supabase.from('task_likes').select('id').eq('task_id', id!).eq('user_id', session.user.id).maybeSingle(),
-        (supabase as any).from('task_waitlist').select('id', { count: 'exact', head: true }).eq('task_id', id!),
-        (supabase as any).from('task_waitlist').select('id, position').eq('task_id', id!).eq('volunteer_id', session.user.id).maybeSingle(),
+        supabase.from('task_waitlist').select('id', { count: 'exact', head: true }).eq('task_id', id!),
+        supabase.from('task_waitlist').select('id, position').eq('task_id', id!).eq('volunteer_id', session.user.id).maybeSingle(),
       ]);
 
       setSignupCount(signupRes.count || 0);

@@ -341,7 +341,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleExcludeTask = async (programId: string, taskId: string) => {
-    const { error } = await supabase.from('loyalty_program_excluded_tasks').insert({ program_id: programId, task_id: taskId } as any);
+    const { error } = await supabase.from('loyalty_program_excluded_tasks').insert({ program_id: programId, task_id: taskId });
     if (error) { toast.error(error.message); return; }
     setExcludedTasks(prev => {
       const updated = { ...prev };

@@ -31,7 +31,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
 
   // Load current swap setting
   useState(() => {
-    (supabase as any).from('clubs').select('allow_shift_swaps').eq('id', clubId).maybeSingle().then(({ data }: any) => {
+    supabase.from('clubs').select('allow_shift_swaps').eq('id', clubId).maybeSingle().then(({ data }) => {
       if (data) setAllowShiftSwaps(!!data.allow_shift_swaps);
     });
   });
@@ -75,7 +75,7 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
       }
     }
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('clubs')
       .update({
         name: name.trim(),

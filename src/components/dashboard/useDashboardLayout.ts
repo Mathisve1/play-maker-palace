@@ -40,12 +40,12 @@ export function useDashboardLayout(clubId: string | null, userId: string) {
     if (layoutId) {
       await supabase
         .from('dashboard_layouts')
-        .update({ layout: newLayout as any })
+        .update({ layout: newLayout as unknown as import('@/integrations/supabase/types').Json })
         .eq('id', layoutId);
     } else {
       const { data } = await supabase
         .from('dashboard_layouts')
-        .insert({ user_id: userId, club_id: clubId, layout: newLayout as any })
+        .insert({ user_id: userId, club_id: clubId, layout: newLayout as unknown as import('@/integrations/supabase/types').Json })
         .select('id')
         .maybeSingle();
       if (data) setLayoutId(data.id);
@@ -58,7 +58,7 @@ export function useDashboardLayout(clubId: string | null, userId: string) {
     if (layoutId) {
       await supabase
         .from('dashboard_layouts')
-        .update({ layout: DEFAULT_LAYOUT as any })
+        .update({ layout: DEFAULT_LAYOUT as unknown as import('@/integrations/supabase/types').Json })
         .eq('id', layoutId);
     }
   }, [clubId, userId, layoutId]);

@@ -180,7 +180,7 @@ async function linkPlayerIdToProfile(playerId: string) {
 
     const { error } = await supabase
       .from('profiles')
-      .update({ onesignal_player_id: playerId, push_notifications_enabled: true } as any)
+      .update({ onesignal_player_id: playerId, push_notifications_enabled: true })
       .eq('id', user.id);
 
     if (error) {
@@ -199,7 +199,7 @@ export async function markPushPromptSeen() {
 
   await supabase
     .from('profiles')
-    .update({ push_prompt_seen: true } as any)
+    .update({ push_prompt_seen: true })
     .eq('id', user.id);
 }
 
@@ -212,7 +212,7 @@ export async function setPushPreference(enabled: boolean) {
   // Update DB FIRST for instant UI feedback
   await supabase
     .from('profiles')
-    .update({ push_notifications_enabled: enabled, push_prompt_seen: true } as any)
+    .update({ push_notifications_enabled: enabled, push_prompt_seen: true })
     .eq('id', user.id);
 
   if (!enabled) {
@@ -224,7 +224,7 @@ export async function setPushPreference(enabled: boolean) {
     console.warn('[OneSignal] Notifications API not available');
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false } as any)
+      .update({ push_notifications_enabled: false })
       .eq('id', user.id);
     return { enabled: false, reason: 'unsupported' as const };
   }
@@ -249,7 +249,7 @@ export async function setPushPreference(enabled: boolean) {
     console.warn('[OneSignal] Permission denied or dismissed');
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false } as any)
+      .update({ push_notifications_enabled: false })
       .eq('id', user.id);
     return { enabled: false, reason: 'denied' as const };
   }

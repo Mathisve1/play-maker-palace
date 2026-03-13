@@ -215,7 +215,7 @@ const ReportingApiTab = () => {
       api_key: apiKey,
       name: newKeyName || 'API Key',
       created_by: userId,
-    } as any);
+    });
     if (error) {
       toast.error(error.message);
     } else {
@@ -228,7 +228,7 @@ const ReportingApiTab = () => {
   };
 
   const revokeKey = async (id: string) => {
-    await supabase.from('club_api_keys').update({ is_active: false } as any).eq('id', id);
+    await supabase.from('club_api_keys').update({ is_active: false }).eq('id', id);
     toast.success(t.keyRevoked);
     loadKeys();
   };

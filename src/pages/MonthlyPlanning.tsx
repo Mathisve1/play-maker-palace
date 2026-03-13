@@ -145,7 +145,7 @@ const MonthlyPlanning = () => {
   }, [clubId, viewYear, viewMonth]);
 
   const approveEnrollment = async (enrollmentId: string) => {
-    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', enrollmentId);
+    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'approved' }).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
     const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'approved' } : e));
@@ -153,7 +153,7 @@ const MonthlyPlanning = () => {
     if (enr) sendPush({ userId: enr.volunteer_id, title: '✅ Inschrijving goedgekeurd', message: `Je inschrijving is goedgekeurd! Je kunt nu je contract ondertekenen.`, url: '/dashboard', type: 'enrollment_approved' });
   };
   const rejectEnrollment = async (enrollmentId: string) => {
-    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' } as any).eq('id', enrollmentId);
+    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' }).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
     const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'rejected' } : e));
@@ -229,7 +229,7 @@ const MonthlyPlanning = () => {
 
   const escalateDispute = async (signup: DaySignupClub) => {
     const now = new Date().toISOString();
-    await supabase.from('monthly_day_signups').update({ dispute_status: 'escalated', dispute_escalated_at: now } as any).eq('id', signup.id);
+    await supabase.from('monthly_day_signups').update({ dispute_status: 'escalated', dispute_escalated_at: now }).eq('id', signup.id);
     setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, dispute_status: 'escalated', dispute_escalated_at: now } : s));
     toast.success(t3('Geschil geëscaleerd. Auto-resolutie in 48u.', 'Litige escaladé. Résolution auto dans 48h.', 'Dispute escalated. Auto-resolve in 48h.'));
     sendPush({ userId: signup.volunteer_id, title: '⚠️ Geschil geëscaleerd', message: 'Het geschil over je uren is geëscaleerd. Na 48u wordt het gemiddelde toegepast.', url: '/dashboard', type: 'dispute_escalated' });
@@ -267,7 +267,7 @@ const MonthlyPlanning = () => {
     if (!clubId) return;
     const { data } = await supabase.from('tasks').select('id, title, task_date, location, compensation_type, hourly_rate, spots_available')
       .eq('club_id', clubId).order('task_date', { ascending: false }).limit(50);
-    setLooseTasks((data || []) as any);
+    setLooseTasks(data || []);
     setShowImportDialog(true);
   };
 

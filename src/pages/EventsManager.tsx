@@ -527,7 +527,7 @@ const EventsManager = () => {
         title: t.title, spots_available: t.spots_available,
       })),
     }));
-    const { error } = await (supabase as any).from('event_templates').insert({
+    const { error } = await supabase.from('event_templates').insert({
       club_id: clubId, name: event.title, description: event.description,
       location: event.location, groups: templateGroups,
     });

@@ -38,7 +38,7 @@ const ReferralSection = ({ userId, language }: Props) => {
       }
 
       // Count successful referrals
-      const { count } = await (supabase as any)
+      const { count } = await supabase
         .from('referrals')
         .select('id', { count: 'exact', head: true })
         .eq('referrer_id', userId)

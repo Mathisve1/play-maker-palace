@@ -248,7 +248,7 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
         volunteer_id: userId,
         is_completed: newValue,
         completed_at: newValue ? new Date().toISOString() : null,
-      } as any, { onConflict: 'checklist_item_id,volunteer_id' } as any);
+      }, { onConflict: 'checklist_item_id,volunteer_id' });
 
     if (error) {
       toast.error(error.message);

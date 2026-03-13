@@ -42,10 +42,10 @@ const SkillsPassport = ({ userId, language, isOwnProfile = true }: Props) => {
   useEffect(() => {
     const load = async () => {
       const [{ data: skillsData }, { count: taskCount }, { data: hourData }, { count: badgeCount }] = await Promise.all([
-        (supabase as any).from('volunteer_skills').select('*').eq('user_id', userId),
+        supabase.from('volunteer_skills').select('*').eq('user_id', userId),
         supabase.from('task_signups').select('id', { count: 'exact', head: true }).eq('volunteer_id', userId).eq('status', 'assigned'),
         supabase.from('hour_confirmations').select('final_hours').eq('volunteer_id', userId).eq('status', 'confirmed'),
-        (supabase as any).from('volunteer_badges').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('volunteer_badges').select('id', { count: 'exact', head: true }).eq('user_id', userId),
       ]);
 
       if (skillsData) setSkills(skillsData);
@@ -70,7 +70,7 @@ const SkillsPassport = ({ userId, language, isOwnProfile = true }: Props) => {
   const handleAddSkill = async () => {
     if (!newSkill.trim()) return;
     setAdding(true);
-    const { data, error } = await (supabase as any).from('volunteer_skills').insert({
+    const { data, error } = await supabase.from('volunteer_skills').insert({
       user_id: userId,
       skill_name: newSkill.trim(),
       level: 'beginner',
@@ -83,7 +83,7 @@ const SkillsPassport = ({ userId, language, isOwnProfile = true }: Props) => {
   };
 
   const handleRemoveSkill = async (id: string) => {
-    await (supabase as any).from('volunteer_skills').delete().eq('id', id);
+    await supabase.from('volunteer_skills').delete().eq('id', id);
     setSkills(prev => prev.filter(s => s.id !== id));
   };
 
