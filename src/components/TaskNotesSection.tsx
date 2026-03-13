@@ -74,7 +74,7 @@ const TaskNotesSection = ({ taskId, userId, language, isAssigned }: TaskNotesSec
       photoUrl = pub.publicUrl;
     }
 
-    const { data, error } = await (supabase as any).from('task_notes').insert({
+    const { data, error } = await supabase.from('task_notes').insert({
       task_id: taskId,
       volunteer_id: userId,
       content: content.trim() || null,
