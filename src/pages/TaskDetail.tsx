@@ -159,6 +159,12 @@ const labels = {
     aboutTask: 'About this task',
     practicalInfo: 'Practical info',
     messageClub: 'Message club',
+    joinWaitlist: 'Join waitlist',
+    onWaitlist: 'You are on the waitlist',
+    leaveWaitlist: 'Leave waitlist',
+    waitlistPosition: 'Position',
+    waitlistCount: 'On waitlist',
+    taskFull: 'Task is full',
   },
 };
 
