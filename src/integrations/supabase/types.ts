@@ -1183,6 +1183,47 @@ export type Database = {
           },
         ]
       }
+      event_templates: {
+        Row: {
+          club_id: string
+          created_at: string
+          description: string | null
+          groups: Json
+          id: string
+          location: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          description?: string | null
+          groups?: Json
+          id?: string
+          location?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          description?: string | null
+          groups?: Json
+          id?: string
+          location?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           certificate_design_id: string | null
