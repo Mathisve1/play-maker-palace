@@ -44,17 +44,11 @@ export default function ReportingFinancialTab({
     ].filter(d => d.value > 0);
   }, [payments, filteredTaskIds]);
 
-  // Stripe vs SEPA
-  const paymentMethodPie = useMemo(() => {
-    const stripePaid = payments.filter(p => filteredTaskIds.has(p.task_id) && (p.status === 'succeeded' || p.status === 'paid'))
+  // SEPA payment totals
+  const sepaTotalPaid = useMemo(() => {
+    return sepaItems.filter(s => filteredTaskIds.has(s.task_id))
       .reduce((s: number, p: any) => s + Number(p.amount), 0);
-    const sepaPaid = sepaItems.filter(s => filteredTaskIds.has(s.task_id))
-      .reduce((s: number, p: any) => s + Number(p.amount), 0);
-    return [
-      { name: 'Stripe', value: Math.round(stripePaid * 100) / 100 },
-      { name: 'SEPA', value: Math.round(sepaPaid * 100) / 100 },
-    ].filter(d => d.value > 0);
-  }, [payments, sepaItems, filteredTaskIds]);
+  }, [sepaItems, filteredTaskIds]);
 
   // Cost per event
   const costPerEvent = useMemo(() => {
@@ -120,11 +114,6 @@ export default function ReportingFinancialTab({
       .sort((a, b) => b.percent - a.percent);
   }, [payments, complianceDeclarations, profiles]);
 
-  // Stripe fees
-  const totalFees = useMemo(() => {
-    return payments.filter(p => filteredTaskIds.has(p.task_id) && p.stripe_fee)
-      .reduce((s: number, p: any) => s + Number(p.stripe_fee || 0), 0);
-  }, [payments, filteredTaskIds]);
 
   const renderPieChart = (data: any[]) => (
     <ResponsiveContainer width="100%" height={280}>
@@ -142,8 +131,8 @@ export default function ReportingFinancialTab({
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="pt-4 pb-3 text-center">
-          <p className="text-2xl font-bold text-foreground">€{totalFees.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Stripe Fees</p>
+          <p className="text-2xl font-bold text-foreground">€{Math.round(sepaTotalPaid * 100 / 100).toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground">SEPA Totaal</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3 text-center">
           <p className="text-2xl font-bold text-foreground">{complianceOverview.filter(v => v.status === 'red').length}</p>
@@ -163,8 +152,6 @@ export default function ReportingFinancialTab({
         <Card><CardHeader><CardTitle className="text-base">Betalingsstatus</CardTitle></CardHeader>
           <CardContent>{paymentStatusPie.length > 0 ? renderPieChart(paymentStatusPie) : <p className="text-sm text-muted-foreground text-center py-8">Geen data</p>}</CardContent></Card>
 
-        <Card><CardHeader><CardTitle className="text-base">Stripe vs SEPA</CardTitle></CardHeader>
-          <CardContent>{paymentMethodPie.length > 0 ? renderPieChart(paymentMethodPie) : <p className="text-sm text-muted-foreground text-center py-8">Geen data</p>}</CardContent></Card>
 
         <Card><CardHeader><CardTitle className="text-base">Kosten per evenement</CardTitle></CardHeader>
           <CardContent>

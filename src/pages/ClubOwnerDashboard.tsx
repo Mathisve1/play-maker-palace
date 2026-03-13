@@ -320,7 +320,7 @@ const ClubOwnerDashboard = () => {
   const [signups, setSignups] = useState<Record<string, Signup[]>>({});
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [updatingSignup, setUpdatingSignup] = useState<string | null>(null);
-  const [clubStripeId, setClubStripeId] = useState<string | null>(null);
+  const [_clubStripeId, _setClubStripeId] = useState<string | null>(null); // kept for type compat
   const [showSettings, setShowSettings] = useState(false);
   const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteer: VolunteerProfile; signupStatus: string; signedUpAt: string } | null>(null);
   const [showMembers, setShowMembers] = useState(false);
@@ -329,8 +329,8 @@ const ClubOwnerDashboard = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [volunteerPayments, setVolunteerPayments] = useState<Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }>>({});
   const [signatureStatuses, setSignatureStatuses] = useState<Record<string, { status: string; document_url?: string | null; id?: string }>>({});
-  const [volunteerStripeIds, setVolunteerStripeIds] = useState<Record<string, string | null>>({});
-  const [sendingPayment, setSendingPayment] = useState<string | null>(null);
+  const [_volunteerStripeIds, _setVolunteerStripeIds] = useState<Record<string, string | null>>({});
+  const [_sendingPayment, _setSendingPayment] = useState<string | null>(null);
   const [sendingContract, setSendingContract] = useState<string | null>(null);
   const [contractConfirm, setContractConfirm] = useState<{ volunteer: Signup['volunteer']; task: Task } | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -423,9 +423,7 @@ const ClubOwnerDashboard = () => {
   useEffect(() => {
     if (contextLoading || !clubId || !currentUserId) return;
     const init = async () => {
-      // Fetch stripe_account_id for the club
-      const { data: clubRow } = await supabase.from('clubs').select('stripe_account_id').eq('id', clubId).maybeSingle();
-      setClubStripeId(clubRow?.stripe_account_id || null);
+      // Club init (SEPA only, Stripe removed)
 
       // Parallel: contract templates, trainings, partners, events, tasks, stripe info
       const [templatesRes, trainingsRes, partnersRes, eventsRes, tasksRes] = await Promise.all([
@@ -482,14 +480,10 @@ const ClubOwnerDashboard = () => {
           const volunteerIds = [...new Set(signupsData.map(s => s.volunteer_id))];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, stripe_account_id')
+            .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date')
             .in('id', volunteerIds);
 
           const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-
-          const stripeIds: Record<string, string | null> = {};
-          profiles?.forEach(p => { stripeIds[p.id] = p.stripe_account_id; });
-          setVolunteerStripeIds(stripeIds);
 
           const grouped: Record<string, Signup[]> = {};
           signupsData.forEach(s => {
@@ -803,22 +797,7 @@ const ClubOwnerDashboard = () => {
     setCreatingTask(false);
   };
 
-  const handleSendPayment = async (taskId: string, volunteerId: string) => {
-    const key = `${taskId}-${volunteerId}`;
-    setSendingPayment(key);
-    try {
-      const { data, error } = await supabase.functions.invoke('stripe-create-transfer', {
-        body: { task_id: taskId, volunteer_id: volunteerId },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success(t3('Betaling aangemaakt!', 'Paiement créé !', 'Payment created!'));
-      setVolunteerPayments(prev => ({ ...prev, [key]: { status: 'processing' } }));
-    } catch (err: any) {
-      toast.error(err.message || t3('Er ging iets mis', 'Une erreur est survenue', 'Something went wrong'));
-    }
-    setSendingPayment(null);
-  };
+  // Stripe payment handler removed - using SEPA only
 
   const handleStartEdit = (task: Task) => {
     setEditingTask(task);
@@ -995,10 +974,7 @@ const ClubOwnerDashboard = () => {
                             const payment = volunteerPayments[payKey];
                             const sigInfo = signatureStatuses[payKey];
                             const contractSigned = sigInfo?.status === 'completed';
-                            const volHasStripe = !!volunteerStripeIds[signup.volunteer_id];
                             const isHourly = task.compensation_type === 'hourly';
-                            // Stripe payments temporarily disabled - using SEPA only
-                            const canPay = false; // was: clubStripeId && volHasStripe && contractSigned && (!payment || payment.status === 'failed');
 
                             // Show hour confirmation button for hourly tasks
                             if (isHourly && contractSigned && (!payment || payment.status === 'failed')) {
@@ -1019,29 +995,11 @@ const ClubOwnerDashboard = () => {
                               );
                             }
 
-                            if (payment && payment.status === 'succeeded') {
-                              return (
-                                <span className="flex items-center gap-1 text-xs font-medium text-green-600">
-                                  <CheckCircle className="w-3.5 h-3.5" /> Betaald
-                                  {payment.receipt_url && <a href={payment.receipt_url} target="_blank" rel="noopener noreferrer" className="ml-1"><Download className="w-3 h-3" /></a>}
-                                </span>
-                              );
-                            }
-                            if (payment && payment.status === 'processing') {
-                              return <span className="flex items-center gap-1 text-xs text-yellow-600"><Clock className="w-3.5 h-3.5" /> Verwerken</span>;
-                            }
                             if (contractSigned && sigInfo?.document_url) {
                               return (
-                                <div className="flex items-center gap-1">
-                                  <a href={sigInfo.document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors" title="Download ondertekend contract">
-                                    <Download className="w-3 h-3" /> Contract
-                                  </a>
-                                  {canPay && (
-                                    <button onClick={() => handleSendPayment(signup.task_id, signup.volunteer_id)} disabled={sendingPayment === payKey} className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1">
-                                      {sendingPayment === payKey ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Betaal
-                                    </button>
-                                  )}
-                                </div>
+                                <a href={sigInfo.document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors" title="Download ondertekend contract">
+                                  <Download className="w-3 h-3" /> Contract
+                                </a>
                               );
                             }
                             if (!contractSigned) {
@@ -1084,13 +1042,6 @@ const ClubOwnerDashboard = () => {
                                   className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
                                 >
                                   {isSending ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />} Contract
-                                </button>
-                              );
-                            }
-                            if (canPay) {
-                              return (
-                                <button onClick={() => handleSendPayment(signup.task_id, signup.volunteer_id)} disabled={sendingPayment === payKey} className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1">
-                                  {sendingPayment === payKey ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Betaal
                                 </button>
                               );
                             }

@@ -264,7 +264,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                   {roleLabels.bestuurder}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  {t3('Volledige toegang: rollen toewijzen & wijzigen, Stripe koppelen/ontkoppelen, betalingen uitvoeren, contracten aanmaken, uitsturen & toekennen, taken beheren, en andere leden tot medebestuurder benoemen.', 'Accès complet: attribuer et modifier les rôles, connecter/déconnecter Stripe, effectuer des paiements, créer et envoyer des contrats, gérer les tâches.', 'Full access: assign & change roles, connect/disconnect Stripe, process payments, create & send contracts, manage tasks, and appoint other board members.')}
+                  {t3('Volledige toegang: rollen toewijzen & wijzigen, betalingen uitvoeren, contracten aanmaken, uitsturen & toekennen, taken beheren, en andere leden tot medebestuurder benoemen.', 'Accès complet: attribuer et modifier les rôles, effectuer des paiements, créer et envoyer des contrats, gérer les tâches.', 'Full access: assign & change roles, process payments, create & send contracts, manage tasks, and appoint other board members.')}
                 </p>
               </div>
               <div>
@@ -273,7 +273,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                   {roleLabels.beheerder}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  {t3('Kan bijna alles: taken beheren, contracten aanmaken & uitsturen, betalingen uitvoeren, en leden uitnodigen. Kan geen rollen wijzigen en geen Stripe-gegevens aanpassen of ontkoppelen.', 'Peut presque tout faire: gérer les tâches, créer et envoyer des contrats, effectuer des paiements et inviter des membres. Ne peut pas modifier les rôles ni les paramètres Stripe.', 'Can do almost everything: manage tasks, create & send contracts, process payments, and invite members. Cannot change roles or modify Stripe settings.')}
+                  {t3('Kan bijna alles: taken beheren, contracten aanmaken & uitsturen, betalingen uitvoeren, en leden uitnodigen. Kan geen rollen wijzigen.', 'Peut presque tout faire: gérer les tâches, créer et envoyer des contrats, effectuer des paiements et inviter des membres. Ne peut pas modifier les rôles.', 'Can do almost everything: manage tasks, create & send contracts, process payments, and invite members. Cannot change roles.')}
                 </p>
               </div>
               <div>

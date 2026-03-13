@@ -24,7 +24,7 @@ const TaskDetail = lazy(() => import("./pages/TaskDetail"));
 const Chat = lazy(() => import("./pages/Chat"));
 const ClubOwnerDashboard = lazy(() => import("./pages/ClubOwnerDashboard"));
 const ClubInviteAccept = lazy(() => import("./pages/ClubInviteAccept"));
-const PaymentsOverview = lazy(() => import("./pages/PaymentsOverview"));
+
 const ContractBuilder = lazy(() => import("./pages/ContractBuilder"));
 const BriefingBuilder = lazy(() => import("./pages/BriefingBuilder"));
 const ComplianceDashboard = lazy(() => import("./pages/ComplianceDashboard"));
@@ -103,7 +103,7 @@ const App = () => {
             <Route path="/club-dashboard" element={<RequireAuth redirectTo="/club-login"><ClubOwnerDashboard /></RequireAuth>} />
             <Route path="/command-center" element={<RequireAuth redirectTo="/club-login"><CommandCenter /></RequireAuth>} />
             <Route path="/club-invite/:token" element={<ClubInviteAccept />} />
-            <Route path="/payments" element={<RequireAuth redirectTo="/club-login"><PaymentsOverview /></RequireAuth>} />
+            
             <Route path="/contract-builder" element={<RequireAuth redirectTo="/club-login"><ContractBuilder /></RequireAuth>} />
             <Route path="/briefing-builder" element={<RequireAuth redirectTo="/club-login"><BriefingBuilder /></RequireAuth>} />
             <Route path="/compliance" element={<RequireAuth redirectTo="/club-login"><ComplianceDashboard /></RequireAuth>} />

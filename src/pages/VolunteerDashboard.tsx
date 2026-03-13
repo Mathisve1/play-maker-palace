@@ -905,7 +905,7 @@ const VolunteerDashboard = () => {
 
       {/* ===== PAYMENTS TAB ===== */}
       {activeTab === 'payments' && (
-        <VolunteerPaymentsTab payments={myPayments} sepaPayouts={sepaPayouts} language={language} />
+        <VolunteerPaymentsTab sepaPayouts={sepaPayouts} language={language} />
       )}
 
       {/* ===== ALL TASKS / MINE TASKS ===== */}
