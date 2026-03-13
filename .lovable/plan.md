@@ -1,85 +1,88 @@
 
-# Volledige Audit – Maart 2026
 
-## PWA & Safe Area (urgent - jouw klacht over tekst achter statusbar)
+# Vrijwilliger Feature Uitbreiding — Implementatieplan
 
-### P1. Mobile header hoogte telt safe-area-inset-top niet mee
-**Probleem:** `DashboardLayout.tsx` header is `h-14` (56px) met `paddingTop: env(safe-area-inset-top)`. Maar omdat `h-14` de TOTALE hoogte is, wordt de content IN de header samengeperst achter de statusbar (batterij/uur). Hetzelfde geldt voor `Chat.tsx`, `TicketScanner.tsx` en `TicketingDashboard.tsx`.
-**Oplossing:** Verander van vaste `h-14` naar `min-h-14` + `pt-safe-top`, zodat de header GROEIT op iOS/Android PWA. Of gebruik een wrapper-div voor de safe area padding boven de header content.
+## Geselecteerde features (7 stuks)
 
-### P2. Chat pagina mist sidebar-layout
-**Probleem:** Chat gebruikt een eigen header + navigatie ipv `DashboardLayout` of `ClubPageLayout`. Inconsistente ervaring: geen sidebar, geen hamburger menu, terug-knop navigeert naar dashboard maar je verliest sidebar-context.
-**Oplossing:** Chat integreren in `DashboardLayout` met de juiste sidebar per rol.
-
----
-
-## Data & Performance
-
-### P3. VolunteerDashboard init() doet 20+ queries sequentieel
-**Probleem:** De `init()` functie in VolunteerDashboard (1188 regels) laadt taken, signups, payments, SEPA, contracten, tickets, loyalty, certificates, follows – allemaal SEQUENTIEEL. Geen `Promise.all()` waar mogelijk. Laadtijd op mobiel is merkbaar.
-**Oplossing:** Groepeer onafhankelijke queries in `Promise.all()` blokken. Splits init in parallelle fasen.
-
-### P4. CommandCenter herlaadt ALLES bij elke realtime change
-**Probleem:** Lijn 286-289: elke `task_signups`, `monthly_enrollments`, of `monthly_day_signups` change triggert een volledige `loadData()` – dit doet 10+ queries opnieuw. Bij drukke events kan dit elke seconde triggeren.
-**Oplossing:** Debounce met 500ms, of targeted updates per change type.
-
-### P5. TicketingDashboard pollt elke 5 seconden
-**Probleem:** Lijn 323-336: een `setInterval(5000)` pollt de volledige tickets-tabel, ook als de tab inactief is. Verspilt resources.
-**Oplossing:** Gebruik `document.visibilityState` check, of vervang polling door pure realtime subscriptions (die al bestaan op lijn 308-321).
-
-### P6. Volunteer live-event polling elke 3 seconden
-**Probleem:** VolunteerDashboard lijn 439-442: pollt elke 3 seconden voor live events, naast de realtime subscriptions die er al zijn. Overkill.
-**Oplossing:** Verhoog interval naar 15-30 seconden, of verwijder polling en vertrouw op de realtime channels.
+1. **Digitaal certificaat PDF** — Auto-genereerd attest na taak/training
+2. **Kalender-sync (.ics / feed)** — Shifts exporteren naar externe kalenders
+3. **Achievements & badges** — Gamification met mijlpaal-badges
+4. **Groepschat per event** — Vrijwilligers chatten onderling per event
+5. **Taak-notities & foto's** — Notities/foto's toevoegen tijdens shift
+6. **Wachtlijst-notificaties** — Push bij vrijgekomen plek
+7. **Social media sharing** — Badges/activiteiten delen
 
 ---
 
-## UX & Navigatie
+## Voorgestelde volgorde
 
-### P7. Geen loading skeletons, alleen spinners
-**Probleem:** Alle dashboards tonen een centered spinner bij initial load. Op mobiel lijkt het alsof de app "leeg" is tot alles geladen is. Geen visuele hint over de structuur.
-**Oplossing:** Skeleton placeholders voor KPI cards, takenlijst, sidebar content.
+### Fase A: Wachtlijst-notificaties
+Kleinste wijziging — geen nieuwe tabellen nodig. Wanneer een `task_signup` wordt geannuleerd en er staat iemand op de `task_waitlist`, automatisch push sturen + optioneel auto-promoten.
 
-### P8. VolunteerDashboard.tsx is 1188 regels – niet gerefactord
-**Probleem:** Vergelijkbaar met ClubOwnerDashboard vóór refactor. Eén component met 30+ state variabelen, init() van 200 regels, en alle tab-renders inline.
-**Oplossing:** Extract `VolunteerDashboardTab`, `VolunteerPaymentsTab`, `VolunteerContractsTab`, etc.
+- Trigger in bestaande annuleer-logica (`TaskDetail.tsx`, `CommandCenter.tsx`)
+- `sendPush()` naar eerste wachtlijst-persoon
+- Optioneel: auto-assign + notificatie
 
-### P9. MonthlyPlanning.tsx is 971 regels
-**Probleem:** Bevat calendar rendering, task CRUD, enrollment management, day signup management, ticket generation, payout generation – alles in 1 component.
-**Oplossing:** Extract `MonthlyCalendar`, `MonthlyEnrollmentList`, `MonthlyDaySignupManager`.
+### Fase B: Taak-notities & foto's
+- **Nieuwe tabel**: `task_notes` (task_id, volunteer_id, text, photo_url, created_at)
+- **Storage bucket**: `task-notes-photos` (public)
+- **UI**: In `TaskDetail.tsx` een notitie-sectie met foto-upload
+- **Club-kant**: Notities zichtbaar in CommandCenter bij signup-details
+- RLS: vrijwilliger kan eigen notities CRUD, club kan lezen
 
-### P10. Duplicate club-finding logic in 8+ pagina's
-**Probleem:** CommandCenter, TicketingDashboard, TicketScanner, MonthlyPlanning, ClubPageLayout – allemaal dupliceren dezelfde "find club by owner_id OR club_members" logica.
-**Oplossing:** Maak een `useClub()` hook die dit centraal afhandelt.
+### Fase C: Digitaal certificaat PDF
+- **Edge function**: `generate-certificate` — PDF met naam, club-logo, datum, QR-verificatie
+- Hergebruik bestaand `generateAccountingPdf.ts` patroon (jsPDF)
+- **Nieuwe tabel**: `volunteer_certificates` bestaat al → toevoegen van `pdf_url` kolom + `verification_code`
+- Download-knop in AcademyTab + SeasonOverview
+- QR linkt naar een publieke verificatiepagina
+
+### Fase D: Kalender-sync
+- **Edge function**: `calendar-feed` — genereert .ics feed per vrijwilliger (token-based URL)
+- **Nieuwe tabel**: `calendar_tokens` (user_id, token UUID, created_at)
+- Per-taak .ics download knop in TaskDetail
+- Feed-URL tonen in profiel-instellingen (kopieerbaar)
+- iCalendar formaat met VEVENT per toegewezen taak
+
+### Fase E: Achievements & badges
+- **Nieuwe tabellen**: `badge_definitions` (key, name_nl/fr/en, description, icon, condition_type, threshold) + `volunteer_badges` (user_id, badge_id, earned_at)
+- **Seed data**: ~10 badges (eerste taak, 10/50/100 taken, nachtshift, 5 clubs, 100 uur, etc.)
+- **Trigger-logica**: Na taak-voltooiing checken of nieuwe badges verdiend zijn (edge function of client-side)
+- **UI**: Badge-sectie in VolunteerDashboard + profiel, met animatie bij nieuw verdiende badge
+- Badges zichtbaar voor clubs in VolunteerProfileDialog
+
+### Fase F: Groepschat per event
+- **Nieuwe tabel**: `event_chats` (event_id, user_id, message, attachment_url, created_at)
+- Realtime via Supabase Realtime (postgres_changes)
+- Toegang: alleen vrijwilligers met `task_signups` status='assigned' voor taken in dat event
+- UI: Nieuw tabblad of sectie in VolunteerDashboard ("Event Chat")
+- RLS: lezen/schrijven alleen voor deelnemers van het event
+
+### Fase G: Social media sharing
+- Share-knoppen (Web Share API + fallback) voor:
+  - Verdiende badges
+  - Seizoensoverzicht (als afbeelding/tekst)
+  - Certificaten
+- Genereer shareable card (canvas → image of statische template)
+- Geen externe API keys nodig — puur client-side Web Share API
 
 ---
 
-## Veiligheid & Code Quality
+## Technisch overzicht
 
-### P11. Veel `(supabase as any)` casts
-**Probleem:** 15+ plekken waar Supabase queries gecast worden naar `any`, wat type safety volledig uitschakelt. Bugs worden niet gevangen door TypeScript.
-**Oplossing:** Database types updaten en proper typeren, of expliciete type assertions gebruiken.
-
-### P12. Auth guard is niet centraal
-**Probleem:** Elke pagina doet een eigen `getSession()` check met redirect. Als er een race condition is of de session expire, krijg je inconsistent gedrag.
-**Oplossing:** Een `<RequireAuth>` wrapper component die sessie centraal controleert.
+| Feature | Nieuwe tabel | Edge function | Storage | Realtime |
+|---------|-------------|---------------|---------|----------|
+| Wachtlijst-push | — | — | — | — |
+| Taak-notities | `task_notes` | — | `task-notes-photos` | — |
+| Certificaat PDF | kolom toevoegen | `generate-certificate` | — | — |
+| Kalender-sync | `calendar_tokens` | `calendar-feed` | — | — |
+| Badges | `badge_definitions` + `volunteer_badges` | — | — | — |
+| Groepschat | `event_chats` | — | hergebruik `chat-attachments` | ✅ |
+| Social sharing | — | — | — | — |
 
 ---
 
-## Aanbevolen prioriteit
+## Aanpak
 
-| # | Upgrade | Impact | Moeite | Gebied |
-|---|---------|--------|--------|--------|
-| P1 | Safe area header fix (PWA statusbar) | **Kritiek** | Klein | PWA |
-| P3 | Parallel queries VolunteerDashboard | Hoog | Medium | Performance |
-| P4 | CommandCenter debounce | Hoog | Klein | Performance |
-| P5 | Ticketing polling optimalisatie | Medium | Klein | Performance |
-| P6 | Volunteer live-event polling reduceren | Medium | Klein | Performance |
-| P7 | Loading skeletons | Medium | Medium | UX |
-| P10 | useClub() hook extracten | Medium | Medium | Code quality |
-| P8 | VolunteerDashboard refactor | Medium | Groot | Code quality |
-| P9 | MonthlyPlanning refactor | Medium | Groot | Code quality |
-| P2 | Chat sidebar-integratie | Laag | Medium | UX |
-| P11 | Supabase type safety | Laag | Medium | Code quality |
-| P12 | Centrale auth guard | Laag | Medium | Security |
+Ik implementeer de fases één voor één in bovenstaande volgorde (A→G), zodat je na elke fase kunt testen. Elke fase bevat database-migratie, RLS policies, component-code en integratie in het bestaande dashboard.
 
-Geef aan welke je wilt aanpakken.
