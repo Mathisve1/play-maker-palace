@@ -197,6 +197,11 @@ const TaskDetail = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [currentUserId, setCurrentUserId] = useState('');
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [waitlistEnabled, setWaitlistEnabled] = useState(false);
+  const [isOnWaitlist, setIsOnWaitlist] = useState(false);
+  const [waitlistPosition, setWaitlistPosition] = useState(0);
+  const [waitlistCount, setWaitlistCount] = useState(0);
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
 
   const l = labels[language];
 
