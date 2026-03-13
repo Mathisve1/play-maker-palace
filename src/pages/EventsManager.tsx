@@ -514,6 +514,55 @@ const EventsManager = () => {
     setTogglingHold(null);
   };
 
+  const handleSaveAsTemplate = async (eventId: string) => {
+    setSavingTemplate(eventId);
+    const event = events.find(e => e.id === eventId);
+    if (!event || !clubId) { setSavingTemplate(null); return; }
+    const groups = eventGroups.filter(g => g.event_id === eventId);
+    const templateGroups = groups.map(g => ({
+      name: g.name, color: g.color,
+      wristband_color: g.wristband_color, wristband_label: g.wristband_label,
+      materials_note: g.materials_note,
+      tasks: tasks.filter(t => t.event_group_id === g.id).map(t => ({
+        title: t.title, spots_available: t.spots_available,
+      })),
+    }));
+    const { error } = await (supabase as any).from('event_templates').insert({
+      club_id: clubId, name: event.title, description: event.description,
+      location: event.location, groups: templateGroups,
+    });
+    if (error) toast.error(error.message);
+    else toast.success(t3('Sjabloon opgeslagen!', 'Modèle sauvegardé!', 'Template saved!'));
+    setSavingTemplate(null);
+  };
+
+  const handleCreateFromTemplate = async (template: { name: string; description: string | null; location: string | null; groups: any[] }) => {
+    if (!clubId) return;
+    const { data: newEv, error } = await supabase.from('events').insert({
+      club_id: clubId, title: template.name, description: template.description, location: template.location,
+    } as any).select('*').maybeSingle();
+    if (error || !newEv) { toast.error(error?.message || 'Failed'); return; }
+    for (const group of template.groups) {
+      const { data: newGrp } = await supabase.from('event_groups').insert({
+        event_id: newEv.id, name: group.name, color: group.color, sort_order: template.groups.indexOf(group),
+        wristband_color: group.wristband_color, wristband_label: group.wristband_label,
+        materials_note: group.materials_note,
+      } as any).select('*').maybeSingle();
+      if (newGrp) {
+        setEventGroups(prev => [...prev, newGrp]);
+        for (const task of (group.tasks || [])) {
+          const { data: newTask } = await supabase.from('tasks').insert({
+            club_id: clubId, title: task.title, spots_available: task.spots_available || 1,
+            event_id: newEv.id, event_group_id: newGrp.id,
+          } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
+          if (newTask) setTasks(prev => [...prev, newTask]);
+        }
+      }
+    }
+    setEvents(prev => [newEv, ...prev]);
+    toast.success(t3('Evenement aangemaakt vanuit sjabloon!', 'Événement créé à partir du modèle!', 'Event created from template!'));
+  };
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
