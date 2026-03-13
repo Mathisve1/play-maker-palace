@@ -36,7 +36,7 @@ const EventGroupChat = ({ eventId, eventTitle, userId, language }: EventGroupCha
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any).from('event_chats')
+      const { data } = await supabase.from('event_chats')
         .select('*')
         .eq('event_id', eventId)
         .order('created_at', { ascending: true })
