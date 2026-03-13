@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus, LayoutGrid, Inbox, User,
+  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -120,6 +120,7 @@ const ClubOwnerSidebar = ({
     { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Award, path: '/loyalty' },
     { label: t3('Partners', 'Partenaires', 'Partners'), icon: Handshake, path: '/external-partners' },
     { label: t3('Rapportering', 'Rapports', 'Reporting'), icon: BarChart3, path: '/reporting' },
+    { label: t3('Analytics', 'Analytique', 'Analytics'), icon: TrendingUp, path: '/analytics' },
   ];
 
   return (
