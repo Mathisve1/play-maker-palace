@@ -504,6 +504,9 @@ const CommandCenter = () => {
           <p className="text-sm text-muted-foreground mt-1">{t.subtitle}</p>
         </div>
 
+        {/* Shift swap approvals */}
+        {clubId && <ShiftSwapApprovals clubId={clubId} language={language} />}
+
         {/* Filter tabs + Bulk bar */}
         {items.length > 0 && (
           <div className="space-y-3">
