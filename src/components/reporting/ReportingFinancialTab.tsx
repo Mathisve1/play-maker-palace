@@ -114,11 +114,6 @@ export default function ReportingFinancialTab({
       .sort((a, b) => b.percent - a.percent);
   }, [payments, complianceDeclarations, profiles]);
 
-  // Stripe fees
-  const totalFees = useMemo(() => {
-    return payments.filter(p => filteredTaskIds.has(p.task_id) && p.stripe_fee)
-      .reduce((s: number, p: any) => s + Number(p.stripe_fee || 0), 0);
-  }, [payments, filteredTaskIds]);
 
   const renderPieChart = (data: any[]) => (
     <ResponsiveContainer width="100%" height={280}>
