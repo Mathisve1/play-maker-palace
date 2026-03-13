@@ -43,46 +43,50 @@ const ClubOwnerSidebar = ({
   useEffect(() => {
     if (!clubId) return;
     const fetchCount = async () => {
-      // Parallel: fetch tasks and plans at the same time
+      let total = 0;
+
       const [tasksRes, plansRes] = await Promise.all([
-        supabase.from('tasks').select('id').eq('club_id', clubId).eq('status', 'open'),
-        supabase.from('monthly_plans').select('id').eq('club_id', clubId).eq('status', 'published'),
+        supabase.from('tasks').select('id, contract_template_id').eq('club_id', clubId).eq('status', 'open'),
+        supabase.from('monthly_plans').select('id, contract_template_id').eq('club_id', clubId).eq('status', 'published'),
       ]);
 
       const tasks = tasksRes.data;
       const plans = plansRes.data;
 
-      // Build parallel batch for counts
-      const countPromises: Promise<number>[] = [];
-
+      // Task signups (pending) + contracts (assigned with template)
       if (tasks && tasks.length > 0) {
         const taskIds = tasks.map(t => t.id);
-        countPromises.push(
-          supabase.from('task_signups').select('id', { count: 'exact', head: true }).in('task_id', taskIds).eq('status', 'pending')
-            .then(r => r.count || 0) as Promise<number>
-        );
+        const { data: signups } = await supabase.from('task_signups').select('id, task_id, status').in('task_id', taskIds).in('status', ['pending', 'assigned']);
+        const tasksWithContract = new Set(tasks.filter(t => t.contract_template_id).map(t => t.id));
+        (signups || []).forEach(s => {
+          if (s.status === 'pending') total++;
+          if (s.status === 'assigned' && tasksWithContract.has(s.task_id)) total++;
+        });
       }
 
+      // Monthly: enrollments (pending) + contracts (approved+pending contract) + day signups (pending) + tickets (assigned without barcode)
       if (plans && plans.length > 0) {
         const planIds = plans.map(p => p.id);
-        countPromises.push(
-          (supabase.from('monthly_enrollments').select('id, approval_status').in('plan_id', planIds)
-            .then(async (r) => {
-              const enrs = r.data || [];
-              const pendingCount = enrs.filter(e => e.approval_status === 'pending').length;
-              const approvedIds = enrs.filter(e => e.approval_status === 'approved').map(e => e.id);
-              let dayCount = 0;
-              if (approvedIds.length > 0) {
-                const { count } = await supabase.from('monthly_day_signups').select('id', { count: 'exact', head: true }).in('enrollment_id', approvedIds).eq('status', 'pending');
-                dayCount = count || 0;
-              }
-              return pendingCount + dayCount;
-            }) as Promise<number>)
-        );
+        const { data: enrollments } = await supabase.from('monthly_enrollments').select('id, plan_id, approval_status, contract_status').in('plan_id', planIds);
+        const enrs = enrollments || [];
+        const plansWithContract = new Set(plans.filter(p => p.contract_template_id).map(p => p.id));
+
+        enrs.forEach(e => {
+          if (e.approval_status === 'pending') total++;
+          if (e.approval_status === 'approved' && e.contract_status === 'pending' && plansWithContract.has(e.plan_id)) total++;
+        });
+
+        if (enrs.length > 0) {
+          const enrIds = enrs.map(e => e.id);
+          const { data: daySignups } = await supabase.from('monthly_day_signups').select('id, status, ticket_barcode').in('enrollment_id', enrIds);
+          (daySignups || []).forEach(ds => {
+            if (ds.status === 'pending') total++;
+            if (ds.status === 'assigned' && !ds.ticket_barcode) total++;
+          });
+        }
       }
 
-      const counts = await Promise.all(countPromises);
-      setActionCount(counts.reduce((a, b) => a + b, 0));
+      setActionCount(total);
     };
     fetchCount();
 
