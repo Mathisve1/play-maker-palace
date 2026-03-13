@@ -24,7 +24,7 @@ const TaskDetail = lazy(() => import("./pages/TaskDetail"));
 const Chat = lazy(() => import("./pages/Chat"));
 const ClubOwnerDashboard = lazy(() => import("./pages/ClubOwnerDashboard"));
 const ClubInviteAccept = lazy(() => import("./pages/ClubInviteAccept"));
-const PaymentsOverview = lazy(() => import("./pages/PaymentsOverview"));
+
 const ContractBuilder = lazy(() => import("./pages/ContractBuilder"));
 const BriefingBuilder = lazy(() => import("./pages/BriefingBuilder"));
 const ComplianceDashboard = lazy(() => import("./pages/ComplianceDashboard"));
