@@ -39,7 +39,7 @@ const TaskNotesSection = ({ taskId, userId, language, isAssigned }: TaskNotesSec
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any).from('task_notes')
+      const { data } = await supabase.from('task_notes')
         .select('*')
         .eq('task_id', taskId)
         .order('created_at', { ascending: false });
