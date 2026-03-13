@@ -382,7 +382,7 @@ const CommandCenter = () => {
           const barcode = `VT-${item.source_id.slice(0, 8).toUpperCase()}`;
           await supabase.from('volunteer_tickets').insert({
             club_id: clubId, volunteer_id: item.volunteer_id, task_id: item.task_id,
-            barcode, status: 'generated' as any,
+            barcode, status: 'sent',
           });
         }
         toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
