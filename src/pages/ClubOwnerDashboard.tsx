@@ -499,7 +499,7 @@ const ClubOwnerDashboard = () => {
         // Process payments
         if (paymentsRes.data) {
           const payMap: Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }> = {};
-          paymentsRes.data.forEach(p => { payMap[`${p.task_id}-${p.volunteer_id}`] = { status: p.status, receipt_url: p.stripe_receipt_url, paid_at: p.paid_at }; });
+          paymentsRes.data.forEach(p => { payMap[`${p.task_id}-${p.volunteer_id}`] = { status: p.status, paid_at: p.paid_at }; });
           setVolunteerPayments(payMap);
         }
 
