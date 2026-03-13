@@ -9,6 +9,8 @@ import {
   AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered, ArrowLeftRight
 } from 'lucide-react';
 import ShiftSwapDialog from '@/components/ShiftSwapDialog';
+import TaskNotesSection from '@/components/TaskNotesSection';
+import { downloadTaskIcs } from '@/components/CalendarSyncSection';
 import { sendPush } from '@/lib/sendPush';
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
