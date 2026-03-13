@@ -824,6 +824,36 @@ const TaskDetail = () => {
             </motion.div>
           )}
 
+          {/* Weather widget */}
+          {task.task_date && (task.location || task.clubs?.location) && (
+            <WeatherWidget
+              location={task.location || task.clubs?.location || ''}
+              date={task.task_date}
+              language={language}
+            />
+          )}
+
+          {/* Break timer (only for assigned volunteers) */}
+          {isSignedUp && currentUserId && (
+            <BreakTimer taskId={id!} userId={currentUserId} language={language} />
+          )}
+
+          {/* Live event feed */}
+          {task.event_id && isSignedUp && (
+            <LiveEventFeed eventId={task.event_id} language={language} />
+          )}
+
+          {/* Shift review (for past assigned tasks) */}
+          {isSignedUp && task.task_date && new Date(task.task_date) < new Date() && currentUserId && (
+            <ShiftReviewForm
+              taskId={id!}
+              clubId={task.club_id}
+              userId={currentUserId}
+              taskTitle={task.title}
+              language={language}
+            />
+          )}
+
           {/* E-signature status */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <SignatureStatus taskId={id!} language={language} />
