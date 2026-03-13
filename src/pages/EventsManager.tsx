@@ -902,8 +902,16 @@ const EventsManager = () => {
       )}
     </ClubPageLayout>
     <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
+    {clubId && (
+      <EventTemplateDialog
+        open={showTemplateDialog}
+        onClose={() => setShowTemplateDialog(false)}
+        clubId={clubId}
+        language={language}
+        onCreateFromTemplate={handleCreateFromTemplate}
+      />
+    )}
     </>
-  );
 
   function renderLooseTaskCard(task: Task, i: number) {
     const isOnHold = task.status === 'on_hold';
