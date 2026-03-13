@@ -84,6 +84,7 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
       compensation_type: form.compensation_type,
       hourly_rate: form.compensation_type === 'hourly' && form.hourly_rate ? parseFloat(form.hourly_rate) : null,
       estimated_hours: form.compensation_type === 'hourly' && form.estimated_hours ? parseFloat(form.estimated_hours) : null,
+      waitlist_enabled: form.waitlist_enabled,
     };
     const { error } = await supabase.from('tasks').update(updateData as any).eq('id', task.id);
     if (error) { toast.error(error.message); } else {
