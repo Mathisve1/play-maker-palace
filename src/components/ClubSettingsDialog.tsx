@@ -27,6 +27,14 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(clubInfo.logo_url);
   const [saving, setSaving] = useState(false);
+  const [allowShiftSwaps, setAllowShiftSwaps] = useState(false);
+
+  // Load current swap setting
+  useState(() => {
+    (supabase as any).from('clubs').select('allow_shift_swaps').eq('id', clubId).maybeSingle().then(({ data }: any) => {
+      if (data) setAllowShiftSwaps(!!data.allow_shift_swaps);
+    });
+  });
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
