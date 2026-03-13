@@ -258,7 +258,7 @@ const TaskDetail = () => {
       setWaitlistEnabled((taskData as any).waitlist_enabled || false);
 
       // Check if club allows shift swaps
-      (supabase as any).from('clubs').select('allow_shift_swaps').eq('id', taskData.club_id).maybeSingle().then(({ data: clubData }: any) => {
+      supabase.from('clubs').select('allow_shift_swaps').eq('id', taskData.club_id).maybeSingle().then(({ data: clubData }) => {
         if (clubData) setAllowShiftSwaps(!!clubData.allow_shift_swaps);
       });
 
