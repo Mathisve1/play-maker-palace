@@ -142,6 +142,12 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
                   <input type="number" min={0} step={0.01} placeholder={l.amount} value={form.expense_amount} onChange={e => setForm(p => ({ ...p, expense_amount: e.target.value }))} className={inputClass + ' max-w-[150px]'} />
                 )}
               </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.waitlist_enabled} onChange={e => setForm(p => ({ ...p, waitlist_enabled: e.target.checked }))} className="w-4 h-4 rounded border-input accent-primary" />
+                  <span className="text-sm text-foreground">{l.waitlist}</span>
+                </label>
+              </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{l.cancel}</button>
                 <button type="submit" disabled={saving || !form.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
