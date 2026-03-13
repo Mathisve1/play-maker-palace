@@ -131,7 +131,7 @@ const AnalyticsDashboard = () => {
         signups.filter(s => s.signed_up_at.slice(0, 7) === monthKey).map(s => s.volunteer_id)
       );
       const activePrevMonth = new Set(
-        signups.filter(s => s.created_at.slice(0, 7) === prevMonthKey).map(s => s.volunteer_id)
+        signups.filter(s => s.signed_up_at.slice(0, 7) === prevMonthKey).map(s => s.volunteer_id)
       );
 
       const returning = [...activeThisMonth].filter(v => activePrevMonth.has(v)).length;
