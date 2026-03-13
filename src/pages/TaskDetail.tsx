@@ -11,6 +11,10 @@ import {
 import ShiftSwapDialog from '@/components/ShiftSwapDialog';
 import TaskNotesSection from '@/components/TaskNotesSection';
 import { downloadTaskIcs } from '@/components/CalendarSyncSection';
+import ShiftReviewForm from '@/components/ShiftReviewForm';
+import WeatherWidget from '@/components/WeatherWidget';
+import BreakTimer from '@/components/BreakTimer';
+import LiveEventFeed from '@/components/LiveEventFeed';
 import { sendPush } from '@/lib/sendPush';
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
@@ -36,6 +40,7 @@ interface Task {
   start_time: string | null;
   end_time: string | null;
   notes: string | null;
+  event_id?: string | null;
   clubs: { name: string; sport: string | null; location: string | null; owner_id?: string } | null;
 }
 
@@ -818,6 +823,36 @@ const TaskDetail = () => {
                 {language === 'nl' ? 'Toevoegen aan kalender' : language === 'fr' ? 'Ajouter au calendrier' : 'Add to calendar'}
               </button>
             </motion.div>
+          )}
+
+          {/* Weather widget */}
+          {task.task_date && (task.location || task.clubs?.location) && (
+            <WeatherWidget
+              location={task.location || task.clubs?.location || ''}
+              date={task.task_date}
+              language={language}
+            />
+          )}
+
+          {/* Break timer (only for assigned volunteers) */}
+          {isSignedUp && currentUserId && (
+            <BreakTimer taskId={id!} userId={currentUserId} language={language} />
+          )}
+
+          {/* Live event feed */}
+          {task.event_id && isSignedUp && (
+            <LiveEventFeed eventId={task.event_id} language={language} />
+          )}
+
+          {/* Shift review (for past assigned tasks) */}
+          {isSignedUp && task.task_date && new Date(task.task_date) < new Date() && currentUserId && (
+            <ShiftReviewForm
+              taskId={id!}
+              clubId={task.club_id}
+              userId={currentUserId}
+              taskTitle={task.title}
+              language={language}
+            />
           )}
 
           {/* E-signature status */}

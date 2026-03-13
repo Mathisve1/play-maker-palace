@@ -1243,6 +1243,50 @@ export type Database = {
           },
         ]
       }
+      event_feed: {
+        Row: {
+          content: string
+          created_at: string
+          event_id: string
+          id: string
+          photo_url: string | null
+          pinned: boolean
+          title: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          event_id: string
+          id?: string
+          photo_url?: string | null
+          pinned?: boolean
+          title?: string | null
+          type?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          photo_url?: string | null
+          pinned?: boolean
+          title?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_feed_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_groups: {
         Row: {
           color: string
@@ -1693,6 +1737,85 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      micro_learning_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          learning_id: string
+          score: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          learning_id: string
+          score?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          learning_id?: string
+          score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "micro_learning_completions_learning_id_fkey"
+            columns: ["learning_id"]
+            isOneToOne: false
+            referencedRelation: "micro_learnings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      micro_learnings: {
+        Row: {
+          club_id: string
+          content: Json
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          is_published: boolean
+          skill_tag: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          club_id: string
+          content?: Json
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_published?: boolean
+          skill_tag?: string | null
+          title: string
+          type?: string
+        }
+        Update: {
+          club_id?: string
+          content?: Json
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_published?: boolean
+          skill_tag?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "micro_learnings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
             referencedColumns: ["id"]
           },
         ]
@@ -2323,8 +2446,11 @@ export type Database = {
           onesignal_player_id: string | null
           phone: string | null
           preferences: Json | null
+          public_profile: boolean
           push_notifications_enabled: boolean
           push_prompt_seen: boolean
+          referral_code: string | null
+          referred_by: string | null
           stripe_account_id: string | null
           updated_at: string
         }
@@ -2347,8 +2473,11 @@ export type Database = {
           onesignal_player_id?: string | null
           phone?: string | null
           preferences?: Json | null
+          public_profile?: boolean
           push_notifications_enabled?: boolean
           push_prompt_seen?: boolean
+          referral_code?: string | null
+          referred_by?: string | null
           stripe_account_id?: string | null
           updated_at?: string
         }
@@ -2371,8 +2500,11 @@ export type Database = {
           onesignal_player_id?: string | null
           phone?: string | null
           preferences?: Json | null
+          public_profile?: boolean
           push_notifications_enabled?: boolean
           push_prompt_seen?: boolean
+          referral_code?: string | null
+          referred_by?: string | null
           stripe_account_id?: string | null
           updated_at?: string
         }
@@ -2445,6 +2577,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referrals: {
+        Row: {
+          bonus_awarded: boolean
+          created_at: string
+          id: string
+          referral_code: string
+          referred_id: string | null
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          bonus_awarded?: boolean
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string | null
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          bonus_awarded?: boolean
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string | null
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: []
       }
       reminder_logs: {
         Row: {
@@ -3908,6 +4070,41 @@ export type Database = {
           },
         ]
       }
+      volunteer_breaks: {
+        Row: {
+          duration_minutes: number | null
+          ended_at: string | null
+          id: string
+          started_at: string
+          task_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          task_id: string
+          volunteer_id: string
+        }
+        Update: {
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          task_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_breaks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_certificates: {
         Row: {
           certificate_design_id: string | null
@@ -4143,6 +4340,51 @@ export type Database = {
           },
         ]
       }
+      volunteer_reviews: {
+        Row: {
+          club_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          task_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          club_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          task_id: string
+          volunteer_id: string
+        }
+        Update: {
+          club_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          task_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_reviews_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_reviews_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_safety_roles: {
         Row: {
           assigned_by: string | null
@@ -4184,6 +4426,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      volunteer_skills: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          skill_name: string
+          source: string | null
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string
+          skill_name: string
+          source?: string | null
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          skill_name?: string
+          source?: string | null
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
       }
       volunteer_tickets: {
         Row: {
