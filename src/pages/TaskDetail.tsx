@@ -11,6 +11,10 @@ import {
 import ShiftSwapDialog from '@/components/ShiftSwapDialog';
 import TaskNotesSection from '@/components/TaskNotesSection';
 import { downloadTaskIcs } from '@/components/CalendarSyncSection';
+import ShiftReviewForm from '@/components/ShiftReviewForm';
+import WeatherWidget from '@/components/WeatherWidget';
+import BreakTimer from '@/components/BreakTimer';
+import LiveEventFeed from '@/components/LiveEventFeed';
 import { sendPush } from '@/lib/sendPush';
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
