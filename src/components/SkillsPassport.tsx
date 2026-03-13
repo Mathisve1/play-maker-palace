@@ -42,10 +42,10 @@ const SkillsPassport = ({ userId, language, isOwnProfile = true }: Props) => {
   useEffect(() => {
     const load = async () => {
       const [{ data: skillsData }, { count: taskCount }, { data: hourData }, { count: badgeCount }] = await Promise.all([
-        (supabase as any).from('volunteer_skills').select('*').eq('user_id', userId),
+        supabase.from('volunteer_skills').select('*').eq('user_id', userId),
         supabase.from('task_signups').select('id', { count: 'exact', head: true }).eq('volunteer_id', userId).eq('status', 'assigned'),
         supabase.from('hour_confirmations').select('final_hours').eq('volunteer_id', userId).eq('status', 'confirmed'),
-        (supabase as any).from('volunteer_badges').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('volunteer_badges').select('id', { count: 'exact', head: true }).eq('user_id', userId),
       ]);
 
       if (skillsData) setSkills(skillsData);
