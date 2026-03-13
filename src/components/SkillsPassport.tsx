@@ -70,7 +70,7 @@ const SkillsPassport = ({ userId, language, isOwnProfile = true }: Props) => {
   const handleAddSkill = async () => {
     if (!newSkill.trim()) return;
     setAdding(true);
-    const { data, error } = await (supabase as any).from('volunteer_skills').insert({
+    const { data, error } = await supabase.from('volunteer_skills').insert({
       user_id: userId,
       skill_name: newSkill.trim(),
       level: 'beginner',
