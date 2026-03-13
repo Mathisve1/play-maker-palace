@@ -793,7 +793,7 @@ const ClubOwnerDashboard = () => {
     setCreatingTask(false);
   };
 
-  // Stripe payment handler removed - using SEPA only
+  
 
   const handleStartEdit = (task: Task) => {
     setEditingTask(task);
