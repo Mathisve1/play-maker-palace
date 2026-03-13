@@ -4538,6 +4538,17 @@ export type Database = {
       }
       get_partner_club_id: { Args: { _partner_id: string }; Returns: string }
       get_partner_club_ids: { Args: { _partner_id: string }; Returns: string[] }
+      get_safe_profile: {
+        Args: { _user_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          email: string
+          full_name: string
+          id: string
+          phone: string
+        }[]
+      }
       get_signup_partner_id: { Args: { _access_id: string }; Returns: string }
       has_club_role: {
         Args: {
