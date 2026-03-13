@@ -480,14 +480,8 @@ const ClubOwnerDashboard = () => {
           const volunteerIds = [...new Set(signupsData.map(s => s.volunteer_id))];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date, stripe_account_id')
+            .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date')
             .in('id', volunteerIds);
-
-          const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-
-          const stripeIds: Record<string, string | null> = {};
-          profiles?.forEach(p => { stripeIds[p.id] = p.stripe_account_id; });
-          setVolunteerStripeIds(stripeIds);
 
           const grouped: Record<string, Signup[]> = {};
           signupsData.forEach(s => {
