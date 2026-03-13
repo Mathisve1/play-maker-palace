@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import ShiftSwapApprovals from '@/components/ShiftSwapApprovals';
 import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
