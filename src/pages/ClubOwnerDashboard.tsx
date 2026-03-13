@@ -467,7 +467,7 @@ const ClubOwnerDashboard = () => {
         // Parallel: signups, payments, signatures
         const [signupsRes, paymentsRes, sigsRes] = await Promise.all([
           supabase.from('task_signups').select('id, task_id, volunteer_id, status, signed_up_at').in('task_id', taskIds),
-          supabase.from('volunteer_payments').select('task_id, volunteer_id, status, stripe_receipt_url, paid_at').eq('club_id', clubId),
+          supabase.from('volunteer_payments').select('task_id, volunteer_id, status, paid_at').eq('club_id', clubId),
           supabase.from('signature_requests').select('id, task_id, volunteer_id, status, document_url').in('task_id', taskIds),
         ]);
 
