@@ -152,7 +152,7 @@ export async function markPushPromptSeen(): Promise<void> {
   if (!user?.id) return;
   await supabase
     .from('profiles')
-    .update({ push_prompt_seen: true } as any)
+    .update({ push_prompt_seen: true })
     .eq('id', user.id);
 }
 
