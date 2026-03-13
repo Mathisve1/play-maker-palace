@@ -23,6 +23,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant
 export default function AiAssistantChat() {
   const { language } = useLanguage();
   const location = useLocation();
+  const clubCtx = useOptionalClubContext();
   const nl = language === "nl";
 
   // Hide AI chat on live safety event pages (volunteer lockdown mode)
