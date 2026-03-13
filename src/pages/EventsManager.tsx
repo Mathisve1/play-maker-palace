@@ -88,6 +88,8 @@ const EventsManager = () => {
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
 
   // Adding task to group
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
