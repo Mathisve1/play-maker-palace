@@ -40,6 +40,7 @@ interface Task {
   start_time: string | null;
   end_time: string | null;
   notes: string | null;
+  event_id?: string | null;
   clubs: { name: string; sport: string | null; location: string | null; owner_id?: string } | null;
 }
 
