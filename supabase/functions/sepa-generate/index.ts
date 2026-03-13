@@ -574,7 +574,8 @@ Deno.serve(async (req) => {
       const submitter = Array.isArray(submission) ? submission[0] : submission;
 
       if (!submitter?.id) {
-        return new Response(JSON.stringify({ error: 'Failed to create submission', details: submissionText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.error('DocuSeal rollback submission failed:', submissionText);
+        return new Response(JSON.stringify({ error: 'Annuleringsverzoek kon niet worden aangemaakt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       return new Response(JSON.stringify({
