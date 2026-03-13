@@ -131,8 +131,8 @@ export default function ReportingFinancialTab({
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="pt-4 pb-3 text-center">
-          <p className="text-2xl font-bold text-foreground">€{totalFees.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Stripe Fees</p>
+          <p className="text-2xl font-bold text-foreground">€{Math.round(sepaTotalPaid * 100 / 100).toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground">SEPA Totaal</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3 text-center">
           <p className="text-2xl font-bold text-foreground">{complianceOverview.filter(v => v.status === 'red').length}</p>
