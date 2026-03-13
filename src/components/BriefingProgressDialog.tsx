@@ -470,10 +470,10 @@ const BriefingProgressDialog = ({ open, onOpenChange, taskId, language }: Briefi
                       <Button
                         size="sm"
                         className="w-full mt-1"
-                        onClick={() => { onOpenChange(false); navigate('/payments'); }}
+                        onClick={() => { onOpenChange(false); navigate('/sepa-payouts'); }}
                       >
                         <CreditCard className="w-4 h-4 mr-1.5" />
-                        {language === 'nl' ? 'Betaling regelen' : language === 'fr' ? 'Gérer le paiement' : 'Manage payment'}
+                        {language === 'nl' ? 'SEPA uitbetaling' : language === 'fr' ? 'Paiement SEPA' : 'SEPA payout'}
                       </Button>
                     )}
                   </div>
