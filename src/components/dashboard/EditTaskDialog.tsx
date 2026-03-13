@@ -61,6 +61,7 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
           compensation_type: (data as any).compensation_type || 'fixed',
           hourly_rate: (data as any).hourly_rate ? String((data as any).hourly_rate) : '',
           estimated_hours: (data as any).estimated_hours ? String((data as any).estimated_hours) : '',
+          waitlist_enabled: (data as any).waitlist_enabled || false,
         });
       }
     });
