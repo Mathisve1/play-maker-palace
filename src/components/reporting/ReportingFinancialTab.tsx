@@ -44,17 +44,11 @@ export default function ReportingFinancialTab({
     ].filter(d => d.value > 0);
   }, [payments, filteredTaskIds]);
 
-  // Stripe vs SEPA
-  const paymentMethodPie = useMemo(() => {
-    const stripePaid = payments.filter(p => filteredTaskIds.has(p.task_id) && (p.status === 'succeeded' || p.status === 'paid'))
+  // SEPA payment totals
+  const sepaTotalPaid = useMemo(() => {
+    return sepaItems.filter(s => filteredTaskIds.has(s.task_id))
       .reduce((s: number, p: any) => s + Number(p.amount), 0);
-    const sepaPaid = sepaItems.filter(s => filteredTaskIds.has(s.task_id))
-      .reduce((s: number, p: any) => s + Number(p.amount), 0);
-    return [
-      { name: 'Stripe', value: Math.round(stripePaid * 100) / 100 },
-      { name: 'SEPA', value: Math.round(sepaPaid * 100) / 100 },
-    ].filter(d => d.value > 0);
-  }, [payments, sepaItems, filteredTaskIds]);
+  }, [sepaItems, filteredTaskIds]);
 
   // Cost per event
   const costPerEvent = useMemo(() => {
