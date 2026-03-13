@@ -599,6 +599,9 @@ const EventsManager = () => {
                 {nl ? 'Start demo' : 'Start demo'}
               </button>
             )}
+            <button onClick={() => setShowTemplateDialog(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
+              <FileText className="w-4 h-4" /> {t3('Sjablonen', 'Modèles', 'Templates')}
+            </button>
             <button data-tour="btn-new-event" onClick={() => { setShowCreateEvent(true); setShowCreateTask(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
                <CalendarDays className="w-4 h-4" /> {t3('Nieuw evenement', 'Nouvel événement', 'New event')}
              </button>
