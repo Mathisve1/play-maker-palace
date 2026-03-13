@@ -30,6 +30,7 @@ import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
 import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab';
 import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
+import OnboardingWizard from '@/components/OnboardingWizard';
 
 interface Task {
   id: string;
@@ -724,6 +725,25 @@ const VolunteerDashboard = () => {
             </h1>
             <p className="text-muted-foreground mt-1">{dt.subtitle}</p>
           </motion.div>
+
+          {/* Onboarding Wizard */}
+          {currentUserId && followedClubIds && followedClubIds.size > 0 && (
+            <OnboardingWizard
+              userId={currentUserId}
+              clubId={[...followedClubIds][0]}
+              language={language}
+              hasProfile={!!(profile?.full_name && profile?.avatar_url)}
+              hasContract={myContracts.some(c => c.status === 'completed')}
+              hasTraining={myCertifiedTrainingIds.size > 0}
+              hasTask={signups.some(s => s.status === 'assigned')}
+              onStepAction={(step) => {
+                if (step === 'profile_complete') setShowProfileDialog(true);
+                else if (step === 'contract_signed') setActiveTab('contracts');
+                else if (step === 'training_done') setActiveTab('academy');
+                else if (step === 'first_task') setActiveTab('all');
+              }}
+            />
+          )}
 
           {/* Search bar */}
           <div className="relative">

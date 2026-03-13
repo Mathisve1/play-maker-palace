@@ -876,6 +876,41 @@ export type Database = {
           },
         ]
       }
+      club_onboarding_config: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          is_required: boolean
+          sort_order: number
+          step: Database["public"]["Enums"]["onboarding_step"]
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          sort_order?: number
+          step: Database["public"]["Enums"]["onboarding_step"]
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          sort_order?: number
+          step?: Database["public"]["Enums"]["onboarding_step"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_onboarding_config_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clubs: {
         Row: {
           created_at: string
@@ -3688,6 +3723,44 @@ export type Database = {
           },
         ]
       }
+      volunteer_onboarding_steps: {
+        Row: {
+          club_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          skipped: boolean
+          step: Database["public"]["Enums"]["onboarding_step"]
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          skipped?: boolean
+          step: Database["public"]["Enums"]["onboarding_step"]
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          skipped?: boolean
+          step?: Database["public"]["Enums"]["onboarding_step"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_onboarding_steps_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_payments: {
         Row: {
           amount: number
@@ -3900,6 +3973,11 @@ export type Database = {
     Enums: {
       app_role: "admin" | "club_owner" | "volunteer"
       club_role: "bestuurder" | "beheerder" | "medewerker"
+      onboarding_step:
+        | "profile_complete"
+        | "contract_signed"
+        | "training_done"
+        | "first_task"
       season_template_category:
         | "steward"
         | "bar_catering"
@@ -4048,6 +4126,12 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "club_owner", "volunteer"],
       club_role: ["bestuurder", "beheerder", "medewerker"],
+      onboarding_step: [
+        "profile_complete",
+        "contract_signed",
+        "training_done",
+        "first_task",
+      ],
       season_template_category: [
         "steward",
         "bar_catering",
