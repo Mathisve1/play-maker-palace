@@ -50,7 +50,7 @@ const VolunteerTaskPreferences = ({ userId, language, tasks, signedUpTaskIds, on
   // Load preferences from profile metadata
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('profiles')
         .select('preferences')
         .eq('id', userId)
