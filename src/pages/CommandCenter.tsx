@@ -354,7 +354,7 @@ const CommandCenter = () => {
     setProcessing(true);
     try {
       if (item.type === 'enrollment') {
-        await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', item.source_id);
+        await supabase.from('monthly_enrollments').update({ approval_status: 'approved' }).eq('id', item.source_id);
         toast.success(t3('Goedgekeurd!', 'Approuvé !', 'Approved!'));
         sendPush({ userId: item.volunteer_id, title: '✅ Inschrijving goedgekeurd', message: `Je inschrijving voor "${item.context_label}" is goedgekeurd!`, url: '/dashboard', type: 'enrollment_approved' });
       } else if (item.type === 'task_signup') {
