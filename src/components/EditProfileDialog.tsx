@@ -170,8 +170,6 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
   const [bankConsentGiven, setBankConsentGiven] = useState(false);
   const [bankConsentDate, setBankConsentDate] = useState<string | null>(null);
   const [bankConsentText, setBankConsentText] = useState<string | null>(null);
-  const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
-  const [connectingStripe, setConnectingStripe] = useState(false);
   const [profileLanguage, setProfileLanguage] = useState<'nl' | 'fr' | 'en'>(language);
   const { setLanguage: setGlobalLanguage } = useLanguage();
   
