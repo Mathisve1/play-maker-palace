@@ -4859,6 +4859,41 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_questions_safe: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          options: Json | null
+          question_text: string | null
+          quiz_id: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          options?: Json | null
+          question_text?: string | null
+          quiz_id?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          options?: Json | null
+          question_text?: string | null
+          quiz_id?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "training_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_briefing_club_id_from_block: {
