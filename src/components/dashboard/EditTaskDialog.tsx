@@ -40,6 +40,7 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
     briefing_time: '', briefing_location: '', start_time: '', end_time: '',
     notes: '', expense_reimbursement: false, expense_amount: '', contract_template_id: '',
     compensation_type: 'fixed', hourly_rate: '', estimated_hours: '',
+    waitlist_enabled: false,
   });
 
   useEffect(() => {
