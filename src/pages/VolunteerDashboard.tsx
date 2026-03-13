@@ -33,6 +33,9 @@ import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import VolunteerSeasonOverview from '@/components/VolunteerSeasonOverview';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
+import VolunteerBadges from '@/components/VolunteerBadges';
+import EventGroupChat from '@/components/EventGroupChat';
+import CalendarSyncSection from '@/components/CalendarSyncSection';
 
 interface Task {
   id: string;
@@ -880,6 +883,12 @@ const VolunteerDashboard = () => {
           {/* Season Overview */}
           {currentUserId && <VolunteerSeasonOverview userId={currentUserId} language={language} />}
 
+          {/* Badges */}
+          {currentUserId && <VolunteerBadges userId={currentUserId} language={language} />}
+
+          {/* Calendar Sync */}
+          {currentUserId && <CalendarSyncSection userId={currentUserId} language={language} />}
+
           {/* Task Preferences & Recommendations */}
           {currentUserId && (
             <VolunteerTaskPreferences
@@ -890,6 +899,20 @@ const VolunteerDashboard = () => {
               onNavigateToTask={(taskId) => navigate(`/task/${taskId}`)}
             />
           )}
+
+          {/* Event Group Chats */}
+          {currentUserId && events.filter(e => {
+            // Only show chat for events where user is assigned
+            return tasks.some(t => t.event_id === e.id && signups.some(s => s.task_id === t.id && s.status === 'assigned'));
+          }).slice(0, 2).map(event => (
+            <EventGroupChat
+              key={event.id}
+              eventId={event.id}
+              eventTitle={event.title}
+              userId={currentUserId}
+              language={language}
+            />
+          ))}
         </div>
       )}
 
