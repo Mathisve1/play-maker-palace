@@ -224,7 +224,7 @@ export async function setPushPreference(enabled: boolean) {
     console.warn('[OneSignal] Notifications API not available');
     await supabase
       .from('profiles')
-      .update({ push_notifications_enabled: false } as any)
+      .update({ push_notifications_enabled: false })
       .eq('id', user.id);
     return { enabled: false, reason: 'unsupported' as const };
   }
