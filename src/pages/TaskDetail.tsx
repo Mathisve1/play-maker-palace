@@ -805,7 +805,15 @@ const TaskDetail = () => {
           transition={{ delay: 0.3 }}
           className="sticky bottom-0 mt-8 -mx-4 px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent"
         >
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl mx-auto space-y-2">
+            {/* Waitlist info badge */}
+            {waitlistEnabled && waitlistCount > 0 && !isSignedUp && !isOnWaitlist && spotsRemaining <= 0 && (
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <ListOrdered className="w-3.5 h-3.5" />
+                {waitlistCount} {l.waitlistCount}
+              </div>
+            )}
+
             {isSignedUp ? (
               <div className="flex gap-3">
                 <div className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-primary/5 border border-primary/20 text-primary font-medium">
@@ -819,13 +827,39 @@ const TaskDetail = () => {
                   {l.cancelSignup}
                 </button>
               </div>
+            ) : isOnWaitlist ? (
+              <div className="flex gap-3">
+                <div className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-secondary/10 border border-secondary/20 text-secondary-foreground font-medium">
+                  <ListOrdered className="w-5 h-5" />
+                  {l.onWaitlist} — #{waitlistPosition}
+                </div>
+                <button
+                  onClick={handleLeaveWaitlist}
+                  className="px-5 py-3 rounded-2xl text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
+                >
+                  {l.leaveWaitlist}
+                </button>
+              </div>
+            ) : spotsRemaining <= 0 && waitlistEnabled ? (
+              <button
+                onClick={handleJoinWaitlist}
+                disabled={joiningWaitlist}
+                className="w-full px-4 py-3.5 rounded-2xl text-sm font-semibold bg-secondary text-secondary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shadow-sm"
+              >
+                {joiningWaitlist ? '...' : (
+                  <span className="flex items-center justify-center gap-2">
+                    <ListOrdered className="w-4 h-4" />
+                    {l.joinWaitlist}
+                  </span>
+                )}
+              </button>
             ) : (
               <button
                 onClick={handleSignup}
                 disabled={signingUp || spotsRemaining <= 0}
                 className="w-full px-4 py-3.5 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shadow-warm"
               >
-                {signingUp ? '...' : l.signUp}
+                {signingUp ? '...' : spotsRemaining <= 0 ? l.taskFull : l.signUp}
               </button>
             )}
           </div>
