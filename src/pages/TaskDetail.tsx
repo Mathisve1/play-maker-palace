@@ -306,6 +306,81 @@ const TaskDetail = () => {
     } else {
       setIsSignedUp(false);
       setSignupCount(prev => Math.max(prev - 1, 0));
+
+      // Auto-promote first person from waitlist
+      if (waitlistEnabled && waitlistCount > 0) {
+        const { data: nextInLine } = await (supabase as any)
+          .from('task_waitlist')
+          .select('id, volunteer_id')
+          .eq('task_id', id!)
+          .order('position', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (nextInLine) {
+          // Promote: create signup and remove from waitlist
+          await supabase.from('task_signups').insert({
+            task_id: id!,
+            volunteer_id: nextInLine.volunteer_id,
+          });
+          await (supabase as any).from('task_waitlist').delete().eq('id', nextInLine.id);
+          setWaitlistCount(prev => Math.max(prev - 1, 0));
+          setSignupCount(prev => prev + 1);
+
+          // Send push notification to promoted volunteer
+          sendPush({
+            userId: nextInLine.volunteer_id,
+            title: language === 'nl' ? 'Plaats vrijgekomen!' : language === 'fr' ? 'Place libérée !' : 'Spot available!',
+            message: language === 'nl'
+              ? `Er is een plek vrijgekomen voor "${task?.title}". Je bent automatisch ingeschreven!`
+              : language === 'fr'
+              ? `Une place s'est libérée pour "${task?.title}". Vous êtes automatiquement inscrit !`
+              : `A spot opened up for "${task?.title}". You've been automatically signed up!`,
+            url: `/task/${id}`,
+            type: 'waitlist_promoted',
+          });
+        }
+      }
+    }
+  };
+
+  const handleJoinWaitlist = async () => {
+    setJoiningWaitlist(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setJoiningWaitlist(false); return; }
+
+    const newPosition = waitlistCount + 1;
+    const { error } = await (supabase as any).from('task_waitlist').insert({
+      task_id: id!,
+      volunteer_id: session.user.id,
+      position: newPosition,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setIsOnWaitlist(true);
+      setWaitlistPosition(newPosition);
+      setWaitlistCount(prev => prev + 1);
+      toast.success(language === 'nl' ? 'Je staat op de wachtlijst!' : language === 'fr' ? 'Vous êtes sur la liste d\'attente !' : 'You\'re on the waitlist!');
+    }
+    setJoiningWaitlist(false);
+  };
+
+  const handleLeaveWaitlist = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { error } = await (supabase as any).from('task_waitlist')
+      .delete()
+      .eq('task_id', id!)
+      .eq('volunteer_id', session.user.id);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setIsOnWaitlist(false);
+      setWaitlistCount(prev => Math.max(prev - 1, 0));
     }
   };
 
