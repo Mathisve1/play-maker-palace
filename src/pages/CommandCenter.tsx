@@ -432,7 +432,7 @@ const CommandCenter = () => {
 
   const handleActionSilent = async (item: ActionItem) => {
     if (item.type === 'enrollment') {
-      await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', item.source_id);
+      await supabase.from('monthly_enrollments').update({ approval_status: 'approved' }).eq('id', item.source_id);
     } else if (item.type === 'task_signup') {
       await supabase.from('task_signups').update({ status: 'assigned' }).eq('id', item.source_id);
     } else if (item.type === 'day_signup') {

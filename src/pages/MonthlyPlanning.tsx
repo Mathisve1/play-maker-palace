@@ -153,7 +153,7 @@ const MonthlyPlanning = () => {
     if (enr) sendPush({ userId: enr.volunteer_id, title: '✅ Inschrijving goedgekeurd', message: `Je inschrijving is goedgekeurd! Je kunt nu je contract ondertekenen.`, url: '/dashboard', type: 'enrollment_approved' });
   };
   const rejectEnrollment = async (enrollmentId: string) => {
-    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' } as any).eq('id', enrollmentId);
+    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' }).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
     const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'rejected' } : e));

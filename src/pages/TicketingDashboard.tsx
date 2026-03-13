@@ -422,7 +422,7 @@ const TicketingDashboard = () => {
         // Update directly to checked_in
         await supabase
           .from('volunteer_tickets')
-          .update({ status: 'checked_in' as any, checked_in_at: new Date().toISOString() })
+          .update({ status: 'checked_in', checked_in_at: new Date().toISOString() })
           .eq('id', existingTicket.id);
       } else {
         // Create ticket and immediately check in

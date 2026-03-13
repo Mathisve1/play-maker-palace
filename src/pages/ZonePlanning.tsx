@@ -177,7 +177,7 @@ const ZonePlanning = () => {
     } else {
       const { data, error } = await supabase.from('volunteer_safety_roles').insert({
         event_id: eventId, volunteer_id: volunteerId, safety_role_id: roleId, assigned_by: userId,
-      } as any).select('*').maybeSingle();
+      }).select('*').maybeSingle();
       if (error) { toast.error(error.message); return; }
       if (data) setVolunteerSafetyRoles(prev => [...prev, data]);
     }
