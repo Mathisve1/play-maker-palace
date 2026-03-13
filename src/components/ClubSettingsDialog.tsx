@@ -75,13 +75,14 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
       }
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('clubs')
       .update({
         name: name.trim(),
         sport: sport.trim() || null,
         location: location.trim() || null,
         logo_url: logoUrl,
+        allow_shift_swaps: allowShiftSwaps,
       })
       .eq('id', clubId);
 
