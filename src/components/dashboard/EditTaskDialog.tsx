@@ -27,9 +27,9 @@ interface EditTaskDialogProps {
 }
 
 const labels = {
-  nl: { editTask: 'Taak bewerken', title: 'Titel', description: 'Beschrijving', date: 'Datum', location: 'Locatie', spots: 'Aantal plaatsen', briefingTime: 'Briefing tijd', briefingLocation: 'Briefing locatie', startTime: 'Starttijd', endTime: 'Eindtijd', notes: 'Notities', expense: 'Onkostenvergoeding', amount: 'Bedrag (€)', template: 'Contractsjabloon', selectTemplate: 'Selecteer een sjabloon...', cancel: 'Annuleren', save: 'Opslaan', saving: 'Opslaan...' },
-  fr: { editTask: 'Modifier la tâche', title: 'Titre', description: 'Description', date: 'Date', location: 'Lieu', spots: 'Nombre de places', briefingTime: 'Heure de briefing', briefingLocation: 'Lieu de briefing', startTime: 'Heure de début', endTime: 'Heure de fin', notes: 'Notes', expense: 'Remboursement des frais', amount: 'Montant (€)', template: 'Modèle de contrat', selectTemplate: 'Sélectionnez un modèle...', cancel: 'Annuler', save: 'Enregistrer', saving: 'Enregistrement...' },
-  en: { editTask: 'Edit task', title: 'Title', description: 'Description', date: 'Date', location: 'Location', spots: 'Available spots', briefingTime: 'Briefing time', briefingLocation: 'Briefing location', startTime: 'Start time', endTime: 'End time', notes: 'Notes', expense: 'Expense reimbursement', amount: 'Amount (€)', template: 'Contract template', selectTemplate: 'Select a template...', cancel: 'Cancel', save: 'Save', saving: 'Saving...' },
+  nl: { editTask: 'Taak bewerken', title: 'Titel', description: 'Beschrijving', date: 'Datum', location: 'Locatie', spots: 'Aantal plaatsen', briefingTime: 'Briefing tijd', briefingLocation: 'Briefing locatie', startTime: 'Starttijd', endTime: 'Eindtijd', notes: 'Notities', expense: 'Onkostenvergoeding', amount: 'Bedrag (€)', template: 'Contractsjabloon', selectTemplate: 'Selecteer een sjabloon...', cancel: 'Annuleren', save: 'Opslaan', saving: 'Opslaan...', waitlist: 'Wachtlijst activeren' },
+  fr: { editTask: 'Modifier la tâche', title: 'Titre', description: 'Description', date: 'Date', location: 'Lieu', spots: 'Nombre de places', briefingTime: 'Heure de briefing', briefingLocation: 'Lieu de briefing', startTime: 'Heure de début', endTime: 'Heure de fin', notes: 'Notes', expense: 'Remboursement des frais', amount: 'Montant (€)', template: 'Modèle de contrat', selectTemplate: 'Sélectionnez un modèle...', cancel: 'Annuler', save: 'Enregistrer', saving: 'Enregistrement...', waitlist: 'Activer la liste d\'attente' },
+  en: { editTask: 'Edit task', title: 'Title', description: 'Description', date: 'Date', location: 'Location', spots: 'Available spots', briefingTime: 'Briefing time', briefingLocation: 'Briefing location', startTime: 'Start time', endTime: 'End time', notes: 'Notes', expense: 'Expense reimbursement', amount: 'Amount (€)', template: 'Contract template', selectTemplate: 'Select a template...', cancel: 'Cancel', save: 'Save', saving: 'Saving...', waitlist: 'Enable waitlist' },
 };
 
 export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, language }: EditTaskDialogProps) => {
@@ -40,6 +40,7 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
     briefing_time: '', briefing_location: '', start_time: '', end_time: '',
     notes: '', expense_reimbursement: false, expense_amount: '', contract_template_id: '',
     compensation_type: 'fixed', hourly_rate: '', estimated_hours: '',
+    waitlist_enabled: false,
   });
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
           compensation_type: (data as any).compensation_type || 'fixed',
           hourly_rate: (data as any).hourly_rate ? String((data as any).hourly_rate) : '',
           estimated_hours: (data as any).estimated_hours ? String((data as any).estimated_hours) : '',
+          waitlist_enabled: (data as any).waitlist_enabled || false,
         });
       }
     });
@@ -82,6 +84,7 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
       compensation_type: form.compensation_type,
       hourly_rate: form.compensation_type === 'hourly' && form.hourly_rate ? parseFloat(form.hourly_rate) : null,
       estimated_hours: form.compensation_type === 'hourly' && form.estimated_hours ? parseFloat(form.estimated_hours) : null,
+      waitlist_enabled: form.waitlist_enabled,
     };
     const { error } = await supabase.from('tasks').update(updateData as any).eq('id', task.id);
     if (error) { toast.error(error.message); } else {
@@ -138,6 +141,12 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
                 {form.expense_reimbursement && (
                   <input type="number" min={0} step={0.01} placeholder={l.amount} value={form.expense_amount} onChange={e => setForm(p => ({ ...p, expense_amount: e.target.value }))} className={inputClass + ' max-w-[150px]'} />
                 )}
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.waitlist_enabled} onChange={e => setForm(p => ({ ...p, waitlist_enabled: e.target.checked }))} className="w-4 h-4 rounded border-input accent-primary" />
+                  <span className="text-sm text-foreground">{l.waitlist}</span>
+                </label>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{l.cancel}</button>

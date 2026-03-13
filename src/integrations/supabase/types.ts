@@ -3165,6 +3165,41 @@ export type Database = {
           },
         ]
       }
+      task_waitlist: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          promoted_at: string | null
+          task_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position?: number
+          promoted_at?: string | null
+          task_id: string
+          volunteer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          promoted_at?: string | null
+          task_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_waitlist_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_zone_assignments: {
         Row: {
           assigned_by: string | null
@@ -3277,6 +3312,7 @@ export type Database = {
           status: string
           task_date: string | null
           title: string
+          waitlist_enabled: boolean
           zone_signup_mode: string
           zone_visible_depth: number | null
         }
@@ -3311,6 +3347,7 @@ export type Database = {
           status?: string
           task_date?: string | null
           title: string
+          waitlist_enabled?: boolean
           zone_signup_mode?: string
           zone_visible_depth?: number | null
         }
@@ -3345,6 +3382,7 @@ export type Database = {
           status?: string
           task_date?: string | null
           title?: string
+          waitlist_enabled?: boolean
           zone_signup_mode?: string
           zone_visible_depth?: number | null
         }

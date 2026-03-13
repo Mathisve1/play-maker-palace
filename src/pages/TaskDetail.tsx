@@ -6,8 +6,9 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Calendar, Users, Clock, Euro, FileText,
-  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera
+  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered
 } from 'lucide-react';
+import { sendPush } from '@/lib/sendPush';
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
 import LikeButton from '@/components/LikeButton';
@@ -72,6 +73,12 @@ const labels = {
     aboutTask: 'Over deze taak',
     practicalInfo: 'Praktische info',
     messageClub: 'Bericht club',
+    joinWaitlist: 'Op wachtlijst zetten',
+    onWaitlist: 'Je staat op de wachtlijst',
+    leaveWaitlist: 'Wachtlijst verlaten',
+    waitlistPosition: 'Positie',
+    waitlistCount: 'Op wachtlijst',
+    taskFull: 'Taak is vol',
   },
   fr: {
     back: 'Retour à l\'aperçu',
@@ -109,6 +116,12 @@ const labels = {
     aboutTask: 'À propos de cette tâche',
     practicalInfo: 'Infos pratiques',
     messageClub: 'Message au club',
+    joinWaitlist: 'Rejoindre la liste d\'attente',
+    onWaitlist: 'Vous êtes sur la liste d\'attente',
+    leaveWaitlist: 'Quitter la liste d\'attente',
+    waitlistPosition: 'Position',
+    waitlistCount: 'En attente',
+    taskFull: 'Tâche complète',
   },
   en: {
     back: 'Back to overview',
@@ -146,6 +159,12 @@ const labels = {
     aboutTask: 'About this task',
     practicalInfo: 'Practical info',
     messageClub: 'Message club',
+    joinWaitlist: 'Join waitlist',
+    onWaitlist: 'You are on the waitlist',
+    leaveWaitlist: 'Leave waitlist',
+    waitlistPosition: 'Position',
+    waitlistCount: 'On waitlist',
+    taskFull: 'Task is full',
   },
 };
 
@@ -196,6 +215,11 @@ const TaskDetail = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [currentUserId, setCurrentUserId] = useState('');
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [waitlistEnabled, setWaitlistEnabled] = useState(false);
+  const [isOnWaitlist, setIsOnWaitlist] = useState(false);
+  const [waitlistPosition, setWaitlistPosition] = useState(0);
+  const [waitlistCount, setWaitlistCount] = useState(0);
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
 
   const l = labels[language];
 
@@ -221,37 +245,27 @@ const TaskDetail = () => {
 
       if (!taskData) { setLoading(false); return; }
       setTask(taskData as unknown as Task);
+      setWaitlistEnabled((taskData as any).waitlist_enabled || false);
 
-      // Count signups
-      const { count } = await supabase
-        .from('task_signups')
-        .select('id', { count: 'exact', head: true })
-        .eq('task_id', id!);
-      setSignupCount(count || 0);
+      // Count signups + waitlist + likes in parallel
+      const [signupRes, mySignupRes, likeRes, myLikeRes, waitlistRes, myWaitlistRes] = await Promise.all([
+        supabase.from('task_signups').select('id', { count: 'exact', head: true }).eq('task_id', id!),
+        supabase.from('task_signups').select('id').eq('task_id', id!).eq('volunteer_id', session.user.id).maybeSingle(),
+        supabase.from('task_likes').select('id', { count: 'exact', head: true }).eq('task_id', id!),
+        supabase.from('task_likes').select('id').eq('task_id', id!).eq('user_id', session.user.id).maybeSingle(),
+        (supabase as any).from('task_waitlist').select('id', { count: 'exact', head: true }).eq('task_id', id!),
+        (supabase as any).from('task_waitlist').select('id, position').eq('task_id', id!).eq('volunteer_id', session.user.id).maybeSingle(),
+      ]);
 
-      // Check if user signed up
-      const { data: mySignup } = await supabase
-        .from('task_signups')
-        .select('id')
-        .eq('task_id', id!)
-        .eq('volunteer_id', session.user.id)
-        .maybeSingle();
-      setIsSignedUp(!!mySignup);
-
-      // Fetch likes
-      const { count: lCount } = await supabase
-        .from('task_likes')
-        .select('id', { count: 'exact', head: true })
-        .eq('task_id', id!);
-      setLikeCount(lCount || 0);
-
-      const { data: myLike } = await supabase
-        .from('task_likes')
-        .select('id')
-        .eq('task_id', id!)
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      setIsLiked(!!myLike);
+      setSignupCount(signupRes.count || 0);
+      setIsSignedUp(!!mySignupRes.data);
+      setLikeCount(likeRes.count || 0);
+      setIsLiked(!!myLikeRes.data);
+      setWaitlistCount(waitlistRes.count || 0);
+      if (myWaitlistRes.data) {
+        setIsOnWaitlist(true);
+        setWaitlistPosition(myWaitlistRes.data.position || 1);
+      }
 
       setLoading(false);
     };
@@ -292,6 +306,81 @@ const TaskDetail = () => {
     } else {
       setIsSignedUp(false);
       setSignupCount(prev => Math.max(prev - 1, 0));
+
+      // Auto-promote first person from waitlist
+      if (waitlistEnabled && waitlistCount > 0) {
+        const { data: nextInLine } = await (supabase as any)
+          .from('task_waitlist')
+          .select('id, volunteer_id')
+          .eq('task_id', id!)
+          .order('position', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (nextInLine) {
+          // Promote: create signup and remove from waitlist
+          await supabase.from('task_signups').insert({
+            task_id: id!,
+            volunteer_id: nextInLine.volunteer_id,
+          });
+          await (supabase as any).from('task_waitlist').delete().eq('id', nextInLine.id);
+          setWaitlistCount(prev => Math.max(prev - 1, 0));
+          setSignupCount(prev => prev + 1);
+
+          // Send push notification to promoted volunteer
+          sendPush({
+            userId: nextInLine.volunteer_id,
+            title: language === 'nl' ? 'Plaats vrijgekomen!' : language === 'fr' ? 'Place libérée !' : 'Spot available!',
+            message: language === 'nl'
+              ? `Er is een plek vrijgekomen voor "${task?.title}". Je bent automatisch ingeschreven!`
+              : language === 'fr'
+              ? `Une place s'est libérée pour "${task?.title}". Vous êtes automatiquement inscrit !`
+              : `A spot opened up for "${task?.title}". You've been automatically signed up!`,
+            url: `/task/${id}`,
+            type: 'waitlist_promoted',
+          });
+        }
+      }
+    }
+  };
+
+  const handleJoinWaitlist = async () => {
+    setJoiningWaitlist(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setJoiningWaitlist(false); return; }
+
+    const newPosition = waitlistCount + 1;
+    const { error } = await (supabase as any).from('task_waitlist').insert({
+      task_id: id!,
+      volunteer_id: session.user.id,
+      position: newPosition,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setIsOnWaitlist(true);
+      setWaitlistPosition(newPosition);
+      setWaitlistCount(prev => prev + 1);
+      toast.success(language === 'nl' ? 'Je staat op de wachtlijst!' : language === 'fr' ? 'Vous êtes sur la liste d\'attente !' : 'You\'re on the waitlist!');
+    }
+    setJoiningWaitlist(false);
+  };
+
+  const handleLeaveWaitlist = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { error } = await (supabase as any).from('task_waitlist')
+      .delete()
+      .eq('task_id', id!)
+      .eq('volunteer_id', session.user.id);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setIsOnWaitlist(false);
+      setWaitlistCount(prev => Math.max(prev - 1, 0));
     }
   };
 
@@ -716,7 +805,15 @@ const TaskDetail = () => {
           transition={{ delay: 0.3 }}
           className="sticky bottom-0 mt-8 -mx-4 px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent"
         >
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl mx-auto space-y-2">
+            {/* Waitlist info badge */}
+            {waitlistEnabled && waitlistCount > 0 && !isSignedUp && !isOnWaitlist && spotsRemaining <= 0 && (
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <ListOrdered className="w-3.5 h-3.5" />
+                {waitlistCount} {l.waitlistCount}
+              </div>
+            )}
+
             {isSignedUp ? (
               <div className="flex gap-3">
                 <div className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-primary/5 border border-primary/20 text-primary font-medium">
@@ -730,13 +827,39 @@ const TaskDetail = () => {
                   {l.cancelSignup}
                 </button>
               </div>
+            ) : isOnWaitlist ? (
+              <div className="flex gap-3">
+                <div className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-secondary/10 border border-secondary/20 text-secondary-foreground font-medium">
+                  <ListOrdered className="w-5 h-5" />
+                  {l.onWaitlist} — #{waitlistPosition}
+                </div>
+                <button
+                  onClick={handleLeaveWaitlist}
+                  className="px-5 py-3 rounded-2xl text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
+                >
+                  {l.leaveWaitlist}
+                </button>
+              </div>
+            ) : spotsRemaining <= 0 && waitlistEnabled ? (
+              <button
+                onClick={handleJoinWaitlist}
+                disabled={joiningWaitlist}
+                className="w-full px-4 py-3.5 rounded-2xl text-sm font-semibold bg-secondary text-secondary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shadow-sm"
+              >
+                {joiningWaitlist ? '...' : (
+                  <span className="flex items-center justify-center gap-2">
+                    <ListOrdered className="w-4 h-4" />
+                    {l.joinWaitlist}
+                  </span>
+                )}
+              </button>
             ) : (
               <button
                 onClick={handleSignup}
                 disabled={signingUp || spotsRemaining <= 0}
                 className="w-full px-4 py-3.5 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shadow-warm"
               >
-                {signingUp ? '...' : l.signUp}
+                {signingUp ? '...' : spotsRemaining <= 0 ? l.taskFull : l.signUp}
               </button>
             )}
           </div>
