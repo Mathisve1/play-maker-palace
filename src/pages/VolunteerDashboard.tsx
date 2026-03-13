@@ -30,6 +30,7 @@ import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
 import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab';
 import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
+import OnboardingWizard from '@/components/OnboardingWizard';
 
 interface Task {
   id: string;
