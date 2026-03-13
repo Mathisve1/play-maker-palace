@@ -76,7 +76,7 @@ const AnalyticsDashboard = () => {
     const [membersRes, tasksRes, signupsRes, eventsRes] = await Promise.all([
       supabase.from('club_members').select('user_id, created_at').eq('club_id', clubId),
       supabase.from('tasks').select('id, title, spots_available, task_date, event_id').eq('club_id', clubId),
-      supabase.from('task_signups').select('task_id, volunteer_id, status, created_at'),
+      supabase.from('task_signups').select('task_id, volunteer_id, status, signed_up_at'),
       supabase.from('events').select('id, title, event_date').eq('club_id', clubId).order('event_date', { ascending: false }).limit(50),
     ]);
 
