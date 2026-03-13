@@ -421,9 +421,7 @@ const ClubOwnerDashboard = () => {
   useEffect(() => {
     if (contextLoading || !clubId || !currentUserId) return;
     const init = async () => {
-      // Club init (SEPA only, Stripe removed)
-
-      // Parallel: contract templates, trainings, partners, events, tasks, stripe info
+      // Parallel: contract templates, trainings, partners, events, tasks
       const [templatesRes, trainingsRes, partnersRes, eventsRes, tasksRes] = await Promise.all([
         supabase.from('contract_templates').select('id, name').eq('club_id', clubId).order('created_at', { ascending: false }),
         supabase.from('academy_trainings').select('id, title').eq('club_id', clubId).eq('is_published', true).order('title'),
