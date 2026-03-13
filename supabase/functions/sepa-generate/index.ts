@@ -544,7 +544,8 @@ Deno.serve(async (req) => {
       let template;
       try { template = JSON.parse(templateText); } catch { template = null; }
       if (!template?.id) {
-        return new Response(JSON.stringify({ error: 'Failed to create template', details: templateText }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.error('DocuSeal rollback template failed:', templateText);
+        return new Response(JSON.stringify({ error: 'Annuleringssjabloon kon niet worden aangemaakt.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Create submission
