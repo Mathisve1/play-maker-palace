@@ -56,7 +56,7 @@ const VolunteerTaskPreferences = ({ userId, language, tasks, signedUpTaskIds, on
         .eq('id', userId)
         .maybeSingle();
       if (data?.preferences) {
-        const prefs = data.preferences as Record<string, unknown>;
+        const prefs = data.preferences as { categories?: string[]; time_prefs?: string[]; max_distance?: string };
         if (prefs.categories) setSelectedCategories(new Set(prefs.categories));
         if (prefs.time_prefs) setSelectedTimePref(new Set(prefs.time_prefs));
         if (prefs.max_distance) setMaxDistance(prefs.max_distance);
