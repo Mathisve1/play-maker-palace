@@ -913,6 +913,7 @@ export type Database = {
       }
       clubs: {
         Row: {
+          allow_shift_swaps: boolean
           created_at: string
           description: string | null
           id: string
@@ -924,6 +925,7 @@ export type Database = {
           stripe_account_id: string | null
         }
         Insert: {
+          allow_shift_swaps?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -935,6 +937,7 @@ export type Database = {
           stripe_account_id?: string | null
         }
         Update: {
+          allow_shift_swaps?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -3094,6 +3097,66 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_swaps: {
+        Row: {
+          club_approved_at: string | null
+          club_approved_by: string | null
+          club_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          requester_id: string
+          status: string
+          target_id: string
+          target_responded_at: string | null
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          club_approved_at?: string | null
+          club_approved_by?: string | null
+          club_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requester_id: string
+          status?: string
+          target_id: string
+          target_responded_at?: string | null
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          club_approved_at?: string | null
+          club_approved_by?: string | null
+          club_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requester_id?: string
+          status?: string
+          target_id?: string
+          target_responded_at?: string | null
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_swaps_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_swaps_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]

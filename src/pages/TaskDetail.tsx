@@ -6,8 +6,9 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Calendar, Users, Clock, Euro, FileText,
-  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered
+  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered, ArrowLeftRight
 } from 'lucide-react';
+import ShiftSwapDialog from '@/components/ShiftSwapDialog';
 import { sendPush } from '@/lib/sendPush';
 import Logo from '@/components/Logo';
 import TaskMap from '@/components/TaskMap';
@@ -220,6 +221,8 @@ const TaskDetail = () => {
   const [waitlistPosition, setWaitlistPosition] = useState(0);
   const [waitlistCount, setWaitlistCount] = useState(0);
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
+  const [allowShiftSwaps, setAllowShiftSwaps] = useState(false);
+  const [showSwapDialog, setShowSwapDialog] = useState(false);
 
   const l = labels[language];
 
@@ -246,6 +249,11 @@ const TaskDetail = () => {
       if (!taskData) { setLoading(false); return; }
       setTask(taskData as unknown as Task);
       setWaitlistEnabled((taskData as any).waitlist_enabled || false);
+
+      // Check if club allows shift swaps
+      (supabase as any).from('clubs').select('allow_shift_swaps').eq('id', taskData.club_id).maybeSingle().then(({ data: clubData }: any) => {
+        if (clubData) setAllowShiftSwaps(!!clubData.allow_shift_swaps);
+      });
 
       // Count signups + waitlist + likes in parallel
       const [signupRes, mySignupRes, likeRes, myLikeRes, waitlistRes, myWaitlistRes] = await Promise.all([
@@ -820,6 +828,15 @@ const TaskDetail = () => {
                   <CheckCircle className="w-5 h-5" />
                   {l.signedUp}
                 </div>
+                {allowShiftSwaps && signupCount > 1 && (
+                  <button
+                    onClick={() => setShowSwapDialog(true)}
+                    className="px-4 py-3 rounded-2xl text-sm font-medium border border-border text-muted-foreground hover:text-primary hover:border-primary/20 transition-colors"
+                    title={language === 'nl' ? 'Shift ruilen' : 'Swap shift'}
+                  >
+                    <ArrowLeftRight className="w-5 h-5" />
+                  </button>
+                )}
                 <button
                   onClick={handleCancel}
                   className="px-5 py-3 rounded-2xl text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
@@ -865,6 +882,17 @@ const TaskDetail = () => {
           </div>
         </motion.div>
       </main>
+      {task && showSwapDialog && (
+        <ShiftSwapDialog
+          open={showSwapDialog}
+          onClose={() => setShowSwapDialog(false)}
+          taskId={task.id}
+          taskTitle={task.title}
+          clubId={task.club_id}
+          currentUserId={currentUserId}
+          language={language}
+        />
+      )}
     </div>
   );
 };

@@ -27,6 +27,14 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(clubInfo.logo_url);
   const [saving, setSaving] = useState(false);
+  const [allowShiftSwaps, setAllowShiftSwaps] = useState(false);
+
+  // Load current swap setting
+  useState(() => {
+    (supabase as any).from('clubs').select('allow_shift_swaps').eq('id', clubId).maybeSingle().then(({ data }: any) => {
+      if (data) setAllowShiftSwaps(!!data.allow_shift_swaps);
+    });
+  });
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,13 +75,14 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
       }
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('clubs')
       .update({
         name: name.trim(),
         sport: sport.trim() || null,
         location: location.trim() || null,
         logo_url: logoUrl,
+        allow_shift_swaps: allowShiftSwaps,
       })
       .eq('id', clubId);
 
@@ -133,6 +142,21 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
               <label className="block text-xs font-medium text-muted-foreground mb-1">{t3('Locatie', 'Localisation', 'Location')}</label>
               <input type="text" value={location} onChange={e => setLocation(e.target.value)} maxLength={200} className={inputClass} />
             </div>
+          </div>
+
+          {/* Shift swap toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-border">
+            <div>
+              <p className="text-sm font-medium text-foreground">{t3('Shift-ruil toestaan', 'Autoriser l\'échange de shifts', 'Allow shift swaps')}</p>
+              <p className="text-xs text-muted-foreground">{t3('Vrijwilligers kunnen onderling shifts ruilen (met jouw goedkeuring)', 'Les bénévoles peuvent échanger des shifts entre eux (avec votre approbation)', 'Volunteers can swap shifts among themselves (with your approval)')}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAllowShiftSwaps(!allowShiftSwaps)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${allowShiftSwaps ? 'bg-primary' : 'bg-muted'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${allowShiftSwaps ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
           </div>
         </div>
 

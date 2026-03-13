@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import ShiftSwapApprovals from '@/components/ShiftSwapApprovals';
 import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -502,6 +503,9 @@ const CommandCenter = () => {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t.subtitle}</p>
         </div>
+
+        {/* Shift swap approvals */}
+        {clubId && <ShiftSwapApprovals clubId={clubId} language={language} />}
 
         {/* Filter tabs + Bulk bar */}
         {items.length > 0 && (
