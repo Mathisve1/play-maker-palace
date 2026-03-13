@@ -204,6 +204,51 @@ export type Database = {
           },
         ]
       }
+      badge_definitions: {
+        Row: {
+          condition_type: string
+          created_at: string
+          description_en: string | null
+          description_fr: string | null
+          description_nl: string | null
+          icon: string
+          id: string
+          key: string
+          name_en: string
+          name_fr: string
+          name_nl: string
+          threshold: number
+        }
+        Insert: {
+          condition_type: string
+          created_at?: string
+          description_en?: string | null
+          description_fr?: string | null
+          description_nl?: string | null
+          icon?: string
+          id?: string
+          key: string
+          name_en: string
+          name_fr: string
+          name_nl: string
+          threshold?: number
+        }
+        Update: {
+          condition_type?: string
+          created_at?: string
+          description_en?: string | null
+          description_fr?: string | null
+          description_nl?: string | null
+          icon?: string
+          id?: string
+          key?: string
+          name_en?: string
+          name_fr?: string
+          name_nl?: string
+          threshold?: number
+        }
+        Relationships: []
+      }
       briefing_block_progress: {
         Row: {
           block_id: string
@@ -517,6 +562,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      calendar_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          token?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       certificate_designs: {
         Row: {
@@ -1138,6 +1204,41 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_chats: {
+        Row: {
+          attachment_url: string | null
+          created_at: string
+          event_id: string
+          id: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          attachment_url?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_chats_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -3240,6 +3341,41 @@ export type Database = {
           },
         ]
       }
+      task_notes: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          photo_url: string | null
+          task_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          task_id: string
+          volunteer_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          task_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_notes_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_signups: {
         Row: {
           id: string
@@ -3743,6 +3879,35 @@ export type Database = {
         }
         Relationships: []
       }
+      volunteer_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badge_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_certificates: {
         Row: {
           certificate_design_id: string | null
@@ -3754,6 +3919,7 @@ export type Database = {
           score: number | null
           training_id: string
           type: string
+          verification_code: string | null
           volunteer_id: string
         }
         Insert: {
@@ -3766,6 +3932,7 @@ export type Database = {
           score?: number | null
           training_id: string
           type?: string
+          verification_code?: string | null
           volunteer_id: string
         }
         Update: {
@@ -3778,6 +3945,7 @@ export type Database = {
           score?: number | null
           training_id?: string
           type?: string
+          verification_code?: string | null
           volunteer_id?: string
         }
         Relationships: [
