@@ -103,7 +103,7 @@ const App = () => {
             <Route path="/club-dashboard" element={<RequireAuth redirectTo="/club-login"><ClubOwnerDashboard /></RequireAuth>} />
             <Route path="/command-center" element={<RequireAuth redirectTo="/club-login"><CommandCenter /></RequireAuth>} />
             <Route path="/club-invite/:token" element={<ClubInviteAccept />} />
-            <Route path="/payments" element={<RequireAuth redirectTo="/club-login"><PaymentsOverview /></RequireAuth>} />
+            
             <Route path="/contract-builder" element={<RequireAuth redirectTo="/club-login"><ContractBuilder /></RequireAuth>} />
             <Route path="/briefing-builder" element={<RequireAuth redirectTo="/club-login"><BriefingBuilder /></RequireAuth>} />
             <Route path="/compliance" element={<RequireAuth redirectTo="/club-login"><ComplianceDashboard /></RequireAuth>} />
