@@ -128,7 +128,21 @@ export default function AiAssistantChat() {
           Authorization: `Bearer ${session?.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ messages: allMessages, conversationId: convId }),
+        body: JSON.stringify({
+          messages: allMessages,
+          conversationId: convId,
+          context: {
+            currentPage: location.pathname,
+            language,
+            clubId: clubCtx?.clubId || null,
+            clubName: clubCtx?.clubInfo?.name || null,
+            clubSport: clubCtx?.clubInfo?.sport || null,
+            clubLocation: clubCtx?.clubInfo?.location || null,
+            isOwner: clubCtx?.isOwner || false,
+            memberRole: clubCtx?.memberRole || null,
+            userName: clubCtx?.profile?.full_name || null,
+          },
+        }),
       });
 
       if (!resp.ok || !resp.body) {
