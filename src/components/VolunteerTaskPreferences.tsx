@@ -50,13 +50,13 @@ const VolunteerTaskPreferences = ({ userId, language, tasks, signedUpTaskIds, on
   // Load preferences from profile metadata
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('profiles')
         .select('preferences')
         .eq('id', userId)
         .maybeSingle();
       if (data?.preferences) {
-        const prefs = data.preferences as any;
+        const prefs = data.preferences as Record<string, unknown>;
         if (prefs.categories) setSelectedCategories(new Set(prefs.categories));
         if (prefs.time_prefs) setSelectedTimePref(new Set(prefs.time_prefs));
         if (prefs.max_distance) setMaxDistance(prefs.max_distance);
