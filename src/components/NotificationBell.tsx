@@ -24,6 +24,7 @@ const NotificationBell = ({ userId }: { userId: string }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const { language } = useLanguage();
+  const navigate = useNavigate();
 
   const t3 = (nlStr: string, frStr: string, enStr: string) =>
     language === 'nl' ? nlStr : language === 'fr' ? frStr : enStr;
