@@ -1,64 +1,47 @@
 project_id = "ebxpdscmebdmyqjwmpun"
 
-[functions.docuseal]
-verify_jwt = false
-
-[functions.club-signup]
-verify_jwt = false
-
-[functions.club-invite]
-verify_jwt = false
-
-[functions.stripe-connect-onboard]
-verify_jwt = false
-
-[functions.stripe-connect-status]
-verify_jwt = false
-
-[functions.stripe-create-transfer]
-verify_jwt = false
-
-[functions.stripe-payment-status]
-verify_jwt = false
-
-[functions.ticketing-webhook]
-verify_jwt = false
-
-[functions.ticketing-generate]
-verify_jwt = false
-
-[functions.ticketing-scan]
-verify_jwt = false
-
-[functions.sepa-generate]
-verify_jwt = false
-
-[functions.generate-quiz]
-verify_jwt = false
-
-[functions.generate-training-content]
-verify_jwt = false
-
-[functions.reporting-ai]
-verify_jwt = false
-
-[functions.safety-demo]
-verify_jwt = false
-
-[functions.send-push-notification]
-verify_jwt = false
-
-[functions.monthly-reminders]
-verify_jwt = false
-
-[functions.push-reminders]
-verify_jwt = false
-
-[functions.club-data-api]
-verify_jwt = false
-
-[functions.calendar-feed]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.calendar-feed]
+    verify_jwt = false
+  [functions.club-data-api]
+    verify_jwt = false
+  [functions.club-invite]
+    verify_jwt = false
+  [functions.club-signup]
+    verify_jwt = false
+  [functions.docuseal]
+    verify_jwt = false
+  [functions.generate-quiz]
+    verify_jwt = false
+  [functions.generate-training-content]
+    verify_jwt = false
+  [functions.monthly-reminders]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.push-reminders]
+    verify_jwt = false
+  [functions.reporting-ai]
+    verify_jwt = false
+  [functions.safety-demo]
+    verify_jwt = false
+  [functions.send-push-notification]
+    verify_jwt = false
+  [functions.sepa-generate]
+    verify_jwt = false
+  [functions.stripe-connect-onboard]
+    verify_jwt = false
+  [functions.stripe-connect-status]
+    verify_jwt = false
+  [functions.stripe-create-transfer]
+    verify_jwt = false
+  [functions.stripe-payment-status]
+    verify_jwt = false
+  [functions.ticketing-generate]
+    verify_jwt = false
+  [functions.ticketing-scan]
+    verify_jwt = false
+  [functions.ticketing-webhook]
+    verify_jwt = false
