@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp, Moon, Sun,
+  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp, Moon, Sun, Bell,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import {
@@ -109,6 +109,7 @@ const ClubOwnerSidebar = ({
     { label: 'Planning', icon: LayoutGrid, path: '/planning' },
     { label: t3('Safety & Security', 'Sécurité', 'Safety & Security'), icon: ShieldAlert, path: '/safety' },
     { label: t3('Berichten', 'Messages', 'Messages'), icon: MessageCircle, path: '/chat' },
+    { label: t3('Notificaties', 'Notifications', 'Notifications'), icon: Bell, path: '/notifications' },
   ];
 
   const managementItems = [

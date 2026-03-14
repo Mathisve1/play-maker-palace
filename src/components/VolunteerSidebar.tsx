@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
+  LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
   HelpCircle, Building2, Shield, CalendarDays, Moon, Sun,
 } from 'lucide-react';
@@ -203,6 +203,12 @@ const VolunteerSidebar = ({
                 <SidebarMenuButton onClick={() => handleExternalNav('/chat')} className="min-h-[48px]">
                   <MessageCircle className="w-5 h-5" />
                   <span>{l.messages}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => handleExternalNav('/notifications')} className="min-h-[48px]">
+                  <Bell className="w-5 h-5" />
+                  <span>{language === 'nl' ? 'Notificaties' : language === 'fr' ? 'Notifications' : 'Notifications'}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
