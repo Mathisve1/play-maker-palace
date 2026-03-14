@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { motion } from 'framer-motion';
-import { MapPin, Users, Calendar, Heart, HeartOff, ArrowLeft, Trophy, Clock, Briefcase, Building2, ArrowRight, Star, TrendingUp } from 'lucide-react';
+import { MapPin, Users, Calendar, Heart, HeartOff, ArrowLeft, Trophy, Clock, Briefcase, Building2, ArrowRight, Star, TrendingUp, Gift, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -84,6 +85,8 @@ const CommunityClubDetail = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [togglingFollow, setTogglingFollow] = useState(false);
   const [stats, setStats] = useState({ volunteers: 0, completedTasks: 0, totalEvents: 0 });
+  const [showReferralDialog, setShowReferralDialog] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
 
   useEffect(() => {
     if (!clubId) return;
@@ -143,11 +146,50 @@ const CommunityClubDetail = () => {
       await supabase.from('club_follows').delete().eq('user_id', currentUserId).eq('club_id', clubId!);
       setIsFollowing(false);
       toast.success(dl.unfollowed);
+      setTogglingFollow(false);
     } else {
-      await supabase.from('club_follows').insert({ user_id: currentUserId, club_id: clubId! });
-      setIsFollowing(true);
-      toast.success(dl.followed);
+      // Show referral code dialog before following
+      setShowReferralDialog(true);
+      setTogglingFollow(false);
     }
+  };
+
+  const confirmFollow = async (code?: string) => {
+    if (!currentUserId || !clubId) return;
+    setShowReferralDialog(false);
+    setTogglingFollow(true);
+
+    await supabase.from('club_follows').insert({ user_id: currentUserId, club_id: clubId });
+    setIsFollowing(true);
+
+    // If referral code provided, look up the referrer
+    if (code && code.trim()) {
+      const trimmedCode = code.trim().toUpperCase();
+      const { data: referrer } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('referral_code', trimmedCode)
+        .neq('id', currentUserId)
+        .maybeSingle();
+
+      if (referrer) {
+        await supabase.from('club_referrals').insert({
+          club_id: clubId,
+          referrer_id: referrer.id,
+          referred_id: currentUserId,
+          status: 'pending',
+        } as any).then(({ error }) => {
+          if (!error) {
+            toast.success(language === 'nl' ? 'Referral-code toegepast!' : language === 'fr' ? 'Code de parrainage appliqué !' : 'Referral code applied!');
+          }
+        });
+      } else {
+        toast.error(language === 'nl' ? 'Ongeldige referral-code' : language === 'fr' ? 'Code de parrainage invalide' : 'Invalid referral code');
+      }
+    }
+
+    toast.success(dl.followed);
+    setReferralCode('');
     setTogglingFollow(false);
   };
 
@@ -381,6 +423,63 @@ const CommunityClubDetail = () => {
       </section>
 
       <Footer />
+
+      {/* Referral Code Dialog */}
+      {showReferralDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => { setShowReferralDialog(false); confirmFollow(); }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card rounded-2xl shadow-elevated p-6 w-full max-w-sm space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-primary" />
+                <h3 className="font-heading font-semibold text-foreground">
+                  {language === 'nl' ? 'Referral-code' : language === 'fr' ? 'Code de parrainage' : 'Referral code'}
+                </h3>
+              </div>
+              <button onClick={() => { setShowReferralDialog(false); confirmFollow(); }} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              {language === 'nl'
+                ? `Heb je een uitnodigingscode gekregen van iemand die al vrijwilliger is bij ${club.name}? Vul deze in zodat jullie allebei bonuspunten kunnen verdienen!`
+                : language === 'fr'
+                ? `Avez-vous reçu un code d'invitation d'un bénévole de ${club.name} ? Entrez-le pour gagner des points bonus !`
+                : `Got a referral code from someone volunteering at ${club.name}? Enter it so you both earn bonus points!`}
+            </p>
+
+            <Input
+              placeholder={language === 'nl' ? 'Bijv. AC241A17' : language === 'fr' ? 'Ex. AC241A17' : 'E.g. AC241A17'}
+              value={referralCode}
+              onChange={e => setReferralCode(e.target.value.toUpperCase())}
+              className="text-center text-lg tracking-widest font-mono"
+              maxLength={12}
+            />
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => { setShowReferralDialog(false); confirmFollow(); }}
+              >
+                {language === 'nl' ? 'Overslaan' : language === 'fr' ? 'Passer' : 'Skip'}
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => confirmFollow(referralCode)}
+                disabled={!referralCode.trim()}
+              >
+                {language === 'nl' ? 'Toepassen & volgen' : language === 'fr' ? 'Appliquer & suivre' : 'Apply & follow'}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

@@ -28,11 +28,15 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
   const [logoPreview, setLogoPreview] = useState<string | null>(clubInfo.logo_url);
   const [saving, setSaving] = useState(false);
   const [allowShiftSwaps, setAllowShiftSwaps] = useState(false);
+  const [referralBonusPoints, setReferralBonusPoints] = useState(0);
 
-  // Load current swap setting
+  // Load current settings
   useState(() => {
-    supabase.from('clubs').select('allow_shift_swaps').eq('id', clubId).maybeSingle().then(({ data }) => {
-      if (data) setAllowShiftSwaps(!!data.allow_shift_swaps);
+    supabase.from('clubs').select('allow_shift_swaps, referral_bonus_points').eq('id', clubId).maybeSingle().then(({ data }) => {
+      if (data) {
+        setAllowShiftSwaps(!!data.allow_shift_swaps);
+        setReferralBonusPoints((data as any).referral_bonus_points || 0);
+      }
     });
   });
 
@@ -83,7 +87,8 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
         location: location.trim() || null,
         logo_url: logoUrl,
         allow_shift_swaps: allowShiftSwaps,
-      })
+        referral_bonus_points: referralBonusPoints,
+      } as any)
       .eq('id', clubId);
 
     if (error) {
@@ -157,6 +162,22 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${allowShiftSwaps ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
+          </div>
+
+          {/* Referral bonus points */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-border">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">{t3('Referral bonuspunten', 'Points bonus de parrainage', 'Referral bonus points')}</p>
+              <p className="text-xs text-muted-foreground">{t3('Punten die een vrijwilliger verdient wanneer een doorverwezen vriend zijn eerste taak voltooit', 'Points qu\'un bénévole gagne quand un ami parrainé termine sa première tâche', 'Points a volunteer earns when a referred friend completes their first task')}</p>
+            </div>
+            <input
+              type="number"
+              min={0}
+              max={1000}
+              value={referralBonusPoints}
+              onChange={e => setReferralBonusPoints(Math.max(0, parseInt(e.target.value) || 0))}
+              className="w-20 px-2 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm text-center"
+            />
           </div>
         </div>
 
