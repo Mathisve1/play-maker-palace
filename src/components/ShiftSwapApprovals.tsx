@@ -90,7 +90,7 @@ const ShiftSwapApprovals = ({ clubId, language }: ShiftSwapApprovalsProps) => {
 
   const handleReject = async (swap: SwapItem) => {
     setProcessing(swap.id);
-    await (supabase as any).from('shift_swaps').update({ status: 'rejected_club' }).eq('id', swap.id);
+    await supabase.from('shift_swaps').update({ status: 'rejected_club' }).eq('id', swap.id);
 
     sendPush({ userId: swap.requester_id, type: 'shift_swap_rejected', title: '❌ Shift-ruil geweigerd', message: `De club heeft je shift-ruil voor "${swap.task_title}" geweigerd.`, url: `/task/${swap.task_id}` });
     sendPush({ userId: swap.target_id, type: 'shift_swap_rejected', title: '❌ Shift-ruil geweigerd', message: `De club heeft de shift-ruil voor "${swap.task_title}" geweigerd.`, url: `/task/${swap.task_id}` });

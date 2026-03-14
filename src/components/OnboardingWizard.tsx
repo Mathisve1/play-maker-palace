@@ -104,7 +104,7 @@ const OnboardingWizard = ({
 
     const syncSteps = async () => {
       for (const s of newlyCompleted) {
-        await (supabase as any)
+        await supabase
           .from('volunteer_onboarding_steps')
           .upsert(
             { user_id: userId, club_id: clubId, step: s.key, completed_at: new Date().toISOString() },

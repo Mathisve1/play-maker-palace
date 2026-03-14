@@ -125,7 +125,7 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
         sendPush({ userId: swap.requester_id, type: 'shift_swap_accepted', title: '✅ Ruil geaccepteerd', message: `Je ruilverzoek voor "${taskTitle}" is geaccepteerd. Wacht op goedkeuring club.`, url: `/task/${taskId}` });
       }
     } else {
-      await (supabase as any).from('shift_swaps').update({
+      await supabase.from('shift_swaps').update({
         status: 'rejected_target',
         target_responded_at: new Date().toISOString(),
       }).eq('id', swapId);

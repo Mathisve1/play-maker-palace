@@ -66,7 +66,7 @@ const MicroLearningsSection = ({ userId, language }: Props) => {
       const score = Math.round((correct / newAnswers.length) * 100);
 
       // Save completion
-      (supabase as any).from('micro_learning_completions').insert({
+      supabase.from('micro_learning_completions').insert({
         learning_id: activeLearning!.id,
         user_id: userId,
         score,

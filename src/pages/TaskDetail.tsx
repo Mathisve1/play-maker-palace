@@ -386,7 +386,7 @@ const TaskDetail = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { error } = await (supabase as any).from('task_waitlist')
+    const { error } = await supabase.from('task_waitlist')
       .delete()
       .eq('task_id', id!)
       .eq('volunteer_id', session.user.id);

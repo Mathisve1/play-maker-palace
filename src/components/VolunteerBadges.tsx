@@ -83,7 +83,7 @@ const VolunteerBadges = ({ userId, language, compact = false }: VolunteerBadgesP
         const val = stats[badge.condition_type] || 0;
         if (val >= badge.threshold) {
           // Award badge
-          const { error } = await (supabase as any).from('volunteer_badges').insert({
+          const { error } = await supabase.from('volunteer_badges').insert({
             user_id: userId,
             badge_id: badge.id,
           });
