@@ -38,22 +38,23 @@ const SafetyEventHub = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const clubId = event.club_id;
 
-      const [clubRes, profileRes, zonesRes, incTypesRes, incRes, clItemsRes, cpRes, cTasksRes] = await Promise.all([
+      const [clubRes, profileRes, zonesRes, incTypesRes, incRes, clItemsRes, cTasksRes] = await Promise.all([
         supabase.from('clubs').select('name').eq('id', clubId).single(),
         session ? supabase.from('profiles').select('full_name').eq('id', session.user.id).single() : Promise.resolve({ data: null }),
         supabase.from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
         supabase.from('safety_incident_types').select('*').eq('club_id', clubId),
         supabase.from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
         supabase.from('safety_checklist_items').select('*').eq('event_id', eventId),
-        supabase.from('safety_checklist_progress').select('*').in('checklist_item_id', (clItemsRes.data || []).map((i: any) => i.id)),
         supabase.from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order'),
       ]);
+      const checklistItemIds = (clItemsRes.data || []).map((i: any) => i.id);
+      const { data: cpData } = await supabase.from('safety_checklist_progress').select('*').in('checklist_item_id', checklistItemIds);
 
       const zones = zonesRes.data || [];
       const incidentTypes = incTypesRes.data || [];
       const incidents = incRes.data || [];
       const checklistItems = clItemsRes.data || [];
-      const checklistProgress = cpRes.data || [];
+      const checklistProgress = cpData || [];
       const cTasks = cTasksRes.data || [];
 
       const volIds = [...new Set(cTasks.map((t: any) => t.assigned_volunteer_id).filter(Boolean))] as string[];
