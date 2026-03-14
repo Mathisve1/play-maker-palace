@@ -52,10 +52,10 @@ const typeConfig = {
 const CommandCenter = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { clubId: contextClubId, clubInfo: contextClubInfo, profile: contextProfile } = useClubContext();
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
-  const [clubInfo, setClubInfo] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [items, setItems] = useState<ActionItem[]>([]);
   const [items, setItems] = useState<ActionItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
