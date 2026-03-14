@@ -1,21 +1,41 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Language } from '@/i18n/translations';
-import { Menu, X, Globe } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, X, Globe, ArrowLeft, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import Logo from '@/components/Logo';
+import { supabase } from '@/integrations/supabase/client';
 
 const langLabels: Record<Language, string> = { nl: 'NL', fr: 'FR', en: 'EN' };
 
 const Navbar = () => {
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const isClubsPage = location.pathname === '/clubs';
   const isVolunteerPage = location.pathname === '/';
   const isCommunityPage = location.pathname.startsWith('/community');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  const dashboardLabel = language === 'nl' ? 'Terug naar dashboard' : language === 'fr' ? 'Retour au tableau de bord' : 'Back to dashboard';
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -69,18 +89,38 @@ const Navbar = () => {
             )}
           </div>
 
-          <Link 
-            to="/login" 
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {t.nav.login}
-          </Link>
-          <Link 
-            to="/signup" 
-            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-          >
-            {t.nav.signup}
-          </Link>
+          {userId ? (
+            <>
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                {dashboardLabel}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              <Link 
+                to="/login" 
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t.nav.login}
+              </Link>
+              <Link 
+                to="/signup" 
+                className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                {t.nav.signup}
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -110,8 +150,21 @@ const Navbar = () => {
               ))}
             </div>
             <hr className="border-border" />
-            <Link to="/login" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{t.nav.login}</Link>
-            <Link to="/signup" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2 text-center rounded-lg bg-primary text-primary-foreground">{t.nav.signup}</Link>
+            {userId ? (
+              <>
+                <button onClick={() => { navigate('/dashboard'); setMobileOpen(false); }} className="flex items-center gap-2 text-sm font-medium py-2 text-primary">
+                  <ArrowLeft className="w-4 h-4" /> {dashboardLabel}
+                </button>
+                <button onClick={() => { handleLogout(); setMobileOpen(false); }} className="flex items-center gap-2 text-sm font-medium py-2 text-muted-foreground">
+                  <LogOut className="w-4 h-4" /> {language === 'nl' ? 'Uitloggen' : language === 'fr' ? 'Déconnexion' : 'Log out'}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{t.nav.login}</Link>
+                <Link to="/signup" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2 text-center rounded-lg bg-primary text-primary-foreground">{t.nav.signup}</Link>
+              </>
+            )}
           </div>
         </div>
       )}
