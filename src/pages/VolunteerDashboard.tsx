@@ -376,19 +376,23 @@ const VolunteerDashboard = () => {
         })));
       }
 
-      // Set loyalty
+      // Certs & follows
+      if (certsRes.data) { setMyCertifiedTrainingIds(new Set(certsRes.data.map((c: any) => c.training_id))); }
+      const userFollowedClubIds = new Set(followsRes.data?.map((f: any) => f.club_id) || []);
+      setFollowedClubIds(userFollowedClubIds);
+
+      // Set loyalty — only show programs from followed clubs
       if (allPrograms && allPrograms.length > 0) {
-        setLoyaltyPrograms(allPrograms.map((p: any) => ({ ...p, club_name: clubEnrichMap.get(p.club_id) || '' })));
+        const filteredPrograms = userFollowedClubIds.size > 0
+          ? allPrograms.filter((p: any) => userFollowedClubIds.has(p.club_id))
+          : allPrograms;
+        setLoyaltyPrograms(filteredPrograms.map((p: any) => ({ ...p, club_name: clubEnrichMap.get(p.club_id) || '' })));
         if (loyaltyEnrRes.data) {
           const enrollMap: Record<string, { id: string; tasks_completed: number; points_earned: number; reward_claimed: boolean }> = {};
           loyaltyEnrRes.data.forEach((e: any) => { enrollMap[e.program_id] = { id: e.id, tasks_completed: e.tasks_completed, points_earned: e.points_earned || 0, reward_claimed: e.reward_claimed }; });
           setLoyaltyEnrollments(enrollMap);
         }
       }
-
-      // Certs & follows (already fetched)
-      if (certsRes.data) { setMyCertifiedTrainingIds(new Set(certsRes.data.map((c: any) => c.training_id))); }
-      setFollowedClubIds(new Set(followsRes.data?.map((f: any) => f.club_id) || []));
 
       setLoading(false);
 
