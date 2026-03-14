@@ -348,14 +348,15 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
                           <span className="text-[10px] text-muted-foreground italic">"{task.note}"</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="w-3 h-3 text-muted-foreground" />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Users className="w-3 h-3 text-muted-foreground shrink-0" />
+                        {/* Individual assignment */}
                         <Select
                           value={task.assigned_volunteer_id || '__none'}
                           onValueChange={v => handleAssignVolunteer(task.id, v === '__none' ? null : v)}
                         >
-                          <SelectTrigger className="h-7 text-xs w-48">
-                            <SelectValue placeholder={t3('Niet toegewezen', 'Non assigné', 'Unassigned')} />
+                          <SelectTrigger className="h-7 text-xs w-40">
+                            <SelectValue placeholder={t3('Persoon...', 'Personne...', 'Person...')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="__none">{t3('Niet toegewezen', 'Non assigné', 'Unassigned')}</SelectItem>
@@ -364,6 +365,26 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
                             ))}
                           </SelectContent>
                         </Select>
+                        {/* Team assignment */}
+                        {teams.length > 0 && (
+                          <>
+                            <span className="text-[10px] text-muted-foreground">{t3('of', 'ou', 'or')}</span>
+                            <Select
+                              value={task.assigned_team_id || '__none'}
+                              onValueChange={v => handleAssignTeam(task.id, v === '__none' ? null : v)}
+                            >
+                              <SelectTrigger className="h-7 text-xs w-40">
+                                <SelectValue placeholder={t3('Team...', 'Équipe...', 'Team...')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none">{t3('Geen team', 'Pas d\'équipe', 'No team')}</SelectItem>
+                                {teams.map(tm => (
+                                  <SelectItem key={tm.id} value={tm.id}>{tm.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </>
+                        )}
                       </div>
                     </div>
                     {task.status !== 'completed' && (
