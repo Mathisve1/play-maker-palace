@@ -336,9 +336,8 @@ const TicketScanner = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="bg-card/80 backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }} />
-      <header className="sticky top-0 z-30 bg-card/80 backdrop-blur border-b border-border">
-        <div className="max-w-lg mx-auto px-4 py-3 min-h-12 flex items-center gap-3">
+      <header className="sticky top-0 z-30 bg-card/80 backdrop-blur border-b border-border pt-[env(safe-area-inset-top)]">
+        <div className="max-w-lg mx-auto px-4 py-3 min-h-14 flex items-center gap-3">
           <button onClick={() => navigate('/ticketing')} className="text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
