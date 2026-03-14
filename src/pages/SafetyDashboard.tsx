@@ -207,25 +207,31 @@ const SafetyDashboard = () => {
         setUserGroupIds(new Set((userTasks || []).map(t => t.event_group_id).filter(Boolean) as string[]));
       }
 
-      const [zRes, itRes, incRes, clRes, llRes, loRes] = await Promise.all([
+      const [zRes, itRes, incRes, clRes, llRes] = await Promise.all([
         supabase.from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
         supabase.from('safety_incident_types').select('*').eq('club_id', ev.club_id).order('sort_order'),
         supabase.from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
         supabase.from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order'),
         supabase.from('safety_location_levels').select('*').eq('club_id', ev.club_id).order('sort_order'),
-        supabase.from('safety_location_options').select('*').order('sort_order'),
       ]);
       const checklistItemIds = new Set((clRes.data || []).map((i: any) => i.id));
-      const { data: cpData } = await supabase.from('safety_checklist_progress').select('*').in('checklist_item_id', Array.from(checklistItemIds));
+      const levels = llRes.data || [];
+      const levelIds = levels.map((l: any) => l.id);
+      const [{ data: cpData }, loRes] = await Promise.all([
+        checklistItemIds.size > 0
+          ? supabase.from('safety_checklist_progress').select('*').in('checklist_item_id', Array.from(checklistItemIds))
+          : Promise.resolve({ data: [] as any[] }),
+        levelIds.length > 0
+          ? supabase.from('safety_location_options').select('*').in('level_id', levelIds).order('sort_order')
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
       setZones(zRes.data || []);
       setIncidentTypes(itRes.data || []);
       setIncidents(incRes.data || []);
       setChecklistItems(clRes.data || []);
       setChecklistProgress(cpData || []);
-      const levels = llRes.data || [];
       setLocationLevels(levels);
-      const levelIds = new Set(levels.map((l: any) => l.id));
-      setLocationOptions((loRes.data || []).filter((o: any) => levelIds.has(o.level_id)));
+      setLocationOptions(loRes.data || []);
 
       // Fetch reporter profiles for incident cards
       const incidentData = incRes.data || [];
