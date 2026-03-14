@@ -681,7 +681,7 @@ const BriefingBuilder = () => {
   // ─── Task selector ───
   if (!taskId || !clubId) {
     if (taskSelectorLoading) {
-      return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+      return <PageSkeleton />;
     }
     const filtered = availableTasks.filter(t => t.title.toLowerCase().includes(taskSearch.toLowerCase()));
     return (
