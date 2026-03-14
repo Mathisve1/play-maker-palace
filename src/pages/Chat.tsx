@@ -606,8 +606,27 @@ const Chat = () => {
         </div>
 
         {/* Messages area */}
-        <div className={`${!activeConversation ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}>
-          {!activeConversation ? (
+        <div className={`${(!activeConversation && !activeGroupChat) ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}>
+          {activeGroupChat && userId ? (
+            <>
+              <div className="px-4 py-2 border-b border-border bg-card md:hidden">
+                <button
+                  onClick={() => setActiveGroupChat(null)}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  ← {l.back}
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <EventGroupChat
+                  eventId={activeGroupChat}
+                  eventTitle={groupChats.find(gc => gc.id === activeGroupChat)?.title || ''}
+                  userId={userId}
+                  language={language}
+                />
+              </div>
+            </>
+          ) : !activeConversation ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <MessageCircle className="w-16 h-16 opacity-20" />
             </div>
