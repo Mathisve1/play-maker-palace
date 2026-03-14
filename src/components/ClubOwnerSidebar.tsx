@@ -109,6 +109,7 @@ const ClubOwnerSidebar = ({
     { label: 'Planning', icon: LayoutGrid, path: '/planning' },
     { label: t3('Safety & Security', 'Sécurité', 'Safety & Security'), icon: ShieldAlert, path: '/safety' },
     { label: t3('Berichten', 'Messages', 'Messages'), icon: MessageCircle, path: '/chat' },
+    { label: t3('Notificaties', 'Notifications', 'Notifications'), icon: Bell, path: '/notifications' },
   ];
 
   const managementItems = [

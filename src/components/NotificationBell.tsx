@@ -107,14 +107,23 @@ const NotificationBell = ({ userId }: { userId: string }) => {
                 <span className="text-sm font-semibold text-foreground">
                   {t3('Notificaties', 'Notifications', 'Notifications')}
                 </span>
-                {notifications.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={markAllRead}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {t3('Alles gelezen', 'Tout lu', 'Mark all read')}
+                    </button>
+                  )}
                   <button
-                    onClick={markAllRead}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => { setOpen(false); navigate('/notifications'); }}
+                    className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
                   >
-                    {t3('Alles gelezen', 'Tout lu', 'Mark all read')}
+                    {t3('Alle bekijken', 'Voir tout', 'View all')}
+                    <ExternalLink className="w-3 h-3" />
                   </button>
-                )}
+                </div>
               </div>
 
               {notifications.length === 0 ? (

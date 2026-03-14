@@ -206,6 +206,12 @@ const VolunteerSidebar = ({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => handleExternalNav('/notifications')} className="min-h-[48px]">
+                  <Bell className="w-5 h-5" />
+                  <span>{language === 'nl' ? 'Notificaties' : language === 'fr' ? 'Notifications' : 'Notifications'}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => handleExternalNav('/community')} className="min-h-[48px]">
                   <Users className="w-5 h-5" />
                   <span>{l.clubSearch}</span>
