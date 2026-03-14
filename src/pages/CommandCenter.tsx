@@ -101,11 +101,11 @@ const CommandCenter = () => {
     const [{ data: tasks }, { data: plans }] = await Promise.all([
       supabase.from('tasks')
         .select('id, title, task_date, location, start_time, end_time, expense_amount, expense_reimbursement, contract_template_id')
-        .eq('club_id', club.id)
+        .eq('club_id', contextClubId)
         .eq('status', 'open'),
       supabase.from('monthly_plans')
         .select('id, title, month, year, contract_template_id')
-        .eq('club_id', club.id)
+        .eq('club_id', contextClubId)
         .eq('status', 'published'),
     ]);
 
