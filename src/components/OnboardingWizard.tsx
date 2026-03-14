@@ -72,7 +72,7 @@ const OnboardingWizard = ({
   // Load saved progress
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('volunteer_onboarding_steps')
         .select('step, completed_at, skipped')
         .eq('user_id', userId)
