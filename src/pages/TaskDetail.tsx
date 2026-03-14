@@ -338,7 +338,7 @@ const TaskDetail = () => {
             task_id: id!,
             volunteer_id: nextInLine.volunteer_id,
           });
-          await (supabase as any).from('task_waitlist').delete().eq('id', nextInLine.id);
+          await supabase.from('task_waitlist').delete().eq('id', nextInLine.id);
           setWaitlistCount(prev => Math.max(prev - 1, 0));
           setSignupCount(prev => prev + 1);
 
