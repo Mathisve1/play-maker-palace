@@ -24,6 +24,14 @@ interface Conversation {
   unread_count?: number;
 }
 
+interface GroupChatEntry {
+  id: string; // event id
+  title: string;
+  club_name: string;
+  event_date: string | null;
+  last_message_at: string | null;
+}
+
 interface Message {
   id: string;
   conversation_id: string;
