@@ -137,7 +137,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
     const itemInserts = editItems.map((item, i) => ({
       template_id: tmpl.id, description: item.description, requires_photo: item.requires_photo, requires_note: item.requires_note, sort_order: i,
     }));
-    const { data: items } = await supabase.from('closing_template_items').insert(itemInserts as any).select('*');
+    const { data: items } = await supabase.from('closing_template_items').insert(itemInserts).select('*');
 
     setTemplates(prev => [...prev, tmpl]);
     setTemplateItems(prev => [...prev, ...(items || [])]);
