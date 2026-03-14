@@ -471,7 +471,7 @@ const SafetyDashboard = () => {
     }
 
     if (Object.keys(updates).length > 0) {
-      await supabase.from('safety_incidents').update(updates as any).eq('id', pendingIncidentId);
+      await supabase.from('safety_incidents').update(updates).eq('id', pendingIncidentId);
     }
 
     toast.success(t3('Details toegevoegd aan melding', 'Détails ajoutés au signalement', 'Details added to report'));
