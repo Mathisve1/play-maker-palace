@@ -119,7 +119,7 @@ const CommandCenter = () => {
           .in('status', ['pending', 'assigned']),
         supabase.from('volunteer_tickets')
           .select('volunteer_id, task_id')
-          .eq('club_id', club.id)
+          .eq('club_id', contextClubId)
           .in('task_id', taskIds),
         supabase.from('signature_requests')
           .select('task_id, volunteer_id')
