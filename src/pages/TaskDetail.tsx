@@ -324,7 +324,7 @@ const TaskDetail = () => {
 
       // Auto-promote first person from waitlist
       if (waitlistEnabled && waitlistCount > 0) {
-        const { data: nextInLine } = await (supabase as any)
+        const { data: nextInLine } = await supabase
           .from('task_waitlist')
           .select('id, volunteer_id')
           .eq('task_id', id!)
