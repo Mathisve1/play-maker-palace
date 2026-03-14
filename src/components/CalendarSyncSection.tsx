@@ -97,7 +97,7 @@ const CalendarSyncSection = ({ userId, language }: CalendarSyncSectionProps) => 
       </div>
 
       {feedUrl ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
             {t3(language,
               'Kopieer deze URL naar Google Calendar, Apple Calendar of Outlook:',
@@ -113,6 +113,9 @@ const CalendarSyncSection = ({ userId, language }: CalendarSyncSectionProps) => 
               <Copy className="w-4 h-4" />
             </Button>
           </div>
+
+          {/* Instructions toggle */}
+          <CalendarInstructions language={language} />
         </div>
       ) : (
         <div className="space-y-2">
