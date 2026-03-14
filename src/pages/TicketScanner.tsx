@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useClubContext } from '@/contexts/ClubContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Camera, CheckCircle2, XCircle, AlertTriangle, Loader2, RotateCcw, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
