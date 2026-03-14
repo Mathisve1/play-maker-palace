@@ -345,13 +345,6 @@ const Community = () => {
     </div>
   );
 
-  if (isLoggedIn) {
-    const sidebar = clubCtx?.clubId
-      ? <ClubOwnerSidebar />
-      : <VolunteerSidebar />;
-    return <DashboardLayout sidebar={sidebar}>{content}</DashboardLayout>;
-  }
-
   return content;
 };
 
