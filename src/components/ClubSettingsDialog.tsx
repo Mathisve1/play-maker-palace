@@ -87,7 +87,8 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
         location: location.trim() || null,
         logo_url: logoUrl,
         allow_shift_swaps: allowShiftSwaps,
-      })
+        referral_bonus_points: referralBonusPoints,
+      } as any)
       .eq('id', clubId);
 
     if (error) {
