@@ -171,7 +171,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const toggleLevelRequired = async (id: string, current: boolean) => {
-    await supabase.from('safety_location_levels').update({ is_required: !current } as any).eq('id', id);
+    await supabase.from('safety_location_levels').update({ is_required: !current }).eq('id', id);
     setLocationLevels(prev => prev.map(l => l.id === id ? { ...l, is_required: !current } : l));
   };
 
