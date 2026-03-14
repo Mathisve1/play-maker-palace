@@ -74,15 +74,26 @@ const VolunteerTasksList = ({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-heading font-bold text-foreground">{activeTab === 'all' ? dt.allTasks : dt.myTasks}</h1>
-        {activeTab === 'mine' && (
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setMineSubTab('pending')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'pending' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.ingeschreven}</button>
-            <button onClick={() => setMineSubTab('assigned')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'assigned' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.toegekend}</button>
-            <button onClick={() => setMineSubTab('history')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'history' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>{language === 'nl' ? 'Historie' : language === 'fr' ? 'Historique' : 'History'}</button>
-          </div>
-        )}
+        <div className="flex gap-2 flex-wrap items-center">
+          {activeTab === 'all' && hasFollows && (
+            <button
+              onClick={() => setShowAllClubs(p => !p)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${showAllClubs ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              {language === 'nl' ? 'Alle clubs' : language === 'fr' ? 'Tous les clubs' : 'All clubs'}
+            </button>
+          )}
+          {activeTab === 'mine' && (
+            <>
+              <button onClick={() => setMineSubTab('pending')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'pending' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.ingeschreven}</button>
+              <button onClick={() => setMineSubTab('assigned')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'assigned' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.toegekend}</button>
+              <button onClick={() => setMineSubTab('history')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'history' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>{language === 'nl' ? 'Historie' : language === 'fr' ? 'Historique' : 'History'}</button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="relative">
