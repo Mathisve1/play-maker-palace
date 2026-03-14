@@ -79,16 +79,18 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
 
   useEffect(() => {
     const load = async () => {
-      const [tRes, ctRes, vRes] = await Promise.all([
+      const [tRes, ctRes, vRes, teamsRes] = await Promise.all([
         supabase.from('closing_templates').select('*').eq('club_id', clubId).order('created_at'),
         supabase.from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order'),
         supabase.from('task_signups').select('volunteer_id').in('task_id',
           (await supabase.from('tasks').select('id').eq('event_id', eventId)).data?.map(t => t.id) || []
         ),
+        supabase.from('safety_teams').select('id, name, leader_id').eq('event_id', eventId),
       ]);
 
       setTemplates(tRes.data || []);
       setClosingTasks(ctRes.data || []);
+      setTeams((teamsRes.data || []) as SafetyTeam[]);
 
       const volIds = [...new Set((vRes.data || []).map((s: any) => s.volunteer_id))];
       if (volIds.length > 0) {
