@@ -35,6 +35,7 @@ interface ClosingTask {
   requires_photo: boolean;
   requires_note: boolean;
   assigned_volunteer_id: string | null;
+  assigned_team_id: string | null;
   status: string;
   photo_url: string | null;
   note: string | null;
@@ -45,6 +46,12 @@ interface ClosingTask {
 interface Volunteer {
   id: string;
   full_name: string;
+}
+
+interface SafetyTeam {
+  id: string;
+  name: string;
+  leader_id: string;
 }
 
 interface Props {
