@@ -23,6 +23,8 @@ interface ChecklistItem {
   zone_id: string | null;
   description: string;
   sort_order: number;
+  assigned_volunteer_id: string | null;
+  assigned_team_id: string | null;
 }
 
 interface SafetyZone {
