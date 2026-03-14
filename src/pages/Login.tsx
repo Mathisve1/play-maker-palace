@@ -97,6 +97,22 @@ const Login = () => {
                 </button>
               </div>
             </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!email) { toast.error(language === 'nl' ? 'Vul eerst je e-mailadres in' : language === 'fr' ? 'Entrez d\'abord votre e-mail' : 'Enter your email first'); return; }
+                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                  });
+                  if (error) toast.error(error.message);
+                  else toast.success(language === 'nl' ? 'Reset-link verstuurd! Check je inbox.' : language === 'fr' ? 'Lien envoyé ! Vérifiez votre boîte.' : 'Reset link sent! Check your inbox.');
+                }}
+                className="text-xs text-primary hover:underline"
+              >
+                {language === 'nl' ? 'Wachtwoord vergeten?' : language === 'fr' ? 'Mot de passe oublié ?' : 'Forgot password?'}
+              </button>
+            </div>
             <button
               type="submit"
               disabled={loading}
