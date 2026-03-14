@@ -59,6 +59,7 @@ const VolunteerManagement = lazy(() => import("./pages/VolunteerManagement"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
