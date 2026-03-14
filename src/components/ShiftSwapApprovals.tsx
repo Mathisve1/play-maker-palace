@@ -73,7 +73,7 @@ const ShiftSwapApprovals = ({ clubId, language }: ShiftSwapApprovalsProps) => {
     // Remove requester, add target (or swap their assignments)
     // Actually both are already signed up - just swap their volunteer_ids in task_signups
     // Simpler: we just need to confirm the swap happened
-    await (supabase as any).from('shift_swaps').update({
+    await supabase.from('shift_swaps').update({
       status: 'approved',
       club_approved_at: new Date().toISOString(),
       club_approved_by: userId,
