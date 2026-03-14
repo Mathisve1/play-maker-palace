@@ -68,7 +68,7 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
       }
 
       // Get existing swap requests for this task involving current user
-      const { data: swaps } = await (supabase as any)
+      const { data: swaps } = await supabase
         .from('shift_swaps')
         .select('*')
         .eq('task_id', taskId)
