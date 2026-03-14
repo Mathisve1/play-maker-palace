@@ -143,7 +143,6 @@ const SafetyDashboard = () => {
   const [teamIncidents, setTeamIncidents] = useState<SafetyIncident[]>([]);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; avatar_url: string | null; roleName: string }[]>([]);
   const flashTimeout = useRef<NodeJS.Timeout>();
-  const testFiredRef = useRef(false);
 
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
