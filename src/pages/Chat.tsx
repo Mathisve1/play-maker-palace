@@ -5,13 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { Send, MessageCircle, Check, CheckCheck, Paperclip, X, FileText, Music, Loader2, Mic, Square } from 'lucide-react';
+import { Send, MessageCircle, Check, CheckCheck, Paperclip, X, FileText, Music, Loader2, Mic, Square, Users } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { sendPush } from '@/lib/sendPush';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ChatSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import VolunteerSidebar from '@/components/VolunteerSidebar';
+import EventGroupChat from '@/components/EventGroupChat';
 
 interface Conversation {
   id: string;
