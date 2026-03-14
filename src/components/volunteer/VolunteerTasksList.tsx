@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Users, Search, CheckCircle, CalendarDays, Award, FileSignature } from 'lucide-react';
+import { MapPin, Calendar, Users, Search, CheckCircle, CalendarDays, Award, FileSignature, Globe } from 'lucide-react';
 import LikeButton from '@/components/LikeButton';
 import type { VolunteerTask, TaskSignup, VolunteerEventData, SignatureContract } from '@/types/volunteer';
 import { volunteerDashboardLabels } from '@/types/volunteer';
