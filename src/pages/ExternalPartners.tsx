@@ -411,7 +411,7 @@ const ExternalPartners = () => {
         task_id: ticketTaskId,
         event_id: task?.event_id || null,
         barcode,
-        status: 'active' as any,
+        status: 'active',
       });
       if (error) throw error;
       toast.success(t3(`Ticket aangemaakt voor ${member.full_name}!`, `Ticket créé pour ${member.full_name}!`, `Ticket created for ${member.full_name}!`));
