@@ -220,9 +220,7 @@ const Community = () => {
   const followedClubs = filtered.filter(c => c.is_following);
   const otherClubs = filtered.filter(c => !c.is_following);
 
-  const { clubId, isOwner } = (() => {
-    try { return useClubContext(); } catch { return { clubId: null, isOwner: false }; }
-  })();
+  const isLoggedIn = !!currentUserId;
 
   const isLoggedIn = !!currentUserId;
 
