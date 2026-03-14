@@ -18,6 +18,7 @@ const SafetyClosing = () => {
   const [eventTitle, setEventTitle] = useState('');
   const [isLive, setIsLive] = useState(false);
   const [eventClosed, setEventClosed] = useState(false);
+  const [volunteers, setVolunteers] = useState<{ id: string; full_name: string }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -32,6 +33,18 @@ const SafetyClosing = () => {
       setEventTitle(ev.title);
       setIsLive(ev.is_live ?? false);
       setEventClosed(ev.status === 'closed');
+
+      // Load volunteers for this event
+      const { data: tasks } = await supabase.from('tasks').select('id').eq('event_id', eventId);
+      if (tasks && tasks.length > 0) {
+        const { data: signups } = await supabase.from('task_signups').select('volunteer_id').in('task_id', tasks.map(t => t.id));
+        const volIds = [...new Set((signups || []).map((s: any) => s.volunteer_id))];
+        if (volIds.length > 0) {
+          const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', volIds);
+          setVolunteers((profiles || []).map(p => ({ id: p.id, full_name: p.full_name || 'Onbekend' })));
+        }
+      }
+
       setLoading(false);
     })();
   }, [eventId, navigate]);
@@ -54,7 +67,7 @@ const SafetyClosing = () => {
             <ArrowLeft className="w-4 h-4" /> {t3('Terug', 'Retour', 'Back')}
           </Button>
           <div className="flex items-center gap-3">
-            <ClipboardList className="w-7 h-7 text-orange-500" />
+            <ClipboardList className="w-7 h-7 text-primary" />
             <div>
               <h1 className="text-2xl font-bold text-foreground">{t3('Sluitingsprocedure', 'Procédure de clôture', 'Closing Procedure')}</h1>
               <p className="text-sm text-muted-foreground">{eventTitle}</p>
@@ -63,18 +76,19 @@ const SafetyClosing = () => {
         </div>
 
         {clubId && eventId && (
-          <SafetyTeamManager
-            clubId={clubId}
-            eventId={eventId}
-            volunteers={[]}
-          />
-          <ClosingProcedureManager
-            clubId={clubId}
-            eventId={eventId}
-            isLive={isLive}
-            eventClosed={eventClosed}
-          />
-        </>
+          <>
+            <SafetyTeamManager
+              clubId={clubId}
+              eventId={eventId}
+              volunteers={volunteers}
+            />
+            <ClosingProcedureManager
+              clubId={clubId}
+              eventId={eventId}
+              isLive={isLive}
+              eventClosed={eventClosed}
+            />
+          </>
         )}
       </div>
     </ClubPageLayout>
