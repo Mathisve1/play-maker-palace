@@ -39,8 +39,9 @@ const VolunteerTasksList = ({
   const navigate = useNavigate();
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
   const hasFollows = followedClubIds !== null && followedClubIds.size > 0;
+  const [showAllClubs, setShowAllClubs] = useState(false);
 
-  const feedTasks = hasFollows && activeTab === 'all' ? tasks.filter(t => followedClubIds!.has(t.club_id)) : tasks;
+  const feedTasks = hasFollows && activeTab === 'all' && !showAllClubs ? tasks.filter(t => followedClubIds!.has(t.club_id)) : tasks;
   const looseTasks = feedTasks.filter(t => !t.event_id);
 
   const filteredLooseTasks = looseTasks.filter(task => {
