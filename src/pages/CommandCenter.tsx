@@ -4,10 +4,10 @@ import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/DashboardLayout';
-import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import VolunteerStepper, { StepStatus } from '@/components/VolunteerStepper';
 import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -52,10 +52,9 @@ const typeConfig = {
 const CommandCenter = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { clubId: contextClubId, clubInfo: contextClubInfo, profile: contextProfile } = useClubContext();
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
-  const [clubInfo, setClubInfo] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
   const [items, setItems] = useState<ActionItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
@@ -92,27 +91,8 @@ const CommandCenter = () => {
   };
 
   const loadData = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/login'); return; }
-
-    // Parallel: profile + club lookup
-    const [{ data: profileData }, { data: ownedClubs }] = await Promise.all([
-      supabase.from('profiles').select('full_name, email').eq('id', session.user.id).maybeSingle(),
-      supabase.from('clubs').select('id, name, logo_url').eq('owner_id', session.user.id),
-    ]);
-    setProfile(profileData);
-
-    let club = ownedClubs?.[0] || null;
-    if (!club) {
-      const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1);
-      if (memberships?.[0]) {
-        const { data: c } = await supabase.from('clubs').select('id, name, logo_url').eq('id', memberships[0].club_id).maybeSingle();
-        club = c;
-      }
-    }
-    if (!club) { setLoading(false); return; }
-    setClubId(club.id);
-    setClubInfo({ name: club.name, logo_url: club.logo_url });
+    if (!contextClubId) { setLoading(false); return; }
+    setClubId(contextClubId);
 
     const actionItems: ActionItem[] = [];
 
@@ -120,11 +100,11 @@ const CommandCenter = () => {
     const [{ data: tasks }, { data: plans }] = await Promise.all([
       supabase.from('tasks')
         .select('id, title, task_date, location, start_time, end_time, expense_amount, expense_reimbursement, contract_template_id')
-        .eq('club_id', club.id)
+        .eq('club_id', contextClubId)
         .eq('status', 'open'),
       supabase.from('monthly_plans')
         .select('id, title, month, year, contract_template_id')
-        .eq('club_id', club.id)
+        .eq('club_id', contextClubId)
         .eq('status', 'published'),
     ]);
 
@@ -139,7 +119,7 @@ const CommandCenter = () => {
           .in('status', ['pending', 'assigned']),
         supabase.from('volunteer_tickets')
           .select('volunteer_id, task_id')
-          .eq('club_id', club.id)
+          .eq('club_id', contextClubId)
           .in('task_id', taskIds),
         supabase.from('signature_requests')
           .select('task_id, volunteer_id')
@@ -313,7 +293,7 @@ const CommandCenter = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/login');
+    navigate('/club-login');
   };
 
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
@@ -483,16 +463,7 @@ const CommandCenter = () => {
   const canReject = (item: ActionItem) => ['enrollment', 'task_signup', 'day_signup'].includes(item.type);
 
   return (
-    <DashboardLayout
-      sidebar={
-        <ClubOwnerSidebar
-          profile={profile}
-          clubId={clubId}
-          clubInfo={clubInfo}
-          onLogout={handleLogout}
-        />
-      }
-    >
+    <ClubPageLayout>
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div>
@@ -655,7 +626,7 @@ const CommandCenter = () => {
           onSent={() => { setContractConfirm(null); loadData(); }}
         />
       )}
-    </DashboardLayout>
+    </ClubPageLayout>
   );
 };
 
