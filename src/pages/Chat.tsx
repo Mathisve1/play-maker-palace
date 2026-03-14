@@ -89,7 +89,9 @@ const Chat = () => {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [groupChats, setGroupChats] = useState<GroupChatEntry[]>([]);
   const [activeConversation, setActiveConversation] = useState<string | null>(conversationId || null);
+  const [activeGroupChat, setActiveGroupChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
