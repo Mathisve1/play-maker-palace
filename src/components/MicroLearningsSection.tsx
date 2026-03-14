@@ -35,8 +35,8 @@ const MicroLearningsSection = ({ userId, language }: Props) => {
   useEffect(() => {
     const load = async () => {
       const [{ data: items }, { data: completions }] = await Promise.all([
-        (supabase as any).from('micro_learnings').select('*').eq('is_published', true).limit(20),
-        (supabase as any).from('micro_learning_completions').select('learning_id').eq('user_id', userId),
+        supabase.from('micro_learnings').select('*').eq('is_published', true).limit(20),
+        supabase.from('micro_learning_completions').select('learning_id').eq('user_id', userId),
       ]);
       if (items) setLearnings(items);
       if (completions) setCompletedIds(new Set(completions.map((c: any) => c.learning_id)));
