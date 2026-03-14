@@ -135,7 +135,7 @@ const MonthlyPlanningKPIs = ({ clubId, language, navigate }: MonthlyPlanningKPIs
   useEffect(() => { load(); }, [clubId]);
 
   const approveEnrollment = async (id: string) => {
-    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'approved' } as any).eq('id', id);
+    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'approved' }).eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Goedgekeurd!' : 'Approved!');
     load();
