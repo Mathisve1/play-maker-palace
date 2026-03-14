@@ -28,11 +28,15 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
   const [logoPreview, setLogoPreview] = useState<string | null>(clubInfo.logo_url);
   const [saving, setSaving] = useState(false);
   const [allowShiftSwaps, setAllowShiftSwaps] = useState(false);
+  const [referralBonusPoints, setReferralBonusPoints] = useState(0);
 
-  // Load current swap setting
+  // Load current settings
   useState(() => {
-    supabase.from('clubs').select('allow_shift_swaps').eq('id', clubId).maybeSingle().then(({ data }) => {
-      if (data) setAllowShiftSwaps(!!data.allow_shift_swaps);
+    supabase.from('clubs').select('allow_shift_swaps, referral_bonus_points').eq('id', clubId).maybeSingle().then(({ data }) => {
+      if (data) {
+        setAllowShiftSwaps(!!data.allow_shift_swaps);
+        setReferralBonusPoints((data as any).referral_bonus_points || 0);
+      }
     });
   });
 
