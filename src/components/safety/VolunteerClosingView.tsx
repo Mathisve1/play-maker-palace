@@ -78,8 +78,17 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
         teamTasks = (data || []) as ClosingTask[];
       }
 
+      // Also get unassigned tasks (no volunteer AND no team) — visible to everyone
+      const { data: unassignedTasks } = await supabase
+        .from('closing_tasks')
+        .select('id, description, requires_photo, requires_note, status, photo_url, note, sort_order, assigned_volunteer_id, assigned_team_id')
+        .eq('event_id', eventId)
+        .is('assigned_volunteer_id', null)
+        .is('assigned_team_id', null)
+        .order('sort_order');
+
       // Merge and deduplicate
-      const allTasks = [...(directTasks || []), ...teamTasks];
+      const allTasks = [...(directTasks || []), ...teamTasks, ...(unassignedTasks || [])];
       const uniqueTasks = Array.from(new Map(allTasks.map(t => [t.id, t])).values());
       uniqueTasks.sort((a, b) => a.sort_order - b.sort_order);
 
