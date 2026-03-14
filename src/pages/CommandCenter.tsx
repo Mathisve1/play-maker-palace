@@ -200,11 +200,6 @@ const CommandCenter = () => {
     }
 
     // 2. Monthly planning: pending enrollments, contracts, day signups, tickets
-    const { data: plans } = await supabase
-      .from('monthly_plans')
-      .select('id, title, month, year, contract_template_id')
-      .eq('club_id', club.id)
-      .eq('status', 'published');
 
     if (plans && plans.length > 0) {
       const planIds = plans.map(p => p.id);
