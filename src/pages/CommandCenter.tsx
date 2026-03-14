@@ -4,6 +4,7 @@ import { sendPush } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
