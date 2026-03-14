@@ -281,16 +281,16 @@ export default function AiAssistantChat() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center md:bottom-6"
+        className="fixed bottom-[calc(68px+env(safe-area-inset-bottom,0px))] right-3 z-40 w-11 h-11 rounded-full bg-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all hover:scale-105 flex items-center justify-center md:bottom-6 md:right-4 md:w-12 md:h-12 md:bg-primary"
         aria-label="AI Assistant"
       >
-        <Bot className="w-6 h-6" />
+        <Bot className="w-5 h-5 md:w-6 md:h-6" />
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-8rem)] bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden md:bottom-6">
+    <div className="fixed bottom-[calc(68px+env(safe-area-inset-bottom,0px))] right-3 z-40 w-[340px] max-w-[calc(100vw-1.5rem)] h-[420px] max-h-[calc(100vh-10rem)] bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden md:bottom-6 md:right-4 md:w-[360px] md:h-[520px] md:max-h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
         <div className="flex items-center gap-2">
