@@ -168,7 +168,7 @@ const HourConfirmationDialog = ({
           .eq('id', confirmation.id);
         if (error) throw error;
 
-        setConfirmation(prev => prev ? { ...prev, ...updateData as any } : null);
+        setConfirmation(prev => prev ? { ...prev, ...(updateData as Record<string, unknown>) } : null);
       } else {
         // Create new record
         const insertData: Record<string, unknown> = {
