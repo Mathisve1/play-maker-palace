@@ -69,6 +69,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   const [templateItems, setTemplateItems] = useState<ClosingTemplateItem[]>([]);
   const [closingTasks, setClosingTasks] = useState<ClosingTask[]>([]);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [teams, setTeams] = useState<SafetyTeam[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   const [editTemplateName, setEditTemplateName] = useState('');
