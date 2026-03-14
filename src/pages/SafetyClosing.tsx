@@ -63,12 +63,18 @@ const SafetyClosing = () => {
         </div>
 
         {clubId && eventId && (
+          <SafetyTeamManager
+            clubId={clubId}
+            eventId={eventId}
+            volunteers={[]}
+          />
           <ClosingProcedureManager
             clubId={clubId}
             eventId={eventId}
             isLive={isLive}
             eventClosed={eventClosed}
           />
+        </>
         )}
       </div>
     </ClubPageLayout>
