@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search } from 'lucide-react';
+import { Language } from '@/i18n/translations';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import VolunteerActivitiesSection from '@/components/VolunteerActivitiesSection';
