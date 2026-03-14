@@ -23,6 +23,8 @@ interface ChecklistItem {
   zone_id: string | null;
   description: string;
   sort_order: number;
+  assigned_volunteer_id: string | null;
+  assigned_team_id: string | null;
 }
 
 interface SafetyZone {
@@ -110,6 +112,16 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
       (userTasks || []).map(t => t.event_group_id).filter(Boolean)
     );
 
+    // Get user's safety team IDs
+    const [{ data: teamMemberships }, { data: teamLeaderships }] = await Promise.all([
+      supabase.from('safety_team_members').select('team_id').eq('volunteer_id', userId),
+      supabase.from('safety_teams').select('id').eq('leader_id', userId).in('event_id', eventIds),
+    ]);
+    const userTeamIds = new Set([
+      ...(teamMemberships || []).map(t => t.team_id),
+      ...(teamLeaderships || []).map(t => t.id),
+    ]);
+
     // 2. Get all zones for those events (with event_group_id)
     const { data: zonesData } = await supabase
       .from('safety_zones')
@@ -130,14 +142,23 @@ const VolunteerSafetyTab = ({ userId, language, onPendingCountChange }: Props) =
     // 3. Get checklist items for those events, filtered to user's zones
     const { data: checklistItems } = await supabase
       .from('safety_checklist_items')
-      .select('id, event_id, zone_id, description, sort_order')
+      .select('id, event_id, zone_id, description, sort_order, assigned_volunteer_id, assigned_team_id')
       .in('event_id', eventIds)
       .order('sort_order', { ascending: true });
 
     // Only keep items that belong to the user's zones (or have no zone)
-    const filteredItems = (checklistItems || []).filter(i => 
-      !i.zone_id || myZoneIds.has(i.zone_id)
-    );
+    // AND are assigned to this user/team, or have no assignment (visible to all)
+    const filteredItems = (checklistItems || []).filter(i => {
+      if (i.zone_id && !myZoneIds.has(i.zone_id)) return false;
+      // If item has specific assignment, only show if it matches this user/team
+      const hasAssignment = i.assigned_volunteer_id || i.assigned_team_id;
+      if (hasAssignment) {
+        const assignedToMe = i.assigned_volunteer_id === userId;
+        const assignedToMyTeam = i.assigned_team_id && userTeamIds.has(i.assigned_team_id);
+        return assignedToMe || assignedToMyTeam;
+      }
+      return true; // No assignment = visible to everyone in zone
+    });
 
     if (filteredItems.length === 0) { setLoading(false); return; }
 

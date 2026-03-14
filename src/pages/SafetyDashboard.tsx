@@ -143,21 +143,7 @@ const SafetyDashboard = () => {
   const [teamIncidents, setTeamIncidents] = useState<SafetyIncident[]>([]);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; avatar_url: string | null; roleName: string }[]>([]);
   const flashTimeout = useRef<NodeJS.Timeout>();
-  const testFiredRef = useRef(false);
 
-  // ONE-TIME test: fire alarm 5x — REMOVE AFTER TESTING
-  useEffect(() => {
-    if (testFiredRef.current) return;
-    testFiredRef.current = true;
-    const triggerTest = () => {
-      playAlarm();
-      setFlashRed(true);
-      if (flashTimeout.current) clearTimeout(flashTimeout.current);
-      flashTimeout.current = setTimeout(() => setFlashRed(false), 4000);
-    };
-    const timers = [3, 6, 9, 12, 15].map(s => setTimeout(triggerTest, s * 1000));
-    return () => timers.forEach(clearTimeout);
-  }, []);
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
     if (entering && ref.current) {
@@ -221,20 +207,21 @@ const SafetyDashboard = () => {
         setUserGroupIds(new Set((userTasks || []).map(t => t.event_group_id).filter(Boolean) as string[]));
       }
 
-      const [zRes, itRes, incRes, clRes, cpRes, llRes, loRes] = await Promise.all([
+      const [zRes, itRes, incRes, clRes, llRes, loRes] = await Promise.all([
         supabase.from('safety_zones').select('*').eq('event_id', eventId).order('sort_order'),
         supabase.from('safety_incident_types').select('*').eq('club_id', ev.club_id).order('sort_order'),
         supabase.from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
         supabase.from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order'),
-        supabase.from('safety_checklist_progress').select('*'),
         supabase.from('safety_location_levels').select('*').eq('club_id', ev.club_id).order('sort_order'),
         supabase.from('safety_location_options').select('*').order('sort_order'),
       ]);
+      const checklistItemIds = new Set((clRes.data || []).map((i: any) => i.id));
+      const { data: cpData } = await supabase.from('safety_checklist_progress').select('*').in('checklist_item_id', Array.from(checklistItemIds));
       setZones(zRes.data || []);
       setIncidentTypes(itRes.data || []);
       setIncidents(incRes.data || []);
       setChecklistItems(clRes.data || []);
-      setChecklistProgress(cpRes.data || []);
+      setChecklistProgress(cpData || []);
       const levels = llRes.data || [];
       setLocationLevels(levels);
       const levelIds = new Set(levels.map((l: any) => l.id));
