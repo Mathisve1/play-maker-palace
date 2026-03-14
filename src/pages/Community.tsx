@@ -107,7 +107,8 @@ const Community = () => {
   const [togglingFollow, setTogglingFollow] = useState<string | null>(null);
   const [sports, setSports] = useState<string[]>([]);
 
-  const { userId: contextUserId } = useClubContext();
+  const clubCtx = useOptionalClubContext();
+  const contextUserId = clubCtx?.userId ?? null;
 
   useEffect(() => {
     const load = async () => {
