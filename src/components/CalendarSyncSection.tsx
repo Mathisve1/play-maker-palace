@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CalendarPlus, Copy, Download, Loader2 } from 'lucide-react';
+import { CalendarPlus, Copy, Download, Loader2, ChevronDown, ChevronUp, Smartphone, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/i18n/translations';
 
@@ -38,6 +38,138 @@ export const downloadTaskIcs = (task: { title: string; task_date: string | null;
   a.download = `${task.title.replace(/[^a-zA-Z0-9]/g, '_')}.ics`;
   a.click();
   URL.revokeObjectURL(url);
+};
+
+const CalendarInstructions = ({ language }: { language: Language }) => {
+  const [showApple, setShowApple] = useState(false);
+  const [showAndroid, setShowAndroid] = useState(false);
+
+  return (
+    <div className="space-y-2 pt-1">
+      <p className="text-xs font-medium text-foreground">
+        {t3(language, 'Hoe integreren?', 'Comment intégrer ?', 'How to integrate?')}
+      </p>
+
+      {/* Apple / iPhone */}
+      <div className="rounded-xl border border-border overflow-hidden">
+        <button
+          onClick={() => setShowApple(!showApple)}
+          className="w-full flex items-center justify-between px-3 py-2.5 bg-muted/50 hover:bg-muted transition-colors text-left"
+        >
+          <span className="flex items-center gap-2 text-xs font-medium text-foreground">
+            <Apple className="w-3.5 h-3.5" />
+            {t3(language, 'iPhone / iPad (Apple Calendar)', 'iPhone / iPad (Apple Calendar)', 'iPhone / iPad (Apple Calendar)')}
+          </span>
+          {showApple ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+        </button>
+        {showApple && (
+          <div className="px-3 py-3 space-y-2 bg-card">
+            <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+              <li>{t3(language,
+                'Open de Instellingen-app op je iPhone of iPad.',
+                'Ouvrez l\'app Réglages sur votre iPhone ou iPad.',
+                'Open the Settings app on your iPhone or iPad.'
+              )}</li>
+              <li>{t3(language,
+                'Scroll naar beneden en tik op "Kalender".',
+                'Faites défiler vers le bas et appuyez sur « Calendrier ».',
+                'Scroll down and tap "Calendar".'
+              )}</li>
+              <li>{t3(language,
+                'Tik op "Accounts" → "Voeg account toe".',
+                'Appuyez sur « Comptes » → « Ajouter un compte ».',
+                'Tap "Accounts" → "Add Account".'
+              )}</li>
+              <li>{t3(language,
+                'Kies "Andere" → "Voeg agenda-abonnement toe".',
+                'Choisissez « Autre » → « Ajouter un abonnement Calendrier ».',
+                'Choose "Other" → "Add Subscribed Calendar".'
+              )}</li>
+              <li>{t3(language,
+                'Plak de gekopieerde URL in het Server-veld.',
+                'Collez l\'URL copiée dans le champ Serveur.',
+                'Paste the copied URL into the Server field.'
+              )}</li>
+              <li>{t3(language,
+                'Tik op "Volgende" en vervolgens op "Bewaar".',
+                'Appuyez sur « Suivant » puis sur « Enregistrer ».',
+                'Tap "Next" and then "Save".'
+              )}</li>
+              <li>{t3(language,
+                'Je shifts verschijnen nu automatisch in je Apple Kalender! 🎉',
+                'Vos shifts apparaîtront automatiquement dans Apple Calendrier ! 🎉',
+                'Your shifts will now appear automatically in Apple Calendar! 🎉'
+              )}</li>
+            </ol>
+            <p className="text-[11px] text-muted-foreground/70 italic">
+              {t3(language,
+                '💡 Tip: De kalender wordt automatisch bijgewerkt. Nieuwe shifts verschijnen vanzelf.',
+                '💡 Astuce : Le calendrier se met à jour automatiquement.',
+                '💡 Tip: The calendar updates automatically. New shifts appear on their own.'
+              )}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Android / Google Calendar */}
+      <div className="rounded-xl border border-border overflow-hidden">
+        <button
+          onClick={() => setShowAndroid(!showAndroid)}
+          className="w-full flex items-center justify-between px-3 py-2.5 bg-muted/50 hover:bg-muted transition-colors text-left"
+        >
+          <span className="flex items-center gap-2 text-xs font-medium text-foreground">
+            <Smartphone className="w-3.5 h-3.5" />
+            {t3(language, 'Android (Google Calendar)', 'Android (Google Calendar)', 'Android (Google Calendar)')}
+          </span>
+          {showAndroid ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+        </button>
+        {showAndroid && (
+          <div className="px-3 py-3 space-y-2 bg-card">
+            <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+              <li>{t3(language,
+                'Open Google Calendar op je computer (calendar.google.com).',
+                'Ouvrez Google Calendar sur votre ordinateur (calendar.google.com).',
+                'Open Google Calendar on your computer (calendar.google.com).'
+              )}</li>
+              <li>{t3(language,
+                'Klik links op het +-icoon naast "Andere agenda\'s".',
+                'Cliquez sur l\'icône + à côté de « Autres agendas ».',
+                'Click the + icon next to "Other calendars" on the left.'
+              )}</li>
+              <li>{t3(language,
+                'Kies "Via URL".',
+                'Choisissez « À partir de l\'URL ».',
+                'Choose "From URL".'
+              )}</li>
+              <li>{t3(language,
+                'Plak de gekopieerde URL in het URL-veld.',
+                'Collez l\'URL copiée dans le champ URL.',
+                'Paste the copied URL into the URL field.'
+              )}</li>
+              <li>{t3(language,
+                'Klik op "Agenda toevoegen".',
+                'Cliquez sur « Ajouter l\'agenda ».',
+                'Click "Add calendar".'
+              )}</li>
+              <li>{t3(language,
+                'De agenda synchroniseert automatisch naar je Android-telefoon! 🎉',
+                'L\'agenda se synchronise automatiquement avec votre téléphone Android ! 🎉',
+                'The calendar syncs automatically to your Android phone! 🎉'
+              )}</li>
+            </ol>
+            <p className="text-[11px] text-muted-foreground/70 italic">
+              {t3(language,
+                '⚠️ Let op: Via URL toevoegen kan alleen via de computer-versie van Google Calendar, niet via de app.',
+                '⚠️ Attention : L\'ajout via URL ne fonctionne que sur la version ordinateur de Google Calendar.',
+                '⚠️ Note: Adding via URL only works on the desktop version of Google Calendar, not the app.'
+              )}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 interface CalendarSyncSectionProps {
@@ -97,7 +229,7 @@ const CalendarSyncSection = ({ userId, language }: CalendarSyncSectionProps) => 
       </div>
 
       {feedUrl ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
             {t3(language,
               'Kopieer deze URL naar Google Calendar, Apple Calendar of Outlook:',
@@ -113,6 +245,9 @@ const CalendarSyncSection = ({ userId, language }: CalendarSyncSectionProps) => 
               <Copy className="w-4 h-4" />
             </Button>
           </div>
+
+          {/* Instructions toggle */}
+          <CalendarInstructions language={language} />
         </div>
       ) : (
         <div className="space-y-2">
