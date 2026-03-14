@@ -423,6 +423,63 @@ const CommunityClubDetail = () => {
       </section>
 
       <Footer />
+
+      {/* Referral Code Dialog */}
+      {showReferralDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => { setShowReferralDialog(false); confirmFollow(); }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card rounded-2xl shadow-elevated p-6 w-full max-w-sm space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-primary" />
+                <h3 className="font-heading font-semibold text-foreground">
+                  {language === 'nl' ? 'Referral-code' : language === 'fr' ? 'Code de parrainage' : 'Referral code'}
+                </h3>
+              </div>
+              <button onClick={() => { setShowReferralDialog(false); confirmFollow(); }} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              {language === 'nl'
+                ? `Heb je een uitnodigingscode gekregen van iemand die al vrijwilliger is bij ${club.name}? Vul deze in zodat jullie allebei bonuspunten kunnen verdienen!`
+                : language === 'fr'
+                ? `Avez-vous reçu un code d'invitation d'un bénévole de ${club.name} ? Entrez-le pour gagner des points bonus !`
+                : `Got a referral code from someone volunteering at ${club.name}? Enter it so you both earn bonus points!`}
+            </p>
+
+            <Input
+              placeholder={language === 'nl' ? 'Bijv. AC241A17' : language === 'fr' ? 'Ex. AC241A17' : 'E.g. AC241A17'}
+              value={referralCode}
+              onChange={e => setReferralCode(e.target.value.toUpperCase())}
+              className="text-center text-lg tracking-widest font-mono"
+              maxLength={12}
+            />
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => { setShowReferralDialog(false); confirmFollow(); }}
+              >
+                {language === 'nl' ? 'Overslaan' : language === 'fr' ? 'Passer' : 'Skip'}
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => confirmFollow(referralCode)}
+                disabled={!referralCode.trim()}
+              >
+                {language === 'nl' ? 'Toepassen & volgen' : language === 'fr' ? 'Appliquer & suivre' : 'Apply & follow'}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
