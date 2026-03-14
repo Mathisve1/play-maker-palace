@@ -92,27 +92,8 @@ const CommandCenter = () => {
   };
 
   const loadData = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/login'); return; }
-
-    // Parallel: profile + club lookup
-    const [{ data: profileData }, { data: ownedClubs }] = await Promise.all([
-      supabase.from('profiles').select('full_name, email').eq('id', session.user.id).maybeSingle(),
-      supabase.from('clubs').select('id, name, logo_url').eq('owner_id', session.user.id),
-    ]);
-    setProfile(profileData);
-
-    let club = ownedClubs?.[0] || null;
-    if (!club) {
-      const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1);
-      if (memberships?.[0]) {
-        const { data: c } = await supabase.from('clubs').select('id, name, logo_url').eq('id', memberships[0].club_id).maybeSingle();
-        club = c;
-      }
-    }
-    if (!club) { setLoading(false); return; }
-    setClubId(club.id);
-    setClubInfo({ name: club.name, logo_url: club.logo_url });
+    if (!contextClubId) { setLoading(false); return; }
+    setClubId(contextClubId);
 
     const actionItems: ActionItem[] = [];
 
