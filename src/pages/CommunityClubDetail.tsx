@@ -85,6 +85,8 @@ const CommunityClubDetail = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [togglingFollow, setTogglingFollow] = useState(false);
   const [stats, setStats] = useState({ volunteers: 0, completedTasks: 0, totalEvents: 0 });
+  const [showReferralDialog, setShowReferralDialog] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
 
   useEffect(() => {
     if (!clubId) return;
