@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 // jsPDF is lazy-loaded when needed for PDF export
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { PageSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -681,7 +682,7 @@ const BriefingBuilder = () => {
   // ─── Task selector ───
   if (!taskId || !clubId) {
     if (taskSelectorLoading) {
-      return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+      return <PageSkeleton />;
     }
     const filtered = availableTasks.filter(t => t.title.toLowerCase().includes(taskSearch.toLowerCase()));
     return (
@@ -705,7 +706,7 @@ const BriefingBuilder = () => {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <PageSkeleton />;
   }
 
   return (

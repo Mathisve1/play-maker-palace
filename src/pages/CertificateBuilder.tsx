@@ -8,6 +8,7 @@ import {
   ArrowLeft, Award, Loader2, Upload, Palette, Eye, Save, Trash2, Plus
 } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { PageSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -178,11 +179,7 @@ const CertificateBuilder = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (

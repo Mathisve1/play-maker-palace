@@ -9,6 +9,7 @@ import { Send, MessageCircle, Check, CheckCheck, Paperclip, X, FileText, Music, 
 import { Language } from '@/i18n/translations';
 import { sendPush } from '@/lib/sendPush';
 import DashboardLayout from '@/components/DashboardLayout';
+import { ChatSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import VolunteerSidebar from '@/components/VolunteerSidebar';
 
@@ -427,9 +428,7 @@ const Chat = () => {
   if (loading) {
     return (
       <DashboardLayout sidebar={sidebarEl}>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
+        <ChatSkeleton />
       </DashboardLayout>
     );
   }

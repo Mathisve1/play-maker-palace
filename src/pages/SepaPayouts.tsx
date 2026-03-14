@@ -23,6 +23,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { TableSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import NotificationBell from '@/components/NotificationBell';
 import { BELGIAN_BANKS, findBic } from '@/components/OnboardingForm';
 import { DocusealForm } from '@docuseal/react';
@@ -701,11 +702,7 @@ const SepaPayouts = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ClubPageLayout><TableSkeleton /></ClubPageLayout>;
   }
 
   return (

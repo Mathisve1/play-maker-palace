@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Users, MapPin, Calendar, ChevronRight, ChevronDown, Loader2, X, UserPlus, UserMinus } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { PageSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 interface Zone {
   id: string;
@@ -312,7 +313,7 @@ const ZonePlanning = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
+    return <PageSkeleton />;
   }
 
   if (!task) {

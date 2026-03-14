@@ -6,6 +6,7 @@ import { useClubContext } from '@/contexts/ClubContext';
 import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2, BookOpen, Shield, CalendarDays, ClipboardList, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { PlanningSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -220,7 +221,7 @@ const PlanningOverview = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
+    return <PlanningSkeleton />;
   }
 
   const TaskRow = ({ task, isFirst }: { task: TaskWithZones; isFirst?: boolean }) => {
