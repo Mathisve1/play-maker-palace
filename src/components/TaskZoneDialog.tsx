@@ -34,7 +34,7 @@ const TaskZoneDialog = ({ taskId, taskTitle, language, open, onClose }: TaskZone
 
   const handleSignupModeChange = async (mode: string) => {
     setZoneSignupMode(mode);
-    await supabase.from('tasks').update({ zone_signup_mode: mode } as any).eq('id', taskId);
+    await supabase.from('tasks').update({ zone_signup_mode: mode }).eq('id', taskId);
   };
 
   const handleVisibleDepthChange = async (depth: number | null) => {
