@@ -146,11 +146,50 @@ const CommunityClubDetail = () => {
       await supabase.from('club_follows').delete().eq('user_id', currentUserId).eq('club_id', clubId!);
       setIsFollowing(false);
       toast.success(dl.unfollowed);
+      setTogglingFollow(false);
     } else {
-      await supabase.from('club_follows').insert({ user_id: currentUserId, club_id: clubId! });
-      setIsFollowing(true);
-      toast.success(dl.followed);
+      // Show referral code dialog before following
+      setShowReferralDialog(true);
+      setTogglingFollow(false);
     }
+  };
+
+  const confirmFollow = async (code?: string) => {
+    if (!currentUserId || !clubId) return;
+    setShowReferralDialog(false);
+    setTogglingFollow(true);
+
+    await supabase.from('club_follows').insert({ user_id: currentUserId, club_id: clubId });
+    setIsFollowing(true);
+
+    // If referral code provided, look up the referrer
+    if (code && code.trim()) {
+      const trimmedCode = code.trim().toUpperCase();
+      const { data: referrer } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('referral_code', trimmedCode)
+        .neq('id', currentUserId)
+        .maybeSingle();
+
+      if (referrer) {
+        await supabase.from('club_referrals').insert({
+          club_id: clubId,
+          referrer_id: referrer.id,
+          referred_id: currentUserId,
+          status: 'pending',
+        } as any).then(({ error }) => {
+          if (!error) {
+            toast.success(language === 'nl' ? 'Referral-code toegepast!' : language === 'fr' ? 'Code de parrainage appliqué !' : 'Referral code applied!');
+          }
+        });
+      } else {
+        toast.error(language === 'nl' ? 'Ongeldige referral-code' : language === 'fr' ? 'Code de parrainage invalide' : 'Invalid referral code');
+      }
+    }
+
+    toast.success(dl.followed);
+    setReferralCode('');
     setTogglingFollow(false);
   };
 
