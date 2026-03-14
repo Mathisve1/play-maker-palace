@@ -13,9 +13,6 @@ import Logo from '@/components/Logo';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/i18n/LanguageContext';
-import DashboardLayout from '@/components/DashboardLayout';
-import VolunteerSidebar from '@/components/VolunteerSidebar';
-import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 
 interface ClubWithStats {
   id: string;
