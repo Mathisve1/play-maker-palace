@@ -96,7 +96,7 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
   const handleSendRequest = async () => {
     if (!selectedTarget) return;
     setSending(true);
-    const { error } = await (supabase as any).from('shift_swaps').insert({
+    const { error } = await supabase.from('shift_swaps').insert({
       club_id: clubId,
       task_id: taskId,
       requester_id: currentUserId,
