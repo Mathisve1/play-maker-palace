@@ -116,7 +116,7 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
     setRespondingTo(swapId);
     const swap = existingSwaps.find(s => s.id === swapId);
     if (accept) {
-      await (supabase as any).from('shift_swaps').update({
+      await supabase.from('shift_swaps').update({
         status: 'pending_club',
         target_responded_at: new Date().toISOString(),
       }).eq('id', swapId);
