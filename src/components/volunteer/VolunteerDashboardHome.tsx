@@ -15,8 +15,7 @@ import CalendarSyncSection from '@/components/CalendarSyncSection';
 import ReferralSection from '@/components/ReferralSection';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import EventGroupChat from '@/components/EventGroupChat';
-import { Search } from 'lucide-react';
-import type { VolunteerTask, TaskSignup, VolunteerPayment, SignatureContract, SepaPayoutItem, VolunteerEventData, LoyaltyProgramView } from '@/types/volunteer';
+import type { VolunteerTask, TaskSignup, VolunteerPayment, SignatureContract, SepaPayoutItem, VolunteerEventData } from '@/types/volunteer';
 import { volunteerDashboardLabels } from '@/types/volunteer';
 
 interface Props {
