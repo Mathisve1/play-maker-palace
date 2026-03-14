@@ -213,7 +213,7 @@ const SafetyDashboard = () => {
         supabase.from('safety_incident_types').select('*').eq('club_id', ev.club_id).order('sort_order'),
         supabase.from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
         supabase.from('safety_checklist_items').select('*').eq('event_id', eventId).order('sort_order'),
-        supabase.from('safety_checklist_progress').select('*'),
+        supabase.from('safety_checklist_progress').select('*').in('checklist_item_id', (clRes.data || []).map((i: any) => i.id)),
         supabase.from('safety_location_levels').select('*').eq('club_id', ev.club_id).order('sort_order'),
         supabase.from('safety_location_options').select('*').order('sort_order'),
       ]);

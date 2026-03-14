@@ -45,7 +45,7 @@ const SafetyEventHub = () => {
         supabase.from('safety_incident_types').select('*').eq('club_id', clubId),
         supabase.from('safety_incidents').select('*').eq('event_id', eventId).order('created_at', { ascending: false }),
         supabase.from('safety_checklist_items').select('*').eq('event_id', eventId),
-        supabase.from('safety_checklist_progress').select('*'),
+        supabase.from('safety_checklist_progress').select('*').in('checklist_item_id', (clItemsRes.data || []).map((i: any) => i.id)),
         supabase.from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order'),
       ]);
 
