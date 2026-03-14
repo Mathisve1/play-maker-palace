@@ -216,7 +216,6 @@ const Community = () => {
   const followedClubs = filtered.filter(c => c.is_following);
   const otherClubs = filtered.filter(c => !c.is_following);
 
-  const isLoggedIn = !!currentUserId;
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
