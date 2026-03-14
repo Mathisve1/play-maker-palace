@@ -106,6 +106,7 @@ const VolunteerSidebar = ({
   const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
   const l = labels[language];
+  const { theme, toggleTheme } = useTheme();
 
   const handleNav = (tab: VolunteerTab) => {
     setActiveTab(tab);
