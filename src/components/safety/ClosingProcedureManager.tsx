@@ -174,10 +174,22 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   const handleAssignVolunteer = async (taskId: string, volunteerId: string | null) => {
     const { error } = await supabase.from('closing_tasks').update({
       assigned_volunteer_id: volunteerId || null,
+      assigned_team_id: null, // Clear team when assigning individual
     }).eq('id', taskId);
     if (error) toast.error(error.message);
     else {
-      setClosingTasks(prev => prev.map(t => t.id === taskId ? { ...t, assigned_volunteer_id: volunteerId || null } : t));
+      setClosingTasks(prev => prev.map(t => t.id === taskId ? { ...t, assigned_volunteer_id: volunteerId || null, assigned_team_id: null } : t));
+    }
+  };
+
+  const handleAssignTeam = async (taskId: string, teamId: string | null) => {
+    const { error } = await supabase.from('closing_tasks').update({
+      assigned_team_id: teamId || null,
+      assigned_volunteer_id: null, // Clear individual when assigning team
+    }).eq('id', taskId);
+    if (error) toast.error(error.message);
+    else {
+      setClosingTasks(prev => prev.map(t => t.id === taskId ? { ...t, assigned_team_id: teamId || null, assigned_volunteer_id: null } : t));
     }
   };
 
