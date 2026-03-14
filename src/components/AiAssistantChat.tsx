@@ -281,10 +281,10 @@ export default function AiAssistantChat() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center md:bottom-6"
+        className="fixed bottom-[calc(68px+env(safe-area-inset-bottom,0px))] right-3 z-40 w-11 h-11 rounded-full bg-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all hover:scale-105 flex items-center justify-center md:bottom-6 md:right-4 md:w-12 md:h-12 md:bg-primary"
         aria-label="AI Assistant"
       >
-        <Bot className="w-6 h-6" />
+        <Bot className="w-5 h-5 md:w-6 md:h-6" />
       </button>
     );
   }
