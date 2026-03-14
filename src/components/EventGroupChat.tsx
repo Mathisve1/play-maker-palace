@@ -98,7 +98,7 @@ const EventGroupChat = ({ eventId, eventTitle, userId, language }: EventGroupCha
   };
 
   return (
-    <div className="flex flex-col h-[500px] bg-card rounded-2xl border border-border overflow-hidden">
+    <div className="flex flex-col h-full bg-card overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center gap-3">
         <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
