@@ -275,6 +275,15 @@ const VolunteerSidebar = ({
       <SidebarFooter className="p-3">
         <SidebarMenu>
           <SidebarMenuItem>
+            <SidebarMenuButton onClick={toggleTheme} className="min-h-[48px] text-muted-foreground">
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              <span>{theme === 'dark'
+                ? (language === 'nl' ? 'Licht thema' : language === 'fr' ? 'Thème clair' : 'Light mode')
+                : (language === 'nl' ? 'Donker thema' : language === 'fr' ? 'Thème sombre' : 'Dark mode')
+              }</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <SidebarMenuButton onClick={() => handleExternalNav('/help')} className="min-h-[48px] text-muted-foreground">
               <HelpCircle className="w-5 h-5" />
               <span>{l.help}</span>
