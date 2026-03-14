@@ -248,7 +248,7 @@ const EventsManager = () => {
     if (!clubId || !newTask.title.trim()) return;
     setCreatingTask(true);
     const locationStr = buildTaskLocationString();
-    const insertData: Record<string, unknown> = {
+    const insertData = {
       club_id: clubId, title: newTask.title.trim(), description: newTask.description.trim() || null,
       task_date: newTask.task_date || null, location: locationStr,
       spots_available: newTask.spots_available,

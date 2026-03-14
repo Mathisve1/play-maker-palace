@@ -747,7 +747,7 @@ const ClubOwnerDashboard = () => {
     if (!clubId || !newTask.title.trim() || (!selectedTemplateId && !isExternalPayrollPartner)) return;
     setCreatingTask(true);
 
-    const insertData: Record<string, unknown> = {
+    const insertData = {
       club_id: clubId,
       title: newTask.title.trim(),
       description: newTask.description.trim() || null,
