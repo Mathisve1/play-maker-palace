@@ -496,7 +496,7 @@ const SafetyDashboard = () => {
     await supabase.from('safety_incidents').update({
       status, updated_at: new Date().toISOString(),
       ...(status === 'opgelost' ? { resolved_by: userId, resolved_at: new Date().toISOString() } : {}),
-    } as any).eq('id', incidentId);
+    }).eq('id', incidentId);
   };
 
   // ── GO LIVE ──
