@@ -198,7 +198,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
     const { data, error } = await supabase.from('safety_roles').insert({
       club_id: clubId, name: newRoleName.trim(), color: newRoleColor,
       level: newRoleLevel, sort_order: safetyRoles.length,
-    } as Record<string, unknown>).select('*').maybeSingle();
+    }).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       setSafetyRoles(prev => [...prev, data]);

@@ -131,7 +131,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
 
     const { data: tmpl, error } = await supabase.from('closing_templates').insert({
       club_id: clubId, name: editTemplateName.trim(),
-    } as Record<string, unknown>).select('*').single();
+    }).select('*').single();
     if (error || !tmpl) { toast.error(error?.message || 'Error'); return; }
 
     const itemInserts = editItems.map((item, i) => ({
