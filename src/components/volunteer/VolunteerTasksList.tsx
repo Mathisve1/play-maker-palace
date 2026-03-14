@@ -59,7 +59,7 @@ const VolunteerTasksList = ({
   });
 
   const filteredEvents = events.filter(event => {
-    if (hasFollows && activeTab === 'all' && !followedClubIds!.has(event.club_id)) return false;
+    if (hasFollows && activeTab === 'all' && !showAllClubs && !followedClubIds!.has(event.club_id)) return false;
     if (activeTab === 'mine') {
       const isPastEvent = event.event_date ? new Date(event.event_date) < new Date() : false;
       if (mineSubTab === 'history') return isPastEvent;
