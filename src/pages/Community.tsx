@@ -222,8 +222,6 @@ const Community = () => {
 
   const isLoggedIn = !!currentUserId;
 
-  const isLoggedIn = !!currentUserId;
-
   const content = (
     <div className={isLoggedIn ? '' : 'min-h-screen bg-background'}>
       {!isLoggedIn && <Navbar />}
