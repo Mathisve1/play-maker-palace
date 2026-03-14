@@ -39,7 +39,7 @@ const TaskZoneDialog = ({ taskId, taskTitle, language, open, onClose }: TaskZone
 
   const handleVisibleDepthChange = async (depth: number | null) => {
     setZoneVisibleDepth(depth);
-    await supabase.from('tasks').update({ zone_visible_depth: depth } as any).eq('id', taskId);
+    await supabase.from('tasks').update({ zone_visible_depth: depth }).eq('id', taskId);
   };
 
   if (!open) return null;

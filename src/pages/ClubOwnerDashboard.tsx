@@ -776,7 +776,7 @@ const ClubOwnerDashboard = () => {
 
     const { data, error } = await supabase
       .from('tasks')
-      .insert(insertData as any)
+      .insert(insertData)
       .select('id, title, description, task_date, location, spots_available, status, club_id, event_id, event_group_id')
       .maybeSingle();
 

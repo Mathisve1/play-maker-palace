@@ -142,7 +142,7 @@ const MonthlyPlanningKPIs = ({ clubId, language, navigate }: MonthlyPlanningKPIs
   };
 
   const rejectEnrollment = async (id: string) => {
-    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' } as any).eq('id', id);
+    const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' }).eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Afgewezen.' : 'Rejected.');
     load();

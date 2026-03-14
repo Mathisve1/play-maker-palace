@@ -155,7 +155,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
       event_id: eventId, club_id: clubId, template_item_id: item.id,
       description: item.description, requires_photo: item.requires_photo, requires_note: item.requires_note, sort_order: i,
     }));
-    const { data, error } = await supabase.from('closing_tasks').insert(inserts as any).select('*');
+    const { data, error } = await supabase.from('closing_tasks').insert(inserts).select('*');
     if (error) { toast.error(error.message); return; }
     setClosingTasks(data || []);
     toast.success(t3(`${items.length} sluitingstaken aangemaakt`, `${items.length} tâches de clôture créées`, `${items.length} closing tasks created`));

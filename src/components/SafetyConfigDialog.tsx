@@ -214,7 +214,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const toggleRolePermission = async (roleId: string, field: keyof SafetyRole, current: boolean) => {
-    await supabase.from('safety_roles').update({ [field]: !current } as any).eq('id', roleId);
+    await supabase.from('safety_roles').update({ [field]: !current } as Record<string, unknown>).eq('id', roleId);
     setSafetyRoles(prev => prev.map(r => r.id === roleId ? { ...r, [field]: !current } : r));
   };
 

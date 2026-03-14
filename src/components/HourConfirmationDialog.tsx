@@ -186,7 +186,7 @@ const HourConfirmationDialog = ({
 
         const { data, error } = await supabase
           .from('hour_confirmations')
-          .insert(insertData as any)
+          .insert(insertData)
           .select('*')
           .maybeSingle();
         if (error) throw error;
