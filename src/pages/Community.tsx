@@ -340,11 +340,9 @@ const Community = () => {
         )}
       </section>
 
-      {!isLoggedIn && <Footer />}
+      <Footer />
     </div>
   );
-
-  return content;
 };
 
 const ClubCard = ({ club, index, onToggleFollow, toggling }: { 
