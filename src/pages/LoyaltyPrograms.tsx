@@ -295,7 +295,7 @@ const LoyaltyPrograms = () => {
       required_tasks: editForm.required_tasks,
       points_based: editForm.points_based,
       required_points: editForm.points_based ? editForm.required_points : null,
-    } as any).eq('id', editingProgram.id);
+    }).eq('id', editingProgram.id);
     if (error) { toast.error(error.message); }
     else {
       toast.success(dt.programUpdated);
