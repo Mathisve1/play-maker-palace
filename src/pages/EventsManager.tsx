@@ -263,7 +263,7 @@ const EventsManager = () => {
       estimated_hours: newTask.compensation_type === 'hourly' && newTask.estimated_hours ? parseFloat(newTask.estimated_hours) : null,
       daily_rate: newTask.compensation_type === 'daily' && newTask.daily_rate ? parseFloat(newTask.daily_rate) : null,
     };
-    const { data, error } = await supabase.from('tasks').insert(insertData as any).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
+    const { data, error } = await supabase.from('tasks').insert(insertData).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
     if (error) { toast.error(error.message); }
     else if (data) {
       if (newTask.add_to_monthly_plan && selectedMonthlyPlanId) {
