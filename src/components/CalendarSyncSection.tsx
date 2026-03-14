@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CalendarPlus, Copy, Download, Loader2 } from 'lucide-react';
+import { CalendarPlus, Copy, Download, Loader2, ChevronDown, ChevronUp, Smartphone, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/i18n/translations';
 
