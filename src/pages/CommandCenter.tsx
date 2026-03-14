@@ -56,7 +56,6 @@ const CommandCenter = () => {
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
   const [items, setItems] = useState<ActionItem[]>([]);
-  const [items, setItems] = useState<ActionItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
   const [filterType, setFilterType] = useState<string | null>(null);
