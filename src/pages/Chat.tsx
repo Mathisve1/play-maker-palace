@@ -223,6 +223,73 @@ const Chat = () => {
       }
 
       setConversations(convoList);
+
+      // Fetch event group chats the user participates in
+      // 1. Events where user has task signups
+      const { data: userSignups } = await supabase
+        .from('task_signups' as any)
+        .select('tasks!inner(event_id)')
+        .eq('volunteer_id', contextUserId);
+      
+      // 2. Events from clubs user owns/is member of
+      const { data: userClubMembers } = await supabase
+        .from('club_members')
+        .select('club_id')
+        .eq('user_id', contextUserId);
+      
+      const clubIds = (userClubMembers || []).map((m: any) => m.club_id);
+      
+      // Collect event IDs from signups
+      const signupEventIds = new Set<string>();
+      (userSignups || []).forEach((s: any) => {
+        if (s.tasks?.event_id) signupEventIds.add(s.tasks.event_id);
+      });
+      
+      // Fetch events from user's clubs + signup events
+      let eventGroupChats: GroupChatEntry[] = [];
+      
+      if (clubIds.length > 0 || signupEventIds.size > 0) {
+        let query = supabase
+          .from('events')
+          .select('id, title, event_date, club_id, clubs(name)')
+          .order('event_date', { ascending: false })
+          .limit(20);
+        
+        if (clubIds.length > 0 && signupEventIds.size > 0) {
+          query = query.or(`club_id.in.(${clubIds.join(',')}),id.in.(${Array.from(signupEventIds).join(',')})`);
+        } else if (clubIds.length > 0) {
+          query = query.in('club_id', clubIds);
+        } else {
+          query = query.in('id', Array.from(signupEventIds));
+        }
+        
+        const { data: events } = await query;
+        
+        if (events) {
+          // Get latest message timestamp for each event
+          const eventIds = events.map((e: any) => e.id);
+          const { data: latestMsgs } = await supabase
+            .from('event_chats')
+            .select('event_id, created_at')
+            .in('event_id', eventIds)
+            .order('created_at', { ascending: false });
+          
+          const latestMap: Record<string, string> = {};
+          (latestMsgs || []).forEach((m: any) => {
+            if (!latestMap[m.event_id]) latestMap[m.event_id] = m.created_at;
+          });
+          
+          eventGroupChats = events.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            club_name: e.clubs?.name || '',
+            event_date: e.event_date,
+            last_message_at: latestMap[e.id] || null,
+          }));
+        }
+      }
+      
+      setGroupChats(eventGroupChats);
       setLoading(false);
     };
     init();
