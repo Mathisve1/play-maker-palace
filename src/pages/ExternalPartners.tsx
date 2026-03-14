@@ -356,7 +356,7 @@ const ExternalPartners = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-        club_id: clubId, email: inviteEmail.trim(), role: 'medewerker' as any, invited_by: session.user.id,
+        club_id: clubId, email: inviteEmail.trim(), role: 'medewerker', invited_by: session.user.id,
       }).select('invite_token').single();
       if (invErr) throw invErr;
       const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).maybeSingle();
