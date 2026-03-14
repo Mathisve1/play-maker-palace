@@ -359,6 +359,8 @@ export type Database = {
       }
       briefing_checklist_items: {
         Row: {
+          assigned_team_id: string | null
+          assigned_volunteer_id: string | null
           block_id: string
           created_at: string
           id: string
@@ -366,6 +368,8 @@ export type Database = {
           sort_order: number
         }
         Insert: {
+          assigned_team_id?: string | null
+          assigned_volunteer_id?: string | null
           block_id: string
           created_at?: string
           id?: string
@@ -373,6 +377,8 @@ export type Database = {
           sort_order?: number
         }
         Update: {
+          assigned_team_id?: string | null
+          assigned_volunteer_id?: string | null
           block_id?: string
           created_at?: string
           id?: string
@@ -380,6 +386,13 @@ export type Database = {
           sort_order?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "briefing_checklist_items_assigned_team_id_fkey"
+            columns: ["assigned_team_id"]
+            isOneToOne: false
+            referencedRelation: "safety_teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "briefing_checklist_items_block_id_fkey"
             columns: ["block_id"]
@@ -661,6 +674,7 @@ export type Database = {
       }
       closing_tasks: {
         Row: {
+          assigned_team_id: string | null
           assigned_volunteer_id: string | null
           club_id: string
           completed_at: string | null
@@ -678,6 +692,7 @@ export type Database = {
           template_item_id: string | null
         }
         Insert: {
+          assigned_team_id?: string | null
           assigned_volunteer_id?: string | null
           club_id: string
           completed_at?: string | null
@@ -695,6 +710,7 @@ export type Database = {
           template_item_id?: string | null
         }
         Update: {
+          assigned_team_id?: string | null
           assigned_volunteer_id?: string | null
           club_id?: string
           completed_at?: string | null
@@ -712,6 +728,13 @@ export type Database = {
           template_item_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "closing_tasks_assigned_team_id_fkey"
+            columns: ["assigned_team_id"]
+            isOneToOne: false
+            referencedRelation: "safety_teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "closing_tasks_club_id_fkey"
             columns: ["club_id"]
@@ -2919,6 +2942,8 @@ export type Database = {
       }
       safety_checklist_items: {
         Row: {
+          assigned_team_id: string | null
+          assigned_volunteer_id: string | null
           club_id: string
           created_at: string
           description: string
@@ -2928,6 +2953,8 @@ export type Database = {
           zone_id: string | null
         }
         Insert: {
+          assigned_team_id?: string | null
+          assigned_volunteer_id?: string | null
           club_id: string
           created_at?: string
           description: string
@@ -2937,6 +2964,8 @@ export type Database = {
           zone_id?: string | null
         }
         Update: {
+          assigned_team_id?: string | null
+          assigned_volunteer_id?: string | null
           club_id?: string
           created_at?: string
           description?: string
@@ -2946,6 +2975,13 @@ export type Database = {
           zone_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "safety_checklist_items_assigned_team_id_fkey"
+            columns: ["assigned_team_id"]
+            isOneToOne: false
+            referencedRelation: "safety_teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "safety_checklist_items_club_id_fkey"
             columns: ["club_id"]
@@ -3288,6 +3324,84 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_team_members: {
+        Row: {
+          created_at: string
+          id: string
+          team_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          team_id: string
+          volunteer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          team_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "safety_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_teams: {
+        Row: {
+          club_id: string
+          created_at: string
+          event_id: string
+          id: string
+          leader_id: string
+          name: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          leader_id: string
+          name: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          leader_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_teams_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_teams_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_teams_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -5105,6 +5219,14 @@ export type Database = {
       }
       is_partner_admin: {
         Args: { _partner_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_team_leader: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
       move_to_dlq: {

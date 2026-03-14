@@ -35,6 +35,7 @@ interface ClosingTask {
   requires_photo: boolean;
   requires_note: boolean;
   assigned_volunteer_id: string | null;
+  assigned_team_id: string | null;
   status: string;
   photo_url: string | null;
   note: string | null;
@@ -45,6 +46,12 @@ interface ClosingTask {
 interface Volunteer {
   id: string;
   full_name: string;
+}
+
+interface SafetyTeam {
+  id: string;
+  name: string;
+  leader_id: string;
 }
 
 interface Props {
@@ -62,6 +69,7 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   const [templateItems, setTemplateItems] = useState<ClosingTemplateItem[]>([]);
   const [closingTasks, setClosingTasks] = useState<ClosingTask[]>([]);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [teams, setTeams] = useState<SafetyTeam[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   const [editTemplateName, setEditTemplateName] = useState('');
@@ -71,16 +79,18 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
 
   useEffect(() => {
     const load = async () => {
-      const [tRes, ctRes, vRes] = await Promise.all([
+      const [tRes, ctRes, vRes, teamsRes] = await Promise.all([
         supabase.from('closing_templates').select('*').eq('club_id', clubId).order('created_at'),
         supabase.from('closing_tasks').select('*').eq('event_id', eventId).order('sort_order'),
         supabase.from('task_signups').select('volunteer_id').in('task_id',
           (await supabase.from('tasks').select('id').eq('event_id', eventId)).data?.map(t => t.id) || []
         ),
+        supabase.from('safety_teams').select('id, name, leader_id').eq('event_id', eventId),
       ]);
 
       setTemplates(tRes.data || []);
       setClosingTasks(ctRes.data || []);
+      setTeams((teamsRes.data || []) as SafetyTeam[]);
 
       const volIds = [...new Set((vRes.data || []).map((s: any) => s.volunteer_id))];
       if (volIds.length > 0) {
@@ -164,10 +174,22 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
   const handleAssignVolunteer = async (taskId: string, volunteerId: string | null) => {
     const { error } = await supabase.from('closing_tasks').update({
       assigned_volunteer_id: volunteerId || null,
+      assigned_team_id: null, // Clear team when assigning individual
     }).eq('id', taskId);
     if (error) toast.error(error.message);
     else {
-      setClosingTasks(prev => prev.map(t => t.id === taskId ? { ...t, assigned_volunteer_id: volunteerId || null } : t));
+      setClosingTasks(prev => prev.map(t => t.id === taskId ? { ...t, assigned_volunteer_id: volunteerId || null, assigned_team_id: null } : t));
+    }
+  };
+
+  const handleAssignTeam = async (taskId: string, teamId: string | null) => {
+    const { error } = await supabase.from('closing_tasks').update({
+      assigned_team_id: teamId || null,
+      assigned_volunteer_id: null, // Clear individual when assigning team
+    }).eq('id', taskId);
+    if (error) toast.error(error.message);
+    else {
+      setClosingTasks(prev => prev.map(t => t.id === taskId ? { ...t, assigned_team_id: teamId || null, assigned_volunteer_id: null } : t));
     }
   };
 
@@ -326,14 +348,15 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
                           <span className="text-[10px] text-muted-foreground italic">"{task.note}"</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="w-3 h-3 text-muted-foreground" />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Users className="w-3 h-3 text-muted-foreground shrink-0" />
+                        {/* Individual assignment */}
                         <Select
                           value={task.assigned_volunteer_id || '__none'}
                           onValueChange={v => handleAssignVolunteer(task.id, v === '__none' ? null : v)}
                         >
-                          <SelectTrigger className="h-7 text-xs w-48">
-                            <SelectValue placeholder={t3('Niet toegewezen', 'Non assigné', 'Unassigned')} />
+                          <SelectTrigger className="h-7 text-xs w-40">
+                            <SelectValue placeholder={t3('Persoon...', 'Personne...', 'Person...')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="__none">{t3('Niet toegewezen', 'Non assigné', 'Unassigned')}</SelectItem>
@@ -342,6 +365,26 @@ const ClosingProcedureManager = ({ clubId, eventId, isLive, eventClosed }: Props
                             ))}
                           </SelectContent>
                         </Select>
+                        {/* Team assignment */}
+                        {teams.length > 0 && (
+                          <>
+                            <span className="text-[10px] text-muted-foreground">{t3('of', 'ou', 'or')}</span>
+                            <Select
+                              value={task.assigned_team_id || '__none'}
+                              onValueChange={v => handleAssignTeam(task.id, v === '__none' ? null : v)}
+                            >
+                              <SelectTrigger className="h-7 text-xs w-40">
+                                <SelectValue placeholder={t3('Team...', 'Équipe...', 'Team...')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none">{t3('Geen team', 'Pas d\'équipe', 'No team')}</SelectItem>
+                                {teams.map(tm => (
+                                  <SelectItem key={tm.id} value={tm.id}>{tm.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </>
+                        )}
                       </div>
                     </div>
                     {task.status !== 'completed' && (

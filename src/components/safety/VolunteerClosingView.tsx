@@ -42,13 +42,48 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
+      // Get tasks directly assigned to user
+      const { data: directTasks } = await supabase
         .from('closing_tasks')
-        .select('id, description, requires_photo, requires_note, status, photo_url, note, sort_order')
+        .select('id, description, requires_photo, requires_note, status, photo_url, note, sort_order, assigned_volunteer_id, assigned_team_id')
         .eq('event_id', eventId)
         .eq('assigned_volunteer_id', userId)
         .order('sort_order');
-      setTasks(data || []);
+
+      // Get tasks assigned to user's teams
+      const { data: userTeams } = await supabase
+        .from('safety_team_members')
+        .select('team_id')
+        .eq('volunteer_id', userId);
+      
+      const { data: leaderTeams } = await supabase
+        .from('safety_teams')
+        .select('id')
+        .eq('leader_id', userId)
+        .eq('event_id', eventId);
+
+      const allTeamIds = new Set([
+        ...(userTeams || []).map((t: any) => t.team_id),
+        ...(leaderTeams || []).map((t: any) => t.id),
+      ]);
+
+      let teamTasks: ClosingTask[] = [];
+      if (allTeamIds.size > 0) {
+        const { data } = await supabase
+          .from('closing_tasks')
+          .select('id, description, requires_photo, requires_note, status, photo_url, note, sort_order, assigned_volunteer_id, assigned_team_id')
+          .eq('event_id', eventId)
+          .in('assigned_team_id', Array.from(allTeamIds))
+          .order('sort_order');
+        teamTasks = (data || []) as ClosingTask[];
+      }
+
+      // Merge and deduplicate
+      const allTasks = [...(directTasks || []), ...teamTasks];
+      const uniqueTasks = Array.from(new Map(allTasks.map(t => [t.id, t])).values());
+      uniqueTasks.sort((a, b) => a.sort_order - b.sort_order);
+
+      setTasks(uniqueTasks);
       setLoading(false);
     };
     load();
@@ -60,15 +95,13 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
       .channel(`vol-closing-${eventId}-${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'closing_tasks', filter: `event_id=eq.${eventId}` },
         (payload: any) => {
-          const task = payload.new as ClosingTask & { assigned_volunteer_id: string };
-          if (task.assigned_volunteer_id !== userId) return;
-          if (payload.eventType === 'INSERT') {
-            setTasks(prev => [...prev, task].sort((a, b) => a.sort_order - b.sort_order));
-          } else if (payload.eventType === 'UPDATE') {
+          const task = payload.new as ClosingTask & { assigned_volunteer_id: string; assigned_team_id: string };
+          if (payload.eventType === 'UPDATE') {
             setTasks(prev => prev.map(t => t.id === task.id ? task : t));
           } else if (payload.eventType === 'DELETE') {
             setTasks(prev => prev.filter(t => t.id !== payload.old.id));
           }
+          // For INSERTs, we don't auto-add since we can't reliably check team membership client-side
         })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
