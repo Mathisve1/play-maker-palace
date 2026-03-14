@@ -464,16 +464,7 @@ const CommandCenter = () => {
   const canReject = (item: ActionItem) => ['enrollment', 'task_signup', 'day_signup'].includes(item.type);
 
   return (
-    <DashboardLayout
-      sidebar={
-        <ClubOwnerSidebar
-          profile={profile}
-          clubId={clubId}
-          clubInfo={clubInfo}
-          onLogout={handleLogout}
-        />
-      }
-    >
+    <ClubPageLayout>
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div>
