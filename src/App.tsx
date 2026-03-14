@@ -58,6 +58,7 @@ const StressTest = lazy(() => import("./pages/StressTest"));
 const VolunteerManagement = lazy(() => import("./pages/VolunteerManagement"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -138,6 +139,7 @@ const App = () => {
             <Route path="/stress-test" element={<RequireAuth redirectTo="/club-login"><StressTest /></RequireAuth>} />
             <Route path="/volunteer-management" element={<RequireAuth redirectTo="/club-login"><VolunteerManagement /></RequireAuth>} />
             <Route path="/analytics" element={<RequireAuth redirectTo="/club-login"><AnalyticsDashboard /></RequireAuth>} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
