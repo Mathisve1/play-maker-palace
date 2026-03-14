@@ -1054,6 +1054,54 @@ export type Database = {
           },
         ]
       }
+      club_referrals: {
+        Row: {
+          bonus_points_awarded: number
+          club_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          referred_id: string
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          bonus_points_awarded?: number
+          club_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referred_id: string
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          bonus_points_awarded?: number
+          club_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referred_id?: string
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_referrals_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_referrals_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clubs: {
         Row: {
           allow_shift_swaps: boolean
@@ -1064,6 +1112,7 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_id: string
+          referral_bonus_points: number
           sport: string | null
           stripe_account_id: string | null
         }
@@ -1076,6 +1125,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_id: string
+          referral_bonus_points?: number
           sport?: string | null
           stripe_account_id?: string | null
         }
@@ -1088,6 +1138,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_id?: string
+          referral_bonus_points?: number
           sport?: string | null
           stripe_account_id?: string | null
         }
