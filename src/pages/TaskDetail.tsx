@@ -365,7 +365,7 @@ const TaskDetail = () => {
     if (!session) { setJoiningWaitlist(false); return; }
 
     const newPosition = waitlistCount + 1;
-    const { error } = await (supabase as any).from('task_waitlist').insert({
+    const { error } = await supabase.from('task_waitlist').insert({
       task_id: id!,
       volunteer_id: session.user.id,
       position: newPosition,
