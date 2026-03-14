@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Users, Search, CheckCircle, CalendarDays, Award, FileSignature } from 'lucide-react';
+import { MapPin, Calendar, Users, Search, CheckCircle, CalendarDays, Award, FileSignature, Globe } from 'lucide-react';
 import LikeButton from '@/components/LikeButton';
 import type { VolunteerTask, TaskSignup, VolunteerEventData, SignatureContract } from '@/types/volunteer';
 import { volunteerDashboardLabels } from '@/types/volunteer';
@@ -38,8 +39,9 @@ const VolunteerTasksList = ({
   const navigate = useNavigate();
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
   const hasFollows = followedClubIds !== null && followedClubIds.size > 0;
+  const [showAllClubs, setShowAllClubs] = useState(false);
 
-  const feedTasks = hasFollows && activeTab === 'all' ? tasks.filter(t => followedClubIds!.has(t.club_id)) : tasks;
+  const feedTasks = hasFollows && activeTab === 'all' && !showAllClubs ? tasks.filter(t => followedClubIds!.has(t.club_id)) : tasks;
   const looseTasks = feedTasks.filter(t => !t.event_id);
 
   const filteredLooseTasks = looseTasks.filter(task => {
@@ -57,7 +59,7 @@ const VolunteerTasksList = ({
   });
 
   const filteredEvents = events.filter(event => {
-    if (hasFollows && activeTab === 'all' && !followedClubIds!.has(event.club_id)) return false;
+    if (hasFollows && activeTab === 'all' && !showAllClubs && !followedClubIds!.has(event.club_id)) return false;
     if (activeTab === 'mine') {
       const isPastEvent = event.event_date ? new Date(event.event_date) < new Date() : false;
       if (mineSubTab === 'history') return isPastEvent;
@@ -72,15 +74,26 @@ const VolunteerTasksList = ({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-heading font-bold text-foreground">{activeTab === 'all' ? dt.allTasks : dt.myTasks}</h1>
-        {activeTab === 'mine' && (
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setMineSubTab('pending')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'pending' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.ingeschreven}</button>
-            <button onClick={() => setMineSubTab('assigned')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'assigned' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.toegekend}</button>
-            <button onClick={() => setMineSubTab('history')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'history' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>{language === 'nl' ? 'Historie' : language === 'fr' ? 'Historique' : 'History'}</button>
-          </div>
-        )}
+        <div className="flex gap-2 flex-wrap items-center">
+          {activeTab === 'all' && hasFollows && (
+            <button
+              onClick={() => setShowAllClubs(p => !p)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 ${showAllClubs ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              {language === 'nl' ? 'Alle clubs' : language === 'fr' ? 'Tous les clubs' : 'All clubs'}
+            </button>
+          )}
+          {activeTab === 'mine' && (
+            <>
+              <button onClick={() => setMineSubTab('pending')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'pending' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.ingeschreven}</button>
+              <button onClick={() => setMineSubTab('assigned')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'assigned' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>{dt.toegekend}</button>
+              <button onClick={() => setMineSubTab('history')} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${mineSubTab === 'history' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>{language === 'nl' ? 'Historie' : language === 'fr' ? 'Historique' : 'History'}</button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="relative">
