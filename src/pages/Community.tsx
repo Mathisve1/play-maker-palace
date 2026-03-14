@@ -218,10 +218,9 @@ const Community = () => {
   const otherClubs = filtered.filter(c => !c.is_following);
 
   const isLoggedIn = !!currentUserId;
-
-  const content = (
-    <div className={isLoggedIn ? '' : 'min-h-screen bg-background'}>
-      {!isLoggedIn && <Navbar />}
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
       {/* Hero Section */}
       <section className="relative pt-20 pb-12 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5" />
