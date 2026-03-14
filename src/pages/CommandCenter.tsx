@@ -627,7 +627,7 @@ const CommandCenter = () => {
           onSent={() => { setContractConfirm(null); loadData(); }}
         />
       )}
-    </DashboardLayout>
+    </ClubPageLayout>
   );
 };
 

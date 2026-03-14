@@ -139,6 +139,8 @@ const TicketScanner = () => {
   const { language } = useLanguage();
   const t = labels[language as keyof typeof labels] || labels.nl;
 
+  const { clubId: contextClubId } = useClubContext();
+
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
   const [noAccess, setNoAccess] = useState(false);
@@ -156,20 +158,14 @@ const TicketScanner = () => {
 
   // ── Auth check ──
   useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/club-login'); return; }
-      const { data: clubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id).limit(1);
-      let cid = clubs?.[0]?.id;
-      if (!cid) {
-        const { data: members } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1);
-        cid = members?.[0]?.club_id;
-      }
-      if (!cid) { setNoAccess(true); setLoading(false); return; }
-      setClubId(cid);
+    if (contextClubId) {
+      setClubId(contextClubId);
       setLoading(false);
-    })();
-  }, [navigate]);
+    } else {
+      setNoAccess(true);
+      setLoading(false);
+    }
+  }, [contextClubId]);
 
   // ── Process barcode ──
   const processBarcode = async (barcode: string) => {
