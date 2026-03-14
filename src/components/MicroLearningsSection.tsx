@@ -38,7 +38,7 @@ const MicroLearningsSection = ({ userId, language }: Props) => {
         supabase.from('micro_learnings').select('*').eq('is_published', true).limit(20),
         supabase.from('micro_learning_completions').select('learning_id').eq('user_id', userId),
       ]);
-      if (items) setLearnings(items);
+      if (items) setLearnings(items as unknown as MicroLearning[]);
       if (completions) setCompletedIds(new Set(completions.map((c: any) => c.learning_id)));
       setLoading(false);
     };
