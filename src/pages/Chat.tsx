@@ -5,13 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { Send, MessageCircle, Check, CheckCheck, Paperclip, X, FileText, Music, Loader2, Mic, Square } from 'lucide-react';
+import { Send, MessageCircle, Check, CheckCheck, Paperclip, X, FileText, Music, Loader2, Mic, Square, Users } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { sendPush } from '@/lib/sendPush';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ChatSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import VolunteerSidebar from '@/components/VolunteerSidebar';
+import EventGroupChat from '@/components/EventGroupChat';
 
 interface Conversation {
   id: string;
@@ -21,6 +22,14 @@ interface Conversation {
   updated_at: string;
   tasks?: { title: string; clubs?: { name: string } | null } | null;
   unread_count?: number;
+}
+
+interface GroupChatEntry {
+  id: string; // event id
+  title: string;
+  club_name: string;
+  event_date: string | null;
+  last_message_at: string | null;
 }
 
 interface Message {
@@ -80,7 +89,9 @@ const Chat = () => {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [groupChats, setGroupChats] = useState<GroupChatEntry[]>([]);
   const [activeConversation, setActiveConversation] = useState<string | null>(conversationId || null);
+  const [activeGroupChat, setActiveGroupChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -212,6 +223,73 @@ const Chat = () => {
       }
 
       setConversations(convoList);
+
+      // Fetch event group chats the user participates in
+      // 1. Events where user has task signups
+      const { data: userSignups } = await supabase
+        .from('task_signups' as any)
+        .select('tasks!inner(event_id)')
+        .eq('volunteer_id', contextUserId);
+      
+      // 2. Events from clubs user owns/is member of
+      const { data: userClubMembers } = await supabase
+        .from('club_members')
+        .select('club_id')
+        .eq('user_id', contextUserId);
+      
+      const clubIds = (userClubMembers || []).map((m: any) => m.club_id);
+      
+      // Collect event IDs from signups
+      const signupEventIds = new Set<string>();
+      (userSignups || []).forEach((s: any) => {
+        if (s.tasks?.event_id) signupEventIds.add(s.tasks.event_id);
+      });
+      
+      // Fetch events from user's clubs + signup events
+      let eventGroupChats: GroupChatEntry[] = [];
+      
+      if (clubIds.length > 0 || signupEventIds.size > 0) {
+        let query = supabase
+          .from('events')
+          .select('id, title, event_date, club_id, clubs(name)')
+          .order('event_date', { ascending: false })
+          .limit(20);
+        
+        if (clubIds.length > 0 && signupEventIds.size > 0) {
+          query = query.or(`club_id.in.(${clubIds.join(',')}),id.in.(${Array.from(signupEventIds).join(',')})`);
+        } else if (clubIds.length > 0) {
+          query = query.in('club_id', clubIds);
+        } else {
+          query = query.in('id', Array.from(signupEventIds));
+        }
+        
+        const { data: events } = await query;
+        
+        if (events) {
+          // Get latest message timestamp for each event
+          const eventIds = events.map((e: any) => e.id);
+          const { data: latestMsgs } = await supabase
+            .from('event_chats')
+            .select('event_id, created_at')
+            .in('event_id', eventIds)
+            .order('created_at', { ascending: false });
+          
+          const latestMap: Record<string, string> = {};
+          (latestMsgs || []).forEach((m: any) => {
+            if (!latestMap[m.event_id]) latestMap[m.event_id] = m.created_at;
+          });
+          
+          eventGroupChats = events.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            club_name: e.clubs?.name || '',
+            event_date: e.event_date,
+            last_message_at: latestMap[e.id] || null,
+          }));
+        }
+      }
+      
+      setGroupChats(eventGroupChats);
       setLoading(false);
     };
     init();
@@ -437,11 +515,59 @@ const Chat = () => {
     <DashboardLayout sidebar={sidebarEl}>
       <div className="flex flex-col md:flex-row overflow-hidden -m-4 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)]">
         {/* Conversation list */}
-        <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto`}>
+        <div className={`${(activeConversation || activeGroupChat) ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto`}>
           <div className="p-4 border-b border-border">
             <h2 className="font-heading font-semibold text-foreground">{l.title}</h2>
           </div>
-          {conversations.length === 0 ? (
+
+          {/* Group Chats Section */}
+          {groupChats.length > 0 && (
+            <>
+              <div className="px-4 pt-3 pb-1">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  {language === 'nl' ? 'Groepschats' : language === 'fr' ? 'Chats de groupe' : 'Group Chats'}
+                </p>
+              </div>
+              {groupChats.map(gc => (
+                <button
+                  key={`gc-${gc.id}`}
+                  onClick={() => { setActiveGroupChat(gc.id); setActiveConversation(null); }}
+                  className={`w-full text-left px-4 py-3 border-b border-border transition-colors hover:bg-muted/50 ${
+                    activeGroupChat === gc.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground text-sm truncate">{gc.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{gc.club_name}</p>
+                    </div>
+                  </div>
+                  {gc.last_message_at && (
+                    <p className="text-[11px] text-muted-foreground mt-1 ml-9">
+                      {new Date(gc.last_message_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
+                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
+                  )}
+                </button>
+              ))}
+            </>
+          )}
+
+          {/* 1-on-1 Conversations Section */}
+          {conversations.length > 0 && (
+            <div className="px-4 pt-3 pb-1">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <MessageCircle className="w-3.5 h-3.5" />
+                {language === 'nl' ? 'Privéberichten' : language === 'fr' ? 'Messages privés' : 'Direct Messages'}
+              </p>
+            </div>
+          )}
+          {conversations.length === 0 && groupChats.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <MessageCircle className="w-12 h-12 text-muted-foreground/30 mb-3" />
               <p className="text-muted-foreground">{l.noConversations}</p>
@@ -451,7 +577,7 @@ const Chat = () => {
             conversations.map(convo => (
               <button
                 key={convo.id}
-                onClick={() => setActiveConversation(convo.id)}
+                onClick={() => { setActiveConversation(convo.id); setActiveGroupChat(null); }}
                 className={`w-full text-left px-4 py-3 border-b border-border transition-colors hover:bg-muted/50 ${
                   activeConversation === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''
                 }`}
@@ -480,8 +606,27 @@ const Chat = () => {
         </div>
 
         {/* Messages area */}
-        <div className={`${!activeConversation ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}>
-          {!activeConversation ? (
+        <div className={`${(!activeConversation && !activeGroupChat) ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}>
+          {activeGroupChat && userId ? (
+            <>
+              <div className="px-4 py-2 border-b border-border bg-card md:hidden">
+                <button
+                  onClick={() => setActiveGroupChat(null)}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  ← {l.back}
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <EventGroupChat
+                  eventId={activeGroupChat}
+                  eventTitle={groupChats.find(gc => gc.id === activeGroupChat)?.title || ''}
+                  userId={userId}
+                  language={language}
+                />
+              </div>
+            </>
+          ) : !activeConversation ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <MessageCircle className="w-16 h-16 opacity-20" />
             </div>
