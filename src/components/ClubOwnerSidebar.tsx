@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp, Moon, Sun,
+  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp, Moon, Sun, Bell,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import {

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
+  LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
   HelpCircle, Building2, Shield, CalendarDays, Moon, Sun,
 } from 'lucide-react';
