@@ -515,11 +515,59 @@ const Chat = () => {
     <DashboardLayout sidebar={sidebarEl}>
       <div className="flex flex-col md:flex-row overflow-hidden -m-4 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)]">
         {/* Conversation list */}
-        <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto`}>
+        <div className={`${(activeConversation || activeGroupChat) ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto`}>
           <div className="p-4 border-b border-border">
             <h2 className="font-heading font-semibold text-foreground">{l.title}</h2>
           </div>
-          {conversations.length === 0 ? (
+
+          {/* Group Chats Section */}
+          {groupChats.length > 0 && (
+            <>
+              <div className="px-4 pt-3 pb-1">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  {language === 'nl' ? 'Groepschats' : language === 'fr' ? 'Chats de groupe' : 'Group Chats'}
+                </p>
+              </div>
+              {groupChats.map(gc => (
+                <button
+                  key={`gc-${gc.id}`}
+                  onClick={() => { setActiveGroupChat(gc.id); setActiveConversation(null); }}
+                  className={`w-full text-left px-4 py-3 border-b border-border transition-colors hover:bg-muted/50 ${
+                    activeGroupChat === gc.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground text-sm truncate">{gc.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{gc.club_name}</p>
+                    </div>
+                  </div>
+                  {gc.last_message_at && (
+                    <p className="text-[11px] text-muted-foreground mt-1 ml-9">
+                      {new Date(gc.last_message_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
+                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
+                  )}
+                </button>
+              ))}
+            </>
+          )}
+
+          {/* 1-on-1 Conversations Section */}
+          {conversations.length > 0 && (
+            <div className="px-4 pt-3 pb-1">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <MessageCircle className="w-3.5 h-3.5" />
+                {language === 'nl' ? 'Privéberichten' : language === 'fr' ? 'Messages privés' : 'Direct Messages'}
+              </p>
+            </div>
+          )}
+          {conversations.length === 0 && groupChats.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <MessageCircle className="w-12 h-12 text-muted-foreground/30 mb-3" />
               <p className="text-muted-foreground">{l.noConversations}</p>
@@ -529,7 +577,7 @@ const Chat = () => {
             conversations.map(convo => (
               <button
                 key={convo.id}
-                onClick={() => setActiveConversation(convo.id)}
+                onClick={() => { setActiveConversation(convo.id); setActiveGroupChat(null); }}
                 className={`w-full text-left px-4 py-3 border-b border-border transition-colors hover:bg-muted/50 ${
                   activeConversation === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''
                 }`}
