@@ -145,19 +145,6 @@ const SafetyDashboard = () => {
   const flashTimeout = useRef<NodeJS.Timeout>();
   const testFiredRef = useRef(false);
 
-  // ONE-TIME test: fire alarm 5x — REMOVE AFTER TESTING
-  useEffect(() => {
-    if (testFiredRef.current) return;
-    testFiredRef.current = true;
-    const triggerTest = () => {
-      playAlarm();
-      setFlashRed(true);
-      if (flashTimeout.current) clearTimeout(flashTimeout.current);
-      flashTimeout.current = setTimeout(() => setFlashRed(false), 4000);
-    };
-    const timers = [3, 6, 9, 12, 15].map(s => setTimeout(triggerTest, s * 1000));
-    return () => timers.forEach(clearTimeout);
-  }, []);
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
     if (entering && ref.current) {
