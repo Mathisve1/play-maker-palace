@@ -95,15 +95,13 @@ const VolunteerClosingView = ({ eventId, userId, eventTitle }: Props) => {
       .channel(`vol-closing-${eventId}-${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'closing_tasks', filter: `event_id=eq.${eventId}` },
         (payload: any) => {
-          const task = payload.new as ClosingTask & { assigned_volunteer_id: string };
-          if (task.assigned_volunteer_id !== userId) return;
-          if (payload.eventType === 'INSERT') {
-            setTasks(prev => [...prev, task].sort((a, b) => a.sort_order - b.sort_order));
-          } else if (payload.eventType === 'UPDATE') {
+          const task = payload.new as ClosingTask & { assigned_volunteer_id: string; assigned_team_id: string };
+          if (payload.eventType === 'UPDATE') {
             setTasks(prev => prev.map(t => t.id === task.id ? task : t));
           } else if (payload.eventType === 'DELETE') {
             setTasks(prev => prev.filter(t => t.id !== payload.old.id));
           }
+          // For INSERTs, we don't auto-add since we can't reliably check team membership client-side
         })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
