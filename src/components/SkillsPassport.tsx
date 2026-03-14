@@ -87,17 +87,38 @@ const SkillsPassport = ({ userId, language, isOwnProfile = true }: Props) => {
     setSkills(prev => prev.filter(s => s.id !== id));
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const text = t3(language,
       `Mijn vrijwilligers-CV: ${stats.totalTasks} taken, ${stats.totalHours} uur, ${stats.badges} badges bij ${stats.clubs} clubs.`,
       `Mon CV bénévole : ${stats.totalTasks} tâches, ${stats.totalHours}h, ${stats.badges} badges dans ${stats.clubs} clubs.`,
       `My volunteer CV: ${stats.totalTasks} tasks, ${stats.totalHours}h, ${stats.badges} badges at ${stats.clubs} clubs.`
     );
-    if (navigator.share) {
-      navigator.share({ title: 'Volunteer CV', text, url: window.location.origin });
-    } else {
-      navigator.clipboard.writeText(text);
-      toast.success(t3(language, 'Gekopieerd!', 'Copié !', 'Copied!'));
+    const shareUrl = window.location.origin;
+    const fullText = `${text}\n${shareUrl}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Skills Passport', text, url: shareUrl });
+        return;
+      }
+    } catch (e) {
+      // User cancelled or share API failed — fall through to clipboard
+    }
+
+    try {
+      await navigator.clipboard.writeText(fullText);
+      toast.success(t3(language, 'Gekopieerd naar klembord!', 'Copié dans le presse-papiers !', 'Copied to clipboard!'));
+    } catch {
+      // Clipboard API blocked (e.g. iframe) — manual fallback
+      const textarea = document.createElement('textarea');
+      textarea.value = fullText;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      toast.success(t3(language, 'Gekopieerd naar klembord!', 'Copié dans le presse-papiers !', 'Copied to clipboard!'));
     }
   };
 
