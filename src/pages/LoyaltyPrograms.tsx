@@ -265,7 +265,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleToggleActive = async (program: LoyaltyProgram) => {
-    const { error } = await supabase.from('loyalty_programs').update({ is_active: !program.is_active } as any).eq('id', program.id);
+    const { error } = await supabase.from('loyalty_programs').update({ is_active: !program.is_active }).eq('id', program.id);
     if (error) { toast.error(error.message); }
     else {
       setPrograms(prev => prev.map(p => p.id === program.id ? { ...p, is_active: !p.is_active } : p));
