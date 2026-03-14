@@ -203,7 +203,7 @@ const ExternalPartners = () => {
         for (const email of validEmails) {
           try {
             const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-              club_id: clubId, email: email.trim(), role: 'medewerker' as any, invited_by: session.user.id,
+              club_id: clubId, email: email.trim(), role: 'medewerker', invited_by: session.user.id,
             }).select('invite_token').single();
             if (invErr) continue;
             await supabase.functions.invoke('club-invite?action=send-email', {
