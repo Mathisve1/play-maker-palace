@@ -4,9 +4,10 @@ import { MapPin, Calendar, Users, Search, CheckCircle, CalendarDays, Award, File
 import LikeButton from '@/components/LikeButton';
 import type { VolunteerTask, TaskSignup, VolunteerEventData, SignatureContract } from '@/types/volunteer';
 import { volunteerDashboardLabels } from '@/types/volunteer';
+import { Language } from '@/i18n/translations';
 
 interface Props {
-  language: string;
+  language: Language;
   activeTab: 'all' | 'mine';
   mineSubTab: 'pending' | 'assigned' | 'history';
   setMineSubTab: (v: 'pending' | 'assigned' | 'history') => void;

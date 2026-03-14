@@ -19,7 +19,7 @@ import type { VolunteerTask, TaskSignup, VolunteerPayment, SignatureContract, Se
 import { volunteerDashboardLabels } from '@/types/volunteer';
 
 interface Props {
-  language: string;
+  language: Language;
   currentUserId: string;
   profile: { full_name: string; email: string; avatar_url?: string | null } | null;
   followedClubIds: Set<string> | null;
