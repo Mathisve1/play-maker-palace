@@ -51,7 +51,7 @@ const CalendarSyncSection = ({ userId, language }: CalendarSyncSectionProps) => 
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any).from('calendar_tokens')
+      const { data } = await supabase.from('calendar_tokens')
         .select('token')
         .eq('user_id', userId)
         .limit(1)
