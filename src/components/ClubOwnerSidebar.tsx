@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp,
+  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp, Moon, Sun,
 } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -35,6 +36,7 @@ const ClubOwnerSidebar = ({
   const { setOpenMobile } = useSidebar();
   const { language } = useLanguage();
   const [actionCount, setActionCount] = useState(0);
+  const { theme, toggleTheme } = useTheme();
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
@@ -222,6 +224,12 @@ const ClubOwnerSidebar = ({
 
       <SidebarFooter className="p-3">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={toggleTheme} className="min-h-[48px] text-muted-foreground">
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              <span>{theme === 'dark' ? t3('Licht thema', 'Thème clair', 'Light mode') : t3('Donker thema', 'Thème sombre', 'Dark mode')}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onLogout} className="min-h-[48px] text-destructive hover:text-destructive">
               <LogOut className="w-5 h-5" />
