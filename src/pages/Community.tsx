@@ -344,9 +344,18 @@ const Community = () => {
         )}
       </section>
 
-      <Footer />
+      {!isLoggedIn && <Footer />}
     </div>
   );
+
+  if (isLoggedIn) {
+    const sidebar = clubCtx?.clubId
+      ? <ClubOwnerSidebar />
+      : <VolunteerSidebar />;
+    return <DashboardLayout sidebar={sidebar}>{content}</DashboardLayout>;
+  }
+
+  return content;
 };
 
 const ClubCard = ({ club, index, onToggleFollow, toggling }: { 
