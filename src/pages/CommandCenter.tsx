@@ -95,11 +95,13 @@ const CommandCenter = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { navigate('/login'); return; }
 
-    const { data: profileData } = await supabase.from('profiles').select('full_name, email').eq('id', session.user.id).maybeSingle();
+    // Parallel: profile + club lookup
+    const [{ data: profileData }, { data: ownedClubs }] = await Promise.all([
+      supabase.from('profiles').select('full_name, email').eq('id', session.user.id).maybeSingle(),
+      supabase.from('clubs').select('id, name, logo_url').eq('owner_id', session.user.id),
+    ]);
     setProfile(profileData);
 
-    // Find club
-    const { data: ownedClubs } = await supabase.from('clubs').select('id, name, logo_url').eq('owner_id', session.user.id);
     let club = ownedClubs?.[0] || null;
     if (!club) {
       const { data: memberships } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1);
@@ -114,34 +116,36 @@ const CommandCenter = () => {
 
     const actionItems: ActionItem[] = [];
 
-    // 1. Pending task signups + assigned signups needing contracts
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('id, title, task_date, location, start_time, end_time, expense_amount, expense_reimbursement, contract_template_id')
-      .eq('club_id', club.id)
-      .eq('status', 'open');
+    // Parallel: tasks + monthly plans (independent queries)
+    const [{ data: tasks }, { data: plans }] = await Promise.all([
+      supabase.from('tasks')
+        .select('id, title, task_date, location, start_time, end_time, expense_amount, expense_reimbursement, contract_template_id')
+        .eq('club_id', club.id)
+        .eq('status', 'open'),
+      supabase.from('monthly_plans')
+        .select('id, title, month, year, contract_template_id')
+        .eq('club_id', club.id)
+        .eq('status', 'published'),
+    ]);
 
     if (tasks && tasks.length > 0) {
       const taskIds = tasks.map(t => t.id);
-      const { data: signups } = await supabase
-        .from('task_signups')
-        .select('id, task_id, volunteer_id, status')
-        .in('task_id', taskIds)
-        .in('status', ['pending', 'assigned']);
 
-      // Also fetch existing tickets to know which assigned signups still need one
-      const { data: existingTickets } = await supabase
-        .from('volunteer_tickets')
-        .select('volunteer_id, task_id')
-        .eq('club_id', club.id)
-        .in('task_id', taskIds);
+      // Parallel: signups + tickets + signatures for tasks
+      const [{ data: signups }, { data: existingTickets }, { data: existingSignatures }] = await Promise.all([
+        supabase.from('task_signups')
+          .select('id, task_id, volunteer_id, status')
+          .in('task_id', taskIds)
+          .in('status', ['pending', 'assigned']),
+        supabase.from('volunteer_tickets')
+          .select('volunteer_id, task_id')
+          .eq('club_id', club.id)
+          .in('task_id', taskIds),
+        supabase.from('signature_requests')
+          .select('task_id, volunteer_id')
+          .in('task_id', taskIds),
+      ]);
       const ticketSet = new Set((existingTickets || []).map(t => `${t.volunteer_id}_${t.task_id}`));
-
-      // Fetch existing signature requests to avoid duplicate contract actions
-      const { data: existingSignatures } = await supabase
-        .from('signature_requests')
-        .select('task_id, volunteer_id')
-        .in('task_id', taskIds);
       const signatureSet = new Set((existingSignatures || []).map(s => `${s.volunteer_id}_${s.task_id}`));
 
       if (signups && signups.length > 0) {
