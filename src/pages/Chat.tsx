@@ -9,6 +9,7 @@ import { Send, MessageCircle, Check, CheckCheck, Paperclip, X, FileText, Music, 
 import { Language } from '@/i18n/translations';
 import { sendPush } from '@/lib/sendPush';
 import DashboardLayout from '@/components/DashboardLayout';
+import { ChatSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import VolunteerSidebar from '@/components/VolunteerSidebar';
 

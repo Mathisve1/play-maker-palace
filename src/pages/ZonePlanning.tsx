@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Users, MapPin, Calendar, ChevronRight, ChevronDown, Loader2, X, UserPlus, UserMinus } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { PageSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 interface Zone {
   id: string;

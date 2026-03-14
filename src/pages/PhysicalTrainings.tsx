@@ -10,6 +10,7 @@ import {
   QrCode, Award, Loader2
 } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { PageSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

@@ -6,6 +6,7 @@ import { useClubContext } from '@/contexts/ClubContext';
 import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2, BookOpen, Shield, CalendarDays, ClipboardList, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { PlanningSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';

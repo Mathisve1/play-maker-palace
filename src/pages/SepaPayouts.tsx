@@ -23,6 +23,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import { TableSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import NotificationBell from '@/components/NotificationBell';
 import { BELGIAN_BANKS, findBic } from '@/components/OnboardingForm';
 import { DocusealForm } from '@docuseal/react';
