@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useClubContext } from '@/contexts/ClubContext';
+import { useOptionalClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
 import { Search, MapPin, Users, Heart, HeartOff, Trophy, Calendar, Building2, ArrowRight, Sparkles, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
