@@ -203,7 +203,7 @@ const ExternalPartners = () => {
         for (const email of validEmails) {
           try {
             const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-              club_id: clubId, email: email.trim(), role: 'medewerker' as any, invited_by: session.user.id,
+              club_id: clubId, email: email.trim(), role: 'medewerker', invited_by: session.user.id,
             }).select('invite_token').single();
             if (invErr) continue;
             await supabase.functions.invoke('club-invite?action=send-email', {
@@ -356,7 +356,7 @@ const ExternalPartners = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-        club_id: clubId, email: inviteEmail.trim(), role: 'medewerker' as any, invited_by: session.user.id,
+        club_id: clubId, email: inviteEmail.trim(), role: 'medewerker', invited_by: session.user.id,
       }).select('invite_token').single();
       if (invErr) throw invErr;
       const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).maybeSingle();
@@ -377,7 +377,7 @@ const ExternalPartners = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-        club_id: clubId, email: member.email, role: 'medewerker' as any, invited_by: session.user.id,
+        club_id: clubId, email: member.email, role: 'medewerker', invited_by: session.user.id,
       }).select('invite_token').single();
       if (invErr) throw invErr;
       await supabase.functions.invoke('club-invite?action=send-email', {
@@ -411,7 +411,7 @@ const ExternalPartners = () => {
         task_id: ticketTaskId,
         event_id: task?.event_id || null,
         barcode,
-        status: 'active' as any,
+        status: 'sent',
       });
       if (error) throw error;
       toast.success(t3(`Ticket aangemaakt voor ${member.full_name}!`, `Ticket créé pour ${member.full_name}!`, `Ticket created for ${member.full_name}!`));

@@ -248,7 +248,7 @@ const EventsManager = () => {
     if (!clubId || !newTask.title.trim()) return;
     setCreatingTask(true);
     const locationStr = buildTaskLocationString();
-    const insertData: Record<string, unknown> = {
+    const insertData = {
       club_id: clubId, title: newTask.title.trim(), description: newTask.description.trim() || null,
       task_date: newTask.task_date || null, location: locationStr,
       spots_available: newTask.spots_available,
@@ -263,7 +263,7 @@ const EventsManager = () => {
       estimated_hours: newTask.compensation_type === 'hourly' && newTask.estimated_hours ? parseFloat(newTask.estimated_hours) : null,
       daily_rate: newTask.compensation_type === 'daily' && newTask.daily_rate ? parseFloat(newTask.daily_rate) : null,
     };
-    const { data, error } = await supabase.from('tasks').insert(insertData as any).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
+    const { data, error } = await supabase.from('tasks').insert(insertData).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
     if (error) { toast.error(error.message); }
     else if (data) {
       if (newTask.add_to_monthly_plan && selectedMonthlyPlanId) {
@@ -499,7 +499,7 @@ const EventsManager = () => {
     setTogglingHold(eventId);
     const event = events.find(e => e.id === eventId);
     const newStatus = event?.status === 'on_hold' ? 'open' : 'on_hold';
-    const { error } = await supabase.from('events').update({ status: newStatus } as any).eq('id', eventId);
+    const { error } = await supabase.from('events').update({ status: newStatus }).eq('id', eventId);
     if (error) toast.error(error.message);
     else { setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e)); toast.success(newStatus === 'on_hold' ? t3('Evenement on hold gezet', 'Événement mis en attente', 'Event put on hold') : t3('Evenement weer actief', 'Événement réactivé', 'Event reactivated')); }
     setTogglingHold(null);
@@ -508,7 +508,7 @@ const EventsManager = () => {
   const handleToggleHoldTask = async (taskId: string, currentStatus: string) => {
     setTogglingHold(taskId);
     const newStatus = currentStatus === 'on_hold' ? 'open' : 'on_hold';
-    const { error } = await supabase.from('tasks').update({ status: newStatus } as any).eq('id', taskId);
+    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
     if (error) toast.error(error.message);
     else { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)); toast.success(newStatus === 'on_hold' ? t3('Taak on hold gezet', 'Tâche mise en attente', 'Task put on hold') : t3('Taak weer actief', 'Tâche réactivée', 'Task reactivated')); }
     setTogglingHold(null);

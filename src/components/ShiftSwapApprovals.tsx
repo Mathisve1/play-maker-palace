@@ -33,7 +33,7 @@ const ShiftSwapApprovals = ({ clubId, language }: ShiftSwapApprovalsProps) => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('shift_swaps')
         .select('id, task_id, requester_id, target_id, reason, created_at')
         .eq('club_id', clubId)
@@ -73,7 +73,7 @@ const ShiftSwapApprovals = ({ clubId, language }: ShiftSwapApprovalsProps) => {
     // Remove requester, add target (or swap their assignments)
     // Actually both are already signed up - just swap their volunteer_ids in task_signups
     // Simpler: we just need to confirm the swap happened
-    await (supabase as any).from('shift_swaps').update({
+    await supabase.from('shift_swaps').update({
       status: 'approved',
       club_approved_at: new Date().toISOString(),
       club_approved_by: userId,
@@ -90,7 +90,7 @@ const ShiftSwapApprovals = ({ clubId, language }: ShiftSwapApprovalsProps) => {
 
   const handleReject = async (swap: SwapItem) => {
     setProcessing(swap.id);
-    await (supabase as any).from('shift_swaps').update({ status: 'rejected_club' }).eq('id', swap.id);
+    await supabase.from('shift_swaps').update({ status: 'rejected_club' }).eq('id', swap.id);
 
     sendPush({ userId: swap.requester_id, type: 'shift_swap_rejected', title: '❌ Shift-ruil geweigerd', message: `De club heeft je shift-ruil voor "${swap.task_title}" geweigerd.`, url: `/task/${swap.task_id}` });
     sendPush({ userId: swap.target_id, type: 'shift_swap_rejected', title: '❌ Shift-ruil geweigerd', message: `De club heeft de shift-ruil voor "${swap.task_title}" geweigerd.`, url: `/task/${swap.task_id}` });

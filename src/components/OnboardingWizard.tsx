@@ -72,7 +72,7 @@ const OnboardingWizard = ({
   // Load saved progress
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('volunteer_onboarding_steps')
         .select('step, completed_at, skipped')
         .eq('user_id', userId)
@@ -104,7 +104,7 @@ const OnboardingWizard = ({
 
     const syncSteps = async () => {
       for (const s of newlyCompleted) {
-        await (supabase as any)
+        await supabase
           .from('volunteer_onboarding_steps')
           .upsert(
             { user_id: userId, club_id: clubId, step: s.key, completed_at: new Date().toISOString() },

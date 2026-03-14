@@ -168,25 +168,21 @@ const HourConfirmationDialog = ({
           .eq('id', confirmation.id);
         if (error) throw error;
 
-        setConfirmation(prev => prev ? { ...prev, ...updateData as any } : null);
+        setConfirmation(prev => prev ? { ...prev, ...(updateData as Record<string, unknown>) } : null);
       } else {
         // Create new record
-        const insertData: Record<string, unknown> = {
+        const insertData = {
           task_id: taskId,
           volunteer_id: volunteerId,
           status: 'submitted',
+          ...(role === 'club'
+            ? { club_reported_hours: h, club_approved: true }
+            : { volunteer_reported_hours: h, volunteer_approved: true }),
         };
-        if (role === 'club') {
-          insertData.club_reported_hours = h;
-          insertData.club_approved = true;
-        } else {
-          insertData.volunteer_reported_hours = h;
-          insertData.volunteer_approved = true;
-        }
 
         const { data, error } = await supabase
           .from('hour_confirmations')
-          .insert(insertData as any)
+          .insert(insertData)
           .select('*')
           .maybeSingle();
         if (error) throw error;

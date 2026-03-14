@@ -265,7 +265,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleToggleActive = async (program: LoyaltyProgram) => {
-    const { error } = await supabase.from('loyalty_programs').update({ is_active: !program.is_active } as any).eq('id', program.id);
+    const { error } = await supabase.from('loyalty_programs').update({ is_active: !program.is_active }).eq('id', program.id);
     if (error) { toast.error(error.message); }
     else {
       setPrograms(prev => prev.map(p => p.id === program.id ? { ...p, is_active: !p.is_active } : p));
@@ -295,7 +295,7 @@ const LoyaltyPrograms = () => {
       required_tasks: editForm.required_tasks,
       points_based: editForm.points_based,
       required_points: editForm.points_based ? editForm.required_points : null,
-    } as any).eq('id', editingProgram.id);
+    }).eq('id', editingProgram.id);
     if (error) { toast.error(error.message); }
     else {
       toast.success(dt.programUpdated);
@@ -326,7 +326,7 @@ const LoyaltyPrograms = () => {
   };
 
   const handleGrantReward = async (enrollment: Enrollment) => {
-    const { error } = await supabase.from('loyalty_enrollments').update({ reward_claimed: true, claimed_at: new Date().toISOString() } as any).eq('id', enrollment.id);
+    const { error } = await supabase.from('loyalty_enrollments').update({ reward_claimed: true, claimed_at: new Date().toISOString() }).eq('id', enrollment.id);
     if (error) { toast.error(error.message); }
     else {
       toast.success(dt.rewardGranted);

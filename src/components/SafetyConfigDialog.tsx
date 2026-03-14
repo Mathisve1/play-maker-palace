@@ -171,7 +171,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const toggleLevelRequired = async (id: string, current: boolean) => {
-    await supabase.from('safety_location_levels').update({ is_required: !current } as any).eq('id', id);
+    await supabase.from('safety_location_levels').update({ is_required: !current }).eq('id', id);
     setLocationLevels(prev => prev.map(l => l.id === id ? { ...l, is_required: !current } : l));
   };
 
@@ -181,7 +181,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
     const { data, error } = await supabase.from('safety_location_options').insert({
       level_id: selectedLevelId, label: newOptionLabel.trim(),
       sort_order: locationOptions.filter(o => o.level_id === selectedLevelId).length,
-    } as any).select('*').maybeSingle();
+    }).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) { setLocationOptions(prev => [...prev, data]); setNewOptionLabel(''); toast.success(t3('Optie toegevoegd', 'Option ajoutée', 'Option added')); }
   };
@@ -198,7 +198,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
     const { data, error } = await supabase.from('safety_roles').insert({
       club_id: clubId, name: newRoleName.trim(), color: newRoleColor,
       level: newRoleLevel, sort_order: safetyRoles.length,
-    } as any).select('*').maybeSingle();
+    }).select('*').maybeSingle();
     if (error) toast.error(error.message);
     else if (data) {
       setSafetyRoles(prev => [...prev, data]);
@@ -214,7 +214,7 @@ const SafetyConfigDialog = ({ open, onClose, eventId, clubId }: SafetyConfigDial
   };
 
   const toggleRolePermission = async (roleId: string, field: keyof SafetyRole, current: boolean) => {
-    await supabase.from('safety_roles').update({ [field]: !current } as any).eq('id', roleId);
+    await supabase.from('safety_roles').update({ [field]: !current } as Record<string, unknown>).eq('id', roleId);
     setSafetyRoles(prev => prev.map(r => r.id === roleId ? { ...r, [field]: !current } : r));
   };
 

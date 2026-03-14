@@ -68,7 +68,7 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
       }
 
       // Get existing swap requests for this task involving current user
-      const { data: swaps } = await (supabase as any)
+      const { data: swaps } = await supabase
         .from('shift_swaps')
         .select('*')
         .eq('task_id', taskId)
@@ -96,7 +96,7 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
   const handleSendRequest = async () => {
     if (!selectedTarget) return;
     setSending(true);
-    const { error } = await (supabase as any).from('shift_swaps').insert({
+    const { error } = await supabase.from('shift_swaps').insert({
       club_id: clubId,
       task_id: taskId,
       requester_id: currentUserId,
@@ -116,7 +116,7 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
     setRespondingTo(swapId);
     const swap = existingSwaps.find(s => s.id === swapId);
     if (accept) {
-      await (supabase as any).from('shift_swaps').update({
+      await supabase.from('shift_swaps').update({
         status: 'pending_club',
         target_responded_at: new Date().toISOString(),
       }).eq('id', swapId);
@@ -125,7 +125,7 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
         sendPush({ userId: swap.requester_id, type: 'shift_swap_accepted', title: '✅ Ruil geaccepteerd', message: `Je ruilverzoek voor "${taskTitle}" is geaccepteerd. Wacht op goedkeuring club.`, url: `/task/${taskId}` });
       }
     } else {
-      await (supabase as any).from('shift_swaps').update({
+      await supabase.from('shift_swaps').update({
         status: 'rejected_target',
         target_responded_at: new Date().toISOString(),
       }).eq('id', swapId);

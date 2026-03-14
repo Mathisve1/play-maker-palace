@@ -47,8 +47,8 @@ const VolunteerBadges = ({ userId, language, compact = false }: VolunteerBadgesP
   useEffect(() => {
     const load = async () => {
       const [{ data: defs }, { data: userBadges }] = await Promise.all([
-        (supabase as any).from('badge_definitions').select('*').order('threshold'),
-        (supabase as any).from('volunteer_badges').select('badge_id, earned_at').eq('user_id', userId),
+        supabase.from('badge_definitions').select('*').order('threshold'),
+        supabase.from('volunteer_badges').select('badge_id, earned_at').eq('user_id', userId),
       ]);
       if (defs) setAllBadges(defs);
       if (userBadges) {
@@ -83,7 +83,7 @@ const VolunteerBadges = ({ userId, language, compact = false }: VolunteerBadgesP
         const val = stats[badge.condition_type] || 0;
         if (val >= badge.threshold) {
           // Award badge
-          const { error } = await (supabase as any).from('volunteer_badges').insert({
+          const { error } = await supabase.from('volunteer_badges').insert({
             user_id: userId,
             badge_id: badge.id,
           });

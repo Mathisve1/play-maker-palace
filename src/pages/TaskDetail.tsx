@@ -324,7 +324,7 @@ const TaskDetail = () => {
 
       // Auto-promote first person from waitlist
       if (waitlistEnabled && waitlistCount > 0) {
-        const { data: nextInLine } = await (supabase as any)
+        const { data: nextInLine } = await supabase
           .from('task_waitlist')
           .select('id, volunteer_id')
           .eq('task_id', id!)
@@ -338,7 +338,7 @@ const TaskDetail = () => {
             task_id: id!,
             volunteer_id: nextInLine.volunteer_id,
           });
-          await (supabase as any).from('task_waitlist').delete().eq('id', nextInLine.id);
+          await supabase.from('task_waitlist').delete().eq('id', nextInLine.id);
           setWaitlistCount(prev => Math.max(prev - 1, 0));
           setSignupCount(prev => prev + 1);
 
@@ -365,7 +365,7 @@ const TaskDetail = () => {
     if (!session) { setJoiningWaitlist(false); return; }
 
     const newPosition = waitlistCount + 1;
-    const { error } = await (supabase as any).from('task_waitlist').insert({
+    const { error } = await supabase.from('task_waitlist').insert({
       task_id: id!,
       volunteer_id: session.user.id,
       position: newPosition,
@@ -386,7 +386,7 @@ const TaskDetail = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { error } = await (supabase as any).from('task_waitlist')
+    const { error } = await supabase.from('task_waitlist')
       .delete()
       .eq('task_id', id!)
       .eq('volunteer_id', session.user.id);

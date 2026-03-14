@@ -60,7 +60,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Persist to profile if logged in
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      await supabase.from('profiles').update({ language: lang } as any).eq('id', session.user.id);
+      await supabase.from('profiles').update({ language: lang }).eq('id', session.user.id);
     }
   }, []);
 

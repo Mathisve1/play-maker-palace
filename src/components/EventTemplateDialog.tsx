@@ -42,7 +42,7 @@ const EventTemplateDialog = ({ open, onClose, clubId, language, onCreateFromTemp
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    (supabase as any).from('event_templates')
+    supabase.from('event_templates')
       .select('*')
       .eq('club_id', clubId)
       .order('created_at', { ascending: false })
@@ -57,7 +57,7 @@ const EventTemplateDialog = ({ open, onClose, clubId, language, onCreateFromTemp
 
   const handleDelete = async (id: string) => {
     setDeleting(id);
-    await (supabase as any).from('event_templates').delete().eq('id', id);
+    await supabase.from('event_templates').delete().eq('id', id);
     setTemplates(prev => prev.filter(t => t.id !== id));
     toast.success(t3(language, 'Sjabloon verwijderd', 'Modèle supprimé', 'Template deleted'));
     setDeleting(null);

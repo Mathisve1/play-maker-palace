@@ -527,7 +527,7 @@ const VolunteerDashboard = () => {
   const handleEnrollLoyalty = async (programId: string) => {
     if (!currentUserId) return;
     setEnrollingProgram(programId);
-    const { data, error } = await supabase.from('loyalty_enrollments').insert({ program_id: programId, volunteer_id: currentUserId } as any).select('*').maybeSingle();
+    const { data, error } = await supabase.from('loyalty_enrollments').insert({ program_id: programId, volunteer_id: currentUserId }).select('*').maybeSingle();
     if (error) {
       if (error.code === '23505') { toast.info(language === 'nl' ? 'Je bent al ingeschreven!' : language === 'fr' ? 'Vous êtes déjà inscrit!' : 'You are already enrolled!'); }
       else { toast.error(error.message); }
