@@ -12,8 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Star, Search, Building2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import EditProfileDialog from '@/components/EditProfileDialog';
-import { Loader2, Star, Search, Building2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 
 interface ClubMembership {
   id: string;
