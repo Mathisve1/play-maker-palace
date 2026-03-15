@@ -110,8 +110,24 @@ const MyClubs = () => {
     setSwitching(null);
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
+  const sidebar = (
+    <VolunteerSidebar
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      profile={profile}
+      language={language}
+      onLogout={handleLogout}
+      onOpenProfile={() => setProfileOpen(true)}
+    />
+  );
+
   return (
-    <DashboardLayout>
+    <DashboardLayout sidebar={sidebar}>
       <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{l.title}</h1>
@@ -197,6 +213,14 @@ const MyClubs = () => {
           </Button>
         </div>
       </div>
+
+      {profileOpen && (
+        <EditProfileDialog
+          open={profileOpen}
+          onOpenChange={setProfileOpen}
+          onProfileUpdated={(p) => updateProfile(p)}
+        />
+      )}
     </DashboardLayout>
   );
 };
