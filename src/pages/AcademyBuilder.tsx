@@ -883,6 +883,15 @@ const AcademyBuilder = () => {
         await saveQuiz(selectedTraining, realModId, mqData.quiz, mqData.questions, mqData.passingScore, mqData.isPractice);
       }
 
+      // Save compliance requirement
+      if (editRequiredForCompliance && !requiredTrainingIds.has(selectedTraining)) {
+        await supabase.from('club_required_trainings' as any).insert({ club_id: clubId, training_id: selectedTraining });
+        setRequiredTrainingIds(prev => new Set([...prev, selectedTraining]));
+      } else if (!editRequiredForCompliance && requiredTrainingIds.has(selectedTraining)) {
+        await supabase.from('club_required_trainings' as any).delete().eq('club_id', clubId).eq('training_id', selectedTraining);
+        setRequiredTrainingIds(prev => { const s = new Set(prev); s.delete(selectedTraining); return s; });
+      }
+
       toast.success(l.saved);
       await loadTrainings(clubId);
       await loadTrainingDetail(selectedTraining);
