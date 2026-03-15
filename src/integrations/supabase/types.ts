@@ -4031,6 +4031,7 @@ export type Database = {
       }
       season_contracts: {
         Row: {
+          archived_at: string | null
           barcode: string | null
           checkin_count: number
           club_id: string
@@ -4048,6 +4049,7 @@ export type Database = {
           volunteer_status: string
         }
         Insert: {
+          archived_at?: string | null
           barcode?: string | null
           checkin_count?: number
           club_id: string
@@ -4065,6 +4067,7 @@ export type Database = {
           volunteer_status?: string
         }
         Update: {
+          archived_at?: string | null
           barcode?: string | null
           checkin_count?: number
           club_id?: string
