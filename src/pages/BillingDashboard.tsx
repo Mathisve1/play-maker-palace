@@ -66,8 +66,10 @@ const BillingDashboard = () => {
     if (!billingRes.data) {
       const { data: newBilling } = await supabase.from('club_billing').insert({ club_id: cId }).select().single();
       setBilling(newBilling);
+      setFreeUsed(0);
     } else {
       setBilling(billingRes.data);
+      setFreeUsed(billingRes.data.free_contracts_used || 0);
     }
     setSeatInput(billingRes.data?.partner_seats_purchased?.toString() || '0');
     setEvents(eventsRes.data || []);
