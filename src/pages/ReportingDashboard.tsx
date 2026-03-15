@@ -811,7 +811,7 @@ const ReportingDashboard = () => {
         taskTypeMap.set(title, existing);
       });
       const { data: batches } = await supabase.from('sepa_batches').select('reference, created_at, item_count, total_amount, status').eq('club_id', clubId);
-      const seasonBatches: SeasonReportBatch[] = (batches || []).filter((b: any) => b.created_at >= season.start_date && b.created_at <= season.end_date)
+      const seasonBatches: any[] = (batches || []).filter((b: any) => b.created_at >= season.start_date && b.created_at <= season.end_date)
         .map((b: any) => ({ reference: b.reference, date: b.created_at, itemCount: b.item_count || 0, totalAmount: b.total_amount || 0, status: b.status }));
       const totalHours = [...volMap.values()].reduce((s, v) => s + v.hours, 0);
       const totalComp = [...volMap.values()].reduce((s, v) => s + v.compensation, 0);
