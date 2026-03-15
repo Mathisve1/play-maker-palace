@@ -22,6 +22,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, subMonths, isWithinInterval, parseISO, isSameMonth, getDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { toast } from 'sonner';
 // jsPDF is lazy-loaded when needed for PDF export
 import {
