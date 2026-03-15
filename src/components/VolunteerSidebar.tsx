@@ -40,6 +40,7 @@ interface VolunteerSidebarProps {
 const labels: Record<Language, Record<string, string>> = {
   nl: {
     dashboard: 'Dashboard',
+    season: 'Mijn Seizoen',
     allTasks: 'Alle Taken',
     myTasks: 'Mijn Taken',
     monthly: 'Maandplanning',
