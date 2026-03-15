@@ -9,10 +9,6 @@ import AiAssistantChat from './AiAssistantChat';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
 import * as Sentry from '@sentry/react';
-import { ClubProvider } from '@/contexts/ClubContext';
-import AiAssistantChat from './AiAssistantChat';
-import { Button } from '@/components/ui/button';
-import { useLanguage } from '@/i18n/LanguageContext';
 
 interface RequireAuthProps {
   children: React.ReactNode;
