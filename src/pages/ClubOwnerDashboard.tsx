@@ -1396,6 +1396,16 @@ const ClubOwnerDashboard = () => {
         }}
         language={language}
       />
+
+      {matcherTask && (
+        <Suspense fallback={null}>
+          <VolunteerMatcher
+            open={!!matcherTask}
+            onOpenChange={(open) => { if (!open) setMatcherTask(null); }}
+            task={{ id: matcherTask.id, title: matcherTask.title, task_date: matcherTask.task_date || null, start_time: null, end_time: null, location: matcherTask.location || null, club_id: matcherTask.club_id || clubId || '' }}
+          />
+        </Suspense>
+      )}
     </DashboardLayout>
   );
 };
