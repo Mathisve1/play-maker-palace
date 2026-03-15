@@ -173,6 +173,7 @@ const VolunteerDashboard = () => {
   const [reviewTarget, setReviewTarget] = useState<{ taskSignupId: string; taskTitle: string; revieweeId: string } | null>(null);
   const [showVolunteerOnboarding, setShowVolunteerOnboarding] = useState(false);
   const [volunteerOnboardingContract, setVolunteerOnboardingContract] = useState<{ id: string; signing_url: string | null; status: string } | null>(null);
+  const [showVolunteerTour, setShowVolunteerTour] = useState(false);
 
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
