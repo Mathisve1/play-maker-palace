@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut, Moon, Sun,
   Search, User, Settings, MessageCircle, Bell, ShieldAlert, Ticket, Handshake,
-  CreditCard, Award, Heart, ChevronDown,
+  CreditCard, Award, Heart, ChevronDown, HelpCircle,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useTheme } from '@/hooks/useTheme';
@@ -104,6 +104,7 @@ const ClubOwnerSidebar = ({
     { label: t3('Facturatie', 'Facturation', 'Billing'), icon: CreditCard, path: '/billing' },
     { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
     { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Heart, path: '/loyalty' },
+    { label: t3('Help', 'Aide', 'Help'), icon: HelpCircle, path: '/club-help' },
   ];
 
   const beheerIsActive = beheerItems.some(item => isActive(item.path));

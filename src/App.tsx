@@ -55,6 +55,7 @@ const CommunityClubDetail = lazy(() => import("./pages/CommunityClubDetail"));
 const CommunityPartnerDetail = lazy(() => import("./pages/CommunityPartnerDetail"));
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
 const VolunteerHelp = lazy(() => import("./pages/VolunteerHelp"));
+const ClubHelp = lazy(() => import("./pages/ClubHelp"));
 const StressTest = lazy(() => import("./pages/StressTest"));
 const EventAttendance = lazy(() => import("./pages/EventAttendance"));
 const VolunteerManagement = lazy(() => import("./pages/VolunteerManagement"));
@@ -154,6 +155,7 @@ const App = () => {
             <Route path="/club/:clubId" element={<CommunityClubDetail />} />
             <Route path="/community/partner/:partnerId" element={<RequireAuth><CommunityPartnerDetail /></RequireAuth>} />
             <Route path="/help" element={<RequireAuth><VolunteerHelp /></RequireAuth>} />
+            <Route path="/club-help" element={<RequireAuth redirectTo="/club-login"><ClubHelp /></RequireAuth>} />
             <Route path="/stress-test" element={<RequireAuth redirectTo="/club-login"><StressTest /></RequireAuth>} />
             <Route path="/volunteer-management" element={<RequireAuth redirectTo="/club-login"><VolunteerManagement /></RequireAuth>} />
             <Route path="/my-clubs" element={<RequireAuth><MyClubs /></RequireAuth>} />
