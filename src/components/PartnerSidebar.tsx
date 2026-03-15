@@ -19,7 +19,7 @@ interface PartnerSidebarProps {
   tasksBadge?: number;
 }
 
-const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout, onOpenProfile }: PartnerSidebarProps) => {
+const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout, onOpenProfile, tasksBadge }: PartnerSidebarProps) => {
   const { setOpenMobile } = useSidebar();
   const { language } = useLanguage();
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
