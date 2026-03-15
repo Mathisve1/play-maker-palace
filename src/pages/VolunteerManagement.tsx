@@ -203,7 +203,8 @@ const VolunteerManagement = () => {
 
       const count = checkInCounts[p.id] || 0;
       const rd = ratingData[p.id];
-      const msId = membershipMap.get(p.id) || null;
+      const ms = membershipMap.get(p.id) || null;
+      const msId = ms?.id || null;
 
       return {
         id: p.id,
@@ -217,6 +218,8 @@ const VolunteerManagement = () => {
         review_count: rd?.count || 0,
         memberContractTypes: msId ? ctMap.get(msId) || [] : [],
         membership_id: msId,
+        joined_at: ms?.joined_at || null,
+        task_count: taskCounts[p.id] || 0,
       };
     });
 
