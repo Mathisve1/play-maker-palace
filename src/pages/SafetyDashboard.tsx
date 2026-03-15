@@ -1265,6 +1265,17 @@ const SafetyDashboard = () => {
             )}
             {isLive && (
               <Button
+                variant="destructive"
+                size="sm"
+                className="gap-1.5 font-bold"
+                onClick={() => setShowAlarmConfirm(true)}
+                disabled={sendingAlarm}
+              >
+                🚨 {t3('Stuur alarmmelding', 'Envoyer alerte', 'Send alarm')}
+              </Button>
+            )}
+            {isLive && (
+              <Button
                 variant="outline"
                 size="sm"
                 className="gap-1.5 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
