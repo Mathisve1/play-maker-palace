@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useActionCount } from '@/hooks/useActionCount';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
@@ -37,7 +38,7 @@ const ClubOwnerSidebar = ({
   const location = useLocation();
   const { setOpenMobile } = useSidebar();
   const { language } = useLanguage();
-  const [actionCount, setActionCount] = useState(0);
+  const { actionCount } = useActionCount(clubId || null);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -48,52 +49,7 @@ const ClubOwnerSidebar = ({
 
   useEffect(() => {
     if (!clubId) return;
-    const fetchCount = async () => {
-      let total = 0;
-
-      const [tasksRes, plansRes] = await Promise.all([
-        supabase.from('tasks').select('id, contract_template_id').eq('club_id', clubId).eq('status', 'open'),
-        supabase.from('monthly_plans').select('id, contract_template_id').eq('club_id', clubId).eq('status', 'published'),
-      ]);
-
-      const tasks = tasksRes.data;
-      const plans = plansRes.data;
-
-      // Task signups (pending) + contracts (assigned with template)
-      if (tasks && tasks.length > 0) {
-        const taskIds = tasks.map(t => t.id);
-        const { data: signups } = await supabase.from('task_signups').select('id, task_id, status').in('task_id', taskIds).in('status', ['pending', 'assigned']);
-        const tasksWithContract = new Set(tasks.filter(t => t.contract_template_id).map(t => t.id));
-        (signups || []).forEach(s => {
-          if (s.status === 'pending') total++;
-          if (s.status === 'assigned' && tasksWithContract.has(s.task_id)) total++;
-        });
-      }
-
-      // Monthly: enrollments (pending) + contracts (approved+pending contract) + day signups (pending) + tickets (assigned without barcode)
-      if (plans && plans.length > 0) {
-        const planIds = plans.map(p => p.id);
-        const { data: enrollments } = await supabase.from('monthly_enrollments').select('id, plan_id, approval_status, contract_status').in('plan_id', planIds);
-        const enrs = enrollments || [];
-        const plansWithContract = new Set(plans.filter(p => p.contract_template_id).map(p => p.id));
-
-        enrs.forEach(e => {
-          if (e.approval_status === 'pending') total++;
-          if (e.approval_status === 'approved' && e.contract_status === 'pending' && plansWithContract.has(e.plan_id)) total++;
-        });
-
-        if (enrs.length > 0) {
-          const enrIds = enrs.map(e => e.id);
-          const { data: daySignups } = await supabase.from('monthly_day_signups').select('id, status, ticket_barcode').in('enrollment_id', enrIds);
-          (daySignups || []).forEach(ds => {
-            if (ds.status === 'pending') total++;
-            if (ds.status === 'assigned' && !ds.ticket_barcode) total++;
-          });
-        }
-      }
-
-      setActionCount(total);
-
+    const fetchReviewCount = async () => {
       // Pending reviews: completed signups for club's tasks without a club review
       const { data: clubTasks } = await supabase.from('tasks').select('id').eq('club_id', clubId);
       if (clubTasks && clubTasks.length > 0) {
@@ -120,13 +76,11 @@ const ClubOwnerSidebar = ({
         setPendingReviewCount(0);
       }
     };
-    fetchCount();
+    fetchReviewCount();
 
     const channel = supabase
-      .channel('sidebar-action-count')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_signups' }, fetchCount)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_enrollments' }, fetchCount)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_day_signups' }, fetchCount)
+      .channel('sidebar-review-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_signups' }, fetchReviewCount)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
