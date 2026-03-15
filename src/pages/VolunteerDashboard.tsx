@@ -173,6 +173,7 @@ const VolunteerDashboard = () => {
   const [loyaltyPrograms, setLoyaltyPrograms] = useState<{ id: string; name: string; description: string | null; reward_description: string; required_tasks: number; required_points: number | null; points_based: boolean; club_id: string; club_name?: string }[]>([]);
   const [loyaltyEnrollments, setLoyaltyEnrollments] = useState<Record<string, { id: string; tasks_completed: number; points_earned: number; reward_claimed: boolean }>>({});
   const [enrollingProgram, setEnrollingProgram] = useState<string | null>(null);
+  const [badgeRefreshKey, setBadgeRefreshKey] = useState(0);
 
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
