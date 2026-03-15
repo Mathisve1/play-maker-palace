@@ -197,7 +197,7 @@ const AnalyticsDashboard = () => {
 
     // === KPIs ===
     const currentMonth = now.toISOString().slice(0, 7);
-    const activeThisMonth = new Set(signups.filter(s => s.signed_up_at.slice(0, 7) === currentMonth).map(s => s.volunteer_id)).size;
+    const activeThisMonth = (activeByMonth[currentMonth] || new Set()).size;
     const avgAtt = eventData.length > 0 ? Math.round(eventData.reduce((s, e) => s + e.rate, 0) / eventData.length) : 0;
     const latestRet = retMonths.length > 0 ? retMonths[retMonths.length - 1].rate : 0;
 
