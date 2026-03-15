@@ -3174,6 +3174,7 @@ export type Database = {
           bio: string | null
           city: string | null
           club_onboarding_step: string
+          compliance_blocked: boolean
           created_at: string
           date_of_birth: string | null
           email: string | null
@@ -3205,6 +3206,7 @@ export type Database = {
           bio?: string | null
           city?: string | null
           club_onboarding_step?: string
+          compliance_blocked?: boolean
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
@@ -3236,6 +3238,7 @@ export type Database = {
           bio?: string | null
           city?: string | null
           club_onboarding_step?: string
+          compliance_blocked?: boolean
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
