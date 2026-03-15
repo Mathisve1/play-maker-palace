@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
-import { Search, MapPin, Users, Heart, HeartOff, Trophy, Calendar, Building2, ArrowRight, Sparkles, Star } from 'lucide-react';
+import { Search, MapPin, Users, Heart, HeartOff, Trophy, Calendar, Building2, ArrowRight, Sparkles, Star, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
