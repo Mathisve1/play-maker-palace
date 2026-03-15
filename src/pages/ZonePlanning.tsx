@@ -5,7 +5,8 @@ import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Users, MapPin, Calendar, ChevronRight, ChevronDown, Loader2, X, UserPlus, UserMinus } from 'lucide-react';
+import { ArrowLeft, Users, MapPin, Calendar, ChevronRight, ChevronDown, Loader2, X, UserPlus, UserMinus, Eye, EyeOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { PageSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
