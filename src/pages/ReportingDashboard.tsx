@@ -7,7 +7,7 @@ import {
   ArrowLeft, BarChart3, Download, Filter, Loader2, PieChart, TrendingUp, Users,
   Calendar, Euro, AlertTriangle, CheckCircle2, XCircle, ClipboardCheck, Send,
   Bot, Sparkles, CreditCard, Hash, Target, Percent, Clock, MapPin, FileText,
-  Handshake, Shield, FileDown, Code2
+  Handshake, Shield, FileDown, Code2, Copy, FilePlus2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -114,6 +114,10 @@ const rl = {
     aiQ7: 'Geef een overzicht van onze maandelijkse kosten', aiQ8: 'Hoeveel contracten zijn al ondertekend?',
     aiQ9: 'Welke partners leveren de meeste medewerkers?', aiQ10: 'Hoeveel vrijwilligers zitten dicht bij de jaargrens?',
     aiQ11: 'Op welke dag van de week plannen we de meeste taken?', aiQ12: 'Hoeveel uur-bevestigingen staan nog open?',
+    aiSummaryTitle: 'AI Samenvatting', aiSummaryBtn: 'Genereer AI-samenvatting', aiSummaryRetry: 'Probeer later opnieuw',
+    aiSummaryCopy: 'Kopieer naar klembord', aiSummaryCopied: 'Gekopieerd!', aiSummaryAdd: 'Voeg toe aan rapport',
+    aiSummaryAdded: 'Samenvatting opgeslagen voor rapport',
+    aiSummaryPrompt: 'Geef een beknopte samenvatting van het seizoen in 3-4 zinnen. Vermeld: aantal actieve vrijwilligers, aantal evenementen, meest populaire taak, opkomstpercentage, en totale uitbetaling. Schrijf in een vriendelijke, professionele toon.',
   },
   fr: {
     reporting: 'Rapports', reportBuilder: 'Constructeur de rapports', filters: 'Filtres',
@@ -156,6 +160,10 @@ const rl = {
     aiQ7: 'Donnez un aperçu de nos coûts mensuels', aiQ8: 'Combien de contrats sont déjà signés ?',
     aiQ9: 'Quels partenaires fournissent le plus de personnel ?', aiQ10: 'Combien de bénévoles approchent la limite annuelle ?',
     aiQ11: 'Quel jour de la semaine planifions-nous le plus de tâches ?', aiQ12: 'Combien de confirmations d\'heures sont encore ouvertes ?',
+    aiSummaryTitle: 'Résumé IA', aiSummaryBtn: 'Générer un résumé IA', aiSummaryRetry: 'Réessayez plus tard',
+    aiSummaryCopy: 'Copier', aiSummaryCopied: 'Copié !', aiSummaryAdd: 'Ajouter au rapport',
+    aiSummaryAdded: 'Résumé enregistré pour le rapport',
+    aiSummaryPrompt: 'Donne un résumé concis de la saison en 3-4 phrases. Mentionne : nombre de bénévoles actifs, nombre d\'événements, tâche la plus populaire, taux de présence, et total payé. Écris en français dans un ton professionnel et amical.',
   },
   en: {
     reporting: 'Reporting', reportBuilder: 'Report Builder', filters: 'Filters',
@@ -198,6 +206,10 @@ const rl = {
     aiQ7: 'Give an overview of our monthly costs', aiQ8: 'How many contracts are already signed?',
     aiQ9: 'Which partners provide the most staff?', aiQ10: 'How many volunteers are close to the annual limit?',
     aiQ11: 'On which day of the week do we schedule the most tasks?', aiQ12: 'How many hour confirmations are still open?',
+    aiSummaryTitle: 'AI Summary', aiSummaryBtn: 'Generate AI summary', aiSummaryRetry: 'Try again later',
+    aiSummaryCopy: 'Copy to clipboard', aiSummaryCopied: 'Copied!', aiSummaryAdd: 'Add to report',
+    aiSummaryAdded: 'Summary saved for report',
+    aiSummaryPrompt: 'Give a concise season summary in 3-4 sentences. Mention: number of active volunteers, number of events, most popular task, attendance rate, and total paid out. Write in English in a friendly, professional tone.',
   },
 };
 
@@ -250,6 +262,9 @@ const ReportingDashboard = () => {
   const aiEndRef = useRef<HTMLDivElement>(null);
   const [selectedVolunteerProfile, setSelectedVolunteerProfile] = useState<VolunteerReport | null>(null);
   const [generatingSeasonReport, setGeneratingSeasonReport] = useState(false);
+  const [aiSummary, setAiSummary] = useState('');
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState(false);
 
   // ── Init ────────────────────────────────────────────────────────
   const { clubId: contextClubId } = useClubContext();
@@ -635,6 +650,59 @@ const ReportingDashboard = () => {
     return lines.join('\n');
   };
 
+  // ── AI summary generation ─────────────────────────────────────
+  const handleGenerateAiSummary = async () => {
+    if (aiSummaryLoading) return;
+    setAiSummaryLoading(true);
+    setAiSummaryError(false);
+    setAiSummary('');
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reporting-ai`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ question: L.aiSummaryPrompt, dataSummary: buildDataSummary() }),
+        }
+      );
+      if (!resp.ok) throw new Error('AI error');
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error('No reader');
+      const decoder = new TextDecoder();
+      let full = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+        for (const line of lines) {
+          const json = line.slice(6);
+          if (json === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(json);
+            const delta = parsed.choices?.[0]?.delta?.content || '';
+            full += delta;
+            setAiSummary(full);
+          } catch { /* skip */ }
+        }
+      }
+    } catch {
+      setAiSummaryError(true);
+    }
+    setAiSummaryLoading(false);
+  };
+
+  const handleCopyAiSummary = async () => {
+    await navigator.clipboard.writeText(aiSummary);
+    toast.success(L.aiSummaryCopied);
+  };
+
+  const handleAddSummaryToReport = () => {
+    // Store in localStorage for ReportBuilder to pick up
+    localStorage.setItem('report-ai-summary', aiSummary);
+    toast.success(L.aiSummaryAdded);
+  };
+
   // ── AI chat ───────────────────────────────────────────────────
   const handleAiQuestion = async () => {
     if (!aiQuestion.trim() || aiLoading) return;
@@ -943,6 +1011,55 @@ const ReportingDashboard = () => {
             </CardContent></Card>
           ))}
         </div>
+
+        {/* ── AI Summary Card ────────────────────────────────── */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="w-5 h-5 text-primary" />
+              {L.aiSummaryTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!aiSummary && !aiSummaryLoading && !aiSummaryError && (
+              <Button onClick={handleGenerateAiSummary} className="gap-2">
+                <Bot className="w-4 h-4" />
+                {L.aiSummaryBtn}
+              </Button>
+            )}
+            {aiSummaryLoading && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">{L.aiAnalyzing}</span>
+              </div>
+            )}
+            {aiSummaryError && (
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-destructive">{L.aiSummaryRetry}</p>
+                <Button variant="outline" size="sm" onClick={handleGenerateAiSummary}>{L.aiSummaryBtn}</Button>
+              </div>
+            )}
+            {aiSummary && (
+              <>
+                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{aiSummary}</p>
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopyAiSummary}>
+                    <Copy className="w-3.5 h-3.5" />
+                    {L.aiSummaryCopy}
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAddSummaryToReport}>
+                    <FilePlus2 className="w-3.5 h-3.5" />
+                    {L.aiSummaryAdd}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="gap-1.5" onClick={handleGenerateAiSummary}>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {L.aiSummaryBtn}
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         {/* ── Tabs ────────────────────────────────────────────── */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>

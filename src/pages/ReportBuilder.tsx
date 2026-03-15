@@ -73,6 +73,15 @@ const ReportBuilder = () => {
   const [exporting, setExporting] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
+  // Pick up AI summary from ReportingDashboard if available
+  useEffect(() => {
+    const saved = localStorage.getItem('report-ai-summary');
+    if (saved) {
+      localStorage.removeItem('report-ai-summary');
+      setWidgets(prev => [...prev, { id: genId(), type: 'text', data: { text: saved } }]);
+    }
+  }, []);
+
   const pushHistory = useCallback(() => {
     setHistory(prev => [...prev.slice(-30), widgets.map(w => ({ ...w, data: { ...w.data } }))]);
   }, [widgets]);
