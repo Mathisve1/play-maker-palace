@@ -801,7 +801,7 @@ const ReportingDashboard = () => {
         volMap.set(h.volunteer_id, existing);
       });
       (contracts || []).forEach((c: any) => { const v = volMap.get(c.volunteer_id); if (v) v.contractType = tmplCatMap.get(c.template_id) || ''; });
-      const taskTypeMap = new Map<string, SeasonReportTaskType>();
+      const taskTypeMap = new Map<string, any>();
       const taskTitleMap = new Map<string, string>();
       (seasonTasks || []).forEach((t: any) => taskTitleMap.set(t.id, t.title));
       (hourConfs || []).forEach((h: any) => {
