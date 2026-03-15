@@ -86,14 +86,13 @@ const VolunteerOnboardingWizard = ({
   // Load existing profile data
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.from('profiles').select('date_of_birth, phone, bank_iban, bank_holder_name, bank_bic, bank_name').eq('id', userId).maybeSingle();
+      const { data } = await supabase.from('profiles').select('date_of_birth, phone, bank_iban, bank_holder_name, bank_bic').eq('id', userId).maybeSingle();
       if (data) {
         if (data.date_of_birth) setDateOfBirth(data.date_of_birth);
         if (data.phone) setPhone(data.phone);
         if (data.bank_iban) { setIban(formatIban(data.bank_iban)); setIbanConfirm(formatIban(data.bank_iban)); }
         if (data.bank_holder_name) setBankHolder(data.bank_holder_name);
         if (data.bank_bic) setBic(data.bank_bic);
-        if (data.bank_name) setBankName(data.bank_name);
       }
     };
     load();
