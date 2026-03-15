@@ -339,19 +339,21 @@ const ClubInviteAccept = () => {
             </>
           )}
 
-          {status === 'success' && (
+          {status === 'success' && !isPartnerInvite && (
+            <SuccessContractTypePicker lang={lang} />
+          )}
+
+          {status === 'success' && isPartnerInvite && (
             <div className="text-center">
               <div className="text-4xl mb-3">🎉</div>
               <h2 className="text-xl font-heading font-bold text-foreground mb-2">
-                {isPartnerInvite
-                  ? t3('Welkom als partner!', 'Bienvenue en tant que partenaire !', 'Welcome as partner!', lang)
-                  : t3('Welkom bij de club!', 'Bienvenue dans le club !', 'Welcome to the club!', lang)}
+                {t3('Welkom als partner!', 'Bienvenue en tant que partenaire !', 'Welcome as partner!', lang)}
               </h2>
               <p className="text-muted-foreground">
                 {t3(
-                  `Je wordt doorgestuurd naar het ${isPartnerInvite ? 'partner' : 'club'} dashboard...`,
-                  `Redirection vers le tableau de bord ${isPartnerInvite ? 'partenaire' : 'du club'}...`,
-                  `Redirecting to ${isPartnerInvite ? 'partner' : 'club'} dashboard...`,
+                  'Je wordt doorgestuurd naar het partner dashboard...',
+                  'Redirection vers le tableau de bord partenaire...',
+                  'Redirecting to partner dashboard...',
                   lang
                 )}
               </p>
