@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileSignature, CheckCircle, Clock, Download, ExternalLink } from 'lucide-react';
+import { FileSignature, CheckCircle, Clock, Download, ExternalLink, CalendarDays } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 
