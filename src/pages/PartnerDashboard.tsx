@@ -310,10 +310,6 @@ const PartnerDashboard = () => {
   const acceptedTasks = clubTasks.filter(t => t.partner_acceptance_status === 'accepted');
   const rejectedTasks = clubTasks.filter(t => t.partner_acceptance_status === 'rejected');
 
-  const now48hAgo = useMemo(() => new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), []);
-  const recentlyModifiedCount = useMemo(() =>
-    clubTasks.filter(t => t.updated_at && t.updated_at > now48hAgo).length
-  , [clubTasks, now48hAgo]);
 
   const isRecentlyModified = (task: ClubTask) =>
     task.updated_at != null && task.updated_at > now48hAgo;
