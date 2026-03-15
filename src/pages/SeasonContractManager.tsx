@@ -437,6 +437,7 @@ const SeasonContractManager = () => {
               )}
             </TabsContent>
           </Tabs>
+          </>
         )}
       </div>
 
