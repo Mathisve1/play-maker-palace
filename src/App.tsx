@@ -8,7 +8,6 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 import IOSInstallOverlay from "@/components/IOSInstallOverlay";
 import { autoResubscribeIfNeeded } from "@/lib/pushNotifications";
 import SentryErrorBoundary from "@/components/SentryErrorBoundary";
-import { autoResubscribeIfNeeded } from "@/lib/pushNotifications";
 
 import RequireAuth from "./components/RequireAuth";
 import { Loader2 } from "lucide-react";
