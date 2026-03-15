@@ -70,6 +70,7 @@ const labels = {
     active: 'Actif',
     blocked: 'Bloqué',
     yearlyLimit: 'Plafond annuel 2026',
+    trainings: 'Formations',
     totalVolunteers: 'Bénévoles',
     greenCount: 'Légal',
     orangeCount: 'Attention',
