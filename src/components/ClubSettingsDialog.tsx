@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, Upload, Save } from 'lucide-react';
+import { X, Upload, Save, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 interface ClubInfo {
