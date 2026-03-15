@@ -256,6 +256,23 @@ const VolunteerManagement = () => {
     setShowSendContract(true);
   };
 
+  const handleBulkSetContractType = async () => {
+    if (bulkContractTypes.size === 0 || selectedIds.size === 0) return;
+    const vols = volunteers.filter(v => selectedIds.has(v.id) && v.membership_id);
+    let success = 0;
+    for (const vol of vols) {
+      await supabase.from('member_contract_types' as any).delete().eq('membership_id', vol.membership_id);
+      const inserts = Array.from(bulkContractTypes).map(ct => ({ membership_id: vol.membership_id, contract_type: ct }));
+      const { error } = await supabase.from('member_contract_types' as any).insert(inserts);
+      if (!error) success++;
+    }
+    toast.success(t(`${success} vrijwilligers bijgewerkt`, `${success} bénévoles mis à jour`, `${success} volunteers updated`));
+    setShowBulkContractType(false);
+    setBulkContractTypes(new Set());
+    setSelectedIds(new Set());
+    loadData();
+  };
+
   return (
     <ClubPageLayout>
       <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-6">
