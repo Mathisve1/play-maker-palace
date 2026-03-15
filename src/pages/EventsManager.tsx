@@ -1076,7 +1076,7 @@ const EventsManager = () => {
                   <DropdownMenuItem onClick={() => handleStartEditEvent(event)}>
                     <Pencil className="w-4 h-4 mr-2" /> {nl ? 'Bewerken' : 'Edit'}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDuplicateEvent(event.id)} disabled={duplicatingEvent === event.id}>
+                  <DropdownMenuItem onClick={() => openDuplicateDialog(event.id)} disabled={duplicatingEvent === event.id}>
                     {duplicatingEvent === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />} {nl ? 'Dupliceren' : 'Duplicate'}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleSaveAsTemplate(event.id)} disabled={savingTemplate === event.id}>
