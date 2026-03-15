@@ -760,7 +760,9 @@ const AcademyBuilder = () => {
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editCertDesignId, setEditCertDesignId] = useState<string>('');
+  const [editRequiredForCompliance, setEditRequiredForCompliance] = useState(false);
   const [certDesigns, setCertDesigns] = useState<{ id: string; name: string }[]>([]);
+  const [requiredTrainingIds, setRequiredTrainingIds] = useState<Set<string>>(new Set());
   // AI Assistant state
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [aiTopic, setAiTopic] = useState('');
