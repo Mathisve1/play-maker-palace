@@ -32,6 +32,7 @@ import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import VolunteerOnboardingWizard from '@/components/VolunteerOnboardingWizard';
+import VolunteerOnboardingTour from '@/components/VolunteerOnboardingTour';
 import VolunteerSeasonOverview from '@/components/VolunteerSeasonOverview';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import VolunteerBadges from '@/components/VolunteerBadges';
