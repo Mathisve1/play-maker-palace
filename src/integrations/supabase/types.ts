@@ -652,6 +652,7 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          planned_send_at: string | null
           task_id: string
           title: string
           updated_at: string
@@ -661,6 +662,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          planned_send_at?: string | null
           task_id: string
           title?: string
           updated_at?: string
@@ -670,6 +672,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          planned_send_at?: string | null
           task_id?: string
           title?: string
           updated_at?: string
