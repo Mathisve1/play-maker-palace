@@ -144,7 +144,6 @@ const VolunteerOnboardingWizard = ({
         bank_iban: iban.replace(/\s/g, ''),
         bank_holder_name: bankHolder,
         bank_bic: bic,
-        bank_name: bankName,
       }).eq('id', userId);
       setSaving(false);
     }
