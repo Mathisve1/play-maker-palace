@@ -9,7 +9,7 @@ import {
   ArrowLeft, Download, FileSignature, Loader2, AlertTriangle,
   CheckCircle, Clock, Building2, Users, Euro, Search, Ban,
   FileText, History, ChevronDown, ChevronUp, RotateCcw, Flag,
-  FileSpreadsheet, AlertCircle
+  FileSpreadsheet, AlertCircle, Zap, ShieldAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
