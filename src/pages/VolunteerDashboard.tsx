@@ -842,6 +842,7 @@ const VolunteerDashboard = () => {
           )}
           <VolunteerTasksList
             language={language}
+            currentUserId={currentUserId}
             activeTab={activeTab as 'all' | 'mine'}
             mineSubTab={mineSubTab}
             setMineSubTab={setMineSubTab}
@@ -861,6 +862,11 @@ const VolunteerDashboard = () => {
             onLikeToggle={handleLikeToggle}
             onSignContract={handleSignContract}
             onSelectEvent={(event) => setSelectedEvent(event)}
+            onSignupComplete={() => {
+              // Refresh signups after quick signup
+              supabase.from('task_signups').select('*').eq('volunteer_id', currentUserId)
+                .then(({ data }) => { if (data) setSignups(data as TaskSignup[]); });
+            }}
           />
         </>
       )}
