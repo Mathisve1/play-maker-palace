@@ -267,9 +267,9 @@ const Community = () => {
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.location?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchSport = filterSport === '__all__' || c.sport?.toLowerCase() === filterSport.toLowerCase();
-    const matchCity = !cityQuery || c.location?.toLowerCase().includes(cityQuery.toLowerCase());
-    const matchOpen = !openOnly || c.task_count > 0;
-    return matchSearch && matchSport && matchCity && matchOpen;
+    const matchProvince = filterProvince === '__all__' || c.location?.toLowerCase().includes(filterProvince.toLowerCase());
+    const matchSeeking = !seekingVolunteers || c.upcoming_task_count > 0;
+    return matchSearch && matchSport && matchProvince && matchSeeking;
   });
 
   // Recommended: clubs in same city, not yet following, max 3
