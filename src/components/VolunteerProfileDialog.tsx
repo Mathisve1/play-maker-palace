@@ -140,7 +140,7 @@ const VolunteerProfileDialog = ({
   signedUpAt,
 }: VolunteerProfileDialogProps) => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
-
+  const [ratingInfo, setRatingInfo] = useState<{ avg: number; count: number } | null>(null);
   useEffect(() => {
     if (!volunteer?.id || !open) { setCertificates([]); return; }
     (async () => {
