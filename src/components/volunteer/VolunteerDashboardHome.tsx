@@ -112,6 +112,28 @@ const VolunteerDashboardHome = ({
     checkBriefings();
   }, [currentUserId, signups, tasks]);
 
+  // Fetch zone assignments for upcoming tasks
+  useEffect(() => {
+    if (!currentUserId || signups.length === 0) return;
+    const fetchZones = async () => {
+      const myTaskIds = signups.filter(s => s.status === 'assigned' || s.status === 'pending').map(s => s.task_id);
+      if (myTaskIds.length === 0) return;
+      const { data: zones } = await supabase.from('task_zones').select('id, name, task_id').in('task_id', myTaskIds);
+      if (!zones || zones.length === 0) return;
+      const zoneIds = zones.map(z => z.id);
+      const { data: assignments } = await supabase.from('task_zone_assignments').select('zone_id').eq('volunteer_id', currentUserId).in('zone_id', zoneIds);
+      if (!assignments || assignments.length === 0) return;
+      const zoneMap = new Map(zones.map(z => [z.id, z]));
+      const result: Record<string, string> = {};
+      assignments.forEach(a => {
+        const zone = zoneMap.get(a.zone_id);
+        if (zone) result[zone.task_id] = zone.name;
+      });
+      setZoneAssignments(result);
+    };
+    fetchZones();
+  }, [currentUserId, signups]);
+
   // Check for active safety incidents on today's events
   useEffect(() => {
     if (!currentUserId || signups.length === 0) return;
