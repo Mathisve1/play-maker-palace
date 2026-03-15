@@ -994,6 +994,9 @@ const EventsManager = () => {
                 <button onClick={() => setSafetyConfigEvent({ eventId: event.id, clubId: event.club_id })} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-accent transition-colors touch-target">
                   <Shield className="w-3.5 h-3.5" /> {nl ? 'Safety Rollen' : 'Safety Roles'}
                 </button>
+                <button onClick={() => setBulkMessageEventId(event.id)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-accent transition-colors touch-target">
+                  <Send className="w-3.5 h-3.5" /> {nl ? 'Stuur bericht' : fr ? 'Envoyer message' : 'Send message'}
+                </button>
               </div>
 
               <DropdownMenu>
