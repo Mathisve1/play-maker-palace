@@ -321,6 +321,9 @@ const SeasonContractManager = () => {
               <TabsTrigger value="overview">{t('Actief seizoen', 'Saison active', 'Active season')}</TabsTrigger>
               <TabsTrigger value="send">{t('Contracten versturen', 'Envoyer contrats', 'Send contracts')}</TabsTrigger>
               <TabsTrigger value="signed">{t('Ondertekend', 'Signés', 'Signed')}</TabsTrigger>
+              {archivedSeasons.length > 0 && (
+                <TabsTrigger value="archived">{t('Vorige seizoenen', 'Saisons précédentes', 'Previous seasons')}</TabsTrigger>
+              )}
             </TabsList>
 
             {/* Tab 1: Active season overview */}
