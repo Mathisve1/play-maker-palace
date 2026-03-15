@@ -1064,6 +1064,9 @@ const EventsManager = () => {
                 <button onClick={() => setBulkMessageEventId(event.id)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-accent transition-colors touch-target">
                   <Send className="w-3.5 h-3.5" /> {nl ? 'Stuur bericht' : fr ? 'Envoyer message' : 'Send message'}
                 </button>
+                <button onClick={() => loadTaskSetsForPicker(event.id)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-accent text-accent-foreground hover:bg-accent/80 transition-colors touch-target">
+                  <FileText className="w-3.5 h-3.5" /> {t3('Taken uit set', 'Tâches depuis ensemble', 'Tasks from set')}
+                </button>
               </div>
 
               <DropdownMenu>
