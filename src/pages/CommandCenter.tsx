@@ -64,6 +64,7 @@ const CommandCenter = () => {
   const [tomorrowReminders, setTomorrowReminders] = useState<{ taskId: string; taskTitle: string; count: number }[]>([]);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
   const [showBulkMessage, setShowBulkMessage] = useState(false);
+  const [unsignedContractCount, setUnsignedContractCount] = useState(0);
 
   const t = language === 'nl' ? {
     title: 'Actielijst',
@@ -309,6 +310,41 @@ const CommandCenter = () => {
       setTomorrowReminders(reminders);
     };
     loadReminders();
+
+    // Load unsigned season contract count
+    const loadUnsignedContracts = async () => {
+      // Get active season
+      const { data: season } = await supabase
+        .from('seasons')
+        .select('id')
+        .eq('club_id', contextClubId)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!season) { setUnsignedContractCount(0); return; }
+
+      // Get members
+      const { data: members } = await supabase
+        .from('club_members')
+        .select('user_id')
+        .eq('club_id', contextClubId);
+
+      if (!members || members.length === 0) { setUnsignedContractCount(0); return; }
+
+      // Get signed contracts for this season
+      const { data: signedContracts } = await supabase
+        .from('season_contracts')
+        .select('volunteer_id')
+        .eq('club_id', contextClubId)
+        .eq('season_id', season.id)
+        .eq('status', 'signed');
+
+      const signedSet = new Set((signedContracts || []).map(c => c.volunteer_id));
+      const unsigned = members.filter(m => !signedSet.has(m.user_id)).length;
+      setUnsignedContractCount(unsigned);
+    };
+    loadUnsignedContracts();
   }, [contextClubId]);
 
   // Realtime subscriptions for live updates (debounced)
@@ -579,6 +615,31 @@ const CommandCenter = () => {
                 </Button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Unsigned season contracts alert */}
+        {unsignedContractCount > 0 && (
+          <div
+            onClick={() => navigate('/season-contracts')}
+            className="flex items-center gap-3 bg-card border border-yellow-500/30 rounded-xl p-3 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="w-9 h-9 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
+              <FileSignature className="w-4 h-4 text-yellow-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                {unsignedContractCount} {t3(
+                  'vrijwilliger(s) hebben hun seizoenscontract nog niet ondertekend',
+                  'bénévole(s) n\'ont pas encore signé leur contrat saisonnier',
+                  'volunteer(s) haven\'t signed their season contract yet'
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t3('Klik om naar contracten te gaan', 'Cliquez pour voir les contrats', 'Click to view contracts')}
+              </p>
+            </div>
+            <Badge variant="secondary" className="shrink-0">{unsignedContractCount}</Badge>
           </div>
         )}
 

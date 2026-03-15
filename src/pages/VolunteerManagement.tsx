@@ -9,19 +9,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag } from 'lucide-react';
+import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
 import ContractTypePicker, { ContractTypeKey, CONTRACT_TYPES } from '@/components/ContractTypePicker';
+import ContractStatusIndicator from '@/components/ContractStatusIndicator';
 
 interface VolunteerRow {
   id: string;
   full_name: string;
   email: string;
   avatar_url: string | null;
-  contracts: { id: string; status: string; category: string; template_name: string }[];
+  contracts: { id: string; status: string; category: string; template_name: string; signing_url: string | null; signed_at: string | null }[];
   check_in_count: number;
   is_paying: boolean;
   avg_rating: number | null;
@@ -101,7 +102,7 @@ const VolunteerManagement = () => {
 
     // Parallel: contracts, templates, check-ins, club members, memberships
     const [contractsRes, templatesRes, checkInsRes, membersRes, membershipsRes] = await Promise.all([
-      supabase.from('season_contracts').select('id, volunteer_id, status, template_id').eq('club_id', clubId),
+      supabase.from('season_contracts').select('id, volunteer_id, status, template_id, signing_url, signed_at').eq('club_id', clubId),
       supabase.from('season_contract_templates').select('id, name, category').or(`club_id.eq.${clubId},is_system.eq.true`),
       season
         ? supabase.from('season_checkins').select('volunteer_id, season_contract_id').eq('club_id', clubId)
@@ -176,6 +177,8 @@ const VolunteerManagement = () => {
             status: c.status,
             category: tmpl?.category || 'event_support',
             template_name: tmpl?.name || 'Contract',
+            signing_url: (c as any).signing_url || null,
+            signed_at: (c as any).signed_at || null,
           };
         });
 
@@ -453,6 +456,15 @@ const VolunteerManagement = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Contract status indicator */}
+                  <ContractStatusIndicator
+                    contracts={vol.contracts}
+                    volunteerId={vol.id}
+                    volunteerName={vol.full_name}
+                    language={language}
+                    onResend={(id) => openSendDialog([id])}
+                  />
 
                   {/* Contract badges */}
                   <div className="hidden md:flex items-center gap-1.5 flex-wrap">
