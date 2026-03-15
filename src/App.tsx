@@ -92,11 +92,25 @@ const queryClient = new QueryClient({
   },
 });
 
+/** Route-aware Crisp visibility controller */
+const CrispRouteGuard = () => {
+  const location = useLocation();
+  useEffect(() => {
+    crispShowHideForRoute(location.pathname);
+  }, [location.pathname]);
+  return null;
+};
+
 const App = () => {
   // Auto-resubscribe push if user has push enabled but subscription was cleared
   useEffect(() => {
     const timer = setTimeout(() => autoResubscribeIfNeeded(), 2000);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Initialize Crisp live chat
+  useEffect(() => {
+    initCrisp();
   }, []);
 
   return (
