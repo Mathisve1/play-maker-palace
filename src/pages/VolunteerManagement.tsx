@@ -538,6 +538,18 @@ const VolunteerManagement = () => {
             ))}
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="season">
+            {clubId && activeSeason ? (
+              <SeasonOverviewTab clubId={clubId} seasonId={activeSeason.id} language={language} />
+            ) : (
+              <div className="text-center py-16 text-muted-foreground">
+                <p>{t('Geen actief seizoen gevonden', 'Aucune saison active', 'No active season found')}</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Dialogs */}
