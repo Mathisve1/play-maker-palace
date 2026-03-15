@@ -385,6 +385,16 @@ const ComplianceDashboard = () => {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
+                        {vol.trainingRequired! > 0 && (
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                            vol.trainingCompleted === vol.trainingRequired
+                              ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400'
+                              : 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+                          }`}>
+                            <BookOpen className="w-3 h-3 inline mr-0.5" />
+                            {vol.trainingCompleted}/{vol.trainingRequired} {vol.trainingCompleted === vol.trainingRequired ? '✅' : ''}
+                          </span>
+                        )}
                         {compliance?.declarationsPending && (
                           <Badge variant="secondary" className="gap-1 text-[10px]">
                             <Clock className="w-3 h-3" />

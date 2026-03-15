@@ -9,7 +9,7 @@ import {
   ChevronDown, ChevronUp, Eye, EyeOff, Loader2, ArrowLeft, Award, Save, Users,
   HelpCircle, Copy, Type, Heading1, Heading2, Minus, AlignLeft, AlignCenter, AlignRight,
   Bold, Italic, Palette, Youtube, Upload, ToggleLeft, ToggleRight, CheckSquare, Square,
-  Wand2, Bot, MessageSquare, CalendarDays, MapPin, UserCheck, QrCode, Send
+  Wand2, Bot, MessageSquare, CalendarDays, MapPin, UserCheck, QrCode, Send, ShieldCheck
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { useClubContext } from '@/contexts/ClubContext';
