@@ -516,7 +516,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
 
                 <div className="flex items-center gap-2 shrink-0">
                   {canManage && member.user_id !== currentUserId ? (
-                    <div className="relative">
+                    <div className="relative" ref={showRoleDropdown === member.id ? roleDropdownRef : undefined}>
                       <button
                         onClick={() => setShowRoleDropdown(showRoleDropdown === member.id ? null : member.id)}
                         className={`px-2.5 py-1 text-xs rounded-full font-medium flex items-center gap-1 ${roleColors[member.role]}`}
