@@ -298,12 +298,18 @@ const VolunteerManagement = () => {
               </Button>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {selectedIds.size > 0 && (
-              <Button onClick={() => openSendDialog()} className="gap-2">
-                <Send className="w-4 h-4" />
-                {t(`Contract versturen (${selectedIds.size})`, `Envoyer contrat (${selectedIds.size})`, `Send contract (${selectedIds.size})`)}
-              </Button>
+              <>
+                <Button onClick={() => openSendDialog()} className="gap-2">
+                  <Send className="w-4 h-4" />
+                  {t(`Contract versturen (${selectedIds.size})`, `Envoyer contrat (${selectedIds.size})`, `Send contract (${selectedIds.size})`)}
+                </Button>
+                <Button variant="outline" onClick={() => setShowBulkContractType(true)} className="gap-2">
+                  <Tag className="w-4 h-4" />
+                  {t('Stel contracttype in', 'Définir type', 'Set contract type')}
+                </Button>
+              </>
             )}
             <Button variant="outline" size="sm" onClick={loadData}>
               {t('Vernieuwen', 'Actualiser', 'Refresh')}
