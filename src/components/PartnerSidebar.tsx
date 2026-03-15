@@ -58,6 +58,9 @@ const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout, onOpen
                 <SidebarMenuButton isActive={activeTab === 'tasks'} onClick={() => handleNav('tasks')} className="min-h-[48px]">
                   <ClipboardList className="w-5 h-5" />
                   <span>{t3('Taken', 'Tâches', 'Tasks')}</span>
+                  {tasksBadge != null && tasksBadge > 0 && (
+                    <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-amber-500 text-white">{tasksBadge}</span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
