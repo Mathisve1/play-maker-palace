@@ -595,8 +595,10 @@ const VolunteerDashboard = () => {
     const { error } = await supabase.from('task_signups').insert({ task_id: taskId, volunteer_id: currentUserId });
     if (error) { toast.error(error.message); } else {
       toast.success(t.volunteer.step3Title + '!');
+      toast.info(language === 'nl' ? 'Taak ingeschreven! Je punten worden bijgewerkt.' : language === 'fr' ? 'Tâche inscrite ! Vos points seront mis à jour.' : 'Task signed up! Your points will be updated.');
       setSignups(prev => [...prev, { task_id: taskId, status: 'pending' }]);
       setSignupCounts(prev => ({ ...prev, [taskId]: (prev[taskId] || 0) + 1 }));
+      setBadgeRefreshKey(k => k + 1);
     }
     setSigningUp(null);
   };
