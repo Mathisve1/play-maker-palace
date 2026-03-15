@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, Upload, Save } from 'lucide-react';
+import { X, Upload, Save, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 interface ClubInfo {
@@ -16,9 +16,10 @@ interface Props {
   clubInfo: ClubInfo;
   onClose: () => void;
   onUpdated: (info: ClubInfo) => void;
+  onRestartOnboarding?: () => void;
 }
 
-const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => {
+const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated, onRestartOnboarding }: Props) => {
   const { language } = useLanguage();
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [name, setName] = useState(clubInfo.name);
@@ -181,18 +182,29 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => 
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
-            {t3('Annuleren', 'Annuler', 'Cancel')}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || !name.trim()}
-            className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : t3('Opslaan', 'Enregistrer', 'Save')}
-          </button>
+        <div className="flex items-center justify-between mt-6">
+          {onRestartOnboarding && (
+            <button
+              onClick={onRestartOnboarding}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              {t3('Onboarding opnieuw starten', "Relancer l'onboarding", 'Restart onboarding')}
+            </button>
+          )}
+          <div className="flex gap-3 ml-auto">
+            <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
+              {t3('Annuleren', 'Annuler', 'Cancel')}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !name.trim()}
+              className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : t3('Opslaan', 'Enregistrer', 'Save')}
+            </button>
+          </div>
         </div>
       </div>
     </div>

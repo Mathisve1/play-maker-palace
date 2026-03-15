@@ -36,6 +36,7 @@ const BriefingProgressDialog = lazy(() => import('@/components/BriefingProgressD
 const TaskPickerDialog = lazy(() => import('@/components/TaskPickerDialog'));
 const EditProfileDialog = lazy(() => import('@/components/EditProfileDialog'));
 const VolunteerMatcher = lazy(() => import('@/components/VolunteerMatcher'));
+const ClubOnboardingWizard = lazy(() => import('@/components/ClubOnboardingWizard'));
 
 interface VolunteerProfile {
   id: string;
@@ -343,6 +344,8 @@ const ClubOwnerDashboard = () => {
   const [showBriefingTaskPicker, setShowBriefingTaskPicker] = useState(false);
   const [showProgressTaskPicker, setShowProgressTaskPicker] = useState(false);
   const [complianceMap, setComplianceMap] = useState<Map<string, ComplianceStatus>>(new Map());
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
 
   // Events state
   const [events, setEvents] = useState<EventData[]>([]);
@@ -419,6 +422,19 @@ const ClubOwnerDashboard = () => {
       setPendingTicketCount(0);
     }
   }, []);
+
+  // Check onboarding status
+  useEffect(() => {
+    if (contextLoading || !currentUserId || onboardingChecked) return;
+    const checkOnboarding = async () => {
+      const { data } = await supabase.from('profiles').select('club_onboarding_step').eq('id', currentUserId).maybeSingle();
+      if (data && (data as any).club_onboarding_step !== 'completed') {
+        setShowOnboarding(true);
+      }
+      setOnboardingChecked(true);
+    };
+    checkOnboarding();
+  }, [contextLoading, currentUserId, onboardingChecked]);
 
   useEffect(() => {
     if (contextLoading || !clubId || !currentUserId) return;
@@ -1312,7 +1328,13 @@ const ClubOwnerDashboard = () => {
       {/* Dialogs — wrapped in Suspense for lazy-loaded components */}
       <Suspense fallback={null}>
         {showSettings && clubId && clubInfo && (
-          <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => { /* updates handled by ClubContext refresh */ }} />
+          <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => { /* updates handled by ClubContext refresh */ }}
+            onRestartOnboarding={async () => {
+              await supabase.from('profiles').update({ club_onboarding_step: 'welcome' }).eq('id', currentUserId);
+              setShowOnboarding(true);
+              setShowSettings(false);
+            }}
+          />
         )}
         {showMembers && clubId && (
           <ClubMembersDialog clubId={clubId} currentUserId={currentUserId} isOwner={isOwner} currentUserRole={myClubRole} onClose={() => setShowMembers(false)} />
@@ -1404,6 +1426,11 @@ const ClubOwnerDashboard = () => {
             onOpenChange={(open) => { if (!open) setMatcherTask(null); }}
             task={{ id: matcherTask.id, title: matcherTask.title, task_date: matcherTask.task_date || null, start_time: null, end_time: null, location: matcherTask.location || null, club_id: matcherTask.club_id || clubId || '' }}
           />
+        </Suspense>
+      )}
+      {showOnboarding && (
+        <Suspense fallback={null}>
+          <ClubOnboardingWizard onComplete={() => setShowOnboarding(false)} />
         </Suspense>
       )}
     </DashboardLayout>
