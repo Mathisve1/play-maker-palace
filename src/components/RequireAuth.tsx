@@ -96,6 +96,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       if (event === 'SIGNED_OUT') {
         if (cancelled) return;
         Sentry.setUser(null);
+        resetUser();
         initialAuthResolved.current = true;
         setAuthenticatedUserId(null);
         setChecked(true);

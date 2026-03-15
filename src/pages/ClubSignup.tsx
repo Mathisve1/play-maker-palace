@@ -115,6 +115,7 @@ const ClubSignup = () => {
         'Compte et club créés ! Vous pouvez maintenant vous connecter.',
         'Account and club created! You can now log in.'
       ));
+      trackEvent('club_signup_completed');
       navigate('/club-login');
     } catch {
       toast.error(t3('Er ging iets mis bij de registratie', 'Erreur lors de l\'inscription', 'Something went wrong during registration'));

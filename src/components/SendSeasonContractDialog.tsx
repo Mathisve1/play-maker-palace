@@ -139,6 +139,7 @@ const SendSeasonContractDialog = ({ open, onClose, clubId, seasonId, language, v
         `${sent} contrat(s) envoyé(s)`,
         `${sent} contract(s) sent`
       ));
+      trackEvent('season_contract_sent', { count: sent });
       onSent();
     }
     if (newErrors.length === 0) onClose();

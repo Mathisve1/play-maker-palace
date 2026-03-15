@@ -626,6 +626,7 @@ const VolunteerDashboard = () => {
       else { toast.error(error.message); }
     } else if (data) {
       toast.success(language === 'nl' ? 'Ingeschreven voor loyaliteitsprogramma!' : language === 'fr' ? 'Inscrit au programme de fidélité!' : 'Enrolled in loyalty program!');
+      trackEvent('loyalty_program_enrolled', { program_id: programId });
       setLoyaltyEnrollments(prev => ({ ...prev, [programId]: { id: data.id, tasks_completed: 0, points_earned: 0, reward_claimed: false } }));
     }
     setEnrollingProgram(null);

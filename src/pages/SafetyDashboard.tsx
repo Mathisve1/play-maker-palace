@@ -440,6 +440,7 @@ const SafetyDashboard = () => {
     setStep2Mode(true);
     setShowIncidentGrid(false);
     toast.success(t3('⚡ Melding direct verstuurd met GPS!', '⚡ Signalement envoyé avec GPS !', '⚡ Report sent instantly with GPS!'));
+    trackEvent('safety_incident_created', { event_id: eventId });
     setReporting(false);
 
     // Push to safety team + club admin
