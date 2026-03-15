@@ -566,6 +566,25 @@ const VolunteerDashboard = () => {
     };
   }, [currentUserId, navigate]);
 
+  // Check for active safety incidents on volunteer's today events
+  useEffect(() => {
+    if (!currentUserId) return;
+    const check = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: mySignups } = await supabase.from('task_signups').select('task_id').eq('volunteer_id', currentUserId).eq('status', 'assigned');
+      if (!mySignups?.length) return;
+      const { data: myTasks } = await supabase.from('tasks').select('event_id').in('id', mySignups.map(s => s.task_id)).not('event_id', 'is', null);
+      const eventIds = [...new Set((myTasks || []).map(t => t.event_id).filter(Boolean) as string[])];
+      if (eventIds.length === 0) return;
+      // Filter to today's events
+      const { data: todayEvents } = await supabase.from('events').select('id').in('id', eventIds).gte('event_date', today).lte('event_date', today + 'T23:59:59');
+      if (!todayEvents?.length) return;
+      const { data: incidents } = await supabase.from('safety_incidents').select('id').in('event_id', todayEvents.map(e => e.id)).neq('status', 'opgelost').limit(1);
+      setSafetyAlertActive((incidents?.length || 0) > 0);
+    };
+    check();
+  }, [currentUserId]);
+
   // ===== HANDLERS =====
   const handleSignup = async (taskId: string) => {
     if (!currentUserId) return;
