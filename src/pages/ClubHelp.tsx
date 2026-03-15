@@ -555,6 +555,10 @@ const ClubHelp = () => {
               <Globe className="w-4 h-4" />
               Community
             </Button>
+            <Button className="gap-2" onClick={() => crispOpen()}>
+              <MessageCircle className="w-4 h-4" />
+              {language === 'nl' ? 'Chat met support' : language === 'fr' ? 'Chatter avec le support' : 'Chat with support'}
+            </Button>
           </div>
         </motion.div>
 
