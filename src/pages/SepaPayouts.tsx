@@ -112,6 +112,26 @@ const SepaPayouts = () => {
   const [rollbackSigningUrl, setRollbackSigningUrl] = useState<string | null>(null);
   const [rollbackBatchId, setRollbackBatchId] = useState<string | null>(null);
   const [showRollbackSigningDialog, setShowRollbackSigningDialog] = useState(false);
+  const [smartBatchLoading, setSmartBatchLoading] = useState(false);
+  const [showSmartPreview, setShowSmartPreview] = useState(false);
+  const [smartBatchItems, setSmartBatchItems] = useState<Array<{
+    volunteerId: string;
+    fullName: string;
+    email: string;
+    avatarUrl: string | null;
+    iban: string;
+    bic: string;
+    holderName: string;
+    amount: number;
+    hours: number;
+    taskTitle: string;
+    taskId: string;
+    taskDate: string | null;
+    compensationType: string;
+    hourConfirmationId: string;
+    seasonTotal: number;
+    exceedsPlafond: boolean;
+  }>>([]);
 
   useEffect(() => {
     init();
