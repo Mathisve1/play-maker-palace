@@ -26,6 +26,7 @@ const SeasonContractManager = () => {
   // Active season
   const [activeSeason, setActiveSeason] = useState<any>(null);
   const [contractStats, setContractStats] = useState<Record<string, number>>({});
+  const [attendanceKpis, setAttendanceKpis] = useState<{ totalTasks: number; avgAttendance: number; totalCompensation: number }>({ totalTasks: 0, avgAttendance: 0, totalCompensation: 0 });
 
   // Volunteers without contract
   const [volunteers, setVolunteers] = useState<any[]>([]);
