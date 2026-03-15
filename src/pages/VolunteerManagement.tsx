@@ -26,6 +26,8 @@ interface VolunteerRow {
   is_paying: boolean;
   avg_rating: number | null;
   review_count: number;
+  memberContractTypes: ContractTypeKey[];
+  membership_id: string | null;
 }
 
 const VolunteerManagement = () => {
