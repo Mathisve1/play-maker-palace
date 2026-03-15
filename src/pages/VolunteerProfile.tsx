@@ -283,9 +283,6 @@ const VolunteerProfile = () => {
               <h1 className="text-2xl font-heading font-bold text-foreground">{profile.full_name || l.notFound}</h1>
               {profile.bio && <p className="text-sm text-muted-foreground mt-1 italic">"{profile.bio}"</p>}
               <div className="flex flex-wrap justify-center sm:justify-start gap-3 mt-3 text-xs text-muted-foreground">
-                {profile.city && (
-                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{profile.city}</span>
-                )}
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
                   {l.memberSince} {new Date(profile.created_at).toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
