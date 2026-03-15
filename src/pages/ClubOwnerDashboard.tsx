@@ -1343,6 +1343,42 @@ const ClubOwnerDashboard = () => {
             )}
           />
         )}
+
+        {/* Compliance warning cards */}
+        {(() => {
+          let orangeCount = 0;
+          let redCount = 0;
+          complianceMap.forEach((c) => {
+            if (c.status === 'red') redCount++;
+            else if (c.status === 'orange') orangeCount++;
+          });
+          return (
+            <>
+              {redCount > 0 && (
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  onClick={() => navigate('/compliance')}
+                  className="w-full rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-left hover:bg-destructive/15 transition-colors"
+                >
+                  <span className="text-sm font-semibold text-destructive flex items-center gap-2">
+                    🚨 {redCount} {language === 'nl' ? 'vrijwilliger(s) hebben het jaarplafond overschreden. Actie vereist →' : language === 'fr' ? 'bénévole(s) ont dépassé le plafond annuel. Action requise →' : 'volunteer(s) exceeded the yearly limit. Action required →'}
+                  </span>
+                </motion.button>
+              )}
+              {orangeCount > 0 && (
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  onClick={() => navigate('/compliance')}
+                  className="w-full rounded-2xl border border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/20 p-4 text-left hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors"
+                >
+                  <span className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                    ⚠️ {orangeCount} {language === 'nl' ? 'vrijwilliger(s) naderen het fiscale jaarplafond. Bekijk compliance →' : language === 'fr' ? 'bénévole(s) approchent du plafond annuel. Voir conformité →' : 'volunteer(s) approaching the yearly limit. View compliance →'}
+                  </span>
+                </motion.button>
+              )}
+            </>
+          );
+        })()}
       </main>
 
       {/* Dialogs — wrapped in Suspense for lazy-loaded components */}
