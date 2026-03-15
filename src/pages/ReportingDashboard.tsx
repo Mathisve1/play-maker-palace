@@ -1012,6 +1012,55 @@ const ReportingDashboard = () => {
           ))}
         </div>
 
+        {/* ── AI Summary Card ────────────────────────────────── */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="w-5 h-5 text-primary" />
+              {L.aiSummaryTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!aiSummary && !aiSummaryLoading && !aiSummaryError && (
+              <Button onClick={handleGenerateAiSummary} className="gap-2">
+                <Bot className="w-4 h-4" />
+                {L.aiSummaryBtn}
+              </Button>
+            )}
+            {aiSummaryLoading && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">{L.aiAnalyzing}</span>
+              </div>
+            )}
+            {aiSummaryError && (
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-destructive">{L.aiSummaryRetry}</p>
+                <Button variant="outline" size="sm" onClick={handleGenerateAiSummary}>{L.aiSummaryBtn}</Button>
+              </div>
+            )}
+            {aiSummary && (
+              <>
+                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{aiSummary}</p>
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopyAiSummary}>
+                    <Copy className="w-3.5 h-3.5" />
+                    {L.aiSummaryCopy}
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAddSummaryToReport}>
+                    <FilePlus2 className="w-3.5 h-3.5" />
+                    {L.aiSummaryAdd}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="gap-1.5" onClick={handleGenerateAiSummary}>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {L.aiSummaryBtn}
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         {/* ── Tabs ────────────────────────────────────────────── */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="overflow-x-auto -mx-4 px-4">
