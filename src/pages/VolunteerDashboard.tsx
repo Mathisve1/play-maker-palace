@@ -31,6 +31,7 @@ import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab'
 import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
 import OnboardingWizard from '@/components/OnboardingWizard';
+import VolunteerOnboardingWizard from '@/components/VolunteerOnboardingWizard';
 import VolunteerSeasonOverview from '@/components/VolunteerSeasonOverview';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import VolunteerBadges from '@/components/VolunteerBadges';
@@ -169,6 +170,8 @@ const VolunteerDashboard = () => {
   const [safetyPendingCount, setSafetyPendingCount] = useState(0);
   const [pendingReviews, setPendingReviews] = useState<{ taskSignupId: string; taskTitle: string; clubName: string; clubOwnerId: string }[]>([]);
   const [reviewTarget, setReviewTarget] = useState<{ taskSignupId: string; taskTitle: string; revieweeId: string } | null>(null);
+  const [showVolunteerOnboarding, setShowVolunteerOnboarding] = useState(false);
+  const [volunteerOnboardingContract, setVolunteerOnboardingContract] = useState<{ id: string; signing_url: string | null; status: string } | null>(null);
 
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -187,7 +190,7 @@ const VolunteerDashboard = () => {
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
   // ===== Use ClubContext instead of re-fetching auth/profile =====
-  const { userId: contextUserId2, profile: contextProfile, clubId: contextClubId } = useClubContext();
+  const { userId: contextUserId2, profile: contextProfile, clubId: contextClubId, clubInfo: contextClubInfo } = useClubContext();
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
 
   // Sync profile from context on mount
@@ -401,6 +404,32 @@ const VolunteerDashboard = () => {
       }
 
       setLoading(false);
+
+      // Check volunteer onboarding wizard eligibility
+      if (contextClubId) {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const [membershipRes, onboardingRes, seasonContractRes] = await Promise.all([
+          supabase.from('club_memberships').select('joined_at').eq('volunteer_id', uid).eq('club_id', contextClubId).limit(1).maybeSingle(),
+          supabase.from('volunteer_onboarding_steps').select('step, completed_at, skipped').eq('user_id', uid).eq('club_id', contextClubId),
+          (supabase.from('season_contracts') as any).select('id, signing_url, status').eq('volunteer_id', uid).eq('club_id', contextClubId).eq('status', 'pending').limit(1).maybeSingle(),
+        ]);
+
+        const membership = membershipRes.data;
+        const onboardingSteps = onboardingRes.data || [];
+        const allCompleted = ['profile_complete', 'contract_signed', 'training_done', 'first_task'].every(
+          s => onboardingSteps.some((os: any) => os.step === s && (os.completed_at || os.skipped))
+        );
+        const isNew = membership && new Date(membership.joined_at) > sevenDaysAgo;
+        const hasPendingContract = !!seasonContractRes.data;
+        const dismissed = localStorage.getItem(`vol-onboarding-dismissed-${uid}-${contextClubId}`);
+
+        if (isNew && hasPendingContract && !allCompleted && !dismissed) {
+          setVolunteerOnboardingContract(seasonContractRes.data);
+          setShowVolunteerOnboarding(true);
+        }
+      }
 
       // Fetch pending reviews: completed tasks in last 14 days without a volunteer review
       const fourteenDaysAgo = new Date();
@@ -772,6 +801,23 @@ const VolunteerDashboard = () => {
 
   return (
     <DashboardLayout sidebar={sidebarEl}>
+      {/* Volunteer Onboarding Wizard overlay */}
+      {showVolunteerOnboarding && currentUserId && contextClubId && (
+        <VolunteerOnboardingWizard
+          userId={currentUserId}
+          clubId={contextClubId}
+          clubName={contextClubInfo?.name || ''}
+          clubLogoUrl={contextClubInfo?.logo_url || null}
+          language={language}
+          seasonContract={volunteerOnboardingContract}
+          onComplete={() => setShowVolunteerOnboarding(false)}
+          onLater={() => {
+            localStorage.setItem(`vol-onboarding-dismissed-${currentUserId}-${contextClubId}`, 'true');
+            setShowVolunteerOnboarding(false);
+          }}
+        />
+      )}
+
       {/* ===== DASHBOARD HOME ===== */}
       {activeTab === 'dashboard' && (
         <div className="max-w-5xl mx-auto space-y-6">
