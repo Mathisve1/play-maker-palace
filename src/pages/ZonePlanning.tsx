@@ -5,7 +5,8 @@ import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Users, MapPin, Calendar, ChevronRight, ChevronDown, Loader2, X, UserPlus, UserMinus } from 'lucide-react';
+import { ArrowLeft, Users, MapPin, Calendar, ChevronRight, ChevronDown, Loader2, X, UserPlus, UserMinus, Eye, EyeOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { PageSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
@@ -58,6 +59,7 @@ const zonePlanningLabels = {
     volunteerAssigned: 'Vrijwilliger toegewezen!', assignmentRemoved: 'Toewijzing verwijderd!',
     roleAssigned: 'Rol toegewezen!', noRole: '— Geen rol —', remove: 'Verwijderen',
     taskNotFound: 'Taak niet gevonden', unknown: 'Onbekend',
+    volunteerOverview: 'Vrijwilligersoverzicht',
   },
   fr: {
     back: 'Retour', title: 'Planification des zones', dragHint: 'Glissez les bénévoles ici',
@@ -67,6 +69,7 @@ const zonePlanningLabels = {
     volunteerAssigned: 'Bénévole assigné !', assignmentRemoved: 'Assignation supprimée !',
     roleAssigned: 'Rôle assigné !', noRole: '— Aucun rôle —', remove: 'Supprimer',
     taskNotFound: 'Tâche non trouvée', unknown: 'Inconnu',
+    volunteerOverview: 'Aperçu bénévoles',
   },
   en: {
     back: 'Back', title: 'Zone Planning', dragHint: 'Drag volunteers here',
@@ -76,6 +79,7 @@ const zonePlanningLabels = {
     volunteerAssigned: 'Volunteer assigned!', assignmentRemoved: 'Assignment removed!',
     roleAssigned: 'Role assigned!', noRole: '— No role —', remove: 'Remove',
     taskNotFound: 'Task not found', unknown: 'Unknown',
+    volunteerOverview: 'Volunteer overview',
   },
 };
 
@@ -229,6 +233,51 @@ const ZonePlanning = () => {
   };
 
   const [dragVolunteer, setDragVolunteer] = useState<string | null>(null);
+  const [overviewMode, setOverviewMode] = useState(false);
+
+  const renderZoneOverview = (zoneList: Zone[], depth = 0): React.ReactNode => {
+    return zoneList.map(zone => {
+      const children = getChildren(zone.id);
+      const zoneAssigns = getAssignments(zone.id);
+      return (
+        <div key={zone.id} className={depth > 0 ? 'ml-6' : ''}>
+          <div className="rounded-xl border border-border bg-card p-4 mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              <h4 className="text-sm font-semibold text-foreground">{zone.name}</h4>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                {zoneAssigns.length}{zone.max_capacity ? `/${zone.max_capacity}` : ''}
+              </span>
+            </div>
+            {zoneAssigns.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {zoneAssigns.map(a => {
+                  const vol = getVolunteer(a.volunteer_id);
+                  const role = getVolunteerRole(a.volunteer_id);
+                  return (
+                    <div key={a.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-muted/50 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                        {vol?.full_name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                      <span className="text-foreground truncate max-w-[120px]">{vol?.full_name || vol?.email || l.unknown}</span>
+                      {role && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-medium text-white" style={{ background: role.color }}>
+                          {role.name}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">{l.dragHint}</p>
+            )}
+          </div>
+          {children.length > 0 && renderZoneOverview(children, depth + 1)}
+        </div>
+      );
+    });
+  };
 
   const renderZoneColumn = (zone: Zone, depth: number) => {
     const children = getChildren(zone.id);
@@ -329,7 +378,14 @@ const ZonePlanning = () => {
           <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-3 transition-colors">
             <ArrowLeft className="w-4 h-4" /> {l.back}
           </button>
-          <h1 className="text-2xl font-heading font-bold text-foreground">{l.title}</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-heading font-bold text-foreground">{l.title}</h1>
+            <label className="flex items-center gap-2 cursor-pointer ml-auto">
+              {overviewMode ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+              <span className="text-xs font-medium text-muted-foreground">{l.volunteerOverview}</span>
+              <Switch checked={overviewMode} onCheckedChange={setOverviewMode} />
+            </label>
+          </div>
           <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{task.title}</span>
             {task.task_date && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>}
@@ -337,49 +393,61 @@ const ZonePlanning = () => {
           </div>
         </div>
 
-        <div className="flex gap-6 min-h-[400px]">
-          <div className="w-64 shrink-0">
-            <div className="rounded-2xl border border-border bg-card overflow-hidden sticky top-4">
-              <div className="px-4 py-3 border-b border-border bg-muted/30">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Users className="w-4 h-4" /> {l.unassigned}
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{unassignedVolunteers.length}</span>
-                </h3>
-              </div>
-              <div className="p-2 space-y-1 max-h-[500px] overflow-y-auto">
-                {unassignedVolunteers.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-4">{l.allAssigned}</p>
-                )}
-                {unassignedVolunteers.map(vol => (
-                  <div
-                    key={vol.id}
-                    draggable
-                    onDragStart={() => setDragVolunteer(vol.id)}
-                    onDragEnd={() => setDragVolunteer(null)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 cursor-grab active:cursor-grabbing hover:bg-muted transition-colors"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                      {vol.full_name?.[0]?.toUpperCase() || '?'}
-                    </div>
-                    <span className="text-sm text-foreground flex-1 truncate">{vol.full_name || vol.email || l.unknown}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-x-auto">
+        {overviewMode ? (
+          /* Overview mode: compact table of all zones with assigned volunteers */
+          <div className="space-y-4">
             {rootZones.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground text-sm">{l.noZones}</p>
-              </div>
+              <p className="text-muted-foreground text-sm text-center py-8">{l.noZones}</p>
             ) : (
-              <div className="flex gap-4">
-                {rootZones.map(zone => renderZoneColumn(zone, 0))}
-              </div>
+              renderZoneOverview(rootZones)
             )}
           </div>
-        </div>
+        ) : (
+          /* Drag & drop mode */
+          <div className="flex gap-6 min-h-[400px]">
+            <div className="w-64 shrink-0">
+              <div className="rounded-2xl border border-border bg-card overflow-hidden sticky top-4">
+                <div className="px-4 py-3 border-b border-border bg-muted/30">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Users className="w-4 h-4" /> {l.unassigned}
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{unassignedVolunteers.length}</span>
+                  </h3>
+                </div>
+                <div className="p-2 space-y-1 max-h-[500px] overflow-y-auto">
+                  {unassignedVolunteers.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">{l.allAssigned}</p>
+                  )}
+                  {unassignedVolunteers.map(vol => (
+                    <div
+                      key={vol.id}
+                      draggable
+                      onDragStart={() => setDragVolunteer(vol.id)}
+                      onDragEnd={() => setDragVolunteer(null)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 cursor-grab active:cursor-grabbing hover:bg-muted transition-colors"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                        {vol.full_name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                      <span className="text-sm text-foreground flex-1 truncate">{vol.full_name || vol.email || l.unknown}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-x-auto">
+              {rootZones.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground text-sm">{l.noZones}</p>
+                </div>
+              ) : (
+                <div className="flex gap-4">
+                  {rootZones.map(zone => renderZoneColumn(zone, 0))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </ClubPageLayout>
   );

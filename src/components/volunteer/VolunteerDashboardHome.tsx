@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText, AlertTriangle, BookOpen } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText, AlertTriangle, BookOpen, Layers } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -55,6 +55,7 @@ const VolunteerDashboardHome = ({
   const [upcomingBriefings, setUpcomingBriefings] = useState<{ taskId: string; taskTitle: string; taskDate: string }[]>([]);
   const [activeSafetyAlert, setActiveSafetyAlert] = useState(false);
   const [requiredTrainings, setRequiredTrainings] = useState<{ id: string; title: string; clubName: string }[]>([]);
+  const [zoneAssignments, setZoneAssignments] = useState<Record<string, string>>({});
   // Check for unread briefings within 48h
   useEffect(() => {
     if (!currentUserId || signups.length === 0) return;
@@ -110,6 +111,28 @@ const VolunteerDashboardHome = ({
     };
     checkBriefings();
   }, [currentUserId, signups, tasks]);
+
+  // Fetch zone assignments for upcoming tasks
+  useEffect(() => {
+    if (!currentUserId || signups.length === 0) return;
+    const fetchZones = async () => {
+      const myTaskIds = signups.filter(s => s.status === 'assigned' || s.status === 'pending').map(s => s.task_id);
+      if (myTaskIds.length === 0) return;
+      const { data: zones } = await supabase.from('task_zones').select('id, name, task_id').in('task_id', myTaskIds);
+      if (!zones || zones.length === 0) return;
+      const zoneIds = zones.map(z => z.id);
+      const { data: assignments } = await supabase.from('task_zone_assignments').select('zone_id').eq('volunteer_id', currentUserId).in('zone_id', zoneIds);
+      if (!assignments || assignments.length === 0) return;
+      const zoneMap = new Map(zones.map(z => [z.id, z]));
+      const result: Record<string, string> = {};
+      assignments.forEach(a => {
+        const zone = zoneMap.get(a.zone_id);
+        if (zone) result[zone.task_id] = zone.name;
+      });
+      setZoneAssignments(result);
+    };
+    fetchZones();
+  }, [currentUserId, signups]);
 
   // Check for active safety incidents on today's events
   useEffect(() => {
@@ -401,6 +424,12 @@ const VolunteerDashboardHome = ({
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{task.title}</p>
+                    {zoneAssignments[task.id] && (
+                      <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/15 text-accent-foreground w-fit">
+                        <Layers className="w-3 h-3" />
+                        Zone: {zoneAssignments[task.id]}
+                      </span>
+                    )}
                     <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">
                       {task.clubs?.name && <span>{task.clubs.name}</span>}
                       {task.task_date && (
