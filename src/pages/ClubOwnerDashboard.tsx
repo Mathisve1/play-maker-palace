@@ -1357,7 +1357,7 @@ const ClubOwnerDashboard = () => {
         )}
 
         <EditProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} userId={currentUserId} language={language} onProfileUpdated={() => { /* handled by ClubContext */ }} />
-        {bulkMessageTask && <BulkMessageDialog taskId={bulkMessageTask.taskId} taskTitle={bulkMessageTask.taskTitle} clubOwnerId={currentUserId} volunteers={bulkMessageTask.volunteers} onClose={() => setBulkMessageTask(null)} />}
+        {bulkMessageTask && <BulkMessageDialog clubId={clubId} clubOwnerId={currentUserId} preselectedTaskId={bulkMessageTask.taskId} preselectedTaskTitle={bulkMessageTask.taskTitle} preselectedVolunteers={bulkMessageTask.volunteers} onClose={() => setBulkMessageTask(null)} />}
         {briefingProgressTaskId && <BriefingProgressDialog open={!!briefingProgressTaskId} onOpenChange={(open) => { if (!open) setBriefingProgressTaskId(null); }} taskId={briefingProgressTaskId} language={language} />}
         <TaskPickerDialog open={showBriefingTaskPicker} onOpenChange={setShowBriefingTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Briefing aanmaken' : language === 'fr' ? 'Créer un briefing' : 'Create briefing'} onSelect={(taskId) => { const task = tasks.find(t => t.id === taskId); if (task) navigate(`/briefing-builder?taskId=${taskId}&clubId=${task.club_id || clubId}`); }} />
         <TaskPickerDialog open={showProgressTaskPicker} onOpenChange={setShowProgressTaskPicker} tasks={tasks} language={language} title={language === 'nl' ? 'Opvolging bekijken' : language === 'fr' ? 'Voir le suivi' : 'View follow-up'} onSelect={(taskId) => setBriefingProgressTaskId(taskId)} />

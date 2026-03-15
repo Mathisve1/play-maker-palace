@@ -10,8 +10,9 @@ import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
   PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
-  FileText, Save, ClipboardCheck,
+  FileText, Save, ClipboardCheck, Send,
 } from 'lucide-react';
+import BulkMessageDialog from '@/components/BulkMessageDialog';
 import EventTemplateDialog from '@/components/EventTemplateDialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -90,6 +91,7 @@ const EventsManager = () => {
   const [showTour, setShowTour] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
+  const [bulkMessageEventId, setBulkMessageEventId] = useState<string | null>(null);
 
   // Adding task to group
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
@@ -900,6 +902,14 @@ const EventsManager = () => {
           clubId={safetyConfigEvent.clubId}
         />
       )}
+      {bulkMessageEventId && clubId && contextUserId && (
+        <BulkMessageDialog
+          clubId={clubId}
+          clubOwnerId={contextUserId}
+          preselectedEventId={bulkMessageEventId}
+          onClose={() => setBulkMessageEventId(null)}
+        />
+      )}
     </ClubPageLayout>
     <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
     {clubId && (
@@ -991,6 +1001,9 @@ const EventsManager = () => {
                 </button>
                 <button onClick={() => setSafetyConfigEvent({ eventId: event.id, clubId: event.club_id })} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-accent transition-colors touch-target">
                   <Shield className="w-3.5 h-3.5" /> {nl ? 'Safety Rollen' : 'Safety Roles'}
+                </button>
+                <button onClick={() => setBulkMessageEventId(event.id)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-accent transition-colors touch-target">
+                  <Send className="w-3.5 h-3.5" /> {nl ? 'Stuur bericht' : fr ? 'Envoyer message' : 'Send message'}
                 </button>
               </div>
 

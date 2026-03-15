@@ -16,9 +16,10 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Users, UserCheck, UserX, FileSignature, Ticket, Clock, CheckCircle2,
-  ChevronDown, ChevronUp, Inbox, Loader2, Filter,
+  ChevronDown, ChevronUp, Inbox, Loader2, Filter, Bell,
 } from 'lucide-react';
 import { ActionListSkeleton } from '@/components/dashboard/DashboardSkeleton';
+import BulkMessageDialog from '@/components/BulkMessageDialog';
 
 interface ActionItem {
   id: string;
@@ -60,6 +61,9 @@ const CommandCenter = () => {
   const [processing, setProcessing] = useState(false);
   const [filterType, setFilterType] = useState<string | null>(null);
   const [contractConfirm, setContractConfirm] = useState<{ volunteer: any; task: any } | null>(null);
+  const [tomorrowReminders, setTomorrowReminders] = useState<{ taskId: string; taskTitle: string; count: number }[]>([]);
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [showBulkMessage, setShowBulkMessage] = useState(false);
 
   const t = language === 'nl' ? {
     title: 'Actielijst',
@@ -270,6 +274,43 @@ const CommandCenter = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Load tomorrow's unconfirmed tasks
+  useEffect(() => {
+    if (!contextClubId) return;
+    const loadReminders = async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+      const { data: tomorrowTasks } = await supabase
+        .from('tasks')
+        .select('id, title')
+        .eq('club_id', contextClubId)
+        .gte('task_date', tomorrowStr + 'T00:00:00')
+        .lte('task_date', tomorrowStr + 'T23:59:59');
+
+      if (!tomorrowTasks || tomorrowTasks.length === 0) { setTomorrowReminders([]); return; }
+
+      const taskIds = tomorrowTasks.map(t => t.id);
+      const { data: signups } = await (supabase as any)
+        .from('task_signups')
+        .select('task_id, volunteer_id, checked_in_at')
+        .in('task_id', taskIds)
+        .eq('status', 'assigned');
+
+      const unchecked = (signups || []).filter((s: any) => !s.checked_in_at);
+      const grouped = new Map<string, number>();
+      unchecked.forEach((s: any) => grouped.set(s.task_id, (grouped.get(s.task_id) || 0) + 1));
+
+      const reminders = tomorrowTasks
+        .filter(t => grouped.has(t.id))
+        .map(t => ({ taskId: t.id, taskTitle: t.title, count: grouped.get(t.id) || 0 }));
+
+      setTomorrowReminders(reminders);
+    };
+    loadReminders();
+  }, [contextClubId]);
+
   // Realtime subscriptions for live updates (debounced)
   useEffect(() => {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -290,6 +331,39 @@ const CommandCenter = () => {
       supabase.removeChannel(channel);
     };
   }, [loadData]);
+
+  const handleSendReminder = async (taskId: string, taskTitle: string) => {
+    setSendingReminder(taskId);
+    const { data: signups } = await (supabase as any)
+      .from('task_signups')
+      .select('volunteer_id')
+      .eq('task_id', taskId)
+      .eq('status', 'assigned')
+      .is('checked_in_at', null);
+
+    const volIds = (signups || []).map((s: any) => s.volunteer_id);
+    let sent = 0;
+    for (const volId of volIds) {
+      await sendPush({
+        userId: volId,
+        title: t3('⏰ Herinnering', '⏰ Rappel', '⏰ Reminder'),
+        message: t3(`Vergeet niet: "${taskTitle}" is morgen!`, `N'oubliez pas: "${taskTitle}" est demain !`, `Don't forget: "${taskTitle}" is tomorrow!`),
+        url: `/task/${taskId}`,
+        type: 'task_reminder',
+      });
+      await supabase.from('notifications').insert({
+        user_id: volId,
+        title: t3('Herinnering', 'Rappel', 'Reminder'),
+        message: t3(`"${taskTitle}" is morgen. Vergeet niet te bevestigen!`, `"${taskTitle}" est demain. N'oubliez pas de confirmer !`, `"${taskTitle}" is tomorrow. Don't forget to confirm!`),
+        type: 'task',
+        metadata: { task_id: taskId, action: 'reminder' },
+      });
+      sent++;
+    }
+    toast.success(t3(`Herinnering verstuurd naar ${sent} vrijwilliger${sent > 1 ? 's' : ''}`, `Rappel envoyé à ${sent} bénévole${sent > 1 ? 's' : ''}`, `Reminder sent to ${sent} volunteer${sent > 1 ? 's' : ''}`));
+    setSendingReminder(null);
+    setTomorrowReminders(prev => prev.filter(r => r.taskId !== taskId));
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -476,6 +550,37 @@ const CommandCenter = () => {
 
         {/* Shift swap approvals */}
         {clubId && <ShiftSwapApprovals clubId={clubId} language={language} />}
+
+        {/* Tomorrow's reminders */}
+        {tomorrowReminders.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+              <Bell className="w-3.5 h-3.5" />
+              {t3('Herinneringen voor morgen', 'Rappels pour demain', 'Reminders for tomorrow')}
+            </p>
+            {tomorrowReminders.map(r => (
+              <div key={r.taskId} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+                <div className="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0">
+                  <Bell className="w-4 h-4 text-orange-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{r.taskTitle}</p>
+                  <p className="text-xs text-muted-foreground">{r.count} {t3('vrijwilligers zonder check-in', 'bénévoles sans check-in', 'volunteers without check-in')}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 shrink-0"
+                  disabled={sendingReminder === r.taskId}
+                  onClick={() => handleSendReminder(r.taskId, r.taskTitle)}
+                >
+                  {sendingReminder === r.taskId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bell className="w-3.5 h-3.5" />}
+                  {t3('Herinnering sturen', 'Envoyer rappel', 'Send reminder')}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Filter tabs + Bulk bar */}
         {items.length > 0 && (

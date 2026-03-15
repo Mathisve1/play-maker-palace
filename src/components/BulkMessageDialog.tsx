@@ -1,8 +1,12 @@
-import { useState, useRef } from 'react';
-import { X, Send, Users, Eye, ChevronDown, ChevronUp, Loader2, Info, Paperclip, FileText, Music, Image, Mic, Square } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Send, Users, Eye, ChevronDown, ChevronUp, Loader2, Info, Paperclip, FileText, Music, Mic, Square, Bell, MessageCircle, CheckCircle, ChevronRight, ChevronLeft, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { sendPush } from '@/lib/sendPush';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Volunteer {
   id: string;
@@ -10,44 +14,61 @@ interface Volunteer {
   email: string | null;
 }
 
+type AudienceMode = 'all' | 'event' | 'partner' | 'role' | 'manual';
+type Channel = 'push' | 'inapp' | 'both';
+
 interface Props {
-  taskId: string;
-  taskTitle: string;
+  clubId: string;
   clubOwnerId: string;
-  volunteers: Volunteer[];
   onClose: () => void;
+  preselectedEventId?: string | null;
+  preselectedTaskId?: string | null;
+  preselectedTaskTitle?: string | null;
+  preselectedVolunteers?: Volunteer[];
 }
 
-const templateVarsI18n: Record<string, { key: string; label: string; description: string }[]> = {
-  nl: [
-    { key: '{{naam}}', label: 'Naam', description: 'Volledige naam van de vrijwilliger' },
-    { key: '{{email}}', label: 'E-mail', description: 'E-mailadres van de vrijwilliger' },
-    { key: '{{taak}}', label: 'Taak', description: 'Titel van de taak' },
-  ],
-  fr: [
-    { key: '{{naam}}', label: 'Nom', description: 'Nom complet du bénévole' },
-    { key: '{{email}}', label: 'E-mail', description: 'Adresse e-mail du bénévole' },
-    { key: '{{taak}}', label: 'Tâche', description: 'Titre de la tâche' },
-  ],
-  en: [
-    { key: '{{naam}}', label: 'Name', description: 'Full name of the volunteer' },
-    { key: '{{email}}', label: 'Email', description: 'Email address of the volunteer' },
-    { key: '{{taak}}', label: 'Task', description: 'Title of the task' },
-  ],
-};
+const templateVars = [
+  { key: '{{naam}}', nl: 'Naam vrijwilliger', fr: 'Nom du bénévole', en: 'Volunteer name' },
+  { key: '{{taak}}', nl: 'Taak', fr: 'Tâche', en: 'Task' },
+  { key: '{{datum}}', nl: 'Datum', fr: 'Date', en: 'Date' },
+  { key: '{{locatie}}', nl: 'Locatie', fr: 'Lieu', en: 'Location' },
+];
 
-const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose }: Props) => {
+const BulkMessageDialog = ({
+  clubId, clubOwnerId, onClose,
+  preselectedEventId, preselectedTaskId, preselectedTaskTitle, preselectedVolunteers,
+}: Props) => {
   const { language } = useLanguage();
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
-  const templateVars = templateVarsI18n[language] || templateVarsI18n.nl;
+
+  // Step management
+  const [step, setStep] = useState(1);
+  const totalSteps = 4;
+
+  // Step 1: Audience
+  const [audienceMode, setAudienceMode] = useState<AudienceMode>(preselectedVolunteers ? 'manual' : preselectedEventId ? 'event' : 'all');
+  const [volunteers, setVolunteers] = useState<Volunteer[]>(preselectedVolunteers || []);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(preselectedVolunteers?.map(v => v.id) || []));
+  const [loadingVolunteers, setLoadingVolunteers] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Event/task selection
+  const [events, setEvents] = useState<{ id: string; title: string; event_date: string | null }[]>([]);
+  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(preselectedEventId ? new Set([preselectedEventId]) : new Set());
+  const [tasks, setTasks] = useState<{ id: string; title: string; task_date: string | null }[]>([]);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(preselectedTaskId ? new Set([preselectedTaskId]) : new Set());
+
+  // Partner selection
+  const [partners, setPartners] = useState<{ id: string; name: string }[]>([]);
+  const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(new Set());
+
+  // Role selection
+  const [roles, setRoles] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<Set<string>>(new Set());
+
+  // Step 2: Message
   const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [selectedVolunteers, setSelectedVolunteers] = useState<Set<string>>(
-    new Set(volunteers.map(v => v.id))
-  );
   const [showVars, setShowVars] = useState(false);
-  const [sentCount, setSentCount] = useState(0);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,72 +78,136 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Step 3: Channel
+  const [channel, setChannel] = useState<Channel>('both');
+
+  // Step 4: Send
+  const [sending, setSending] = useState(false);
+  const [sentCount, setSentCount] = useState(0);
+
+  // Load events, partners, tasks on mount
+  useEffect(() => {
+    if (!clubId) return;
+    Promise.all([
+      supabase.from('events').select('id, title, event_date').eq('club_id', clubId).order('event_date', { ascending: false }).limit(50),
+      supabase.from('external_partners').select('id, name').eq('club_id', clubId),
+      supabase.from('tasks').select('id, title, task_date').eq('club_id', clubId).eq('status', 'open').order('task_date', { ascending: false }).limit(100),
+    ]).then(([evRes, partRes, taskRes]) => {
+      setEvents(evRes.data || []);
+      setPartners(partRes.data || []);
+      setTasks(taskRes.data || []);
+      // Extract unique roles from club_memberships
+      supabase.from('club_memberships').select('club_role').eq('club_id', clubId).then(({ data }) => {
+        const uniqueRoles = [...new Set((data || []).map(d => d.club_role).filter(Boolean))];
+        setRoles(uniqueRoles);
+      });
+    });
+  }, [clubId]);
+
+  // Load volunteers based on audience selection
+  const loadVolunteers = useCallback(async () => {
+    if (preselectedVolunteers && audienceMode === 'manual') return;
+    setLoadingVolunteers(true);
+    let volIds: string[] = [];
+
+    if (audienceMode === 'all') {
+      const { data } = await supabase.from('club_memberships').select('volunteer_id').eq('club_id', clubId).eq('status', 'actief');
+      volIds = (data || []).map(d => d.volunteer_id);
+    } else if (audienceMode === 'event') {
+      // Get tasks for selected events, then get signups
+      const evIds = [...selectedEventIds];
+      if (evIds.length > 0) {
+        const { data: eventTasks } = await supabase.from('tasks').select('id').eq('club_id', clubId).in('event_id', evIds);
+        const taskIds = [...selectedTaskIds, ...(eventTasks || []).map(t => t.id)];
+        if (taskIds.length > 0) {
+          const { data: signups } = await supabase.from('task_signups').select('volunteer_id').in('task_id', taskIds);
+          volIds = [...new Set((signups || []).map(s => s.volunteer_id))];
+        }
+      } else if (selectedTaskIds.size > 0) {
+        const { data: signups } = await supabase.from('task_signups').select('volunteer_id').in('task_id', [...selectedTaskIds]);
+        volIds = [...new Set((signups || []).map(s => s.volunteer_id))];
+      }
+    } else if (audienceMode === 'partner') {
+      const pIds = [...selectedPartnerIds];
+      if (pIds.length > 0) {
+        // Get partner members via partner_event_access or club_memberships with partner link
+        const { data } = await supabase.from('club_memberships').select('volunteer_id').eq('club_id', clubId).eq('status', 'actief');
+        volIds = (data || []).map(d => d.volunteer_id);
+        // Filter by partner assignment - get tasks assigned to partners
+        const { data: pAccess } = await supabase.from('partner_event_access').select('event_id').in('partner_id', pIds);
+        if (pAccess && pAccess.length > 0) {
+          const evIds = pAccess.map(p => p.event_id);
+          const { data: eTasks } = await supabase.from('tasks').select('id').in('event_id', evIds);
+          if (eTasks && eTasks.length > 0) {
+            const { data: signups } = await supabase.from('task_signups').select('volunteer_id').in('task_id', eTasks.map(t => t.id));
+            volIds = [...new Set((signups || []).map(s => s.volunteer_id))];
+          }
+        }
+      }
+    } else if (audienceMode === 'role') {
+      const r = [...selectedRoles];
+      if (r.length > 0) {
+        const { data } = await supabase.from('club_memberships').select('volunteer_id').eq('club_id', clubId).eq('status', 'actief').in('club_role', r);
+        volIds = (data || []).map(d => d.volunteer_id);
+      }
+    }
+
+    if (volIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', volIds);
+      setVolunteers(profiles || []);
+      setSelectedIds(new Set((profiles || []).map(p => p.id)));
+    } else if (audienceMode !== 'manual') {
+      setVolunteers([]);
+      setSelectedIds(new Set());
+    }
+    setLoadingVolunteers(false);
+  }, [clubId, audienceMode, selectedEventIds, selectedTaskIds, selectedPartnerIds, selectedRoles, preselectedVolunteers]);
+
+  useEffect(() => { loadVolunteers(); }, [loadVolunteers]);
+
   const toggleVolunteer = (id: string) => {
-    setSelectedVolunteers(prev => {
+    setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   };
 
-  const toggleAll = () => {
-    if (selectedVolunteers.size === volunteers.length) {
-      setSelectedVolunteers(new Set());
-    } else {
-      setSelectedVolunteers(new Set(volunteers.map(v => v.id)));
-    }
-  };
-
-  const resolveTemplate = (template: string, volunteer: Volunteer): string => {
+  const resolveTemplate = (template: string, vol: Volunteer, taskTitle?: string): string => {
     return template
-      .replace(/\{\{naam\}\}/gi, volunteer.full_name || 'Vrijwilliger')
-      .replace(/\{\{email\}\}/gi, volunteer.email || '')
-      .replace(/\{\{taak\}\}/gi, taskTitle);
-  };
-
-  const insertVariable = (varKey: string) => {
-    setMessage(prev => prev + varKey);
+      .replace(/\{\{naam\}\}/gi, vol.full_name || 'Vrijwilliger')
+      .replace(/\{\{taak\}\}/gi, taskTitle || preselectedTaskTitle || '')
+      .replace(/\{\{datum\}\}/gi, new Date().toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB'))
+      .replace(/\{\{locatie\}\}/gi, '');
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 20 * 1024 * 1024) { toast.error(t3('Bestand mag max 20MB zijn', 'Le fichier ne peut pas dépasser 20 Mo', 'File must be max 20MB')); return; }
+    if (file.size > 20 * 1024 * 1024) { toast.error('Max 20MB'); return; }
     setAttachmentFile(file);
-    if (file.type.startsWith('image/')) {
-      setAttachmentPreview(URL.createObjectURL(file));
-    } else {
-      setAttachmentPreview(null);
-    }
-  };
-
-  const clearAttachment = () => {
-    setAttachmentFile(null);
-    setAttachmentPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setAttachmentPreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
   };
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+      const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
       audioChunksRef.current = [];
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
-        const ext = mediaRecorder.mimeType.includes('webm') ? 'webm' : 'm4a';
-        const file = new File([blob], `audiobericht.${ext}`, { type: mediaRecorder.mimeType });
-        setAttachmentFile(file);
+      mediaRecorderRef.current = mr;
+      mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
+        const ext = mr.mimeType.includes('webm') ? 'webm' : 'm4a';
+        setAttachmentFile(new File([blob], `audio.${ext}`, { type: mr.mimeType }));
         setAttachmentPreview(null);
         stream.getTracks().forEach(t => t.stop());
       };
-      mediaRecorder.start();
+      mr.start();
       setRecording(true);
       setRecordingTime(0);
       recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
-    } catch { toast.error(t3('Microfoon niet beschikbaar', 'Microphone non disponible', 'Microphone not available')); }
+    } catch { toast.error(t3('Microfoon niet beschikbaar', 'Micro non disponible', 'Mic unavailable')); }
   };
 
   const stopRecording = () => {
@@ -131,311 +216,469 @@ const BulkMessageDialog = ({ taskId, taskTitle, clubOwnerId, volunteers, onClose
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
   };
 
-  const formatRecordingTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
-
-  const getAttachmentCategory = (type: string): string => {
-    if (type.startsWith('image/')) return 'image';
-    if (type.startsWith('audio/')) return 'audio';
-    return 'document';
-  };
-
-  const uploadAttachment = async (file: File, userId: string): Promise<{ url: string; type: string; name: string } | null> => {
+  const uploadAttachment = async (file: File): Promise<{ url: string; type: string; name: string } | null> => {
     const ext = file.name.split('.').pop();
-    const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const path = `${clubOwnerId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage.from('chat-attachments').upload(path, file);
-    if (error) { toast.error(t3('Upload mislukt', 'Échec du téléchargement', 'Upload failed')); return null; }
+    if (error) { toast.error('Upload failed'); return null; }
     const { data: { publicUrl } } = supabase.storage.from('chat-attachments').getPublicUrl(path);
-    return { url: publicUrl, type: getAttachmentCategory(file.type), name: file.name };
+    const cat = file.type.startsWith('image/') ? 'image' : file.type.startsWith('audio/') ? 'audio' : 'document';
+    return { url: publicUrl, type: cat, name: file.name };
   };
 
   const handleSend = async () => {
-    if ((!message.trim() && !attachmentFile) || selectedVolunteers.size === 0) return;
+    if (!message.trim() && !attachmentFile) return;
+    const selected = volunteers.filter(v => selectedIds.has(v.id));
+    if (selected.length === 0) return;
     setSending(true);
     setSentCount(0);
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setSending(false); return; }
 
-    let sent = 0;
-    const selected = volunteers.filter(v => selectedVolunteers.has(v.id));
-
-    // Upload attachment once, reuse URL for all
     let attachment: { url: string; type: string; name: string } | null = null;
     if (attachmentFile) {
-      attachment = await uploadAttachment(attachmentFile, session.user.id);
-      if (!attachment && !message.trim()) { setSending(false); return; }
+      attachment = await uploadAttachment(attachmentFile);
     }
 
-    for (const volunteer of selected) {
+    let sent = 0;
+    const taskId = preselectedTaskId || (selectedTaskIds.size === 1 ? [...selectedTaskIds][0] : null);
+
+    for (const vol of selected) {
       try {
-        // Find or create conversation
-        const { data: existing } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('task_id', taskId)
-          .eq('volunteer_id', volunteer.id)
-          .eq('club_owner_id', clubOwnerId)
-          .maybeSingle();
+        const personalizedMsg = resolveTemplate(message, vol);
 
-        let conversationId = existing?.id;
+        // In-app notification
+        if (channel === 'inapp' || channel === 'both') {
+          await supabase.from('notifications').insert({
+            user_id: vol.id,
+            title: t3('Bericht van club', 'Message du club', 'Message from club'),
+            message: personalizedMsg,
+            type: 'message',
+            metadata: { task_id: taskId, action: 'bulk_message' },
+          });
+        }
 
-        if (!conversationId) {
-          const { data: created, error: createError } = await supabase
+        // Push notification
+        if (channel === 'push' || channel === 'both') {
+          await sendPush({
+            userId: vol.id,
+            title: t3('Nieuw bericht', 'Nouveau message', 'New message'),
+            message: personalizedMsg.slice(0, 200),
+            url: taskId ? `/task/${taskId}` : '/dashboard',
+            type: 'bulk_message',
+          });
+        }
+
+        // Also send as chat message if we have a taskId
+        if (taskId) {
+          const { data: existing } = await supabase
             .from('conversations')
-            .insert({
-              task_id: taskId,
-              volunteer_id: volunteer.id,
-              club_owner_id: clubOwnerId,
-            })
             .select('id')
-            .single();
+            .eq('task_id', taskId)
+            .eq('volunteer_id', vol.id)
+            .eq('club_owner_id', clubOwnerId)
+            .maybeSingle();
 
-          if (createError) {
-            console.error('Failed to create conversation for', volunteer.email, createError);
-            continue;
+          let convId = existing?.id;
+          if (!convId) {
+            const { data: created } = await supabase
+              .from('conversations')
+              .insert({ task_id: taskId, volunteer_id: vol.id, club_owner_id: clubOwnerId })
+              .select('id')
+              .single();
+            convId = created?.id;
           }
-          conversationId = created.id;
+
+          if (convId) {
+            await supabase.from('messages').insert({
+              conversation_id: convId,
+              sender_id: session.user.id,
+              content: personalizedMsg || (attachment ? `📎 ${attachment.name}` : ''),
+              ...(attachment && { attachment_url: attachment.url, attachment_type: attachment.type, attachment_name: attachment.name }),
+            });
+            await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId);
+          }
         }
-
-        // Send personalized message
-        const personalizedMessage = resolveTemplate(message, volunteer);
-        const { error: msgError } = await supabase.from('messages').insert({
-          conversation_id: conversationId,
-          sender_id: session.user.id,
-          content: personalizedMessage || (attachment ? `📎 ${attachment.name}` : ''),
-          ...(attachment && {
-            attachment_url: attachment.url,
-            attachment_type: attachment.type,
-            attachment_name: attachment.name,
-          }),
-        });
-
-        if (msgError) {
-          console.error('Failed to send message to', volunteer.email, msgError);
-          continue;
-        }
-
-        // Update conversation timestamp
-        await supabase
-          .from('conversations')
-          .update({ updated_at: new Date().toISOString() })
-          .eq('id', conversationId);
 
         sent++;
         setSentCount(sent);
       } catch (err) {
-        console.error('Error sending to', volunteer.email, err);
+        console.error('Send error', vol.id, err);
       }
     }
 
-    if (sent === selected.length) {
-      toast.success(t3(`Bericht verstuurd naar ${sent} vrijwilliger${sent > 1 ? 's' : ''}!`, `Message envoyé à ${sent} bénévole${sent > 1 ? 's' : ''}!`, `Message sent to ${sent} volunteer${sent > 1 ? 's' : ''}!`));
-    } else if (sent > 0) {
-      toast.warning(t3(`${sent} van ${selected.length} berichten verstuurd.`, `${sent} sur ${selected.length} messages envoyés.`, `${sent} of ${selected.length} messages sent.`));
-    } else {
-      toast.error(t3('Geen berichten konden worden verstuurd.', 'Aucun message n\'a pu être envoyé.', 'No messages could be sent.'));
-    }
-
+    toast.success(t3(`Bericht verstuurd naar ${sent} vrijwilliger${sent > 1 ? 's' : ''}`, `Message envoyé à ${sent} bénévole${sent > 1 ? 's' : ''}`, `Message sent to ${sent} volunteer${sent > 1 ? 's' : ''}`));
     setSending(false);
     if (sent > 0) onClose();
   };
 
-  const previewVolunteer = volunteers.find(v => selectedVolunteers.has(v.id)) || volunteers[0];
+  const filteredVolunteers = searchQuery
+    ? volunteers.filter(v => (v.full_name || v.email || '').toLowerCase().includes(searchQuery.toLowerCase()))
+    : volunteers;
+
+  const previewVol = volunteers.find(v => selectedIds.has(v.id)) || volunteers[0];
+  const canGoNext = () => {
+    if (step === 1) return selectedIds.size > 0;
+    if (step === 2) return message.trim().length > 0 || !!attachmentFile;
+    if (step === 3) return true;
+    return true;
+  };
+
+  const audienceModes: { mode: AudienceMode; icon: typeof Users; nl: string; fr: string; en: string }[] = [
+    { mode: 'all', icon: Users, nl: 'Alle vrijwilligers', fr: 'Tous les bénévoles', en: 'All volunteers' },
+    { mode: 'event', icon: FileText, nl: 'Per evenement/taak', fr: 'Par événement/tâche', en: 'By event/task' },
+    { mode: 'partner', icon: Users, nl: 'Per partner', fr: 'Par partenaire', en: 'By partner' },
+    { mode: 'role', icon: Users, nl: 'Per rol', fr: 'Par rôle', en: 'By role' },
+    { mode: 'manual', icon: CheckCircle, nl: 'Handmatige selectie', fr: 'Sélection manuelle', en: 'Manual selection' },
+  ];
+
+  const channelOptions: { ch: Channel; icon: typeof Bell; nl: string; fr: string; en: string }[] = [
+    { ch: 'push', icon: Bell, nl: 'Push notificatie', fr: 'Notification push', en: 'Push notification' },
+    { ch: 'inapp', icon: MessageCircle, nl: 'In-app bericht', fr: 'Message in-app', en: 'In-app message' },
+    { ch: 'both', icon: Send, nl: 'Push + In-app', fr: 'Push + In-app', en: 'Push + In-app' },
+  ];
+
+  const stepLabels = [
+    t3('Doelgroep', 'Audience', 'Audience'),
+    t3('Bericht', 'Message', 'Message'),
+    t3('Kanaal', 'Canal', 'Channel'),
+    t3('Verstuur', 'Envoyer', 'Send'),
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="bg-card rounded-2xl shadow-elevated p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-card rounded-t-2xl sm:rounded-2xl shadow-elevated w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
-            <Send className="w-5 h-5 text-primary" />
-            {t3('Bericht versturen', 'Envoyer un message', 'Send message')}
-          </h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+        <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
+              <Send className="w-5 h-5 text-primary" />
+              {t3('Communicatiecentrum', 'Centre de communication', 'Communication Center')}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{stepLabels[step - 1]} · {t3('Stap', 'Étape', 'Step')} {step}/{totalSteps}</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="text-sm text-muted-foreground mb-4">
-          {t3('Stuur een bericht naar vrijwilligers voor', 'Envoyer un message aux bénévoles pour', 'Send a message to volunteers for')} <span className="font-medium text-foreground">{taskTitle}</span>
-        </p>
-
-        {/* Volunteer selection */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" />
-              {t3('Ontvangers', 'Destinataires', 'Recipients')} ({selectedVolunteers.size}/{volunteers.length})
-            </h3>
-            <button
-              onClick={toggleAll}
-              className="text-xs text-primary hover:underline"
-            >
-              {selectedVolunteers.size === volunteers.length ? t3('Deselecteer alles', 'Tout désélectionner', 'Deselect all') : t3('Selecteer alles', 'Tout sélectionner', 'Select all')}
-            </button>
-          </div>
-          <div className="space-y-1 max-h-32 overflow-y-auto">
-            {volunteers.map(v => (
-              <label
-                key={v.id}
-                className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedVolunteers.has(v.id)}
-                  onChange={() => toggleVolunteer(v.id)}
-                  className="rounded border-input text-primary focus:ring-ring w-4 h-4"
-                />
-                <span className="text-sm text-foreground truncate">{v.full_name || v.email || t3('Onbekend', 'Inconnu', 'Unknown')}</span>
-              </label>
-            ))}
-          </div>
+        {/* Progress */}
+        <div className="px-4 pt-3 shrink-0">
+          <Progress value={(step / totalSteps) * 100} className="h-1.5" />
         </div>
 
-        {/* Template variables info */}
-        <div className="mb-3">
-          <button
-            onClick={() => setShowVars(!showVars)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Info className="w-3.5 h-3.5" />
-            {t3('Dynamische variabelen', 'Variables dynamiques', 'Dynamic variables')}
-            {showVars ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          </button>
-          {showVars && (
-            <div className="mt-2 p-3 rounded-xl bg-muted/30 border border-border space-y-1.5">
-              <p className="text-xs text-muted-foreground mb-2">
-                {t3('Klik om in te voegen. Variabelen worden automatisch vervangen per vrijwilliger.', 'Cliquez pour insérer. Les variables seront remplacées automatiquement par bénévole.', 'Click to insert. Variables are automatically replaced per volunteer.')}
-              </p>
-              {templateVars.map(v => (
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* STEP 1: Audience */}
+          {step === 1 && (
+            <div className="space-y-4">
+              {/* Audience mode buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                {audienceModes.map(am => (
+                  <button
+                    key={am.mode}
+                    onClick={() => setAudienceMode(am.mode)}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      audienceMode === am.mode
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/30'
+                    }`}
+                  >
+                    <am.icon className={`w-4 h-4 mb-1 ${audienceMode === am.mode ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <p className="text-sm font-medium text-foreground">{am[language]}</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Event/task multiselect */}
+              {audienceMode === 'event' && (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">{t3('Evenementen', 'Événements', 'Events')}</p>
+                    <div className="max-h-32 overflow-y-auto space-y-1 border border-border rounded-xl p-2">
+                      {events.map(ev => (
+                        <label key={ev.id} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-muted/30 cursor-pointer">
+                          <Checkbox
+                            checked={selectedEventIds.has(ev.id)}
+                            onCheckedChange={() => {
+                              setSelectedEventIds(prev => {
+                                const n = new Set(prev);
+                                n.has(ev.id) ? n.delete(ev.id) : n.add(ev.id);
+                                return n;
+                              });
+                            }}
+                          />
+                          <span className="text-sm text-foreground truncate">{ev.title}</span>
+                          {ev.event_date && <span className="text-[10px] text-muted-foreground ml-auto shrink-0">{new Date(ev.event_date).toLocaleDateString()}</span>}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">{t3('Taken', 'Tâches', 'Tasks')}</p>
+                    <div className="max-h-32 overflow-y-auto space-y-1 border border-border rounded-xl p-2">
+                      {tasks.map(tk => (
+                        <label key={tk.id} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-muted/30 cursor-pointer">
+                          <Checkbox
+                            checked={selectedTaskIds.has(tk.id)}
+                            onCheckedChange={() => {
+                              setSelectedTaskIds(prev => {
+                                const n = new Set(prev);
+                                n.has(tk.id) ? n.delete(tk.id) : n.add(tk.id);
+                                return n;
+                              });
+                            }}
+                          />
+                          <span className="text-sm text-foreground truncate">{tk.title}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Partner select */}
+              {audienceMode === 'partner' && partners.length > 0 && (
+                <div className="max-h-32 overflow-y-auto space-y-1 border border-border rounded-xl p-2">
+                  {partners.map(p => (
+                    <label key={p.id} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-muted/30 cursor-pointer">
+                      <Checkbox
+                        checked={selectedPartnerIds.has(p.id)}
+                        onCheckedChange={() => {
+                          setSelectedPartnerIds(prev => {
+                            const n = new Set(prev);
+                            n.has(p.id) ? n.delete(p.id) : n.add(p.id);
+                            return n;
+                          });
+                        }}
+                      />
+                      <span className="text-sm text-foreground">{p.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Role select */}
+              {audienceMode === 'role' && roles.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {roles.map(r => (
+                    <button
+                      key={r}
+                      onClick={() => {
+                        setSelectedRoles(prev => {
+                          const n = new Set(prev);
+                          n.has(r) ? n.delete(r) : n.add(r);
+                          return n;
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        selectedRoles.has(r) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Volunteer list with search */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-primary" />
+                    {selectedIds.size} {t3('vrijwilligers geselecteerd', 'bénévoles sélectionnés', 'volunteers selected')}
+                  </p>
+                  {volunteers.length > 0 && (
+                    <button
+                      onClick={() => setSelectedIds(selectedIds.size === volunteers.length ? new Set() : new Set(volunteers.map(v => v.id)))}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {selectedIds.size === volunteers.length ? t3('Deselecteer', 'Désélectionner', 'Deselect') : t3('Selecteer alles', 'Tout', 'Select all')}
+                    </button>
+                  )}
+                </div>
+
+                {loadingVolunteers ? (
+                  <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+                ) : (
+                  <>
+                    {volunteers.length > 10 && (
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          placeholder={t3('Zoek...', 'Rechercher...', 'Search...')}
+                          className="w-full pl-9 pr-3 py-2 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                    )}
+                    <div className="max-h-40 overflow-y-auto space-y-0.5 border border-border rounded-xl p-2">
+                      {filteredVolunteers.map(v => (
+                        <label key={v.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/30 cursor-pointer min-h-[44px]">
+                          <Checkbox checked={selectedIds.has(v.id)} onCheckedChange={() => toggleVolunteer(v.id)} />
+                          <span className="text-sm text-foreground truncate">{v.full_name || v.email || '?'}</span>
+                        </label>
+                      ))}
+                      {filteredVolunteers.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">{t3('Geen vrijwilligers', 'Aucun bénévole', 'No volunteers')}</p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: Message */}
+          {step === 2 && (
+            <div className="space-y-3">
+              {/* Variables */}
+              <button onClick={() => setShowVars(!showVars)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                <Info className="w-3.5 h-3.5" />
+                {t3('Variabelen', 'Variables', 'Variables')}
+                {showVars ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              {showVars && (
+                <div className="flex flex-wrap gap-1.5">
+                  {templateVars.map(v => (
+                    <button
+                      key={v.key}
+                      onClick={() => setMessage(prev => prev + v.key)}
+                      className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-mono hover:bg-primary/20 transition-colors"
+                    >
+                      {v.key}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <textarea
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                placeholder={t3('Typ je bericht... Gebruik {{naam}} voor personalisatie.', 'Tapez votre message...', 'Type your message...')}
+                className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring resize-none min-h-[120px]"
+                rows={5}
+                maxLength={2000}
+              />
+
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-muted-foreground">{message.length}/2000</span>
+                <input ref={fileInputRef} type="file" accept="image/*,audio/*,.pdf,.doc,.docx" onChange={handleFileSelect} className="hidden" />
+                <button onClick={() => fileInputRef.current?.click()} className="text-muted-foreground hover:text-foreground"><Paperclip className="w-4 h-4" /></button>
+                {recording ? (
+                  <button onClick={stopRecording} className="flex items-center gap-1 text-destructive">
+                    <Square className="w-4 h-4" />
+                    <span className="text-xs animate-pulse">{Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</span>
+                  </button>
+                ) : (
+                  <button onClick={startRecording} className="text-muted-foreground hover:text-foreground"><Mic className="w-4 h-4" /></button>
+                )}
+              </div>
+
+              {attachmentFile && (
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                  {attachmentPreview ? <img src={attachmentPreview} alt="" className="w-10 h-10 rounded object-cover" /> :
+                   attachmentFile.type.startsWith('audio/') ? <Music className="w-4 h-4 text-muted-foreground" /> :
+                   <FileText className="w-4 h-4 text-muted-foreground" />}
+                  <span className="text-xs text-foreground truncate flex-1">{attachmentFile.name}</span>
+                  <button onClick={() => { setAttachmentFile(null); setAttachmentPreview(null); }} className="text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 3: Channel */}
+          {step === 3 && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{t3('Kies hoe je het bericht verstuurt:', 'Choisissez le canal:', 'Choose how to send:')}</p>
+              {channelOptions.map(co => (
                 <button
-                  key={v.key}
-                  onClick={() => insertVariable(v.key)}
-                  className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg hover:bg-muted/50 transition-colors"
+                  key={co.ch}
+                  onClick={() => setChannel(co.ch)}
+                  className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                    channel === co.ch ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
+                  }`}
                 >
-                  <code className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">{v.key}</code>
-                  <span className="text-xs text-muted-foreground">{v.description}</span>
+                  <co.icon className={`w-5 h-5 ${channel === co.ch ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <span className="text-sm font-medium text-foreground">{co[language]}</span>
                 </button>
               ))}
             </div>
           )}
-        </div>
 
-        {/* Message input */}
-        <div className="mb-3">
-          <textarea
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            placeholder={t3('Typ je bericht... Gebruik {{naam}} om automatisch de naam van elke vrijwilliger in te voegen.', 'Tapez votre message... Utilisez {{naam}} pour insérer automatiquement le nom de chaque bénévole.', 'Type your message... Use {{naam}} to automatically insert each volunteer\'s name.')}
-            className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-            rows={4}
-            maxLength={2000}
-          />
-          <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground">{message.length}/2000</span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                title={t3('Bijlage toevoegen', 'Ajouter une pièce jointe', 'Add attachment')}
-              >
-                <Paperclip className="w-3.5 h-3.5" />
-              </button>
-              {recording ? (
-                <button
-                  type="button"
-                  onClick={stopRecording}
-                  className="flex items-center gap-1 text-destructive hover:text-destructive/80 transition-colors"
-                  title={t3('Stop opname', 'Arrêter l\'enregistrement', 'Stop recording')}
-                >
-                  <Square className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-medium animate-pulse">{formatRecordingTime(recordingTime)}</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={startRecording}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  title={t3('Audio opnemen', 'Enregistrer un audio', 'Record audio')}
-                >
-                  <Mic className="w-3.5 h-3.5" />
-                </button>
+          {/* STEP 4: Preview & Send */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-muted/50 rounded-xl p-3">
+                  <p className="text-xs text-muted-foreground">{t3('Ontvangers', 'Destinataires', 'Recipients')}</p>
+                  <p className="text-lg font-heading font-bold text-foreground">{selectedIds.size}</p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-3">
+                  <p className="text-xs text-muted-foreground">{t3('Kanaal', 'Canal', 'Channel')}</p>
+                  <p className="text-sm font-semibold text-foreground">{channelOptions.find(c => c.ch === channel)?.[language]}</p>
+                </div>
+              </div>
+
+              {previewVol && message.trim() && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                  <p className="text-[10px] text-muted-foreground mb-1">
+                    {t3('Voorbeeld voor:', 'Aperçu pour:', 'Preview for:')} {previewVol.full_name || previewVol.email}
+                  </p>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">
+                    {resolveTemplate(message, previewVol)}
+                  </p>
+                </div>
               )}
-            </div>
-          </div>
-          {attachmentFile && (
-            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-muted/50">
-              {attachmentPreview ? (
-                <img src={attachmentPreview} alt="Preview" className="w-10 h-10 rounded object-cover" />
-              ) : attachmentFile.type.startsWith('audio/') ? (
-                <Music className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <FileText className="w-4 h-4 text-muted-foreground" />
+
+              {sending && (
+                <div className="space-y-2">
+                  <Progress value={(sentCount / selectedIds.size) * 100} className="h-2" />
+                  <p className="text-xs text-muted-foreground text-center">{sentCount}/{selectedIds.size} {t3('verstuurd...', 'envoyé...', 'sent...')}</p>
+                </div>
               )}
-              <span className="text-xs text-foreground truncate flex-1">{attachmentFile.name}</span>
-              <button onClick={clearAttachment} className="text-muted-foreground hover:text-foreground">
-                <X className="w-3.5 h-3.5" />
-              </button>
             </div>
           )}
         </div>
 
-        {/* Preview toggle */}
-        {message.trim() && (
-          <div className="mb-4">
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className="flex items-center gap-1.5 text-xs text-primary hover:underline"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              {showPreview ? t3('Verberg voorbeeld', 'Masquer l\'aperçu', 'Hide preview') : t3('Voorbeeld bekijken', 'Voir l\'aperçu', 'Preview')}
-            </button>
-            {showPreview && previewVolunteer && (
-              <div className="mt-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
-                <p className="text-[10px] text-muted-foreground mb-1">
-                  {t3('Voorbeeld voor:', 'Aperçu pour:', 'Preview for:')} {previewVolunteer.full_name || previewVolunteer.email}
-                </p>
-                <p className="text-sm text-foreground whitespace-pre-wrap">
-                  {resolveTemplate(message, previewVolunteer)}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Send button */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {sending && `${sentCount}/${selectedVolunteers.size} ${t3('verstuurd...', 'envoyé...', 'sent...')}`}
-          </span>
-          <button
-            onClick={handleSend}
-            disabled={sending || (!message.trim() && !attachmentFile) || selectedVolunteers.size === 0}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+        {/* Footer navigation */}
+        <div className="p-4 border-t border-border flex items-center justify-between shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => step > 1 ? setStep(step - 1) : onClose()}
+            className="rounded-xl"
           >
-            {sending ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {t3('Versturen...', 'Envoi...', 'Sending...')}
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                {t3(`Verstuur naar ${selectedVolunteers.size} vrijwilliger${selectedVolunteers.size !== 1 ? 's' : ''}`, `Envoyer à ${selectedVolunteers.size} bénévole${selectedVolunteers.size !== 1 ? 's' : ''}`, `Send to ${selectedVolunteers.size} volunteer${selectedVolunteers.size !== 1 ? 's' : ''}`)}
-              </>
-            )}
-          </button>
+            {step > 1 ? <><ChevronLeft className="w-4 h-4 mr-1" />{t3('Vorige', 'Précédent', 'Previous')}</> : t3('Annuleren', 'Annuler', 'Cancel')}
+          </Button>
+
+          {step < totalSteps ? (
+            <Button
+              onClick={() => setStep(step + 1)}
+              disabled={!canGoNext()}
+              className="rounded-xl"
+            >
+              {t3('Volgende', 'Suivant', 'Next')}
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSend}
+              disabled={sending || selectedIds.size === 0 || (!message.trim() && !attachmentFile)}
+              className="rounded-xl"
+            >
+              {sending ? (
+                <><Loader2 className="w-4 h-4 animate-spin mr-1" />{t3('Versturen...', 'Envoi...', 'Sending...')}</>
+              ) : (
+                <><Send className="w-4 h-4 mr-1" />{t3(`Verstuur naar ${selectedIds.size}`, `Envoyer à ${selectedIds.size}`, `Send to ${selectedIds.size}`)}</>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>
