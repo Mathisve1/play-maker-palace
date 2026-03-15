@@ -476,12 +476,19 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                   <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
                     {(member.profile?.full_name || member.profile?.email || '?')[0].toUpperCase()}
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {member.profile?.full_name || t3('Onbekend', 'Inconnu', 'Unknown')}
-                      {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">({t3('jij', 'vous', 'you')})</span>}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">{member.profile?.email}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {member.profile?.full_name || member.profile?.email || t3('Onbekend', 'Inconnu', 'Unknown')}
+                        {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">({t3('jij', 'vous', 'you')})</span>}
+                        {member.isPending && (
+                          <span className="ml-2 inline-flex px-1.5 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-600 font-medium">
+                            {t3('Uitnodiging in afwachting', 'Invitation en attente', 'Invitation pending')}
+                          </span>
+                        )}
+                      </p>
+                      {member.profile?.email && member.profile?.full_name && (
+                        <p className="text-xs text-muted-foreground truncate">{member.profile.email}</p>
+                      )}
                     {member.contractTypes && member.contractTypes.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {member.contractTypes.map(ct => (
