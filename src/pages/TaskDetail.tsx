@@ -234,6 +234,7 @@ const TaskDetail = () => {
   const [hasBriefing, setHasBriefing] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const [contractStatus, setContractStatus] = useState<'signed' | 'pending' | 'none' | 'loading'>('loading');
+  const [myZone, setMyZone] = useState<{ name: string; max_capacity: number | null } | null>(null);
 
   const l = labels[language];
 
