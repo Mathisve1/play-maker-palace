@@ -11,79 +11,79 @@ interface Props {
 
 const upgradeT = {
   nl: {
-    title: 'Jouw club groeit! 🎉',
-    subtitle: 'Je hebt je 2 gratis contracttypes opgebruikt. Upgrade om onbeperkt door te gaan.',
+    title: 'Zo werkt onze facturatie 💡',
+    subtitle: 'Elke vrijwilliger mag 2 taken gratis voltooien per seizoen. Vanaf de 3e taak betaal je €15 voor die vrijwilliger voor het hele seizoen.',
     features: [
-      'Interactieve briefings met checklists en routes',
-      'SEPA-uitbetalingen en automatische facturatie',
-      'Digitale contracten met e-handtekening',
-      'Veiligheidsmodule met incident-logging',
+      'Eerste 2 voltooide taken per vrijwilliger: gratis',
+      'Vanaf 3e taak: €15 per vrijwilliger per seizoen (eenmalig)',
+      'Automatisch gefactureerd — geen blokkering',
+      'Teller reset elk nieuw seizoen',
     ],
     price: '€15 per vrijwilliger / per seizoen',
-    priceNote: 'Betaal enkel voor actieve vrijwilligers',
-    howItWorks: 'Hoe werkt de prijs?',
-    step1: 'Eerste 2 contracttypes: volledig gratis',
-    step2: 'Vanaf 3e contracttype: €15 per vrijwilliger per seizoen',
-    step3: 'Betaal enkel voor actieve vrijwilligers met een contract',
+    priceNote: 'Enkel voor vrijwilligers met 3+ voltooide taken',
+    howItWorks: 'Hoe werkt het?',
+    step1: 'Vrijwilliger voltooit taak 1 & 2: gratis ✓',
+    step2: 'Bij taak 3: €15 wordt automatisch gefactureerd',
+    step3: 'Alle volgende taken dat seizoen: geen extra kost',
     exampleTitle: 'Voorbeeldberekening',
-    example1: '10 stewards × €15 = €150 / seizoen',
-    example2: '25 bar & catering × €15 = €375 / seizoen',
-    example3: '5 terreinmedewerkers × €15 = €75 / seizoen',
-    exampleTotal: 'Totaal: 40 vrijwilligers = €600 / seizoen',
+    example1: '5 stewards met 3+ taken × €15 = €75',
+    example2: '10 bar-vrijwilligers met 3+ taken × €15 = €150',
+    example3: '8 vrijwilligers met max 2 taken: €0',
+    exampleTotal: 'Totaal: 15 gefactureerd × €15 = €225 / seizoen',
     testimonial: 'KAA Gent bespaart 10+ uur administratie per wedstrijd',
     testimonialAuthor: 'Coördinator vrijwilligers, KAA Gent',
-    confirm: 'Doorgaan voor €15/vrijwilliger',
-    later: 'Later',
+    confirm: 'Begrepen',
+    later: 'Sluiten',
   },
   fr: {
-    title: 'Votre club grandit ! 🎉',
-    subtitle: 'Vous avez utilisé vos 2 types de contrats gratuits. Passez à la version payante pour continuer.',
+    title: 'Notre modèle de facturation 💡',
+    subtitle: 'Chaque bénévole peut effectuer 2 tâches gratuitement par saison. À partir de la 3e tâche, vous payez €15 pour ce bénévole pour toute la saison.',
     features: [
-      'Briefings interactifs avec checklists et itinéraires',
-      'Paiements SEPA et facturation automatique',
-      'Contrats numériques avec signature électronique',
-      'Module de sécurité avec journal des incidents',
+      '2 premières tâches par bénévole : gratuites',
+      'À partir de la 3e tâche : €15 par bénévole par saison',
+      'Facturation automatique — pas de blocage',
+      'Compteur réinitialisé chaque saison',
     ],
     price: '€15 par bénévole / par saison',
-    priceNote: 'Payez uniquement pour les bénévoles actifs',
-    howItWorks: 'Comment fonctionne le prix ?',
-    step1: '2 premiers types de contrats : entièrement gratuits',
-    step2: 'À partir du 3e type : €15 par bénévole par saison',
-    step3: 'Ne payez que pour les bénévoles actifs avec un contrat',
+    priceNote: 'Uniquement pour les bénévoles avec 3+ tâches',
+    howItWorks: 'Comment ça marche ?',
+    step1: 'Bénévole complète tâches 1 & 2 : gratuit ✓',
+    step2: 'À la tâche 3 : €15 facturé automatiquement',
+    step3: 'Toutes les tâches suivantes cette saison : sans frais',
     exampleTitle: 'Exemple de calcul',
-    example1: '10 stewards × €15 = €150 / saison',
-    example2: '25 bar & restauration × €15 = €375 / saison',
-    example3: '5 agents terrain × €15 = €75 / saison',
-    exampleTotal: 'Total : 40 bénévoles = €600 / saison',
+    example1: '5 stewards avec 3+ tâches × €15 = €75',
+    example2: '10 bénévoles bar avec 3+ tâches × €15 = €150',
+    example3: '8 bénévoles avec max 2 tâches : €0',
+    exampleTotal: 'Total : 15 facturés × €15 = €225 / saison',
     testimonial: 'KAA Gent économise plus de 10h d\'administration par match',
     testimonialAuthor: 'Coordinateur bénévoles, KAA Gent',
-    confirm: 'Continuer pour €15/bénévole',
-    later: 'Plus tard',
+    confirm: 'Compris',
+    later: 'Fermer',
   },
   en: {
-    title: 'Your club is growing! 🎉',
-    subtitle: 'You\'ve used your 2 free contract types. Upgrade to continue unlimited.',
+    title: 'How our billing works 💡',
+    subtitle: 'Each volunteer can complete 2 tasks for free per season. From the 3rd task, you pay €15 for that volunteer for the entire season.',
     features: [
-      'Interactive briefings with checklists and routes',
-      'SEPA payouts and automated invoicing',
-      'Digital contracts with e-signatures',
-      'Safety module with incident logging',
+      'First 2 completed tasks per volunteer: free',
+      'From 3rd task: €15 per volunteer per season (one-time)',
+      'Automatically invoiced — no blocking',
+      'Counter resets each new season',
     ],
     price: '€15 per volunteer / per season',
-    priceNote: 'Only pay for active volunteers',
-    howItWorks: 'How does pricing work?',
-    step1: 'First 2 contract types: completely free',
-    step2: 'From 3rd contract type: €15 per volunteer per season',
-    step3: 'Only pay for active volunteers with a contract',
+    priceNote: 'Only for volunteers with 3+ completed tasks',
+    howItWorks: 'How does it work?',
+    step1: 'Volunteer completes tasks 1 & 2: free ✓',
+    step2: 'At task 3: €15 is automatically invoiced',
+    step3: 'All subsequent tasks that season: no extra cost',
     exampleTitle: 'Example calculation',
-    example1: '10 stewards × €15 = €150 / season',
-    example2: '25 bar & catering × €15 = €375 / season',
-    example3: '5 grounds crew × €15 = €75 / season',
-    exampleTotal: 'Total: 40 volunteers = €600 / season',
+    example1: '5 stewards with 3+ tasks × €15 = €75',
+    example2: '10 bar volunteers with 3+ tasks × €15 = €150',
+    example3: '8 volunteers with max 2 tasks: €0',
+    exampleTotal: 'Total: 15 billed × €15 = €225 / season',
     testimonial: 'KAA Gent saves 10+ hours of administration per match',
     testimonialAuthor: 'Volunteer coordinator, KAA Gent',
-    confirm: 'Continue for €15/volunteer',
-    later: 'Later',
+    confirm: 'Got it',
+    later: 'Close',
   },
 };
 
@@ -134,18 +134,12 @@ const UpgradeModal = ({ open, onClose, onConfirm }: Props) => {
               <h3 className="text-sm font-semibold text-foreground">{t.howItWorks}</h3>
             </div>
             <ul className="space-y-2 text-sm">
-              <li className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-                <span className="text-foreground">{t.step1}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
-                <span className="text-foreground">{t.step2}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
-                <span className="text-foreground">{t.step3}</span>
-              </li>
+              {[t.step1, t.step2, t.step3].map((step, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                  <span className="text-foreground">{step}</span>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -158,7 +152,7 @@ const UpgradeModal = ({ open, onClose, onConfirm }: Props) => {
             <div className="space-y-1.5 text-sm text-muted-foreground">
               <p>{t.example1}</p>
               <p>{t.example2}</p>
-              <p>{t.example3}</p>
+              <p className="text-primary">{t.example3}</p>
             </div>
             <div className="mt-3 pt-3 border-t border-primary/15">
               <p className="text-sm font-bold text-primary">{t.exampleTotal}</p>
