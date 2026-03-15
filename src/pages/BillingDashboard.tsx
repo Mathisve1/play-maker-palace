@@ -10,8 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
+import {
   CreditCard, Receipt, Users, Loader2, Download, Gift, AlertTriangle,
-  CheckCircle, Handshake, TrendingUp, FileText
+  CheckCircle, Handshake, TrendingUp, FileText, Package
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { generateInvoicePdf } from '@/lib/generateInvoicePdf';
