@@ -183,36 +183,8 @@ const SeasonContractManager = () => {
     }
   };
 
-  const isFreeTrialExhausted = billing && billing.free_contracts_used >= billing.free_contracts_limit;
-
+  // No more blocking — billing is automatic per volunteer when they complete 3+ tasks
   const handleSendClick = () => {
-    if (isFreeTrialExhausted) {
-      setShowBillingModal(true);
-    } else {
-      setShowSendContract(true);
-    }
-  };
-
-  const handleAcceptBilling = async () => {
-    if (!clubId || !activeSeason) return;
-    // Log billing events for each selected volunteer
-    for (const volId of selectedVols) {
-      await supabase.from('billing_events').insert({
-        club_id: clubId,
-        event_type: 'paid_contract_created',
-        volunteer_id: volId,
-        season_id: activeSeason.id,
-        amount_cents: billing?.volunteer_price_cents || 1500,
-      });
-    }
-    // Update billing counts
-    await supabase.from('club_billing')
-      .update({
-        current_season_volunteers_billed: (billing?.current_season_volunteers_billed || 0) + selectedVols.size,
-      })
-      .eq('club_id', clubId);
-
-    setShowBillingModal(false);
     setShowSendContract(true);
   };
 
