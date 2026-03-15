@@ -143,6 +143,44 @@ const VolunteerProfileDialog = ({
 }: VolunteerProfileDialogProps) => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [ratingInfo, setRatingInfo] = useState<{ avg: number; count: number } | null>(null);
+  const [exportingGdpr, setExportingGdpr] = useState(false);
+
+  const handleGdprExport = async () => {
+    if (!volunteer) return;
+    setExportingGdpr(true);
+    try {
+      const [profileRes, signupsRes, contractsRes, paymentsRes, reviewsRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', volunteer.id).maybeSingle(),
+        supabase.from('task_signups').select('*, tasks(title, task_date)').eq('volunteer_id', volunteer.id),
+        (supabase as any).from('season_contracts').select('*').eq('volunteer_id', volunteer.id),
+        supabase.from('volunteer_payments').select('*').eq('volunteer_id', volunteer.id),
+        (supabase as any).from('task_reviews').select('*').eq('reviewee_id', volunteer.id),
+      ]);
+
+      const exportData = {
+        export_date: new Date().toISOString(),
+        volunteer_id: volunteer.id,
+        profile: profileRes.data,
+        task_signups: signupsRes.data || [],
+        contracts: contractsRes.data || [],
+        payments: paymentsRes.data || [],
+        reviews: reviewsRes.data || [],
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gdpr_export_${volunteer.full_name?.replace(/\s+/g, '_') || volunteer.id}_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(language === 'nl' ? 'GDPR-export gedownload' : language === 'fr' ? 'Export RGPD téléchargé' : 'GDPR export downloaded');
+    } catch (err) {
+      console.error(err);
+      toast.error('Export failed');
+    }
+    setExportingGdpr(false);
+  };
   useEffect(() => {
     if (!volunteer?.id || !open) { setCertificates([]); setRatingInfo(null); return; }
     (async () => {
