@@ -738,28 +738,66 @@ const TicketingDashboard = () => {
 
               {selectedEventId && (
                 <>
+                  {/* Global progress + last update + reminder button */}
                   <Card>
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-foreground">
                           {checkedInCount} / {totalVolunteers} {labels.progress}
                         </span>
-                        <span className="text-2xl font-bold text-primary">{progressPercent}%</span>
+                        <div className="flex items-center gap-3">
+                          {lastUpdateTime && (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              {labels.lastUpdate}: {lastUpdateTime.toLocaleTimeString()}
+                            </span>
+                          )}
+                          <span className="text-2xl font-bold text-primary">{progressPercent}%</span>
+                        </div>
                       </div>
                       <Progress value={progressPercent} className="h-3" />
-                      <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" /> {labels.checkedIn}: {checkedInCount}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-blue-500" /> {labels.sent}: {sentCount}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-muted-foreground" /> {labels.noTicket}: {totalVolunteers - checkedInCount - sentCount}
-                        </span>
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-accent" /> {labels.checkedIn}: {checkedInCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-primary" /> {labels.sent}: {sentCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-muted-foreground" /> {labels.noTicket}: {totalVolunteers - checkedInCount - sentCount}
+                          </span>
+                        </div>
+                        {sentVolunteers.length > 0 && (
+                          <Button size="sm" variant="outline" onClick={() => setShowReminderDialog(true)} className="gap-1.5">
+                            <Bell className="w-3.5 h-3.5" />
+                            {labels.sendReminder}
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Per-task progress */}
+                  {taskProgress.length > 1 && (
+                    <Card>
+                      <CardContent className="pt-6 space-y-4">
+                        <p className="text-sm font-medium text-foreground">{labels.perTask}</p>
+                        {taskProgress.map(tp => {
+                          const pct = tp.total > 0 ? Math.round((tp.checkedIn / tp.total) * 100) : 0;
+                          return (
+                            <div key={tp.id} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-foreground font-medium truncate max-w-[60%]">{tp.title}</span>
+                                <span className="text-muted-foreground">{tp.checkedIn}/{tp.total} ({pct}%)</span>
+                              </div>
+                              <Progress value={pct} className="h-2" />
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Search for manual check-in */}
                   <div className="relative">
