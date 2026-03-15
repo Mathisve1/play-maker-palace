@@ -334,11 +334,9 @@ const PlanningOverview = () => {
           </div>
         )}
 
-        {/* Calendar view */}
         {viewMode === 'calendar' ? (
           <PlanningCalendarView events={events} tasks={tasks} language={language} />
         ) : (
-        {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
           <TabsList className="w-full grid grid-cols-3 h-12">
              <TabsTrigger value="events" className="flex items-center gap-2 text-sm">
@@ -355,7 +353,6 @@ const PlanningOverview = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Search - shared */}
           <div className="relative mt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -367,7 +364,6 @@ const PlanningOverview = () => {
             />
           </div>
 
-          {/* Tab: Event Planning */}
           <TabsContent value="events" className="space-y-4 mt-4">
             {filteredEvents.map(event => {
               const eventTasks = getEventTasks(event.id);
@@ -405,7 +401,6 @@ const PlanningOverview = () => {
             )}
           </TabsContent>
 
-          {/* Tab: Losse Taken */}
           <TabsContent value="loose" className="space-y-4 mt-4">
             {filteredLooseTasks.length > 0 ? (
               <div className="bg-card rounded-2xl border border-border overflow-hidden">
@@ -427,9 +422,7 @@ const PlanningOverview = () => {
             )}
           </TabsContent>
 
-          {/* Tab: Maandplanning */}
           <TabsContent value="monthly" className="space-y-4 mt-4">
-            {/* Info banner */}
             <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5">
               <div className="flex items-start gap-3">
                 <FileText className="w-5 h-5 text-primary mt-0.5 shrink-0" />
@@ -446,7 +439,6 @@ const PlanningOverview = () => {
               </div>
             </div>
 
-            {/* Demo buttons */}
             <div className="flex gap-2">
               {hasMonthlyDemo ? (
                 <button onClick={handleDeleteMonthlyDemo} disabled={monthlyDemoDeleteLoading}
@@ -503,7 +495,6 @@ const PlanningOverview = () => {
               </div>
             )}
 
-            {/* Button to go to full monthly planning */}
             <button
               onClick={() => navigate('/monthly-planning')}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
@@ -513,6 +504,7 @@ const PlanningOverview = () => {
             </button>
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </ClubPageLayout>
     <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
