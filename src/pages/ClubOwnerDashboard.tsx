@@ -37,6 +37,7 @@ const TaskPickerDialog = lazy(() => import('@/components/TaskPickerDialog'));
 const EditProfileDialog = lazy(() => import('@/components/EditProfileDialog'));
 const VolunteerMatcher = lazy(() => import('@/components/VolunteerMatcher'));
 const ClubOnboardingWizard = lazy(() => import('@/components/ClubOnboardingWizard'));
+const FreeTrialBanner = lazy(() => import('@/components/FreeTrialBanner'));
 
 interface VolunteerProfile {
   id: string;
