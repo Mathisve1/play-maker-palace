@@ -153,12 +153,38 @@ const PartnerDashboard = () => {
     const { error } = await supabase.from('tasks').update({ partner_acceptance_status: 'accepted' }).eq('id', taskId);
     if (error) { toast.error(error.message); return; }
     toast.success(nl ? 'Taak aanvaard!' : 'Task accepted!');
+    // Notify club
+    try {
+      const task = clubTasks.find(t => t.id === taskId);
+      if (partner && selectedClubId) {
+        sendPushToClub({
+          clubId: selectedClubId,
+          title: '✅ Taak geaccepteerd',
+          message: `${partner.name} heeft taak "${task?.title || ''}" geaccepteerd.`,
+          url: '/external-partners',
+          type: 'partner_response',
+        });
+      }
+    } catch { /* silent */ }
     await refreshAll();
   };
   const handleRejectTask = async (taskId: string) => {
     const { error } = await supabase.from('tasks').update({ partner_acceptance_status: 'rejected' }).eq('id', taskId);
     if (error) { toast.error(error.message); return; }
     toast.success(nl ? 'Taak geweigerd.' : 'Task rejected.');
+    // Notify club
+    try {
+      const task = clubTasks.find(t => t.id === taskId);
+      if (partner && selectedClubId) {
+        sendPushToClub({
+          clubId: selectedClubId,
+          title: '❌ Taak geweigerd',
+          message: `${partner.name} heeft taak "${task?.title || ''}" geweigerd.`,
+          url: '/external-partners',
+          type: 'partner_response',
+        });
+      }
+    } catch { /* silent */ }
     await refreshAll();
   };
 
