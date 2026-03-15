@@ -13,6 +13,7 @@ interface Member {
   role: ClubRole;
   membership_id?: string;
   profile?: { full_name: string | null; email: string | null };
+  isPending?: boolean;
   contractTypes?: ContractTypeKey[];
 }
 
