@@ -177,6 +177,8 @@ const VolunteerManagement = () => {
             status: c.status,
             category: tmpl?.category || 'event_support',
             template_name: tmpl?.name || 'Contract',
+            signing_url: (c as any).signing_url || null,
+            signed_at: (c as any).signed_at || null,
           };
         });
 
