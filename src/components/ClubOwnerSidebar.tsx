@@ -36,6 +36,7 @@ const ClubOwnerSidebar = ({
   const { setOpenMobile } = useSidebar();
   const { language } = useLanguage();
   const [actionCount, setActionCount] = useState(0);
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
