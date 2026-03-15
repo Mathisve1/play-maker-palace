@@ -171,7 +171,7 @@ const EventAttendance = () => {
 
   const handleCheckIn = async (signupId: string) => {
     setCheckingIn(signupId);
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('task_signups')
       .update({ checked_in_at: new Date().toISOString() })
       .eq('id', signupId);
