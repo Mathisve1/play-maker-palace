@@ -200,7 +200,7 @@ const CloseSeasonWizard = ({ open, onClose, clubId, seasonId, seasonName, langua
 
             {pendingHours.length === 0 ? (
               <div className="bg-muted/30 rounded-xl p-6 text-center">
-                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-primary" />
                 <p className="text-sm text-foreground font-medium">{t('Alle uren zijn bevestigd!', 'Toutes les heures sont confirmées!', 'All hours are confirmed!')}</p>
               </div>
             ) : (
