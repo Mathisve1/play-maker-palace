@@ -117,6 +117,11 @@ const VolunteerLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Vind vrijwilligerswerk bij jouw sportclub | De 12e Man"
+        description="De 12e Man koppelt vrijwilligers aan sportclubs in België. Vind taken, teken contracten en word beloond voor je inzet."
+        canonical="/"
+      />
       <Navbar />
 
       {/* Hero */}

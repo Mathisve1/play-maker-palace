@@ -157,6 +157,11 @@ const ClubsLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Beheer vrijwilligers professioneel | De 12e Man"
+        description="Digitaal vrijwilligersbeheer voor sportclubs. Seizoenscontracten, compliance, planning en meer — alles in één platform."
+        canonical="/clubs"
+      />
       <Navbar />
 
       {/* Hero */}

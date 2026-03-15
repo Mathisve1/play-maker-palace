@@ -245,6 +245,11 @@ const CommunityClubDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title={`${club.name} — Vrijwilligers gezocht | De 12e Man`}
+        description={club.description || `Word vrijwilliger bij ${club.name}. Ontdek beschikbare taken en schrijf je in via De 12e Man.`}
+        canonical={`/community/club/${club.id}`}
+      />
       <Navbar />
 
       {/* Hero */}
