@@ -217,23 +217,14 @@ const AnalyticsDashboard = () => {
     return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/club-login');
-  };
-
-  const sidebarEl = (
-    <ClubOwnerSidebar
-      profile={profile}
-      clubId={clubId}
-      clubInfo={clubInfo}
-      onLogout={handleLogout}
-    />
-  );
-
   return (
-    <DashboardLayout sidebar={sidebarEl}>
+    <ClubPageLayout>
       <div className="max-w-6xl mx-auto space-y-6">
+        <PageNavTabs tabs={[
+          { label: t3('Rapporten', 'Rapports', 'Reports'), path: '/reporting' },
+          { label: 'Analytics', path: '/analytics' },
+          { label: 'Audit Log', path: '/audit-log' },
+        ]} />
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
