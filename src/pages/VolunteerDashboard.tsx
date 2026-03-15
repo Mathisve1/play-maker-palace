@@ -772,7 +772,20 @@ const VolunteerDashboard = () => {
 
       {/* ===== LOYALTY TAB ===== */}
       {activeTab === 'loyalty' && (
-        <VolunteerLoyaltyTab programs={loyaltyPrograms} enrollments={loyaltyEnrollments} language={language} enrollingProgram={enrollingProgram} onEnroll={handleEnrollLoyalty} />
+        <div className="max-w-5xl mx-auto space-y-6">
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">
+            {language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'}
+          </h1>
+          {currentUserId && (
+            <VolunteerLoyaltyProgress
+              userId={currentUserId}
+              language={language}
+              totalPoints={Object.values(loyaltyEnrollments).reduce((s, e) => s + (e.points_earned || 0), 0)}
+              refreshKey={badgeRefreshKey}
+            />
+          )}
+          <VolunteerLoyaltyTab programs={loyaltyPrograms} enrollments={loyaltyEnrollments} language={language} enrollingProgram={enrollingProgram} onEnroll={handleEnrollLoyalty} />
+        </div>
       )}
 
       {/* ===== BRIEFINGS TAB ===== */}
