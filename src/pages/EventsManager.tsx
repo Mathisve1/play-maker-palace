@@ -226,9 +226,14 @@ const EventsManager = () => {
     return parts.join(', ') || null;
   };
 
+  const pastDateError = () => t3('Je kunt geen datum in het verleden kiezen.', 'Vous ne pouvez pas choisir une date dans le passé.', 'You cannot choose a date in the past.');
+  const isDateInPast = (d: string) => d && new Date(d) < new Date(new Date().toDateString());
+  const todayMin = new Date().toISOString().slice(0, 16);
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !newEvent.title.trim()) return;
+    if (isDateInPast(newEvent.event_date)) { toast.error(pastDateError()); return; }
     setCreatingEvent(true);
     const locationStr = buildLocationString();
     const { data, error } = await supabase.from('events').insert({
