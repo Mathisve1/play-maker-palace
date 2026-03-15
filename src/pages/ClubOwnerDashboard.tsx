@@ -36,6 +36,7 @@ const BriefingProgressDialog = lazy(() => import('@/components/BriefingProgressD
 const TaskPickerDialog = lazy(() => import('@/components/TaskPickerDialog'));
 const EditProfileDialog = lazy(() => import('@/components/EditProfileDialog'));
 const VolunteerMatcher = lazy(() => import('@/components/VolunteerMatcher'));
+const ClubOnboardingWizard = lazy(() => import('@/components/ClubOnboardingWizard'));
 
 interface VolunteerProfile {
   id: string;
