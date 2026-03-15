@@ -70,6 +70,13 @@ const t = {
     noEvents: 'Aucun événement disponible',
     success: 'Succès',
     error: 'Erreur',
+    sendReminder: 'Envoyer un rappel à tous',
+    reminderConfirmTitle: 'Envoyer un rappel',
+    reminderConfirmDesc: 'Vous allez envoyer un rappel à {count} bénévole(s) avec un ticket non lu.',
+    reminderSending: 'Envoi...',
+    reminderSent: 'Rappels envoyés',
+    lastUpdate: 'Dernière mise à jour',
+    perTask: 'Par tâche',
   },
   en: {
     back: 'Back to dashboard',
