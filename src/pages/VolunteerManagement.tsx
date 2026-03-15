@@ -483,6 +483,30 @@ const VolunteerManagement = () => {
               <SelectItem value="trial">{t('Proefperiode', 'Essai', 'Trial')}</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filterTaskCount} onValueChange={setFilterTaskCount}>
+            <SelectTrigger className="w-full md:w-44">
+              <SelectValue placeholder={t('Taken', 'Tâches', 'Tasks')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('Alle taken', 'Toutes les tâches', 'All tasks')}</SelectItem>
+              <SelectItem value="none">{t('Geen taken', 'Aucune tâche', 'No tasks')}</SelectItem>
+              <SelectItem value="1-5">1-5 {t('taken', 'tâches', 'tasks')}</SelectItem>
+              <SelectItem value="5+">5+ {t('taken', 'tâches', 'tasks')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterJoinDate} onValueChange={setFilterJoinDate}>
+            <SelectTrigger className="w-full md:w-48">
+              <CalendarDays className="w-4 h-4 mr-2" />
+              <SelectValue placeholder={t('Lid sinds', 'Membre depuis', 'Member since')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('Alle', 'Tous', 'All')}</SelectItem>
+              <SelectItem value="week">{t('Laatste week', 'Dernière semaine', 'Last week')}</SelectItem>
+              <SelectItem value="month">{t('Laatste maand', 'Dernier mois', 'Last month')}</SelectItem>
+              <SelectItem value="3months">{t('Laatste 3 maanden', '3 derniers mois', 'Last 3 months')}</SelectItem>
+              <SelectItem value="older">{t('Langer geleden', 'Plus ancien', 'Older')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Bulk action bar */}
