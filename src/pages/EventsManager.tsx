@@ -10,7 +10,7 @@ import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
   PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
-  FileText, Save, ClipboardCheck, Send,
+  FileText, Save, ClipboardCheck, Send, UserCheck,
 } from 'lucide-react';
 import BulkMessageDialog from '@/components/BulkMessageDialog';
 import EventTemplateDialog from '@/components/EventTemplateDialog';
@@ -100,6 +100,7 @@ const EventsManager = () => {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
   const [bulkMessageEventId, setBulkMessageEventId] = useState<string | null>(null);
+  const [bulkMessageTask, setBulkMessageTask] = useState<{ id: string; title: string } | null>(null);
 
   // Adding task to group
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
@@ -983,6 +984,15 @@ const EventsManager = () => {
           onClose={() => setBulkMessageEventId(null)}
         />
       )}
+      {bulkMessageTask && clubId && contextUserId && (
+        <BulkMessageDialog
+          clubId={clubId}
+          clubOwnerId={contextUserId}
+          preselectedTaskId={bulkMessageTask.id}
+          preselectedTaskTitle={bulkMessageTask.title}
+          onClose={() => setBulkMessageTask(null)}
+        />
+      )}
     </ClubPageLayout>
     <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
     {clubId && (
@@ -1167,6 +1177,11 @@ const EventsManager = () => {
                   <DropdownMenuItem onClick={() => handleSaveAsTemplate(event.id)} disabled={savingTemplate === event.id}>
                     {savingTemplate === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} {nl ? 'Opslaan als sjabloon' : 'Save as template'}
                   </DropdownMenuItem>
+                  {event.event_date && new Date(event.event_date).setHours(0,0,0,0) <= new Date().setHours(23,59,59,999) && (
+                    <DropdownMenuItem onClick={() => navigate(`/events/${event.id}/attendance`)}>
+                      <UserCheck className="w-4 h-4 mr-2" /> {t3('Aanwezigheidsoverzicht', 'Aperçu des présences', 'Attendance overview')}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => handleToggleHoldEvent(event.id)} disabled={togglingHold === event.id} className="text-yellow-600 dark:text-yellow-400 focus:text-yellow-600 dark:focus:text-yellow-400">
                     {event.status === 'on_hold' ? <PlayCircle className="w-4 h-4 mr-2" /> : <PauseCircle className="w-4 h-4 mr-2" />} {event.status === 'on_hold' ? (nl ? 'Heractiveren' : 'Reactivate') : (nl ? 'On hold' : 'On hold')}
@@ -1305,6 +1320,9 @@ const EventsManager = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
+                              <button onClick={() => setBulkMessageTask({ id: task.id, title: task.title })} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors border border-border" title={t3('Nodig vrijwilligers uit', 'Inviter des bénévoles', 'Invite volunteers')}>
+                                <Send className="w-3.5 h-3.5" /> {t3('Uitnodigen', 'Inviter', 'Invite')}
+                              </button>
                               <button data-tour={ei === 0 && gi === 0 ? 'btn-zones-first' : undefined} onClick={() => setZoneDialogTask({ id: task.id, title: task.title })} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors border border-border" title={nl ? 'Zones beheren' : 'Manage zones'}>
                                 <Layers className="w-3.5 h-3.5" /> {nl ? 'Zones' : 'Zones'}
                               </button>
