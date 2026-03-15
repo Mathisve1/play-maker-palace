@@ -278,7 +278,24 @@ const PlanningOverview = () => {
                {t3('Beheer event planning, losse taken en maandcontracten', 'Gérez la planification, les tâches et les contrats mensuels', 'Manage event planning, standalone tasks and monthly contracts')}
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
+            {/* View mode toggle */}
+            <div className="inline-flex rounded-xl border border-border overflow-hidden">
+              <button
+                onClick={() => { setViewMode('list'); localStorage.setItem('planning-view-mode', 'list'); }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'}`}
+              >
+                <LayoutList className="w-4 h-4" />
+                <span className="hidden sm:inline">{t3('Lijst', 'Liste', 'List')}</span>
+              </button>
+              <button
+                onClick={() => { setViewMode('calendar'); localStorage.setItem('planning-view-mode', 'calendar'); }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'calendar' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'}`}
+              >
+                <CalendarDays className="w-4 h-4" />
+                <span className="hidden sm:inline">{t3('Kalender', 'Calendrier', 'Calendar')}</span>
+              </button>
+            </div>
             <button onClick={() => setShowSafetyRoles(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
               <Shield className="w-4 h-4" /> {t3('Safety Rollen', 'Rôles sécurité', 'Safety Roles')}
