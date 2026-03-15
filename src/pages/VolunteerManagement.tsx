@@ -287,6 +287,8 @@ const VolunteerManagement = () => {
         <PageNavTabs tabs={[
           { label: t('Overzicht', 'Aperçu', 'Overview'), path: '/volunteer-management' },
           { label: t('Contracten', 'Contrats', 'Contracts'), path: '/season-contracts' },
+          { label: t('Contract Builder', 'Contract Builder', 'Contract Builder'), path: '/contract-builder' },
+          { label: t('Sjablonen', 'Modèles', 'Templates'), path: '/contract-templates' },
           { label: 'Briefings', path: '/briefing-builder' },
           { label: t('Vergoedingen', 'Indemnités', 'Payments'), path: '/sepa-payouts' },
           { label: 'Compliance', path: '/compliance' },

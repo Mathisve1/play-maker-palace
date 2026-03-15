@@ -692,6 +692,8 @@ const BriefingBuilder = () => {
           <PageNavTabs tabs={[
             { label: 'Overzicht', path: '/volunteer-management' },
             { label: 'Contracten', path: '/season-contracts' },
+            { label: 'Contract Builder', path: '/contract-builder' },
+            { label: 'Sjablonen', path: '/contract-templates' },
             { label: 'Briefings', path: '/briefing-builder' },
             { label: 'Vergoedingen', path: '/sepa-payouts' },
             { label: 'Compliance', path: '/compliance' },

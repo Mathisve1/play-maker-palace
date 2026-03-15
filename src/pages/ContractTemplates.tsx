@@ -69,8 +69,16 @@ const ContractTemplates = () => {
 
   return (
     <ClubPageLayout>
-      <div className="max-w-5xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <PageNavTabs tabs={[
+          { label: t('Overzicht', 'Aperçu', 'Overview'), path: '/volunteer-management' },
+          { label: t('Contracten', 'Contrats', 'Contracts'), path: '/season-contracts' },
+          { label: 'Contract Builder', path: '/contract-builder' },
+          { label: t('Sjablonen', 'Modèles', 'Templates'), path: '/contract-templates' },
+          { label: 'Briefings', path: '/briefing-builder' },
+          { label: t('Vergoedingen', 'Indemnités', 'Payments'), path: '/sepa-payouts' },
+          { label: 'Compliance', path: '/compliance' },
+        ]} />
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">
               {t('Contractsjablonen', 'Modèles de contrat', 'Contract Templates')}
