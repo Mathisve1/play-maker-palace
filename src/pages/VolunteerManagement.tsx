@@ -128,9 +128,16 @@ const VolunteerManagement = () => {
     const checkIns = (checkInsRes as any).data || [];
     const members = membersRes.data || [];
     const memberships = membershipsRes.data || [];
+    const taskSignups = (taskSignupsRes.data || []) as any[];
 
-    // Map volunteer_id -> membership_id
-    const membershipMap = new Map(memberships.map(m => [m.volunteer_id, m.id]));
+    // Map volunteer_id -> membership (with joined_at)
+    const membershipMap = new Map(memberships.map(m => [m.volunteer_id, { id: m.id, joined_at: (m as any).joined_at }]));
+
+    // Count completed tasks per volunteer
+    const taskCounts: Record<string, number> = {};
+    taskSignups.forEach((ts: any) => {
+      taskCounts[ts.volunteer_id] = (taskCounts[ts.volunteer_id] || 0) + 1;
+    });
 
     // Fetch member_contract_types
     const msIds = memberships.map(m => m.id);
