@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Clock, Search, MoreHorizontal, Mail, Ban, User, Loader2 } from 'lucide-react';
+import { ShieldCheck, Clock, Search, MoreHorizontal, Mail, Ban, User, Loader2, BookOpen } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import PageNavTabs from '@/components/PageNavTabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
