@@ -688,7 +688,7 @@ const EventsManager = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
-                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" min={todayMin} value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
                  <div className="sm:col-span-2">
                    <label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label>
                    <div className="grid gap-3 sm:grid-cols-4">
