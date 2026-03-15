@@ -334,6 +334,10 @@ const PlanningOverview = () => {
           </div>
         )}
 
+        {/* Calendar view */}
+        {viewMode === 'calendar' ? (
+          <PlanningCalendarView events={events} tasks={tasks} language={language} />
+        ) : (
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
           <TabsList className="w-full grid grid-cols-3 h-12">
