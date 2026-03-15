@@ -685,7 +685,7 @@ const MonthlyPlanning = () => {
             <div><Label>{t3('Beschrijving', 'Description', 'Description')}</Label><Textarea value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
             <div className="flex gap-3 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowAddTask(false)}>{t3('Annuleren', 'Annuler', 'Cancel')}</Button>
-              <Button className="flex-1" onClick={addOrUpdateTask} disabled={!taskForm.title}>{editingTask ? t3('Opslaan', 'Enregistrer', 'Save') : t3('Toevoegen', 'Ajouter', 'Add')}</Button>
+              <Button className="flex-1" onClick={addOrUpdateTask} disabled={!taskForm.title.trim()}>{editingTask ? t3('Opslaan', 'Enregistrer', 'Save') : t3('Toevoegen', 'Ajouter', 'Add')}</Button>
             </div>
           </div>
         </DialogContent>
