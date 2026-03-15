@@ -274,7 +274,7 @@ const VolunteerSidebar = ({
                   <Badge count={counts.payments} />
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              <SidebarMenuItem data-tour="vol-sidebar-contracts">
                 <SidebarMenuButton isActive={activeTab === 'contracts'} onClick={() => handleNav('contracts')} className="min-h-[48px]">
                   <FileSignature className="w-5 h-5" />
                   <span>{l.contracts}</span>
