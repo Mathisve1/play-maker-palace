@@ -830,12 +830,12 @@ const SepaPayouts = () => {
 
         return {
           volunteerId: hc.volunteer_id,
-          fullName: profile.full_name || 'Onbekend',
-          email: profile.email || '',
-          avatarUrl: profile.avatar_url,
-          iban: (profile.bank_iban || '').replace(/\s/g, '').toUpperCase(),
-          bic: profile.bank_bic || '',
-          holderName: profile.bank_holder_name || profile.full_name || '',
+          fullName: (profile as any).full_name || 'Onbekend',
+          email: (profile as any).email || '',
+          avatarUrl: (profile as any).avatar_url,
+          iban: ((profile as any).bank_iban || '').replace(/\s/g, '').toUpperCase(),
+          bic: (profile as any).bank_bic || '',
+          holderName: (profile as any).bank_holder_name || (profile as any).full_name || '',
           amount: Math.round(amount * 100) / 100,
           hours,
           taskTitle: task.title,
