@@ -54,6 +54,10 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     // Non-blocking: profile creation and push sync happen in background
     void ensureProfileExists(sessionUser).catch(e => console.warn('RequireAuth: ensureProfileExists failed', e));
     void syncOneSignalUser(sessionUser.id).catch(() => {});
+    // Set Crisp user context
+    if (sessionUser.email) {
+      crispSetUser(sessionUser.email, { user_id: sessionUser.id });
+    }
   }, []);
 
   const retryAuth = useCallback(async () => {
