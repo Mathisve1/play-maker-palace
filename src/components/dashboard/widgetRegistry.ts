@@ -145,10 +145,10 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
   // === Season ===
   season_progress: {
     type: 'season_progress',
-    label: { nl: 'Seizoensvoortgang', en: 'Season Progress', fr: 'Progression saison' },
-    description: { nl: 'Voortgang van het actieve seizoen met vrijwilligers en contracten', en: 'Active season progress with volunteers and contracts', fr: 'Progression de la saison avec bénévoles et contrats' },
+    label: { nl: 'Seizoensoverzicht', en: 'Season Overview', fr: 'Aperçu saison' },
+    description: { nl: 'Volledige seizoensvoortgang met stats, contracten en afsluiting', en: 'Full season progress with stats, contracts and closing', fr: 'Progression complète de la saison avec stats et clôture' },
     icon: 'CalendarRange',
-    defaultW: 2, defaultH: 1, minW: 2, maxW: 4, minH: 1, maxH: 1,
+    defaultW: 2, defaultH: 2, minW: 2, maxW: 4, minH: 1, maxH: 2,
     category: 'season',
   },
   contract_status: {
