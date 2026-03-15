@@ -105,57 +105,65 @@ const VolunteerContractsTab = ({ contracts, language, checkingContract, onCheckS
         </div>
       ) : (
         <>
-          {/* Season contracts */}
-          {seasonContracts.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                {t('Seizoenscontracten', 'Contrats saisonniers', 'Season contracts')}
-              </h2>
-              {seasonContracts.map((sc, i) => (
-                <motion.div key={sc.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  className={`bg-card rounded-2xl p-5 shadow-sm border ${sc.status === 'signed' ? 'border-green-200 dark:border-green-800' : 'border-border'}`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{sc.template_name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {sc.club_name && <span className="text-xs text-muted-foreground">{sc.club_name}</span>}
-                        {sc.season_name && <Badge variant="outline" className="text-[10px]">{sc.season_name}</Badge>}
-                        {sc.template_category && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            {categoryLabels[sc.template_category] || sc.template_category}
-                          </Badge>
-                        )}
+          {/* Season contracts grouped by season */}
+          {seasonContracts.length > 0 && (() => {
+            const grouped = new Map<string, SeasonContract[]>();
+            seasonContracts.forEach(sc => {
+              const key = sc.season_name || t('Onbekend seizoen', 'Saison inconnue', 'Unknown season');
+              if (!grouped.has(key)) grouped.set(key, []);
+              grouped.get(key)!.push(sc);
+            });
+            return [...grouped.entries()].map(([seasonName, scs]) => (
+              <div key={seasonName} className="space-y-3">
+                <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-primary" />
+                  {seasonName}
+                </h2>
+                {scs.map((sc, i) => (
+                  <motion.div key={sc.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                    className={`bg-card rounded-2xl p-5 shadow-sm border ${sc.status === 'signed' ? 'border-green-200 dark:border-green-800' : 'border-border'}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{sc.template_name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {sc.club_name && <span className="text-xs text-muted-foreground">{sc.club_name}</span>}
+                          {sc.template_category && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {categoryLabels[sc.template_category] || sc.template_category}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          {sc.status === 'signed' ? (
+                            <span className="flex items-center gap-1 text-xs font-medium text-green-600"><CheckCircle className="w-3.5 h-3.5" />{t('Ondertekend', 'Signé', 'Signed')}</span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs font-medium text-yellow-600"><Clock className="w-3.5 h-3.5" />{t('Wacht op ondertekening', 'En attente de signature', 'Awaiting signature')}</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        {sc.status === 'signed' ? (
-                          <span className="flex items-center gap-1 text-xs font-medium text-green-600"><CheckCircle className="w-3.5 h-3.5" />{t('Ondertekend', 'Signé', 'Signed')}</span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-xs font-medium text-yellow-600"><Clock className="w-3.5 h-3.5" />{t('Wacht op ondertekening', 'En attente de signature', 'Awaiting signature')}</span>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        {(sc.status === 'pending' || sc.status === 'sent') && sc.signing_url && (
+                          <a href={sc.signing_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+                            <FileSignature className="w-3.5 h-3.5" />{t('Nu ondertekenen', 'Signer maintenant', 'Sign now')}
+                          </a>
+                        )}
+                        {sc.status === 'signed' && sc.document_url && (
+                          <a href={sc.document_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-green-200 text-green-700 hover:bg-green-50 transition-colors">
+                            <Download className="w-3.5 h-3.5" />{t('Download', 'Télécharger', 'Download')}
+                          </a>
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      {(sc.status === 'pending' || sc.status === 'sent') && sc.signing_url && (
-                        <a href={sc.signing_url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
-                          <FileSignature className="w-3.5 h-3.5" />{t('Nu ondertekenen', 'Signer maintenant', 'Sign now')}
-                        </a>
-                      )}
-                      {sc.status === 'signed' && sc.document_url && (
-                        <a href={sc.document_url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-green-200 text-green-700 hover:bg-green-50 transition-colors">
-                          <Download className="w-3.5 h-3.5" />{t('Download', 'Télécharger', 'Download')}
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {t('Verstuurd op', 'Envoyé le', 'Sent on')}: {new Date(sc.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {t('Verstuurd op', 'Envoyé le', 'Sent on')}: {new Date(sc.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            ));
+          })()}
 
           {/* Legacy task-based contracts */}
           {contracts.length > 0 && (
