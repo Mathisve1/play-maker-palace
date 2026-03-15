@@ -423,6 +423,19 @@ const ClubOwnerDashboard = () => {
     }
   }, []);
 
+  // Check onboarding status
+  useEffect(() => {
+    if (contextLoading || !currentUserId || onboardingChecked) return;
+    const checkOnboarding = async () => {
+      const { data } = await supabase.from('profiles').select('club_onboarding_step').eq('id', currentUserId).maybeSingle();
+      if (data && (data as any).club_onboarding_step !== 'completed') {
+        setShowOnboarding(true);
+      }
+      setOnboardingChecked(true);
+    };
+    checkOnboarding();
+  }, [contextLoading, currentUserId, onboardingChecked]);
+
   useEffect(() => {
     if (contextLoading || !clubId || !currentUserId) return;
     const init = async () => {
