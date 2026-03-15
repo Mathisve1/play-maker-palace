@@ -139,7 +139,8 @@ const App = () => {
             <Route path="/safety/:eventId/control-room" element={<RequireAuth redirectTo="/club-login"><SafetyDashboard /></RequireAuth>} />
             <Route path="/safety/:eventId/closing" element={<RequireAuth redirectTo="/club-login"><SafetyClosing /></RequireAuth>} />
             <Route path="/community" element={<RequireAuth><Community /></RequireAuth>} />
-            <Route path="/community/club/:clubId" element={<RequireAuth><CommunityClubDetail /></RequireAuth>} />
+            <Route path="/community/club/:clubId" element={<CommunityClubDetail />} />
+            <Route path="/club/:clubId" element={<CommunityClubDetail />} />
             <Route path="/community/partner/:partnerId" element={<RequireAuth><CommunityPartnerDetail /></RequireAuth>} />
             <Route path="/help" element={<RequireAuth><VolunteerHelp /></RequireAuth>} />
             <Route path="/stress-test" element={<RequireAuth redirectTo="/club-login"><StressTest /></RequireAuth>} />
