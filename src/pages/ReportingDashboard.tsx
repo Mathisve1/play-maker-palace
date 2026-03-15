@@ -822,6 +822,7 @@ const ReportingDashboard = () => {
         taskTypes: [...taskTypeMap.values()].sort((a, b) => b.count - a.count),
         sepaBatches: seasonBatches, language,
       });
+      const doc = await generateSeasonReport(reportParams);
       doc.save(`seizoensrapport-${season.name.replace(/\s+/g, '-').toLowerCase()}.pdf`);
       toast.success(language === 'nl' ? 'Seizoensrapport gedownload!' : 'Season report downloaded!');
     } catch (err: any) { toast.error(err?.message || 'Error'); }
