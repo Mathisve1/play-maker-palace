@@ -21,6 +21,7 @@ import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
 import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab';
 import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
+import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
 import VolunteerDashboardHome from '@/components/volunteer/VolunteerDashboardHome';
 import VolunteerTasksList from '@/components/volunteer/VolunteerTasksList';
 import VolunteerOnboardingWizard from '@/components/VolunteerOnboardingWizard';
