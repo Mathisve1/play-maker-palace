@@ -151,6 +151,7 @@ const VolunteerDashboard = () => {
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
   const [sepaPayouts, setSepaPayouts] = useState<SepaPayoutItem[]>([]);
   const [safetyPendingCount, setSafetyPendingCount] = useState(0);
+  const [safetyAlertActive, setSafetyAlertActive] = useState(false);
   const [pendingReviews, setPendingReviews] = useState<{ taskSignupId: string; taskTitle: string; clubName: string; clubOwnerId: string }[]>([]);
   const [reviewTarget, setReviewTarget] = useState<{ taskSignupId: string; taskTitle: string; revieweeId: string } | null>(null);
   const [showVolunteerOnboarding, setShowVolunteerOnboarding] = useState(false);
