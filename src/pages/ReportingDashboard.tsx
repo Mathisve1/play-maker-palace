@@ -114,6 +114,10 @@ const rl = {
     aiQ7: 'Geef een overzicht van onze maandelijkse kosten', aiQ8: 'Hoeveel contracten zijn al ondertekend?',
     aiQ9: 'Welke partners leveren de meeste medewerkers?', aiQ10: 'Hoeveel vrijwilligers zitten dicht bij de jaargrens?',
     aiQ11: 'Op welke dag van de week plannen we de meeste taken?', aiQ12: 'Hoeveel uur-bevestigingen staan nog open?',
+    aiSummaryTitle: 'AI Samenvatting', aiSummaryBtn: 'Genereer AI-samenvatting', aiSummaryRetry: 'Probeer later opnieuw',
+    aiSummaryCopy: 'Kopieer naar klembord', aiSummaryCopied: 'Gekopieerd!', aiSummaryAdd: 'Voeg toe aan rapport',
+    aiSummaryAdded: 'Samenvatting opgeslagen voor rapport',
+    aiSummaryPrompt: 'Geef een beknopte samenvatting van het seizoen in 3-4 zinnen. Vermeld: aantal actieve vrijwilligers, aantal evenementen, meest populaire taak, opkomstpercentage, en totale uitbetaling. Schrijf in een vriendelijke, professionele toon.',
   },
   fr: {
     reporting: 'Rapports', reportBuilder: 'Constructeur de rapports', filters: 'Filtres',
