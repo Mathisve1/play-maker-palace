@@ -299,6 +299,7 @@ const BriefingBuilder = () => {
   const [showPreview, setShowPreview] = useState(true);
   const [showLibrary, setShowLibrary] = useState(true);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [plannedSendHours, setPlannedSendHours] = useState<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
