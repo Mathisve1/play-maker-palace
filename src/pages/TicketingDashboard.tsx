@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
-import { ArrowLeft, CalendarDays, Radio, Ticket, Loader2, Send, Users, QrCode, Mail, CheckCircle2, AlertCircle, Search, UserCheck } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Radio, Ticket, Loader2, Send, Users, QrCode, Mail, CheckCircle2, AlertCircle, Search, UserCheck, Clock, Bell } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
@@ -39,6 +40,13 @@ const t = {
     noEvents: 'Geen evenementen beschikbaar',
     success: 'Succes',
     error: 'Fout',
+    sendReminder: 'Stuur herinnering naar allen',
+    reminderConfirmTitle: 'Herinnering versturen',
+    reminderConfirmDesc: 'Je staat op het punt een herinnering te sturen naar {count} vrijwilliger(s) met een ongelezen ticket.',
+    reminderSending: 'Versturen...',
+    reminderSent: 'Herinneringen verstuurd',
+    lastUpdate: 'Laatste update',
+    perTask: 'Per taak',
   },
   fr: {
     back: 'Retour au tableau de bord',
@@ -62,6 +70,13 @@ const t = {
     noEvents: 'Aucun événement disponible',
     success: 'Succès',
     error: 'Erreur',
+    sendReminder: 'Envoyer un rappel à tous',
+    reminderConfirmTitle: 'Envoyer un rappel',
+    reminderConfirmDesc: 'Vous allez envoyer un rappel à {count} bénévole(s) avec un ticket non lu.',
+    reminderSending: 'Envoi...',
+    reminderSent: 'Rappels envoyés',
+    lastUpdate: 'Dernière mise à jour',
+    perTask: 'Par tâche',
   },
   en: {
     back: 'Back to dashboard',
@@ -85,6 +100,13 @@ const t = {
     noEvents: 'No events available',
     success: 'Success',
     error: 'Error',
+    sendReminder: 'Send reminder to all',
+    reminderConfirmTitle: 'Send reminder',
+    reminderConfirmDesc: 'You are about to send a reminder to {count} volunteer(s) with an unopened ticket.',
+    reminderSending: 'Sending...',
+    reminderSent: 'Reminders sent',
+    lastUpdate: 'Last update',
+    perTask: 'Per task',
   },
 };
 
@@ -123,6 +145,9 @@ const TicketingDashboard = () => {
   const [sendingEmailIds, setSendingEmailIds] = useState<Set<string>>(new Set());
   const [liveSearch, setLiveSearch] = useState('');
   const [manualCheckingIds, setManualCheckingIds] = useState<Set<string>>(new Set());
+  const [showReminderDialog, setShowReminderDialog] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
 
   const { clubId: contextClubId } = useClubContext();
 
@@ -311,6 +336,7 @@ const TicketingDashboard = () => {
             ? { ...v, status: updated.status, checked_in_at: updated.checked_in_at, external_ticket_id: updated.external_ticket_id, error_message: updated.error_message, id: updated.id }
             : v
         ));
+        setLastUpdateTime(new Date());
       })
       .subscribe();
 
@@ -326,6 +352,7 @@ const TicketingDashboard = () => {
           }
           return v;
         }));
+        setLastUpdateTime(new Date());
       }
     }, 30000);
 
@@ -486,6 +513,52 @@ const TicketingDashboard = () => {
   const checkedInCount = volunteers.filter(v => v.status === 'checked_in').length;
   const sentCount = volunteers.filter(v => v.status === 'sent').length;
   const progressPercent = totalVolunteers > 0 ? Math.round((checkedInCount / totalVolunteers) * 100) : 0;
+
+  // Per-task progress
+  const taskProgress = useMemo(() => {
+    const map = new Map<string, { title: string; total: number; checkedIn: number }>();
+    volunteers.forEach(v => {
+      const key = v.task_id || '__none__';
+      if (!map.has(key)) map.set(key, { title: v.task_title || 'Onbekend', total: 0, checkedIn: 0 });
+      const entry = map.get(key)!;
+      entry.total++;
+      if (v.status === 'checked_in') entry.checkedIn++;
+    });
+    return Array.from(map.entries()).map(([id, data]) => ({ id, ...data }));
+  }, [volunteers]);
+
+  // Volunteers with sent but not checked-in tickets (for reminder)
+  const sentVolunteers = volunteers.filter(v => v.status === 'sent');
+
+  const handleSendReminders = async () => {
+    setSendingReminders(true);
+    try {
+      // Get volunteer emails
+      const volIds = sentVolunteers.map(v => v.volunteer_id);
+      const { data: profiles } = await supabase.from('profiles').select('id, email, full_name').in('id', volIds);
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+      let sent = 0;
+      for (const v of sentVolunteers) {
+        const profile = profileMap.get(v.volunteer_id);
+        if (!profile?.email) continue;
+        await supabase.functions.invoke('send-task-invite-email', {
+          body: {
+            to: profile.email,
+            volunteer_name: profile.full_name || profile.email,
+            task_title: v.task_title,
+            type: 'ticket_reminder',
+          },
+        });
+        sent++;
+      }
+      toast.success(`${labels.reminderSent} (${sent})`);
+    } catch (e: any) {
+      toast.error(e.message || labels.error);
+    }
+    setSendingReminders(false);
+    setShowReminderDialog(false);
+  };
 
   if (loading) {
     return (
@@ -665,28 +738,66 @@ const TicketingDashboard = () => {
 
               {selectedEventId && (
                 <>
+                  {/* Global progress + last update + reminder button */}
                   <Card>
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-foreground">
                           {checkedInCount} / {totalVolunteers} {labels.progress}
                         </span>
-                        <span className="text-2xl font-bold text-primary">{progressPercent}%</span>
+                        <div className="flex items-center gap-3">
+                          {lastUpdateTime && (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              {labels.lastUpdate}: {lastUpdateTime.toLocaleTimeString()}
+                            </span>
+                          )}
+                          <span className="text-2xl font-bold text-primary">{progressPercent}%</span>
+                        </div>
                       </div>
                       <Progress value={progressPercent} className="h-3" />
-                      <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" /> {labels.checkedIn}: {checkedInCount}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-blue-500" /> {labels.sent}: {sentCount}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-muted-foreground" /> {labels.noTicket}: {totalVolunteers - checkedInCount - sentCount}
-                        </span>
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-accent" /> {labels.checkedIn}: {checkedInCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-primary" /> {labels.sent}: {sentCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-muted-foreground" /> {labels.noTicket}: {totalVolunteers - checkedInCount - sentCount}
+                          </span>
+                        </div>
+                        {sentVolunteers.length > 0 && (
+                          <Button size="sm" variant="outline" onClick={() => setShowReminderDialog(true)} className="gap-1.5">
+                            <Bell className="w-3.5 h-3.5" />
+                            {labels.sendReminder}
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Per-task progress */}
+                  {taskProgress.length > 1 && (
+                    <Card>
+                      <CardContent className="pt-6 space-y-4">
+                        <p className="text-sm font-medium text-foreground">{labels.perTask}</p>
+                        {taskProgress.map(tp => {
+                          const pct = tp.total > 0 ? Math.round((tp.checkedIn / tp.total) * 100) : 0;
+                          return (
+                            <div key={tp.id} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-foreground font-medium truncate max-w-[60%]">{tp.title}</span>
+                                <span className="text-muted-foreground">{tp.checkedIn}/{tp.total} ({pct}%)</span>
+                              </div>
+                              <Progress value={pct} className="h-2" />
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Search for manual check-in */}
                   <div className="relative">
@@ -755,6 +866,30 @@ const TicketingDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Reminder confirmation dialog */}
+      <AlertDialog open={showReminderDialog} onOpenChange={setShowReminderDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{labels.reminderConfirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {labels.reminderConfirmDesc.replace('{count}', String(sentVolunteers.length))}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sendingReminders}>
+              {language === 'nl' ? 'Annuleren' : language === 'fr' ? 'Annuler' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSendReminders} disabled={sendingReminders}>
+              {sendingReminders ? (
+                <><Loader2 className="w-4 h-4 animate-spin mr-1" /> {labels.reminderSending}</>
+              ) : (
+                <><Bell className="w-4 h-4 mr-1" /> {labels.sendReminder}</>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ClubPageLayout>
   );
 };
