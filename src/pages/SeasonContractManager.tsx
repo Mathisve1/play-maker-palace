@@ -85,6 +85,32 @@ const SeasonContractManager = () => {
     const season = seasonRes.data;
     if (!season) return;
 
+    // Load attendance KPIs: task_signups for tasks in this season date range
+    const seasonStart = season.start_date;
+    const seasonEnd = season.end_date;
+    const [tasksKpiRes, hourConfRes] = await Promise.all([
+      supabase.from('tasks').select('id').eq('club_id', cId).gte('task_date', seasonStart).lte('task_date', seasonEnd),
+      supabase.from('hour_confirmations').select('final_hours, final_amount, task_id').eq('status', 'auto_confirmed'),
+    ]);
+    const seasonTaskIds = (tasksKpiRes.data || []).map((t: any) => t.id);
+    let totalSignups = 0;
+    let totalCheckedIn = 0;
+    if (seasonTaskIds.length > 0) {
+      const [signupCountRes, checkedInRes] = await Promise.all([
+        supabase.from('task_signups').select('id', { count: 'exact', head: true }).in('task_id', seasonTaskIds),
+        (supabase as any).from('task_signups').select('id', { count: 'exact', head: true }).in('task_id', seasonTaskIds).not('checked_in_at', 'is', null),
+      ]);
+      totalSignups = signupCountRes.count || 0;
+      totalCheckedIn = checkedInRes.count || 0;
+    }
+    const seasonHours = (hourConfRes.data || []).filter((h: any) => seasonTaskIds.includes(h.task_id));
+    const totalComp = seasonHours.reduce((sum: number, h: any) => sum + (h.final_amount || 0), 0);
+    setAttendanceKpis({
+      totalTasks: seasonTaskIds.length,
+      avgAttendance: totalSignups > 0 ? Math.round((totalCheckedIn / totalSignups) * 100) : 0,
+      totalCompensation: totalComp,
+    });
+
     // Load contract stats per template category
     const { data: contracts } = await supabase
       .from('season_contracts')
