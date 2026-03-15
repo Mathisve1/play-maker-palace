@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
 import ContractTypePicker, { ContractTypeKey, CONTRACT_TYPES } from '@/components/ContractTypePicker';
+import ContractStatusIndicator from '@/components/ContractStatusIndicator';
 
 interface VolunteerRow {
   id: string;
