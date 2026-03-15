@@ -34,6 +34,7 @@ interface VolunteerSidebarProps {
     tickets?: number;
     loyalty?: number;
     safety?: number;
+    safetyAlert?: boolean;
   };
 }
 
@@ -220,7 +221,12 @@ const VolunteerSidebar = ({
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton isActive={activeTab === 'safety'} onClick={() => handleNav('safety')} className="min-h-[48px]">
-                  <Shield className="w-5 h-5" />
+                  <div className="relative">
+                    <Shield className="w-5 h-5" />
+                    {counts.safetyAlert && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
+                    )}
+                  </div>
                   <span>{l.safety}</span>
                   <Badge count={counts.safety} />
                 </SidebarMenuButton>

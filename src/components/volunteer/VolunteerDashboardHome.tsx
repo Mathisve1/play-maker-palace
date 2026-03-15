@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -53,7 +53,7 @@ const VolunteerDashboardHome = ({
   const navigate = useNavigate();
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
   const [upcomingBriefings, setUpcomingBriefings] = useState<{ taskId: string; taskTitle: string; taskDate: string }[]>([]);
-
+  const [activeSafetyAlert, setActiveSafetyAlert] = useState(false);
   // Check for unread briefings within 48h
   useEffect(() => {
     if (!currentUserId || signups.length === 0) return;
@@ -110,6 +110,30 @@ const VolunteerDashboardHome = ({
     checkBriefings();
   }, [currentUserId, signups, tasks]);
 
+  // Check for active safety incidents on today's events
+  useEffect(() => {
+    if (!currentUserId || signups.length === 0) return;
+    const checkSafety = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const myTaskIds = signups.filter(s => s.status === 'assigned').map(s => s.task_id);
+      if (myTaskIds.length === 0) return;
+
+      const myTasks = tasks.filter(t => myTaskIds.includes(t.id) && t.task_date?.slice(0, 10) === today);
+      const eventIds = [...new Set(myTasks.map(t => t.event_id).filter(Boolean))];
+      if (eventIds.length === 0) return;
+
+      const { data: incidents } = await supabase
+        .from('safety_incidents')
+        .select('id')
+        .in('event_id', eventIds)
+        .neq('status', 'opgelost')
+        .limit(1);
+
+      setActiveSafetyAlert((incidents?.length || 0) > 0);
+    };
+    checkSafety();
+  }, [currentUserId, signups, tasks]);
+
   const totalEarned = myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0)
     + sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
 
@@ -164,6 +188,23 @@ const VolunteerDashboardHome = ({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      {/* Safety alert banner */}
+      {activeSafetyAlert && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
+          onClick={() => setActiveTab('safety')}
+        >
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+          <p className="text-sm font-medium text-destructive">
+            {language === 'nl' ? '⚠️ Er is een veiligheidsmelding voor jouw evenement vandaag.' :
+             language === 'fr' ? '⚠️ Il y a un signalement de sécurité pour votre événement aujourd\'hui.' :
+             '⚠️ There is a safety alert for your event today.'}
+          </p>
+        </motion.div>
+      )}
+
       {/* Welcome */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
