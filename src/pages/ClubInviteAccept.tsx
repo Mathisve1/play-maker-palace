@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/Logo';
+import ContractTypePicker, { ContractTypeKey, CONTRACT_TYPES } from '@/components/ContractTypePicker';
 
 const t3 = (nl: string, fr: string, en: string, lang: string) => lang === 'fr' ? fr : lang === 'en' ? en : nl;
 
