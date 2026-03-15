@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { trackEvent } from '@/lib/posthog';
 import { Language } from '@/i18n/translations';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';

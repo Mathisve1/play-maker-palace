@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
+import { trackEvent } from '@/lib/posthog';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
