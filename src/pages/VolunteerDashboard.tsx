@@ -41,6 +41,7 @@ import ReferralSection from '@/components/ReferralSection';
 import SkillsPassport from '@/components/SkillsPassport';
 import MicroLearningsSection from '@/components/MicroLearningsSection';
 import AvailabilityCalendar from '@/components/AvailabilityCalendar';
+import TaskReviewDialog from '@/components/TaskReviewDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Task {
