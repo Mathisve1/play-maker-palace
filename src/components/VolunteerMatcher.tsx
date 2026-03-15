@@ -143,6 +143,11 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
       const pastSignups = (signupsRes.data || []) as any[];
       const alreadySignedUp = new Set((existingSignups.data || []).map((s: any) => s.volunteer_id));
       const seasonContracts = (contractsRes.data || []) as any[];
+      const eventAvailData = (eventAvailRes.data || []) as any[];
+
+      // Build event availability map: volunteer_id -> status
+      const eventAvailMap = new Map<string, string>();
+      eventAvailData.forEach((ea: any) => eventAvailMap.set(ea.volunteer_id, ea.status));
 
       // Build contract status map per volunteer
       const contractStatusMap = new Map<string, 'signed' | 'pending' | 'none'>();
