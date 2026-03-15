@@ -333,6 +333,7 @@ const VolunteerDashboardHome = ({
         )}
       </div>
 
+      {currentUserId && <VolunteerLoyaltyProgress userId={currentUserId} language={language} />}
       <NearbyClubsWidget userId={currentUserId} language={language} />
       <VolunteerActivitiesSection items={activityItems} language={language} />
       {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
