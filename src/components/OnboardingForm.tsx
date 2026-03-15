@@ -2,9 +2,10 @@
 
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { CheckIcon, ArrowRightIcon, Camera, Upload, User, Building2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { CheckIcon, ArrowRightIcon, Camera, FolderOpen, User, Building2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Belgian bank BIC mapping
 const BELGIAN_BANKS: Record<string, string> = {
@@ -215,6 +216,7 @@ const steps = [
 ];
 
 export function OnboardingForm({ language, onComplete, saving, onLanguageChange }: OnboardingFormProps) {
+  const isMobile = useIsMobile();
   const l = labels[language];
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -478,20 +480,22 @@ export function OnboardingForm({ language, onComplete, saving, onLanguageChange 
               </Avatar>
 
               <div className="flex gap-2 w-full">
-                <button
-                  type="button"
-                  onClick={() => cameraInputRef.current?.click()}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                >
-                  <Camera className="w-4 h-4" />
-                  {l.takePhoto}
-                </button>
+                {isMobile && (
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                  >
+                    <Camera className="w-4 h-4" />
+                    {l.takePhoto}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-border bg-card text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-2"
                 >
-                  <Upload className="w-4 h-4" />
+                  <FolderOpen className="w-4 h-4" />
                   {l.chooseFile}
                 </button>
               </div>
