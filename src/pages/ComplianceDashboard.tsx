@@ -23,6 +23,8 @@ interface VolunteerEntry {
   email: string | null;
   avatar_url: string | null;
   compliance_blocked?: boolean;
+  trainingCompleted?: number;
+  trainingRequired?: number;
 }
 
 const labels = {
