@@ -186,6 +186,35 @@ const VolunteerDashboardHome = ({
         />
       )}
 
+      {/* Briefing banner */}
+      {upcomingBriefings.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          {upcomingBriefings.map(b => (
+            <button
+              key={b.taskId}
+              onClick={() => navigate(`/task/${b.taskId}`)}
+              className="w-full flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-2xl p-4 mb-2 text-left hover:bg-primary/15 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">
+                  {language === 'nl' ? '📋 Briefing beschikbaar' : language === 'fr' ? '📋 Briefing disponible' : '📋 Briefing available'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                  {b.taskTitle}
+                  {b.taskDate && ` · ${new Date(b.taskDate).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                </p>
+              </div>
+              <span className="text-xs font-medium text-primary shrink-0">
+                {language === 'nl' ? 'Bekijken →' : language === 'fr' ? 'Voir →' : 'View →'}
+              </span>
+            </button>
+          ))}
+        </motion.div>
+      )}
+
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
