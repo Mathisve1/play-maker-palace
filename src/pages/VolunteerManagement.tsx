@@ -96,20 +96,37 @@ const VolunteerManagement = () => {
       setActiveSeason({ id: season.id, name: season.name });
     }
 
-    // Parallel: contracts, templates, check-ins, club members
-    const [contractsRes, templatesRes, checkInsRes, membersRes] = await Promise.all([
+    // Parallel: contracts, templates, check-ins, club members, memberships
+    const [contractsRes, templatesRes, checkInsRes, membersRes, membershipsRes] = await Promise.all([
       supabase.from('season_contracts').select('id, volunteer_id, status, template_id').eq('club_id', clubId),
       supabase.from('season_contract_templates').select('id, name, category').or(`club_id.eq.${clubId},is_system.eq.true`),
       season
         ? supabase.from('season_checkins').select('volunteer_id, season_contract_id').eq('club_id', clubId)
         : Promise.resolve({ data: [] as any[] }),
       supabase.from('club_members').select('user_id').eq('club_id', clubId),
+      supabase.from('club_memberships').select('id, volunteer_id').eq('club_id', clubId),
     ]);
 
     const contracts = contractsRes.data || [];
     const templates = templatesRes.data || [];
     const checkIns = (checkInsRes as any).data || [];
     const members = membersRes.data || [];
+    const memberships = membershipsRes.data || [];
+
+    // Map volunteer_id -> membership_id
+    const membershipMap = new Map(memberships.map(m => [m.volunteer_id, m.id]));
+
+    // Fetch member_contract_types
+    const msIds = memberships.map(m => m.id);
+    let ctMap = new Map<string, ContractTypeKey[]>();
+    if (msIds.length > 0) {
+      const { data: ctData } = await supabase.from('member_contract_types' as any).select('membership_id, contract_type').in('membership_id', msIds);
+      (ctData as any[] || []).forEach((ct: any) => {
+        const arr = ctMap.get(ct.membership_id) || [];
+        arr.push(ct.contract_type);
+        ctMap.set(ct.membership_id, arr);
+      });
+    }
 
     // Count check-ins per volunteer
     const checkInCounts: Record<string, number> = {};
@@ -161,6 +178,7 @@ const VolunteerManagement = () => {
 
       const count = checkInCounts[p.id] || 0;
       const rd = ratingData[p.id];
+      const msId = membershipMap.get(p.id) || null;
 
       return {
         id: p.id,
@@ -172,6 +190,8 @@ const VolunteerManagement = () => {
         is_paying: count >= 4,
         avg_rating: rd ? rd.sum / rd.count : null,
         review_count: rd?.count || 0,
+        memberContractTypes: msId ? ctMap.get(msId) || [] : [],
+        membership_id: msId,
       };
     });
 
