@@ -227,6 +227,34 @@ const AnalyticsDashboard = () => {
     return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
+  const exportCsv = useCallback(() => {
+    let headers: string[] = [];
+    let rows: string[][] = [];
+
+    if (tab === 'volunteers') {
+      headers = [t3('Maand', 'Mois', 'Month'), t3('Nieuw', 'Nouveaux', 'New'), t3('Cumulatief', 'Cumulatif', 'Cumulative')];
+      rows = volunteerGrowth.map(r => [r.month, String(r.count), String(r.cumulative)]);
+    } else if (tab === 'events') {
+      headers = [t3('Event', 'Événement', 'Event'), t3('Plaatsen', 'Places', 'Spots'), t3('Aanmeldingen', 'Inscriptions', 'Signups'), t3('Opkomst %', 'Présence %', 'Attendance %')];
+      rows = eventAttendance.map(r => [r.name, String(r.spots), String(r.signups), `${r.rate}%`]);
+    } else {
+      headers = [t3('Maand', 'Mois', 'Month'), t3('Terugkerend', 'Retours', 'Returning'), t3('Nieuw', 'Nouveaux', 'New'), t3('Totaal', 'Total', 'Total'), t3('Retentie %', 'Rétention %', 'Retention %')];
+      rows = retentionData.map(r => [r.month, String(r.returning), String(r.new), String(r.total), `${r.rate}%`]);
+    }
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-${tab}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [tab, volunteerGrowth, eventAttendance, retentionData, language]);
+    if (trend === 'down') return <ArrowDownRight className="w-4 h-4 text-destructive" />;
+    return <Minus className="w-4 h-4 text-muted-foreground" />;
+  };
+
   return (
     <ClubPageLayout>
       <div className="max-w-6xl mx-auto space-y-6">
