@@ -349,49 +349,61 @@ const ZonePlanning = () => {
           </div>
         </div>
 
-        <div className="flex gap-6 min-h-[400px]">
-          <div className="w-64 shrink-0">
-            <div className="rounded-2xl border border-border bg-card overflow-hidden sticky top-4">
-              <div className="px-4 py-3 border-b border-border bg-muted/30">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Users className="w-4 h-4" /> {l.unassigned}
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{unassignedVolunteers.length}</span>
-                </h3>
-              </div>
-              <div className="p-2 space-y-1 max-h-[500px] overflow-y-auto">
-                {unassignedVolunteers.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-4">{l.allAssigned}</p>
-                )}
-                {unassignedVolunteers.map(vol => (
-                  <div
-                    key={vol.id}
-                    draggable
-                    onDragStart={() => setDragVolunteer(vol.id)}
-                    onDragEnd={() => setDragVolunteer(null)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 cursor-grab active:cursor-grabbing hover:bg-muted transition-colors"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                      {vol.full_name?.[0]?.toUpperCase() || '?'}
-                    </div>
-                    <span className="text-sm text-foreground flex-1 truncate">{vol.full_name || vol.email || l.unknown}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-x-auto">
+        {overviewMode ? (
+          /* Overview mode: compact table of all zones with assigned volunteers */
+          <div className="space-y-4">
             {rootZones.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground text-sm">{l.noZones}</p>
-              </div>
+              <p className="text-muted-foreground text-sm text-center py-8">{l.noZones}</p>
             ) : (
-              <div className="flex gap-4">
-                {rootZones.map(zone => renderZoneColumn(zone, 0))}
-              </div>
+              renderZoneOverview(rootZones)
             )}
           </div>
-        </div>
+        ) : (
+          /* Drag & drop mode */
+          <div className="flex gap-6 min-h-[400px]">
+            <div className="w-64 shrink-0">
+              <div className="rounded-2xl border border-border bg-card overflow-hidden sticky top-4">
+                <div className="px-4 py-3 border-b border-border bg-muted/30">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Users className="w-4 h-4" /> {l.unassigned}
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{unassignedVolunteers.length}</span>
+                  </h3>
+                </div>
+                <div className="p-2 space-y-1 max-h-[500px] overflow-y-auto">
+                  {unassignedVolunteers.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">{l.allAssigned}</p>
+                  )}
+                  {unassignedVolunteers.map(vol => (
+                    <div
+                      key={vol.id}
+                      draggable
+                      onDragStart={() => setDragVolunteer(vol.id)}
+                      onDragEnd={() => setDragVolunteer(null)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 cursor-grab active:cursor-grabbing hover:bg-muted transition-colors"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                        {vol.full_name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                      <span className="text-sm text-foreground flex-1 truncate">{vol.full_name || vol.email || l.unknown}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-x-auto">
+              {rootZones.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground text-sm">{l.noZones}</p>
+                </div>
+              ) : (
+                <div className="flex gap-4">
+                  {rootZones.map(zone => renderZoneColumn(zone, 0))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </ClubPageLayout>
   );
