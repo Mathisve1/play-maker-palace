@@ -344,6 +344,8 @@ const ClubOwnerDashboard = () => {
   const [showBriefingTaskPicker, setShowBriefingTaskPicker] = useState(false);
   const [showProgressTaskPicker, setShowProgressTaskPicker] = useState(false);
   const [complianceMap, setComplianceMap] = useState<Map<string, ComplianceStatus>>(new Map());
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
 
   // Events state
   const [events, setEvents] = useState<EventData[]>([]);
