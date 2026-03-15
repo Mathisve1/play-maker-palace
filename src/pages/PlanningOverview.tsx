@@ -72,6 +72,9 @@ const PlanningOverview = () => {
   const [showSafetyRoles, setShowSafetyRoles] = useState(false);
   const [monthlyDemoLoading, setMonthlyDemoLoading] = useState(false);
   const [monthlyDemoDeleteLoading, setMonthlyDemoDeleteLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>(() => {
+    return (localStorage.getItem('planning-view-mode') as 'list' | 'calendar') || 'list';
+  });
 
   const { clubId: contextClubId } = useClubContext();
 
