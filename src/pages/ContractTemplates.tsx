@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Edit3, Loader2, ShieldCheck, Plus, Eye } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { seasonTemplateNames } from '@/data/seasonContractTemplates';
 
 interface Template {
@@ -68,7 +69,16 @@ const ContractTemplates = () => {
 
   return (
     <ClubPageLayout>
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <PageNavTabs tabs={[
+          { label: t('Overzicht', 'Aperçu', 'Overview'), path: '/volunteer-management' },
+          { label: t('Contracten', 'Contrats', 'Contracts'), path: '/season-contracts' },
+          { label: 'Contract Builder', path: '/contract-builder' },
+          { label: t('Sjablonen', 'Modèles', 'Templates'), path: '/contract-templates' },
+          { label: 'Briefings', path: '/briefing-builder' },
+          { label: t('Vergoedingen', 'Indemnités', 'Payments'), path: '/sepa-payouts' },
+          { label: 'Compliance', path: '/compliance' },
+        ]} />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">

@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 // html2canvas and jsPDF are lazy-loaded when needed for PDF export
 
 // ─── Block Types (shared) ────────────────────────────────
@@ -710,6 +711,16 @@ const ContractBuilder = () => {
 
   return (
     <ClubPageLayout>
+      <div className="space-y-4">
+        <PageNavTabs tabs={[
+          { label: 'Overzicht', path: '/volunteer-management' },
+          { label: 'Contracten', path: '/season-contracts' },
+          { label: 'Contract Builder', path: '/contract-builder' },
+          { label: 'Sjablonen', path: '/contract-templates' },
+          { label: 'Briefings', path: '/briefing-builder' },
+          { label: 'Vergoedingen', path: '/sepa-payouts' },
+          { label: 'Compliance', path: '/compliance' },
+        ]} />
       {/* Action bar */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <div className="relative">
@@ -1296,6 +1307,7 @@ const ContractBuilder = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </ClubPageLayout>
   );
