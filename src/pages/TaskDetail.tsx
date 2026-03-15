@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import VolunteerBriefingView from '@/components/VolunteerBriefingView';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
