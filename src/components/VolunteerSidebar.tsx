@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
-  HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home,
+  HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home, TrendingUp,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useOptionalClubContext } from '@/contexts/ClubContext';
