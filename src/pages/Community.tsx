@@ -136,8 +136,8 @@ const Community = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSport, setFilterSport] = useState<string>('__all__');
-  const [cityQuery, setCityQuery] = useState('');
-  const [openOnly, setOpenOnly] = useState(false);
+   const [filterProvince, setFilterProvince] = useState<string>('__all__');
+   const [seekingVolunteers, setSeekingVolunteers] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [togglingFollow, setTogglingFollow] = useState<string | null>(null);
