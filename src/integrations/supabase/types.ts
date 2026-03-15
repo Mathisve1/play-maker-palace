@@ -4636,6 +4636,47 @@ export type Database = {
         }
         Relationships: []
       }
+      volunteer_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_recurring: boolean
+          specific_date: string | null
+          start_time: string
+          volunteer_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_recurring?: boolean
+          specific_date?: string | null
+          start_time: string
+          volunteer_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_recurring?: boolean
+          specific_date?: string | null
+          start_time?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_availability_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_badges: {
         Row: {
           badge_id: string
