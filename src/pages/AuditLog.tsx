@@ -165,6 +165,11 @@ const AuditLog = () => {
   return (
     <ClubPageLayout>
       <div className="space-y-4">
+        <PageNavTabs tabs={[
+          { label: 'Rapporten', path: '/reporting' },
+          { label: 'Analytics', path: '/analytics' },
+          { label: 'Audit Log', path: '/audit-log' },
+        ]} />
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">

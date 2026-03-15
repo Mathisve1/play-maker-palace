@@ -459,6 +459,11 @@ const MonthlyPlanning = () => {
   return (
     <ClubPageLayout>
       <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
+        <PageNavTabs tabs={[
+          { label: t('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks'), path: '/events-manager' },
+          { label: 'Planning', path: '/planning' },
+          { label: t('Maandplanning', 'Planification mensuelle', 'Monthly Planning'), path: '/monthly-planning' },
+        ]} />
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

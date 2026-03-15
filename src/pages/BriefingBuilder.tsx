@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 // jsPDF is lazy-loaded when needed for PDF export
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { PageSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

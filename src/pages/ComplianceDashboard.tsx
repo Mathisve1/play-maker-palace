@@ -168,7 +168,14 @@ const ComplianceDashboard = () => {
 
   return (
     <ClubPageLayout>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <PageNavTabs tabs={[
+          { label: 'Overzicht', path: '/volunteer-management' },
+          { label: 'Contracten', path: '/season-contracts' },
+          { label: 'Briefings', path: '/briefing-builder' },
+          { label: 'Vergoedingen', path: '/sepa-payouts' },
+          { label: 'Compliance', path: '/compliance' },
+        ]} />
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-primary" />
