@@ -64,6 +64,40 @@ const BillingDashboard = () => {
     setSeatInput(billingRes.data?.partner_seats_purchased?.toString() || '0');
     setEvents(eventsRes.data || []);
     setInvoices(invoicesRes.data || []);
+
+    // Fetch contract type breakdown for the active season
+    const { data: activeSeason } = await supabase.from('seasons').select('id').eq('club_id', cId).eq('status', 'active').maybeSingle();
+    if (activeSeason) {
+      const { data: contracts } = await (supabase as any).from('season_contracts')
+        .select('template_id, volunteer_id, status')
+        .eq('club_id', cId)
+        .eq('season_id', activeSeason.id);
+      if (contracts && contracts.length > 0) {
+        const templateIds = [...new Set(contracts.map((c: any) => c.template_id))];
+        const { data: templates } = await supabase.from('season_contract_templates')
+          .select('id, category')
+          .in('id', templateIds);
+        const catMap = new Map<string, string>();
+        (templates || []).forEach((t: any) => catMap.set(t.id, t.category || 'Other'));
+
+        const breakdown = new Map<string, { count: number }>();
+        contracts.forEach((c: any) => {
+          const cat = catMap.get(c.template_id) || 'Other';
+          const entry = breakdown.get(cat) || { count: 0 };
+          entry.count += 1;
+          breakdown.set(cat, entry);
+        });
+
+        const pricePerVol = (billingRes.data?.volunteer_price_cents || 1500) / 100;
+        setContractTypeBreakdown(
+          [...breakdown.entries()].map(([category, { count }]) => ({
+            category,
+            count,
+            cost: count * pricePerVol,
+          })).sort((a, b) => b.count - a.count)
+        );
+      }
+    }
   };
 
   const isFree = billing && billing.free_contracts_used < billing.free_contracts_limit;
