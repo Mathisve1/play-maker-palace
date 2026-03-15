@@ -330,6 +330,7 @@ const ContractBuilder = () => {
   const [searchParams] = useSearchParams();
   const clubId = searchParams.get('club_id') || '';
   const editTemplateId = searchParams.get('template_id') || '';
+  const seasonTemplateId = searchParams.get('templateId') || '';
   const canvasRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
