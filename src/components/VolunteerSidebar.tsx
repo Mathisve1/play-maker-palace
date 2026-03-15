@@ -54,6 +54,7 @@ const labels: Record<Language, Record<string, string>> = {
     academy: 'Academy',
     loyalty: 'Loyaliteit',
     safety: 'Veiligheidscontrole',
+    availability: 'Beschikbaarheid',
     settings: 'Instellingen',
     help: 'Hulp nodig?',
     logout: 'Uitloggen',
