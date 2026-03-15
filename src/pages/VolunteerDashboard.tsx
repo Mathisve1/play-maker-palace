@@ -844,7 +844,7 @@ const VolunteerDashboard = () => {
           complianceData={complianceData}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          setActiveTab={setActiveTab}
+          setActiveTab={(tab) => setActiveTab(tab as VolunteerTab)}
           setShowProfileDialog={setShowProfileDialog}
           getSignupStatus={getSignupStatus}
         />
