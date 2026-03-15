@@ -902,6 +902,14 @@ const EventsManager = () => {
           clubId={safetyConfigEvent.clubId}
         />
       )}
+      {bulkMessageEventId && clubId && contextUserId && (
+        <BulkMessageDialog
+          clubId={clubId}
+          clubOwnerId={contextUserId}
+          preselectedEventId={bulkMessageEventId}
+          onClose={() => setBulkMessageEventId(null)}
+        />
+      )}
     </ClubPageLayout>
     <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
     {clubId && (
