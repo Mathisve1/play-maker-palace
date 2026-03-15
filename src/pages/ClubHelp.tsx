@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Language } from '@/i18n/translations';
 import SEOHead from '@/components/SEOHead';
+import { crispOpen } from '@/lib/crisp';
 
 /* ── Types ── */
 interface FAQItem { q: string; a: string; tags?: string[] }
