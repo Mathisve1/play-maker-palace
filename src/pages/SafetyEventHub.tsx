@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, ArrowLeft, CalendarDays, MapPin, Loader2, Radio, ClipboardList, FileDown, RefreshCw } from 'lucide-react';
+import { Shield, ArrowLeft, CalendarDays, MapPin, Loader2, Radio, ClipboardList, FileDown, RefreshCw, Bell, BellOff } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { generateSafetyReportPdf, type SafetyIncidentForPdf, type SafetyZoneForPdf, type ClosingTaskForPdf } from '@/lib/generateSafetyReportPdf';
 
