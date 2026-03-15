@@ -984,6 +984,15 @@ const EventsManager = () => {
           onClose={() => setBulkMessageEventId(null)}
         />
       )}
+      {bulkMessageTask && clubId && contextUserId && (
+        <BulkMessageDialog
+          clubId={clubId}
+          clubOwnerId={contextUserId}
+          preselectedTaskId={bulkMessageTask.id}
+          preselectedTaskTitle={bulkMessageTask.title}
+          onClose={() => setBulkMessageTask(null)}
+        />
+      )}
     </ClubPageLayout>
     <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
     {clubId && (
