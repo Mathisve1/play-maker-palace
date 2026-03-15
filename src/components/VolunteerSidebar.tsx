@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
   HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home,
 } from 'lucide-react';
+import GlobalSearch from '@/components/GlobalSearch';
+import { useOptionalClubContext } from '@/contexts/ClubContext';
 import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
