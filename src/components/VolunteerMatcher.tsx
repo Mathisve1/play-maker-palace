@@ -85,6 +85,10 @@ const labels = {
     tasks: 'tasks',
     matchScore: 'Match',
     sending: 'Sending email...',
+    contractOk: 'Contract OK',
+    contractPending: 'Contract pending',
+    noContract: 'No contract',
+    noContractTooltip: 'Volunteer does not have a season contract yet',
   },
 };
 
