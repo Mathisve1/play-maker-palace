@@ -449,7 +449,27 @@ const AnalyticsDashboard = () => {
                           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                           <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                           <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                          <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px' }} />
+                          <Tooltip
+                            contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px' }}
+                            content={({ active, payload, label }) => {
+                              if (!active || !payload?.length) return null;
+                              return (
+                                <div className="bg-card border border-border rounded-xl p-3 text-xs shadow-lg">
+                                  <p className="font-semibold text-foreground mb-1">{label}</p>
+                                  {payload.map((p: any) => (
+                                    <p key={p.dataKey} style={{ color: p.color }}>{p.name}: {p.value}</p>
+                                  ))}
+                                  <p className="text-muted-foreground mt-1.5 border-t border-border pt-1.5 max-w-[220px]">
+                                    {t3(
+                                      'Terugkerend = actief vorige én huidige maand. Nieuw = eerste maand actief.',
+                                      'Retours = actif le mois précédent et actuel. Nouveau = premier mois actif.',
+                                      'Returning = active previous & current month. New = first month active.'
+                                    )}
+                                  </p>
+                                </div>
+                              );
+                            }}
+                          />
                           <Legend />
                           <Bar dataKey="returning" stackId="a" fill="hsl(var(--primary))" radius={[0, 0, 0, 0]} name={t3('Terugkerend', 'Retours', 'Returning')} />
                           <Bar dataKey="new" stackId="a" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} name={t3('Nieuw', 'Nouveaux', 'New')} />
