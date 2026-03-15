@@ -19,8 +19,9 @@ import {
   Plus, GripVertical, Save, Users, Loader2, ChevronDown, ChevronUp,
   Trash2, X, Send, Copy, Eye, EyeOff, PanelLeftClose, PanelLeft,
   Clock, FileText, Coffee, CheckSquare, Phone, Route, PenLine, Package,
-  Layers, Image as ImageIcon, MapPin,
+  Layers, Image as ImageIcon, MapPin, Timer,
 } from 'lucide-react';
+import { sendPush } from '@/lib/sendPush';
 // jsPDF is lazy-loaded when needed for PDF export
 import ClubPageLayout from '@/components/ClubPageLayout';
 import PageNavTabs from '@/components/PageNavTabs';
@@ -298,6 +299,7 @@ const BriefingBuilder = () => {
   const [showPreview, setShowPreview] = useState(true);
   const [showLibrary, setShowLibrary] = useState(true);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [plannedSendHours, setPlannedSendHours] = useState<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -549,13 +551,31 @@ const BriefingBuilder = () => {
     setSaving(true);
     try {
       let bId = briefingId;
+      // Calculate planned_send_at from task_date and offset hours
+      let plannedSendAt: string | null = null;
+      if (plannedSendHours !== null && taskData?.task_date) {
+        const d = new Date(taskData.task_date);
+        if (taskData.start_time) {
+          const [h, m] = taskData.start_time.split(':').map(Number);
+          d.setHours(h, m, 0, 0);
+        }
+        d.setTime(d.getTime() - plannedSendHours * 60 * 60 * 1000);
+        plannedSendAt = d.toISOString();
+      }
+
       if (!bId) {
-        const { data, error } = await supabase.from('briefings').insert({ task_id: taskId, club_id: clubId, title: briefingTitle, created_by: userId }).select('id').single();
+        const { data, error } = await supabase.from('briefings').insert({
+          task_id: taskId, club_id: clubId, title: briefingTitle, created_by: userId,
+          planned_send_at: plannedSendAt,
+        } as any).select('id').single();
         if (error) throw error;
         bId = data.id;
         setBriefingId(bId);
       } else {
-        await supabase.from('briefings').update({ title: briefingTitle }).eq('id', bId);
+        await supabase.from('briefings').update({
+          title: briefingTitle,
+          planned_send_at: plannedSendAt,
+        } as any).eq('id', bId);
       }
 
       await supabase.from('briefing_groups').delete().eq('briefing_id', bId);
@@ -671,6 +691,22 @@ const BriefingBuilder = () => {
         if (msgErr) throw msgErr;
         await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convoId);
       }
+      // Send push notifications to all selected volunteers
+      const dateStr = taskData?.task_date
+        ? new Date(taskData.task_date).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })
+        : '';
+      await Promise.allSettled(
+        selectedVolunteerIds.map(vid =>
+          sendPush({
+            userId: vid,
+            title: '📋 Nieuwe briefing beschikbaar!',
+            message: `Er is een briefing voor jouw taak ${taskTitle}${dateStr ? ` op ${dateStr}` : ''}. Bekijk de instructies.`,
+            url: '/dashboard',
+            type: 'briefing',
+          })
+        )
+      );
+
       setShowSendDialog(false);
       toast.success(t3('Briefing link verstuurd naar vrijwilligers!', 'Lien du briefing envoyé aux bénévoles !', 'Briefing link sent to volunteers!'));
     } catch (err: any) {
@@ -779,6 +815,25 @@ const BriefingBuilder = () => {
                 placeholder={t3('Briefing titel', 'Titre du briefing', 'Briefing title')}
                 className="text-xl font-heading font-semibold border-none shadow-none px-0 focus-visible:ring-0 h-auto"
               />
+              {/* Scheduled send */}
+              <div className="flex items-center gap-2 mt-2">
+                <Timer className="w-4 h-4 text-muted-foreground" />
+                <Select
+                  value={plannedSendHours !== null ? String(plannedSendHours) : 'manual'}
+                  onValueChange={v => setPlannedSendHours(v === 'manual' ? null : Number(v))}
+                >
+                  <SelectTrigger className="h-8 w-56 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">{t3('Handmatig versturen', 'Envoi manuel', 'Manual send')}</SelectItem>
+                    <SelectItem value="6">{t3('6 uur voor taak', '6h avant la tâche', '6h before task')}</SelectItem>
+                    <SelectItem value="12">{t3('12 uur voor taak', '12h avant la tâche', '12h before task')}</SelectItem>
+                    <SelectItem value="24">{t3('24 uur voor taak (aanbevolen)', '24h avant (recommandé)', '24h before (recommended)')}</SelectItem>
+                    <SelectItem value="48">{t3('48 uur voor taak', '48h avant la tâche', '48h before task')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Groups with DnD */}

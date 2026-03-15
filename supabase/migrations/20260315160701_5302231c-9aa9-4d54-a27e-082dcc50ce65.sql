@@ -1,0 +1,1 @@
+ALTER TABLE public.briefings ADD COLUMN planned_send_at timestamptz DEFAULT NULL;
