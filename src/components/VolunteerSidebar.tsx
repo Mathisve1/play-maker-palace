@@ -199,7 +199,7 @@ const VolunteerSidebar = ({
                   <span>{l.allTasks}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              <SidebarMenuItem data-tour="vol-sidebar-tasks">
                 <SidebarMenuButton isActive={activeTab === 'mine'} onClick={() => handleNav('mine')} className="min-h-[48px]">
                   <ClipboardList className="w-5 h-5" />
                   <span>{l.myTasks}</span>
