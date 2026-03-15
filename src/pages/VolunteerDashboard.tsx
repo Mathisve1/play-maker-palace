@@ -401,6 +401,44 @@ const VolunteerDashboard = () => {
 
       setLoading(false);
 
+      // Fetch pending reviews: completed tasks in last 14 days without a volunteer review
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      const { data: completedSignups } = await supabase
+        .from('task_signups')
+        .select('id, task_id, status')
+        .eq('volunteer_id', uid)
+        .eq('status', 'completed');
+
+      if (completedSignups && completedSignups.length > 0) {
+        const signupIds = completedSignups.map(s => s.id);
+        const completedTaskIds = completedSignups.map(s => s.task_id);
+
+        const [reviewsRes, reviewTasksRes] = await Promise.all([
+          supabase.from('task_reviews' as any).select('task_signup_id').in('task_signup_id', signupIds).eq('reviewer_role', 'volunteer'),
+          supabase.from('tasks').select('id, title, task_date, club_id, clubs(name, owner_id)').in('id', completedTaskIds),
+        ]);
+
+        const reviewedSignupIds = new Set((reviewsRes.data || []).map((r: any) => r.task_signup_id));
+        const reviewTaskMap = new Map((reviewTasksRes.data || []).map((t: any) => [t.id, t]));
+
+        const pending = completedSignups
+          .filter(s => !reviewedSignupIds.has(s.id))
+          .map(s => {
+            const task = reviewTaskMap.get(s.task_id) as any;
+            if (!task || (task.task_date && new Date(task.task_date) < fourteenDaysAgo)) return null;
+            return {
+              taskSignupId: s.id,
+              taskTitle: task.title,
+              clubName: task.clubs?.name || '',
+              clubOwnerId: task.clubs?.owner_id || '',
+            };
+          })
+          .filter(Boolean) as any[];
+
+        setPendingReviews(pending);
+      }
+
       // Check compliance – only prompt once per calendar month (first visit)
       const now = new Date();
       const complianceKey = `compliance-prompted-${now.getFullYear()}-${now.getMonth() + 1}`;
