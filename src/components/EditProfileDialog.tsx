@@ -108,6 +108,9 @@ const labels = {
     pushDisable: 'Désactiver',
     pushUnavailable: 'Les notifications push ne sont pas supportées dans ce navigateur',
     pushDenied: 'Les notifications push sont bloquées. Modifiez cela dans les paramètres de votre navigateur.',
+    themeTitle: 'Apparence',
+    lightMode: 'Thème clair',
+    darkMode: 'Thème sombre',
   },
   en: {
     title: 'My profile',
