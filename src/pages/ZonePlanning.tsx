@@ -69,6 +69,7 @@ const zonePlanningLabels = {
     volunteerAssigned: 'Bénévole assigné !', assignmentRemoved: 'Assignation supprimée !',
     roleAssigned: 'Rôle assigné !', noRole: '— Aucun rôle —', remove: 'Supprimer',
     taskNotFound: 'Tâche non trouvée', unknown: 'Inconnu',
+    volunteerOverview: 'Aperçu bénévoles',
   },
   en: {
     back: 'Back', title: 'Zone Planning', dragHint: 'Drag volunteers here',
