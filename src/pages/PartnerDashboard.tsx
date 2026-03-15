@@ -34,6 +34,7 @@ interface ClubTask {
   id: string; title: string; description: string | null; task_date: string | null;
   location: string | null; spots_available: number; event_id: string | null;
   event_title?: string | null; partner_acceptance_status: string; assigned_members: string[];
+  updated_at?: string | null;
 }
 
 const EMPTY_MEMBER = {
