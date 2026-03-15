@@ -145,6 +145,9 @@ const TicketingDashboard = () => {
   const [sendingEmailIds, setSendingEmailIds] = useState<Set<string>>(new Set());
   const [liveSearch, setLiveSearch] = useState('');
   const [manualCheckingIds, setManualCheckingIds] = useState<Set<string>>(new Set());
+  const [showReminderDialog, setShowReminderDialog] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
 
   const { clubId: contextClubId } = useClubContext();
 
