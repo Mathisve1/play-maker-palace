@@ -317,6 +317,23 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
                         </Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
+                        {/* Contract status badge */}
+                        {vol.contractStatus === 'signed' ? (
+                          <Badge className="text-[10px] bg-green-500/10 text-green-700 dark:text-green-400 border-0">
+                            <CheckCircle className="w-3 h-3 mr-0.5" />
+                            {l.contractOk}
+                          </Badge>
+                        ) : vol.contractStatus === 'pending' ? (
+                          <Badge className="text-[10px] bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-0">
+                            <Clock className="w-3 h-3 mr-0.5" />
+                            {l.contractPending}
+                          </Badge>
+                        ) : (
+                          <Badge className="text-[10px] bg-destructive/10 text-destructive border-0">
+                            <AlertCircle className="w-3 h-3 mr-0.5" />
+                            {l.noContract}
+                          </Badge>
+                        )}
                         {vol.availabilityMatch && (
                           <Badge variant="secondary" className="text-[10px]">
                             <Clock className="w-3 h-3 mr-0.5" />
