@@ -816,7 +816,31 @@ const TaskDetail = () => {
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* Zone assignment */}
+              {myZone && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-4 h-4 text-accent" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {language === 'nl' ? 'Jouw zone' : language === 'fr' ? 'Votre zone' : 'Your zone'}
+                    </p>
+                    <div className="mt-1 bg-accent/5 rounded-xl p-3 border border-accent/10">
+                      <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-accent" />
+                        {myZone.name}
+                      </p>
+                      {myZone.max_capacity && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {language === 'nl' ? 'Capaciteit' : language === 'fr' ? 'Capacité' : 'Capacity'}: {myZone.max_capacity}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {task.notes && (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
