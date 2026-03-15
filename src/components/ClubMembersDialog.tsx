@@ -377,43 +377,70 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
               <UserPlus className="w-4 h-4" />
               {t3('Nieuw lid uitnodigen', 'Inviter un nouveau membre', 'Invite new member')}
             </h3>
-            <div className="flex gap-2 mb-2">
-              <select
-                value={inviteRole}
-                onChange={e => setInviteRole(e.target.value as ClubRole)}
-                className="px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {canManage && <option value="beheerder">{roleLabels.beheerder}</option>}
-                <option value="medewerker">{roleLabels.medewerker}</option>
-              </select>
-            </div>
 
-            {/* Email invite */}
-            <div className="flex gap-2 mb-2">
-              <input
-                type="email"
-                placeholder={t3('E-mailadres', 'Adresse e-mail', 'Email address')}
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button
-                onClick={handleInviteByEmail}
-                disabled={inviting || !inviteEmail.trim()}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {t3('Verstuur', 'Envoyer', 'Send')}
-              </button>
-            </div>
+            {inviteStep === 'form' ? (
+              <>
+                <div className="flex gap-2 mb-2">
+                  <select
+                    value={inviteRole}
+                    onChange={e => setInviteRole(e.target.value as ClubRole)}
+                    className="px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {canManage && <option value="beheerder">{roleLabels.beheerder}</option>}
+                    <option value="medewerker">{roleLabels.medewerker}</option>
+                  </select>
+                </div>
 
-            {/* Generate link */}
-            <button
-              onClick={handleGenerateLink}
-              className="flex items-center gap-2 text-sm text-primary hover:underline"
-            >
-              <Copy className="w-3.5 h-3.5" />
-              {t3('Genereer uitnodigingslink', 'Générer un lien d\'invitation', 'Generate invite link')}
-            </button>
+                {/* Email invite */}
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="email"
+                    placeholder={t3('E-mailadres', 'Adresse e-mail', 'Email address')}
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    onClick={handleInviteByEmail}
+                    disabled={inviting || !inviteEmail.trim()}
+                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {t3('Verstuur', 'Envoyer', 'Send')}
+                  </button>
+                </div>
+
+                {/* Generate link */}
+                <button
+                  onClick={handleGenerateLink}
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {t3('Genereer uitnodigingslink', 'Générer un lien d\'invitation', 'Generate invite link')}
+                </button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  {t3('Welk contracttype krijgt deze vrijwilliger?', 'Quel type de contrat pour ce bénévole?', 'Which contract type for this volunteer?')}
+                </p>
+                <ContractTypePicker
+                  selected={selectedContractTypes}
+                  onChange={setSelectedContractTypes}
+                  language={language}
+                  multiSelect={true}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveContractTypes}
+                    className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    {selectedContractTypes.size > 0
+                      ? t3('Opslaan', 'Enregistrer', 'Save')
+                      : t3('Overslaan', 'Passer', 'Skip')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
