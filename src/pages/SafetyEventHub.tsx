@@ -29,6 +29,12 @@ const SafetyEventHub = () => {
         .eq('id', eventId)
         .maybeSingle();
       setEvent(data);
+      // Check if push notifications are active (user has a push subscription)
+      try {
+        const reg = await navigator.serviceWorker?.getRegistration();
+        const sub = await reg?.pushManager?.getSubscription();
+        setPushActive(!!sub);
+      } catch { setPushActive(false); }
       setLoading(false);
     })();
   }, [eventId]);
