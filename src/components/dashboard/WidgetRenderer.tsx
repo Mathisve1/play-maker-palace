@@ -46,7 +46,7 @@ export const WidgetRenderer = ({
     case 'kpi_upcoming_events':
       return <KpiWidget type={widget.type} value={upcomingEventCount} language={language} onClick={() => navigate('/events-manager')} />;
     case 'kpi_pending_signups':
-      return <KpiWidget type={widget.type} value={pendingSignupCount} language={language} onClick={() => navigate('/planning?tab=overview')} />;
+      return <KpiWidget type={widget.type} value={pendingSignupCount} language={language} onClick={() => navigate('/command-center')} />;
     case 'kpi_active_volunteers':
       return <KpiWidget type={widget.type} value={activeVolunteerCount} language={language} onClick={() => navigate('/reporting')} />;
     case 'kpi_unsigned_contracts':
