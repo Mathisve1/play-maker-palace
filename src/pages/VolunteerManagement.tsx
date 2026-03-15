@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star } from 'lucide-react';
+import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
+import ContractTypePicker, { ContractTypeKey, CONTRACT_TYPES } from '@/components/ContractTypePicker';
 
 interface VolunteerRow {
   id: string;
