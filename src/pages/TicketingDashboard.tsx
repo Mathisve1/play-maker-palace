@@ -524,8 +524,8 @@ const TicketingDashboard = () => {
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <Select value={isMonthlyPlan ? `mp_${selectedEventId}` : selectedEventId} onValueChange={handleSelectChange}>
-                  <SelectTrigger className="w-full sm:w-80">
-                    <SelectValue placeholder={labels.selectEvent} />
+                  <SelectTrigger className="w-full sm:w-80 min-w-[200px]">
+                    <SelectValue placeholder={labels.selectEvent} className="truncate" />
                   </SelectTrigger>
                   <SelectContent>
                     {events.length === 0 && monthlyPlans.length === 0 ? (
