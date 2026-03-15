@@ -35,6 +35,7 @@ const BulkMessageDialog = lazy(() => import('@/components/BulkMessageDialog'));
 const BriefingProgressDialog = lazy(() => import('@/components/BriefingProgressDialog'));
 const TaskPickerDialog = lazy(() => import('@/components/TaskPickerDialog'));
 const EditProfileDialog = lazy(() => import('@/components/EditProfileDialog'));
+const VolunteerMatcher = lazy(() => import('@/components/VolunteerMatcher'));
 
 interface VolunteerProfile {
   id: string;
