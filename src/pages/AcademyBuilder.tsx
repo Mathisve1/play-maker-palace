@@ -1447,6 +1447,21 @@ const AcademyBuilder = () => {
                 </div>
               </div>
 
+              {/* ─── Compliance Toggle ─── */}
+              <div className="bg-card rounded-2xl border border-border p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-primary" /> {language === 'nl' ? 'Verplicht voor compliance' : language === 'fr' ? 'Obligatoire pour conformité' : 'Required for compliance'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'nl' ? 'Wanneer ingeschakeld, moeten vrijwilligers deze training voltooien om compliant te zijn.' : language === 'fr' ? 'Si activé, les bénévoles doivent terminer cette formation pour être conformes.' : 'When enabled, volunteers must complete this training for compliance.'}
+                    </p>
+                  </div>
+                  <Switch checked={editRequiredForCompliance} onCheckedChange={setEditRequiredForCompliance} />
+                </div>
+              </div>
+
               {/* ─── Certificates ─── */}
               <div className="bg-card rounded-2xl border border-border p-5">
                 <h3 className="font-heading font-semibold text-foreground flex items-center gap-2 mb-3">
