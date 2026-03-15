@@ -458,6 +458,21 @@ const SafetyDashboard = () => {
 
     // Push to safety team + club admin
     notifySafetyTeam(type.label, eventId, clubId);
+
+    // Auto-notify ALL volunteers on urgent/critical incidents
+    if (autoNotifyUrgent && (type.default_priority === 'high' || type.default_priority === 'critical')) {
+      sendPushToEventVolunteers({
+        eventId,
+        title: `🚨 ${type.label} — ${eventTitle}`,
+        message: t3(
+          'Gelieve de instructies van het veiligheidsteam te volgen.',
+          'Veuillez suivre les instructions de l\'équipe de sécurité.',
+          'Please follow the safety team\'s instructions.'
+        ),
+        url: `/safety/${eventId}`,
+        type: 'safety_alarm',
+      });
+    }
   };
 
   // ── Steward: Step 2 — update with details ──
