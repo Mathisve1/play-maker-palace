@@ -100,6 +100,27 @@ const BillingDashboard = () => {
         );
       }
     }
+
+    // Fetch contract type distribution
+    const { data: contracts } = await (supabase as any)
+      .from('season_contracts')
+      .select('contract_type, is_billable')
+      .eq('club_id', cId)
+      .not('contract_type', 'is', null);
+
+    if (contracts && contracts.length > 0) {
+      const typeMap: Record<string, { count: number; isFree: boolean }> = {};
+      contracts.forEach((c: any) => {
+        if (!typeMap[c.contract_type]) {
+          typeMap[c.contract_type] = { count: 0, isFree: !c.is_billable };
+        }
+        typeMap[c.contract_type].count++;
+      });
+      setContractTypes(
+        Object.entries(typeMap).map(([type, data]) => ({ type, ...data }))
+          .sort((a, b) => (a.isFree === b.isFree ? 0 : a.isFree ? -1 : 1))
+      );
+    }
   };
 
   const billedCount = billing?.current_season_volunteers_billed || 0;
