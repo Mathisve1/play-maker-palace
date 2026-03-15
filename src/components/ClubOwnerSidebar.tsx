@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut, Moon, Sun,
   Search, User, Settings, MessageCircle, Bell, ShieldAlert, Ticket, Handshake,
-  CreditCard, Award, Heart, ChevronDown, HelpCircle,
+  CreditCard, Award, Heart, ChevronDown, HelpCircle, Sparkles,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useTheme } from '@/hooks/useTheme';
