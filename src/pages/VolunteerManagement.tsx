@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -11,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag, AlertCircle, BarChart3 } from 'lucide-react';
+import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag, AlertCircle, BarChart3, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
@@ -37,6 +38,7 @@ interface VolunteerRow {
 const VolunteerManagement = () => {
   const { clubId } = useClubContext();
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const [volunteers, setVolunteers] = useState<VolunteerRow[]>([]);
@@ -328,6 +330,24 @@ const VolunteerManagement = () => {
                 </Button>
               </>
             )}
+            <Button variant="outline" size="sm" onClick={() => {
+              const header = ['Naam', 'E-mail', 'Contracttype(s)', 'Contractstatus', 'Aantal check-ins', 'Gemiddelde beoordeling'].join(',');
+              const rows = filtered.map(v => {
+                const types = v.contracts.map(c => categoryLabels[c.category] || c.template_name).join('; ') || '-';
+                const status = v.contracts.length === 0 ? 'Geen' : v.contracts.every(c => c.status === 'signed') ? 'Getekend' : 'In afwachting';
+                const rating = v.avg_rating !== null ? v.avg_rating.toFixed(1) : '-';
+                return [v.full_name, v.email, `"${types}"`, status, v.check_in_count, rating].join(',');
+              });
+              const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = 'vrijwilligers.csv'; a.click();
+              URL.revokeObjectURL(url);
+              toast.success(t('CSV geëxporteerd', 'CSV exporté', 'CSV exported'));
+            }} className="gap-1.5">
+              <Download className="w-4 h-4" />
+              {t('Exporteer lijst', 'Exporter la liste', 'Export list')}
+            </Button>
             <Button variant="outline" size="sm" onClick={loadData}>
               {t('Vernieuwen', 'Actualiser', 'Refresh')}
             </Button>
@@ -451,35 +471,38 @@ const VolunteerManagement = () => {
                     className="shrink-0"
                   />
 
-                  {/* Avatar */}
-                  <Avatar className="h-11 w-11 shrink-0">
-                    {vol.avatar_url && <AvatarImage src={vol.avatar_url} alt={vol.full_name} />}
-                    <AvatarFallback className="text-sm font-bold bg-primary/10 text-primary">
-                      {vol.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  {/* Name & email */}
-                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground truncate">{vol.full_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{vol.email}</p>
-                    {vol.avg_rating !== null && (
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                        <span className="text-xs font-medium text-foreground">{vol.avg_rating.toFixed(1)}</span>
-                        <span className="text-[10px] text-muted-foreground">({vol.review_count})</span>
-                      </div>
-                    )}
-                    {vol.memberContractTypes.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-0.5">
-                        {vol.memberContractTypes.map(ct => (
-                          <span key={ct} className="inline-flex px-1.5 py-0.5 rounded text-[10px] bg-secondary/50 text-secondary-foreground font-medium capitalize">
-                            {ct.replace('_', ' ')}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  {/* Avatar + Name — clickable */}
+                  <button
+                    onClick={() => navigate(`/volunteer/${vol.id}`)}
+                    className="flex items-center gap-3 min-w-0 flex-1 text-left hover:opacity-80 transition-opacity"
+                  >
+                    <Avatar className="h-11 w-11 shrink-0">
+                      {vol.avatar_url && <AvatarImage src={vol.avatar_url} alt={vol.full_name} />}
+                      <AvatarFallback className="text-sm font-bold bg-primary/10 text-primary">
+                        {vol.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground truncate">{vol.full_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{vol.email}</p>
+                      {vol.avg_rating !== null && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                          <span className="text-xs font-medium text-foreground">{vol.avg_rating.toFixed(1)}</span>
+                          <span className="text-[10px] text-muted-foreground">({vol.review_count})</span>
+                        </div>
+                      )}
+                      {vol.memberContractTypes.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {vol.memberContractTypes.map(ct => (
+                            <span key={ct} className="inline-flex px-1.5 py-0.5 rounded text-[10px] bg-secondary/50 text-secondary-foreground font-medium capitalize">
+                              {ct.replace('_', ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </button>
 
                   {/* Contract status indicator */}
                   <ContractStatusIndicator
@@ -531,6 +554,9 @@ const VolunteerManagement = () => {
                     <FileSignature className="w-3.5 h-3.5" />
                     <span className="hidden lg:inline">{t('Contract', 'Contrat', 'Contract')}</span>
                   </Button>
+
+                  {/* Navigate hint */}
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 hidden sm:block" />
                 </div>
 
                 {/* Mobile contract badges */}
