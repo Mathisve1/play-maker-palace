@@ -312,6 +312,76 @@ const BillingDashboard = () => {
               </Card>
             </div>
 
+            {/* Your plan — contract type breakdown */}
+            {contractTypeBreakdown.length > 0 && (
+              <Card className="mb-10">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Package className="w-5 h-5 text-primary" />
+                    <h3 className="text-lg font-heading font-bold text-foreground">
+                      {t('Jouw plan dit seizoen', 'Votre plan cette saison', 'Your plan this season')}
+                    </h3>
+                  </div>
+
+                  <div className="rounded-xl border border-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('Contracttype', 'Type de contrat', 'Contract type')}</TableHead>
+                          <TableHead className="text-right">{t('Actieve vrijwilligers', 'Bénévoles actifs', 'Active volunteers')}</TableHead>
+                          <TableHead className="text-right">{t('Kost dit seizoen', 'Coût cette saison', 'Cost this season')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {contractTypeBreakdown.map((row, i) => (
+                          <TableRow key={row.category}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {row.category}
+                                {i < 2 && isFree && (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {t('Gratis', 'Gratuit', 'Free')}
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">{row.count}</TableCell>
+                            <TableCell className="text-right font-medium">
+                              {i < 2 && isFree ? (
+                                <span className="text-primary">€0</span>
+                              ) : (
+                                <span>€{row.cost.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-muted/30 font-bold">
+                          <TableCell>{t('Totaal', 'Total', 'Total')}</TableCell>
+                          <TableCell className="text-right">
+                            {contractTypeBreakdown.reduce((s, r) => s + r.count, 0)}
+                          </TableCell>
+                          <TableCell className="text-right text-primary">
+                            €{(isFree
+                              ? contractTypeBreakdown.slice(2).reduce((s, r) => s + r.cost, 0)
+                              : contractTypeBreakdown.reduce((s, r) => s + r.cost, 0)
+                            ).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {t(
+                      '* De eerste 2 contracttypes zijn gratis. Vanaf het 3e contracttype betaal je €15 per vrijwilliger per seizoen.',
+                      '* Les 2 premiers types de contrats sont gratuits. À partir du 3e type, vous payez €15 par bénévole par saison.',
+                      '* The first 2 contract types are free. From the 3rd type, you pay €15 per volunteer per season.'
+                    )}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* FAQ */}
             <div className="space-y-4">
               <h2 className="text-xl font-heading font-bold text-foreground">
