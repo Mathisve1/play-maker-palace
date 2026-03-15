@@ -1328,7 +1328,13 @@ const ClubOwnerDashboard = () => {
       {/* Dialogs — wrapped in Suspense for lazy-loaded components */}
       <Suspense fallback={null}>
         {showSettings && clubId && clubInfo && (
-          <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => { /* updates handled by ClubContext refresh */ }} />
+          <ClubSettingsDialog clubId={clubId} clubInfo={clubInfo} onClose={() => setShowSettings(false)} onUpdated={(info) => { /* updates handled by ClubContext refresh */ }}
+            onRestartOnboarding={async () => {
+              await supabase.from('profiles').update({ club_onboarding_step: 'welcome' }).eq('id', currentUserId);
+              setShowOnboarding(true);
+              setShowSettings(false);
+            }}
+          />
         )}
         {showMembers && clubId && (
           <ClubMembersDialog clubId={clubId} currentUserId={currentUserId} isOwner={isOwner} currentUserRole={myClubRole} onClose={() => setShowMembers(false)} />
