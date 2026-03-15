@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import MonthlyPlanningKPIs from '@/components/MonthlyPlanningKPIs';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3 } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3, UserCheck } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
@@ -35,6 +35,7 @@ const BulkMessageDialog = lazy(() => import('@/components/BulkMessageDialog'));
 const BriefingProgressDialog = lazy(() => import('@/components/BriefingProgressDialog'));
 const TaskPickerDialog = lazy(() => import('@/components/TaskPickerDialog'));
 const EditProfileDialog = lazy(() => import('@/components/EditProfileDialog'));
+const VolunteerMatcher = lazy(() => import('@/components/VolunteerMatcher'));
 
 interface VolunteerProfile {
   id: string;
@@ -325,6 +326,7 @@ const ClubOwnerDashboard = () => {
   const [selectedVolunteer, setSelectedVolunteer] = useState<{ volunteer: VolunteerProfile; signupStatus: string; signedUpAt: string } | null>(null);
   const [showMembers, setShowMembers] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [matcherTask, setMatcherTask] = useState<Task | null>(null);
   const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [volunteerPayments, setVolunteerPayments] = useState<Record<string, { status: string; receipt_url?: string | null; paid_at?: string | null }>>({});
@@ -911,6 +913,9 @@ const ClubOwnerDashboard = () => {
             <button onClick={(e) => { e.stopPropagation(); setBriefingProgressTaskId(task.id); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-accent/50 text-accent-foreground hover:bg-accent transition-colors">
               <Users className="w-3.5 h-3.5" /> Voortgang
             </button>
+            <button onClick={(e) => { e.stopPropagation(); setMatcherTask(task); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+              <UserCheck className="w-3.5 h-3.5" /> {t3('Vrijwilligers zoeken', 'Chercher bénévoles', 'Find volunteers')}
+            </button>
             <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteTask(task.id); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors">
               <Trash2 className="w-3.5 h-3.5" /> {dt.deleteTask}
             </button>
@@ -1391,6 +1396,16 @@ const ClubOwnerDashboard = () => {
         }}
         language={language}
       />
+
+      {matcherTask && (
+        <Suspense fallback={null}>
+          <VolunteerMatcher
+            open={!!matcherTask}
+            onOpenChange={(open) => { if (!open) setMatcherTask(null); }}
+            task={{ id: matcherTask.id, title: matcherTask.title, task_date: matcherTask.task_date || null, start_time: null, end_time: null, location: matcherTask.location || null, club_id: matcherTask.club_id || clubId || '' }}
+          />
+        </Suspense>
+      )}
     </DashboardLayout>
   );
 };

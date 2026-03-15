@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, Search, CheckCircle, Heart, MessageCircle, FileSignature, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Gift, Ticket, Banknote, Award, TrendingUp, Star } from 'lucide-react';
+import { MapPin, Calendar, Users, Search, CheckCircle, Heart, MessageCircle, FileSignature, CreditCard, Clock, AlertTriangle, Download, ClipboardList, CalendarDays, Gift, Ticket, Banknote, Award, TrendingUp, Star, ChevronDown } from 'lucide-react';
 import { VolunteerCardsSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import HourConfirmationDialog from '@/components/HourConfirmationDialog';
 import LikeButton from '@/components/LikeButton';
@@ -40,6 +40,8 @@ import VolunteerFinancialDashboard from '@/components/VolunteerFinancialDashboar
 import ReferralSection from '@/components/ReferralSection';
 import SkillsPassport from '@/components/SkillsPassport';
 import MicroLearningsSection from '@/components/MicroLearningsSection';
+import AvailabilityCalendar from '@/components/AvailabilityCalendar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Task {
   id: string;
@@ -899,6 +901,35 @@ const VolunteerDashboard = () => {
 
           {/* Skills Passport */}
           {currentUserId && <SkillsPassport userId={currentUserId} language={language} />}
+
+          {/* Availability Calendar */}
+          {currentUserId && (
+            <Collapsible>
+              <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+                <CollapsibleTrigger className="w-full p-5 flex items-center justify-between text-left hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground">
+                        {language === 'nl' ? 'Mijn Beschikbaarheid' : language === 'fr' ? 'Ma Disponibilité' : 'My Availability'}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'nl' ? 'Geef aan wanneer je beschikbaar bent' : language === 'fr' ? 'Indiquez vos disponibilités' : 'Set your availability'}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="px-5 pb-5">
+                    <AvailabilityCalendar userId={currentUserId} />
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          )}
 
           {/* Micro-learnings */}
           {currentUserId && <MicroLearningsSection userId={currentUserId} language={language} />}
