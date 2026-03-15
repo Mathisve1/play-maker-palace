@@ -296,9 +296,6 @@ const VolunteerManagement = () => {
     setShowSendContract(true);
   };
 
-  const handleBulkSetContractType = async () => {
-    if (bulkContractTypes.size === 0 || selectedIds.size === 0) return;
-
   const downloadCsv = (vols: VolunteerRow[], filename: string) => {
     const clubName = clubInfo?.name || 'Club';
     const header = [
@@ -325,6 +322,9 @@ const VolunteerManagement = () => {
     URL.revokeObjectURL(url);
     toast.success(t('CSV geëxporteerd', 'CSV exporté', 'CSV exported'));
   };
+
+  const handleBulkSetContractType = async () => {
+    if (bulkContractTypes.size === 0 || selectedIds.size === 0) return;
     const vols = volunteers.filter(v => selectedIds.has(v.id) && v.membership_id);
     let success = 0;
     for (const vol of vols) {
