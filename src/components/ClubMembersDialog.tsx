@@ -73,11 +73,35 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   }, [clubId]);
 
   const fetchData = async () => {
-    // Fetch members
+    // Fetch members via club_members
     const { data: membersData } = await supabase
       .from('club_members')
       .select('id, user_id, role')
       .eq('club_id', clubId);
+
+    // Also fetch club_memberships for contract type mapping
+    const { data: membershipsData } = await supabase
+      .from('club_memberships')
+      .select('id, volunteer_id')
+      .eq('club_id', clubId);
+
+    const membershipMap = new Map((membershipsData || []).map(m => [m.volunteer_id, m.id]));
+
+    // Fetch contract types
+    const membershipIds = (membershipsData || []).map(m => m.id);
+    let contractTypeMap = new Map<string, ContractTypeKey[]>();
+    if (membershipIds.length > 0) {
+      const { data: ctData } = await supabase
+        .from('member_contract_types' as any)
+        .select('membership_id, contract_type')
+        .in('membership_id', membershipIds);
+      
+      (ctData as any[] || []).forEach((ct: any) => {
+        const existing = contractTypeMap.get(ct.membership_id) || [];
+        existing.push(ct.contract_type);
+        contractTypeMap.set(ct.membership_id, existing);
+      });
+    }
 
     if (membersData && membersData.length > 0) {
       const userIds = membersData.map(m => m.user_id);
@@ -90,12 +114,15 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
       setMembers(
         membersData.map(m => {
           const prof = profileMap.get(m.user_id);
+          const msId = membershipMap.get(m.user_id);
           return {
             ...m,
             role: m.role as ClubRole,
+            membership_id: msId,
             profile: prof
               ? { full_name: prof.full_name || prof.email || null, email: prof.email }
               : { full_name: null, email: null },
+            contractTypes: msId ? contractTypeMap.get(msId) || [] : [],
           };
         })
       );
