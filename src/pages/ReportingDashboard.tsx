@@ -206,6 +206,10 @@ const rl = {
     aiQ7: 'Give an overview of our monthly costs', aiQ8: 'How many contracts are already signed?',
     aiQ9: 'Which partners provide the most staff?', aiQ10: 'How many volunteers are close to the annual limit?',
     aiQ11: 'On which day of the week do we schedule the most tasks?', aiQ12: 'How many hour confirmations are still open?',
+    aiSummaryTitle: 'AI Summary', aiSummaryBtn: 'Generate AI summary', aiSummaryRetry: 'Try again later',
+    aiSummaryCopy: 'Copy to clipboard', aiSummaryCopied: 'Copied!', aiSummaryAdd: 'Add to report',
+    aiSummaryAdded: 'Summary saved for report',
+    aiSummaryPrompt: 'Give a concise season summary in 3-4 sentences. Mention: number of active volunteers, number of events, most popular task, attendance rate, and total paid out. Write in English in a friendly, professional tone.',
   },
 };
 
