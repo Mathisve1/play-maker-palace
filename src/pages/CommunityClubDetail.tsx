@@ -64,6 +64,8 @@ const CommunityClubDetail = () => {
   const [stats, setStats] = useState({ volunteers: 0, events: 0, avgRating: 0, ratingCount: 0 });
   const [showReferralDialog, setShowReferralDialog] = useState(false);
   const [referralCode, setReferralCode] = useState('');
+  const [isMember, setIsMember] = useState<boolean | null>(null);
+  const [interestSending, setInterestSending] = useState(false);
 
   // SEO
   useEffect(() => {
