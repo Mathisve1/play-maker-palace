@@ -42,6 +42,10 @@ const SeasonContractManager = () => {
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [showSendContract, setShowSendContract] = useState(false);
   const [showBillingModal, setShowBillingModal] = useState(false);
+  const [showCloseWizard, setShowCloseWizard] = useState(false);
+
+  // Archived seasons
+  const [archivedSeasons, setArchivedSeasons] = useState<any[]>([]);
 
   // Billing
   const [billing, setBilling] = useState<any>(null);
