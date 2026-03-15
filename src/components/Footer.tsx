@@ -12,9 +12,9 @@ const Footer = () => {
           <Logo size="sm" linkTo="/" />
           <p className="text-sm">{t.footer.tagline}</p>
           <div className="flex gap-6 text-sm">
-            <Link to="#" className="hover:text-background transition-colors">{t.footer.privacy}</Link>
-            <Link to="#" className="hover:text-background transition-colors">{t.footer.terms}</Link>
-            <Link to="#" className="hover:text-background transition-colors">{t.footer.contact}</Link>
+            <Link to="/privacy" className="hover:text-background transition-colors">{t.footer.privacy}</Link>
+            <Link to="/terms" className="hover:text-background transition-colors">{t.footer.terms}</Link>
+            <Link to="/contact" className="hover:text-background transition-colors">{t.footer.contact}</Link>
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-background/10 text-center text-xs text-background/40">

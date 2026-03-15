@@ -160,6 +160,9 @@ const App = () => {
             <Route path="/notifications" element={<RequireAuth><NotificationCenter /></RequireAuth>} />
             <Route path="/audit-log" element={<RequireAuth redirectTo="/club-login"><AuditLog /></RequireAuth>} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
