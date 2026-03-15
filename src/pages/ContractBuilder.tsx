@@ -394,7 +394,17 @@ const ContractBuilder = () => {
         if (res.ok) setClubSignatureUrl(sigData.publicUrl);
       }).catch(() => {});
     }
-  }, [navigate, clubId, editTemplateId]);
+
+    // Load season_contract_template if templateId param is set
+    if (seasonTemplateId) {
+      supabase.from('season_contract_templates').select('id, name, template_data').eq('id', seasonTemplateId).single().then(({ data }) => {
+        if (data && (data as any).template_data) {
+          setBlocks((data as any).template_data as ContractBlock[]);
+          setTemplateName(data.name);
+        }
+      });
+    }
+  }, [navigate, clubId, editTemplateId, seasonTemplateId]);
 
   // Upload club signature (reusable for all contracts)
   const handleSignatureUpload = async (file: File) => {
