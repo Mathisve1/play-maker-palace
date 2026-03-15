@@ -331,29 +331,38 @@ const EventsManager = () => {
     setCreatingGroupTask(false);
   };
 
-  const handleDuplicateEvent = async (eventId: string) => {
+  const openDuplicateDialog = (eventId: string) => {
+    const event = events.find(e => e.id === eventId);
+    setDuplicateDateDialog(eventId);
+    setDuplicateNewDate(event?.event_date ? event.event_date.slice(0, 16) : '');
+  };
+
+  const handleDuplicateEvent = async () => {
+    if (!duplicateDateDialog || !clubId) return;
+    const eventId = duplicateDateDialog;
     setDuplicatingEvent(eventId);
     const event = events.find(e => e.id === eventId);
-    if (!event || !clubId) return;
+    if (!event) { setDuplicatingEvent(null); setDuplicateDateDialog(null); return; }
     const { data: newEv, error } = await supabase.from('events').insert({
       club_id: clubId, title: `${event.title} (kopie)`, description: event.description,
-      event_date: event.event_date, location: event.location,
+      event_date: duplicateNewDate || event.event_date, location: event.location,
     } as any).select('*').maybeSingle();
-    if (error || !newEv) { toast.error(error?.message || 'Failed'); setDuplicatingEvent(null); return; }
+    if (error || !newEv) { toast.error(error?.message || 'Failed'); setDuplicatingEvent(null); setDuplicateDateDialog(null); return; }
 
     const groups = eventGroups.filter(g => g.event_id === eventId);
     for (const group of groups) {
       const { data: newGrp } = await supabase.from('event_groups').insert({
         event_id: newEv.id, name: group.name, color: group.color, sort_order: group.sort_order,
+        wristband_color: group.wristband_color, wristband_label: group.wristband_label, materials_note: group.materials_note,
       } as any).select('*').maybeSingle();
       if (newGrp) {
         setEventGroups(prev => [...prev, newGrp]);
         const groupTasks = tasks.filter(t => t.event_group_id === group.id);
         for (const task of groupTasks) {
           const { data: newTask } = await supabase.from('tasks').insert({
-            club_id: clubId, title: task.title, task_date: task.task_date, location: task.location,
+            club_id: clubId, title: task.title, task_date: duplicateNewDate || task.task_date, location: task.location,
             spots_available: task.spots_available, event_id: newEv.id, event_group_id: newGrp.id,
-          } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
+          } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
           if (newTask) setTasks(prev => [...prev, newTask]);
         }
       }
@@ -361,6 +370,49 @@ const EventsManager = () => {
     setEvents(prev => [newEv, ...prev]);
     toast.success(t3('Evenement gedupliceerd!', 'Événement dupliqué!', 'Event duplicated!'));
     setDuplicatingEvent(null);
+    setDuplicateDateDialog(null);
+  };
+
+  const loadTaskSetsForPicker = async (eventId: string) => {
+    setTaskSetPickerEventId(eventId);
+    setShowTaskSetPicker(true);
+    const [setsRes, ttRes] = await Promise.all([
+      supabase.from('task_template_sets').select('id, name').eq('club_id', clubId!),
+      supabase.from('task_templates').select('*').eq('club_id', clubId!),
+    ]);
+    const sets = setsRes.data || [];
+    const tts = ttRes.data || [];
+    const map: Record<string, any> = {};
+    tts.forEach((t: any) => { map[t.id] = t; });
+    setTaskTemplatesMap(map);
+
+    if (sets.length > 0) {
+      const { data: items } = await supabase.from('task_template_set_items').select('*').in('set_id', sets.map((s: any) => s.id));
+      setTaskSets(sets.map((s: any) => ({ ...s, items: (items || []).filter((i: any) => i.set_id === s.id) })));
+    } else {
+      setTaskSets([]);
+    }
+  };
+
+  const handleApplyTaskSet = async (setId: string) => {
+    if (!clubId || !taskSetPickerEventId) return;
+    setApplyingSet(setId);
+    const set = taskSets.find(s => s.id === setId);
+    if (!set) { setApplyingSet(null); return; }
+
+    for (const item of set.items) {
+      const tt = taskTemplatesMap[item.template_id];
+      if (!tt) continue;
+      const { data: newTask } = await supabase.from('tasks').insert({
+        club_id: clubId, title: tt.name, description: tt.description,
+        location: tt.location, spots_available: tt.required_volunteers,
+        event_id: taskSetPickerEventId,
+      } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
+      if (newTask) setTasks(prev => [...prev, newTask]);
+    }
+    toast.success(t3('Taken aangemaakt vanuit set!', 'Tâches créées à partir de l\'ensemble!', 'Tasks created from set!'));
+    setApplyingSet(null);
+    setShowTaskSetPicker(false);
   };
 
   const handleDeleteEvent = async (eventId: string) => {
