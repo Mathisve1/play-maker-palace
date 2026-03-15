@@ -73,10 +73,11 @@ const SeasonContractManager = () => {
   }, []);
 
   const loadData = async (cId: string) => {
-    // Load active season + billing in parallel
-    const [seasonRes, billingRes] = await Promise.all([
+    // Load active season + billing + archived seasons in parallel
+    const [seasonRes, billingRes, archivedRes] = await Promise.all([
       supabase.from('seasons').select('*').eq('club_id', cId).eq('is_active', true).limit(1).maybeSingle(),
       supabase.from('club_billing').select('*').eq('club_id', cId).maybeSingle(),
+      supabase.from('seasons').select('*').eq('club_id', cId).eq('is_active', false).order('end_date', { ascending: false }),
     ]);
 
     setActiveSeason(seasonRes.data);
