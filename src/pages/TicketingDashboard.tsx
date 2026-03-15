@@ -643,8 +643,8 @@ const TicketingDashboard = () => {
           <TabsContent value="live">
             <div className="space-y-4">
               <Select value={isMonthlyPlan ? `mp_${selectedEventId}` : selectedEventId} onValueChange={handleSelectChange}>
-                <SelectTrigger className="w-full sm:w-80">
-                  <SelectValue placeholder={labels.selectEvent} />
+                <SelectTrigger className="w-full sm:w-80 min-w-[200px]">
+                  <SelectValue placeholder={labels.selectEvent} className="truncate" />
                 </SelectTrigger>
                 <SelectContent>
                   {events.map(e => (
