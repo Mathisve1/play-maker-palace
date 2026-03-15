@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
+import PageNavTabs from '@/components/PageNavTabs';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
