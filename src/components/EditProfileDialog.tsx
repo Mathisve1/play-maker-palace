@@ -159,6 +159,7 @@ const formatIban = (value: string) => {
 
 const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpdated, isFirstLogin = false }: EditProfileDialogProps) => {
   const l = labels[language];
+  const { theme, toggleTheme } = useTheme();
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
