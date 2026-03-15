@@ -307,6 +307,7 @@ const MonthlyPlanning = () => {
 
   const addOrUpdateTask = async () => {
     if (!plan) return;
+    if (!taskForm.title.trim()) { toast.error(t3('Titel mag niet leeg zijn.', 'Le titre ne peut pas être vide.', 'Title cannot be empty.')); return; }
     const payload = {
       plan_id: plan.id, task_date: selectedDate!, title: taskForm.title, category: taskForm.category,
       description: taskForm.description || null, location: taskForm.location || null,
@@ -641,7 +642,7 @@ const MonthlyPlanning = () => {
 
       {/* Add/Edit Task Dialog */}
       <Dialog open={showAddTask} onOpenChange={setShowAddTask}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingTask ? t3('Taak bewerken', 'Modifier la tâche', 'Edit task') : t3('Taak toevoegen', 'Ajouter une tâche', 'Add task')}</DialogTitle>
             <DialogDescription>
@@ -684,7 +685,7 @@ const MonthlyPlanning = () => {
             <div><Label>{t3('Beschrijving', 'Description', 'Description')}</Label><Textarea value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
             <div className="flex gap-3 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowAddTask(false)}>{t3('Annuleren', 'Annuler', 'Cancel')}</Button>
-              <Button className="flex-1" onClick={addOrUpdateTask} disabled={!taskForm.title}>{editingTask ? t3('Opslaan', 'Enregistrer', 'Save') : t3('Toevoegen', 'Ajouter', 'Add')}</Button>
+              <Button className="flex-1" onClick={addOrUpdateTask} disabled={!taskForm.title.trim()}>{editingTask ? t3('Opslaan', 'Enregistrer', 'Save') : t3('Toevoegen', 'Ajouter', 'Add')}</Button>
             </div>
           </div>
         </DialogContent>
