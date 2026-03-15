@@ -420,7 +420,7 @@ const AnalyticsDashboard = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </ClubPageLayout>
   );
 };
 
