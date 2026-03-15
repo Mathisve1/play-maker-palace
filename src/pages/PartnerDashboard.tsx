@@ -116,7 +116,7 @@ const PartnerDashboard = () => {
 
   const fetchClubTasks = async (partnerId: string, clubId: string) => {
     const { data: tasks } = await supabase.from('tasks')
-      .select('id, title, description, task_date, location, spots_available, event_id, partner_acceptance_status')
+      .select('id, title, description, task_date, location, spots_available, event_id, partner_acceptance_status, updated_at')
       .eq('partner_only', true).eq('assigned_partner_id', partnerId).eq('club_id', clubId);
     const allTasks = tasks || [];
     const taskIds = allTasks.map(t => t.id);
