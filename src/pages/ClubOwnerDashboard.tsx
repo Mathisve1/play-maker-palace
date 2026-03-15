@@ -913,6 +913,9 @@ const ClubOwnerDashboard = () => {
             <button onClick={(e) => { e.stopPropagation(); setBriefingProgressTaskId(task.id); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-accent/50 text-accent-foreground hover:bg-accent transition-colors">
               <Users className="w-3.5 h-3.5" /> Voortgang
             </button>
+            <button onClick={(e) => { e.stopPropagation(); setMatcherTask(task); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+              <UserCheck className="w-3.5 h-3.5" /> {t3('Vrijwilligers zoeken', 'Chercher bénévoles', 'Find volunteers')}
+            </button>
             <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteTask(task.id); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors">
               <Trash2 className="w-3.5 h-3.5" /> {dt.deleteTask}
             </button>
