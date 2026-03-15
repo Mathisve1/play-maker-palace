@@ -736,6 +736,16 @@ const VolunteerManagement = () => {
               </div>
             </div>
           )}
+
+          {/* Bulk message dialog */}
+          {showBulkMessage && userId && (
+            <BulkMessageDialog
+              clubId={clubId}
+              clubOwnerId={userId}
+              onClose={() => setShowBulkMessage(false)}
+              preselectedVolunteers={filtered.filter(v => selectedIds.has(v.id)).map(v => ({ id: v.id, full_name: v.full_name, email: v.email }))}
+            />
+          )}
         </>
       )}
     </ClubPageLayout>
