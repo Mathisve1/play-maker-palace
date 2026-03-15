@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
+import { trackEvent } from '@/lib/posthog';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -440,6 +441,7 @@ const SafetyDashboard = () => {
     setStep2Mode(true);
     setShowIncidentGrid(false);
     toast.success(t3('⚡ Melding direct verstuurd met GPS!', '⚡ Signalement envoyé avec GPS !', '⚡ Report sent instantly with GPS!'));
+    trackEvent('safety_incident_created', { event_id: eventId });
     setReporting(false);
 
     // Push to safety team + club admin

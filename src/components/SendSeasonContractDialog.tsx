@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { trackEvent } from '@/lib/posthog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -139,6 +140,7 @@ const SendSeasonContractDialog = ({ open, onClose, clubId, seasonId, language, v
         `${sent} contrat(s) envoyé(s)`,
         `${sent} contract(s) sent`
       ));
+      trackEvent('season_contract_sent', { count: sent });
       onSent();
     }
     if (newErrors.length === 0) onClose();

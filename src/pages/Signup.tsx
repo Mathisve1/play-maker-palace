@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { trackEvent } from '@/lib/posthog';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +42,7 @@ const Signup = () => {
     if (data.user) {
       setUserId(data.user.id);
       setPhase('onboarding');
+      trackEvent('volunteer_signup_completed');
     } else {
       toast.success(language === 'nl' ? 'Controleer je e-mail om je account te bevestigen!' : language === 'fr' ? 'Vérifiez votre e-mail pour confirmer votre compte !' : 'Check your email to confirm your account!');
       navigate('/login');

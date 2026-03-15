@@ -9,6 +9,7 @@ import AiAssistantChat from './AiAssistantChat';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
 import * as Sentry from '@sentry/react';
+import { identifyUser, resetUser } from '@/lib/posthog';
 
 interface RequireAuthProps {
   children: React.ReactNode;
@@ -47,6 +48,8 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     setShowRetry(false);
     // Set Sentry user context
     Sentry.setUser({ id: sessionUser.id, email: sessionUser.email || undefined });
+    // Set PostHog user context
+    identifyUser(sessionUser.id, { email: sessionUser.email || undefined });
     // Non-blocking: profile creation and push sync happen in background
     void ensureProfileExists(sessionUser).catch(e => console.warn('RequireAuth: ensureProfileExists failed', e));
     void syncOneSignalUser(sessionUser.id).catch(() => {});
@@ -93,6 +96,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       if (event === 'SIGNED_OUT') {
         if (cancelled) return;
         Sentry.setUser(null);
+        resetUser();
         initialAuthResolved.current = true;
         setAuthenticatedUserId(null);
         setChecked(true);

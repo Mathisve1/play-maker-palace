@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { trackEvent } from '@/lib/posthog';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -288,6 +289,7 @@ const VolunteerTraining = () => {
       }
       confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['hsl(24, 85%, 55%)', 'hsl(145, 55%, 42%)', 'hsl(35, 90%, 60%)', '#FFD700'] });
       setTimeout(() => confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 } }), 300);
+      trackEvent('academy_training_completed', { training_id: training?.id, score: correct });
       setPhase('certified');
     } else {
       setPhase('result');
