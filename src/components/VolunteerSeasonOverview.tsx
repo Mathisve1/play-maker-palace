@@ -229,6 +229,32 @@ const VolunteerSeasonOverview = ({ userId, language }: SeasonOverviewProps) => {
         earned: Math.round(data.earned),
       })));
 
+      // Fetch SEPA payments for this volunteer
+      const { data: batchItems } = await supabase
+        .from('sepa_batch_items')
+        .select('id, amount, status, batch_id')
+        .eq('volunteer_id', userId);
+
+      if (batchItems && batchItems.length > 0) {
+        const batchIds = [...new Set(batchItems.map(i => i.batch_id))];
+        const { data: batchesData } = await supabase
+          .from('sepa_batches')
+          .select('id, batch_reference, status, created_at')
+          .in('id', batchIds);
+
+        const batchMap = new Map((batchesData || []).map(b => [b.id, b]));
+        setSepaPayments(batchItems.map(item => {
+          const batch = batchMap.get(item.batch_id);
+          return {
+            id: item.id,
+            amount: Number(item.amount),
+            status: (batch as any)?.status || item.status || 'pending',
+            created_at: (batch as any)?.created_at || '',
+            batch_reference: (batch as any)?.batch_reference || '',
+          };
+        }));
+      }
+
       setLoading(false);
     };
     load();
