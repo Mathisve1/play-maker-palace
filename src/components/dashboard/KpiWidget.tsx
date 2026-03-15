@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, Users, FileSignature, Ticket, Shield, Euro, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
+import { CalendarDays, Clock, Users, FileSignature, Ticket, Shield, Euro, BarChart3, TrendingUp, TrendingDown, CalendarRange, Inbox } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { WIDGET_REGISTRY } from './widgetRegistry';
 
