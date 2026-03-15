@@ -682,7 +682,7 @@ const ContractBuilder = () => {
       }
 
       toast.success(t3('Contractsjabloon succesvol opgeslagen!', 'Modèle de contrat enregistré avec succès!', 'Contract template saved successfully!'));
-      navigate('/club-dashboard');
+      setSavedSuccessfully(true);
     } catch (err: any) {
       toast.error(err.message || t3('Opslaan mislukt', 'Échec de l\'enregistrement', 'Save failed'));
     }
