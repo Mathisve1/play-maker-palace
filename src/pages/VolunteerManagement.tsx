@@ -225,6 +225,7 @@ const VolunteerManagement = () => {
       if (filterMemberType !== 'all' && !v.memberContractTypes.includes(filterMemberType as ContractTypeKey)) return false;
       if (filterStatus === 'signed' && !v.contracts.some(c => c.status === 'signed')) return false;
       if (filterStatus === 'pending' && !v.contracts.some(c => c.status !== 'signed')) return false;
+      if (filterStatus === 'no_contract' && v.contracts.some(c => c.status === 'signed')) return false;
       if (filterStatus === 'paying' && !v.is_paying) return false;
       if (filterStatus === 'trial' && v.is_paying) return false;
       return true;

@@ -559,6 +559,29 @@ const TaskDetail = () => {
       </header>
 
       <main className="px-4 py-6 pb-tab-bar max-w-3xl mx-auto">
+        {/* Contract warning banner */}
+        {contractStatus !== 'loading' && contractStatus !== 'signed' && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 flex items-start gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                {language === 'nl'
+                  ? `Je hebt nog geen geldig seizoenscontract voor ${task.clubs?.name || 'deze club'}. Je kunt je inschrijven maar de club moet je nog goedkeuren.`
+                  : language === 'fr'
+                  ? `Vous n'avez pas encore de contrat saisonnier valide pour ${task.clubs?.name || 'ce club'}. Vous pouvez vous inscrire mais le club doit encore vous approuver.`
+                  : `You don't have a valid season contract for ${task.clubs?.name || 'this club'} yet. You can sign up but the club still needs to approve you.`}
+              </p>
+              <button
+                onClick={() => navigate('/volunteer-dashboard?tab=contracts')}
+                className="mt-2 text-xs font-medium text-yellow-700 dark:text-yellow-300 hover:underline"
+              >
+                {language === 'nl' ? 'Bekijk mijn contracten →' : language === 'fr' ? 'Voir mes contrats →' : 'View my contracts →'}
+              </button>
+            </div>
+          </motion.div>
+        )}
         {/* Hero section */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex flex-wrap items-center gap-2 mb-3">
