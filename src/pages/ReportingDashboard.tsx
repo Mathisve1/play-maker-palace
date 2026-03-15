@@ -780,7 +780,9 @@ const ReportingDashboard = () => {
     if (!clubId) return;
     setGeneratingSeasonReport(true);
     try {
-      const { generateSeasonReport, type SeasonReportVolunteer, type SeasonReportTaskType, type SeasonReportBatch } = await import('@/lib/generateSeasonReport');
+      const mod = await import('@/lib/generateSeasonReport');
+      const generateSeasonReport = mod.generateSeasonReport;
+      type SeasonReportVolunteer = mod.SeasonReportVolunteer; type SeasonReportTaskType = mod.SeasonReportTaskType; type SeasonReportBatch = mod.SeasonReportBatch;
       const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).single();
       const { data: season } = await supabase.from('seasons').select('*').eq('club_id', clubId).eq('is_active', true).limit(1).maybeSingle();
       if (!season) { toast.error(language === 'nl' ? 'Geen actief seizoen gevonden' : 'No active season found'); setGeneratingSeasonReport(false); return; }
