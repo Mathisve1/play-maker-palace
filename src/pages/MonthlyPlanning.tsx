@@ -641,7 +641,7 @@ const MonthlyPlanning = () => {
 
       {/* Add/Edit Task Dialog */}
       <Dialog open={showAddTask} onOpenChange={setShowAddTask}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingTask ? t3('Taak bewerken', 'Modifier la tâche', 'Edit task') : t3('Taak toevoegen', 'Ajouter une tâche', 'Add task')}</DialogTitle>
             <DialogDescription>
