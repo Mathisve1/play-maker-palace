@@ -433,6 +433,18 @@ const VolunteerDashboard = () => {
         }
       }
 
+      // Check if volunteer tour should be shown (onboarding completed but tour not yet seen)
+      if (!showVolunteerOnboarding) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('first_tour_seen')
+          .eq('id', uid)
+          .maybeSingle();
+        if (profileData && !(profileData as any).first_tour_seen) {
+          setShowVolunteerTour(true);
+        }
+      }
+
       // Fetch pending reviews: completed tasks in last 14 days without a volunteer review
       const fourteenDaysAgo = new Date();
       fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
