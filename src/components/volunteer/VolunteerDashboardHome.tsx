@@ -55,6 +55,7 @@ const VolunteerDashboardHome = ({
   const [upcomingBriefings, setUpcomingBriefings] = useState<{ taskId: string; taskTitle: string; taskDate: string }[]>([]);
   const [activeSafetyAlert, setActiveSafetyAlert] = useState(false);
   const [requiredTrainings, setRequiredTrainings] = useState<{ id: string; title: string; clubName: string }[]>([]);
+  const [zoneAssignments, setZoneAssignments] = useState<Record<string, string>>({});
   // Check for unread briefings within 48h
   useEffect(() => {
     if (!currentUserId || signups.length === 0) return;
