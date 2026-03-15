@@ -269,7 +269,7 @@ const PlanningOverview = () => {
           { label: 'Planning', path: '/planning' },
           { label: t3('Maandplanning', 'Planification mensuelle', 'Monthly Planning'), path: '/monthly-planning' },
         ]} />
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">
               Planning
