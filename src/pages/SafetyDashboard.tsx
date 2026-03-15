@@ -1667,7 +1667,33 @@ const SafetyDashboard = () => {
           )}
         </AnimatePresence>
 
-        {/* Photo Lightbox — portaled into fullscreen element when active */}
+        {/* Alarm Confirmation Dialog */}
+        <AlertDialog open={showAlarmConfirm} onOpenChange={setShowAlarmConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>🚨 {t3('Alarmmelding versturen?', 'Envoyer une alerte ?', 'Send alarm?')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t3(
+                  'Dit stuurt een pushmelding naar ALLE vrijwilligers actief bij dit evenement. Doorgaan?',
+                  'Ceci enverra une notification push à TOUS les bénévoles actifs à cet événement. Continuer ?',
+                  'This will send a push notification to ALL volunteers active at this event. Continue?'
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t3('Annuleren', 'Annuler', 'Cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSendAlarm}
+                disabled={sendingAlarm}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {sendingAlarm ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
+                {t3('Ja, stuur alarm', 'Oui, envoyer', 'Yes, send alarm')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {createPortal(
           <AnimatePresence>
             {lightboxUrl && (
