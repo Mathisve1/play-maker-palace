@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, ArrowLeft, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff } from 'lucide-react';
+import { Bell, Check, CheckCheck, ArrowLeft, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff, Loader2, ThumbsUp, ThumbsDown, Star, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
@@ -8,7 +8,9 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface Notification {
   id: string;
@@ -18,6 +20,8 @@ interface Notification {
   read: boolean;
   created_at: string;
   metadata: Record<string, unknown> | null;
+  action_type: string | null;
+  action_data: Record<string, unknown> | null;
 }
 
 const DATE_LOCALES = { nl, fr, en: enUS } as const;
@@ -39,6 +43,7 @@ const getTypeConfig = (type: string) => TYPE_CONFIG[type] || TYPE_CONFIG.default
 const getNotificationLink = (n: Notification): string | null => {
   const meta = n.metadata as Record<string, any> | null;
   if (!meta) return null;
+  if (n.action_type) return null; // Don't navigate for actionable notifications
   if (meta.task_id) return `/task/${meta.task_id}`;
   if (meta.volunteer_id && meta.action === 'signup') return `/volunteer/${meta.volunteer_id}`;
   if (meta.action === 'sign_contract') return '/dashboard';
@@ -52,6 +57,10 @@ const NotificationCenter = () => {
   const [filter, setFilter] = useState<string>('all');
   const { language } = useLanguage();
   const navigate = useNavigate();
+
+  // Inline action state
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [hoursForm, setHoursForm] = useState<{ notifId: string; hours: string } | null>(null);
 
   const t3 = (nlStr: string, frStr: string, enStr: string) =>
     language === 'nl' ? nlStr : language === 'fr' ? frStr : enStr;
@@ -100,6 +109,53 @@ const NotificationCenter = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  // ── Inline action handlers ────────────────────────────────────
+  const handleApproveSignup = async (notifId: string, signupId: string, approve: boolean) => {
+    setActionLoading(notifId);
+    const newStatus = approve ? 'assigned' : 'rejected';
+    const { error } = await supabase.from('task_signups').update({ status: newStatus }).eq('id', signupId);
+    if (error) { toast.error(error.message); }
+    else {
+      toast.success(approve ? t3('Inschrijving goedgekeurd', 'Inscription approuvée', 'Signup approved') : t3('Inschrijving geweigerd', 'Inscription refusée', 'Signup rejected'));
+      markAsRead(notifId);
+      // Clear action so buttons disappear
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, action_type: null, read: true } : n));
+    }
+    setActionLoading(null);
+  };
+
+  const handleSignContract = async (notifId: string, signingUrl: string) => {
+    window.open(signingUrl, '_blank');
+    markAsRead(notifId);
+  };
+
+  const handleConfirmHours = async (notifId: string, confirmationId: string) => {
+    if (!hoursForm || hoursForm.notifId !== notifId) {
+      setHoursForm({ notifId, hours: '' });
+      return;
+    }
+    const hours = parseFloat(hoursForm.hours);
+    if (isNaN(hours) || hours <= 0) { toast.error(t3('Vul geldige uren in', 'Entrez des heures valides', 'Enter valid hours')); return; }
+    setActionLoading(notifId);
+    const { error } = await supabase.from('hour_confirmations').update({
+      volunteer_reported_hours: hours,
+      volunteer_approved: true,
+      status: 'volunteer_confirmed',
+    }).eq('id', confirmationId);
+    if (error) { toast.error(error.message); }
+    else {
+      toast.success(t3('Uren bevestigd!', 'Heures confirmées!', 'Hours confirmed!'));
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, action_type: null, read: true } : n));
+      setHoursForm(null);
+    }
+    setActionLoading(null);
+  };
+
+  const handleReviewTask = (notifId: string, taskId: string) => {
+    markAsRead(notifId);
+    navigate(`/task/${taskId}?review=true`);
+  };
+
   const uniqueTypes = useMemo(() => {
     const types = new Set(notifications.map(n => n.type));
     return Array.from(types);
@@ -111,7 +167,6 @@ const NotificationCenter = () => {
     return notifications.filter(n => n.type === filter);
   }, [notifications, filter]);
 
-  // Group by day
   const grouped = useMemo(() => {
     const groups: { label: string; items: Notification[] }[] = [];
     const todayLabel = t3('Vandaag', "Aujourd'hui", 'Today');
@@ -139,9 +194,87 @@ const NotificationCenter = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleClick = (n: Notification) => {
+    if (n.action_type) return; // Don't navigate for actionable
     if (!n.read) markAsRead(n.id);
     const link = getNotificationLink(n);
     if (link) navigate(link);
+  };
+
+  // ── Render inline action buttons ──────────────────────────────
+  const renderActionButtons = (n: Notification) => {
+    if (!n.action_type) return null;
+    const data = (n.action_data || {}) as Record<string, any>;
+    const isLoading = actionLoading === n.id;
+
+    switch (n.action_type) {
+      case 'approve_signup':
+        return (
+          <div className="flex items-center gap-2 mt-2">
+            <Button size="sm" variant="default" className="h-7 text-xs gap-1" disabled={isLoading}
+              onClick={(e) => { e.stopPropagation(); handleApproveSignup(n.id, data.signup_id, true); }}>
+              {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsUp className="w-3 h-3" />}
+              {t3('Goedkeuren', 'Approuver', 'Approve')}
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/5" disabled={isLoading}
+              onClick={(e) => { e.stopPropagation(); handleApproveSignup(n.id, data.signup_id, false); }}>
+              <ThumbsDown className="w-3 h-3" />
+              {t3('Weigeren', 'Refuser', 'Reject')}
+            </Button>
+          </div>
+        );
+
+      case 'sign_contract':
+        return (
+          <div className="mt-2">
+            <Button size="sm" variant="default" className="h-7 text-xs gap-1" disabled={isLoading}
+              onClick={(e) => { e.stopPropagation(); handleSignContract(n.id, data.signing_url); }}>
+              <FileSignature className="w-3 h-3" />
+              {t3('Onderteken', 'Signer', 'Sign')}
+            </Button>
+          </div>
+        );
+
+      case 'confirm_hours':
+        return (
+          <div className="mt-2 space-y-2">
+            {hoursForm?.notifId === n.id ? (
+              <div className="flex items-center gap-2">
+                <Input type="number" step="0.5" min="0.5" placeholder={t3('Uren', 'Heures', 'Hours')} value={hoursForm.hours}
+                  onChange={e => setHoursForm({ ...hoursForm, hours: e.target.value })}
+                  className="h-7 w-24 text-xs" onClick={e => e.stopPropagation()} autoFocus />
+                <Button size="sm" variant="default" className="h-7 text-xs gap-1" disabled={isLoading}
+                  onClick={(e) => { e.stopPropagation(); handleConfirmHours(n.id, data.confirmation_id); }}>
+                  {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                  {t3('Bevestig', 'Confirmer', 'Confirm')}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); setHoursForm(null); }}>
+                  ✕
+                </Button>
+              </div>
+            ) : (
+              <Button size="sm" variant="default" className="h-7 text-xs gap-1" disabled={isLoading}
+                onClick={(e) => { e.stopPropagation(); handleConfirmHours(n.id, data.confirmation_id); }}>
+                <Clock className="w-3 h-3" />
+                {t3('Bevestig uren', 'Confirmer heures', 'Confirm hours')}
+              </Button>
+            )}
+          </div>
+        );
+
+      case 'review_task':
+        return (
+          <div className="mt-2">
+            <Button size="sm" variant="default" className="h-7 text-xs gap-1" disabled={isLoading}
+              onClick={(e) => { e.stopPropagation(); handleReviewTask(n.id, data.task_id); }}>
+              <Star className="w-3 h-3" />
+              {t3('Beoordeel', 'Évaluer', 'Review')}
+            </Button>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   if (loading) {
@@ -237,6 +370,7 @@ const NotificationCenter = () => {
                       const Icon = cfg.icon;
                       const isUrgent = n.type === 'urgent';
                       const link = getNotificationLink(n);
+                      const hasAction = !!n.action_type;
 
                       return (
                         <motion.div
@@ -275,8 +409,10 @@ const NotificationCenter = () => {
                                 })}
                               </span>
                             </div>
+                            {/* Inline action buttons */}
+                            {renderActionButtons(n)}
                           </div>
-                          {!n.read && (
+                          {!n.read && !hasAction && (
                             <Button
                               variant="ghost"
                               size="icon"
