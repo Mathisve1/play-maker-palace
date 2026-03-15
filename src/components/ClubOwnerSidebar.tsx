@@ -1,23 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useActionCount } from '@/hooks/useActionCount';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut, Moon, Sun,
-  Search, Grid2X2, User, Settings,
+  Search, User, Settings, MessageCircle, Bell, ShieldAlert, Ticket, Handshake,
+  CreditCard, Award, Heart, ChevronDown,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
-import SidebarMoreSheet from '@/components/SidebarMoreSheet';
 import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarSeparator, useSidebar,
 } from '@/components/ui/sidebar';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Logo from '@/components/Logo';
-import { useLocation } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -42,7 +41,6 @@ const ClubOwnerSidebar = ({
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
@@ -88,11 +86,41 @@ const ClubOwnerSidebar = ({
 
   const mainItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
-    { label: t3('Actielijst', 'Liste d\'actions', 'Action List'), icon: Inbox, path: '/command-center', badge: actionCount },
+    { label: t3('Actielijst', "Liste d'actions", 'Action List'), icon: Inbox, path: '/command-center', badge: actionCount },
     { label: t3('Evenementen', 'Événements', 'Events'), icon: CalendarPlus, path: '/events-manager' },
     { label: t3('Vrijwilligers', 'Bénévoles', 'Volunteers'), icon: Users, path: '/volunteer-management', badge: pendingReviewCount },
     { label: t3('Rapporten', 'Rapports', 'Reports'), icon: BarChart3, path: '/reporting' },
   ];
+
+  const commsItems = [
+    { label: t3('Berichten', 'Messages', 'Messages'), icon: MessageCircle, path: '/chat' },
+    { label: t3('Notificaties', 'Notifications', 'Notifications'), icon: Bell, path: '/notifications' },
+  ];
+
+  const beheerItems = [
+    { label: t3('Safety & Security', 'Sécurité', 'Safety & Security'), icon: ShieldAlert, path: '/safety' },
+    { label: 'Ticketing', icon: Ticket, path: '/ticketing' },
+    { label: t3('Partners', 'Partenaires', 'Partners'), icon: Handshake, path: '/external-partners' },
+    { label: t3('Facturatie', 'Facturation', 'Billing'), icon: CreditCard, path: '/billing' },
+    { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
+    { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Heart, path: '/loyalty' },
+  ];
+
+  const beheerIsActive = beheerItems.some(item => isActive(item.path));
+
+  const renderMenuItem = (item: { label: string; icon: any; path: string; badge?: number }) => (
+    <SidebarMenuItem key={item.path}>
+      <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[44px]">
+        <item.icon className="w-5 h-5" />
+        <span className="flex-1">{item.label}</span>
+        {item.badge != null && item.badge > 0 && (
+          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center ml-auto">
+            {item.badge}
+          </Badge>
+        )}
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
 
   return (
     <Sidebar collapsible="offcanvas" className="border-r border-border">
@@ -126,42 +154,50 @@ const ClubOwnerSidebar = ({
       <SidebarSeparator />
 
       <SidebarContent>
+        {/* Groep 1 — Navigatie */}
         <SidebarGroup>
           <SidebarGroupLabel>{t3('Navigatie', 'Navigation', 'Navigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map(item => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[48px]">
-                    <item.icon className="w-5 h-5" />
-                    <span className="flex-1">{item.label}</span>
-                    {'badge' in item && (item as any).badge > 0 && (
-                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center ml-auto">
-                        {(item as any).badge}
-                      </Badge>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              {/* Meer knop */}
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setMoreOpen(true)} className="min-h-[48px]">
-                  <Grid2X2 className="w-5 h-5" />
-                  <span className="flex-1">{t3('Meer', 'Plus', 'More')}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {mainItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      </SidebarContent>
 
-      <SidebarMoreSheet open={moreOpen} onOpenChange={setMoreOpen} />
+        {/* Groep 2 — Communicatie (altijd open) */}
+        <SidebarGroup>
+          <SidebarGroupLabel>{t3('Communicatie', 'Communication', 'Communication')}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {commsItems.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Groep 3 — Beheer (inklapbaar) */}
+        <Collapsible defaultOpen={beheerIsActive} className="group/collapsible">
+          <SidebarGroup>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="cursor-pointer hover:bg-muted/50 rounded-md transition-colors">
+                {t3('Beheer', 'Gestion', 'Management')}
+                <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {beheerItems.map(renderMenuItem)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
+      </SidebarContent>
 
       <SidebarSeparator />
 
       <SidebarFooter className="p-3">
         <SidebarMenu>
-          {/* Compact settings row */}
           {onOpenProfile && (
             <SidebarMenuItem>
               <SidebarMenuButton onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="min-h-[40px]">
