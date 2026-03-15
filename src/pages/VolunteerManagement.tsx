@@ -23,6 +23,8 @@ interface VolunteerRow {
   contracts: { id: string; status: string; category: string; template_name: string }[];
   check_in_count: number;
   is_paying: boolean;
+  avg_rating: number | null;
+  review_count: number;
 }
 
 const VolunteerManagement = () => {

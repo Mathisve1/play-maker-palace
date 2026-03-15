@@ -1231,6 +1231,24 @@ const VolunteerDashboard = () => {
       {currentUserId && (
         <MonthlyComplianceDialog open={showComplianceDialog} onOpenChange={setShowComplianceDialog} userId={currentUserId} language={language} onCompleted={() => setShowComplianceDialog(false)} />
       )}
+
+      {/* Task Review Dialog */}
+      {reviewTarget && currentUserId && (
+        <TaskReviewDialog
+          open={!!reviewTarget}
+          onOpenChange={(open) => { if (!open) setReviewTarget(null); }}
+          language={language}
+          taskSignupId={reviewTarget.taskSignupId}
+          taskTitle={reviewTarget.taskTitle}
+          reviewerId={currentUserId}
+          revieweeId={reviewTarget.revieweeId}
+          reviewerRole="volunteer"
+          onReviewed={() => {
+            setPendingReviews(prev => prev.filter(r => r.taskSignupId !== reviewTarget.taskSignupId));
+            setReviewTarget(null);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 };
