@@ -66,15 +66,15 @@ const BillingDashboard = () => {
     setInvoices(invoicesRes.data || []);
 
     // Fetch contract type breakdown for the active season
-    const { data: activeSeason } = await supabase.from('seasons').select('id').eq('club_id', cId).eq('status', 'active').maybeSingle();
+    const { data: activeSeason } = await (supabase as any).from('seasons').select('id').eq('club_id', cId).eq('status', 'active').maybeSingle();
     if (activeSeason) {
       const { data: contracts } = await (supabase as any).from('season_contracts')
         .select('template_id, volunteer_id, status')
         .eq('club_id', cId)
         .eq('season_id', activeSeason.id);
       if (contracts && contracts.length > 0) {
-        const templateIds = [...new Set(contracts.map((c: any) => c.template_id))];
-        const { data: templates } = await supabase.from('season_contract_templates')
+        const templateIds = [...new Set((contracts as any[]).map((c: any) => c.template_id))] as string[];
+        const { data: templates } = await (supabase as any).from('season_contract_templates')
           .select('id, category')
           .in('id', templateIds);
         const catMap = new Map<string, string>();
