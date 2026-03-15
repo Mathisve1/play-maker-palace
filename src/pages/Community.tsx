@@ -121,8 +121,7 @@ const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
     events: 'events',
     recommended: 'Recommended for you',
     sportFilter: 'Sport',
-    cityFilter: 'City/region',
-    openOnly: 'Only clubs with open tasks',
+    provinceFilter: 'Province',
   },
 };
 
