@@ -249,6 +249,56 @@ const BillingDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Contract Types Progress */}
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              <h3 className="font-heading font-semibold text-foreground">
+                {t('Contracttypes', 'Types de contrat', 'Contract types')}
+              </h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {Math.min(freeUsed, 2)} {t('van 2 gratis types gebruikt', 'de 2 types gratuits utilisés', 'of 2 free types used')}
+                </span>
+                {freeUsed > 2 && (
+                  <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
+                    {freeUsed - 2} {t('betalend type(s)', 'type(s) payant(s)', 'paid type(s)')}
+                  </Badge>
+                )}
+              </div>
+              <Progress value={Math.min((freeUsed / 2) * 100, 100)} className="h-2" />
+            </div>
+            {contractTypes.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {contractTypes.map(ct => (
+                  <div key={ct.type} className={`rounded-xl p-3 border ${ct.isFree ? 'border-primary/20 bg-primary/5' : 'border-destructive/20 bg-destructive/5'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-foreground capitalize">{ct.type.replace(/_/g, ' ')}</span>
+                      {ct.isFree ? (
+                        <Badge variant="secondary" className="text-[10px]">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          {t('Gratis', 'Gratuit', 'Free')}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          €15/{t('vrijwilliger', 'bénévole', 'volunteer')}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {ct.count} {t('contract(en)', 'contrat(s)', 'contract(s)')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="pricing" className="space-y-4">
           <TabsList>
             <TabsTrigger value="pricing">{t('Prijzen', 'Tarifs', 'Pricing')}</TabsTrigger>
