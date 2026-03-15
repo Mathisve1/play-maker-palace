@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
+import PageNavTabs from '@/components/PageNavTabs';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
@@ -912,6 +913,13 @@ const SepaPayouts = () => {
   return (
     <ClubPageLayout>
       <div className="max-w-7xl mx-auto space-y-6">
+        <PageNavTabs tabs={[
+          { label: 'Overzicht', path: '/volunteer-management' },
+          { label: 'Contracten', path: '/season-contracts' },
+          { label: 'Briefings', path: '/briefing-builder' },
+          { label: 'Vergoedingen', path: '/sepa-payouts' },
+          { label: 'Compliance', path: '/compliance' },
+        ]} />
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}

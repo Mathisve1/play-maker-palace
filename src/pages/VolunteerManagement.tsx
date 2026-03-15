@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -282,6 +283,14 @@ const VolunteerManagement = () => {
   return (
     <ClubPageLayout>
       <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-6">
+        {/* Page-level tabs */}
+        <PageNavTabs tabs={[
+          { label: t('Overzicht', 'Aperçu', 'Overview'), path: '/volunteer-management' },
+          { label: t('Contracten', 'Contrats', 'Contracts'), path: '/season-contracts' },
+          { label: 'Briefings', path: '/briefing-builder' },
+          { label: t('Vergoedingen', 'Indemnités', 'Payments'), path: '/sepa-payouts' },
+          { label: 'Compliance', path: '/compliance' },
+        ]} />
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>

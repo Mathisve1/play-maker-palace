@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -458,6 +459,11 @@ const MonthlyPlanning = () => {
   return (
     <ClubPageLayout>
       <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
+        <PageNavTabs tabs={[
+          { label: t3('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks'), path: '/events-manager' },
+          { label: 'Planning', path: '/planning' },
+          { label: t3('Maandplanning', 'Planification mensuelle', 'Monthly Planning'), path: '/monthly-planning' },
+        ]} />
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
 import CloseSeasonWizard from '@/components/CloseSeasonWizard';
@@ -341,6 +342,13 @@ const SeasonContractManager = () => {
   return (
     <ClubPageLayout>
       <div className="max-w-5xl mx-auto space-y-6">
+        <PageNavTabs tabs={[
+          { label: 'Overzicht', path: '/volunteer-management' },
+          { label: 'Contracten', path: '/season-contracts' },
+          { label: 'Briefings', path: '/briefing-builder' },
+          { label: 'Vergoedingen', path: '/sepa-payouts' },
+          { label: 'Compliance', path: '/compliance' },
+        ]} />
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

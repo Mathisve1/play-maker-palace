@@ -15,6 +15,7 @@ import {
 import BulkMessageDialog from '@/components/BulkMessageDialog';
 import EventTemplateDialog from '@/components/EventTemplateDialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskZoneDialog from '@/components/TaskZoneDialog';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
@@ -639,6 +640,12 @@ const EventsManager = () => {
     <>
     <ClubPageLayout>
       <div className="space-y-6">
+        {/* Page-level tabs */}
+        <PageNavTabs tabs={[
+          { label: t3('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks'), path: '/events-manager' },
+          { label: 'Planning', path: '/planning' },
+          { label: t3('Maandplanning', 'Planification mensuelle', 'Monthly Planning'), path: '/monthly-planning' },
+        ]} />
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

@@ -6,6 +6,7 @@ import { useClubContext } from '@/contexts/ClubContext';
 import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2, BookOpen, Shield, CalendarDays, ClipboardList, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { PlanningSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
@@ -259,6 +260,11 @@ const PlanningOverview = () => {
     <>
     <ClubPageLayout>
       <div className="space-y-6">
+        <PageNavTabs tabs={[
+          { label: t3('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks'), path: '/events-manager' },
+          { label: 'Planning', path: '/planning' },
+          { label: t3('Maandplanning', 'Planification mensuelle', 'Monthly Planning'), path: '/monthly-planning' },
+        ]} />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">
