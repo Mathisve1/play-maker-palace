@@ -1,18 +1,25 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
-import { Search, MapPin, Users, Heart, HeartOff, Trophy, Calendar, Building2, ArrowRight, Sparkles, Filter } from 'lucide-react';
+import { Search, MapPin, Users, Heart, HeartOff, Trophy, Calendar, Building2, ArrowRight, Sparkles, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import Logo from '@/components/Logo';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/i18n/LanguageContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ClubWithStats {
   id: string;
@@ -26,6 +33,8 @@ interface ClubWithStats {
   event_count: number;
   partner_count: number;
   is_following: boolean;
+  avg_rating: number;
+  rating_count: number;
 }
 
 const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
@@ -33,7 +42,7 @@ const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
     badge: 'Community',
     heroTitle: 'Ontdek sportclubs',
     heroSubtitle: 'Volg jouw favoriete clubs en krijg hun taken op je feed. Ontdek partners en evenementen.',
-    searchPlaceholder: 'Zoek op naam, sport of locatie...',
+    searchPlaceholder: 'Zoek op naam of locatie...',
     all: 'Alles',
     yourClubs: 'Jouw clubs',
     otherClubs: 'Andere clubs',
@@ -48,12 +57,16 @@ const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
     tasks: 'taken',
     volunteers: 'vrijwilligers',
     events: 'events',
+    recommended: 'Aanbevolen voor jou',
+    sportFilter: 'Sport',
+    cityFilter: 'Stad/regio',
+    openOnly: 'Enkel clubs met open taken',
   },
   fr: {
     badge: 'Communauté',
     heroTitle: 'Découvrez les clubs sportifs',
     heroSubtitle: 'Suivez vos clubs préférés et recevez leurs tâches dans votre fil. Découvrez les partenaires et événements.',
-    searchPlaceholder: 'Rechercher par nom, sport ou lieu...',
+    searchPlaceholder: 'Rechercher par nom ou lieu...',
     all: 'Tout',
     yourClubs: 'Vos clubs',
     otherClubs: 'Autres clubs',
@@ -68,12 +81,16 @@ const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
     tasks: 'tâches',
     volunteers: 'bénévoles',
     events: 'événements',
+    recommended: 'Recommandé pour vous',
+    sportFilter: 'Sport',
+    cityFilter: 'Ville/région',
+    openOnly: 'Uniquement les clubs avec des tâches ouvertes',
   },
   en: {
     badge: 'Community',
     heroTitle: 'Discover sports clubs',
     heroSubtitle: 'Follow your favourite clubs and get their tasks in your feed. Discover partners and events.',
-    searchPlaceholder: 'Search by name, sport or location...',
+    searchPlaceholder: 'Search by name or location...',
     all: 'All',
     yourClubs: 'Your clubs',
     otherClubs: 'Other clubs',
@@ -88,6 +105,10 @@ const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
     tasks: 'tasks',
     volunteers: 'volunteers',
     events: 'events',
+    recommended: 'Recommended for you',
+    sportFilter: 'Sport',
+    cityFilter: 'City/region',
+    openOnly: 'Only clubs with open tasks',
   },
 };
 
@@ -98,11 +119,14 @@ const Community = () => {
   const [clubs, setClubs] = useState<ClubWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterSport, setFilterSport] = useState<string | null>(null);
+  const [filterSport, setFilterSport] = useState<string>('__all__');
+  const [cityQuery, setCityQuery] = useState('');
+  const [openOnly, setOpenOnly] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [togglingFollow, setTogglingFollow] = useState<string | null>(null);
   const [sports, setSports] = useState<string[]>([]);
+  const [userCity, setUserCity] = useState<string | null>(null);
 
   const { userId: contextUserId } = useClubContext();
 
@@ -110,29 +134,33 @@ const Community = () => {
     const load = async () => {
       if (contextUserId) setCurrentUserId(contextUserId);
 
-      // Parallel: clubs, follows, all tasks (for counts)
-      const [clubsRes, followsRes] = await Promise.all([
+      const [clubsRes, followsRes, profileRes] = await Promise.all([
         supabase.from('clubs').select('*'),
         contextUserId
           ? supabase.from('club_follows').select('club_id').eq('user_id', contextUserId)
           : Promise.resolve({ data: [] as any[] }),
+        contextUserId
+          ? (supabase as any).from('profiles').select('city').eq('id', contextUserId).maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
 
       const clubsData = clubsRes.data;
       if (!clubsData) { setLoading(false); return; }
+
+      if (profileRes.data?.city) setUserCity(profileRes.data.city);
 
       const followSet = new Set<string>(followsRes.data?.map((f: any) => f.club_id) || []);
       setFollowingIds(followSet);
 
       const clubIds = clubsData.map(c => c.id);
 
-      // Parallel batch 2: tasks, signups, events, partners
-      const [tasksRes, signupsRes, eventsRes, partnersRes, allTasksRes] = await Promise.all([
+      const [tasksRes, signupsRes, eventsRes, partnersRes, allTasksRes, reviewsRes] = await Promise.all([
         supabase.from('tasks').select('club_id').in('club_id', clubIds).eq('status', 'open'),
         supabase.from('task_signups').select('task_id, volunteer_id'),
         supabase.from('events').select('club_id').in('club_id', clubIds),
         supabase.from('external_partners').select('club_id').in('club_id', clubIds),
         supabase.from('tasks').select('id, club_id').in('club_id', clubIds),
+        (supabase as any).from('task_reviews').select('rating, task_id, reviewer_role').eq('reviewer_role', 'volunteer'),
       ]);
 
       const taskCounts: Record<string, number> = {};
@@ -156,6 +184,17 @@ const Community = () => {
       const partnerCounts: Record<string, number> = {};
       partnersRes.data?.forEach((p: any) => { partnerCounts[p.club_id] = (partnerCounts[p.club_id] || 0) + 1; });
 
+      // Compute avg rating per club
+      const clubRatings: Record<string, { sum: number; count: number }> = {};
+      (reviewsRes.data || []).forEach((r: any) => {
+        const cid = fullTaskClubMap[r.task_id];
+        if (cid && r.rating) {
+          if (!clubRatings[cid]) clubRatings[cid] = { sum: 0, count: 0 };
+          clubRatings[cid].sum += r.rating;
+          clubRatings[cid].count += 1;
+        }
+      });
+
       const enriched: ClubWithStats[] = clubsData.map(c => ({
         ...c,
         task_count: taskCounts[c.id] || 0,
@@ -163,9 +202,10 @@ const Community = () => {
         event_count: eventCounts[c.id] || 0,
         partner_count: partnerCounts[c.id] || 0,
         is_following: followSet.has(c.id),
+        avg_rating: clubRatings[c.id] ? Math.round((clubRatings[c.id].sum / clubRatings[c.id].count) * 10) / 10 : 0,
+        rating_count: clubRatings[c.id]?.count || 0,
       }));
 
-      // Extract unique sports (case-insensitive dedup, keep first-seen casing)
       const sportMap = new Map<string, string>();
       enriched.forEach(c => {
         if (c.sport) {
@@ -173,9 +213,7 @@ const Community = () => {
           if (!sportMap.has(key)) sportMap.set(key, c.sport);
         }
       });
-      const uniqueSports = [...sportMap.values()];
-      setSports(uniqueSports);
-
+      setSports([...sportMap.values()]);
       setClubs(enriched);
       setLoading(false);
     };
@@ -183,13 +221,9 @@ const Community = () => {
   }, [contextUserId]);
 
   const toggleFollow = async (clubId: string) => {
-    if (!currentUserId) {
-      navigate('/login');
-      return;
-    }
+    if (!currentUserId) { navigate('/login'); return; }
     setTogglingFollow(clubId);
     const isFollowing = followingIds.has(clubId);
-    
     if (isFollowing) {
       await supabase.from('club_follows').delete().eq('user_id', currentUserId).eq('club_id', clubId);
       setFollowingIds(prev => { const n = new Set(prev); n.delete(clubId); return n; });
@@ -205,16 +239,26 @@ const Community = () => {
   };
 
   const filtered = clubs.filter(c => {
-    const matchSearch = !searchQuery || 
+    const matchSearch = !searchQuery ||
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.sport?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.location?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchSport = !filterSport || c.sport?.toLowerCase() === filterSport.toLowerCase();
-    return matchSearch && matchSport;
+    const matchSport = filterSport === '__all__' || c.sport?.toLowerCase() === filterSport.toLowerCase();
+    const matchCity = !cityQuery || c.location?.toLowerCase().includes(cityQuery.toLowerCase());
+    const matchOpen = !openOnly || c.task_count > 0;
+    return matchSearch && matchSport && matchCity && matchOpen;
   });
 
+  // Recommended: clubs in same city, not yet following, max 3
+  const recommended = userCity
+    ? filtered
+        .filter(c => !c.is_following && c.location?.toLowerCase().includes(userCity.toLowerCase()))
+        .sort((a, b) => b.task_count - a.task_count)
+        .slice(0, 3)
+    : [];
+
   const followedClubs = filtered.filter(c => c.is_following);
-  const otherClubs = filtered.filter(c => !c.is_following);
+  const recommendedIds = new Set(recommended.map(c => c.id));
+  const otherClubs = filtered.filter(c => !c.is_following && !recommendedIds.has(c.id));
 
   return (
     <div className="min-h-screen bg-background">
@@ -243,12 +287,12 @@ const Community = () => {
             </p>
           </motion.div>
 
-          {/* Search & Filter */}
+          {/* Search & Filters */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="max-w-xl mx-auto"
+            className="max-w-2xl mx-auto space-y-3"
           >
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -259,29 +303,32 @@ const Community = () => {
                 className="pl-10 h-12 text-base rounded-xl border-border/50 bg-card shadow-card"
               />
             </div>
-            {sports.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4 justify-center">
-                <button
-                  onClick={() => setFilterSport(null)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                   !filterSport ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
-                >
-                  {cl.all}
-                </button>
-                {sports.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => setFilterSport(filterSport === s ? null : s)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      filterSport === s ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={filterSport} onValueChange={setFilterSport}>
+                <SelectTrigger className="w-[160px] h-9 rounded-xl text-xs bg-card">
+                  <SelectValue placeholder={cl.sportFilter} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{cl.all}</SelectItem>
+                  {sports.map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative flex-1 min-w-[140px] max-w-[200px]">
+                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder={cl.cityFilter}
+                  value={cityQuery}
+                  onChange={e => setCityQuery(e.target.value)}
+                  className="pl-8 h-9 text-xs rounded-xl bg-card"
+                />
               </div>
-            )}
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <Checkbox checked={openOnly} onCheckedChange={v => setOpenOnly(v === true)} />
+                {cl.openOnly}
+              </label>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -290,12 +337,27 @@ const Community = () => {
       <section className="container mx-auto px-4 pb-24">
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1,2,3].map(i => (
+            {[1, 2, 3].map(i => (
               <div key={i} className="h-72 rounded-2xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : (
           <>
+            {/* Recommended */}
+            {recommended.length > 0 && (
+              <div className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                  <h2 className="text-xl font-bold font-heading">{cl.recommended}</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {recommended.map((club, i) => (
+                    <ClubCard key={club.id} club={club} index={i} onToggleFollow={toggleFollow} toggling={togglingFollow} />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Followed Clubs */}
             {followedClubs.length > 0 && (
               <div className="mb-10">
@@ -312,7 +374,7 @@ const Community = () => {
               </div>
             )}
 
-            {/* All Clubs */}
+            {/* All / Other Clubs */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Building2 className="w-5 h-5 text-muted-foreground" />
@@ -343,9 +405,9 @@ const Community = () => {
   );
 };
 
-const ClubCard = ({ club, index, onToggleFollow, toggling }: { 
-  club: ClubWithStats; 
-  index: number; 
+const ClubCard = ({ club, index, onToggleFollow, toggling }: {
+  club: ClubWithStats;
+  index: number;
   onToggleFollow: (id: string) => void;
   toggling: string | null;
 }) => {
@@ -397,6 +459,13 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
         {club.location && (
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <MapPin className="w-3 h-3" /> {club.location}
+          </p>
+        )}
+        {club.avg_rating > 0 && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+            <span className="font-medium text-foreground">{club.avg_rating}</span>
+            <span>({club.rating_count})</span>
           </p>
         )}
         {club.description && (

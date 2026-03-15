@@ -30,8 +30,8 @@ const NearbyClubsWidget = ({ userId, language }: { userId: string; language: Lan
   useEffect(() => {
     if (!userId) return;
     const load = async () => {
-      const { data: profile } = await supabase.from('profiles').select('city').eq('id', userId).maybeSingle();
-      const userCity = profile?.city;
+      const { data: profile } = await (supabase as any).from('profiles').select('city').eq('id', userId).maybeSingle();
+      const userCity = profile?.city as string | null;
       if (!userCity) return;
 
       const { data: allClubs } = await supabase.from('clubs').select('id, name, sport, location, logo_url');
