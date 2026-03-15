@@ -38,6 +38,10 @@ const SeasonContractManager = () => {
   // Dialogs
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [showSendContract, setShowSendContract] = useState(false);
+  const [showBillingModal, setShowBillingModal] = useState(false);
+
+  // Billing
+  const [billing, setBilling] = useState<any>(null);
 
   const categoryLabels: Record<string, string> = {
     steward: 'Steward',
