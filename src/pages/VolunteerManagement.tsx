@@ -39,7 +39,7 @@ interface VolunteerRow {
 }
 
 const VolunteerManagement = () => {
-  const { clubId } = useClubContext();
+  const { clubId, clubInfo, userId } = useClubContext();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
@@ -50,11 +50,14 @@ const VolunteerManagement = () => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [activeSeason, setActiveSeason] = useState<{ id: string; name: string } | null>(null);
+  const [filterTaskCount, setFilterTaskCount] = useState<string>('all');
+  const [filterJoinDate, setFilterJoinDate] = useState<string>('all');
 
   // Dialogs
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [showSendContract, setShowSendContract] = useState(false);
   const [showBulkContractType, setShowBulkContractType] = useState(false);
+  const [showBulkMessage, setShowBulkMessage] = useState(false);
   const [bulkContractTypes, setBulkContractTypes] = useState<Set<ContractTypeKey>>(new Set());
   const [filterMemberType, setFilterMemberType] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
