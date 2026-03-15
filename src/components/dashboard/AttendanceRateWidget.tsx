@@ -38,9 +38,9 @@ export const AttendanceRateWidget = ({ clubId, language }: Props) => {
       const taskIds = tasks.map(t => t.id);
       const { data: signups } = await supabase
         .from('task_signups')
-        .select('task_id, status, checked_in_at')
+        .select('task_id, status, checked_in_at' as any)
         .in('task_id', taskIds)
-        .eq('status', 'assigned');
+        .eq('status', 'assigned') as any;
 
       if (!signups) return;
 
