@@ -672,6 +672,22 @@ const BriefingBuilder = () => {
         if (msgErr) throw msgErr;
         await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convoId);
       }
+      // Send push notifications to all selected volunteers
+      const dateStr = taskData?.task_date
+        ? new Date(taskData.task_date).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })
+        : '';
+      await Promise.allSettled(
+        selectedVolunteerIds.map(vid =>
+          sendPush({
+            userId: vid,
+            title: '📋 Nieuwe briefing beschikbaar!',
+            message: `Er is een briefing voor jouw taak ${taskTitle}${dateStr ? ` op ${dateStr}` : ''}. Bekijk de instructies.`,
+            url: '/dashboard',
+            type: 'briefing',
+          })
+        )
+      );
+
       setShowSendDialog(false);
       toast.success(t3('Briefing link verstuurd naar vrijwilligers!', 'Lien du briefing envoyé aux bénévoles !', 'Briefing link sent to volunteers!'));
     } catch (err: any) {
