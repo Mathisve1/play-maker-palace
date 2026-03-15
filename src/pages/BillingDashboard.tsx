@@ -202,12 +202,126 @@ const BillingDashboard = () => {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="seats" className="space-y-4">
+        <Tabs defaultValue="pricing" className="space-y-4">
           <TabsList>
+            <TabsTrigger value="pricing">{t('Prijzen', 'Tarifs', 'Pricing')}</TabsTrigger>
             <TabsTrigger value="seats">{t('Partner zitjes', 'Sièges partenaires', 'Partner seats')}</TabsTrigger>
             <TabsTrigger value="invoices">{t('Facturen', 'Factures', 'Invoices')}</TabsTrigger>
             <TabsTrigger value="history">{t('Geschiedenis', 'Historique', 'History')}</TabsTrigger>
           </TabsList>
+
+          {/* Pricing comparison */}
+          <TabsContent value="pricing">
+            <div className="grid md:grid-cols-2 gap-6 mb-10">
+              {/* Free tier */}
+              <Card className="relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-muted" />
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Gift className="w-5 h-5 text-muted-foreground" />
+                    <h3 className="text-lg font-heading font-bold text-foreground">{t('Gratis', 'Gratuit', 'Free')}</h3>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground mt-3">€0</p>
+                  <p className="text-xs text-muted-foreground mb-6">{t('voor altijd', 'pour toujours', 'forever')}</p>
+                  <ul className="space-y-3 text-sm">
+                    {[
+                      t('2 seizoenscontracten', '2 contrats saisonniers', '2 season contracts'),
+                      t('5 contractsjablonen', '5 modèles de contrats', '5 contract templates'),
+                      t('Alle platformfeatures', 'Toutes les fonctionnalités', 'All platform features'),
+                      t('Briefings & veiligheid', 'Briefings & sécurité', 'Briefings & safety'),
+                      t('Community & badges', 'Communauté & badges', 'Community & badges'),
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-foreground">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Paid tier */}
+              <Card className="relative overflow-hidden border-primary/30 shadow-card">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
+                <div className="absolute top-3 right-3">
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">
+                    {t('Populair', 'Populaire', 'Popular')}
+                  </Badge>
+                </div>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CreditCard className="w-5 h-5 text-primary" />
+                    <h3 className="text-lg font-heading font-bold text-foreground">{t('Betaald', 'Payant', 'Paid')}</h3>
+                  </div>
+                  <p className="text-3xl font-bold text-primary mt-3">€15</p>
+                  <p className="text-xs text-muted-foreground mb-6">{t('per vrijwilliger / seizoen', 'par bénévole / saison', 'per volunteer / season')}</p>
+                  <ul className="space-y-3 text-sm">
+                    {[
+                      t('Onbeperkt contracten', 'Contrats illimités', 'Unlimited contracts'),
+                      t('€15/vrijwilliger/seizoen', '€15/bénévole/saison', '€15/volunteer/season'),
+                      t('SEPA-uitbetalingen', 'Paiements SEPA', 'SEPA payouts'),
+                      t('Automatische facturatie', 'Facturation automatique', 'Automated invoicing'),
+                      t('Partnerzitjes (bulk)', 'Sièges partenaires (en lot)', 'Partner seats (bulk)'),
+                      t('Prioritaire support', 'Support prioritaire', 'Priority support'),
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-foreground">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* FAQ */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-heading font-bold text-foreground">
+                {t('Veelgestelde vragen', 'Questions fréquentes', 'Frequently asked questions')}
+              </h2>
+              {[
+                {
+                  q: t('Wanneer betaal ik?', 'Quand est-ce que je paie ?', 'When do I pay?'),
+                  a: t(
+                    'Je betaalt pas wanneer je meer dan 2 seizoenscontracten actief hebt. Facturatie gebeurt maandelijks op de 1e van elke maand.',
+                    'Vous ne payez qu\'à partir du 3e contrat saisonnier actif. La facturation est mensuelle, le 1er de chaque mois.',
+                    'You only pay when you have more than 2 active season contracts. Billing happens monthly on the 1st of each month.'
+                  ),
+                },
+                {
+                  q: t('Wat als een vrijwilliger stopt?', 'Et si un bénévole arrête ?', 'What if a volunteer leaves?'),
+                  a: t(
+                    'Je betaalt enkel voor actieve vrijwilligers. Als een contract wordt beëindigd, worden er geen verdere kosten in rekening gebracht voor die vrijwilliger.',
+                    'Vous ne payez que pour les bénévoles actifs. Si un contrat est résilié, aucun frais supplémentaire n\'est facturé.',
+                    'You only pay for active volunteers. If a contract is terminated, no further charges apply for that volunteer.'
+                  ),
+                },
+                {
+                  q: t('Hoe werkt de facturatie?', 'Comment fonctionne la facturation ?', 'How does billing work?'),
+                  a: t(
+                    'Elke maand op de 1e wordt automatisch een factuur gegenereerd op basis van je actieve contracten en partnerzitjes. Je vindt alle facturen in het tabblad "Facturen".',
+                    'Chaque mois, le 1er, une facture est automatiquement générée. Retrouvez toutes vos factures dans l\'onglet "Factures".',
+                    'On the 1st of each month, an invoice is automatically generated based on your active contracts and partner seats. Find all invoices in the "Invoices" tab.'
+                  ),
+                },
+                {
+                  q: t('Wat zijn partnerzitjes?', 'Que sont les sièges partenaires ?', 'What are partner seats?'),
+                  a: t(
+                    'Partnerzitjes zijn onbenoemde plaatsen die je in bulk aankoopt voor externe partners (bijv. steward-vzw\'s). Ze kosten €15 per zitje per seizoen en kunnen per wedstrijd vrij worden toegewezen.',
+                    'Les sièges partenaires sont des places anonymes achetées en lot pour les partenaires externes. €15/siège/saison, attribuables librement par match.',
+                    'Partner seats are unnamed spots purchased in bulk for external partners (e.g. steward organizations). €15/seat/season, freely assignable per match.'
+                  ),
+                },
+              ].map((faq, i) => (
+                <Card key={i}>
+                  <CardContent className="p-5">
+                    <h4 className="font-medium text-foreground text-sm mb-2">{faq.q}</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
           {/* Partner seats management */}
           <TabsContent value="seats">
