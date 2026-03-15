@@ -551,6 +551,37 @@ const CommandCenter = () => {
         {/* Shift swap approvals */}
         {clubId && <ShiftSwapApprovals clubId={clubId} language={language} />}
 
+        {/* Tomorrow's reminders */}
+        {tomorrowReminders.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+              <Bell className="w-3.5 h-3.5" />
+              {t3('Herinneringen voor morgen', 'Rappels pour demain', 'Reminders for tomorrow')}
+            </p>
+            {tomorrowReminders.map(r => (
+              <div key={r.taskId} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+                <div className="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0">
+                  <Bell className="w-4 h-4 text-orange-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{r.taskTitle}</p>
+                  <p className="text-xs text-muted-foreground">{r.count} {t3('vrijwilligers zonder check-in', 'bénévoles sans check-in', 'volunteers without check-in')}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 shrink-0"
+                  disabled={sendingReminder === r.taskId}
+                  onClick={() => handleSendReminder(r.taskId, r.taskTitle)}
+                >
+                  {sendingReminder === r.taskId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bell className="w-3.5 h-3.5" />}
+                  {t3('Herinnering sturen', 'Envoyer rappel', 'Send reminder')}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Filter tabs + Bulk bar */}
         {items.length > 0 && (
           <div className="space-y-3">
