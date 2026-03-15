@@ -310,6 +310,41 @@ const CommandCenter = () => {
       setTomorrowReminders(reminders);
     };
     loadReminders();
+
+    // Load unsigned season contract count
+    const loadUnsignedContracts = async () => {
+      // Get active season
+      const { data: season } = await supabase
+        .from('seasons')
+        .select('id')
+        .eq('club_id', contextClubId)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!season) { setUnsignedContractCount(0); return; }
+
+      // Get members
+      const { data: members } = await supabase
+        .from('club_members')
+        .select('user_id')
+        .eq('club_id', contextClubId);
+
+      if (!members || members.length === 0) { setUnsignedContractCount(0); return; }
+
+      // Get signed contracts for this season
+      const { data: signedContracts } = await supabase
+        .from('season_contracts')
+        .select('volunteer_id')
+        .eq('club_id', contextClubId)
+        .eq('season_id', season.id)
+        .eq('status', 'signed');
+
+      const signedSet = new Set((signedContracts || []).map(c => c.volunteer_id));
+      const unsigned = members.filter(m => !signedSet.has(m.user_id)).length;
+      setUnsignedContractCount(unsigned);
+    };
+    loadUnsignedContracts();
   }, [contextClubId]);
 
   // Realtime subscriptions for live updates (debounced)
