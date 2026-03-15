@@ -1168,6 +1168,11 @@ const EventsManager = () => {
                   <DropdownMenuItem onClick={() => handleSaveAsTemplate(event.id)} disabled={savingTemplate === event.id}>
                     {savingTemplate === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} {nl ? 'Opslaan als sjabloon' : 'Save as template'}
                   </DropdownMenuItem>
+                  {event.event_date && new Date(event.event_date).setHours(0,0,0,0) <= new Date().setHours(23,59,59,999) && (
+                    <DropdownMenuItem onClick={() => navigate(`/events/${event.id}/attendance`)}>
+                      <UserCheck className="w-4 h-4 mr-2" /> {t3('Aanwezigheidsoverzicht', 'Aperçu des présences', 'Attendance overview')}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => handleToggleHoldEvent(event.id)} disabled={togglingHold === event.id} className="text-yellow-600 dark:text-yellow-400 focus:text-yellow-600 dark:focus:text-yellow-400">
                     {event.status === 'on_hold' ? <PlayCircle className="w-4 h-4 mr-2" /> : <PauseCircle className="w-4 h-4 mr-2" />} {event.status === 'on_hold' ? (nl ? 'Heractiveren' : 'Reactivate') : (nl ? 'On hold' : 'On hold')}
