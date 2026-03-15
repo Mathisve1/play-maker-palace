@@ -494,6 +494,48 @@ const SafetyDashboard = () => {
       status, updated_at: new Date().toISOString(),
       ...(status === 'opgelost' ? { resolved_by: userId, resolved_at: new Date().toISOString() } : {}),
     }).eq('id', incidentId);
+
+    // Push on escalation to urgent/critical
+    if ((status === 'urgent' || status === 'critical') && eventId && clubId) {
+      const inc = incidents.find(i => i.id === incidentId);
+      const typeLabel = inc?.incident_type_id ? incidentTypes.find(t => t.id === inc.incident_type_id)?.label || 'Incident' : 'Incident';
+      notifySafetyTeam(typeLabel, eventId, clubId);
+    }
+  };
+
+  // ── Push helper for safety team ──
+  const notifySafetyTeam = async (typeLabel: string, evId: string, cId: string) => {
+    try {
+      // Get safety team members for this event's club
+      const { data: teams } = await supabase.from('safety_teams').select('id, leader_id').eq('club_id', cId);
+      const userIds = new Set<string>();
+      if (teams) {
+        for (const team of teams) {
+          if (team.leader_id) userIds.add(team.leader_id);
+        }
+        const teamIds = teams.map(t => t.id);
+        if (teamIds.length > 0) {
+          const { data: members } = await supabase.from('safety_team_members').select('volunteer_id').in('team_id', teamIds);
+          members?.forEach(m => userIds.add(m.volunteer_id));
+        }
+      }
+
+      const title = `🚨 Incident: ${typeLabel}`;
+      const message = `${eventTitle}`;
+      const url = `/safety/${evId}`;
+
+      // Push to all safety team members
+      await Promise.allSettled(
+        Array.from(userIds).map(uid =>
+          sendPush({ userId: uid, title, message, url, type: 'safety' })
+        )
+      );
+
+      // Also notify club admin
+      await sendPushToClub({ clubId: cId, title, message, url, type: 'safety' });
+    } catch (e) {
+      console.warn('[Safety] notifySafetyTeam failed:', e);
+    }
   };
 
   // ── GO LIVE ──

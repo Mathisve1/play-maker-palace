@@ -188,6 +188,23 @@ const VolunteerDashboardHome = ({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      {/* Safety alert banner */}
+      {activeSafetyAlert && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
+          onClick={() => setActiveTab('safety')}
+        >
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+          <p className="text-sm font-medium text-destructive">
+            {language === 'nl' ? '⚠️ Er is een veiligheidsmelding voor jouw evenement vandaag.' :
+             language === 'fr' ? '⚠️ Il y a un signalement de sécurité pour votre événement aujourd\'hui.' :
+             '⚠️ There is a safety alert for your event today.'}
+          </p>
+        </motion.div>
+      )}
+
       {/* Welcome */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
