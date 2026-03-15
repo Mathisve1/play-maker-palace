@@ -9,7 +9,7 @@ export interface WidgetDefinition {
   maxW: number;
   minH: number;
   maxH: number;
-  category: 'kpi' | 'overview' | 'shortcuts' | 'activity';
+  category: 'kpi' | 'overview' | 'shortcuts' | 'activity' | 'season';
 }
 
 export interface WidgetInstance {
