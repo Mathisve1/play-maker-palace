@@ -814,6 +814,15 @@ const ContractBuilder = () => {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : editingTemplateId ? t3('Bijwerken', 'Mettre à jour', 'Update') : t3('Opslaan', 'Enregistrer', 'Save')}
           </button>
+          {savedSuccessfully && (
+            <button
+              onClick={() => navigate('/season-contracts')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              <ChevronRight className="w-4 h-4" />
+              {t3('Terug naar contractenbeheer', 'Retour à la gestion des contrats', 'Back to contract management')}
+            </button>
+          )}
         </div>
       </div>
 

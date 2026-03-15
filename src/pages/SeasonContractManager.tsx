@@ -376,6 +376,10 @@ const SeasonContractManager = () => {
               <Plus className="w-4 h-4 mr-1" />
               {t('Nieuw seizoen', 'Nouvelle saison', 'New season')}
             </Button>
+            <Button onClick={() => navigate('/contract-builder')} size="sm">
+              <FileText className="w-4 h-4 mr-1" />
+              {t('Nieuw sjabloon bouwen', 'Créer un modèle', 'Build new template')}
+            </Button>
           </div>
         </div>
 
