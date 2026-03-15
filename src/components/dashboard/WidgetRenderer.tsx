@@ -4,6 +4,10 @@ import { KpiWidget } from '@/components/dashboard/KpiWidget';
 import { ShortcutsWidget } from '@/components/dashboard/ShortcutsWidget';
 import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget';
 import { ActionListWidget } from '@/components/dashboard/ActionListWidget';
+import { SeasonProgressWidget } from '@/components/dashboard/SeasonProgressWidget';
+import { ContractStatusWidget } from '@/components/dashboard/ContractStatusWidget';
+import { AttendanceRateWidget } from '@/components/dashboard/AttendanceRateWidget';
+import { RevenueWidget } from '@/components/dashboard/RevenueWidget';
 import { WidgetInstance } from '@/components/dashboard/widgetRegistry';
 import { ComplianceStatus } from '@/hooks/useComplianceData';
 import { Calendar, CalendarDays, CreditCard, Shield, Ticket } from 'lucide-react';
@@ -140,6 +144,14 @@ export const WidgetRenderer = ({
           </p>
         </div>
       );
+    case 'season_progress':
+      return <SeasonProgressWidget clubId={clubId} language={language} />;
+    case 'contract_status':
+      return <ContractStatusWidget clubId={clubId} language={language} />;
+    case 'attendance_rate':
+      return <AttendanceRateWidget clubId={clubId} language={language} />;
+    case 'revenue':
+      return <RevenueWidget clubId={clubId} language={language} />;
     default:
       return (
         <div className="w-full h-full bg-card rounded-2xl border border-dashed border-border p-4 flex items-center justify-center">

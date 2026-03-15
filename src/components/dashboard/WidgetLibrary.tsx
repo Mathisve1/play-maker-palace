@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Plus, X, CalendarDays, Clock, Users, FileSignature, Ticket, Zap, Calendar, MessageCircle, Shield, Euro, BarChart3, GraduationCap } from 'lucide-react';
+import { Plus, X, CalendarDays, Clock, Users, FileSignature, Ticket, Zap, Calendar, MessageCircle, Shield, Euro, BarChart3, GraduationCap, CalendarRange, Inbox, CreditCard } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { WidgetDefinition } from './widgetRegistry';
 
@@ -11,7 +11,7 @@ interface WidgetLibraryProps {
 }
 
 const iconMap: Record<string, any> = {
-  CalendarDays, Clock, Users, FileSignature, Ticket, Activity: MessageCircle, Zap, Calendar, Shield, Euro, BarChart3, GraduationCap,
+  CalendarDays, Clock, Users, FileSignature, Ticket, Activity: MessageCircle, Zap, Calendar, Shield, Euro, BarChart3, GraduationCap, CalendarRange, Inbox, CreditCard,
 };
 
 const categoryLabels: Record<string, Record<string, string>> = {
@@ -19,6 +19,7 @@ const categoryLabels: Record<string, Record<string, string>> = {
   overview: { nl: 'Overzicht', en: 'Overview', fr: 'Aperçu' },
   shortcuts: { nl: 'Snelkoppelingen', en: 'Shortcuts', fr: 'Raccourcis' },
   activity: { nl: 'Activiteit', en: 'Activity', fr: 'Activité' },
+  season: { nl: 'Seizoen', en: 'Season', fr: 'Saison' },
 };
 
 const categoryEmoji: Record<string, string> = {
@@ -26,6 +27,7 @@ const categoryEmoji: Record<string, string> = {
   overview: '👁️',
   shortcuts: '⚡',
   activity: '🔔',
+  season: '🏆',
 };
 
 export const WidgetLibrary = ({ availableWidgets, language, onAdd, onClose }: WidgetLibraryProps) => {

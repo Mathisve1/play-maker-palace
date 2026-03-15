@@ -9,7 +9,7 @@ export interface WidgetDefinition {
   maxW: number;
   minH: number;
   maxH: number;
-  category: 'kpi' | 'overview' | 'shortcuts' | 'activity';
+  category: 'kpi' | 'overview' | 'shortcuts' | 'activity' | 'season';
 }
 
 export interface WidgetInstance {
@@ -141,6 +141,40 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     defaultW: 2, defaultH: 2, minW: 2, maxW: 4, minH: 1, maxH: 2,
     category: 'activity',
   },
+
+  // === Season ===
+  season_progress: {
+    type: 'season_progress',
+    label: { nl: 'Seizoensvoortgang', en: 'Season Progress', fr: 'Progression saison' },
+    description: { nl: 'Voortgang van het actieve seizoen met vrijwilligers en contracten', en: 'Active season progress with volunteers and contracts', fr: 'Progression de la saison avec bénévoles et contrats' },
+    icon: 'CalendarRange',
+    defaultW: 2, defaultH: 1, minW: 2, maxW: 4, minH: 1, maxH: 1,
+    category: 'season',
+  },
+  contract_status: {
+    type: 'contract_status',
+    label: { nl: 'Contractstatus', en: 'Contract Status', fr: 'Statut contrats' },
+    description: { nl: 'Donut-grafiek: ondertekend, in afwachting, niet verstuurd', en: 'Donut chart: signed, pending, not sent', fr: 'Graphique: signés, en attente, non envoyés' },
+    icon: 'FileSignature',
+    defaultW: 2, defaultH: 1, minW: 2, maxW: 4, minH: 1, maxH: 2,
+    category: 'season',
+  },
+  attendance_rate: {
+    type: 'attendance_rate',
+    label: { nl: 'Aanwezigheidsgraad', en: 'Attendance Rate', fr: 'Taux de présence' },
+    description: { nl: 'Lijndiagram van aanwezigheidsgraad per maand dit seizoen', en: 'Monthly attendance rate line chart this season', fr: 'Graphique linéaire du taux de présence mensuel' },
+    icon: 'BarChart3',
+    defaultW: 2, defaultH: 1, minW: 2, maxW: 4, minH: 1, maxH: 2,
+    category: 'season',
+  },
+  revenue: {
+    type: 'revenue',
+    label: { nl: 'Seizoenskosten', en: 'Season Costs', fr: 'Coûts saisonniers' },
+    description: { nl: 'Gratis contracten en lopende kosten dit seizoen', en: 'Free contracts and running costs this season', fr: 'Contrats gratuits et coûts en cours' },
+    icon: 'Euro',
+    defaultW: 2, defaultH: 1, minW: 1, maxW: 4, minH: 1, maxH: 2,
+    category: 'season',
+  },
 };
 
 export const DEFAULT_LAYOUT: WidgetInstance[] = [
@@ -148,9 +182,13 @@ export const DEFAULT_LAYOUT: WidgetInstance[] = [
   { i: 'w2', type: 'kpi_pending_signups', x: 1, y: 0, w: 1, h: 1 },
   { i: 'w3', type: 'kpi_active_volunteers', x: 2, y: 0, w: 1, h: 1 },
   { i: 'w4', type: 'kpi_unsigned_contracts', x: 3, y: 0, w: 1, h: 1 },
-  { i: 'w5', type: 'shortcuts', x: 0, y: 1, w: 2, h: 1 },
-  { i: 'w6', type: 'recent_activity', x: 2, y: 1, w: 2, h: 2 },
-  { i: 'w7', type: 'monthly_planning', x: 0, y: 2, w: 2, h: 1 },
+  { i: 'w5', type: 'season_progress', x: 0, y: 1, w: 2, h: 1 },
+  { i: 'w6', type: 'contract_status', x: 2, y: 1, w: 2, h: 1 },
+  { i: 'w7', type: 'attendance_rate', x: 0, y: 2, w: 2, h: 1 },
+  { i: 'w8', type: 'revenue', x: 2, y: 2, w: 2, h: 1 },
+  { i: 'w9', type: 'shortcuts', x: 0, y: 3, w: 2, h: 1 },
+  { i: 'w10', type: 'recent_activity', x: 2, y: 3, w: 2, h: 2 },
+  { i: 'w11', type: 'monthly_planning', x: 0, y: 4, w: 2, h: 1 },
 ];
 
 export function generateWidgetId(): string {
