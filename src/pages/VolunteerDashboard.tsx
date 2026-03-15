@@ -166,6 +166,8 @@ const VolunteerDashboard = () => {
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
   const [sepaPayouts, setSepaPayouts] = useState<SepaPayoutItem[]>([]);
   const [safetyPendingCount, setSafetyPendingCount] = useState(0);
+  const [pendingReviews, setPendingReviews] = useState<{ taskSignupId: string; taskTitle: string; clubName: string; clubOwnerId: string }[]>([]);
+  const [reviewTarget, setReviewTarget] = useState<{ taskSignupId: string; taskTitle: string; revieweeId: string } | null>(null);
 
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
