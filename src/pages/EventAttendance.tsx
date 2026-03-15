@@ -171,16 +171,71 @@ const EventAttendance = () => {
 
   const handleCheckIn = async (signupId: string) => {
     setCheckingIn(signupId);
+    const signup = signups.find(s => s.id === signupId);
+    const now = new Date().toISOString();
+
     const { error } = await (supabase as any)
       .from('task_signups')
-      .update({ checked_in_at: new Date().toISOString() })
+      .update({ checked_in_at: now })
       .eq('id', signupId);
-    if (error) toast.error(error.message);
-    else {
-      setSignups(prev => prev.map(s =>
-        s.id === signupId ? { ...s, checked_in_at: new Date().toISOString() } : s
-      ));
+    if (error) { toast.error(error.message); setCheckingIn(null); return; }
+
+    setSignups(prev => prev.map(s =>
+      s.id === signupId ? { ...s, checked_in_at: now } : s
+    ));
+
+    // Auto-create hour_confirmation if not exists
+    if (signup) {
+      try {
+        // Check if hour_confirmation already exists
+        const { data: existing } = await supabase
+          .from('hour_confirmations')
+          .select('id')
+          .eq('task_id', signup.task_id)
+          .eq('volunteer_id', signup.volunteer_id)
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          // Get task times for hour calculation
+          const { data: taskData } = await supabase
+            .from('tasks')
+            .select('start_time, end_time, expense_amount')
+            .eq('id', signup.task_id)
+            .maybeSingle();
+
+          let hours: number | null = null;
+          let amount: number | null = null;
+          if (taskData?.start_time && taskData?.end_time) {
+            const diffMs = new Date(taskData.end_time).getTime() - new Date(taskData.start_time).getTime();
+            hours = Math.round((diffMs / (1000 * 60 * 60)) * 10) / 10;
+            amount = taskData.expense_amount ?? null;
+          }
+
+          await supabase.from('hour_confirmations').insert({
+            task_id: signup.task_id,
+            volunteer_id: signup.volunteer_id,
+            status: 'auto_confirmed',
+            volunteer_reported_hours: hours,
+            club_reported_hours: hours,
+            final_hours: hours,
+            final_amount: amount,
+            volunteer_approved: true,
+            club_approved: true,
+          });
+        }
+
+        const volName = signup.volunteer_name || '';
+        toast.success(
+          language === 'nl' ? `Aanwezigheid en uren geregistreerd voor ${volName}` :
+          language === 'fr' ? `Présence et heures enregistrées pour ${volName}` :
+          `Attendance and hours recorded for ${volName}`
+        );
+      } catch (e) {
+        console.warn('Auto hour_confirmation failed:', e);
+        toast.success(l.present);
+      }
     }
+
     setCheckingIn(null);
   };
 

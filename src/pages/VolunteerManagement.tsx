@@ -9,13 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag, AlertCircle } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag, AlertCircle, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
 import ContractTypePicker, { ContractTypeKey, CONTRACT_TYPES } from '@/components/ContractTypePicker';
 import ContractStatusIndicator from '@/components/ContractStatusIndicator';
+import SeasonOverviewTab from '@/components/SeasonOverviewTab';
 
 interface VolunteerRow {
   id: string;
@@ -337,7 +339,16 @@ const VolunteerManagement = () => {
             </motion.div>
           ))}
         </div>
+        <Tabs defaultValue="list" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="list">{t('Vrijwilligers', 'Bénévoles', 'Volunteers')}</TabsTrigger>
+            <TabsTrigger value="season" className="gap-1.5">
+              <BarChart3 className="w-3.5 h-3.5" />
+              {t('Seizoensoverzicht', 'Aperçu saison', 'Season overview')}
+            </TabsTrigger>
+          </TabsList>
 
+          <TabsContent value="list" className="space-y-4">
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
@@ -527,6 +538,18 @@ const VolunteerManagement = () => {
             ))}
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="season">
+            {clubId && activeSeason ? (
+              <SeasonOverviewTab clubId={clubId} seasonId={activeSeason.id} language={language} />
+            ) : (
+              <div className="text-center py-16 text-muted-foreground">
+                <p>{t('Geen actief seizoen gevonden', 'Aucune saison active', 'No active season found')}</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Dialogs */}

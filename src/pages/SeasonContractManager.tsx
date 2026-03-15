@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   CalendarDays, Send, FileSignature, Download, CheckCircle, Clock,
-  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard
+  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard, UserCheck, TrendingUp, Euro
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
@@ -26,6 +26,7 @@ const SeasonContractManager = () => {
   // Active season
   const [activeSeason, setActiveSeason] = useState<any>(null);
   const [contractStats, setContractStats] = useState<Record<string, number>>({});
+  const [attendanceKpis, setAttendanceKpis] = useState<{ totalTasks: number; avgAttendance: number; totalCompensation: number }>({ totalTasks: 0, avgAttendance: 0, totalCompensation: 0 });
 
   // Volunteers without contract
   const [volunteers, setVolunteers] = useState<any[]>([]);
@@ -83,6 +84,32 @@ const SeasonContractManager = () => {
 
     const season = seasonRes.data;
     if (!season) return;
+
+    // Load attendance KPIs: task_signups for tasks in this season date range
+    const seasonStart = season.start_date;
+    const seasonEnd = season.end_date;
+    const [tasksKpiRes, hourConfRes] = await Promise.all([
+      supabase.from('tasks').select('id').eq('club_id', cId).gte('task_date', seasonStart).lte('task_date', seasonEnd),
+      supabase.from('hour_confirmations').select('final_hours, final_amount, task_id').eq('status', 'auto_confirmed'),
+    ]);
+    const seasonTaskIds = (tasksKpiRes.data || []).map((t: any) => t.id);
+    let totalSignups = 0;
+    let totalCheckedIn = 0;
+    if (seasonTaskIds.length > 0) {
+      const [signupCountRes, checkedInRes] = await Promise.all([
+        supabase.from('task_signups').select('id', { count: 'exact', head: true }).in('task_id', seasonTaskIds),
+        (supabase as any).from('task_signups').select('id', { count: 'exact', head: true }).in('task_id', seasonTaskIds).not('checked_in_at', 'is', null),
+      ]);
+      totalSignups = signupCountRes.count || 0;
+      totalCheckedIn = checkedInRes.count || 0;
+    }
+    const seasonHours = (hourConfRes.data || []).filter((h: any) => seasonTaskIds.includes(h.task_id));
+    const totalComp = seasonHours.reduce((sum: number, h: any) => sum + (h.final_amount || 0), 0);
+    setAttendanceKpis({
+      totalTasks: seasonTaskIds.length,
+      avgAttendance: totalSignups > 0 ? Math.round((totalCheckedIn / totalSignups) * 100) : 0,
+      totalCompensation: totalComp,
+    });
 
     // Load contract stats per template category
     const { data: contracts } = await supabase
@@ -235,6 +262,44 @@ const SeasonContractManager = () => {
             </CardContent>
           </Card>
         ) : (
+          <>
+            {/* Attendance KPI Widget */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <UserCheck className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">{attendanceKpis.totalTasks}</p>
+                    <p className="text-xs text-muted-foreground">{t('Taken dit seizoen', 'Tâches cette saison', 'Tasks this season')}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className={`text-2xl font-bold ${attendanceKpis.avgAttendance < 50 ? 'text-destructive' : 'text-foreground'}`}>{attendanceKpis.avgAttendance}%</p>
+                    <p className="text-xs text-muted-foreground">{t('Gem. aanwezigheidsgraad', 'Taux de présence moyen', 'Avg attendance rate')}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <Euro className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">€{attendanceKpis.totalCompensation.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">{t('Totale vergoedingen', 'Compensations totales', 'Total compensations')}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">{t('Actief seizoen', 'Saison active', 'Active season')}</TabsTrigger>
@@ -372,6 +437,7 @@ const SeasonContractManager = () => {
               )}
             </TabsContent>
           </Tabs>
+          </>
         )}
       </div>
 
