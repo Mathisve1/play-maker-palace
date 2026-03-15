@@ -290,7 +290,7 @@ const SeasonContractManager = () => {
                       <Button
                         size="sm"
                         disabled={selectedVols.size === 0}
-                        onClick={() => setShowSendContract(true)}
+                        onClick={handleSendClick}
                       >
                         <Send className="w-4 h-4 mr-1" />
                         {t(`Verstuur (${selectedVols.size})`, `Envoyer (${selectedVols.size})`, `Send (${selectedVols.size})`)}
