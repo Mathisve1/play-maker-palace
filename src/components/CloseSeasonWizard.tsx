@@ -289,7 +289,7 @@ const CloseSeasonWizard = ({ open, onClose, clubId, seasonId, seasonName, langua
               </Button>
             ) : (
               <div className="bg-muted/30 rounded-xl p-6 text-center">
-                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-primary" />
                 <p className="text-sm text-foreground font-medium">{t('Alle contracten gearchiveerd!', 'Tous archivés!', 'All archived!')}</p>
               </div>
             )}
