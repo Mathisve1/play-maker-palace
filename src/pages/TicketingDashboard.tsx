@@ -40,6 +40,13 @@ const t = {
     noEvents: 'Geen evenementen beschikbaar',
     success: 'Succes',
     error: 'Fout',
+    sendReminder: 'Stuur herinnering naar allen',
+    reminderConfirmTitle: 'Herinnering versturen',
+    reminderConfirmDesc: 'Je staat op het punt een herinnering te sturen naar {count} vrijwilliger(s) met een ongelezen ticket.',
+    reminderSending: 'Versturen...',
+    reminderSent: 'Herinneringen verstuurd',
+    lastUpdate: 'Laatste update',
+    perTask: 'Per taak',
   },
   fr: {
     back: 'Retour au tableau de bord',
