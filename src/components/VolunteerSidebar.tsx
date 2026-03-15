@@ -189,6 +189,7 @@ const VolunteerSidebar = ({
                   <TrendingUp className="w-5 h-5" />
                   <span>{l.season}</span>
                 </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton isActive={activeTab === 'all'} onClick={() => handleNav('all')} className="min-h-[48px]">
                   <Search className="w-5 h-5" />
