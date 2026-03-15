@@ -9,12 +9,14 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   CalendarDays, Send, FileSignature, Download, CheckCircle, Clock,
-  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard, UserCheck, TrendingUp, Euro
+  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard, UserCheck, TrendingUp, Euro,
+  Archive, ChevronRight, Lock
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
+import CloseSeasonWizard from '@/components/CloseSeasonWizard';
 
 const SeasonContractManager = () => {
   const { language } = useLanguage();
@@ -40,6 +42,10 @@ const SeasonContractManager = () => {
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [showSendContract, setShowSendContract] = useState(false);
   const [showBillingModal, setShowBillingModal] = useState(false);
+  const [showCloseWizard, setShowCloseWizard] = useState(false);
+
+  // Archived seasons
+  const [archivedSeasons, setArchivedSeasons] = useState<any[]>([]);
 
   // Billing
   const [billing, setBilling] = useState<any>(null);
@@ -67,13 +73,15 @@ const SeasonContractManager = () => {
   }, []);
 
   const loadData = async (cId: string) => {
-    // Load active season + billing in parallel
-    const [seasonRes, billingRes] = await Promise.all([
+    // Load active season + billing + archived seasons in parallel
+    const [seasonRes, billingRes, archivedRes] = await Promise.all([
       supabase.from('seasons').select('*').eq('club_id', cId).eq('is_active', true).limit(1).maybeSingle(),
       supabase.from('club_billing').select('*').eq('club_id', cId).maybeSingle(),
+      supabase.from('seasons').select('*').eq('club_id', cId).eq('is_active', false).order('end_date', { ascending: false }),
     ]);
 
     setActiveSeason(seasonRes.data);
+    setArchivedSeasons(archivedRes.data || []);
 
     if (!billingRes.data) {
       const { data: newBilling } = await supabase.from('club_billing').insert({ club_id: cId }).select().single();
@@ -245,10 +253,18 @@ const SeasonContractManager = () => {
               </p>
             )}
           </div>
-          <Button onClick={() => setShowCreateSeason(true)} variant="outline" size="sm">
-            <Plus className="w-4 h-4 mr-1" />
-            {t('Nieuw seizoen', 'Nouvelle saison', 'New season')}
-          </Button>
+          <div className="flex gap-2">
+            {activeSeason && (
+              <Button onClick={() => setShowCloseWizard(true)} variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/5">
+                <Lock className="w-4 h-4 mr-1" />
+                {t('Sluit seizoen af', 'Clôturer la saison', 'Close season')}
+              </Button>
+            )}
+            <Button onClick={() => setShowCreateSeason(true)} variant="outline" size="sm">
+              <Plus className="w-4 h-4 mr-1" />
+              {t('Nieuw seizoen', 'Nouvelle saison', 'New season')}
+            </Button>
+          </div>
         </div>
 
         {!activeSeason ? (
@@ -305,6 +321,9 @@ const SeasonContractManager = () => {
               <TabsTrigger value="overview">{t('Actief seizoen', 'Saison active', 'Active season')}</TabsTrigger>
               <TabsTrigger value="send">{t('Contracten versturen', 'Envoyer contrats', 'Send contracts')}</TabsTrigger>
               <TabsTrigger value="signed">{t('Ondertekend', 'Signés', 'Signed')}</TabsTrigger>
+              {archivedSeasons.length > 0 && (
+                <TabsTrigger value="archived">{t('Vorige seizoenen', 'Saisons précédentes', 'Previous seasons')}</TabsTrigger>
+              )}
             </TabsList>
 
             {/* Tab 1: Active season overview */}
@@ -436,6 +455,38 @@ const SeasonContractManager = () => {
                 </div>
               )}
             </TabsContent>
+            {/* Tab 4: Archived seasons */}
+            {archivedSeasons.length > 0 && (
+              <TabsContent value="archived">
+                <div className="space-y-3">
+                  {archivedSeasons.map((s: any) => (
+                    <Card key={s.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-muted">
+                              <Archive className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">{s.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(s.start_date).toLocaleDateString()} → {new Date(s.end_date).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {t('Afgesloten', 'Clôturé', 'Closed')}
+                            </Badge>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
           </>
         )}
@@ -452,19 +503,30 @@ const SeasonContractManager = () => {
             onCreated={() => loadData(clubId)}
           />
           {activeSeason && (
-            <SendSeasonContractDialog
-              open={showSendContract}
-              onClose={() => setShowSendContract(false)}
-              clubId={clubId}
-              seasonId={activeSeason.id}
-              language={language}
-              volunteers={volunteersWithoutContract}
-              preSelectedIds={[...selectedVols]}
-              onSent={() => {
-                setSelectedVols(new Set());
-                loadData(clubId);
-              }}
-            />
+            <>
+              <SendSeasonContractDialog
+                open={showSendContract}
+                onClose={() => setShowSendContract(false)}
+                clubId={clubId}
+                seasonId={activeSeason.id}
+                language={language}
+                volunteers={volunteersWithoutContract}
+                preSelectedIds={[...selectedVols]}
+                onSent={() => {
+                  setSelectedVols(new Set());
+                  loadData(clubId);
+                }}
+              />
+              <CloseSeasonWizard
+                open={showCloseWizard}
+                onClose={() => setShowCloseWizard(false)}
+                clubId={clubId}
+                seasonId={activeSeason.id}
+                seasonName={activeSeason.name}
+                language={language}
+                onCompleted={() => loadData(clubId)}
+              />
+            </>
           )}
         </>
       )}
