@@ -18,6 +18,7 @@ import ReferralSection from '@/components/ReferralSection';
 import NearbyClubsWidget from '@/components/community/NearbyClubsWidget';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import EventGroupChat from '@/components/EventGroupChat';
+import TodayPlanningSection from '@/components/volunteer/TodayPlanningSection';
 import type { VolunteerTask, TaskSignup, VolunteerPayment, SignatureContract, SepaPayoutItem, VolunteerEventData } from '@/types/volunteer';
 import { volunteerDashboardLabels } from '@/types/volunteer';
 
@@ -169,6 +170,16 @@ const VolunteerDashboardHome = ({
         </h1>
         <p className="text-muted-foreground mt-1">{dt.subtitle}</p>
       </motion.div>
+
+      {/* Today & Tomorrow planning */}
+      <TodayPlanningSection
+        language={language}
+        currentUserId={currentUserId}
+        profileName={profile?.full_name || profile?.email || ''}
+        tasks={tasks}
+        signups={signups}
+        getSignupStatus={getSignupStatus}
+      />
 
       {/* Onboarding Wizard */}
       {currentUserId && followedClubIds && followedClubIds.size > 0 && (

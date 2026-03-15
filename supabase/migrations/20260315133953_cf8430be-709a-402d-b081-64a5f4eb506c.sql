@@ -1,0 +1,1 @@
+ALTER TABLE public.task_signups ADD COLUMN IF NOT EXISTS checked_in_at timestamptz DEFAULT NULL;

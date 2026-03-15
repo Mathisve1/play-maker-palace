@@ -24,6 +24,7 @@ export interface VolunteerTask {
 export interface TaskSignup {
   task_id: string;
   status: string;
+  checked_in_at?: string | null;
 }
 
 export interface VolunteerPayment {
