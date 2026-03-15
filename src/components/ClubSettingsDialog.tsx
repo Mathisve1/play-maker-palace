@@ -16,9 +16,10 @@ interface Props {
   clubInfo: ClubInfo;
   onClose: () => void;
   onUpdated: (info: ClubInfo) => void;
+  onRestartOnboarding?: () => void;
 }
 
-const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated }: Props) => {
+const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated, onRestartOnboarding }: Props) => {
   const { language } = useLanguage();
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [name, setName] = useState(clubInfo.name);
