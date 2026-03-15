@@ -451,6 +451,22 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
                   {totalSteps} {l.step.toLowerCase()}{totalSteps !== 1 ? (language === 'nl' ? 'pen' : 's') : ''}
                 </p>
               </div>
+              {myZone && (
+                <div className="w-full max-w-xs mx-auto bg-accent/5 rounded-xl p-4 border border-accent/10 text-left">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                    {language === 'nl' ? 'Jouw zone' : language === 'fr' ? 'Votre zone' : 'Your zone'}
+                  </p>
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-accent" />
+                    {myZone.name}
+                  </p>
+                  {myZone.max_capacity && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'nl' ? 'Capaciteit' : language === 'fr' ? 'Capacité' : 'Capacity'}: {myZone.max_capacity}
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="flex flex-col items-center gap-3">
                 <Progress value={progressPct} className="h-2 w-full max-w-xs" />
                 <p className="text-xs text-muted-foreground">
