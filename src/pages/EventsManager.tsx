@@ -326,6 +326,7 @@ const EventsManager = () => {
   const handleAddTaskToGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !addingTaskToGroup || !groupTaskForm.title.trim()) return;
+    if (isDateInPast(groupTaskForm.task_date)) { toast.error(pastDateError()); return; }
     setCreatingGroupTask(true);
     const { data, error } = await supabase.from('tasks').insert({
       club_id: clubId, title: groupTaskForm.title.trim(), task_date: groupTaskForm.task_date || null,
