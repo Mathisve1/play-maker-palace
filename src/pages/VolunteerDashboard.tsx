@@ -801,6 +801,23 @@ const VolunteerDashboard = () => {
 
   return (
     <DashboardLayout sidebar={sidebarEl}>
+      {/* Volunteer Onboarding Wizard overlay */}
+      {showVolunteerOnboarding && currentUserId && contextClubId && (
+        <VolunteerOnboardingWizard
+          userId={currentUserId}
+          clubId={contextClubId}
+          clubName={contextClubInfo?.name || ''}
+          clubLogoUrl={contextClubInfo?.logo_url || null}
+          language={language}
+          seasonContract={volunteerOnboardingContract}
+          onComplete={() => setShowVolunteerOnboarding(false)}
+          onLater={() => {
+            localStorage.setItem(`vol-onboarding-dismissed-${currentUserId}-${contextClubId}`, 'true');
+            setShowVolunteerOnboarding(false);
+          }}
+        />
+      )}
+
       {/* ===== DASHBOARD HOME ===== */}
       {activeTab === 'dashboard' && (
         <div className="max-w-5xl mx-auto space-y-6">
