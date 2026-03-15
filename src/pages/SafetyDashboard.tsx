@@ -1303,6 +1303,22 @@ const SafetyDashboard = () => {
           </div>
         </div>
 
+        {/* Auto-notify toggle */}
+        {isLive && (
+          <div className="mb-4 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border">
+            <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+            <span className="text-sm text-foreground flex-1">
+              {t3('Automatisch notificeren bij urgent incident', 'Notification auto. pour incident urgent', 'Auto-notify on urgent incident')}
+            </span>
+            <button
+              onClick={() => setAutoNotifyUrgent(!autoNotifyUrgent)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${autoNotifyUrgent ? 'bg-destructive/15 text-destructive' : 'bg-muted text-muted-foreground'}`}
+            >
+              {autoNotifyUrgent ? t3('Actief', 'Actif', 'Active') : t3('Uit', 'Désactivé', 'Off')}
+            </button>
+          </div>
+        )}
+
         {/* PRE-EVENT: Checklist progress + GO LIVE */}
         {!isLive && (
           <div className="mb-6 space-y-4">

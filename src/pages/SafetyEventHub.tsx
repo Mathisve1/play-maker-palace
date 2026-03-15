@@ -254,6 +254,31 @@ const SafetyEventHub = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Push notification status */}
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border">
+          {pushActive ? (
+            <>
+              <Bell className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-sm text-foreground flex-1">
+                {t3('Push notificaties', 'Notifications push', 'Push notifications')}
+              </span>
+              <Badge variant="default" className="text-[10px] gap-1">
+                ✓ {t3('Actief', 'Actif', 'Active')}
+              </Badge>
+            </>
+          ) : (
+            <>
+              <BellOff className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-muted-foreground flex-1">
+                {t3('Push notificaties', 'Notifications push', 'Push notifications')}
+              </span>
+              <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
+                {t3('Inactief', 'Inactif', 'Inactive')}
+              </Badge>
+            </>
+          )}
+        </div>
       </div>
     </ClubPageLayout>
   );
