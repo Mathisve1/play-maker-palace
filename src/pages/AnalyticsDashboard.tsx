@@ -223,6 +223,7 @@ const AnalyticsDashboard = () => {
         <PageNavTabs tabs={[
           { label: t3('Rapporten', 'Rapports', 'Reports'), path: '/reporting' },
           { label: 'Analytics', path: '/analytics' },
+          { label: t3('Rapport Builder', 'Rapport Builder', 'Report Builder'), path: '/report-builder' },
           { label: 'Audit Log', path: '/audit-log' },
         ]} />
         {/* Header */}

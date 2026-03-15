@@ -166,8 +166,9 @@ const AuditLog = () => {
     <ClubPageLayout>
       <div className="space-y-4">
         <PageNavTabs tabs={[
-          { label: 'Rapporten', path: '/reporting' },
+          { label: t3('Rapporten', 'Rapports', 'Reports'), path: '/reporting' },
           { label: 'Analytics', path: '/analytics' },
+          { label: t3('Rapport Builder', 'Rapport Builder', 'Report Builder'), path: '/report-builder' },
           { label: 'Audit Log', path: '/audit-log' },
         ]} />
         {/* Header */}

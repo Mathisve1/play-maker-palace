@@ -840,14 +840,12 @@ const ReportingDashboard = () => {
         <PageNavTabs tabs={[
           { label: L.reporting, path: '/reporting' },
           { label: 'Analytics', path: '/analytics' },
+          { label: L.reportBuilder, path: '/report-builder' },
           { label: language === 'nl' ? 'Audit Log' : language === 'fr' ? 'Journal d\'audit' : 'Audit Log', path: '/audit-log' },
         ]} />
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold text-foreground">{L.reporting}</h1>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/report-builder')}>
-              <FileText className="w-4 h-4" /> {L.reportBuilder}
-            </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={exportPDF}>
               <FileDown className="w-4 h-4" /> PDF
             </Button>

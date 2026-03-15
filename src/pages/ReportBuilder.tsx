@@ -22,6 +22,8 @@ import { nl } from 'date-fns/locale';
 // jsPDF and html2canvas are lazy-loaded when needed for PDF export
 import Logo from '@/components/Logo';
 import { useLanguage } from '@/i18n/LanguageContext';
+import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart as RechartsPie, Pie, Cell, LineChart, Line, Legend, AreaChart, Area
@@ -813,14 +815,17 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
+    <ClubPageLayout>
+      <div className="max-w-5xl mx-auto space-y-6">
+        <PageNavTabs tabs={[
+          { label: t3('Rapporten', 'Rapports', 'Reports'), path: '/reporting' },
+          { label: 'Analytics', path: '/analytics' },
+          { label: t3('Rapport Builder', 'Rapport Builder', 'Report Builder'), path: '/report-builder' },
+          { label: 'Audit Log', path: '/audit-log' },
+        ]} />
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/reporting')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
             <div>
               <h1 className="text-lg font-bold flex items-center gap-2">
                 <LayoutDashboard className="h-5 w-5" />
@@ -941,7 +946,8 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
           </div>
         )}
       </main>
-    </div>
+      </div>
+    </ClubPageLayout>
   );
 };
 
