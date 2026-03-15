@@ -641,6 +641,17 @@ const VolunteerManagement = () => {
                     <span className="hidden lg:inline">{t('Contract', 'Contrat', 'Contract')}</span>
                   </Button>
 
+                  {/* View profile button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 gap-1.5 text-xs"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/volunteer/${vol.id}`); }}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span className="hidden lg:inline">{t('Profiel', 'Profil', 'Profile')}</span>
+                  </Button>
+
                   {/* Navigate hint */}
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 hidden sm:block" />
                 </div>
