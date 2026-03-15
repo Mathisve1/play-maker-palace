@@ -551,13 +551,31 @@ const BriefingBuilder = () => {
     setSaving(true);
     try {
       let bId = briefingId;
+      // Calculate planned_send_at from task_date and offset hours
+      let plannedSendAt: string | null = null;
+      if (plannedSendHours !== null && taskData?.task_date) {
+        const d = new Date(taskData.task_date);
+        if (taskData.start_time) {
+          const [h, m] = taskData.start_time.split(':').map(Number);
+          d.setHours(h, m, 0, 0);
+        }
+        d.setTime(d.getTime() - plannedSendHours * 60 * 60 * 1000);
+        plannedSendAt = d.toISOString();
+      }
+
       if (!bId) {
-        const { data, error } = await supabase.from('briefings').insert({ task_id: taskId, club_id: clubId, title: briefingTitle, created_by: userId }).select('id').single();
+        const { data, error } = await supabase.from('briefings').insert({
+          task_id: taskId, club_id: clubId, title: briefingTitle, created_by: userId,
+          planned_send_at: plannedSendAt,
+        } as any).select('id').single();
         if (error) throw error;
         bId = data.id;
         setBriefingId(bId);
       } else {
-        await supabase.from('briefings').update({ title: briefingTitle }).eq('id', bId);
+        await supabase.from('briefings').update({
+          title: briefingTitle,
+          planned_send_at: plannedSendAt,
+        } as any).eq('id', bId);
       }
 
       await supabase.from('briefing_groups').delete().eq('briefing_id', bId);
