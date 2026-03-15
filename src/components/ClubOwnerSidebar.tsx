@@ -7,7 +7,6 @@ import {
   CreditCard, Award, Heart, ChevronDown, HelpCircle, Sparkles,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
-import GlobalSearch from '@/components/GlobalSearch';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
