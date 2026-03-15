@@ -24,9 +24,9 @@ export interface ClubWithStats {
 }
 
 const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
-  nl: { following: 'Volgend', unfollow: 'Ontvolgen', follow: 'Volgen', view: 'Bekijken', tasks: 'taken', volunteers: 'vrijwilligers', events: 'events' },
-  fr: { following: 'Suivi', unfollow: 'Ne plus suivre', follow: 'Suivre', view: 'Voir', tasks: 'tâches', volunteers: 'bénévoles', events: 'événements' },
-  en: { following: 'Following', unfollow: 'Unfollow', follow: 'Follow', view: 'View', tasks: 'tasks', volunteers: 'volunteers', events: 'events' },
+  nl: { following: 'Volgend', unfollow: 'Ontvolgen', follow: 'Volgen', view: 'Bekijken', tasks: 'taken', volunteers: 'vrijwilligers', events: 'events', openTasks: 'openstaande taken' },
+  fr: { following: 'Suivi', unfollow: 'Ne plus suivre', follow: 'Suivre', view: 'Voir', tasks: 'tâches', volunteers: 'bénévoles', events: 'événements', openTasks: 'tâches ouvertes' },
+  en: { following: 'Following', unfollow: 'Unfollow', follow: 'Follow', view: 'View', tasks: 'tasks', volunteers: 'volunteers', events: 'events', openTasks: 'open tasks' },
 };
 
 const ClubCard = ({ club, index, onToggleFollow, toggling }: {
