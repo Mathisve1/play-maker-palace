@@ -39,6 +39,8 @@ const BillingDashboard = () => {
   const [seatInput, setSeatInput] = useState('');
   const [savingSeats, setSavingSeats] = useState(false);
   const [volunteerUsage, setVolunteerUsage] = useState<VolunteerUsageRow[]>([]);
+  const [contractTypes, setContractTypes] = useState<{ type: string; count: number; isFree: boolean }[]>([]);
+  const [freeUsed, setFreeUsed] = useState(0);
 
   useEffect(() => {
     const init = async () => {
@@ -64,8 +66,10 @@ const BillingDashboard = () => {
     if (!billingRes.data) {
       const { data: newBilling } = await supabase.from('club_billing').insert({ club_id: cId }).select().single();
       setBilling(newBilling);
+      setFreeUsed(0);
     } else {
       setBilling(billingRes.data);
+      setFreeUsed(billingRes.data.free_contracts_used || 0);
     }
     setSeatInput(billingRes.data?.partner_seats_purchased?.toString() || '0');
     setEvents(eventsRes.data || []);
@@ -95,6 +99,27 @@ const BillingDashboard = () => {
           }))
         );
       }
+    }
+
+    // Fetch contract type distribution
+    const { data: contracts } = await (supabase as any)
+      .from('season_contracts')
+      .select('contract_type, is_billable')
+      .eq('club_id', cId)
+      .not('contract_type', 'is', null);
+
+    if (contracts && contracts.length > 0) {
+      const typeMap: Record<string, { count: number; isFree: boolean }> = {};
+      contracts.forEach((c: any) => {
+        if (!typeMap[c.contract_type]) {
+          typeMap[c.contract_type] = { count: 0, isFree: !c.is_billable };
+        }
+        typeMap[c.contract_type].count++;
+      });
+      setContractTypes(
+        Object.entries(typeMap).map(([type, data]) => ({ type, ...data }))
+          .sort((a, b) => (a.isFree === b.isFree ? 0 : a.isFree ? -1 : 1))
+      );
     }
   };
 
@@ -221,6 +246,56 @@ const BillingDashboard = () => {
               <p className="text-xs text-muted-foreground mt-1">{t('Facturatie op de 1e van elke maand', 'Facturation le 1er de chaque mois', 'Billed on the 1st of each month')}</p>
             </div>
             <TrendingUp className="w-10 h-10 text-primary/20" />
+          </CardContent>
+        </Card>
+
+        {/* Contract Types Progress */}
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              <h3 className="font-heading font-semibold text-foreground">
+                {t('Contracttypes', 'Types de contrat', 'Contract types')}
+              </h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {Math.min(freeUsed, 2)} {t('van 2 gratis types gebruikt', 'de 2 types gratuits utilisés', 'of 2 free types used')}
+                </span>
+                {freeUsed > 2 && (
+                  <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
+                    {freeUsed - 2} {t('betalend type(s)', 'type(s) payant(s)', 'paid type(s)')}
+                  </Badge>
+                )}
+              </div>
+              <Progress value={Math.min((freeUsed / 2) * 100, 100)} className="h-2" />
+            </div>
+            {contractTypes.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {contractTypes.map(ct => (
+                  <div key={ct.type} className={`rounded-xl p-3 border ${ct.isFree ? 'border-primary/20 bg-primary/5' : 'border-destructive/20 bg-destructive/5'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-foreground capitalize">{ct.type.replace(/_/g, ' ')}</span>
+                      {ct.isFree ? (
+                        <Badge variant="secondary" className="text-[10px]">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          {t('Gratis', 'Gratuit', 'Free')}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          €15/{t('vrijwilliger', 'bénévole', 'volunteer')}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {ct.count} {t('contract(en)', 'contrat(s)', 'contract(s)')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
