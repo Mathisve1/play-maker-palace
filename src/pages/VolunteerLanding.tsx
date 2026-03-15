@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from 'react';
+import SEOHead from '@/components/SEOHead';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import { Search, FileSignature, Smartphone, CreditCard, Shield, MapPin, Clock, CheckCircle, ArrowRight, Users, Star, Sparkles } from 'lucide-react';
