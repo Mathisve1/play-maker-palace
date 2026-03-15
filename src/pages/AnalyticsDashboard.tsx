@@ -265,13 +265,19 @@ const AnalyticsDashboard = () => {
           { label: 'Audit Log', path: '/audit-log' },
         ]} />
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
-            {t3('Analytics', 'Analytique', 'Analytics')} 📊
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t3('Inzichten in vrijwilligersgroei, opkomst en retentie', 'Aperçu de la croissance, présence et rétention', 'Insights into volunteer growth, attendance and retention')}
-          </p>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
+              {t3('Analytics', 'Analytique', 'Analytics')} 📊
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {t3('Inzichten in vrijwilligersgroei, opkomst en retentie', 'Aperçu de la croissance, présence et rétention', 'Insights into volunteer growth, attendance and retention')}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={exportCsv} className="shrink-0 gap-1.5">
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">{t3('Exporteer CSV', 'Exporter CSV', 'Export CSV')}</span>
+          </Button>
         </motion.div>
 
         {/* KPI Cards */}
