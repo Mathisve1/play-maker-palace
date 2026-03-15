@@ -219,13 +219,14 @@ const VolunteerManagement = () => {
     return volunteers.filter(v => {
       if (search && !v.full_name.toLowerCase().includes(search.toLowerCase()) && !v.email.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && !v.contracts.some(c => c.category === filterCategory)) return false;
+      if (filterMemberType !== 'all' && !v.memberContractTypes.includes(filterMemberType as ContractTypeKey)) return false;
       if (filterStatus === 'signed' && !v.contracts.some(c => c.status === 'signed')) return false;
       if (filterStatus === 'pending' && !v.contracts.some(c => c.status !== 'signed')) return false;
       if (filterStatus === 'paying' && !v.is_paying) return false;
       if (filterStatus === 'trial' && v.is_paying) return false;
       return true;
     });
-  }, [volunteers, search, filterCategory, filterStatus]);
+  }, [volunteers, search, filterCategory, filterStatus, filterMemberType]);
 
   const stats = useMemo(() => ({
     total: volunteers.length,
