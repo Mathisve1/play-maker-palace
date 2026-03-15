@@ -96,6 +96,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       // Only redirect on explicit sign-out, never on transient null sessions
       if (event === 'SIGNED_OUT') {
         if (cancelled) return;
+        Sentry.setUser(null);
         initialAuthResolved.current = true;
         setAuthenticatedUserId(null);
         setChecked(true);
