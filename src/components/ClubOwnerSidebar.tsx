@@ -91,22 +91,28 @@ const ClubOwnerSidebar = ({
 
       setActionCount(total);
 
-      // Pending reviews: completed task_signups for this club without a club review
-      const { data: completedSignups } = await supabase
-        .from('task_signups')
-        .select('id')
-        .eq('club_id', clubId)
-        .eq('status', 'completed');
+      // Pending reviews: completed signups for club's tasks without a club review
+      const { data: clubTasks } = await supabase.from('tasks').select('id').eq('club_id', clubId);
+      if (clubTasks && clubTasks.length > 0) {
+        const clubTaskIds = clubTasks.map((t: any) => t.id);
+        const { data: completedSignups } = await supabase
+          .from('task_signups')
+          .select('id')
+          .in('task_id', clubTaskIds)
+          .eq('status', 'completed');
 
-      if (completedSignups && completedSignups.length > 0) {
-        const sIds = completedSignups.map(s => s.id);
-        const { data: existingReviews } = await supabase
-          .from('task_reviews' as any)
-          .select('task_signup_id')
-          .eq('reviewer_role', 'club')
-          .in('task_signup_id', sIds);
-        const reviewedIds = new Set((existingReviews || []).map((r: any) => r.task_signup_id));
-        setPendingReviewCount(sIds.filter(id => !reviewedIds.has(id)).length);
+        if (completedSignups && completedSignups.length > 0) {
+          const sIds = completedSignups.map(s => s.id);
+          const { data: existingReviews } = await (supabase as any)
+            .from('task_reviews')
+            .select('task_signup_id')
+            .eq('reviewer_role', 'club')
+            .in('task_signup_id', sIds);
+          const reviewedIds = new Set((existingReviews || []).map((r: any) => r.task_signup_id));
+          setPendingReviewCount(sIds.filter(id => !reviewedIds.has(id)).length);
+        } else {
+          setPendingReviewCount(0);
+        }
       } else {
         setPendingReviewCount(0);
       }
