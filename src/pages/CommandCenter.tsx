@@ -16,9 +16,10 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Users, UserCheck, UserX, FileSignature, Ticket, Clock, CheckCircle2,
-  ChevronDown, ChevronUp, Inbox, Loader2, Filter,
+  ChevronDown, ChevronUp, Inbox, Loader2, Filter, Bell,
 } from 'lucide-react';
 import { ActionListSkeleton } from '@/components/dashboard/DashboardSkeleton';
+import BulkMessageDialog from '@/components/BulkMessageDialog';
 
 interface ActionItem {
   id: string;
