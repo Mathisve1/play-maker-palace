@@ -537,11 +537,18 @@ const VolunteerManagement = () => {
                     </p>
                   </div>
 
-                  {/* 4-times indicator */}
-                  <div className="hidden sm:flex items-center gap-1">
-                    {[1, 2, 3, 4].map(n => (
-                      <div key={n} className={`w-2.5 h-2.5 rounded-full ${vol.check_in_count >= n ? 'bg-green-500' : 'bg-muted'}`} />
+                  {/* Free trial indicator: 2 free tasks, then €15/season */}
+                  <div className="hidden sm:flex items-center gap-1.5" title={t(
+                    `${Math.min(vol.check_in_count, 2)}/2 gratis taken gebruikt`,
+                    `${Math.min(vol.check_in_count, 2)}/2 tâches gratuites utilisées`,
+                    `${Math.min(vol.check_in_count, 2)}/2 free tasks used`
+                  )}>
+                    {[1, 2].map(n => (
+                      <div key={n} className={`w-2.5 h-2.5 rounded-full transition-colors ${vol.check_in_count >= n ? 'bg-primary' : 'bg-muted'}`} />
                     ))}
+                    {vol.is_paying && (
+                      <span className="text-[9px] font-semibold text-primary ml-0.5">€15</span>
+                    )}
                   </div>
 
                   {/* Send contract button */}
