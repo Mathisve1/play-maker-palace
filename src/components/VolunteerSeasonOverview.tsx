@@ -49,6 +49,13 @@ interface MonthData {
   hours: number;
   earned: number;
 }
+interface SepaPaymentItem {
+  id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  batch_reference: string;
+}
 
 const VolunteerSeasonOverview = ({ userId, language }: SeasonOverviewProps) => {
   const [loading, setLoading] = useState(true);
