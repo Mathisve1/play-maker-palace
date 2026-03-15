@@ -352,6 +352,7 @@ const TicketingDashboard = () => {
           }
           return v;
         }));
+        setLastUpdateTime(new Date());
       }
     }, 30000);
 
