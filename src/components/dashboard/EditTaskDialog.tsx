@@ -4,6 +4,7 @@ import { X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Language } from '@/i18n/translations';
+import { sendPush } from '@/lib/sendPush';
 
 interface Task {
   id: string;
