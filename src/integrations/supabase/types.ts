@@ -310,6 +310,60 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_events: {
+        Row: {
+          amount_cents: number | null
+          club_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          partner_id: string | null
+          season_id: string | null
+          stripe_payment_intent_id: string | null
+          volunteer_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          club_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          partner_id?: string | null
+          season_id?: string | null
+          stripe_payment_intent_id?: string | null
+          volunteer_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          club_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          partner_id?: string | null
+          season_id?: string | null
+          stripe_payment_intent_id?: string | null
+          volunteer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_events_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_events_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       briefing_block_progress: {
         Row: {
           block_id: string
@@ -949,6 +1003,66 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_billing: {
+        Row: {
+          billing_email: string | null
+          club_id: string
+          created_at: string
+          current_season_volunteers_billed: number
+          free_contracts_limit: number
+          free_contracts_used: number
+          id: string
+          partner_seat_price_cents: number
+          partner_seats_purchased: number
+          stripe_customer_id: string | null
+          updated_at: string
+          volunteer_price_cents: number
+        }
+        Insert: {
+          billing_email?: string | null
+          club_id: string
+          created_at?: string
+          current_season_volunteers_billed?: number
+          free_contracts_limit?: number
+          free_contracts_used?: number
+          id?: string
+          partner_seat_price_cents?: number
+          partner_seats_purchased?: number
+          stripe_customer_id?: string | null
+          updated_at?: string
+          volunteer_price_cents?: number
+        }
+        Update: {
+          billing_email?: string | null
+          club_id?: string
+          created_at?: string
+          current_season_volunteers_billed?: number
+          free_contracts_limit?: number
+          free_contracts_used?: number
+          id?: string
+          partner_seat_price_cents?: number
+          partner_seats_purchased?: number
+          stripe_customer_id?: string | null
+          updated_at?: string
+          volunteer_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_billing_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_billing_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2337,6 +2451,72 @@ export type Database = {
           },
         ]
       }
+      monthly_invoices: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          invoice_month: number
+          invoice_year: number
+          paid_at: string | null
+          partner_seats_amount_cents: number
+          partner_seats_count: number
+          pdf_url: string | null
+          season_id: string | null
+          status: string
+          total_amount_cents: number
+          volunteer_amount_cents: number
+          volunteer_count: number
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          invoice_month: number
+          invoice_year: number
+          paid_at?: string | null
+          partner_seats_amount_cents?: number
+          partner_seats_count?: number
+          pdf_url?: string | null
+          season_id?: string | null
+          status?: string
+          total_amount_cents?: number
+          volunteer_amount_cents?: number
+          volunteer_count?: number
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          invoice_month?: number
+          invoice_year?: number
+          paid_at?: string | null
+          partner_seats_amount_cents?: number
+          partner_seats_count?: number
+          pdf_url?: string | null
+          season_id?: string | null
+          status?: string
+          total_amount_cents?: number
+          volunteer_amount_cents?: number
+          volunteer_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_invoices_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_invoices_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_payouts: {
         Row: {
           club_id: string
@@ -2784,6 +2964,75 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_seat_allocations: {
+        Row: {
+          club_id: string
+          created_at: string
+          event_id: string | null
+          id: string
+          partner_id: string
+          season_id: string
+          seats_allocated: number
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          partner_id: string
+          season_id: string
+          seats_allocated?: number
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          partner_id?: string
+          season_id?: string
+          seats_allocated?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_seat_allocations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_seat_allocations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_seat_allocations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_seat_allocations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_seat_allocations_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
             referencedColumns: ["id"]
           },
         ]
