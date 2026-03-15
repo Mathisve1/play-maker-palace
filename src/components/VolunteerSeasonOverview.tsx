@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Euro, TrendingUp, Award, FileSignature, Shield, ExternalLink, ChevronDown } from 'lucide-react';
+import { Calendar, Clock, Euro, TrendingUp, Award, FileSignature, Shield, ExternalLink, ChevronDown, CreditCard, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Badge } from '@/components/ui/badge';

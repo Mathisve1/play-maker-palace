@@ -1410,6 +1410,98 @@ const SepaPayouts = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Smart Batch Preview Dialog */}
+      <Dialog open={showSmartPreview} onOpenChange={setShowSmartPreview}>
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
+              {t3('Smart Batch Voorstel', 'Proposition Smart Batch', 'Smart Batch Proposal')}
+            </DialogTitle>
+            <DialogDescription>
+              {t3(
+                `${smartBatchItems.length} vrijwilligers, totaal €${smartBatchItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}`,
+                `${smartBatchItems.length} bénévoles, total €${smartBatchItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}`,
+                `${smartBatchItems.length} volunteers, total €${smartBatchItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}`
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {smartBatchItems.some(i => i.exceedsPlafond) && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-sm">
+              <ShieldAlert className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+              <p className="text-orange-700 dark:text-orange-400">
+                {t3(
+                  'Let op: sommige vrijwilligers overschrijden het wettelijke jaarplafond van €3.233,91.',
+                  'Attention : certains bénévoles dépassent le plafond légal annuel de €3.233,91.',
+                  'Warning: some volunteers exceed the annual legal cap of €3,233.91.'
+                )}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {smartBatchItems.map((item, i) => (
+              <div
+                key={`${item.volunteerId}-${item.taskId}`}
+                className={`flex items-center justify-between gap-3 p-3 rounded-lg border ${
+                  item.exceedsPlafond ? 'border-orange-500/30 bg-orange-500/5' : 'border-border bg-card'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <Avatar className="w-8 h-8 shrink-0">
+                    <AvatarImage src={item.avatarUrl || undefined} />
+                    <AvatarFallback className="text-xs">{item.fullName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{item.fullName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{item.taskTitle}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {item.hours > 0 && `${item.hours}h`}
+                      {item.compensationType === 'hourly' && ` × uurtarief`}
+                      {item.compensationType === 'daily' && ` dagvergoeding`}
+                      {item.compensationType === 'fixed' && ` vast bedrag`}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold text-foreground">€{item.amount.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {t3('Seizoen', 'Saison', 'Season')}: €{item.seasonTotal.toFixed(2)}
+                  </p>
+                  {item.exceedsPlafond && (
+                    <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20 text-[10px] mt-1">
+                      {t3('Wettelijk plafond risico', 'Risque plafond légal', 'Legal cap risk')}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {t3('Totaal', 'Total', 'Total')}: €{smartBatchItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {smartBatchItems.filter(i => !i.exceedsPlafond).length} {t3('binnen plafond', 'dans le plafond', 'within cap')}
+                {smartBatchItems.some(i => i.exceedsPlafond) && `, ${smartBatchItems.filter(i => i.exceedsPlafond).length} ${t3('boven plafond', 'au-dessus du plafond', 'above cap')}`}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowSmartPreview(false)}>
+                {t3('Annuleren', 'Annuler', 'Cancel')}
+              </Button>
+              <Button onClick={handleApplySmartBatch} className="gap-2">
+                <CheckCircle className="w-4 h-4" />
+                {t3('Toepassen', 'Appliquer', 'Apply')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </ClubPageLayout>
   );
 };
