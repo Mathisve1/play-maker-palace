@@ -648,6 +648,32 @@ const MonthlyPlanning = () => {
                   <Users className="w-4 h-4 mr-1" /> {enrollments.length} {t3('vrijwilliger(s)', 'bénévole(s)', 'volunteer(s)')}
                 </Badge>
               )}
+              {plan.status === 'published' && tasks.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" disabled={copyingToNext}>
+                      {copyingToNext ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-2" />}
+                      {t3('Kopieer naar volgende maand', 'Copier vers le mois suivant', 'Copy to next month')}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t3('Taken kopiëren?', 'Copier les tâches ?', 'Copy tasks?')}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t3(
+                          `${tasks.length} taken worden gekopieerd naar ${MONTH_NAMES.nl[viewMonth === 12 ? 0 : viewMonth]} ${viewMonth === 12 ? viewYear + 1 : viewYear}. Bestaande taken in die maand blijven behouden. Inschrijvingen worden niet gekopieerd.`,
+                          `${tasks.length} tâches seront copiées vers ${MONTH_NAMES.fr[viewMonth === 12 ? 0 : viewMonth]} ${viewMonth === 12 ? viewYear + 1 : viewYear}. Les tâches existantes seront conservées. Les inscriptions ne seront pas copiées.`,
+                          `${tasks.length} tasks will be copied to ${MONTH_NAMES.en[viewMonth === 12 ? 0 : viewMonth]} ${viewMonth === 12 ? viewYear + 1 : viewYear}. Existing tasks in that month will be kept. Enrollments will not be copied.`
+                        )}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t3('Annuleren', 'Annuler', 'Cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={copyToNextMonth}>{t3('Kopiëren', 'Copier', 'Copy')}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
 
             {/* Tasks list */}
