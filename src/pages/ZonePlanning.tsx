@@ -233,6 +233,7 @@ const ZonePlanning = () => {
   };
 
   const [dragVolunteer, setDragVolunteer] = useState<string | null>(null);
+  const [overviewMode, setOverviewMode] = useState(false);
 
   const renderZoneColumn = (zone: Zone, depth: number) => {
     const children = getChildren(zone.id);
