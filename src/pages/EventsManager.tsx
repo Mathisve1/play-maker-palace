@@ -1315,7 +1315,7 @@ const EventsManager = () => {
                         <form data-tour={ei === 0 && gi === 0 ? 'form-add-task-group' : undefined} onSubmit={handleAddTaskToGroup} className="p-4 border-t border-border space-y-3">
                           <div><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required value={groupTaskForm.title} onChange={e => setGroupTaskForm(p => ({ ...p, title: e.target.value }))} className={inputClass} autoFocus /></div>
                           <div className="grid grid-cols-3 gap-3">
-                            <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={groupTaskForm.task_date} onChange={e => setGroupTaskForm(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
+                            <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" min={todayMin} value={groupTaskForm.task_date} onChange={e => setGroupTaskForm(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
                             <div><label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label><input type="text" value={groupTaskForm.location} onChange={e => setGroupTaskForm(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
                             <div><label className={labelClass}>{nl ? 'Plaatsen' : 'Spots'}</label><input type="number" min={1} value={groupTaskForm.spots_available} onChange={e => setGroupTaskForm(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
                           </div>
