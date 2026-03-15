@@ -199,7 +199,7 @@ const VolunteerSidebar = ({
                   <span>{l.allTasks}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              <SidebarMenuItem data-tour="vol-sidebar-tasks">
                 <SidebarMenuButton isActive={activeTab === 'mine'} onClick={() => handleNav('mine')} className="min-h-[48px]">
                   <ClipboardList className="w-5 h-5" />
                   <span>{l.myTasks}</span>
@@ -212,7 +212,7 @@ const VolunteerSidebar = ({
                   <span>{l.monthly}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              <SidebarMenuItem data-tour="vol-sidebar-availability">
                 <SidebarMenuButton isActive={activeTab === 'availability'} onClick={() => handleNav('availability')} className="min-h-[48px]">
                   <Calendar className="w-5 h-5" />
                   <span>{l.availability}</span>
@@ -234,7 +234,7 @@ const VolunteerSidebar = ({
           <SidebarGroupLabel>{l.communication}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
+              <SidebarMenuItem data-tour="vol-sidebar-messages">
                 <SidebarMenuButton onClick={() => handleExternalNav('/chat')} className="min-h-[48px]">
                   <MessageCircle className="w-5 h-5" />
                   <span>{l.messages}</span>
@@ -274,7 +274,7 @@ const VolunteerSidebar = ({
                   <Badge count={counts.payments} />
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              <SidebarMenuItem data-tour="vol-sidebar-contracts">
                 <SidebarMenuButton isActive={activeTab === 'contracts'} onClick={() => handleNav('contracts')} className="min-h-[48px]">
                   <FileSignature className="w-5 h-5" />
                   <span>{l.contracts}</span>

@@ -32,6 +32,7 @@ import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import VolunteerOnboardingWizard from '@/components/VolunteerOnboardingWizard';
+import VolunteerOnboardingTour from '@/components/VolunteerOnboardingTour';
 import VolunteerSeasonOverview from '@/components/VolunteerSeasonOverview';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import VolunteerBadges from '@/components/VolunteerBadges';
@@ -172,6 +173,7 @@ const VolunteerDashboard = () => {
   const [reviewTarget, setReviewTarget] = useState<{ taskSignupId: string; taskTitle: string; revieweeId: string } | null>(null);
   const [showVolunteerOnboarding, setShowVolunteerOnboarding] = useState(false);
   const [volunteerOnboardingContract, setVolunteerOnboardingContract] = useState<{ id: string; signing_url: string | null; status: string } | null>(null);
+  const [showVolunteerTour, setShowVolunteerTour] = useState(false);
 
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -428,6 +430,18 @@ const VolunteerDashboard = () => {
         if (isNew && hasPendingContract && !allCompleted && !dismissed) {
           setVolunteerOnboardingContract(seasonContractRes.data);
           setShowVolunteerOnboarding(true);
+        }
+      }
+
+      // Check if volunteer tour should be shown (onboarding completed but tour not yet seen)
+      if (!showVolunteerOnboarding) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('first_tour_seen')
+          .eq('id', uid)
+          .maybeSingle();
+        if (profileData && !(profileData as any).first_tour_seen) {
+          setShowVolunteerTour(true);
         }
       }
 
@@ -1305,6 +1319,16 @@ const VolunteerDashboard = () => {
             setPendingReviews(prev => prev.filter(r => r.taskSignupId !== reviewTarget.taskSignupId));
             setReviewTarget(null);
           }}
+        />
+      )}
+
+      {/* Volunteer Onboarding Tour */}
+      {currentUserId && (
+        <VolunteerOnboardingTour
+          open={showVolunteerTour && !showVolunteerOnboarding}
+          onClose={() => setShowVolunteerTour(false)}
+          onNavigateTab={(tab) => setActiveTab(tab as VolunteerTab)}
+          userId={currentUserId}
         />
       )}
     </DashboardLayout>
