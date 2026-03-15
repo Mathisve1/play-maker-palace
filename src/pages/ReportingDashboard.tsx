@@ -980,7 +980,7 @@ const ReportingDashboard = () => {
               <Card><CardHeader><CardTitle className="text-base">{L.compTypeChart}</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
-                    <RechartsPie><Pie data={compensationPieData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    <RechartsPie><Pie data={compensationPieData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} fontSize={10}>
                       {compensationPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie><Tooltip /><Legend /></RechartsPie>
                   </ResponsiveContainer>
