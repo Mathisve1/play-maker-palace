@@ -1,23 +1,157 @@
 import { useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Users, Zap, Heart } from 'lucide-react';
+import {
+  FileSignature, Users, CreditCard, ClipboardList, Shield, CheckCircle,
+  ArrowRight, Sparkles, Quote, Smartphone, BarChart3, AlertTriangle, Lock,
+} from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import Logo from '@/components/Logo';
 import { AppStoreButtons, InstallInstructionsDialog } from '@/components/PWAInstallButtons';
+import { Badge } from '@/components/ui/badge';
+import { motion } from 'framer-motion';
 
-const fadeUpClass = 'animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both';
+const t3Map = {
+  nl: {
+    heroTitle: 'Beheer al je vrijwilligers op één platform',
+    heroSubtitle: 'Seizoenscontracten, briefings, SEPA-vergoedingen en meer — alles geautomatiseerd.',
+    heroCta: 'Start gratis',
+    heroCtaSecondary: 'Bekijk features',
+    pricingTitle: 'Simpele, eerlijke prijzen',
+    pricingSubtitle: 'Start gratis. Betaal pas wanneer je groeit.',
+    free: 'Gratis',
+    freeDesc: 'Perfect om te testen',
+    freePrice: '€0',
+    freePeriod: 'voor altijd',
+    freeFeatures: ['2 seizoenscontracten', 'Alle platformfeatures', 'Briefing builder', 'Community & badges'],
+    paid: 'Groeiplan',
+    paidDesc: 'Voor actieve clubs',
+    paidPrice: '€15',
+    paidPeriod: 'per vrijwilliger / seizoen',
+    paidFeatures: ['Onbeperkt contracten', 'SEPA-uitbetalingen', 'Automatische facturatie', 'Partnerzitjes (bulk)', 'Prioritaire support'],
+    paidNote: 'Betaal enkel voor actieve vrijwilligers',
+    featuresTitle: 'Alles wat je club nodig heeft',
+    feat1: 'Seizoenscontracten', feat1Desc: 'Digitale contracten met e-handtekening via DocuSeal. Automatisch verstuurd bij onboarding.',
+    feat2: 'SEPA-uitbetalingen', feat2Desc: 'Genereer SEPA-bestanden en betaal alle vrijwilligers in één klik uit.',
+    feat3: 'Briefing builder', feat3Desc: 'Bouw interactieve briefings met checklists, routes en tijdschema\'s.',
+    feat4: 'Aanwezigheidsregistratie', feat4Desc: 'QR-code check-in met automatische urenregistratie.',
+    feat5: 'Veiligheidsmodule', feat5Desc: 'Incident-logging, sluitingsprocedures en veiligheidsteams.',
+    feat6: 'Rapportage & compliance', feat6Desc: 'Seizoensrapporten, financiële overzichten en compliance-tracking.',
+    testimonialTitle: 'Wat clubs zeggen',
+    testimonial1Quote: 'We besparen minstens 10 uur administratie per wedstrijd. De briefing tool alleen al is het waard.',
+    testimonial1Name: 'Tom Verhoeven',
+    testimonial1Role: 'Coördinator vrijwilligers, KAA Gent',
+    testimonial2Quote: 'Eindelijk een platform dat de Belgische vrijwilligerswetgeving begrijpt. Contracten en vergoedingen lopen nu volledig automatisch.',
+    testimonial2Name: 'Sarah De Smet',
+    testimonial2Role: 'Operationeel manager, Club Brugge',
+    trustTitle: 'Gebouwd op vertrouwen',
+    trust1: 'GDPR-conform',
+    trust2: 'Belgische vrijwilligerswetgeving',
+    trust3: 'DocuSeal e-handtekeningen',
+    ctaTitle: 'Klaar om je club te digitaliseren?',
+    ctaSubtitle: 'Maak je account aan en stuur je eerste contract vandaag nog.',
+    ctaButton: 'Start gratis',
+  },
+  fr: {
+    heroTitle: 'Gérez tous vos bénévoles sur une seule plateforme',
+    heroSubtitle: 'Contrats saisonniers, briefings, paiements SEPA et plus — tout automatisé.',
+    heroCta: 'Commencer gratuitement',
+    heroCtaSecondary: 'Voir les fonctionnalités',
+    pricingTitle: 'Tarifs simples et transparents',
+    pricingSubtitle: 'Commencez gratuitement. Payez quand vous grandissez.',
+    free: 'Gratuit',
+    freeDesc: 'Parfait pour tester',
+    freePrice: '€0',
+    freePeriod: 'pour toujours',
+    freeFeatures: ['2 contrats saisonniers', 'Toutes les fonctionnalités', 'Briefing builder', 'Communauté & badges'],
+    paid: 'Plan croissance',
+    paidDesc: 'Pour les clubs actifs',
+    paidPrice: '€15',
+    paidPeriod: 'par bénévole / saison',
+    paidFeatures: ['Contrats illimités', 'Paiements SEPA', 'Facturation automatique', 'Sièges partenaires', 'Support prioritaire'],
+    paidNote: 'Payez uniquement pour les bénévoles actifs',
+    featuresTitle: 'Tout ce dont votre club a besoin',
+    feat1: 'Contrats saisonniers', feat1Desc: 'Contrats numériques avec signature électronique via DocuSeal.',
+    feat2: 'Paiements SEPA', feat2Desc: 'Générez des fichiers SEPA et payez tous les bénévoles en un clic.',
+    feat3: 'Briefing builder', feat3Desc: 'Créez des briefings interactifs avec checklists et itinéraires.',
+    feat4: 'Enregistrement de présence', feat4Desc: 'Check-in par QR-code avec enregistrement automatique des heures.',
+    feat5: 'Module de sécurité', feat5Desc: 'Journal des incidents, procédures de clôture et équipes de sécurité.',
+    feat6: 'Rapports & conformité', feat6Desc: 'Rapports saisonniers, aperçus financiers et suivi de conformité.',
+    testimonialTitle: 'Ce que disent les clubs',
+    testimonial1Quote: 'Nous économisons au moins 10 heures d\'administration par match.',
+    testimonial1Name: 'Tom Verhoeven',
+    testimonial1Role: 'Coordinateur bénévoles, KAA Gent',
+    testimonial2Quote: 'Enfin une plateforme qui comprend la législation belge sur le bénévolat.',
+    testimonial2Name: 'Sarah De Smet',
+    testimonial2Role: 'Manager opérationnel, Club Brugge',
+    trustTitle: 'Construit sur la confiance',
+    trust1: 'Conforme RGPD',
+    trust2: 'Législation belge du bénévolat',
+    trust3: 'Signatures DocuSeal',
+    ctaTitle: 'Prêt à digitaliser votre club ?',
+    ctaSubtitle: 'Créez votre compte et envoyez votre premier contrat aujourd\'hui.',
+    ctaButton: 'Commencer gratuitement',
+  },
+  en: {
+    heroTitle: 'Manage all your volunteers on one platform',
+    heroSubtitle: 'Season contracts, briefings, SEPA payouts and more — fully automated.',
+    heroCta: 'Start for free',
+    heroCtaSecondary: 'View features',
+    pricingTitle: 'Simple, fair pricing',
+    pricingSubtitle: 'Start free. Pay only when you grow.',
+    free: 'Free',
+    freeDesc: 'Perfect to test',
+    freePrice: '€0',
+    freePeriod: 'forever',
+    freeFeatures: ['2 season contracts', 'All platform features', 'Briefing builder', 'Community & badges'],
+    paid: 'Growth plan',
+    paidDesc: 'For active clubs',
+    paidPrice: '€15',
+    paidPeriod: 'per volunteer / season',
+    paidFeatures: ['Unlimited contracts', 'SEPA payouts', 'Automated invoicing', 'Partner seats (bulk)', 'Priority support'],
+    paidNote: 'Only pay for active volunteers',
+    featuresTitle: 'Everything your club needs',
+    feat1: 'Season contracts', feat1Desc: 'Digital contracts with e-signatures via DocuSeal. Automatically sent during onboarding.',
+    feat2: 'SEPA payouts', feat2Desc: 'Generate SEPA files and pay all volunteers in one click.',
+    feat3: 'Briefing builder', feat3Desc: 'Build interactive briefings with checklists, routes and schedules.',
+    feat4: 'Attendance tracking', feat4Desc: 'QR code check-in with automatic hour registration.',
+    feat5: 'Safety module', feat5Desc: 'Incident logging, closing procedures and safety teams.',
+    feat6: 'Reporting & compliance', feat6Desc: 'Season reports, financial overviews and compliance tracking.',
+    testimonialTitle: 'What clubs say',
+    testimonial1Quote: 'We save at least 10 hours of administration per match. The briefing tool alone is worth it.',
+    testimonial1Name: 'Tom Verhoeven',
+    testimonial1Role: 'Volunteer coordinator, KAA Gent',
+    testimonial2Quote: 'Finally a platform that understands Belgian volunteering legislation. Contracts and compensation run fully automatically.',
+    testimonial2Name: 'Sarah De Smet',
+    testimonial2Role: 'Operations manager, Club Brugge',
+    trustTitle: 'Built on trust',
+    trust1: 'GDPR compliant',
+    trust2: 'Belgian volunteer legislation',
+    trust3: 'DocuSeal e-signatures',
+    ctaTitle: 'Ready to digitalize your club?',
+    ctaSubtitle: 'Create your account and send your first contract today.',
+    ctaButton: 'Start for free',
+  },
+};
 
 const ClubsLanding = () => {
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+  const l = t3Map[language as keyof typeof t3Map] || t3Map.nl;
   const [installPlatform, setInstallPlatform] = useState<'ios' | 'android' | null>(null);
 
   const features = [
-    { icon: ClipboardList, title: t.clubs.feature1Title, desc: t.clubs.feature1Desc },
-    { icon: Users, title: t.clubs.feature2Title, desc: t.clubs.feature2Desc },
-    { icon: Zap, title: t.clubs.feature3Title, desc: t.clubs.feature3Desc },
-    { icon: Heart, title: t.clubs.feature4Title, desc: t.clubs.feature4Desc },
+    { icon: FileSignature, title: l.feat1, desc: l.feat1Desc },
+    { icon: CreditCard, title: l.feat2, desc: l.feat2Desc },
+    { icon: ClipboardList, title: l.feat3, desc: l.feat3Desc },
+    { icon: Smartphone, title: l.feat4, desc: l.feat4Desc },
+    { icon: Shield, title: l.feat5, desc: l.feat5Desc },
+    { icon: BarChart3, title: l.feat6, desc: l.feat6Desc },
+  ];
+
+  const trustBadges = [
+    { icon: Lock, label: l.trust1 },
+    { icon: Shield, label: l.trust2 },
+    { icon: FileSignature, label: l.trust3 },
   ];
 
   return (
@@ -25,59 +159,175 @@ const ClubsLanding = () => {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-20 pb-16 px-4 relative overflow-hidden">
+      <section className="pt-24 pb-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-accent/5" />
+        <div className="absolute top-32 left-0 w-96 h-96 bg-secondary/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-primary/8 rounded-full blur-3xl" />
         <div className="container mx-auto relative">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className={`${fadeUpClass} flex justify-center mb-6`}>
-              <Logo size="lg" showText={false} linkTo="" />
-            </div>
-            <h1 className={`${fadeUpClass} delay-100 text-4xl md:text-6xl font-heading font-bold text-foreground leading-tight`}>
-              {t.clubs.heroTitle.split(' ').map((word, i, arr) => 
-                i >= arr.length - 2 ? <span key={i} className="text-gradient-secondary"> {word}</span> : ` ${word}`
-              )}
-            </h1>
-            <p className={`${fadeUpClass} delay-200 mt-6 text-lg text-muted-foreground max-w-lg mx-auto`}>
-              {t.clubs.heroSubtitle}
-            </p>
-            <div className={`${fadeUpClass} delay-300 mt-8 flex flex-col sm:flex-row gap-3 justify-center`}>
-              <Link to="/club-signup" className="px-6 py-3 rounded-xl bg-hero-secondary text-secondary-foreground font-medium hover:opacity-90 transition-opacity">
-                {t.clubs.heroCta}
+          <div className="max-w-3xl mx-auto text-center">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 bg-secondary/10 text-secondary-foreground px-4 py-1.5 rounded-full text-sm font-medium mb-6">
+              <Sparkles className="w-4 h-4" />
+              {language === 'nl' ? 'Voor clubs' : language === 'fr' ? 'Pour clubs' : 'For clubs'}
+            </motion.div>
+            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-4xl md:text-6xl font-heading font-bold text-foreground leading-tight">
+              {l.heroTitle}
+            </motion.h1>
+            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
+              {l.heroSubtitle}
+            </motion.p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+              <Link to="/club-signup" className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base hover:opacity-90 transition-opacity shadow-card">
+                {l.heroCta} <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link to="/partner-login" className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors flex items-center gap-2 justify-center">
-                <span>{t.clubs.heroCtaSecondary}</span>
-              </Link>
-            </div>
-            <div className={`${fadeUpClass} delay-500 mt-6 flex justify-center`}>
+              <a href="#features" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors">
+                {l.heroCtaSecondary}
+              </a>
+            </motion.div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8 flex justify-center">
               <AppStoreButtons
                 variant="secondary"
                 onClickIOS={() => setInstallPlatform('ios')}
                 onClickAndroid={() => setInstallPlatform('android')}
               />
-            </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="py-20 px-4 bg-muted/30">
+        <div className="container mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{l.pricingTitle}</h2>
+            <p className="mt-3 text-muted-foreground max-w-lg mx-auto">{l.pricingSubtitle}</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {/* Free */}
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-card rounded-2xl border border-border/50 p-8 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-muted" />
+              <p className="text-sm font-medium text-muted-foreground">{l.freeDesc}</p>
+              <h3 className="text-xl font-heading font-bold text-foreground mt-1">{l.free}</h3>
+              <p className="text-4xl font-bold text-foreground mt-4">{l.freePrice}</p>
+              <p className="text-xs text-muted-foreground">{l.freePeriod}</p>
+              <ul className="mt-6 space-y-3">
+                {l.freeFeatures.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-foreground">{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link to="/club-signup" className="mt-8 block text-center px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors">
+                {l.heroCta}
+              </Link>
+            </motion.div>
+
+            {/* Paid */}
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-card rounded-2xl border border-primary/30 p-8 relative overflow-hidden shadow-card">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
+              <div className="absolute top-4 right-4">
+                <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">
+                  {language === 'nl' ? 'Populair' : language === 'fr' ? 'Populaire' : 'Popular'}
+                </Badge>
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">{l.paidDesc}</p>
+              <h3 className="text-xl font-heading font-bold text-foreground mt-1">{l.paid}</h3>
+              <p className="text-4xl font-bold text-primary mt-4">{l.paidPrice}</p>
+              <p className="text-xs text-muted-foreground">{l.paidPeriod}</p>
+              <ul className="mt-6 space-y-3">
+                {l.paidFeatures.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-foreground">{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link to="/club-signup" className="mt-8 block text-center px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
+                {l.heroCta}
+              </Link>
+              <p className="text-[11px] text-muted-foreground text-center mt-3">{l.paidNote}</p>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="py-20 px-4 bg-muted/50">
+      <section id="features" className="py-20 px-4">
         <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{t.clubs.featuresTitle}</h2>
-            <p className="mt-3 text-muted-foreground">{t.clubs.featuresSubtitle}</p>
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{l.featuresTitle}</h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {features.map((f, i) => (
-              <div
+              <motion.div
                 key={i}
-                className="bg-card rounded-2xl p-6 shadow-card hover:shadow-elevated transition-shadow"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="bg-card rounded-2xl p-6 shadow-card hover:shadow-elevated transition-shadow border border-border/50"
               >
-                <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center mb-4">
-                  <f.icon className="w-6 h-6 text-secondary" />
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                  <f.icon className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="font-heading font-semibold text-foreground mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground">{f.desc}</p>
-              </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 px-4 bg-muted/30">
+        <div className="container mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{l.testimonialTitle}</h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {[
+              { quote: l.testimonial1Quote, name: l.testimonial1Name, role: l.testimonial1Role },
+              { quote: l.testimonial2Quote, name: l.testimonial2Name, role: l.testimonial2Role },
+            ].map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-card rounded-2xl p-8 shadow-card border border-border/50"
+              >
+                <Quote className="w-8 h-8 text-primary/20 mb-4" />
+                <p className="text-foreground italic leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">{t.role}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust badges */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-10">
+            <h3 className="text-xl font-heading font-bold text-foreground">{l.trustTitle}</h3>
+          </div>
+          <div className="flex flex-wrap justify-center gap-6">
+            {trustBadges.map((badge, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="flex items-center gap-3 bg-card rounded-xl border border-border/50 px-6 py-4 shadow-card"
+              >
+                <badge.icon className="w-5 h-5 text-primary" />
+                <span className="text-sm font-medium text-foreground">{badge.label}</span>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -86,13 +336,18 @@ const ClubsLanding = () => {
       {/* CTA */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
-          <div className="max-w-2xl mx-auto text-center bg-hero-secondary rounded-3xl p-12">
-            <h2 className="text-3xl font-heading font-bold text-secondary-foreground">{t.clubs.ctaTitle}</h2>
-            <p className="mt-3 text-secondary-foreground/80">{t.clubs.ctaSubtitle}</p>
-            <Link to="/club-signup" className="mt-6 inline-block px-8 py-3 rounded-xl bg-background text-foreground font-medium hover:opacity-90 transition-opacity">
-              {t.clubs.ctaButton}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-2xl mx-auto text-center bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 rounded-3xl border border-primary/15 p-12"
+          >
+            <h2 className="text-3xl font-heading font-bold text-foreground">{l.ctaTitle}</h2>
+            <p className="mt-3 text-muted-foreground">{l.ctaSubtitle}</p>
+            <Link to="/club-signup" className="mt-8 inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
+              {l.ctaButton} <ArrowRight className="w-4 h-4" />
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 

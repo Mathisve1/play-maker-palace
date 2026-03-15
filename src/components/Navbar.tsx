@@ -19,6 +19,7 @@ const Navbar = () => {
   const isClubsPage = location.pathname === '/clubs';
   const isVolunteerPage = location.pathname === '/';
   const isCommunityPage = location.pathname.startsWith('/community');
+  const isPublic = ['/', '/clubs', '/community'].includes(location.pathname) || location.pathname.startsWith('/community');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -36,6 +37,10 @@ const Navbar = () => {
   };
 
   const dashboardLabel = language === 'nl' ? 'Terug naar dashboard' : language === 'fr' ? 'Retour au tableau de bord' : 'Back to dashboard';
+  const pricingLabel = language === 'nl' ? 'Prijzen' : language === 'fr' ? 'Tarifs' : 'Pricing';
+  const forVolunteersLabel = language === 'nl' ? 'Voor vrijwilligers' : language === 'fr' ? 'Pour bénévoles' : 'For volunteers';
+  const forClubsLabel = language === 'nl' ? 'Voor clubs' : language === 'fr' ? 'Pour clubs' : 'For clubs';
+  const communityLabel = language === 'nl' ? 'Community' : language === 'fr' ? 'Communauté' : 'Community';
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -44,29 +49,37 @@ const Navbar = () => {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className={`text-sm font-medium transition-colors ${isVolunteerPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            {t.nav.volunteers}
+            {forVolunteersLabel}
           </Link>
-          <Link 
-            to="/clubs" 
-            className={`text-sm font-medium transition-colors ${isClubsPage ? 'text-secondary' : 'text-muted-foreground hover:text-foreground'}`}
+          <Link
+            to="/clubs"
+            className={`text-sm font-medium transition-colors ${isClubsPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            {t.nav.clubs}
+            {forClubsLabel}
           </Link>
-          <Link 
-            to="/community" 
+          <Link
+            to="/community"
             className={`text-sm font-medium transition-colors ${isCommunityPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            {language === 'nl' ? 'Community' : language === 'fr' ? 'Communauté' : 'Community'}
+            {communityLabel}
           </Link>
+          {isPublic && (
+            <Link
+              to="/clubs#pricing"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {pricingLabel}
+            </Link>
+          )}
 
           {/* Language switcher */}
           <div className="relative">
-            <button 
-              onClick={() => setLangOpen(!langOpen)} 
+            <button
+              onClick={() => setLangOpen(!langOpen)}
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <Globe className="w-4 h-4" />
@@ -107,14 +120,14 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {t.nav.login}
               </Link>
-              <Link 
-                to="/signup" 
+              <Link
+                to="/signup"
                 className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
               >
                 {t.nav.signup}
@@ -133,9 +146,10 @@ const Navbar = () => {
       {mobileOpen && (
         <div className="md:hidden glass border-t border-border overflow-hidden">
           <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
-            <Link to="/" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{t.nav.volunteers}</Link>
-            <Link to="/clubs" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{t.nav.clubs}</Link>
-            <Link to="/community" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{language === 'nl' ? 'Community' : language === 'fr' ? 'Communauté' : 'Community'}</Link>
+            <Link to="/" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{forVolunteersLabel}</Link>
+            <Link to="/clubs" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{forClubsLabel}</Link>
+            <Link to="/community" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{communityLabel}</Link>
+            <Link to="/clubs#pricing" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">{pricingLabel}</Link>
             <div className="flex gap-2 py-2">
               {(['nl', 'fr', 'en'] as Language[]).map(lang => (
                 <button
