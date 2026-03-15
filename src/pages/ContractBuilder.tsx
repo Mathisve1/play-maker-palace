@@ -353,6 +353,7 @@ const ContractBuilder = () => {
   const [existingTemplates, setExistingTemplates] = useState<{ id: string; name: string }[]>([]);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(editTemplateId || null);
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
 
   // Auth check + fetch club data + signature
   useEffect(() => {
