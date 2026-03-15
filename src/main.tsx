@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/react";
+import posthog from "posthog-js";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
@@ -11,5 +12,14 @@ Sentry.init({
   integrations: [Sentry.browserTracingIntegration()],
   enabled: !!import.meta.env.VITE_SENTRY_DSN,
 });
+
+// Initialize PostHog — key is optional, PostHog is a no-op without it
+// Set VITE_POSTHOG_KEY and VITE_POSTHOG_HOST (default: https://eu.posthog.com)
+if (import.meta.env.VITE_POSTHOG_KEY) {
+  posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
+    api_host: import.meta.env.VITE_POSTHOG_HOST || "https://eu.posthog.com",
+    autocapture: false,
+  });
+}
 
 createRoot(document.getElementById("root")!).render(<App />);
