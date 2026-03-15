@@ -532,7 +532,28 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
           )}
         </div>
 
-        {/* Bank details */}
+        {/* Theme toggle */}
+        <div className="space-y-3 mt-6 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            {theme === 'dark' ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+            {l.themeTitle}
+          </h3>
+          <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-card">
+            <div className="flex items-center gap-3">
+              {theme === 'dark' ? <Moon className="w-4 h-4 text-muted-foreground" /> : <Sun className="w-4 h-4 text-muted-foreground" />}
+              <p className="text-sm text-foreground">
+                {theme === 'dark' ? l.darkMode : l.lightMode}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-muted text-foreground hover:bg-muted/80"
+            >
+              {theme === 'dark' ? l.lightMode : l.darkMode}
+            </button>
+          </div>
+        </div>
         <div className="space-y-4 mt-6 pt-6 border-t border-border">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Building2 className="w-4 h-4 text-primary" />
