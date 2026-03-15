@@ -711,6 +711,190 @@ const SepaPayouts = () => {
     setExpandedBatchId(batchId);
   };
 
+  const MAX_PLAFOND = 3233.91;
+
+  const handleSmartBatch = async () => {
+    if (!clubId) return;
+    setSmartBatchLoading(true);
+    try {
+      // 1. Get all confirmed hour_confirmations that aren't in any sepa_batch_item yet
+      const { data: hcs } = await supabase
+        .from('hour_confirmations')
+        .select('id, task_id, volunteer_id, final_hours, final_amount, status')
+        .in('status', ['confirmed', 'auto_confirmed']);
+
+      if (!hcs || hcs.length === 0) {
+        toast.info(t3('Geen bevestigde uren gevonden om uit te betalen.', 'Aucune heure confirmée trouvée.', 'No confirmed hours found for payout.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      // 2. Get tasks for this club only
+      const taskIds = [...new Set(hcs.map(h => h.task_id))];
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('id, title, task_date, expense_amount, compensation_type, hourly_rate, daily_rate, club_id')
+        .in('id', taskIds)
+        .eq('club_id', clubId);
+
+      if (!tasks || tasks.length === 0) {
+        toast.info(t3('Geen taken van deze club gevonden.', 'Aucune tâche de ce club trouvée.', 'No tasks for this club found.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      const clubTaskIds = new Set(tasks.map(t => t.id));
+      const relevantHcs = hcs.filter(h => clubTaskIds.has(h.task_id));
+
+      if (relevantHcs.length === 0) {
+        toast.info(t3('Geen bevestigde uren voor deze club.', 'Aucune heure confirmée pour ce club.', 'No confirmed hours for this club.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      // 3. Filter out already-paid ones (existing sepa_batch_items)
+      const hcTaskVolPairs = relevantHcs.map(h => `${h.volunteer_id}-${h.task_id}`);
+      const { data: existingBatchItems } = await supabase
+        .from('sepa_batch_items')
+        .select('volunteer_id, task_id')
+        .in('task_id', [...clubTaskIds]);
+
+      const paidSet = new Set((existingBatchItems || []).map(i => `${i.volunteer_id}-${i.task_id}`));
+      const unpaidHcs = relevantHcs.filter(h => !paidSet.has(`${h.volunteer_id}-${h.task_id}`));
+
+      if (unpaidHcs.length === 0) {
+        toast.info(t3('Alle bevestigde uren zijn al uitbetaald.', 'Toutes les heures confirmées sont déjà payées.', 'All confirmed hours are already paid out.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      // 4. Only volunteers with signed season contracts
+      const volIds = [...new Set(unpaidHcs.map(h => h.volunteer_id))];
+      const { data: contracts } = await supabase
+        .from('season_contracts' as any)
+        .select('volunteer_id, status')
+        .eq('club_id', clubId)
+        .eq('status', 'signed')
+        .in('volunteer_id', volIds);
+
+      const signedVolIds = new Set(((contracts || []) as any[]).map((c: any) => c.volunteer_id));
+      const eligibleHcs = unpaidHcs.filter(h => signedVolIds.has(h.volunteer_id));
+
+      if (eligibleHcs.length === 0) {
+        toast.info(t3('Geen vrijwilligers met ondertekend seizoenscontract gevonden.', 'Aucun bénévole avec contrat signé trouvé.', 'No volunteers with signed season contract found.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      // 5. Fetch profiles
+      const eligibleVolIds = [...new Set(eligibleHcs.map(h => h.volunteer_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, bank_iban, bank_bic, bank_holder_name')
+        .in('id', eligibleVolIds) as any;
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      const taskMap = new Map(tasks.map(t => [t.id, t]));
+
+      // 6. Calculate season totals for plafond check
+      const { data: allSeasonItems } = await supabase
+        .from('sepa_batch_items')
+        .select('volunteer_id, amount')
+        .in('volunteer_id', eligibleVolIds);
+
+      const seasonTotals = new Map<string, number>();
+      (allSeasonItems || []).forEach(i => {
+        seasonTotals.set(i.volunteer_id, (seasonTotals.get(i.volunteer_id) || 0) + Number(i.amount));
+      });
+
+      // 7. Build smart batch items
+      const items = eligibleHcs.map(hc => {
+        const task = taskMap.get(hc.task_id);
+        const profile = profileMap.get(hc.volunteer_id);
+        if (!task || !profile) return null;
+
+        const hours = hc.final_hours || 0;
+        let amount = 0;
+        if (hc.final_amount) {
+          amount = hc.final_amount;
+        } else if (task.compensation_type === 'hourly' && task.hourly_rate) {
+          amount = hours * task.hourly_rate;
+        } else if (task.compensation_type === 'daily' && task.daily_rate) {
+          amount = task.daily_rate;
+        } else if (task.compensation_type === 'fixed' && task.expense_amount) {
+          amount = task.expense_amount;
+        }
+
+        const currentTotal = seasonTotals.get(hc.volunteer_id) || 0;
+        const newTotal = currentTotal + amount;
+
+        return {
+          volunteerId: hc.volunteer_id,
+          fullName: profile.full_name || 'Onbekend',
+          email: profile.email || '',
+          avatarUrl: profile.avatar_url,
+          iban: (profile.bank_iban || '').replace(/\s/g, '').toUpperCase(),
+          bic: profile.bank_bic || '',
+          holderName: profile.bank_holder_name || profile.full_name || '',
+          amount: Math.round(amount * 100) / 100,
+          hours,
+          taskTitle: task.title,
+          taskId: task.id,
+          taskDate: task.task_date,
+          compensationType: task.compensation_type || 'fixed',
+          hourConfirmationId: hc.id,
+          seasonTotal: newTotal,
+          exceedsPlafond: newTotal > MAX_PLAFOND,
+        };
+      }).filter(Boolean) as typeof smartBatchItems;
+
+      setSmartBatchItems(items);
+      setShowSmartPreview(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Smart batch mislukt');
+    }
+    setSmartBatchLoading(false);
+  };
+
+  const handleApplySmartBatch = () => {
+    // Add all smart batch items to the payables list and select them
+    const newPayables: PayableVolunteer[] = smartBatchItems
+      .filter(item => validateIban(item.iban) && item.amount > 0)
+      .map(item => ({
+        volunteerId: item.volunteerId,
+        fullName: item.fullName,
+        email: item.email,
+        avatarUrl: item.avatarUrl,
+        iban: item.iban,
+        bic: item.bic,
+        holderName: item.holderName,
+        amount: item.amount,
+        taskTitle: item.taskTitle,
+        taskId: item.taskId,
+        taskDate: item.taskDate,
+        signupId: item.hourConfirmationId,
+        ibanValid: validateIban(item.iban),
+      }));
+
+    // Merge with existing payables (avoid duplicates)
+    const existingKeys = new Set(payables.map(p => `${p.volunteerId}-${p.taskId}`));
+    const toAdd = newPayables.filter(p => !existingKeys.has(`${p.volunteerId}-${p.taskId}`));
+    const merged = [...payables, ...toAdd];
+    setPayables(merged);
+
+    // Select all new items
+    const newSelection = new Set(selected);
+    newPayables.forEach(p => newSelection.add(`${p.volunteerId}-${p.taskId}`));
+    setSelected(newSelection);
+
+    setShowSmartPreview(false);
+    toast.success(t3(
+      `${newPayables.length} vrijwilligers toegevoegd aan de batch.`,
+      `${newPayables.length} bénévoles ajoutés au lot.`,
+      `${newPayables.length} volunteers added to batch.`
+    ));
+  };
+
   const statusBadge = (status: string) => {
     switch (status) {
       case 'pending': return <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" /> {t3('Open', 'Ouvert', 'Open')}</Badge>;
