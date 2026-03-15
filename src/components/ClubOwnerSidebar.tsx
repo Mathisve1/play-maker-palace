@@ -253,12 +253,6 @@ const ClubOwnerSidebar = ({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={toggleTheme} className="min-h-[40px]">
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              <span>{theme === 'dark' ? t3('Licht thema', 'Thème clair', 'Light mode') : t3('Donker thema', 'Thème sombre', 'Dark mode')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
             <SidebarMenuButton onClick={onLogout} className="min-h-[48px] text-destructive hover:text-destructive">
               <LogOut className="w-5 h-5" />
               <span>{t3('Uitloggen', 'Déconnexion', 'Log out')}</span>
