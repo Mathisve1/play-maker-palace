@@ -32,8 +32,7 @@ const VolunteerLoyaltyTab = ({ programs, enrollments, language, enrollingProgram
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
-      <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{t('Loyaliteit', 'Fidélité', 'Loyalty')}</h1>
+    <div className="space-y-4">
       {programs.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <Gift className="w-12 h-12 mx-auto mb-3 opacity-30" />
