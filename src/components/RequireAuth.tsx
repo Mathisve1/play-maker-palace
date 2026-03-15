@@ -8,6 +8,7 @@ import { ClubProvider } from '@/contexts/ClubContext';
 import AiAssistantChat from './AiAssistantChat';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
+import * as Sentry from '@sentry/react';
 
 interface RequireAuthProps {
   children: React.ReactNode;
@@ -44,6 +45,8 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     setAuthenticatedUserId(sessionUser.id);
     setChecked(true);
     setShowRetry(false);
+    // Set Sentry user context
+    Sentry.setUser({ id: sessionUser.id, email: sessionUser.email || undefined });
     // Non-blocking: profile creation and push sync happen in background
     void ensureProfileExists(sessionUser).catch(e => console.warn('RequireAuth: ensureProfileExists failed', e));
     void syncOneSignalUser(sessionUser.id).catch(() => {});
@@ -89,6 +92,7 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
       // Only redirect on explicit sign-out, never on transient null sessions
       if (event === 'SIGNED_OUT') {
         if (cancelled) return;
+        Sentry.setUser(null);
         initialAuthResolved.current = true;
         setAuthenticatedUserId(null);
         setChecked(true);
