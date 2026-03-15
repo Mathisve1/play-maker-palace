@@ -272,15 +272,17 @@ const TaskDetail = () => {
         setHasBriefing(!!(briefData && briefData.length > 0));
       });
 
-      // Load zone assignment for this volunteer
-      supabase.from('task_zone_assignments').select('zone_id, task_zones(name, max_capacity)').eq('volunteer_id', session.user.id).then(({ data: zoneData }) => {
-        if (zoneData && zoneData.length > 0) {
-          // Filter to zones belonging to this task
-          const matchingZone = zoneData.find((z: any) => z.task_zones);
-          if (matchingZone && (matchingZone as any).task_zones) {
-            const tz = (matchingZone as any).task_zones;
-            setMyZone({ name: tz.name, max_capacity: tz.max_capacity });
-          }
+      // Load zone assignment for this volunteer on this task
+      supabase.from('task_zones').select('id, name, max_capacity').eq('task_id', id!).then(async ({ data: zones }) => {
+        if (!zones || zones.length === 0) return;
+        const zoneIds = zones.map(z => z.id);
+        const { data: assignments } = await supabase.from('task_zone_assignments')
+          .select('zone_id')
+          .eq('volunteer_id', session.user.id)
+          .in('zone_id', zoneIds);
+        if (assignments && assignments.length > 0) {
+          const zone = zones.find(z => z.id === assignments[0].zone_id);
+          if (zone) setMyZone({ name: zone.name, max_capacity: zone.max_capacity });
         }
       });
 
