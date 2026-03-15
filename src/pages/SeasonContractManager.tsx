@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ import { generateSeasonReport, type SeasonReportVolunteer, type SeasonReportTask
 
 const SeasonContractManager = () => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const [clubId, setClubId] = useState<string | null>(null);
@@ -373,6 +375,10 @@ const SeasonContractManager = () => {
             <Button onClick={() => setShowCreateSeason(true)} variant="outline" size="sm">
               <Plus className="w-4 h-4 mr-1" />
               {t('Nieuw seizoen', 'Nouvelle saison', 'New season')}
+            </Button>
+            <Button onClick={() => navigate('/contract-builder')} size="sm">
+              <FileText className="w-4 h-4 mr-1" />
+              {t('Nieuw sjabloon bouwen', 'Créer un modèle', 'Build new template')}
             </Button>
           </div>
         </div>

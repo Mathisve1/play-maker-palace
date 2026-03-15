@@ -330,6 +330,7 @@ const ContractBuilder = () => {
   const [searchParams] = useSearchParams();
   const clubId = searchParams.get('club_id') || '';
   const editTemplateId = searchParams.get('template_id') || '';
+  const seasonTemplateId = searchParams.get('templateId') || '';
   const canvasRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -352,6 +353,7 @@ const ContractBuilder = () => {
   const [existingTemplates, setExistingTemplates] = useState<{ id: string; name: string }[]>([]);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(editTemplateId || null);
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
 
   // Auth check + fetch club data + signature
   useEffect(() => {
@@ -392,7 +394,17 @@ const ContractBuilder = () => {
         if (res.ok) setClubSignatureUrl(sigData.publicUrl);
       }).catch(() => {});
     }
-  }, [navigate, clubId, editTemplateId]);
+
+    // Load season_contract_template if templateId param is set
+    if (seasonTemplateId) {
+      supabase.from('season_contract_templates').select('id, name, template_data').eq('id', seasonTemplateId).single().then(({ data }) => {
+        if (data && (data as any).template_data) {
+          setBlocks((data as any).template_data as ContractBlock[]);
+          setTemplateName(data.name);
+        }
+      });
+    }
+  }, [navigate, clubId, editTemplateId, seasonTemplateId]);
 
   // Upload club signature (reusable for all contracts)
   const handleSignatureUpload = async (file: File) => {
@@ -670,7 +682,7 @@ const ContractBuilder = () => {
       }
 
       toast.success(t3('Contractsjabloon succesvol opgeslagen!', 'Modèle de contrat enregistré avec succès!', 'Contract template saved successfully!'));
-      navigate('/club-dashboard');
+      setSavedSuccessfully(true);
     } catch (err: any) {
       toast.error(err.message || t3('Opslaan mislukt', 'Échec de l\'enregistrement', 'Save failed'));
     }
@@ -802,6 +814,15 @@ const ContractBuilder = () => {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : editingTemplateId ? t3('Bijwerken', 'Mettre à jour', 'Update') : t3('Opslaan', 'Enregistrer', 'Save')}
           </button>
+          {savedSuccessfully && (
+            <button
+              onClick={() => navigate('/season-contracts')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              <ChevronRight className="w-4 h-4" />
+              {t3('Terug naar contractenbeheer', 'Retour à la gestion des contrats', 'Back to contract management')}
+            </button>
+          )}
         </div>
       </div>
 
