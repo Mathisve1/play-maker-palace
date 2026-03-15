@@ -464,6 +464,15 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                       {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">({t3('jij', 'vous', 'you')})</span>}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{member.profile?.email}</p>
+                    {member.contractTypes && member.contractTypes.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {member.contractTypes.map(ct => (
+                          <span key={ct} className="inline-flex px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary font-medium">
+                            {ct.replace('_', ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
