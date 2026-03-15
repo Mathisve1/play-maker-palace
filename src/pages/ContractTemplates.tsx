@@ -51,7 +51,8 @@ interface EventTemplate {
   id: string;
   name: string;
   description: string | null;
-  template_data: any;
+  groups: any;
+  location: string | null;
   created_at: string;
 }
 
