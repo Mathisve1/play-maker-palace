@@ -64,6 +64,8 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
 const AuditLog = lazy(() => import("./pages/AuditLog"));
+const SeasonContractManager = lazy(() => import("./pages/SeasonContractManager"));
+const ContractTemplates = lazy(() => import("./pages/ContractTemplates"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
