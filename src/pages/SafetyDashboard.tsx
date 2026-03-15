@@ -155,7 +155,9 @@ const SafetyDashboard = () => {
   const [teamIncidents, setTeamIncidents] = useState<SafetyIncident[]>([]);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; avatar_url: string | null; roleName: string }[]>([]);
   const flashTimeout = useRef<NodeJS.Timeout>();
-
+  const [showAlarmConfirm, setShowAlarmConfirm] = useState(false);
+  const [sendingAlarm, setSendingAlarm] = useState(false);
+  const [autoNotifyUrgent, setAutoNotifyUrgent] = useState(true);
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
     if (entering && ref.current) {
