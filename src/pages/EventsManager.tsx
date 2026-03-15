@@ -226,9 +226,14 @@ const EventsManager = () => {
     return parts.join(', ') || null;
   };
 
+  const pastDateError = () => t3('Je kunt geen datum in het verleden kiezen.', 'Vous ne pouvez pas choisir une date dans le passé.', 'You cannot choose a date in the past.');
+  const isDateInPast = (d: string) => d && new Date(d) < new Date(new Date().toDateString());
+  const todayMin = new Date().toISOString().slice(0, 16);
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !newEvent.title.trim()) return;
+    if (isDateInPast(newEvent.event_date)) { toast.error(pastDateError()); return; }
     setCreatingEvent(true);
     const locationStr = buildLocationString();
     const { data, error } = await supabase.from('events').insert({
@@ -255,6 +260,7 @@ const EventsManager = () => {
   const handleCreateLooseTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !newTask.title.trim()) return;
+    if (isDateInPast(newTask.task_date)) { toast.error(pastDateError()); return; }
     setCreatingTask(true);
     const locationStr = buildTaskLocationString();
     const insertData = {
@@ -320,6 +326,7 @@ const EventsManager = () => {
   const handleAddTaskToGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !addingTaskToGroup || !groupTaskForm.title.trim()) return;
+    if (isDateInPast(groupTaskForm.task_date)) { toast.error(pastDateError()); return; }
     setCreatingGroupTask(true);
     const { data, error } = await supabase.from('tasks').insert({
       club_id: clubId, title: groupTaskForm.title.trim(), task_date: groupTaskForm.task_date || null,
@@ -681,7 +688,7 @@ const EventsManager = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
-                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
+                 <div className="sm:col-span-2"><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" min={todayMin} value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
                  <div className="sm:col-span-2">
                    <label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label>
                    <div className="grid gap-3 sm:grid-cols-4">
@@ -728,7 +735,7 @@ const EventsManager = () => {
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
 
                  {/* Date & Spots */}
-                 <div><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={newTask.task_date} onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" min={todayMin} value={newTask.task_date} onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
                  <div><label className={labelClass}>{t3('Plaatsen', 'Places', 'Spots')}</label><input type="number" min={1} value={newTask.spots_available} onChange={e => setNewTask(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
 
                  {/* Location (multi-field) */}
@@ -1308,7 +1315,7 @@ const EventsManager = () => {
                         <form data-tour={ei === 0 && gi === 0 ? 'form-add-task-group' : undefined} onSubmit={handleAddTaskToGroup} className="p-4 border-t border-border space-y-3">
                           <div><label className={labelClass}>{nl ? 'Titel' : 'Title'} *</label><input type="text" required value={groupTaskForm.title} onChange={e => setGroupTaskForm(p => ({ ...p, title: e.target.value }))} className={inputClass} autoFocus /></div>
                           <div className="grid grid-cols-3 gap-3">
-                            <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" value={groupTaskForm.task_date} onChange={e => setGroupTaskForm(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
+                            <div><label className={labelClass}>{nl ? 'Datum' : 'Date'}</label><input type="datetime-local" min={todayMin} value={groupTaskForm.task_date} onChange={e => setGroupTaskForm(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
                             <div><label className={labelClass}>{nl ? 'Locatie' : 'Location'}</label><input type="text" value={groupTaskForm.location} onChange={e => setGroupTaskForm(p => ({ ...p, location: e.target.value }))} className={inputClass} /></div>
                             <div><label className={labelClass}>{nl ? 'Plaatsen' : 'Spots'}</label><input type="number" min={1} value={groupTaskForm.spots_available} onChange={e => setGroupTaskForm(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
                           </div>
