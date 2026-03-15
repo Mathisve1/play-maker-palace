@@ -135,6 +135,32 @@ const VolunteerDashboardHome = ({
     checkSafety();
   }, [currentUserId, signups, tasks]);
 
+  // Fetch required trainings the volunteer hasn't completed
+  useEffect(() => {
+    if (!currentUserId || !followedClubIds || followedClubIds.size === 0) return;
+    const fetchRequired = async () => {
+      const clubIds = [...followedClubIds];
+      const { data: reqData } = await supabase.from('club_required_trainings' as any)
+        .select('training_id, club_id')
+        .in('club_id', clubIds);
+      if (!reqData || reqData.length === 0) { setRequiredTrainings([]); return; }
+
+      const trainingIds = [...new Set((reqData as any[]).map(r => r.training_id))];
+      const [trainingsRes, certsRes, clubsRes] = await Promise.all([
+        supabase.from('academy_trainings').select('id, title, club_id').in('id', trainingIds),
+        supabase.from('volunteer_certificates').select('training_id').eq('volunteer_id', currentUserId).in('training_id', trainingIds),
+        supabase.from('clubs').select('id, name').in('id', clubIds),
+      ]);
+      const certifiedIds = new Set((certsRes.data || []).map((c: any) => c.training_id));
+      const clubNameMap = new Map((clubsRes.data || []).map((c: any) => [c.id, c.name]));
+      const incomplete = (trainingsRes.data || [])
+        .filter((t: any) => !certifiedIds.has(t.id))
+        .map((t: any) => ({ id: t.id, title: t.title, clubName: clubNameMap.get(t.club_id) || '' }));
+      setRequiredTrainings(incomplete);
+    };
+    fetchRequired();
+  }, [currentUserId, followedClubIds, myCertifiedTrainingIds]);
+
   const totalEarned = myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0)
     + sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
 
