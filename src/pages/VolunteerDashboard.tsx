@@ -21,6 +21,7 @@ import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
 import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab';
 import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
+import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
 import VolunteerDashboardHome from '@/components/volunteer/VolunteerDashboardHome';
 import VolunteerTasksList from '@/components/volunteer/VolunteerTasksList';
 import VolunteerOnboardingWizard from '@/components/VolunteerOnboardingWizard';
@@ -172,6 +173,7 @@ const VolunteerDashboard = () => {
   const [loyaltyPrograms, setLoyaltyPrograms] = useState<{ id: string; name: string; description: string | null; reward_description: string; required_tasks: number; required_points: number | null; points_based: boolean; club_id: string; club_name?: string }[]>([]);
   const [loyaltyEnrollments, setLoyaltyEnrollments] = useState<Record<string, { id: string; tasks_completed: number; points_earned: number; reward_claimed: boolean }>>({});
   const [enrollingProgram, setEnrollingProgram] = useState<string | null>(null);
+  const [badgeRefreshKey, setBadgeRefreshKey] = useState(0);
 
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
@@ -593,8 +595,10 @@ const VolunteerDashboard = () => {
     const { error } = await supabase.from('task_signups').insert({ task_id: taskId, volunteer_id: currentUserId });
     if (error) { toast.error(error.message); } else {
       toast.success(t.volunteer.step3Title + '!');
+      toast.info(language === 'nl' ? 'Taak ingeschreven! Je punten worden bijgewerkt.' : language === 'fr' ? 'Tâche inscrite ! Vos points seront mis à jour.' : 'Task signed up! Your points will be updated.');
       setSignups(prev => [...prev, { task_id: taskId, status: 'pending' }]);
       setSignupCounts(prev => ({ ...prev, [taskId]: (prev[taskId] || 0) + 1 }));
+      setBadgeRefreshKey(k => k + 1);
     }
     setSigningUp(null);
   };
@@ -770,7 +774,20 @@ const VolunteerDashboard = () => {
 
       {/* ===== LOYALTY TAB ===== */}
       {activeTab === 'loyalty' && (
-        <VolunteerLoyaltyTab programs={loyaltyPrograms} enrollments={loyaltyEnrollments} language={language} enrollingProgram={enrollingProgram} onEnroll={handleEnrollLoyalty} />
+        <div className="max-w-5xl mx-auto space-y-6">
+          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">
+            {language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'}
+          </h1>
+          {currentUserId && (
+            <VolunteerLoyaltyProgress
+              userId={currentUserId}
+              language={language}
+              totalPoints={Object.values(loyaltyEnrollments).reduce((s, e) => s + (e.points_earned || 0), 0)}
+              refreshKey={badgeRefreshKey}
+            />
+          )}
+          <VolunteerLoyaltyTab programs={loyaltyPrograms} enrollments={loyaltyEnrollments} language={language} enrollingProgram={enrollingProgram} onEnroll={handleEnrollLoyalty} />
+        </div>
       )}
 
       {/* ===== BRIEFINGS TAB ===== */}
