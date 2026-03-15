@@ -777,12 +777,14 @@ const AcademyBuilder = () => {
     if (!contextClubId) return;
     const init = async () => {
       setClubId(contextClubId);
-      const [trainingsRes, designsRes] = await Promise.all([
+      const [trainingsRes, designsRes, reqRes] = await Promise.all([
         supabase.from('academy_trainings').select('*').eq('club_id', contextClubId).order('created_at', { ascending: false }),
         supabase.from('certificate_designs').select('id, name').eq('club_id', contextClubId),
+        supabase.from('club_required_trainings' as any).select('training_id').eq('club_id', contextClubId),
       ]);
       setTrainings((trainingsRes.data as Training[]) || []);
       setCertDesigns((designsRes.data || []) as { id: string; name: string }[]);
+      setRequiredTrainingIds(new Set((reqRes.data || []).map((r: any) => r.training_id)));
       setLoading(false);
     };
     init();
