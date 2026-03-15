@@ -405,6 +405,32 @@ const VolunteerDashboard = () => {
 
       setLoading(false);
 
+      // Check volunteer onboarding wizard eligibility
+      if (contextClubId) {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const [membershipRes, onboardingRes, seasonContractRes] = await Promise.all([
+          supabase.from('club_memberships').select('joined_at').eq('volunteer_id', uid).eq('club_id', contextClubId).limit(1).maybeSingle(),
+          supabase.from('volunteer_onboarding_steps').select('step, completed_at, skipped').eq('user_id', uid).eq('club_id', contextClubId),
+          (supabase.from('season_contracts') as any).select('id, signing_url, status').eq('volunteer_id', uid).eq('club_id', contextClubId).eq('status', 'pending').limit(1).maybeSingle(),
+        ]);
+
+        const membership = membershipRes.data;
+        const onboardingSteps = onboardingRes.data || [];
+        const allCompleted = ['profile_complete', 'contract_signed', 'training_done', 'first_task'].every(
+          s => onboardingSteps.some((os: any) => os.step === s && (os.completed_at || os.skipped))
+        );
+        const isNew = membership && new Date(membership.joined_at) > sevenDaysAgo;
+        const hasPendingContract = !!seasonContractRes.data;
+        const dismissed = localStorage.getItem(`vol-onboarding-dismissed-${uid}-${contextClubId}`);
+
+        if (isNew && hasPendingContract && !allCompleted && !dismissed) {
+          setVolunteerOnboardingContract(seasonContractRes.data);
+          setShowVolunteerOnboarding(true);
+        }
+      }
+
       // Fetch pending reviews: completed tasks in last 14 days without a volunteer review
       const fourteenDaysAgo = new Date();
       fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
