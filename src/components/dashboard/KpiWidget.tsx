@@ -33,7 +33,7 @@ export const KpiWidget = ({ type, value, language, onClick, subtitle, trend }: K
   return (
     <button
       onClick={onClick}
-      className={`w-full h-full bg-card rounded-2xl border ${colors.accent} p-5 text-left hover:shadow-md hover:border-primary/30 transition-all duration-200 flex flex-col justify-between group`}
+      className={`w-full h-full bg-card rounded-2xl border ${colors.accent} p-4 text-left hover:shadow-md hover:border-primary/30 transition-all duration-200 flex flex-col justify-between group overflow-visible`}
     >
       <div className="flex items-center justify-between">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors.bg} group-hover:scale-105 transition-transform`}>
