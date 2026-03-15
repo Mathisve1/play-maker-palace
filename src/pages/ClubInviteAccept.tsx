@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/Logo';
+import ContractTypePicker, { ContractTypeKey, CONTRACT_TYPES } from '@/components/ContractTypePicker';
 
 const t3 = (nl: string, fr: string, en: string, lang: string) => lang === 'fr' ? fr : lang === 'en' ? en : nl;
 
@@ -32,6 +33,82 @@ const roleLabels: Record<string, Record<string, string>> = {
   nl: { bestuurder: 'Bestuurder', beheerder: 'Beheerder', medewerker: 'Medewerker', partner_admin: 'Partner Beheerder' },
   fr: { bestuurder: 'Directeur', beheerder: 'Administrateur', medewerker: 'Collaborateur', partner_admin: 'Admin Partenaire' },
   en: { bestuurder: 'Director', beheerder: 'Administrator', medewerker: 'Staff', partner_admin: 'Partner Admin' },
+};
+
+// Sub-component for contract type selection after successful invite acceptance
+const SuccessContractTypePicker = ({ lang }: { lang: string }) => {
+  const navigate = useNavigate();
+  const [selectedTypes, setSelectedTypes] = useState<Set<ContractTypeKey>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    // Save contract types to the user's membership
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data: memberships } = await supabase
+        .from('club_memberships')
+        .select('id')
+        .eq('volunteer_id', session.user.id)
+        .order('joined_at', { ascending: false })
+        .limit(1);
+
+      if (memberships?.[0] && selectedTypes.size > 0) {
+        const inserts = Array.from(selectedTypes).map(ct => ({
+          membership_id: memberships[0].id,
+          contract_type: ct,
+        }));
+        await supabase.from('member_contract_types' as any).insert(inserts);
+      }
+    }
+    setDone(true);
+    setSaving(false);
+    setTimeout(() => navigate('/dashboard'), 2000);
+  };
+
+  if (done) {
+    return (
+      <div className="text-center">
+        <div className="text-4xl mb-3">🎉</div>
+        <h2 className="text-xl font-heading font-bold text-foreground mb-2">
+          {t3('Welkom bij de club!', 'Bienvenue dans le club !', 'Welcome to the club!', lang)}
+        </h2>
+        <p className="text-muted-foreground">
+          {t3('Je wordt doorgestuurd...', 'Redirection...', 'Redirecting...', lang)}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <div className="text-4xl mb-3">🎉</div>
+        <h2 className="text-xl font-heading font-bold text-foreground mb-2">
+          {t3('Welkom bij de club!', 'Bienvenue dans le club !', 'Welcome to the club!', lang)}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          {t3('Kies je contracttype om verder te gaan:', 'Choisissez votre type de contrat:', 'Choose your contract type to continue:', lang)}
+        </p>
+      </div>
+      <ContractTypePicker
+        selected={selectedTypes}
+        onChange={setSelectedTypes}
+        language={lang as any}
+        multiSelect={true}
+      />
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+      >
+        {saving ? '...' : selectedTypes.size > 0
+          ? t3('Opslaan & doorgaan', 'Enregistrer & continuer', 'Save & continue', lang)
+          : t3('Overslaan', 'Passer', 'Skip', lang)}
+      </button>
+    </div>
+  );
 };
 
 const ClubInviteAccept = () => {
@@ -338,19 +415,21 @@ const ClubInviteAccept = () => {
             </>
           )}
 
-          {status === 'success' && (
+          {status === 'success' && !isPartnerInvite && (
+            <SuccessContractTypePicker lang={lang} />
+          )}
+
+          {status === 'success' && isPartnerInvite && (
             <div className="text-center">
               <div className="text-4xl mb-3">🎉</div>
               <h2 className="text-xl font-heading font-bold text-foreground mb-2">
-                {isPartnerInvite
-                  ? t3('Welkom als partner!', 'Bienvenue en tant que partenaire !', 'Welcome as partner!', lang)
-                  : t3('Welkom bij de club!', 'Bienvenue dans le club !', 'Welcome to the club!', lang)}
+                {t3('Welkom als partner!', 'Bienvenue en tant que partenaire !', 'Welcome as partner!', lang)}
               </h2>
               <p className="text-muted-foreground">
                 {t3(
-                  `Je wordt doorgestuurd naar het ${isPartnerInvite ? 'partner' : 'club'} dashboard...`,
-                  `Redirection vers le tableau de bord ${isPartnerInvite ? 'partenaire' : 'du club'}...`,
-                  `Redirecting to ${isPartnerInvite ? 'partner' : 'club'} dashboard...`,
+                  'Je wordt doorgestuurd naar het partner dashboard...',
+                  'Redirection vers le tableau de bord partenaire...',
+                  'Redirecting to partner dashboard...',
                   lang
                 )}
               </p>

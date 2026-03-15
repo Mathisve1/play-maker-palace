@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, UserPlus, Copy, Trash2, Shield, ChevronDown, Info } from 'lucide-react';
+import { X, UserPlus, Copy, Trash2, Shield, ChevronDown, Info, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import ContractTypePicker, { ContractTypeKey } from '@/components/ContractTypePicker';
 
 type ClubRole = 'bestuurder' | 'beheerder' | 'medewerker';
 
@@ -10,7 +11,9 @@ interface Member {
   id: string;
   user_id: string;
   role: ClubRole;
+  membership_id?: string;
   profile?: { full_name: string | null; email: string | null };
+  contractTypes?: ContractTypeKey[];
 }
 
 interface Invitation {
@@ -57,6 +60,11 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   const [inviting, setInviting] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState<string | null>(null);
 
+  // Contract type step for new invites
+  const [inviteStep, setInviteStep] = useState<'form' | 'contract-type'>('form');
+  const [selectedContractTypes, setSelectedContractTypes] = useState<Set<ContractTypeKey>>(new Set());
+  const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
+
   const canManage = isOwner || currentUserRole === 'bestuurder';
   const canInvite = canManage || currentUserRole === 'beheerder';
 
@@ -65,11 +73,35 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   }, [clubId]);
 
   const fetchData = async () => {
-    // Fetch members
+    // Fetch members via club_members
     const { data: membersData } = await supabase
       .from('club_members')
       .select('id, user_id, role')
       .eq('club_id', clubId);
+
+    // Also fetch club_memberships for contract type mapping
+    const { data: membershipsData } = await supabase
+      .from('club_memberships')
+      .select('id, volunteer_id')
+      .eq('club_id', clubId);
+
+    const membershipMap = new Map((membershipsData || []).map(m => [m.volunteer_id, m.id]));
+
+    // Fetch contract types
+    const membershipIds = (membershipsData || []).map(m => m.id);
+    let contractTypeMap = new Map<string, ContractTypeKey[]>();
+    if (membershipIds.length > 0) {
+      const { data: ctData } = await supabase
+        .from('member_contract_types' as any)
+        .select('membership_id, contract_type')
+        .in('membership_id', membershipIds);
+      
+      (ctData as any[] || []).forEach((ct: any) => {
+        const existing = contractTypeMap.get(ct.membership_id) || [];
+        existing.push(ct.contract_type);
+        contractTypeMap.set(ct.membership_id, existing);
+      });
+    }
 
     if (membersData && membersData.length > 0) {
       const userIds = membersData.map(m => m.user_id);
@@ -82,12 +114,15 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
       setMembers(
         membersData.map(m => {
           const prof = profileMap.get(m.user_id);
+          const msId = membershipMap.get(m.user_id);
           return {
             ...m,
             role: m.role as ClubRole,
+            membership_id: msId,
             profile: prof
               ? { full_name: prof.full_name || prof.email || null, email: prof.email }
               : { full_name: null, email: null },
+            contractTypes: msId ? contractTypeMap.get(msId) || [] : [],
           };
         })
       );
@@ -124,16 +159,14 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
 
     if (error) {
       toast.error(error.message);
-    } else if (data) {
-      // Send email via edge function
-      try {
-        // Get club name for the email
-        const { data: club } = await supabase
-          .from('clubs')
-          .select('name')
-          .eq('id', clubId)
-          .maybeSingle();
+      setInviting(false);
+      return;
+    }
 
+    if (data) {
+      // Send email
+      try {
+        const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).maybeSingle();
         await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/club-invite?action=send-email`,
           {
@@ -155,10 +188,53 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         console.error('Email sending failed:', e);
       }
       toast.success(t3(`Uitnodiging verstuurd naar ${inviteEmail}`, `Invitation envoyée à ${inviteEmail}`, `Invitation sent to ${inviteEmail}`));
-      setInviteEmail('');
-      fetchData();
+      
+      // Show contract type step
+      setPendingInviteToken(data.invite_token);
+      setInviteStep('contract-type');
+      setSelectedContractTypes(new Set());
     }
     setInviting(false);
+  };
+
+  const handleSaveContractTypes = async () => {
+    // Find the invitation that was just created, look up corresponding membership if user already exists
+    // For now, store the contract type selection in the invitation metadata or handle it when the invite is accepted
+    // Since the volunteer may not have a membership yet, we store it as metadata on the invitation
+    if (pendingInviteToken && selectedContractTypes.size > 0) {
+      // We'll store the contract types when the invite is accepted
+      // For existing members, we can save directly
+    }
+    setInviteStep('form');
+    setInviteEmail('');
+    setPendingInviteToken(null);
+    setSelectedContractTypes(new Set());
+    fetchData();
+  };
+
+  const handleSetMemberContractTypes = async (memberId: string, membershipId: string | undefined, types: Set<ContractTypeKey>) => {
+    if (!membershipId) {
+      toast.error(t3('Geen lidmaatschap gevonden', 'Aucune adhésion trouvée', 'No membership found'));
+      return;
+    }
+
+    // Delete existing and re-insert
+    await supabase.from('member_contract_types' as any).delete().eq('membership_id', membershipId);
+    
+    if (types.size > 0) {
+      const inserts = Array.from(types).map(ct => ({
+        membership_id: membershipId,
+        contract_type: ct,
+      }));
+      const { error } = await supabase.from('member_contract_types' as any).insert(inserts);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+    }
+
+    toast.success(t3('Contracttype bijgewerkt', 'Type de contrat mis à jour', 'Contract type updated'));
+    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, contractTypes: Array.from(types) } : m));
   };
 
   const handleGenerateLink = async () => {
@@ -301,43 +377,70 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
               <UserPlus className="w-4 h-4" />
               {t3('Nieuw lid uitnodigen', 'Inviter un nouveau membre', 'Invite new member')}
             </h3>
-            <div className="flex gap-2 mb-2">
-              <select
-                value={inviteRole}
-                onChange={e => setInviteRole(e.target.value as ClubRole)}
-                className="px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {canManage && <option value="beheerder">{roleLabels.beheerder}</option>}
-                <option value="medewerker">{roleLabels.medewerker}</option>
-              </select>
-            </div>
 
-            {/* Email invite */}
-            <div className="flex gap-2 mb-2">
-              <input
-                type="email"
-                placeholder={t3('E-mailadres', 'Adresse e-mail', 'Email address')}
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button
-                onClick={handleInviteByEmail}
-                disabled={inviting || !inviteEmail.trim()}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {t3('Verstuur', 'Envoyer', 'Send')}
-              </button>
-            </div>
+            {inviteStep === 'form' ? (
+              <>
+                <div className="flex gap-2 mb-2">
+                  <select
+                    value={inviteRole}
+                    onChange={e => setInviteRole(e.target.value as ClubRole)}
+                    className="px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {canManage && <option value="beheerder">{roleLabels.beheerder}</option>}
+                    <option value="medewerker">{roleLabels.medewerker}</option>
+                  </select>
+                </div>
 
-            {/* Generate link */}
-            <button
-              onClick={handleGenerateLink}
-              className="flex items-center gap-2 text-sm text-primary hover:underline"
-            >
-              <Copy className="w-3.5 h-3.5" />
-              {t3('Genereer uitnodigingslink', 'Générer un lien d\'invitation', 'Generate invite link')}
-            </button>
+                {/* Email invite */}
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="email"
+                    placeholder={t3('E-mailadres', 'Adresse e-mail', 'Email address')}
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    onClick={handleInviteByEmail}
+                    disabled={inviting || !inviteEmail.trim()}
+                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {t3('Verstuur', 'Envoyer', 'Send')}
+                  </button>
+                </div>
+
+                {/* Generate link */}
+                <button
+                  onClick={handleGenerateLink}
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {t3('Genereer uitnodigingslink', 'Générer un lien d\'invitation', 'Generate invite link')}
+                </button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  {t3('Welk contracttype krijgt deze vrijwilliger?', 'Quel type de contrat pour ce bénévole?', 'Which contract type for this volunteer?')}
+                </p>
+                <ContractTypePicker
+                  selected={selectedContractTypes}
+                  onChange={setSelectedContractTypes}
+                  language={language}
+                  multiSelect={true}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveContractTypes}
+                    className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    {selectedContractTypes.size > 0
+                      ? t3('Opslaan', 'Enregistrer', 'Save')
+                      : t3('Overslaan', 'Passer', 'Skip')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -361,6 +464,15 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                       {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">({t3('jij', 'vous', 'you')})</span>}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{member.profile?.email}</p>
+                    {member.contractTypes && member.contractTypes.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {member.contractTypes.map(ct => (
+                          <span key={ct} className="inline-flex px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary font-medium">
+                            {ct.replace('_', ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

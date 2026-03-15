@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star } from 'lucide-react';
+import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
+import ContractTypePicker, { ContractTypeKey, CONTRACT_TYPES } from '@/components/ContractTypePicker';
 
 interface VolunteerRow {
   id: string;
@@ -25,6 +26,8 @@ interface VolunteerRow {
   is_paying: boolean;
   avg_rating: number | null;
   review_count: number;
+  memberContractTypes: ContractTypeKey[];
+  membership_id: string | null;
 }
 
 const VolunteerManagement = () => {
@@ -42,6 +45,9 @@ const VolunteerManagement = () => {
   // Dialogs
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [showSendContract, setShowSendContract] = useState(false);
+  const [showBulkContractType, setShowBulkContractType] = useState(false);
+  const [bulkContractTypes, setBulkContractTypes] = useState<Set<ContractTypeKey>>(new Set());
+  const [filterMemberType, setFilterMemberType] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Auto-create season on first load
@@ -93,20 +99,37 @@ const VolunteerManagement = () => {
       setActiveSeason({ id: season.id, name: season.name });
     }
 
-    // Parallel: contracts, templates, check-ins, club members
-    const [contractsRes, templatesRes, checkInsRes, membersRes] = await Promise.all([
+    // Parallel: contracts, templates, check-ins, club members, memberships
+    const [contractsRes, templatesRes, checkInsRes, membersRes, membershipsRes] = await Promise.all([
       supabase.from('season_contracts').select('id, volunteer_id, status, template_id').eq('club_id', clubId),
       supabase.from('season_contract_templates').select('id, name, category').or(`club_id.eq.${clubId},is_system.eq.true`),
       season
         ? supabase.from('season_checkins').select('volunteer_id, season_contract_id').eq('club_id', clubId)
         : Promise.resolve({ data: [] as any[] }),
       supabase.from('club_members').select('user_id').eq('club_id', clubId),
+      supabase.from('club_memberships').select('id, volunteer_id').eq('club_id', clubId),
     ]);
 
     const contracts = contractsRes.data || [];
     const templates = templatesRes.data || [];
     const checkIns = (checkInsRes as any).data || [];
     const members = membersRes.data || [];
+    const memberships = membershipsRes.data || [];
+
+    // Map volunteer_id -> membership_id
+    const membershipMap = new Map(memberships.map(m => [m.volunteer_id, m.id]));
+
+    // Fetch member_contract_types
+    const msIds = memberships.map(m => m.id);
+    let ctMap = new Map<string, ContractTypeKey[]>();
+    if (msIds.length > 0) {
+      const { data: ctData } = await supabase.from('member_contract_types' as any).select('membership_id, contract_type').in('membership_id', msIds);
+      (ctData as any[] || []).forEach((ct: any) => {
+        const arr = ctMap.get(ct.membership_id) || [];
+        arr.push(ct.contract_type);
+        ctMap.set(ct.membership_id, arr);
+      });
+    }
 
     // Count check-ins per volunteer
     const checkInCounts: Record<string, number> = {};
@@ -158,6 +181,7 @@ const VolunteerManagement = () => {
 
       const count = checkInCounts[p.id] || 0;
       const rd = ratingData[p.id];
+      const msId = membershipMap.get(p.id) || null;
 
       return {
         id: p.id,
@@ -169,6 +193,8 @@ const VolunteerManagement = () => {
         is_paying: count >= 4,
         avg_rating: rd ? rd.sum / rd.count : null,
         review_count: rd?.count || 0,
+        memberContractTypes: msId ? ctMap.get(msId) || [] : [],
+        membership_id: msId,
       };
     });
 
@@ -193,13 +219,14 @@ const VolunteerManagement = () => {
     return volunteers.filter(v => {
       if (search && !v.full_name.toLowerCase().includes(search.toLowerCase()) && !v.email.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && !v.contracts.some(c => c.category === filterCategory)) return false;
+      if (filterMemberType !== 'all' && !v.memberContractTypes.includes(filterMemberType as ContractTypeKey)) return false;
       if (filterStatus === 'signed' && !v.contracts.some(c => c.status === 'signed')) return false;
       if (filterStatus === 'pending' && !v.contracts.some(c => c.status !== 'signed')) return false;
       if (filterStatus === 'paying' && !v.is_paying) return false;
       if (filterStatus === 'trial' && v.is_paying) return false;
       return true;
     });
-  }, [volunteers, search, filterCategory, filterStatus]);
+  }, [volunteers, search, filterCategory, filterStatus, filterMemberType]);
 
   const stats = useMemo(() => ({
     total: volunteers.length,
@@ -229,6 +256,23 @@ const VolunteerManagement = () => {
     setShowSendContract(true);
   };
 
+  const handleBulkSetContractType = async () => {
+    if (bulkContractTypes.size === 0 || selectedIds.size === 0) return;
+    const vols = volunteers.filter(v => selectedIds.has(v.id) && v.membership_id);
+    let success = 0;
+    for (const vol of vols) {
+      await supabase.from('member_contract_types' as any).delete().eq('membership_id', vol.membership_id);
+      const inserts = Array.from(bulkContractTypes).map(ct => ({ membership_id: vol.membership_id, contract_type: ct }));
+      const { error } = await supabase.from('member_contract_types' as any).insert(inserts);
+      if (!error) success++;
+    }
+    toast.success(t(`${success} vrijwilligers bijgewerkt`, `${success} bénévoles mis à jour`, `${success} volunteers updated`));
+    setShowBulkContractType(false);
+    setBulkContractTypes(new Set());
+    setSelectedIds(new Set());
+    loadData();
+  };
+
   return (
     <ClubPageLayout>
       <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-6">
@@ -254,12 +298,18 @@ const VolunteerManagement = () => {
               </Button>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {selectedIds.size > 0 && (
-              <Button onClick={() => openSendDialog()} className="gap-2">
-                <Send className="w-4 h-4" />
-                {t(`Contract versturen (${selectedIds.size})`, `Envoyer contrat (${selectedIds.size})`, `Send contract (${selectedIds.size})`)}
-              </Button>
+              <>
+                <Button onClick={() => openSendDialog()} className="gap-2">
+                  <Send className="w-4 h-4" />
+                  {t(`Contract versturen (${selectedIds.size})`, `Envoyer contrat (${selectedIds.size})`, `Send contract (${selectedIds.size})`)}
+                </Button>
+                <Button variant="outline" onClick={() => setShowBulkContractType(true)} className="gap-2">
+                  <Tag className="w-4 h-4" />
+                  {t('Stel contracttype in', 'Définir type', 'Set contract type')}
+                </Button>
+              </>
             )}
             <Button variant="outline" size="sm" onClick={loadData}>
               {t('Vernieuwen', 'Actualiser', 'Refresh')}
@@ -304,6 +354,18 @@ const VolunteerManagement = () => {
               <SelectItem value="all">{t('Alle types', 'Tous les types', 'All types')}</SelectItem>
               {Object.entries(categoryLabels).filter(([k]) => k !== 'custom').map(([key, label]) => (
                 <SelectItem key={key} value={key}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterMemberType} onValueChange={setFilterMemberType}>
+            <SelectTrigger className="w-full md:w-48">
+              <Tag className="w-4 h-4 mr-2" />
+              <SelectValue placeholder={t('Lidtype', 'Type membre', 'Member type')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('Alle lidtypes', 'Tous les types', 'All member types')}</SelectItem>
+              {CONTRACT_TYPES.map(ct => (
+                <SelectItem key={ct.key} value={ct.key}>{ct.icon} {language === 'nl' ? ct.nl : language === 'fr' ? ct.fr : ct.en}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -379,6 +441,15 @@ const VolunteerManagement = () => {
                         <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                         <span className="text-xs font-medium text-foreground">{vol.avg_rating.toFixed(1)}</span>
                         <span className="text-[10px] text-muted-foreground">({vol.review_count})</span>
+                      </div>
+                    )}
+                    {vol.memberContractTypes.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {vol.memberContractTypes.map(ct => (
+                          <span key={ct} className="inline-flex px-1.5 py-0.5 rounded text-[10px] bg-secondary/50 text-secondary-foreground font-medium capitalize">
+                            {ct.replace('_', ' ')}
+                          </span>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -465,6 +536,34 @@ const VolunteerManagement = () => {
               preSelectedIds={[...selectedIds]}
               onSent={loadData}
             />
+          )}
+
+          {/* Bulk contract type dialog */}
+          {showBulkContractType && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setShowBulkContractType(false)}>
+              <div className="bg-card rounded-2xl shadow-elevated p-6 w-full max-w-md max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <h3 className="text-lg font-heading font-semibold text-foreground mb-1">
+                  {t('Contracttype instellen', 'Définir le type de contrat', 'Set contract type')}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {t(`Voor ${selectedIds.size} geselecteerde vrijwilligers`, `Pour ${selectedIds.size} bénévoles sélectionnés`, `For ${selectedIds.size} selected volunteers`)}
+                </p>
+                <ContractTypePicker
+                  selected={bulkContractTypes}
+                  onChange={setBulkContractTypes}
+                  language={language}
+                  multiSelect={true}
+                />
+                <div className="flex gap-2 mt-4">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowBulkContractType(false)}>
+                    {t('Annuleren', 'Annuler', 'Cancel')}
+                  </Button>
+                  <Button className="flex-1" onClick={handleBulkSetContractType} disabled={bulkContractTypes.size === 0}>
+                    {t('Opslaan', 'Enregistrer', 'Save')}
+                  </Button>
+                </div>
+              </div>
+            </div>
           )}
         </>
       )}

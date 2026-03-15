@@ -2190,6 +2190,35 @@ export type Database = {
           },
         ]
       }
+      member_contract_types: {
+        Row: {
+          contract_type: string
+          created_at: string
+          id: string
+          membership_id: string
+        }
+        Insert: {
+          contract_type: string
+          created_at?: string
+          id?: string
+          membership_id: string
+        }
+        Update: {
+          contract_type?: string
+          created_at?: string
+          id?: string
+          membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_contract_types_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachment_name: string | null
