@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import { useActionCount } from '@/hooks/useActionCount';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut, Moon, Sun,
+  LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut,
   Search, User, Settings, MessageCircle, Bell, ShieldAlert, Ticket, Handshake,
   CreditCard, Award, Heart, ChevronDown, HelpCircle, Sparkles,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
-import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -39,7 +38,6 @@ const ClubOwnerSidebar = ({
   const { language } = useLanguage();
   const { actionCount } = useActionCount(clubId || null);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
-  const { theme, toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
@@ -252,12 +250,6 @@ const ClubOwnerSidebar = ({
               <Sparkles className="w-4 h-4" />
               <span className="flex-1">{t3('Wat is nieuw?', 'Quoi de neuf ?', "What's new?")}</span>
               <span className="text-[10px] text-muted-foreground">v1.0 — {t3('maart', 'mars', 'March')} 2026</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={toggleTheme} className="min-h-[40px]">
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              <span>{theme === 'dark' ? t3('Licht thema', 'Thème clair', 'Light mode') : t3('Donker thema', 'Thème sombre', 'Dark mode')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>

@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
-  HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home, TrendingUp, Calendar,
+  HelpCircle, Building2, Shield, CalendarDays, Home, TrendingUp, Calendar,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useOptionalClubContext } from '@/contexts/ClubContext';
-import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -119,7 +118,6 @@ const VolunteerSidebar = ({
   const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
   const l = labels[language];
-  const { theme, toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const clubCtx = useOptionalClubContext();
 
@@ -328,15 +326,6 @@ const VolunteerSidebar = ({
 
       <SidebarFooter className="p-3">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={toggleTheme} className="min-h-[48px] text-muted-foreground">
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              <span>{theme === 'dark'
-                ? (language === 'nl' ? 'Licht thema' : language === 'fr' ? 'Thème clair' : 'Light mode')
-                : (language === 'nl' ? 'Donker thema' : language === 'fr' ? 'Thème sombre' : 'Dark mode')
-              }</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={() => handleExternalNav('/help')} className="min-h-[48px] text-muted-foreground">
               <HelpCircle className="w-5 h-5" />

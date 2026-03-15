@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard, BarChart3, Edit3, Bell, BellOff } from 'lucide-react';
+import { Camera, User, Mail, Phone, Building2, ShieldCheck, AlertTriangle, ExternalLink, Loader2, CreditCard, BarChart3, Edit3, Bell, BellOff, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Language } from '@/i18n/translations';
@@ -69,6 +70,9 @@ const labels = {
     pushDisable: 'Uitschakelen',
     pushUnavailable: 'Pushmeldingen worden niet ondersteund in deze browser',
     pushDenied: 'Pushmeldingen zijn geblokkeerd. Wijzig dit in je browserinstellingen.',
+    themeTitle: 'Weergave',
+    lightMode: 'Licht thema',
+    darkMode: 'Donker thema',
   },
   fr: {
     title: 'Mon profil',
@@ -104,6 +108,9 @@ const labels = {
     pushDisable: 'Désactiver',
     pushUnavailable: 'Les notifications push ne sont pas supportées dans ce navigateur',
     pushDenied: 'Les notifications push sont bloquées. Modifiez cela dans les paramètres de votre navigateur.',
+    themeTitle: 'Apparence',
+    lightMode: 'Thème clair',
+    darkMode: 'Thème sombre',
   },
   en: {
     title: 'My profile',
@@ -139,6 +146,9 @@ const labels = {
     pushDisable: 'Disable',
     pushUnavailable: 'Push notifications are not supported in this browser',
     pushDenied: 'Push notifications are blocked. Change this in your browser settings.',
+    themeTitle: 'Appearance',
+    lightMode: 'Light mode',
+    darkMode: 'Dark mode',
   },
 };
 
@@ -149,6 +159,7 @@ const formatIban = (value: string) => {
 
 const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpdated, isFirstLogin = false }: EditProfileDialogProps) => {
   const l = labels[language];
+  const { theme, toggleTheme } = useTheme();
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
@@ -521,7 +532,28 @@ const EditProfileDialog = ({ open, onOpenChange, userId, language, onProfileUpda
           )}
         </div>
 
-        {/* Bank details */}
+        {/* Theme toggle */}
+        <div className="space-y-3 mt-6 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            {theme === 'dark' ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+            {l.themeTitle}
+          </h3>
+          <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-card">
+            <div className="flex items-center gap-3">
+              {theme === 'dark' ? <Moon className="w-4 h-4 text-muted-foreground" /> : <Sun className="w-4 h-4 text-muted-foreground" />}
+              <p className="text-sm text-foreground">
+                {theme === 'dark' ? l.darkMode : l.lightMode}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-muted text-foreground hover:bg-muted/80"
+            >
+              {theme === 'dark' ? l.lightMode : l.darkMode}
+            </button>
+          </div>
+        </div>
         <div className="space-y-4 mt-6 pt-6 border-t border-border">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Building2 className="w-4 h-4 text-primary" />
