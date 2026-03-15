@@ -126,13 +126,14 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
       const volunteerIds = (memberships || []).map((m: any) => m.volunteer_id);
       if (volunteerIds.length === 0) { setLoading(false); return; }
 
-      // 2. Parallel: profiles, availability, skills, past signups, existing signups for this task
-      const [profilesRes, availRes, skillsRes, signupsRes, existingSignups] = await Promise.all([
+      // 2. Parallel: profiles, availability, skills, past signups, existing signups, season contracts
+      const [profilesRes, availRes, skillsRes, signupsRes, existingSignups, contractsRes] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email, avatar_url').in('id', volunteerIds),
         supabase.from('volunteer_availability').select('*').in('volunteer_id', volunteerIds),
         supabase.from('volunteer_skills').select('user_id, skill_name').in('user_id', volunteerIds),
         supabase.from('task_signups').select('volunteer_id, task_id').in('volunteer_id', volunteerIds).eq('status', 'assigned'),
         supabase.from('task_signups').select('volunteer_id, status').eq('task_id', task.id),
+        supabase.from('season_contracts').select('volunteer_id, status').eq('club_id', task.club_id),
       ]);
 
       const profiles = profilesRes.data || [];
