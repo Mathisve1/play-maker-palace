@@ -95,8 +95,7 @@ const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
     events: 'événements',
     recommended: 'Recommandé pour vous',
     sportFilter: 'Sport',
-    cityFilter: 'Ville/région',
-    openOnly: 'Uniquement les clubs avec des tâches ouvertes',
+    provinceFilter: 'Province',
   },
   en: {
     badge: 'Community',
