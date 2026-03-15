@@ -949,7 +949,8 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
           </div>
         )}
       </main>
-    </div>
+      </div>
+    </ClubPageLayout>
   );
 };
 
