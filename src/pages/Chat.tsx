@@ -108,6 +108,8 @@ const Chat = () => {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isUserScrolledRef = useRef(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { userId: contextUserId, isOwner } = useClubContext();
 
@@ -363,10 +365,19 @@ const Chat = () => {
     return () => { supabase.removeChannel(channel); };
   }, [activeConversation, userId, conversations, participantNames]);
 
-  // Auto-scroll
+  // Auto-scroll only when user is at the bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!isUserScrolledRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
+
+  const handleMessagesScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    isUserScrolledRef.current = distanceFromBottom > 100;
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -441,6 +452,7 @@ const Chat = () => {
 
   const handleSend = async () => {
     if ((!newMessage.trim() && !attachmentFile) || !activeConversation || !userId) return;
+    isUserScrolledRef.current = false;
     setSending(true);
 
     let attachment: { url: string; type: string; name: string } | null = null;
@@ -644,7 +656,7 @@ const Chat = () => {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.map(msg => {
                   const isMe = msg.sender_id === userId;
                   return (
