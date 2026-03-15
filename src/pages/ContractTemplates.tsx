@@ -508,7 +508,7 @@ const ContractTemplates = () => {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {eventTemplates.map(tmpl => {
-                  const taskCount = tmpl.template_data?.tasks?.length || 0;
+                  const taskCount = Array.isArray(tmpl.groups) ? tmpl.groups.length : 0;
                   return (
                     <Card key={tmpl.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-5">
