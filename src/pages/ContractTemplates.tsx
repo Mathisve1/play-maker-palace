@@ -118,7 +118,7 @@ const ContractTemplates = () => {
       supabase.from('certificate_designs').select('id, name, accent_color, issuer_name, created_at').eq('club_id', clubId).order('created_at', { ascending: false }),
       supabase.from('closing_templates').select('id, name, created_at').eq('club_id', clubId).order('created_at'),
       supabase.from('closing_template_items').select('id, template_id'),
-      supabase.from('event_templates').select('id, name, description, template_data, created_at').eq('club_id', clubId).order('created_at', { ascending: false }),
+      supabase.from('event_templates').select('id, name, description, groups, location, created_at').eq('club_id', clubId).order('created_at', { ascending: false }),
     ]);
 
     setContractTemplates(contractsRes.data || []);
