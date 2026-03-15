@@ -22,6 +22,7 @@ import IncidentMap from '@/components/safety/IncidentMap';
 import ClosingProcedureManager from '@/components/safety/ClosingProcedureManager';
 import VolunteerClosingView from '@/components/safety/VolunteerClosingView';
 import { generateSafetyReportPdf, type SafetyIncidentForPdf, type SafetyZoneForPdf, type ClosingTaskForPdf } from '@/lib/generateSafetyReportPdf';
+import { sendPush, sendPushToClub } from '@/lib/sendPush';
 
 // Types
 interface SafetyZone {
