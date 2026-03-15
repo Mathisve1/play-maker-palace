@@ -5682,6 +5682,64 @@ export type Database = {
           },
         ]
       }
+      volunteer_season_usage: {
+        Row: {
+          billed_at: string | null
+          club_id: string
+          completed_tasks: number
+          created_at: string
+          id: string
+          is_billed: boolean
+          season_id: string
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          billed_at?: string | null
+          club_id: string
+          completed_tasks?: number
+          created_at?: string
+          id?: string
+          is_billed?: boolean
+          season_id: string
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          billed_at?: string | null
+          club_id?: string
+          completed_tasks?: number
+          created_at?: string
+          id?: string
+          is_billed?: boolean
+          season_id?: string
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_season_usage_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_season_usage_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_season_usage_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_skills: {
         Row: {
           created_at: string
