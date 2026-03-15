@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Banknote, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Banknote, CheckCircle, Clock, AlertTriangle, Wallet } from 'lucide-react';
 
 interface SepaPayoutItem {
   id: string;
@@ -19,11 +20,26 @@ interface Props {
   language: string;
 }
 
+/**
+ * Add N business days (Mon-Fri) to a date.
+ */
+function addBusinessDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  let added = 0;
+  while (added < days) {
+    result.setDate(result.getDate() + 1);
+    const dow = result.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return result;
+}
+
 const VolunteerPaymentsTab = ({ sepaPayouts, language }: Props) => {
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const paidTotal = sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
   const processingTotal = sepaPayouts.filter(s => ['signed', 'awaiting_signature', 'pending'].includes(s.batch_status) && !s.error_flag).reduce((s, p) => s + p.amount, 0);
+  const seasonTotal = useMemo(() => sepaPayouts.filter(s => !s.error_flag).reduce((s, p) => s + p.amount, 0), [sepaPayouts]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-4">
@@ -35,10 +51,14 @@ const VolunteerPaymentsTab = ({ sepaPayouts, language }: Props) => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('Totaal dit seizoen', 'Total cette saison', 'Season total')}</p>
+              <p className="text-2xl font-heading font-bold text-foreground mt-1">€{seasonTotal.toFixed(2)}</p>
+            </div>
             <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('Betaald', 'Payé', 'Paid')}</p>
-              <p className="text-2xl font-heading font-bold text-green-600 mt-1">€{paidTotal.toFixed(2)}</p>
+              <p className="text-2xl font-heading font-bold text-accent mt-1">€{paidTotal.toFixed(2)}</p>
             </div>
             <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('Verwerken', 'En cours', 'Processing')}</p>
@@ -51,6 +71,7 @@ const VolunteerPaymentsTab = ({ sepaPayouts, language }: Props) => {
           </h3>
           {sepaPayouts.map((payout, i) => {
             const isExported = ['downloaded', 'signed'].includes(payout.batch_status);
+            const estimatedDate = addBusinessDays(new Date(payout.created_at), 2);
             return (
               <motion.div key={payout.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                 className={`bg-card rounded-2xl p-5 shadow-sm border ${payout.error_flag ? 'border-destructive/30' : 'border-border'}`}>
@@ -59,6 +80,9 @@ const VolunteerPaymentsTab = ({ sepaPayouts, language }: Props) => {
                     <p className="text-sm font-medium text-foreground truncate">{payout.task_title || t('Taak', 'Tâche', 'Task')}</p>
                     {payout.club_name && <p className="text-xs text-muted-foreground">{payout.club_name}</p>}
                     <p className="text-lg font-heading font-bold text-foreground mt-1">€{payout.amount.toFixed(2)}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {t('Verwachte storting', 'Date estimée', 'Expected deposit')}: {estimatedDate.toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
                   </div>
                   <div className="shrink-0">
                     {payout.error_flag ? (
