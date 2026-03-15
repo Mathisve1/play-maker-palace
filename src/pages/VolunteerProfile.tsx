@@ -130,7 +130,7 @@ const VolunteerProfile = () => {
       // Fetch profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('id, full_name, email, avatar_url, bio, city, phone, created_at')
+        .select('id, full_name, email, avatar_url, bio, phone, created_at')
         .eq('id', id)
         .single();
 
