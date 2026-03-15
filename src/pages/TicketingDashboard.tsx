@@ -866,6 +866,30 @@ const TicketingDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Reminder confirmation dialog */}
+      <AlertDialog open={showReminderDialog} onOpenChange={setShowReminderDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{labels.reminderConfirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {labels.reminderConfirmDesc.replace('{count}', String(sentVolunteers.length))}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sendingReminders}>
+              {language === 'nl' ? 'Annuleren' : language === 'fr' ? 'Annuler' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSendReminders} disabled={sendingReminders}>
+              {sendingReminders ? (
+                <><Loader2 className="w-4 h-4 animate-spin mr-1" /> {labels.reminderSending}</>
+              ) : (
+                <><Bell className="w-4 h-4 mr-1" /> {labels.sendReminder}</>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ClubPageLayout>
   );
 };
