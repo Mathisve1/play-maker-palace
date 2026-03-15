@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
   CalendarPlus, LayoutGrid, Inbox, User, TrendingUp, Moon, Sun, Bell, Search,
+  ScrollText,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useTheme } from '@/hooks/useTheme';
