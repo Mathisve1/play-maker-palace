@@ -417,6 +417,20 @@ const VolunteerProfileDialog = ({
             <p className="text-sm text-muted-foreground italic">{l.noBankDetails}</p>
           )}
         </div>
+
+        {/* GDPR Export */}
+        <div className="pt-3 border-t border-border">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5"
+            onClick={handleGdprExport}
+            disabled={exportingGdpr}
+          >
+            {exportingGdpr ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {language === 'nl' ? 'GDPR Export' : language === 'fr' ? 'Export RGPD' : 'GDPR Export'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
