@@ -234,6 +234,7 @@ const TaskDetail = () => {
   const [hasBriefing, setHasBriefing] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const [contractStatus, setContractStatus] = useState<'signed' | 'pending' | 'none' | 'loading'>('loading');
+  const [myZone, setMyZone] = useState<{ name: string; max_capacity: number | null } | null>(null);
 
   const l = labels[language];
 
@@ -269,6 +270,20 @@ const TaskDetail = () => {
       // Check if task has a briefing
       supabase.from('briefings').select('id').eq('task_id', id!).limit(1).then(({ data: briefData }) => {
         setHasBriefing(!!(briefData && briefData.length > 0));
+      });
+
+      // Load zone assignment for this volunteer on this task
+      supabase.from('task_zones').select('id, name, max_capacity').eq('task_id', id!).then(async ({ data: zones }) => {
+        if (!zones || zones.length === 0) return;
+        const zoneIds = zones.map(z => z.id);
+        const { data: assignments } = await supabase.from('task_zone_assignments')
+          .select('zone_id')
+          .eq('volunteer_id', session.user.id)
+          .in('zone_id', zoneIds);
+        if (assignments && assignments.length > 0) {
+          const zone = zones.find(z => z.id === assignments[0].zone_id);
+          if (zone) setMyZone({ name: zone.name, max_capacity: zone.max_capacity });
+        }
       });
 
       // Check season contract status for this club
@@ -801,7 +816,31 @@ const TaskDetail = () => {
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* Zone assignment */}
+              {myZone && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-4 h-4 text-accent" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {language === 'nl' ? 'Jouw zone' : language === 'fr' ? 'Votre zone' : 'Your zone'}
+                    </p>
+                    <div className="mt-1 bg-accent/5 rounded-xl p-3 border border-accent/10">
+                      <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-accent" />
+                        {myZone.name}
+                      </p>
+                      {myZone.max_capacity && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {language === 'nl' ? 'Capaciteit' : language === 'fr' ? 'Capacité' : 'Capacity'}: {myZone.max_capacity}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {task.notes && (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">

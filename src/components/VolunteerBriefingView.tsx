@@ -148,6 +148,7 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [completedBlocks, setCompletedBlocks] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState(-1); // -1 = intro, allBlocks.length = done
+  const [myZone, setMyZone] = useState<{ name: string; max_capacity: number | null } | null>(null);
   const l = labels[language];
 
   // Flatten all blocks across groups for step-by-step
@@ -159,7 +160,22 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
 
   useEffect(() => {
     loadBriefing();
+    loadZoneAssignment();
   }, [taskId]);
+
+  const loadZoneAssignment = async () => {
+    const { data: zones } = await supabase.from('task_zones').select('id, name, max_capacity').eq('task_id', taskId);
+    if (!zones || zones.length === 0) return;
+    const zoneIds = zones.map(z => z.id);
+    const { data: assignments } = await supabase.from('task_zone_assignments')
+      .select('zone_id')
+      .eq('volunteer_id', userId)
+      .in('zone_id', zoneIds);
+    if (assignments && assignments.length > 0) {
+      const zone = zones.find(z => z.id === assignments[0].zone_id);
+      if (zone) setMyZone({ name: zone.name, max_capacity: zone.max_capacity });
+    }
+  };
 
   // Cache to localStorage for offline access
   const cacheData = useCallback((data: BriefingData) => {
@@ -435,6 +451,22 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
                   {totalSteps} {l.step.toLowerCase()}{totalSteps !== 1 ? (language === 'nl' ? 'pen' : 's') : ''}
                 </p>
               </div>
+              {myZone && (
+                <div className="w-full max-w-xs mx-auto bg-accent/5 rounded-xl p-4 border border-accent/10 text-left">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                    {language === 'nl' ? 'Jouw zone' : language === 'fr' ? 'Votre zone' : 'Your zone'}
+                  </p>
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-accent" />
+                    {myZone.name}
+                  </p>
+                  {myZone.max_capacity && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'nl' ? 'Capaciteit' : language === 'fr' ? 'Capacité' : 'Capacity'}: {myZone.max_capacity}
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="flex flex-col items-center gap-3">
                 <Progress value={progressPct} className="h-2 w-full max-w-xs" />
                 <p className="text-xs text-muted-foreground">
