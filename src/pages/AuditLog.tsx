@@ -3,6 +3,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useOptionalClubContext } from '@/contexts/ClubContext';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
