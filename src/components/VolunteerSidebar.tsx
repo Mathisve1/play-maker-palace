@@ -78,6 +78,7 @@ const labels: Record<Language, Record<string, string>> = {
     academy: 'Académie',
     loyalty: 'Fidélité',
     safety: 'Contrôle de sécurité',
+    availability: 'Disponibilité',
     settings: 'Paramètres',
     help: 'Besoin d\'aide?',
     logout: 'Déconnexion',
