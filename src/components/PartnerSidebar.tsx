@@ -16,6 +16,7 @@ interface PartnerSidebarProps {
   setActiveTab: (tab: string) => void;
   onLogout: () => void;
   onOpenProfile: () => void;
+  tasksBadge?: number;
 }
 
 const PartnerSidebar = ({ partnerName, activeTab, setActiveTab, onLogout, onOpenProfile }: PartnerSidebarProps) => {
