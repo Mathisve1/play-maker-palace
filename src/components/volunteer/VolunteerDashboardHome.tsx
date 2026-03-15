@@ -19,6 +19,7 @@ import NearbyClubsWidget from '@/components/community/NearbyClubsWidget';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import EventGroupChat from '@/components/EventGroupChat';
 import TodayPlanningSection from '@/components/volunteer/TodayPlanningSection';
+import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
 import type { VolunteerTask, TaskSignup, VolunteerPayment, SignatureContract, SepaPayoutItem, VolunteerEventData } from '@/types/volunteer';
 import { volunteerDashboardLabels } from '@/types/volunteer';
 
@@ -332,6 +333,7 @@ const VolunteerDashboardHome = ({
         )}
       </div>
 
+      {currentUserId && <VolunteerLoyaltyProgress userId={currentUserId} language={language} />}
       <NearbyClubsWidget userId={currentUserId} language={language} />
       <VolunteerActivitiesSection items={activityItems} language={language} />
       {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
