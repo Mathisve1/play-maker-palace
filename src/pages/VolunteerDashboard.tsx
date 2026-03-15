@@ -212,7 +212,7 @@ const VolunteerDashboard = () => {
       // ===== CRITICAL PATH: Tasks + signups (show UI fast) =====
       const [tasksRes, signupsRes] = await Promise.all([
         supabase.from('tasks').select('*, clubs(name, sport, location)').eq('status', 'open').order('task_date', { ascending: true }),
-        supabase.from('task_signups').select('task_id, status, checked_in_at').eq('volunteer_id', uid),
+        (supabase as any).from('task_signups').select('task_id, status, checked_in_at').eq('volunteer_id', uid),
       ]);
 
       // Process tasks immediately so UI renders
