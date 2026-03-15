@@ -86,7 +86,7 @@ const CloseSeasonWizard = ({ open, onClose, clubId, seasonId, seasonName, langua
       taskIds.length > 0
         ? supabase.from('hour_confirmations').select('id, final_amount, task_id').in('status', ['confirmed', 'auto_confirmed']).in('task_id', taskIds)
         : Promise.resolve({ data: [] }),
-      supabase.from('season_contracts').select('id, status, archived_at').eq('season_id', seasonId).eq('club_id', clubId),
+      (supabase.from('season_contracts') as any).select('id, status, archived_at').eq('season_id', seasonId).eq('club_id', clubId),
     ]);
 
     // Step 0
