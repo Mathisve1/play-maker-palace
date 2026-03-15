@@ -452,6 +452,7 @@ const Chat = () => {
 
   const handleSend = async () => {
     if ((!newMessage.trim() && !attachmentFile) || !activeConversation || !userId) return;
+    isUserScrolledRef.current = false;
     setSending(true);
 
     let attachment: { url: string; type: string; name: string } | null = null;
