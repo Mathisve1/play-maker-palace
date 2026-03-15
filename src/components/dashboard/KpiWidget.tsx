@@ -12,7 +12,7 @@ interface KpiWidgetProps {
 }
 
 const iconMap: Record<string, any> = {
-  CalendarDays, Clock, Users, FileSignature, Ticket, Shield, Euro, BarChart3,
+  CalendarDays, Clock, Users, FileSignature, Ticket, Shield, Euro, BarChart3, CalendarRange, Inbox,
 };
 
 const colorMap: Record<string, { icon: string; bg: string; accent: string }> = {
