@@ -186,6 +186,13 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
             score += 20; // Has availability set, but no date to match
           }
 
+          // Event-specific availability boost
+          const eventAvailStatus = eventAvailMap.get(p.id);
+          if (eventAvailStatus === 'available') score += 30;
+          else if (eventAvailStatus === 'maybe') score += 10;
+          else if (eventAvailStatus === 'unavailable') score -= 20;
+          if (eventAvailStatus === 'available') availMatch = true;
+
           // Skill match (check task title/description words)
           const volSkills = skills.filter((s: any) => s.user_id === p.id).map((s: any) => s.skill_name);
           const matchingSkills = volSkills.filter((sk: string) =>
