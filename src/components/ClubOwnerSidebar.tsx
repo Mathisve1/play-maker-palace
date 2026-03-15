@@ -39,7 +39,6 @@ const ClubOwnerSidebar = ({
   const { actionCount } = useActionCount(clubId || null);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
