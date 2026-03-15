@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import MonthlyPlanningKPIs from '@/components/MonthlyPlanningKPIs';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3, UserCheck } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3, UserCheck, Share2 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
@@ -1293,10 +1293,23 @@ const ClubOwnerDashboard = () => {
               {language === 'nl' ? 'Overzicht van je club' : language === 'fr' ? 'Aperçu de votre club' : 'Your club overview'}
             </p>
           </div>
-          <button onClick={() => navigate('/events-manager')} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-            <Plus className="w-4 h-4" />
-            {language === 'nl' ? 'Nieuw' : language === 'fr' ? 'Nouveau' : 'New'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/club/${clubId}`;
+                navigator.clipboard.writeText(url);
+                toast.success(language === 'nl' ? 'Wervingslink gekopieerd!' : language === 'fr' ? 'Lien copié !' : 'Recruitment link copied!');
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+              {language === 'nl' ? 'Deel wervingspagina' : language === 'fr' ? 'Partager' : 'Share recruitment page'}
+            </button>
+            <button onClick={() => navigate('/events-manager')} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+              <Plus className="w-4 h-4" />
+              {language === 'nl' ? 'Nieuw' : language === 'fr' ? 'Nouveau' : 'New'}
+            </button>
+          </div>
         </motion.div>
 
         {/* Customizable Widget Grid */}

@@ -1234,6 +1234,7 @@ export type Database = {
           referral_bonus_points: number
           sport: string | null
           stripe_account_id: string | null
+          why_volunteer: string | null
         }
         Insert: {
           allow_shift_swaps?: boolean
@@ -1247,6 +1248,7 @@ export type Database = {
           referral_bonus_points?: number
           sport?: string | null
           stripe_account_id?: string | null
+          why_volunteer?: string | null
         }
         Update: {
           allow_shift_swaps?: boolean
@@ -1260,6 +1262,7 @@ export type Database = {
           referral_bonus_points?: number
           sport?: string | null
           stripe_account_id?: string | null
+          why_volunteer?: string | null
         }
         Relationships: []
       }
