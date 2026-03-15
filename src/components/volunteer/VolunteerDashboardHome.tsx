@@ -321,6 +321,7 @@ const VolunteerDashboardHome = ({
         )}
       </div>
 
+      <NearbyClubsWidget userId={currentUserId} language={language} />
       <VolunteerActivitiesSection items={activityItems} language={language} />
       {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
       {currentUserId && <VolunteerSeasonOverview userId={currentUserId} language={language} />}
