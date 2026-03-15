@@ -241,6 +241,7 @@ const VolunteerManagement = () => {
   };
 
   const filtered = useMemo(() => {
+    const now = Date.now();
     return volunteers.filter(v => {
       if (search && !v.full_name.toLowerCase().includes(search.toLowerCase()) && !v.email.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && !v.contracts.some(c => c.category === filterCategory)) return false;
@@ -250,9 +251,22 @@ const VolunteerManagement = () => {
       if (filterStatus === 'no_contract' && v.contracts.some(c => c.status === 'signed')) return false;
       if (filterStatus === 'paying' && !v.is_paying) return false;
       if (filterStatus === 'trial' && v.is_paying) return false;
+      // Task count filter
+      if (filterTaskCount === 'none' && v.task_count > 0) return false;
+      if (filterTaskCount === '1-5' && (v.task_count < 1 || v.task_count > 5)) return false;
+      if (filterTaskCount === '5+' && v.task_count < 5) return false;
+      // Join date filter
+      if (filterJoinDate !== 'all' && v.joined_at) {
+        const joinMs = now - new Date(v.joined_at).getTime();
+        const days = joinMs / (1000 * 60 * 60 * 24);
+        if (filterJoinDate === 'week' && days > 7) return false;
+        if (filterJoinDate === 'month' && days > 30) return false;
+        if (filterJoinDate === '3months' && days > 90) return false;
+        if (filterJoinDate === 'older' && days <= 90) return false;
+      } else if (filterJoinDate !== 'all' && !v.joined_at) return false;
       return true;
     });
-  }, [volunteers, search, filterCategory, filterStatus, filterMemberType]);
+  }, [volunteers, search, filterCategory, filterStatus, filterMemberType, filterTaskCount, filterJoinDate]);
 
   const stats = useMemo(() => ({
     total: volunteers.length,
