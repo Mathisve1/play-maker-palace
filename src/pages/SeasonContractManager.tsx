@@ -262,6 +262,44 @@ const SeasonContractManager = () => {
             </CardContent>
           </Card>
         ) : (
+          <>
+            {/* Attendance KPI Widget */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <UserCheck className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">{attendanceKpis.totalTasks}</p>
+                    <p className="text-xs text-muted-foreground">{t('Taken dit seizoen', 'Tâches cette saison', 'Tasks this season')}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className={`text-2xl font-bold ${attendanceKpis.avgAttendance < 50 ? 'text-destructive' : 'text-foreground'}`}>{attendanceKpis.avgAttendance}%</p>
+                    <p className="text-xs text-muted-foreground">{t('Gem. aanwezigheidsgraad', 'Taux de présence moyen', 'Avg attendance rate')}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <Euro className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">€{attendanceKpis.totalCompensation.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">{t('Totale vergoedingen', 'Compensations totales', 'Total compensations')}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">{t('Actief seizoen', 'Saison active', 'Active season')}</TabsTrigger>
