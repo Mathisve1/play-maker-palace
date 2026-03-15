@@ -840,6 +840,7 @@ const ReportingDashboard = () => {
         <PageNavTabs tabs={[
           { label: L.reporting, path: '/reporting' },
           { label: 'Analytics', path: '/analytics' },
+          { label: L.reportBuilder, path: '/report-builder' },
           { label: language === 'nl' ? 'Audit Log' : language === 'fr' ? 'Journal d\'audit' : 'Audit Log', path: '/audit-log' },
         ]} />
         <div className="flex items-center justify-between">
