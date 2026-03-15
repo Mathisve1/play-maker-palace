@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
