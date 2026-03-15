@@ -503,16 +503,17 @@ export function OnboardingForm({ language, onComplete, saving, onLanguageChange 
             </div>
 
             {/* Identity confirmation checkbox */}
-            <label className={cn("flex items-start gap-3 cursor-pointer group p-3 rounded-xl border transition-colors", formData.identityConfirmed ? "border-primary/30 bg-primary/5" : "border-border", errors.identityConfirmed && "border-destructive")}>
+            <div className={cn("flex items-start gap-2 p-3 rounded-xl border transition-colors", formData.identityConfirmed ? "border-primary/30 bg-primary/5" : "border-border", errors.identityConfirmed && "border-destructive")}>
               <Checkbox
+                id="identityConfirmed"
                 checked={formData.identityConfirmed}
                 onCheckedChange={(checked) => update('identityConfirmed', checked === true)}
                 className="mt-0.5"
               />
-              <span className="text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
+              <label htmlFor="identityConfirmed" className="text-sm text-foreground leading-snug cursor-pointer">
                 {(l as any).identityConfirm}
-              </span>
-            </label>
+              </label>
+            </div>
             {errors.identityConfirmed && <p className="text-xs text-destructive">{errors.identityConfirmed}</p>}
           </div>
         )}
@@ -662,16 +663,17 @@ export function OnboardingForm({ language, onComplete, saving, onLanguageChange 
                 <AlertTriangle className="w-3.5 h-3.5 text-primary shrink-0" />
                 <p className="text-[10px] text-primary/80 leading-snug">{l.legalWarning}</p>
               </div>
-              <label className={cn("flex items-start gap-3 cursor-pointer group", errors.consent && "text-destructive")}>
+              <div className={cn("flex items-start gap-2", errors.consent && "text-destructive")}>
                 <Checkbox
+                  id="bankConsent"
                   checked={formData.bankConsentGiven}
                   onCheckedChange={(checked) => update('bankConsentGiven', checked === true)}
                   className="mt-0.5"
                 />
-                <span className="text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
+                <label htmlFor="bankConsent" className="text-sm text-foreground leading-snug cursor-pointer">
                   {l.consentAgree}
-                </span>
-              </label>
+                </label>
+              </div>
               {errors.consent && <p className="text-xs text-destructive">{errors.consent}</p>}
             </div>
           </div>

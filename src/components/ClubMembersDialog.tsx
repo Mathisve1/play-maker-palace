@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { X, UserPlus, Copy, Trash2, Shield, ChevronDown, Info, ChevronRight } from 'lucide-react';
@@ -60,6 +60,19 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   const [inviteRole, setInviteRole] = useState<ClubRole>('medewerker');
   const [inviting, setInviting] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState<string | null>(null);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close role dropdown on outside click
+  useEffect(() => {
+    if (!showRoleDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(e.target as Node)) {
+        setShowRoleDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showRoleDropdown]);
 
   // Contract type step for new invites
   const [inviteStep, setInviteStep] = useState<'form' | 'contract-type'>('form');
@@ -503,7 +516,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
 
                 <div className="flex items-center gap-2 shrink-0">
                   {canManage && member.user_id !== currentUserId ? (
-                    <div className="relative">
+                    <div className="relative" ref={showRoleDropdown === member.id ? roleDropdownRef : undefined}>
                       <button
                         onClick={() => setShowRoleDropdown(showRoleDropdown === member.id ? null : member.id)}
                         className={`px-2.5 py-1 text-xs rounded-full font-medium flex items-center gap-1 ${roleColors[member.role]}`}
