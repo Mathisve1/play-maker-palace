@@ -119,7 +119,7 @@ const VolunteerSidebar = ({
   const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
   const l = labels[language];
-  const { theme, toggleTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const clubCtx = useOptionalClubContext();
 
