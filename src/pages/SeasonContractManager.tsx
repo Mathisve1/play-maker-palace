@@ -253,10 +253,18 @@ const SeasonContractManager = () => {
               </p>
             )}
           </div>
-          <Button onClick={() => setShowCreateSeason(true)} variant="outline" size="sm">
-            <Plus className="w-4 h-4 mr-1" />
-            {t('Nieuw seizoen', 'Nouvelle saison', 'New season')}
-          </Button>
+          <div className="flex gap-2">
+            {activeSeason && (
+              <Button onClick={() => setShowCloseWizard(true)} variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/5">
+                <Lock className="w-4 h-4 mr-1" />
+                {t('Sluit seizoen af', 'Clôturer la saison', 'Close season')}
+              </Button>
+            )}
+            <Button onClick={() => setShowCreateSeason(true)} variant="outline" size="sm">
+              <Plus className="w-4 h-4 mr-1" />
+              {t('Nieuw seizoen', 'Nouvelle saison', 'New season')}
+            </Button>
+          </div>
         </div>
 
         {!activeSeason ? (
