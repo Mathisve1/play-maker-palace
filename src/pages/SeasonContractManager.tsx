@@ -160,7 +160,7 @@ const SeasonContractManager = () => {
   }
 
   return (
-    <ClubPageLayout title={t('Seizoenscontracten', 'Contrats saisonniers', 'Season Contracts')}>
+    <ClubPageLayout>
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

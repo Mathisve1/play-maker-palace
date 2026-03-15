@@ -114,6 +114,8 @@ const App = () => {
             <Route path="/club-invite/:token" element={<ClubInviteAccept />} />
             
             <Route path="/contract-builder" element={<RequireAuth redirectTo="/club-login"><ContractBuilder /></RequireAuth>} />
+            <Route path="/contract-templates" element={<RequireAuth redirectTo="/club-login"><ContractTemplates /></RequireAuth>} />
+            <Route path="/season-contracts" element={<RequireAuth redirectTo="/club-login"><SeasonContractManager /></RequireAuth>} />
             <Route path="/briefing-builder" element={<RequireAuth redirectTo="/club-login"><BriefingBuilder /></RequireAuth>} />
             <Route path="/compliance" element={<RequireAuth redirectTo="/club-login"><ComplianceDashboard /></RequireAuth>} />
             <Route path="/loyalty" element={<RequireAuth redirectTo="/club-login"><LoyaltyPrograms /></RequireAuth>} />
