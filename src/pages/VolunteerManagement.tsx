@@ -457,6 +457,15 @@ const VolunteerManagement = () => {
                     )}
                   </div>
 
+                  {/* Contract status indicator */}
+                  <ContractStatusIndicator
+                    contracts={vol.contracts}
+                    volunteerId={vol.id}
+                    volunteerName={vol.full_name}
+                    language={language}
+                    onResend={(id) => openSendDialog([id])}
+                  />
+
                   {/* Contract badges */}
                   <div className="hidden md:flex items-center gap-1.5 flex-wrap">
                     {vol.contracts.length === 0 ? (
