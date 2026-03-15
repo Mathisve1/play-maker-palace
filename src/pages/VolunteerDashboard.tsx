@@ -1321,6 +1321,16 @@ const VolunteerDashboard = () => {
           }}
         />
       )}
+
+      {/* Volunteer Onboarding Tour */}
+      {currentUserId && (
+        <VolunteerOnboardingTour
+          open={showVolunteerTour && !showVolunteerOnboarding}
+          onClose={() => setShowVolunteerTour(false)}
+          onNavigateTab={(tab) => setActiveTab(tab as VolunteerTab)}
+          userId={currentUserId}
+        />
+      )}
     </DashboardLayout>
   );
 };
