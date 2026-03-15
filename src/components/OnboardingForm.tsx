@@ -216,6 +216,7 @@ const steps = [
 ];
 
 export function OnboardingForm({ language, onComplete, saving, onLanguageChange }: OnboardingFormProps) {
+  const isMobile = useIsMobile();
   const l = labels[language];
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<OnboardingFormData>({
