@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Euro,
   Users, Trash2, Edit, Send, CalendarDays,
-  Copy, Loader2, Play,
+  Copy, Loader2, Play, ArrowRight,
 } from 'lucide-react';
 import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 import MonthlyCalendarGrid from '@/components/monthly-planning/MonthlyCalendarGrid';
