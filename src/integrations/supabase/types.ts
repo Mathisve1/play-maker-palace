@@ -4096,10 +4096,12 @@ export type Database = {
           barcode: string | null
           checkin_count: number
           club_id: string
+          contract_type: string | null
           created_at: string
           document_url: string | null
           docuseal_submission_id: number | null
           id: string
+          is_billable: boolean | null
           season_id: string
           signed_at: string | null
           signing_url: string | null
@@ -4114,10 +4116,12 @@ export type Database = {
           barcode?: string | null
           checkin_count?: number
           club_id: string
+          contract_type?: string | null
           created_at?: string
           document_url?: string | null
           docuseal_submission_id?: number | null
           id?: string
+          is_billable?: boolean | null
           season_id: string
           signed_at?: string | null
           signing_url?: string | null
@@ -4132,10 +4136,12 @@ export type Database = {
           barcode?: string | null
           checkin_count?: number
           club_id?: string
+          contract_type?: string | null
           created_at?: string
           document_url?: string | null
           docuseal_submission_id?: number | null
           id?: string
+          is_billable?: boolean | null
           season_id?: string
           signed_at?: string | null
           signing_url?: string | null
