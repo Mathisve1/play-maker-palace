@@ -78,7 +78,14 @@ const EventsManager = () => {
   const [newGroupWristbandLabel, setNewGroupWristbandLabel] = useState('');
   const [newGroupMaterialsNote, setNewGroupMaterialsNote] = useState('');
   const [duplicatingEvent, setDuplicatingEvent] = useState<string | null>(null);
+  const [duplicateDateDialog, setDuplicateDateDialog] = useState<string | null>(null);
+  const [duplicateNewDate, setDuplicateNewDate] = useState('');
   const [confirmDeleteEvent, setConfirmDeleteEvent] = useState<string | null>(null);
+  const [showTaskSetPicker, setShowTaskSetPicker] = useState(false);
+  const [taskSetPickerEventId, setTaskSetPickerEventId] = useState<string | null>(null);
+  const [taskSets, setTaskSets] = useState<{ id: string; name: string; items: { template_id: string }[] }[]>([]);
+  const [taskTemplatesMap, setTaskTemplatesMap] = useState<Record<string, any>>({});
+  const [applyingSet, setApplyingSet] = useState<string | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventData | null>(null);
   const [editEventForm, setEditEventForm] = useState({ title: '', description: '', event_date: '', location: '' });
@@ -324,29 +331,38 @@ const EventsManager = () => {
     setCreatingGroupTask(false);
   };
 
-  const handleDuplicateEvent = async (eventId: string) => {
+  const openDuplicateDialog = (eventId: string) => {
+    const event = events.find(e => e.id === eventId);
+    setDuplicateDateDialog(eventId);
+    setDuplicateNewDate(event?.event_date ? event.event_date.slice(0, 16) : '');
+  };
+
+  const handleDuplicateEvent = async () => {
+    if (!duplicateDateDialog || !clubId) return;
+    const eventId = duplicateDateDialog;
     setDuplicatingEvent(eventId);
     const event = events.find(e => e.id === eventId);
-    if (!event || !clubId) return;
+    if (!event) { setDuplicatingEvent(null); setDuplicateDateDialog(null); return; }
     const { data: newEv, error } = await supabase.from('events').insert({
       club_id: clubId, title: `${event.title} (kopie)`, description: event.description,
-      event_date: event.event_date, location: event.location,
+      event_date: duplicateNewDate || event.event_date, location: event.location,
     } as any).select('*').maybeSingle();
-    if (error || !newEv) { toast.error(error?.message || 'Failed'); setDuplicatingEvent(null); return; }
+    if (error || !newEv) { toast.error(error?.message || 'Failed'); setDuplicatingEvent(null); setDuplicateDateDialog(null); return; }
 
     const groups = eventGroups.filter(g => g.event_id === eventId);
     for (const group of groups) {
       const { data: newGrp } = await supabase.from('event_groups').insert({
         event_id: newEv.id, name: group.name, color: group.color, sort_order: group.sort_order,
+        wristband_color: group.wristband_color, wristband_label: group.wristband_label, materials_note: group.materials_note,
       } as any).select('*').maybeSingle();
       if (newGrp) {
         setEventGroups(prev => [...prev, newGrp]);
         const groupTasks = tasks.filter(t => t.event_group_id === group.id);
         for (const task of groupTasks) {
           const { data: newTask } = await supabase.from('tasks').insert({
-            club_id: clubId, title: task.title, task_date: task.task_date, location: task.location,
+            club_id: clubId, title: task.title, task_date: duplicateNewDate || task.task_date, location: task.location,
             spots_available: task.spots_available, event_id: newEv.id, event_group_id: newGrp.id,
-          } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
+          } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
           if (newTask) setTasks(prev => [...prev, newTask]);
         }
       }
@@ -354,6 +370,49 @@ const EventsManager = () => {
     setEvents(prev => [newEv, ...prev]);
     toast.success(t3('Evenement gedupliceerd!', 'Événement dupliqué!', 'Event duplicated!'));
     setDuplicatingEvent(null);
+    setDuplicateDateDialog(null);
+  };
+
+  const loadTaskSetsForPicker = async (eventId: string) => {
+    setTaskSetPickerEventId(eventId);
+    setShowTaskSetPicker(true);
+    const [setsRes, ttRes] = await Promise.all([
+      supabase.from('task_template_sets').select('id, name').eq('club_id', clubId!),
+      supabase.from('task_templates').select('*').eq('club_id', clubId!),
+    ]);
+    const sets = setsRes.data || [];
+    const tts = ttRes.data || [];
+    const map: Record<string, any> = {};
+    tts.forEach((t: any) => { map[t.id] = t; });
+    setTaskTemplatesMap(map);
+
+    if (sets.length > 0) {
+      const { data: items } = await supabase.from('task_template_set_items').select('*').in('set_id', sets.map((s: any) => s.id));
+      setTaskSets(sets.map((s: any) => ({ ...s, items: (items || []).filter((i: any) => i.set_id === s.id) })));
+    } else {
+      setTaskSets([]);
+    }
+  };
+
+  const handleApplyTaskSet = async (setId: string) => {
+    if (!clubId || !taskSetPickerEventId) return;
+    setApplyingSet(setId);
+    const set = taskSets.find(s => s.id === setId);
+    if (!set) { setApplyingSet(null); return; }
+
+    for (const item of set.items) {
+      const tt = taskTemplatesMap[item.template_id];
+      if (!tt) continue;
+      const { data: newTask } = await supabase.from('tasks').insert({
+        club_id: clubId, title: tt.name, description: tt.description,
+        location: tt.location, spots_available: tt.required_volunteers,
+        event_id: taskSetPickerEventId,
+      } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').maybeSingle();
+      if (newTask) setTasks(prev => [...prev, newTask]);
+    }
+    toast.success(t3('Taken aangemaakt vanuit set!', 'Tâches créées à partir de l\'ensemble!', 'Tasks created from set!'));
+    setApplyingSet(null);
+    setShowTaskSetPicker(false);
   };
 
   const handleDeleteEvent = async (eventId: string) => {
@@ -921,6 +980,74 @@ const EventsManager = () => {
         onCreateFromTemplate={handleCreateFromTemplate}
       />
     )}
+
+    {/* Duplicate Event Date Picker */}
+    <AnimatePresence>
+      {duplicateDateDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDuplicateDateDialog(null)}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-sm">
+            <h2 className="text-lg font-heading font-semibold text-foreground mb-4">
+              {t3('Evenement dupliceren', 'Dupliquer l\'événement', 'Duplicate event')}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">{t3('Kies de nieuwe datum voor het gedupliceerde evenement.', 'Choisissez la nouvelle date.', 'Choose the new date for the duplicated event.')}</p>
+            <div className="mb-4">
+              <label className={labelClass}>{t3('Nieuwe datum', 'Nouvelle date', 'New date')}</label>
+              <input type="datetime-local" value={duplicateNewDate} onChange={e => setDuplicateNewDate(e.target.value)} className={inputClass} autoFocus />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setDuplicateDateDialog(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
+              <button onClick={handleDuplicateEvent} disabled={!!duplicatingEvent} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
+                {duplicatingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Dupliceren', 'Dupliquer', 'Duplicate')}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+
+    {/* Task Set Picker */}
+    <AnimatePresence>
+      {showTaskSetPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowTaskSetPicker(false)}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-md max-h-[70vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-heading font-semibold text-foreground">
+                {t3('Taken aanmaken vanuit set', 'Créer tâches depuis ensemble', 'Create tasks from set')}
+              </h2>
+              <button onClick={() => setShowTaskSetPicker(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-3">
+              {taskSets.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">{t3('Geen wedstrijdsets gevonden. Maak er eerst één aan via Sjablonen.', 'Aucun ensemble trouvé.', 'No match sets found. Create one first via Templates.')}</p>
+                </div>
+              ) : taskSets.map(set => (
+                <div key={set.id} className="rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground text-sm">{set.name}</p>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {set.items.map((item, i) => {
+                          const tt = taskTemplatesMap[item.template_id];
+                          return tt ? <span key={i} className="px-2 py-0.5 text-[10px] rounded-full bg-muted text-muted-foreground">{tt.name}</span> : null;
+                        })}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{set.items.length} {t3('taken', 'tâches', 'tasks')}</p>
+                    </div>
+                    <button onClick={() => handleApplyTaskSet(set.id)} disabled={applyingSet === set.id}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50 shrink-0">
+                      {applyingSet === set.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                      {t3('Toepassen', 'Appliquer', 'Apply')}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
     </>
   );
 
@@ -1005,6 +1132,9 @@ const EventsManager = () => {
                 <button onClick={() => setBulkMessageEventId(event.id)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-accent transition-colors touch-target">
                   <Send className="w-3.5 h-3.5" /> {nl ? 'Stuur bericht' : fr ? 'Envoyer message' : 'Send message'}
                 </button>
+                <button onClick={() => loadTaskSetsForPicker(event.id)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-accent text-accent-foreground hover:bg-accent/80 transition-colors touch-target">
+                  <FileText className="w-3.5 h-3.5" /> {t3('Taken uit set', 'Tâches depuis ensemble', 'Tasks from set')}
+                </button>
               </div>
 
               <DropdownMenu>
@@ -1017,7 +1147,7 @@ const EventsManager = () => {
                   <DropdownMenuItem onClick={() => handleStartEditEvent(event)}>
                     <Pencil className="w-4 h-4 mr-2" /> {nl ? 'Bewerken' : 'Edit'}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDuplicateEvent(event.id)} disabled={duplicatingEvent === event.id}>
+                  <DropdownMenuItem onClick={() => openDuplicateDialog(event.id)} disabled={duplicatingEvent === event.id}>
                     {duplicatingEvent === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />} {nl ? 'Dupliceren' : 'Duplicate'}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleSaveAsTemplate(event.id)} disabled={savingTemplate === event.id}>

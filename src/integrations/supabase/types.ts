@@ -4578,6 +4578,141 @@ export type Database = {
           },
         ]
       }
+      task_template_set_items: {
+        Row: {
+          created_at: string
+          id: string
+          set_id: string
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          set_id: string
+          sort_order?: number
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          set_id?: string
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_template_set_items_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "task_template_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_template_set_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_template_sets: {
+        Row: {
+          club_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_template_sets_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_template_sets_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_templates: {
+        Row: {
+          briefing_id: string | null
+          club_id: string
+          contract_template_category: string | null
+          created_at: string
+          description: string | null
+          end_time: string | null
+          id: string
+          location: string | null
+          name: string
+          required_volunteers: number
+          start_time: string | null
+        }
+        Insert: {
+          briefing_id?: string | null
+          club_id: string
+          contract_template_category?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          required_volunteers?: number
+          start_time?: string | null
+        }
+        Update: {
+          briefing_id?: string | null
+          club_id?: string
+          contract_template_category?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          required_volunteers?: number
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_waitlist: {
         Row: {
           created_at: string
