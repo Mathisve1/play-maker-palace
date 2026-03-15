@@ -49,6 +49,8 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     setAuthenticatedUserId(sessionUser.id);
     setChecked(true);
     setShowRetry(false);
+    // Set Sentry user context
+    Sentry.setUser({ id: sessionUser.id, email: sessionUser.email || undefined });
     // Non-blocking: profile creation and push sync happen in background
     void ensureProfileExists(sessionUser).catch(e => console.warn('RequireAuth: ensureProfileExists failed', e));
     void syncOneSignalUser(sessionUser.id).catch(() => {});
