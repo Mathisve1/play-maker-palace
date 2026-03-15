@@ -234,7 +234,7 @@ const VolunteerSidebar = ({
           <SidebarGroupLabel>{l.communication}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
+              <SidebarMenuItem data-tour="vol-sidebar-messages">
                 <SidebarMenuButton onClick={() => handleExternalNav('/chat')} className="min-h-[48px]">
                   <MessageCircle className="w-5 h-5" />
                   <span>{l.messages}</span>
