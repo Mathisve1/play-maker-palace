@@ -552,6 +552,40 @@ const SafetyDashboard = () => {
     }
   };
 
+  // ── Send alarm to ALL event volunteers ──
+  const handleSendAlarm = async () => {
+    if (!eventId) return;
+    setSendingAlarm(true);
+    try {
+      await sendPushToEventVolunteers({
+        eventId,
+        title: `🚨 ${t3('Urgente melding', 'Alerte urgente', 'Urgent alert')} — ${eventTitle}`,
+        message: t3(
+          'Gelieve de instructies van het veiligheidsteam te volgen.',
+          'Veuillez suivre les instructions de l\'équipe de sécurité.',
+          'Please follow the safety team\'s instructions.'
+        ),
+        url: `/safety/${eventId}`,
+        type: 'safety_alarm',
+      });
+      if (clubId) {
+        await sendPushToClub({
+          clubId,
+          title: `🚨 ${t3('Alarmmelding verstuurd', 'Alerte envoyée', 'Alarm sent')} — ${eventTitle}`,
+          message: t3('Een alarmmelding is verstuurd naar alle vrijwilligers.', 'Une alerte a été envoyée à tous les bénévoles.', 'An alarm has been sent to all volunteers.'),
+          url: `/safety/${eventId}`,
+          type: 'safety_alarm',
+        });
+      }
+      toast.success(t3('🚨 Alarmmelding verstuurd naar alle vrijwilligers!', '🚨 Alerte envoyée à tous les bénévoles !', '🚨 Alarm sent to all volunteers!'));
+    } catch {
+      toast.error(t3('Fout bij verzenden alarm', 'Erreur lors de l\'envoi', 'Error sending alarm'));
+    } finally {
+      setSendingAlarm(false);
+      setShowAlarmConfirm(false);
+    }
+  };
+
   // ── GO LIVE ──
   const handleGoLive = async () => {
     if (!eventId) return;
