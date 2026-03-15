@@ -688,7 +688,14 @@ const BriefingBuilder = () => {
     const filtered = availableTasks.filter(t => t.title.toLowerCase().includes(taskSearch.toLowerCase()));
     return (
       <ClubPageLayout>
-        <div className="max-w-2xl mx-auto py-4">
+        <div className="max-w-2xl mx-auto py-4 space-y-4">
+          <PageNavTabs tabs={[
+            { label: 'Overzicht', path: '/volunteer-management' },
+            { label: 'Contracten', path: '/season-contracts' },
+            { label: 'Briefings', path: '/briefing-builder' },
+            { label: 'Vergoedingen', path: '/sepa-payouts' },
+            { label: 'Compliance', path: '/compliance' },
+          ]} />
           <h1 className="text-2xl font-bold text-foreground mb-1">Briefing Builder</h1>
           <p className="text-muted-foreground text-sm mb-6">Selecteer een taak om de briefing te bewerken of aan te maken.</p>
           <Input placeholder="Zoek taak..." value={taskSearch} onChange={e => setTaskSearch(e.target.value)} className="mb-4" />
