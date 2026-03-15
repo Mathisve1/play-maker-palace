@@ -141,6 +141,40 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     defaultW: 2, defaultH: 2, minW: 2, maxW: 4, minH: 1, maxH: 2,
     category: 'activity',
   },
+
+  // === Season ===
+  season_progress: {
+    type: 'season_progress',
+    label: { nl: 'Seizoensvoortgang', en: 'Season Progress', fr: 'Progression saison' },
+    description: { nl: 'Voortgang van het actieve seizoen met vrijwilligers en contracten', en: 'Active season progress with volunteers and contracts', fr: 'Progression de la saison avec bénévoles et contrats' },
+    icon: 'CalendarRange',
+    defaultW: 2, defaultH: 1, minW: 2, maxW: 4, minH: 1, maxH: 1,
+    category: 'season',
+  },
+  contract_status: {
+    type: 'contract_status',
+    label: { nl: 'Contractstatus', en: 'Contract Status', fr: 'Statut contrats' },
+    description: { nl: 'Donut-grafiek: ondertekend, in afwachting, niet verstuurd', en: 'Donut chart: signed, pending, not sent', fr: 'Graphique: signés, en attente, non envoyés' },
+    icon: 'FileSignature',
+    defaultW: 2, defaultH: 1, minW: 2, maxW: 4, minH: 1, maxH: 2,
+    category: 'season',
+  },
+  attendance_rate: {
+    type: 'attendance_rate',
+    label: { nl: 'Aanwezigheidsgraad', en: 'Attendance Rate', fr: 'Taux de présence' },
+    description: { nl: 'Lijndiagram van aanwezigheidsgraad per maand dit seizoen', en: 'Monthly attendance rate line chart this season', fr: 'Graphique linéaire du taux de présence mensuel' },
+    icon: 'BarChart3',
+    defaultW: 2, defaultH: 1, minW: 2, maxW: 4, minH: 1, maxH: 2,
+    category: 'season',
+  },
+  revenue: {
+    type: 'revenue',
+    label: { nl: 'Seizoenskosten', en: 'Season Costs', fr: 'Coûts saisonniers' },
+    description: { nl: 'Gratis contracten en lopende kosten dit seizoen', en: 'Free contracts and running costs this season', fr: 'Contrats gratuits et coûts en cours' },
+    icon: 'Euro',
+    defaultW: 2, defaultH: 1, minW: 1, maxW: 4, minH: 1, maxH: 2,
+    category: 'season',
+  },
 };
 
 export const DEFAULT_LAYOUT: WidgetInstance[] = [
