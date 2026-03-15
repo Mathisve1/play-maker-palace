@@ -1286,7 +1286,13 @@ const ClubOwnerDashboard = () => {
   return (
     <DashboardLayout sidebar={sidebarEl}>
       <main className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
+        {/* Free Trial Banner */}
+        {clubId && (
+          <Suspense fallback={null}>
+            <FreeTrialBanner clubId={clubId} />
+          </Suspense>
+        )}
+
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">{dt.title}</h1>
