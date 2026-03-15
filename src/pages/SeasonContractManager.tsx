@@ -238,37 +238,44 @@ const SeasonContractManager = () => {
       const seasonStart = activeSeason.start_date;
       const seasonEnd = activeSeason.end_date;
       const { data: club } = await supabase.from('clubs').select('name, logo_url').eq('id', clubId).single();
-      const { data: seasonTasks } = await supabase.from('tasks').select('id, title').eq('club_id', clubId).gte('task_date', seasonStart).lte('task_date', seasonEnd);
+      const { data: seasonTasks } = await supabase.from('tasks').select('id, title, task_date').eq('club_id', clubId).gte('task_date', seasonStart).lte('task_date', seasonEnd);
       const taskIds = (seasonTasks || []).map((t: any) => t.id);
-      const { data: hourConfs } = taskIds.length > 0
-        ? await supabase.from('hour_confirmations').select('*').in('task_id', taskIds)
-        : { data: [] as any[] };
-      const { data: contracts } = await supabase.from('season_contracts').select('volunteer_id, template_id').eq('season_id', activeSeason.id);
-      const templateIds = [...new Set((contracts || []).map((c: any) => c.template_id))];
+      const [hourConfsRes, contractsRes, allContractsRes] = await Promise.all([
+        taskIds.length > 0
+          ? supabase.from('hour_confirmations').select('*').in('task_id', taskIds)
+          : Promise.resolve({ data: [] as any[] }),
+        supabase.from('season_contracts').select('volunteer_id, template_id').eq('season_id', activeSeason.id),
+        supabase.from('season_contracts').select('status, template_id').eq('season_id', activeSeason.id).eq('club_id', clubId),
+      ]);
+      const hourConfs = hourConfsRes.data || [];
+      const contracts = contractsRes.data || [];
+      const allSeasonContracts = allContractsRes.data || [];
+
+      const templateIds = [...new Set(contracts.map((c: any) => c.template_id))];
       let tmplCatMap = new Map<string, string>();
       if (templateIds.length > 0) {
         const { data: tmpls } = await supabase.from('season_contract_templates').select('id, category').in('id', templateIds);
         (tmpls || []).forEach((t: any) => tmplCatMap.set(t.id, t.category));
       }
-      const volIds = [...new Set((hourConfs || []).map((h: any) => h.volunteer_id))];
+      const volIds = [...new Set(hourConfs.map((h: any) => h.volunteer_id))];
       let profileMap = new Map<string, string>();
       if (volIds.length > 0) {
         const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', volIds);
         (profiles || []).forEach((p: any) => profileMap.set(p.id, p.full_name || '—'));
       }
       const volMap = new Map<string, SeasonReportVolunteer>();
-      (hourConfs || []).forEach((h: any) => {
+      hourConfs.forEach((h: any) => {
         const existing = volMap.get(h.volunteer_id) || { name: profileMap.get(h.volunteer_id) || '—', contractType: '', taskCount: 0, hours: 0, compensation: 0 };
         existing.taskCount += 1;
         existing.hours += (h.final_hours || 0);
         existing.compensation += (h.final_amount || 0);
         volMap.set(h.volunteer_id, existing);
       });
-      (contracts || []).forEach((c: any) => { const v = volMap.get(c.volunteer_id); if (v) v.contractType = tmplCatMap.get(c.template_id) || ''; });
+      contracts.forEach((c: any) => { const v = volMap.get(c.volunteer_id); if (v) v.contractType = tmplCatMap.get(c.template_id) || ''; });
       const taskTypeMap = new Map<string, SeasonReportTaskType>();
       const taskTitleMap = new Map<string, string>();
       (seasonTasks || []).forEach((t: any) => taskTitleMap.set(t.id, t.title));
-      (hourConfs || []).forEach((h: any) => {
+      hourConfs.forEach((h: any) => {
         const title = taskTitleMap.get(h.task_id) || 'Other';
         const existing = taskTypeMap.get(title) || { type: title, count: 0, totalHours: 0, totalCompensation: 0 };
         existing.count += 1; existing.totalHours += (h.final_hours || 0); existing.totalCompensation += (h.final_amount || 0);
@@ -279,6 +286,58 @@ const SeasonContractManager = () => {
         .map((b: any) => ({ reference: b.reference, date: b.created_at, itemCount: b.item_count || 0, totalAmount: b.total_amount || 0, status: b.status }));
       const totalHours = [...volMap.values()].reduce((s, v) => s + v.hours, 0);
       const totalComp = [...volMap.values()].reduce((s, v) => s + v.compensation, 0);
+
+      // === NEW: Monthly attendance ===
+      const taskDateMap = new Map<string, string>();
+      (seasonTasks || []).forEach((t: any) => { if (t.task_date) taskDateMap.set(t.id, t.task_date); });
+      const monthMap = new Map<string, { signups: number; attended: number }>();
+      if (taskIds.length > 0) {
+        const { data: signupRows } = await supabase.from('task_signups').select('task_id, checked_in_at').in('task_id', taskIds);
+        (signupRows || []).forEach((s: any) => {
+          const taskDate = taskDateMap.get(s.task_id);
+          if (!taskDate) return;
+          const monthKey = taskDate.substring(0, 7); // "YYYY-MM"
+          const entry = monthMap.get(monthKey) || { signups: 0, attended: 0 };
+          entry.signups += 1;
+          if (s.checked_in_at) entry.attended += 1;
+          monthMap.set(monthKey, entry);
+        });
+      }
+      const locale = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
+      const monthlyAtt: MonthlyAttendance[] = [...monthMap.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, val]) => {
+          const d = new Date(key + '-01');
+          return {
+            month: key,
+            label: d.toLocaleDateString(locale, { month: 'short', year: 'numeric' }),
+            signups: val.signups,
+            attended: val.attended,
+            rate: val.signups > 0 ? Math.round((val.attended / val.signups) * 100) : 0,
+          };
+        });
+
+      // === NEW: Compensation per contract type ===
+      const compByType = new Map<string, { totalCompensation: number; volunteers: Set<string> }>();
+      contracts.forEach((c: any) => {
+        const cat = tmplCatMap.get(c.template_id) || 'Other';
+        const vol = volMap.get(c.volunteer_id);
+        const entry = compByType.get(cat) || { totalCompensation: 0, volunteers: new Set() };
+        entry.volunteers.add(c.volunteer_id);
+        if (vol) entry.totalCompensation += vol.compensation;
+        compByType.set(cat, entry);
+      });
+      const compPerType: ContractTypeCompensation[] = [...compByType.entries()].map(([type, val]) => ({
+        contractType: type, totalCompensation: val.totalCompensation, volunteerCount: val.volunteers.size,
+      }));
+
+      // === NEW: Contract status ===
+      const contractStatusData: ContractStatusSummary = {
+        signed: allSeasonContracts.filter((c: any) => c.status === 'signed').length,
+        pending: allSeasonContracts.filter((c: any) => c.status === 'pending').length,
+        sent: allSeasonContracts.filter((c: any) => c.status === 'sent').length,
+        total: allSeasonContracts.length,
+      };
       const doc = await generateSeasonReport({
         clubName: club?.name || '—', clubLogoUrl: club?.logo_url || null,
         seasonName: activeSeason.name, seasonStart, seasonEnd,
