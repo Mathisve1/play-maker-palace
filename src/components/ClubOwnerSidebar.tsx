@@ -155,6 +155,7 @@ const ClubOwnerSidebar = ({
     { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
     { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Award, path: '/loyalty' },
     { label: t3('Partners', 'Partenaires', 'Partners'), icon: Handshake, path: '/external-partners' },
+    { label: t3('Facturatie', 'Facturation', 'Billing'), icon: CreditCard, path: '/billing' },
     { label: t3('Rapportering', 'Rapports', 'Reporting'), icon: BarChart3, path: '/reporting' },
     { label: t3('Analytics', 'Analytique', 'Analytics'), icon: TrendingUp, path: '/analytics' },
   ];
