@@ -90,8 +90,12 @@ const CommunityClubDetail = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setCurrentUserId(session.user.id);
-        const { data: follow } = await supabase.from('club_follows').select('id').eq('user_id', session.user.id).eq('club_id', clubId).maybeSingle();
-        setIsFollowing(!!follow);
+        const [followRes, membershipRes] = await Promise.all([
+          supabase.from('club_follows').select('id').eq('user_id', session.user.id).eq('club_id', clubId).maybeSingle(),
+          supabase.from('club_memberships').select('id').eq('volunteer_id', session.user.id).eq('club_id', clubId).maybeSingle(),
+        ]);
+        setIsFollowing(!!followRes.data);
+        setIsMember(!!membershipRes.data);
       }
 
       // Load club data (use clubs_safe view for public access, fallback to clubs)
