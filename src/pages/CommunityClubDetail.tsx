@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import SEOHead from '@/components/SEOHead';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
