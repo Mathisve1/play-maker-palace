@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
-import { Search, MapPin, Users, Heart, HeartOff, Trophy, Calendar, Building2, ArrowRight, Sparkles, Star } from 'lucide-react';
+import { Search, MapPin, Users, Heart, HeartOff, Trophy, Calendar, Building2, ArrowRight, Sparkles, Star, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
@@ -29,6 +29,7 @@ interface ClubWithStats {
   logo_url: string | null;
   description: string | null;
   task_count: number;
+  upcoming_task_count: number;
   volunteer_count: number;
   event_count: number;
   partner_count: number;
@@ -37,16 +38,25 @@ interface ClubWithStats {
   rating_count: number;
 }
 
+const BELGIAN_PROVINCES = [
+  'Antwerpen', 'Brussel', 'Henegouwen', 'Limburg', 'Luik',
+  'Luxemburg', 'Namen', 'Oost-Vlaanderen', 'Vlaams-Brabant',
+  'Waals-Brabant', 'West-Vlaanderen',
+];
+
 const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
   nl: {
     badge: 'Community',
     heroTitle: 'Ontdek sportclubs',
     heroSubtitle: 'Volg jouw favoriete clubs en krijg hun taken op je feed. Ontdek partners en evenementen.',
-    searchPlaceholder: 'Zoek op naam of locatie...',
+    searchPlaceholder: 'Zoek op clubnaam...',
     all: 'Alles',
+    allProvinces: 'Alle provincies',
     yourClubs: 'Jouw clubs',
     otherClubs: 'Andere clubs',
     allClubs: 'Alle clubs',
+    seekingVolunteers: 'Zoekt vrijwilligers (30 dagen)',
+    openTasks: 'openstaande taken',
     noClubs: 'Geen clubs gevonden',
     unfollowed: 'Club ontvolgd',
     followed: 'Club gevolgd! Je ziet nu hun taken in je feed.',
@@ -59,18 +69,20 @@ const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
     events: 'events',
     recommended: 'Aanbevolen voor jou',
     sportFilter: 'Sport',
-    cityFilter: 'Stad/regio',
-    openOnly: 'Enkel clubs met open taken',
+    provinceFilter: 'Provincie',
   },
   fr: {
     badge: 'Communauté',
     heroTitle: 'Découvrez les clubs sportifs',
     heroSubtitle: 'Suivez vos clubs préférés et recevez leurs tâches dans votre fil. Découvrez les partenaires et événements.',
-    searchPlaceholder: 'Rechercher par nom ou lieu...',
+    searchPlaceholder: 'Rechercher par nom de club...',
     all: 'Tout',
+    allProvinces: 'Toutes les provinces',
     yourClubs: 'Vos clubs',
     otherClubs: 'Autres clubs',
     allClubs: 'Tous les clubs',
+    seekingVolunteers: 'Cherche des bénévoles (30 jours)',
+    openTasks: 'tâches ouvertes',
     noClubs: 'Aucun club trouvé',
     unfollowed: 'Club non suivi',
     followed: 'Club suivi ! Vous verrez leurs tâches dans votre fil.',
@@ -83,18 +95,20 @@ const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
     events: 'événements',
     recommended: 'Recommandé pour vous',
     sportFilter: 'Sport',
-    cityFilter: 'Ville/région',
-    openOnly: 'Uniquement les clubs avec des tâches ouvertes',
+    provinceFilter: 'Province',
   },
   en: {
     badge: 'Community',
     heroTitle: 'Discover sports clubs',
     heroSubtitle: 'Follow your favourite clubs and get their tasks in your feed. Discover partners and events.',
-    searchPlaceholder: 'Search by name or location...',
+    searchPlaceholder: 'Search by club name...',
     all: 'All',
+    allProvinces: 'All provinces',
     yourClubs: 'Your clubs',
     otherClubs: 'Other clubs',
     allClubs: 'All clubs',
+    seekingVolunteers: 'Seeking volunteers (30 days)',
+    openTasks: 'open tasks',
     noClubs: 'No clubs found',
     unfollowed: 'Club unfollowed',
     followed: 'Club followed! You will now see their tasks in your feed.',
@@ -107,8 +121,7 @@ const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
     events: 'events',
     recommended: 'Recommended for you',
     sportFilter: 'Sport',
-    cityFilter: 'City/region',
-    openOnly: 'Only clubs with open tasks',
+    provinceFilter: 'Province',
   },
 };
 
@@ -120,8 +133,8 @@ const Community = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSport, setFilterSport] = useState<string>('__all__');
-  const [cityQuery, setCityQuery] = useState('');
-  const [openOnly, setOpenOnly] = useState(false);
+   const [filterProvince, setFilterProvince] = useState<string>('__all__');
+   const [seekingVolunteers, setSeekingVolunteers] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [togglingFollow, setTogglingFollow] = useState<string | null>(null);
@@ -154,8 +167,12 @@ const Community = () => {
 
       const clubIds = clubsData.map(c => c.id);
 
-      const [tasksRes, signupsRes, eventsRes, partnersRes, allTasksRes, reviewsRes] = await Promise.all([
+      const today = new Date().toISOString().split('T')[0];
+      const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+
+      const [tasksRes, upcomingTasksRes, signupsRes, eventsRes, partnersRes, allTasksRes, reviewsRes] = await Promise.all([
         supabase.from('tasks').select('club_id').in('club_id', clubIds).eq('status', 'open'),
+        supabase.from('tasks').select('club_id').in('club_id', clubIds).eq('status', 'open').gte('task_date', today).lte('task_date', in30),
         supabase.from('task_signups').select('task_id, volunteer_id'),
         supabase.from('events').select('club_id').in('club_id', clubIds),
         supabase.from('external_partners').select('club_id').in('club_id', clubIds),
@@ -165,6 +182,9 @@ const Community = () => {
 
       const taskCounts: Record<string, number> = {};
       tasksRes.data?.forEach(t => { taskCounts[t.club_id] = (taskCounts[t.club_id] || 0) + 1; });
+
+      const upcomingCounts: Record<string, number> = {};
+      upcomingTasksRes.data?.forEach((t: any) => { upcomingCounts[t.club_id] = (upcomingCounts[t.club_id] || 0) + 1; });
 
       const fullTaskClubMap: Record<string, string> = {};
       allTasksRes.data?.forEach((t: any) => { fullTaskClubMap[t.id] = t.club_id; });
@@ -198,6 +218,7 @@ const Community = () => {
       const enriched: ClubWithStats[] = clubsData.map(c => ({
         ...c,
         task_count: taskCounts[c.id] || 0,
+        upcoming_task_count: upcomingCounts[c.id] || 0,
         volunteer_count: volunteerSets[c.id]?.size || 0,
         event_count: eventCounts[c.id] || 0,
         partner_count: partnerCounts[c.id] || 0,
@@ -243,9 +264,9 @@ const Community = () => {
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.location?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchSport = filterSport === '__all__' || c.sport?.toLowerCase() === filterSport.toLowerCase();
-    const matchCity = !cityQuery || c.location?.toLowerCase().includes(cityQuery.toLowerCase());
-    const matchOpen = !openOnly || c.task_count > 0;
-    return matchSearch && matchSport && matchCity && matchOpen;
+    const matchProvince = filterProvince === '__all__' || c.location?.toLowerCase().includes(filterProvince.toLowerCase());
+    const matchSeeking = !seekingVolunteers || c.upcoming_task_count > 0;
+    return matchSearch && matchSport && matchProvince && matchSeeking;
   });
 
   // Recommended: clubs in same city, not yet following, max 3
@@ -315,18 +336,21 @@ const Community = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <div className="relative flex-1 min-w-[140px] max-w-[200px]">
-                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  placeholder={cl.cityFilter}
-                  value={cityQuery}
-                  onChange={e => setCityQuery(e.target.value)}
-                  className="pl-8 h-9 text-xs rounded-xl bg-card"
-                />
-              </div>
+              <Select value={filterProvince} onValueChange={setFilterProvince}>
+                <SelectTrigger className="w-[180px] h-9 rounded-xl text-xs bg-card">
+                  <MapPin className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+                  <SelectValue placeholder={cl.allProvinces} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{cl.allProvinces}</SelectItem>
+                  {BELGIAN_PROVINCES.map(p => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                <Checkbox checked={openOnly} onCheckedChange={v => setOpenOnly(v === true)} />
-                {cl.openOnly}
+                <Switch checked={seekingVolunteers} onCheckedChange={setSeekingVolunteers} />
+                {cl.seekingVolunteers}
               </label>
             </div>
           </motion.div>
