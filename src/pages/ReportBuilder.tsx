@@ -815,8 +815,14 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
+    <ClubPageLayout>
+      <div className="max-w-5xl mx-auto space-y-6">
+        <PageNavTabs tabs={[
+          { label: t3('Rapporten', 'Rapports', 'Reports'), path: '/reporting' },
+          { label: 'Analytics', path: '/analytics' },
+          { label: t3('Rapport Builder', 'Rapport Builder', 'Report Builder'), path: '/report-builder' },
+          { label: 'Audit Log', path: '/audit-log' },
+        ]} />
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
