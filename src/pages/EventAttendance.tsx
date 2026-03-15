@@ -118,13 +118,14 @@ const EventAttendance = () => {
     }
 
     // Get signups for these tasks (assigned or completed)
-    const { data: signupData } = await supabase
+    const { data: signupData } = await (supabase as any)
       .from('task_signups')
       .select('id, task_id, volunteer_id, status, checked_in_at')
       .in('task_id', taskIds)
       .in('status', ['assigned', 'completed']);
 
-    const volIds = [...new Set((signupData || []).map(s => s.volunteer_id))];
+    const rows = (signupData || []) as any[];
+    const volIds = [...new Set(rows.map((s: any) => s.volunteer_id))];
 
     // Get volunteer profiles
     const { data: profiles } = volIds.length > 0
@@ -132,7 +133,7 @@ const EventAttendance = () => {
       : { data: [] };
     const profileMap = new Map((profiles || []).map(p => [p.id, p]));
 
-    setSignups((signupData || []).map(s => {
+    setSignups(rows.map((s: any) => {
       const prof = profileMap.get(s.volunteer_id);
       return {
         id: s.id,
