@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   CalendarDays, Send, FileSignature, Download, CheckCircle, Clock,
-  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard
+  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard, UserCheck, TrendingUp, Euro
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
