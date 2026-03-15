@@ -192,6 +192,38 @@ const CommunityClubDetail = () => {
     navigate(`/task/${taskId}`);
   };
 
+  const handleInterest = async () => {
+    if (!currentUserId || !clubId) { navigate('/login'); return; }
+    setInterestSending(true);
+    try {
+      await supabase.from('club_memberships').insert({
+        volunteer_id: currentUserId,
+        club_id: clubId,
+        status: 'pending',
+        club_role: 'volunteer',
+      });
+      // Notify club owner
+      if (club) {
+        const { data: clubData } = await supabase.from('clubs').select('owner_id').eq('id', clubId).maybeSingle();
+        if (clubData?.owner_id) {
+          const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', currentUserId).maybeSingle();
+          await supabase.from('notifications').insert({
+            user_id: clubData.owner_id,
+            title: t3('Nieuwe interesse', 'Nouvel intérêt', 'New interest'),
+            message: `${profile?.full_name || 'Iemand'} ${t3('wil lid worden van', 'souhaite rejoindre', 'wants to join')} ${club.name}`,
+            type: 'task',
+            metadata: { club_id: clubId, volunteer_id: currentUserId, action: 'interest' },
+          });
+        }
+      }
+      setIsMember(true);
+      toast.success(t3('Interesse gemeld!', 'Intérêt signalé !', 'Interest registered!'));
+    } catch {
+      toast.error(t3('Er ging iets mis', 'Quelque chose a mal tourné', 'Something went wrong'));
+    }
+    setInterestSending(false);
+  };
+
   const dateFmt = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
 
   if (loading || !club) {
