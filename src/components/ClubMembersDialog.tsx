@@ -110,18 +110,35 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         .select('id, full_name, email')
         .in('id', userIds);
 
+      // Fetch pending invitations to get emails for members without profiles
+      const { data: allInvitations } = await supabase
+        .from('club_invitations')
+        .select('email, status')
+        .eq('club_id', clubId);
+
       const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+      
       setMembers(
         membersData.map(m => {
           const prof = profileMap.get(m.user_id);
           const msId = membershipMap.get(m.user_id);
+          const hasName = prof?.full_name;
+          const hasEmail = prof?.email;
+          // If no profile name or email, try to find from accepted invitations
+          const invEmail = !hasEmail
+            ? (allInvitations || []).find(i => i.status === 'accepted' && i.email)?.email
+            : null;
+          const displayEmail = hasEmail || invEmail || null;
+          const isPending = !hasName && !hasEmail;
           return {
             ...m,
             role: m.role as ClubRole,
             membership_id: msId,
-            profile: prof
-              ? { full_name: prof.full_name || prof.email || null, email: prof.email }
-              : { full_name: null, email: null },
+            profile: {
+              full_name: hasName || null,
+              email: displayEmail,
+            },
+            isPending,
             contractTypes: msId ? contractTypeMap.get(msId) || [] : [],
           };
         })
