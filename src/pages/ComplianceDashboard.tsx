@@ -99,6 +99,7 @@ const labels = {
     active: 'Active',
     blocked: 'Blocked',
     yearlyLimit: 'Yearly limit 2026',
+    trainings: 'Trainings',
     totalVolunteers: 'Volunteers',
     greenCount: 'Legal',
     orangeCount: 'Warning',
