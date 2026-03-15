@@ -65,11 +65,13 @@ const labels = {
 };
 
 const MyClubs = () => {
-  const { userId, clubId, refresh } = useClubContext();
+  const { userId, clubId, profile, refresh, updateProfile } = useClubContext();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const l = labels[language];
 
+  const [activeTab, setActiveTab] = useState<VolunteerTab>('dashboard');
+  const [profileOpen, setProfileOpen] = useState(false);
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState<string | null>(null);
