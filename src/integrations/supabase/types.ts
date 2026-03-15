@@ -3172,6 +3172,7 @@ export type Database = {
           bank_holder_name: string | null
           bank_iban: string | null
           bio: string | null
+          city: string | null
           club_onboarding_step: string
           created_at: string
           date_of_birth: string | null
@@ -3201,6 +3202,7 @@ export type Database = {
           bank_holder_name?: string | null
           bank_iban?: string | null
           bio?: string | null
+          city?: string | null
           club_onboarding_step?: string
           created_at?: string
           date_of_birth?: string | null
@@ -3230,6 +3232,7 @@ export type Database = {
           bank_holder_name?: string | null
           bank_iban?: string | null
           bio?: string | null
+          city?: string | null
           club_onboarding_step?: string
           created_at?: string
           date_of_birth?: string | null

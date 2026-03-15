@@ -64,6 +64,8 @@ const CommunityClubDetail = () => {
   const [stats, setStats] = useState({ volunteers: 0, events: 0, avgRating: 0, ratingCount: 0 });
   const [showReferralDialog, setShowReferralDialog] = useState(false);
   const [referralCode, setReferralCode] = useState('');
+  const [isMember, setIsMember] = useState<boolean | null>(null);
+  const [interestSending, setInterestSending] = useState(false);
 
   // SEO
   useEffect(() => {
@@ -88,8 +90,12 @@ const CommunityClubDetail = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setCurrentUserId(session.user.id);
-        const { data: follow } = await supabase.from('club_follows').select('id').eq('user_id', session.user.id).eq('club_id', clubId).maybeSingle();
-        setIsFollowing(!!follow);
+        const [followRes, membershipRes] = await Promise.all([
+          supabase.from('club_follows').select('id').eq('user_id', session.user.id).eq('club_id', clubId).maybeSingle(),
+          supabase.from('club_memberships').select('id').eq('volunteer_id', session.user.id).eq('club_id', clubId).maybeSingle(),
+        ]);
+        setIsFollowing(!!followRes.data);
+        setIsMember(!!membershipRes.data);
       }
 
       // Load club data (use clubs_safe view for public access, fallback to clubs)
@@ -186,6 +192,38 @@ const CommunityClubDetail = () => {
     navigate(`/task/${taskId}`);
   };
 
+  const handleInterest = async () => {
+    if (!currentUserId || !clubId) { navigate('/login'); return; }
+    setInterestSending(true);
+    try {
+      await supabase.from('club_memberships').insert({
+        volunteer_id: currentUserId,
+        club_id: clubId,
+        status: 'pending',
+        club_role: 'volunteer',
+      });
+      // Notify club owner
+      if (club) {
+        const { data: clubData } = await supabase.from('clubs').select('owner_id').eq('id', clubId).maybeSingle();
+        if (clubData?.owner_id) {
+          const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', currentUserId).maybeSingle();
+          await supabase.from('notifications').insert({
+            user_id: clubData.owner_id,
+            title: t3('Nieuwe interesse', 'Nouvel intérêt', 'New interest'),
+            message: `${profile?.full_name || 'Iemand'} ${t3('wil lid worden van', 'souhaite rejoindre', 'wants to join')} ${club.name}`,
+            type: 'task',
+            metadata: { club_id: clubId, volunteer_id: currentUserId, action: 'interest' },
+          });
+        }
+      }
+      setIsMember(true);
+      toast.success(t3('Interesse gemeld!', 'Intérêt signalé !', 'Interest registered!'));
+    } catch {
+      toast.error(t3('Er ging iets mis', 'Quelque chose a mal tourné', 'Something went wrong'));
+    }
+    setInterestSending(false);
+  };
+
   const dateFmt = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
 
   if (loading || !club) {
@@ -251,6 +289,22 @@ const CommunityClubDetail = () => {
                 >
                   {isFollowing ? <><HeartOff className="w-4 h-4" /> {t3('Ontvolgen', 'Ne plus suivre', 'Unfollow')}</> : <><Heart className="w-4 h-4" /> {t3('Volgen', 'Suivre', 'Follow')}</>}
                 </Button>
+                {isMember === false && (
+                  <Button
+                    onClick={handleInterest}
+                    disabled={interestSending}
+                    variant="secondary"
+                    className="gap-2 rounded-xl"
+                  >
+                    <Users className="w-4 h-4" />
+                    {t3('Meld interesse', 'Signaler intérêt', 'Register interest')}
+                  </Button>
+                )}
+                {isMember === true && (
+                  <Badge variant="secondary" className="h-10 px-4 flex items-center gap-1.5 text-sm">
+                    <CheckCircle className="w-4 h-4" /> {t3('Lid', 'Membre', 'Member')}
+                  </Badge>
+                )}
               </div>
               {club.description && (
                 <p className="text-muted-foreground mt-3 max-w-2xl text-base leading-relaxed">{club.description}</p>

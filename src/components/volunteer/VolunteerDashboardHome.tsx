@@ -15,6 +15,7 @@ import SkillsPassport from '@/components/SkillsPassport';
 import MicroLearningsSection from '@/components/MicroLearningsSection';
 import CalendarSyncSection from '@/components/CalendarSyncSection';
 import ReferralSection from '@/components/ReferralSection';
+import NearbyClubsWidget from '@/components/community/NearbyClubsWidget';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import EventGroupChat from '@/components/EventGroupChat';
 import type { VolunteerTask, TaskSignup, VolunteerPayment, SignatureContract, SepaPayoutItem, VolunteerEventData } from '@/types/volunteer';
@@ -320,6 +321,7 @@ const VolunteerDashboardHome = ({
         )}
       </div>
 
+      <NearbyClubsWidget userId={currentUserId} language={language} />
       <VolunteerActivitiesSection items={activityItems} language={language} />
       {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
       {currentUserId && <VolunteerSeasonOverview userId={currentUserId} language={language} />}
