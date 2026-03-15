@@ -7,7 +7,7 @@ import { Search, MapPin, Users, Heart, HeartOff, Trophy, Calendar, Building2, Ar
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
