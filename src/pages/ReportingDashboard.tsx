@@ -160,6 +160,10 @@ const rl = {
     aiQ7: 'Donnez un aperçu de nos coûts mensuels', aiQ8: 'Combien de contrats sont déjà signés ?',
     aiQ9: 'Quels partenaires fournissent le plus de personnel ?', aiQ10: 'Combien de bénévoles approchent la limite annuelle ?',
     aiQ11: 'Quel jour de la semaine planifions-nous le plus de tâches ?', aiQ12: 'Combien de confirmations d\'heures sont encore ouvertes ?',
+    aiSummaryTitle: 'Résumé IA', aiSummaryBtn: 'Générer un résumé IA', aiSummaryRetry: 'Réessayez plus tard',
+    aiSummaryCopy: 'Copier', aiSummaryCopied: 'Copié !', aiSummaryAdd: 'Ajouter au rapport',
+    aiSummaryAdded: 'Résumé enregistré pour le rapport',
+    aiSummaryPrompt: 'Donne un résumé concis de la saison en 3-4 phrases. Mentionne : nombre de bénévoles actifs, nombre d\'événements, tâche la plus populaire, taux de présence, et total payé. Écris en français dans un ton professionnel et amical.',
   },
   en: {
     reporting: 'Reporting', reportBuilder: 'Report Builder', filters: 'Filters',
