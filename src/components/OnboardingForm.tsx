@@ -2,9 +2,10 @@
 
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { CheckIcon, ArrowRightIcon, Camera, Upload, User, Building2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { CheckIcon, ArrowRightIcon, Camera, FolderOpen, User, Building2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Belgian bank BIC mapping
 const BELGIAN_BANKS: Record<string, string> = {
