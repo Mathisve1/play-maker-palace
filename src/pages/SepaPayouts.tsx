@@ -9,7 +9,7 @@ import {
   ArrowLeft, Download, FileSignature, Loader2, AlertTriangle,
   CheckCircle, Clock, Building2, Users, Euro, Search, Ban,
   FileText, History, ChevronDown, ChevronUp, RotateCcw, Flag,
-  FileSpreadsheet, AlertCircle
+  FileSpreadsheet, AlertCircle, Zap, ShieldAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,6 +112,26 @@ const SepaPayouts = () => {
   const [rollbackSigningUrl, setRollbackSigningUrl] = useState<string | null>(null);
   const [rollbackBatchId, setRollbackBatchId] = useState<string | null>(null);
   const [showRollbackSigningDialog, setShowRollbackSigningDialog] = useState(false);
+  const [smartBatchLoading, setSmartBatchLoading] = useState(false);
+  const [showSmartPreview, setShowSmartPreview] = useState(false);
+  const [smartBatchItems, setSmartBatchItems] = useState<Array<{
+    volunteerId: string;
+    fullName: string;
+    email: string;
+    avatarUrl: string | null;
+    iban: string;
+    bic: string;
+    holderName: string;
+    amount: number;
+    hours: number;
+    taskTitle: string;
+    taskId: string;
+    taskDate: string | null;
+    compensationType: string;
+    hourConfirmationId: string;
+    seasonTotal: number;
+    exceedsPlafond: boolean;
+  }>>([]);
 
   useEffect(() => {
     init();
@@ -691,6 +711,190 @@ const SepaPayouts = () => {
     setExpandedBatchId(batchId);
   };
 
+  const MAX_PLAFOND = 3233.91;
+
+  const handleSmartBatch = async () => {
+    if (!clubId) return;
+    setSmartBatchLoading(true);
+    try {
+      // 1. Get all confirmed hour_confirmations that aren't in any sepa_batch_item yet
+      const { data: hcs } = await supabase
+        .from('hour_confirmations')
+        .select('id, task_id, volunteer_id, final_hours, final_amount, status')
+        .in('status', ['confirmed', 'auto_confirmed']);
+
+      if (!hcs || hcs.length === 0) {
+        toast.info(t3('Geen bevestigde uren gevonden om uit te betalen.', 'Aucune heure confirmée trouvée.', 'No confirmed hours found for payout.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      // 2. Get tasks for this club only
+      const taskIds = [...new Set(hcs.map(h => h.task_id))];
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('id, title, task_date, expense_amount, compensation_type, hourly_rate, daily_rate, club_id')
+        .in('id', taskIds)
+        .eq('club_id', clubId);
+
+      if (!tasks || tasks.length === 0) {
+        toast.info(t3('Geen taken van deze club gevonden.', 'Aucune tâche de ce club trouvée.', 'No tasks for this club found.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      const clubTaskIds = new Set(tasks.map(t => t.id));
+      const relevantHcs = hcs.filter(h => clubTaskIds.has(h.task_id));
+
+      if (relevantHcs.length === 0) {
+        toast.info(t3('Geen bevestigde uren voor deze club.', 'Aucune heure confirmée pour ce club.', 'No confirmed hours for this club.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      // 3. Filter out already-paid ones (existing sepa_batch_items)
+      const hcTaskVolPairs = relevantHcs.map(h => `${h.volunteer_id}-${h.task_id}`);
+      const { data: existingBatchItems } = await supabase
+        .from('sepa_batch_items')
+        .select('volunteer_id, task_id')
+        .in('task_id', [...clubTaskIds]);
+
+      const paidSet = new Set((existingBatchItems || []).map(i => `${i.volunteer_id}-${i.task_id}`));
+      const unpaidHcs = relevantHcs.filter(h => !paidSet.has(`${h.volunteer_id}-${h.task_id}`));
+
+      if (unpaidHcs.length === 0) {
+        toast.info(t3('Alle bevestigde uren zijn al uitbetaald.', 'Toutes les heures confirmées sont déjà payées.', 'All confirmed hours are already paid out.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      // 4. Only volunteers with signed season contracts
+      const volIds = [...new Set(unpaidHcs.map(h => h.volunteer_id))];
+      const { data: contracts } = await supabase
+        .from('season_contracts' as any)
+        .select('volunteer_id, status')
+        .eq('club_id', clubId)
+        .eq('status', 'signed')
+        .in('volunteer_id', volIds);
+
+      const signedVolIds = new Set(((contracts || []) as any[]).map((c: any) => c.volunteer_id));
+      const eligibleHcs = unpaidHcs.filter(h => signedVolIds.has(h.volunteer_id));
+
+      if (eligibleHcs.length === 0) {
+        toast.info(t3('Geen vrijwilligers met ondertekend seizoenscontract gevonden.', 'Aucun bénévole avec contrat signé trouvé.', 'No volunteers with signed season contract found.'));
+        setSmartBatchLoading(false);
+        return;
+      }
+
+      // 5. Fetch profiles
+      const eligibleVolIds = [...new Set(eligibleHcs.map(h => h.volunteer_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, bank_iban, bank_bic, bank_holder_name')
+        .in('id', eligibleVolIds) as any;
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      const taskMap = new Map(tasks.map(t => [t.id, t]));
+
+      // 6. Calculate season totals for plafond check
+      const { data: allSeasonItems } = await supabase
+        .from('sepa_batch_items')
+        .select('volunteer_id, amount')
+        .in('volunteer_id', eligibleVolIds);
+
+      const seasonTotals = new Map<string, number>();
+      (allSeasonItems || []).forEach(i => {
+        seasonTotals.set(i.volunteer_id, (seasonTotals.get(i.volunteer_id) || 0) + Number(i.amount));
+      });
+
+      // 7. Build smart batch items
+      const items = eligibleHcs.map(hc => {
+        const task = taskMap.get(hc.task_id);
+        const profile = profileMap.get(hc.volunteer_id);
+        if (!task || !profile) return null;
+
+        const hours = hc.final_hours || 0;
+        let amount = 0;
+        if (hc.final_amount) {
+          amount = hc.final_amount;
+        } else if (task.compensation_type === 'hourly' && task.hourly_rate) {
+          amount = hours * task.hourly_rate;
+        } else if (task.compensation_type === 'daily' && task.daily_rate) {
+          amount = task.daily_rate;
+        } else if (task.compensation_type === 'fixed' && task.expense_amount) {
+          amount = task.expense_amount;
+        }
+
+        const currentTotal = seasonTotals.get(hc.volunteer_id) || 0;
+        const newTotal = currentTotal + amount;
+
+        return {
+          volunteerId: hc.volunteer_id,
+          fullName: (profile as any).full_name || 'Onbekend',
+          email: (profile as any).email || '',
+          avatarUrl: (profile as any).avatar_url,
+          iban: ((profile as any).bank_iban || '').replace(/\s/g, '').toUpperCase(),
+          bic: (profile as any).bank_bic || '',
+          holderName: (profile as any).bank_holder_name || (profile as any).full_name || '',
+          amount: Math.round(amount * 100) / 100,
+          hours,
+          taskTitle: task.title,
+          taskId: task.id,
+          taskDate: task.task_date,
+          compensationType: task.compensation_type || 'fixed',
+          hourConfirmationId: hc.id,
+          seasonTotal: newTotal,
+          exceedsPlafond: newTotal > MAX_PLAFOND,
+        };
+      }).filter(Boolean) as typeof smartBatchItems;
+
+      setSmartBatchItems(items);
+      setShowSmartPreview(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Smart batch mislukt');
+    }
+    setSmartBatchLoading(false);
+  };
+
+  const handleApplySmartBatch = () => {
+    // Add all smart batch items to the payables list and select them
+    const newPayables: PayableVolunteer[] = smartBatchItems
+      .filter(item => validateIban(item.iban) && item.amount > 0)
+      .map(item => ({
+        volunteerId: item.volunteerId,
+        fullName: item.fullName,
+        email: item.email,
+        avatarUrl: item.avatarUrl,
+        iban: item.iban,
+        bic: item.bic,
+        holderName: item.holderName,
+        amount: item.amount,
+        taskTitle: item.taskTitle,
+        taskId: item.taskId,
+        taskDate: item.taskDate,
+        signupId: item.hourConfirmationId,
+        ibanValid: validateIban(item.iban),
+      }));
+
+    // Merge with existing payables (avoid duplicates)
+    const existingKeys = new Set(payables.map(p => `${p.volunteerId}-${p.taskId}`));
+    const toAdd = newPayables.filter(p => !existingKeys.has(`${p.volunteerId}-${p.taskId}`));
+    const merged = [...payables, ...toAdd];
+    setPayables(merged);
+
+    // Select all new items
+    const newSelection = new Set(selected);
+    newPayables.forEach(p => newSelection.add(`${p.volunteerId}-${p.taskId}`));
+    setSelected(newSelection);
+
+    setShowSmartPreview(false);
+    toast.success(t3(
+      `${newPayables.length} vrijwilligers toegevoegd aan de batch.`,
+      `${newPayables.length} bénévoles ajoutés au lot.`,
+      `${newPayables.length} volunteers added to batch.`
+    ));
+  };
+
   const statusBadge = (status: string) => {
     switch (status) {
       case 'pending': return <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" /> {t3('Open', 'Ouvert', 'Open')}</Badge>;
@@ -790,7 +994,7 @@ const SepaPayouts = () => {
           </div>
         </div>
 
-        {/* Search + Table */}
+        {/* Search + Smart Batch + Table */}
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           <div className="p-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="relative w-full sm:w-80">
@@ -802,17 +1006,31 @@ const SepaPayouts = () => {
                 className="pl-9"
               />
             </div>
-            <Button
-              onClick={handleGenerateSepa}
-              disabled={selected.size === 0 || generating || !clubIban.trim() || !batchMessage.trim()}
-              className="gap-2 w-full sm:w-auto"
-            >
-              {generating ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Genereren...</>
-              ) : (
-                <><FileSignature className="w-4 h-4" /> SEPA XML Genereren ({selected.size})</>
-              )}
-            </Button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={handleSmartBatch}
+                disabled={smartBatchLoading}
+                className="gap-2 flex-1 sm:flex-none"
+              >
+                {smartBatchLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {t3('Analyseren...', 'Analyse...', 'Analyzing...')}</>
+                ) : (
+                  <><Zap className="w-4 h-4" /> Smart Batch</>
+                )}
+              </Button>
+              <Button
+                onClick={handleGenerateSepa}
+                disabled={selected.size === 0 || generating || !clubIban.trim() || !batchMessage.trim()}
+                className="gap-2 flex-1 sm:flex-none"
+              >
+                {generating ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Genereren...</>
+                ) : (
+                  <><FileSignature className="w-4 h-4" /> SEPA XML ({selected.size})</>
+                )}
+              </Button>
+            </div>
           </div>
 
           {filtered.length === 0 ? (
@@ -1190,6 +1408,98 @@ const SepaPayouts = () => {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Smart Batch Preview Dialog */}
+      <Dialog open={showSmartPreview} onOpenChange={setShowSmartPreview}>
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
+              {t3('Smart Batch Voorstel', 'Proposition Smart Batch', 'Smart Batch Proposal')}
+            </DialogTitle>
+            <DialogDescription>
+              {t3(
+                `${smartBatchItems.length} vrijwilligers, totaal €${smartBatchItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}`,
+                `${smartBatchItems.length} bénévoles, total €${smartBatchItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}`,
+                `${smartBatchItems.length} volunteers, total €${smartBatchItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}`
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {smartBatchItems.some(i => i.exceedsPlafond) && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-sm">
+              <ShieldAlert className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+              <p className="text-orange-700 dark:text-orange-400">
+                {t3(
+                  'Let op: sommige vrijwilligers overschrijden het wettelijke jaarplafond van €3.233,91.',
+                  'Attention : certains bénévoles dépassent le plafond légal annuel de €3.233,91.',
+                  'Warning: some volunteers exceed the annual legal cap of €3,233.91.'
+                )}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {smartBatchItems.map((item, i) => (
+              <div
+                key={`${item.volunteerId}-${item.taskId}`}
+                className={`flex items-center justify-between gap-3 p-3 rounded-lg border ${
+                  item.exceedsPlafond ? 'border-orange-500/30 bg-orange-500/5' : 'border-border bg-card'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <Avatar className="w-8 h-8 shrink-0">
+                    <AvatarImage src={item.avatarUrl || undefined} />
+                    <AvatarFallback className="text-xs">{item.fullName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{item.fullName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{item.taskTitle}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {item.hours > 0 && `${item.hours}h`}
+                      {item.compensationType === 'hourly' && ` × uurtarief`}
+                      {item.compensationType === 'daily' && ` dagvergoeding`}
+                      {item.compensationType === 'fixed' && ` vast bedrag`}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold text-foreground">€{item.amount.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {t3('Seizoen', 'Saison', 'Season')}: €{item.seasonTotal.toFixed(2)}
+                  </p>
+                  {item.exceedsPlafond && (
+                    <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20 text-[10px] mt-1">
+                      {t3('Wettelijk plafond risico', 'Risque plafond légal', 'Legal cap risk')}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {t3('Totaal', 'Total', 'Total')}: €{smartBatchItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {smartBatchItems.filter(i => !i.exceedsPlafond).length} {t3('binnen plafond', 'dans le plafond', 'within cap')}
+                {smartBatchItems.some(i => i.exceedsPlafond) && `, ${smartBatchItems.filter(i => i.exceedsPlafond).length} ${t3('boven plafond', 'au-dessus du plafond', 'above cap')}`}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowSmartPreview(false)}>
+                {t3('Annuleren', 'Annuler', 'Cancel')}
+              </Button>
+              <Button onClick={handleApplySmartBatch} className="gap-2">
+                <CheckCircle className="w-4 h-4" />
+                {t3('Toepassen', 'Appliquer', 'Apply')}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </ClubPageLayout>
