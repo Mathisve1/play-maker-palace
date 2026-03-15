@@ -170,8 +170,12 @@ const Community = () => {
 
       const clubIds = clubsData.map(c => c.id);
 
-      const [tasksRes, signupsRes, eventsRes, partnersRes, allTasksRes, reviewsRes] = await Promise.all([
+      const today = new Date().toISOString().split('T')[0];
+      const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+
+      const [tasksRes, upcomingTasksRes, signupsRes, eventsRes, partnersRes, allTasksRes, reviewsRes] = await Promise.all([
         supabase.from('tasks').select('club_id').in('club_id', clubIds).eq('status', 'open'),
+        supabase.from('tasks').select('club_id').in('club_id', clubIds).eq('status', 'open').gte('task_date', today).lte('task_date', in30),
         supabase.from('task_signups').select('task_id, volunteer_id'),
         supabase.from('events').select('club_id').in('club_id', clubIds),
         supabase.from('external_partners').select('club_id').in('club_id', clubIds),
@@ -181,6 +185,9 @@ const Community = () => {
 
       const taskCounts: Record<string, number> = {};
       tasksRes.data?.forEach(t => { taskCounts[t.club_id] = (taskCounts[t.club_id] || 0) + 1; });
+
+      const upcomingCounts: Record<string, number> = {};
+      upcomingTasksRes.data?.forEach((t: any) => { upcomingCounts[t.club_id] = (upcomingCounts[t.club_id] || 0) + 1; });
 
       const fullTaskClubMap: Record<string, string> = {};
       allTasksRes.data?.forEach((t: any) => { fullTaskClubMap[t.id] = t.club_id; });
