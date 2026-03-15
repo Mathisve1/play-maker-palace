@@ -9,12 +9,14 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   CalendarDays, Send, FileSignature, Download, CheckCircle, Clock,
-  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard, UserCheck, TrendingUp, Euro
+  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard, UserCheck, TrendingUp, Euro,
+  Archive, ChevronRight, Lock
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
+import CloseSeasonWizard from '@/components/CloseSeasonWizard';
 
 const SeasonContractManager = () => {
   const { language } = useLanguage();
