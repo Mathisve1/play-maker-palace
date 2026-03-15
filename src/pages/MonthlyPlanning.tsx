@@ -138,9 +138,28 @@ const MonthlyPlanning = () => {
         if (enrs.length > 0) {
           const { data: signupsData } = await supabase
             .from('monthly_day_signups').select('*').in('enrollment_id', enrs.map(e => e.id));
+
+          // Fetch season check-in counts for all volunteers in this plan
+          const volIds = [...new Set(enrs.map(e => e.volunteer_id))];
+          const { data: checkinCounts } = await supabase
+            .from('season_checkins')
+            .select('volunteer_id')
+            .in('volunteer_id', volIds);
+          const checkinMap = new Map<string, number>();
+          (checkinCounts || []).forEach((c: any) => {
+            checkinMap.set(c.volunteer_id, (checkinMap.get(c.volunteer_id) || 0) + 1);
+          });
+
           const enriched = (signupsData || []).map((s: any) => {
             const enr = enrs.find(e => e.id === s.enrollment_id);
-            return { ...s, volunteer_name: (enr?.profiles as any)?.full_name || t3('Onbekend', 'Inconnu', 'Unknown'), volunteer_email: (enr?.profiles as any)?.email || null };
+            return {
+              ...s,
+              volunteer_name: (enr?.profiles as any)?.full_name || t3('Onbekend', 'Inconnu', 'Unknown'),
+              volunteer_email: (enr?.profiles as any)?.email || null,
+              volunteer_avatar_url: (enr?.profiles as any)?.avatar_url || null,
+              contract_status: enr?.contract_status || 'none',
+              season_checkin_count: checkinMap.get(s.volunteer_id) || 0,
+            };
           });
           setDaySignups(enriched as DaySignupClub[]);
         } else { setDaySignups([]); }
