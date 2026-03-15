@@ -419,6 +419,7 @@ const PartnerDashboard = () => {
       setActiveTab={setActiveTab}
       onLogout={handleLogoutWrapped}
       onOpenProfile={() => setShowProfileDialog(true)}
+      tasksBadge={recentlyModifiedCount}
     />
   );
 
