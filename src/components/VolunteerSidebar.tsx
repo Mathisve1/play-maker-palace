@@ -102,6 +102,7 @@ const labels: Record<Language, Record<string, string>> = {
     academy: 'Academy',
     loyalty: 'Loyalty',
     safety: 'Safety Check',
+    availability: 'Availability',
     settings: 'Settings',
     help: 'Need help?',
     logout: 'Log out',
