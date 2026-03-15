@@ -250,6 +250,9 @@ const ReportingDashboard = () => {
   const aiEndRef = useRef<HTMLDivElement>(null);
   const [selectedVolunteerProfile, setSelectedVolunteerProfile] = useState<VolunteerReport | null>(null);
   const [generatingSeasonReport, setGeneratingSeasonReport] = useState(false);
+  const [aiSummary, setAiSummary] = useState('');
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState(false);
 
   // ── Init ────────────────────────────────────────────────────────
   const { clubId: contextClubId } = useClubContext();
