@@ -4,9 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import { nl } from 'date-fns/locale';
-import { fr } from 'date-fns/locale';
-import { enUS } from 'date-fns/locale';
+import { nl, fr, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 interface Notification {
@@ -16,6 +14,7 @@ interface Notification {
   message: string;
   read: boolean;
   created_at: string;
+  metadata: Record<string, unknown> | null;
 }
 
 const DATE_LOCALES = { nl, fr, en: enUS } as const;
@@ -30,6 +29,7 @@ const NotificationBell = ({ userId }: { userId: string }) => {
     language === 'nl' ? nlStr : language === 'fr' ? frStr : enStr;
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const hasUrgent = notifications.some(n => !n.read && n.type === 'urgent');
 
   const fetchNotifications = async () => {
     const { data } = await supabase
@@ -77,6 +77,15 @@ const NotificationBell = ({ userId }: { userId: string }) => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  const handleNotificationClick = (n: Notification) => {
+    setOpen(false);
+    const meta = n.metadata as Record<string, any> | null;
+    if (meta?.task_id) navigate(`/task/${meta.task_id}`);
+    else if (meta?.volunteer_id) navigate(`/volunteer/${meta.volunteer_id}`);
+    else if (meta?.action === 'sign_contract') navigate('/dashboard');
+    else navigate('/notifications');
+  };
+
   return (
     <div className="relative">
       <button
@@ -86,7 +95,8 @@ const NotificationBell = ({ userId }: { userId: string }) => {
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+          <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[10px] font-bold rounded-full flex items-center justify-center
+            ${hasUrgent ? 'bg-destructive text-destructive-foreground animate-pulse' : 'bg-destructive text-destructive-foreground'}`}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -132,21 +142,29 @@ const NotificationBell = ({ userId }: { userId: string }) => {
                 </div>
               ) : (
                 <div>
-                  {notifications.map(n => (
-                    <div
-                      key={n.id}
-                      className={`p-3 border-b border-border last:border-0 transition-colors ${!n.read ? 'bg-primary/5' : ''}`}
-                    >
-                      <p className="text-sm font-medium text-foreground">{n.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
-                      <p className="text-[11px] text-muted-foreground/60 mt-1">
-                        {formatDistanceToNow(new Date(n.created_at), {
-                          addSuffix: true,
-                          locale: DATE_LOCALES[language] || nl,
-                        })}
-                      </p>
-                    </div>
-                  ))}
+                  {notifications.map(n => {
+                    const isUrgent = n.type === 'urgent';
+                    return (
+                      <div
+                        key={n.id}
+                        className={`p-3 border-b border-border last:border-0 transition-colors cursor-pointer hover:bg-muted/50
+                          ${isUrgent && !n.read ? 'bg-destructive/5' : !n.read ? 'bg-primary/5' : ''}`}
+                        onClick={() => handleNotificationClick(n)}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          {isUrgent && <span className="w-2 h-2 rounded-full bg-destructive animate-pulse shrink-0" />}
+                          <p className={`text-sm text-foreground ${!n.read ? 'font-semibold' : 'font-medium'}`}>{n.title}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
+                        <p className="text-[11px] text-muted-foreground/60 mt-1">
+                          {formatDistanceToNow(new Date(n.created_at), {
+                            addSuffix: true,
+                            locale: DATE_LOCALES[language] || nl,
+                          })}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </motion.div>
