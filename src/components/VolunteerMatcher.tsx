@@ -67,6 +67,10 @@ const labels = {
     tasks: 'tâches',
     matchScore: 'Match',
     sending: "L'email est envoyé...",
+    contractOk: 'Contrat OK',
+    contractPending: 'Contrat en cours',
+    noContract: 'Pas de contrat',
+    noContractTooltip: 'Le bénévole n\'a pas encore de contrat saisonnier',
   },
   en: {
     title: 'Find Volunteers',
