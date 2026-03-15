@@ -108,6 +108,8 @@ const Chat = () => {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isUserScrolledRef = useRef(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { userId: contextUserId, isOwner } = useClubContext();
 
