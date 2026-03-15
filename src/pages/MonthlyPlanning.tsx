@@ -62,6 +62,9 @@ interface DaySignupClub {
   dispute_status: string; dispute_escalated_at: string | null;
   club_reported_checkout: string | null; volunteer_reported_checkout: string | null;
   volunteer_name?: string; volunteer_email?: string;
+  volunteer_avatar_url?: string | null;
+  contract_status?: string;
+  season_checkin_count?: number;
 }
 
 const MonthlyPlanning = () => {
