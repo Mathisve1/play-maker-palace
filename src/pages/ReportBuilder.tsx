@@ -22,6 +22,8 @@ import { nl } from 'date-fns/locale';
 // jsPDF and html2canvas are lazy-loaded when needed for PDF export
 import Logo from '@/components/Logo';
 import { useLanguage } from '@/i18n/LanguageContext';
+import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart as RechartsPie, Pie, Cell, LineChart, Line, Legend, AreaChart, Area
