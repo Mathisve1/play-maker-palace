@@ -1079,6 +1079,34 @@ const VolunteerDashboard = () => {
               className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring border border-border" />
           </div>
 
+          {/* Pending Reviews section (mine tab only) */}
+          {activeTab === 'mine' && pendingReviews.length > 0 && (
+            <div>
+              <h2 className="text-lg font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                {language === 'nl' ? 'Te beoordelen' : language === 'fr' ? 'À évaluer' : 'Pending reviews'}
+              </h2>
+              <div className="space-y-2">
+                {pendingReviews.map((pr) => (
+                  <motion.div key={pr.taskSignupId} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    className="bg-card rounded-2xl p-4 border border-yellow-200/50 dark:border-yellow-800/30 shadow-sm flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground truncate">{pr.taskTitle}</p>
+                      <p className="text-xs text-muted-foreground">{pr.clubName}</p>
+                    </div>
+                    <button
+                      onClick={() => setReviewTarget({ taskSignupId: pr.taskSignupId, taskTitle: pr.taskTitle, revieweeId: pr.clubOwnerId })}
+                      className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-colors flex items-center gap-1.5"
+                    >
+                      <Star className="w-3.5 h-3.5" />
+                      {language === 'nl' ? 'Beoordeel' : language === 'fr' ? 'Évaluer' : 'Review'}
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Events */}
           {filteredEvents.length > 0 && (
             <div>
