@@ -151,7 +151,7 @@ const SeasonContractManager = () => {
 
   if (loading) {
     return (
-      <ClubPageLayout title={t('Seizoenscontracten', 'Contrats saisonniers', 'Season Contracts')}>
+      <ClubPageLayout>
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
