@@ -1290,6 +1290,51 @@ export type Database = {
           },
         ]
       }
+      club_onboarding_emails: {
+        Row: {
+          club_id: string
+          created_at: string
+          email_step: number
+          id: string
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          email_step: number
+          id?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          email_step?: number
+          id?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_onboarding_emails_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_onboarding_emails_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_referrals: {
         Row: {
           bonus_points_awarded: number
