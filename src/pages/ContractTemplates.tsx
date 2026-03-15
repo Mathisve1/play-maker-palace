@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Edit3, Loader2, ShieldCheck, Plus, Eye } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { seasonTemplateNames } from '@/data/seasonContractTemplates';
 
 interface Template {
