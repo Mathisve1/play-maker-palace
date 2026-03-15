@@ -145,7 +145,9 @@ const ClubOwnerSidebar = ({
   const managementItems = [
     { label: t3('Vrijwilligers', 'Bénévoles', 'Volunteers'), icon: Users, path: '/volunteer-management', badge: pendingReviewCount },
     { label: t3('SEPA Vergoedingen', 'Indemnités SEPA', 'SEPA Payments'), icon: Banknote, path: '/sepa-payouts' },
-    { label: t3('Contracten', 'Contrats', 'Contracts'), icon: FileText, path: '/contract-builder' },
+    { label: t3('Contract Builder', 'Contract Builder', 'Contract Builder'), icon: FileText, path: '/contract-builder' },
+    { label: t3('Sjablonen', 'Modèles', 'Templates'), icon: FileText, path: '/contract-templates' },
+    { label: t3('Seizoenscontracten', 'Contrats saisonniers', 'Season Contracts'), icon: CalendarPlus, path: '/season-contracts' },
     { label: 'Briefings', icon: ClipboardList, path: '/briefing-builder' },
     { label: 'Compliance', icon: Shield, path: '/compliance' },
     { label: t3('Audit Log', 'Journal d\'audit', 'Audit Log'), icon: ScrollText, path: '/audit-log' },
