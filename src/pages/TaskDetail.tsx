@@ -230,6 +230,8 @@ const TaskDetail = () => {
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
   const [allowShiftSwaps, setAllowShiftSwaps] = useState(false);
   const [showSwapDialog, setShowSwapDialog] = useState(false);
+  const [hasBriefing, setHasBriefing] = useState(false);
+  const [showBriefing, setShowBriefing] = useState(false);
 
   const l = labels[language];
 
