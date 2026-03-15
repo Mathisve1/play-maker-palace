@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Language } from '@/i18n/translations';
+import { crispOpen } from '@/lib/crisp';
 
 /* ──────────────────────────────────────────────
    Types
@@ -706,6 +707,10 @@ const VolunteerHelp = () => {
             >
               <MessageCircle className="w-4 h-4" />
               {c.contactWhatsApp}
+            </Button>
+            <Button className="gap-2" onClick={() => crispOpen()}>
+              <MessageCircle className="w-4 h-4" />
+              {language === 'nl' ? 'Chat met support' : language === 'fr' ? 'Chatter avec le support' : 'Chat with support'}
             </Button>
           </div>
         </motion.div>

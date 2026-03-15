@@ -3,11 +3,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import IOSInstallOverlay from "@/components/IOSInstallOverlay";
 import { autoResubscribeIfNeeded } from "@/lib/pushNotifications";
 import SentryErrorBoundary from "@/components/SentryErrorBoundary";
+// Crisp live chat — set VITE_CRISP_WEBSITE_ID in your environment
+import { initCrisp, crispShowHideForRoute } from "@/lib/crisp";
 
 import RequireAuth from "./components/RequireAuth";
 import { Loader2 } from "lucide-react";
@@ -90,11 +92,25 @@ const queryClient = new QueryClient({
   },
 });
 
+/** Route-aware Crisp visibility controller */
+const CrispRouteGuard = () => {
+  const location = useLocation();
+  useEffect(() => {
+    crispShowHideForRoute(location.pathname);
+  }, [location.pathname]);
+  return null;
+};
+
 const App = () => {
   // Auto-resubscribe push if user has push enabled but subscription was cleared
   useEffect(() => {
     const timer = setTimeout(() => autoResubscribeIfNeeded(), 2000);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Initialize Crisp live chat
+  useEffect(() => {
+    initCrisp();
   }, []);
 
   return (
@@ -170,6 +186,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
+          <CrispRouteGuard />
           <IOSInstallOverlay />
         </BrowserRouter>
       </TooltipProvider>

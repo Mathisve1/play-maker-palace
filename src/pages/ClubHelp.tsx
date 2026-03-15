@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Language } from '@/i18n/translations';
 import SEOHead from '@/components/SEOHead';
+import { crispOpen } from '@/lib/crisp';
 
 /* ── Types ── */
 interface FAQItem { q: string; a: string; tags?: string[] }
@@ -553,6 +554,10 @@ const ClubHelp = () => {
             <Button variant="outline" className="gap-2" onClick={() => navigate('/community')}>
               <Globe className="w-4 h-4" />
               Community
+            </Button>
+            <Button className="gap-2" onClick={() => crispOpen()}>
+              <MessageCircle className="w-4 h-4" />
+              {language === 'nl' ? 'Chat met support' : language === 'fr' ? 'Chatter avec le support' : 'Chat with support'}
             </Button>
           </div>
         </motion.div>
