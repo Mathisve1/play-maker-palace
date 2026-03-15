@@ -17,7 +17,7 @@ import ClubPageLayout from '@/components/ClubPageLayout';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
 import CloseSeasonWizard from '@/components/CloseSeasonWizard';
-import { generateSeasonReport, type SeasonReportVolunteer, type SeasonReportTaskType, type SeasonReportBatch } from '@/lib/generateSeasonReport';
+import { generateSeasonReport, type SeasonReportVolunteer, type SeasonReportTaskType, type SeasonReportBatch, type MonthlyAttendance, type ContractTypeCompensation, type ContractStatusSummary } from '@/lib/generateSeasonReport';
 
 const SeasonContractManager = () => {
   const { language } = useLanguage();
