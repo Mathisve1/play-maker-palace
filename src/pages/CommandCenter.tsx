@@ -61,6 +61,9 @@ const CommandCenter = () => {
   const [processing, setProcessing] = useState(false);
   const [filterType, setFilterType] = useState<string | null>(null);
   const [contractConfirm, setContractConfirm] = useState<{ volunteer: any; task: any } | null>(null);
+  const [tomorrowReminders, setTomorrowReminders] = useState<{ taskId: string; taskTitle: string; count: number }[]>([]);
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [showBulkMessage, setShowBulkMessage] = useState(false);
 
   const t = language === 'nl' ? {
     title: 'Actielijst',
