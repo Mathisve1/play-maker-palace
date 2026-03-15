@@ -424,6 +424,12 @@ const VolunteerDashboardHome = ({
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{task.title}</p>
+                    {zoneAssignments[task.id] && (
+                      <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/15 text-accent-foreground w-fit">
+                        <Layers className="w-3 h-3" />
+                        Zone: {zoneAssignments[task.id]}
+                      </span>
+                    )}
                     <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">
                       {task.clubs?.name && <span>{task.clubs.name}</span>}
                       {task.task_date && (

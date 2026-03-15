@@ -334,7 +334,14 @@ const ZonePlanning = () => {
           <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-3 transition-colors">
             <ArrowLeft className="w-4 h-4" /> {l.back}
           </button>
-          <h1 className="text-2xl font-heading font-bold text-foreground">{l.title}</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-heading font-bold text-foreground">{l.title}</h1>
+            <label className="flex items-center gap-2 cursor-pointer ml-auto">
+              {overviewMode ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+              <span className="text-xs font-medium text-muted-foreground">{l.volunteerOverview}</span>
+              <Switch checked={overviewMode} onCheckedChange={setOverviewMode} />
+            </label>
+          </div>
           <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{task.title}</span>
             {task.task_date && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>}
