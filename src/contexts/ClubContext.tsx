@@ -52,33 +52,38 @@ export const ClubProvider = ({ children, authenticatedUserId }: { children: Reac
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    // Parallel: profile + owned clubs + memberships
+    // Parallel: profile + owned clubs + club_memberships (new table)
     const [profileRes, ownedRes, membershipRes] = await Promise.all([
-      supabase.from('profiles').select('full_name, email, avatar_url').eq('id', userId).maybeSingle(),
+      supabase.from('profiles').select('full_name, email, avatar_url, primary_club_id').eq('id', userId).maybeSingle(),
       supabase.from('clubs').select('id, name, logo_url, sport, location').eq('owner_id', userId).limit(1),
-      supabase.from('club_members').select('club_id, role').eq('user_id', userId).limit(1),
+      supabase.from('club_memberships').select('club_id, club_role, status').eq('volunteer_id', userId).eq('status', 'actief'),
     ]);
 
-    if (profileRes.data) {
+    const profileData = profileRes.data as any;
+    if (profileData) {
       setProfile({
-        full_name: profileRes.data.full_name || '',
-        email: profileRes.data.email || '',
-        avatar_url: profileRes.data.avatar_url,
+        full_name: profileData.full_name || '',
+        email: profileData.email || '',
+        avatar_url: profileData.avatar_url,
       });
     }
 
     const ownedClub = ownedRes.data?.[0];
-    const membership = membershipRes.data?.[0];
+    const memberships = (membershipRes.data || []) as any[];
+    const primaryClubId = profileData?.primary_club_id;
+
     if (ownedClub) {
       setClubId(ownedClub.id);
       setClubInfo(ownedClub);
       setIsOwner(true);
-    } else if (membership?.club_id) {
-      setMemberRole((membership.role as any) || 'medewerker');
+    } else if (memberships.length > 0) {
+      // Prefer the primary_club_id if it matches an active membership, otherwise first
+      const target = memberships.find((m: any) => m.club_id === primaryClubId) || memberships[0];
+      setMemberRole((target.club_role as any) || 'medewerker');
       const { data: c } = await supabase
         .from('clubs')
         .select('id, name, logo_url, sport, location')
-        .eq('id', membership.club_id)
+        .eq('id', target.club_id)
         .maybeSingle();
       if (c) {
         setClubId(c.id);

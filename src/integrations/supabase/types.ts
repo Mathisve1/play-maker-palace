@@ -1035,6 +1035,55 @@ export type Database = {
           },
         ]
       }
+      club_memberships: {
+        Row: {
+          club_id: string
+          club_role: string
+          id: string
+          joined_at: string
+          status: string
+          volunteer_id: string
+        }
+        Insert: {
+          club_id: string
+          club_role?: string
+          id?: string
+          joined_at?: string
+          status?: string
+          volunteer_id: string
+        }
+        Update: {
+          club_id?: string
+          club_role?: string
+          id?: string
+          joined_at?: string
+          status?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_memberships_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_memberships_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_memberships_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_onboarding_config: {
         Row: {
           club_id: string
@@ -2754,6 +2803,7 @@ export type Database = {
           onesignal_player_id: string | null
           phone: string | null
           preferences: Json | null
+          primary_club_id: string | null
           public_profile: boolean
           push_notifications_enabled: boolean
           push_prompt_seen: boolean
@@ -2781,6 +2831,7 @@ export type Database = {
           onesignal_player_id?: string | null
           phone?: string | null
           preferences?: Json | null
+          primary_club_id?: string | null
           public_profile?: boolean
           push_notifications_enabled?: boolean
           push_prompt_seen?: boolean
@@ -2808,6 +2859,7 @@ export type Database = {
           onesignal_player_id?: string | null
           phone?: string | null
           preferences?: Json | null
+          primary_club_id?: string | null
           public_profile?: boolean
           push_notifications_enabled?: boolean
           push_prompt_seen?: boolean
@@ -2816,7 +2868,22 @@ export type Database = {
           stripe_account_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_primary_club_id_fkey"
+            columns: ["primary_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_primary_club_id_fkey"
+            columns: ["primary_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       push_subscriptions: {
         Row: {

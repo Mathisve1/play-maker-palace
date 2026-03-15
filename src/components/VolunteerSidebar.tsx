@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
-  HelpCircle, Building2, Shield, CalendarDays, Moon, Sun,
+  HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import {
@@ -42,6 +42,7 @@ const labels: Record<Language, Record<string, string>> = {
     monthly: 'Maandplanning',
     messages: 'Berichten',
     clubSearch: 'Club Zoeken',
+    myClubs: 'Mijn Clubs',
     payments: 'Vergoedingen',
     contracts: 'Contracten',
     briefings: 'Briefings',
@@ -63,6 +64,7 @@ const labels: Record<Language, Record<string, string>> = {
     monthly: 'Planning mensuel',
     messages: 'Messages',
     clubSearch: 'Chercher un club',
+    myClubs: 'Mes Clubs',
     payments: 'Remboursements',
     contracts: 'Contrats',
     briefings: 'Briefings',
@@ -84,6 +86,7 @@ const labels: Record<Language, Record<string, string>> = {
     monthly: 'Monthly Planning',
     messages: 'Messages',
     clubSearch: 'Find Clubs',
+    myClubs: 'My Clubs',
     payments: 'Payments',
     contracts: 'Contracts',
     briefings: 'Briefings',
@@ -215,6 +218,12 @@ const VolunteerSidebar = ({
                 <SidebarMenuButton onClick={() => handleExternalNav('/community')} className="min-h-[48px]">
                   <Users className="w-5 h-5" />
                   <span>{l.clubSearch}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => handleExternalNav('/my-clubs')} className="min-h-[48px]">
+                  <Home className="w-5 h-5" />
+                  <span>{l.myClubs}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
