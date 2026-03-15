@@ -14,6 +14,7 @@ export interface ClubWithStats {
   logo_url: string | null;
   description: string | null;
   task_count: number;
+  upcoming_task_count: number;
   volunteer_count: number;
   event_count: number;
   partner_count: number;
