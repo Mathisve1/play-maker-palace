@@ -146,6 +146,9 @@ const labels = {
     pushDisable: 'Disable',
     pushUnavailable: 'Push notifications are not supported in this browser',
     pushDenied: 'Push notifications are blocked. Change this in your browser settings.',
+    themeTitle: 'Appearance',
+    lightMode: 'Light mode',
+    darkMode: 'Dark mode',
   },
 };
 
