@@ -274,6 +274,43 @@ const CommandCenter = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Load tomorrow's unconfirmed tasks
+  useEffect(() => {
+    if (!contextClubId) return;
+    const loadReminders = async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+      const { data: tomorrowTasks } = await supabase
+        .from('tasks')
+        .select('id, title')
+        .eq('club_id', contextClubId)
+        .gte('task_date', tomorrowStr + 'T00:00:00')
+        .lte('task_date', tomorrowStr + 'T23:59:59');
+
+      if (!tomorrowTasks || tomorrowTasks.length === 0) { setTomorrowReminders([]); return; }
+
+      const taskIds = tomorrowTasks.map(t => t.id);
+      const { data: signups } = await (supabase as any)
+        .from('task_signups')
+        .select('task_id, volunteer_id, checked_in_at')
+        .in('task_id', taskIds)
+        .eq('status', 'assigned');
+
+      const unchecked = (signups || []).filter((s: any) => !s.checked_in_at);
+      const grouped = new Map<string, number>();
+      unchecked.forEach((s: any) => grouped.set(s.task_id, (grouped.get(s.task_id) || 0) + 1));
+
+      const reminders = tomorrowTasks
+        .filter(t => grouped.has(t.id))
+        .map(t => ({ taskId: t.id, taskTitle: t.title, count: grouped.get(t.id) || 0 }));
+
+      setTomorrowReminders(reminders);
+    };
+    loadReminders();
+  }, [contextClubId]);
+
   // Realtime subscriptions for live updates (debounced)
   useEffect(() => {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
