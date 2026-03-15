@@ -55,6 +55,7 @@ const CommunityPartnerDetail = lazy(() => import("./pages/CommunityPartnerDetail
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
 const VolunteerHelp = lazy(() => import("./pages/VolunteerHelp"));
 const StressTest = lazy(() => import("./pages/StressTest"));
+const EventAttendance = lazy(() => import("./pages/EventAttendance"));
 const VolunteerManagement = lazy(() => import("./pages/VolunteerManagement"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const MyClubs = lazy(() => import("./pages/MyClubs"));
@@ -128,6 +129,7 @@ const App = () => {
             <Route path="/reporting" element={<RequireAuth redirectTo="/club-login"><ReportingDashboard /></RequireAuth>} />
             <Route path="/report-builder" element={<RequireAuth redirectTo="/club-login"><ReportBuilder /></RequireAuth>} />
             <Route path="/events-manager" element={<RequireAuth redirectTo="/club-login"><EventsManager /></RequireAuth>} />
+            <Route path="/events/:eventId/attendance" element={<RequireAuth redirectTo="/club-login"><EventAttendance /></RequireAuth>} />
             <Route path="/planning" element={<RequireAuth redirectTo="/club-login"><PlanningOverview /></RequireAuth>} />
             <Route path="/monthly-planning" element={<RequireAuth redirectTo="/club-login"><MonthlyPlanning /></RequireAuth>} />
             <Route path="/planning/:taskId" element={<RequireAuth redirectTo="/club-login"><ZonePlanning /></RequireAuth>} />

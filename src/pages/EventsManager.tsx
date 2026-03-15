@@ -10,7 +10,7 @@ import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
   PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
-  FileText, Save,
+  FileText, Save, ClipboardCheck,
 } from 'lucide-react';
 import EventTemplateDialog from '@/components/EventTemplateDialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
@@ -985,6 +985,9 @@ const EventsManager = () => {
                 </button>
                 <button onClick={() => navigate(`/safety/${event.id}`)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors touch-target">
                   <Radio className="w-3.5 h-3.5" /> Control Room
+                </button>
+                <button onClick={() => navigate(`/events/${event.id}/attendance`)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors touch-target">
+                  <ClipboardCheck className="w-3.5 h-3.5" /> {nl ? 'Aanwezigheid' : 'Attendance'}
                 </button>
                 <button onClick={() => setSafetyConfigEvent({ eventId: event.id, clubId: event.club_id })} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-accent transition-colors touch-target">
                   <Shield className="w-3.5 h-3.5" /> {nl ? 'Safety Rollen' : 'Safety Roles'}
