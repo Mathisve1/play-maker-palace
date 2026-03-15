@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
-import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2, BookOpen, Shield, CalendarDays, ClipboardList, FileText } from 'lucide-react';
+import { Loader2, Calendar, MapPin, Users, Layers, ChevronRight, Search, Play, Trash2, BookOpen, Shield, CalendarDays, ClipboardList, FileText, LayoutList } from 'lucide-react';
+import PlanningCalendarView from '@/components/PlanningCalendarView';
 import { toast } from 'sonner';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import PageNavTabs from '@/components/PageNavTabs';
@@ -71,6 +72,9 @@ const PlanningOverview = () => {
   const [showSafetyRoles, setShowSafetyRoles] = useState(false);
   const [monthlyDemoLoading, setMonthlyDemoLoading] = useState(false);
   const [monthlyDemoDeleteLoading, setMonthlyDemoDeleteLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>(() => {
+    return (localStorage.getItem('planning-view-mode') as 'list' | 'calendar') || 'list';
+  });
 
   const { clubId: contextClubId } = useClubContext();
 
@@ -265,7 +269,7 @@ const PlanningOverview = () => {
           { label: 'Planning', path: '/planning' },
           { label: t3('Maandplanning', 'Planification mensuelle', 'Monthly Planning'), path: '/monthly-planning' },
         ]} />
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">
               Planning
@@ -274,7 +278,24 @@ const PlanningOverview = () => {
                {t3('Beheer event planning, losse taken en maandcontracten', 'Gérez la planification, les tâches et les contrats mensuels', 'Manage event planning, standalone tasks and monthly contracts')}
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
+            {/* View mode toggle */}
+            <div className="inline-flex rounded-xl border border-border overflow-hidden">
+              <button
+                onClick={() => { setViewMode('list'); localStorage.setItem('planning-view-mode', 'list'); }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'}`}
+              >
+                <LayoutList className="w-4 h-4" />
+                <span className="hidden sm:inline">{t3('Lijst', 'Liste', 'List')}</span>
+              </button>
+              <button
+                onClick={() => { setViewMode('calendar'); localStorage.setItem('planning-view-mode', 'calendar'); }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'calendar' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'}`}
+              >
+                <CalendarDays className="w-4 h-4" />
+                <span className="hidden sm:inline">{t3('Kalender', 'Calendrier', 'Calendar')}</span>
+              </button>
+            </div>
             <button onClick={() => setShowSafetyRoles(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
               <Shield className="w-4 h-4" /> {t3('Safety Rollen', 'Rôles sécurité', 'Safety Roles')}
@@ -313,7 +334,9 @@ const PlanningOverview = () => {
           </div>
         )}
 
-        {/* Tabs */}
+        {viewMode === 'calendar' ? (
+          <PlanningCalendarView events={events} tasks={tasks} language={language} />
+        ) : (
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
           <TabsList className="w-full grid grid-cols-3 h-12">
              <TabsTrigger value="events" className="flex items-center gap-2 text-sm">
@@ -330,7 +353,6 @@ const PlanningOverview = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Search - shared */}
           <div className="relative mt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -342,7 +364,6 @@ const PlanningOverview = () => {
             />
           </div>
 
-          {/* Tab: Event Planning */}
           <TabsContent value="events" className="space-y-4 mt-4">
             {filteredEvents.map(event => {
               const eventTasks = getEventTasks(event.id);
@@ -380,7 +401,6 @@ const PlanningOverview = () => {
             )}
           </TabsContent>
 
-          {/* Tab: Losse Taken */}
           <TabsContent value="loose" className="space-y-4 mt-4">
             {filteredLooseTasks.length > 0 ? (
               <div className="bg-card rounded-2xl border border-border overflow-hidden">
@@ -402,9 +422,7 @@ const PlanningOverview = () => {
             )}
           </TabsContent>
 
-          {/* Tab: Maandplanning */}
           <TabsContent value="monthly" className="space-y-4 mt-4">
-            {/* Info banner */}
             <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5">
               <div className="flex items-start gap-3">
                 <FileText className="w-5 h-5 text-primary mt-0.5 shrink-0" />
@@ -421,7 +439,6 @@ const PlanningOverview = () => {
               </div>
             </div>
 
-            {/* Demo buttons */}
             <div className="flex gap-2">
               {hasMonthlyDemo ? (
                 <button onClick={handleDeleteMonthlyDemo} disabled={monthlyDemoDeleteLoading}
@@ -478,7 +495,6 @@ const PlanningOverview = () => {
               </div>
             )}
 
-            {/* Button to go to full monthly planning */}
             <button
               onClick={() => navigate('/monthly-planning')}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
@@ -488,6 +504,7 @@ const PlanningOverview = () => {
             </button>
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </ClubPageLayout>
     <PlanningOnboardingTour open={showTour} onClose={() => setShowTour(false)} />
