@@ -38,6 +38,7 @@ interface VolunteerRow {
 const VolunteerManagement = () => {
   const { clubId } = useClubContext();
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const [volunteers, setVolunteers] = useState<VolunteerRow[]>([]);
