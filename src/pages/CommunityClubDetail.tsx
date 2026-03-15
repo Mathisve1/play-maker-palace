@@ -289,6 +289,22 @@ const CommunityClubDetail = () => {
                 >
                   {isFollowing ? <><HeartOff className="w-4 h-4" /> {t3('Ontvolgen', 'Ne plus suivre', 'Unfollow')}</> : <><Heart className="w-4 h-4" /> {t3('Volgen', 'Suivre', 'Follow')}</>}
                 </Button>
+                {isMember === false && (
+                  <Button
+                    onClick={handleInterest}
+                    disabled={interestSending}
+                    variant="secondary"
+                    className="gap-2 rounded-xl"
+                  >
+                    <Users className="w-4 h-4" />
+                    {t3('Meld interesse', 'Signaler intérêt', 'Register interest')}
+                  </Button>
+                )}
+                {isMember === true && (
+                  <Badge variant="secondary" className="h-10 px-4 flex items-center gap-1.5 text-sm">
+                    <CheckCircle className="w-4 h-4" /> {t3('Lid', 'Membre', 'Member')}
+                  </Badge>
+                )}
               </div>
               {club.description && (
                 <p className="text-muted-foreground mt-3 max-w-2xl text-base leading-relaxed">{club.description}</p>
