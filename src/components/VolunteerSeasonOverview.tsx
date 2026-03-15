@@ -93,28 +93,47 @@ const VolunteerSeasonOverview = ({ userId, language }: SeasonOverviewProps) => {
           .limit(10),
       ]);
 
-      // Process contract
+      // Process contract - enrich with template and season data
       if (contractRes.data && contractRes.data.length > 0) {
         const c = contractRes.data[0] as any;
+        let templateCategory: string | null = null;
+        let seasonName: string | null = null;
+
+        if (c.template_id) {
+          const { data: tmpl } = await supabase.from('season_contract_templates' as any).select('category').eq('id', c.template_id).limit(1);
+          templateCategory = (tmpl as any)?.[0]?.category || null;
+        }
+        if (c.season_id) {
+          const { data: seas } = await supabase.from('seasons' as any).select('name').eq('id', c.season_id).limit(1);
+          seasonName = (seas as any)?.[0]?.name || null;
+        }
+
         setContract({
           id: c.id,
           status: c.status,
           signing_url: c.signing_url,
           document_url: c.document_url,
-          template_category: c.season_contract_templates?.category || null,
-          season_name: c.seasons?.name || null,
+          template_category: templateCategory,
+          season_name: seasonName,
         });
       }
 
-      // Process badges
-      if (badgesRes.data) {
-        setBadges(badgesRes.data.map((b: any) => ({
-          id: b.id,
-          earned_at: b.earned_at,
-          name: language === 'nl' ? b.badge_definitions?.name_nl : language === 'fr' ? b.badge_definitions?.name_fr : b.badge_definitions?.name_en,
-          description: language === 'nl' ? b.badge_definitions?.description_nl : language === 'fr' ? b.badge_definitions?.description_fr : b.badge_definitions?.description_en,
-          icon: b.badge_definitions?.icon || '🏅',
-        })));
+      // Process badges - enrich with definitions
+      if (badgesRes.data && (badgesRes.data as any[]).length > 0) {
+        const badgeIds = (badgesRes.data as any[]).map((b: any) => b.badge_id);
+        const { data: defs } = await supabase.from('badge_definitions').select('id, name_nl, name_fr, name_en, description_nl, description_fr, description_en, icon').in('id', badgeIds);
+        const defMap = new Map((defs || []).map(d => [d.id, d]));
+
+        setBadges((badgesRes.data as any[]).map((b: any) => {
+          const def = defMap.get(b.badge_id);
+          return {
+            id: b.id,
+            earned_at: b.earned_at,
+            name: language === 'nl' ? def?.name_nl : language === 'fr' ? def?.name_fr : def?.name_en,
+            description: language === 'nl' ? def?.description_nl : language === 'fr' ? def?.description_fr : def?.description_en,
+            icon: def?.icon || '🏅',
+          };
+        }));
       }
 
       // Process tasks
