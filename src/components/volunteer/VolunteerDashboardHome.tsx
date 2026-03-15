@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import OnboardingWizard from '@/components/OnboardingWizard';
@@ -47,6 +49,63 @@ const VolunteerDashboardHome = ({
 }: Props) => {
   const navigate = useNavigate();
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
+  const [upcomingBriefings, setUpcomingBriefings] = useState<{ taskId: string; taskTitle: string; taskDate: string }[]>([]);
+
+  // Check for unread briefings within 48h
+  useEffect(() => {
+    if (!currentUserId || signups.length === 0) return;
+    const checkBriefings = async () => {
+      const now = new Date();
+      const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+      // Get upcoming assigned task ids
+      const upcomingTaskIds = tasks
+        .filter(t => {
+          const status = signups.find(s => s.task_id === t.id)?.status;
+          if (status !== 'assigned' && status !== 'pending') return false;
+          if (!t.task_date) return false;
+          const d = new Date(t.task_date);
+          return d >= now && d <= in48h;
+        })
+        .map(t => t.id);
+      if (upcomingTaskIds.length === 0) return;
+
+      const { data: briefingsData } = await supabase
+        .from('briefings')
+        .select('id, title, task_id')
+        .in('task_id', upcomingTaskIds);
+      if (!briefingsData || briefingsData.length === 0) return;
+
+      // Check which ones the user has NOT completed all blocks for
+      const result: typeof upcomingBriefings = [];
+      for (const b of briefingsData) {
+        const { data: blockData } = await supabase
+          .from('briefing_groups')
+          .select('id')
+          .eq('briefing_id', b.id);
+        if (!blockData || blockData.length === 0) continue;
+        const groupIds = blockData.map(g => g.id);
+        const { data: blocks } = await supabase
+          .from('briefing_blocks')
+          .select('id')
+          .in('group_id', groupIds);
+        if (!blocks || blocks.length === 0) continue;
+        const blockIds = blocks.map(bl => bl.id);
+        const { data: progress } = await supabase
+          .from('briefing_block_progress')
+          .select('block_id')
+          .in('block_id', blockIds)
+          .eq('volunteer_id', currentUserId)
+          .eq('completed', true);
+        const completedCount = progress?.length || 0;
+        if (completedCount < blockIds.length) {
+          const task = tasks.find(t => t.id === b.task_id);
+          result.push({ taskId: b.task_id, taskTitle: task?.title || b.title, taskDate: task?.task_date || '' });
+        }
+      }
+      setUpcomingBriefings(result);
+    };
+    checkBriefings();
+  }, [currentUserId, signups, tasks]);
 
   const totalEarned = myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0)
     + sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
@@ -125,6 +184,35 @@ const VolunteerDashboardHome = ({
             else if (step === 'first_task') setActiveTab('all');
           }}
         />
+      )}
+
+      {/* Briefing banner */}
+      {upcomingBriefings.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          {upcomingBriefings.map(b => (
+            <button
+              key={b.taskId}
+              onClick={() => navigate(`/task/${b.taskId}`)}
+              className="w-full flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-2xl p-4 mb-2 text-left hover:bg-primary/15 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">
+                  {language === 'nl' ? '📋 Briefing beschikbaar' : language === 'fr' ? '📋 Briefing disponible' : '📋 Briefing available'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                  {b.taskTitle}
+                  {b.taskDate && ` · ${new Date(b.taskDate).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                </p>
+              </div>
+              <span className="text-xs font-medium text-primary shrink-0">
+                {language === 'nl' ? 'Bekijken →' : language === 'fr' ? 'Voir →' : 'View →'}
+              </span>
+            </button>
+          ))}
+        </motion.div>
       )}
 
       {/* Search bar */}

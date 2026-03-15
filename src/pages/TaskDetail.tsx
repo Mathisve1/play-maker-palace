@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import VolunteerBriefingView from '@/components/VolunteerBriefingView';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -230,6 +231,8 @@ const TaskDetail = () => {
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
   const [allowShiftSwaps, setAllowShiftSwaps] = useState(false);
   const [showSwapDialog, setShowSwapDialog] = useState(false);
+  const [hasBriefing, setHasBriefing] = useState(false);
+  const [showBriefing, setShowBriefing] = useState(false);
 
   const l = labels[language];
 
@@ -260,6 +263,11 @@ const TaskDetail = () => {
       // Check if club allows shift swaps
       supabase.from('clubs').select('allow_shift_swaps').eq('id', taskData.club_id).maybeSingle().then(({ data: clubData }) => {
         if (clubData) setAllowShiftSwaps(!!clubData.allow_shift_swaps);
+      });
+
+      // Check if task has a briefing
+      supabase.from('briefings').select('id').eq('task_id', id!).limit(1).then(({ data: briefData }) => {
+        setHasBriefing(!!(briefData && briefData.length > 0));
       });
 
       // Count signups + waitlist + likes in parallel
@@ -822,6 +830,32 @@ const TaskDetail = () => {
                 <Calendar className="w-4 h-4" />
                 {language === 'nl' ? 'Toevoegen aan kalender' : language === 'fr' ? 'Ajouter au calendrier' : 'Add to calendar'}
               </button>
+            </motion.div>
+          )}
+
+          {/* Briefing view */}
+          {isSignedUp && hasBriefing && currentUserId && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.26 }}>
+              {showBriefing ? (
+                <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                  <div className="p-3 border-b border-border flex justify-between items-center">
+                    <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary" />
+                      {language === 'nl' ? 'Briefing' : language === 'fr' ? 'Briefing' : 'Briefing'}
+                    </span>
+                    <button onClick={() => setShowBriefing(false)} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
+                  </div>
+                  <VolunteerBriefingView taskId={id!} language={language} userId={currentUserId} />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowBriefing(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <FileText className="w-4 h-4" />
+                  {language === 'nl' ? 'Briefing bekijken' : language === 'fr' ? 'Voir le briefing' : 'View briefing'}
+                </button>
+              )}
             </motion.div>
           )}
 
