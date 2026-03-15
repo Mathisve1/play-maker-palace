@@ -776,6 +776,58 @@ const ReportingDashboard = () => {
   // ── AI presets ─────────────────────────────────────────────────
   const aiPresets = [L.aiQ1, L.aiQ2, L.aiQ3, L.aiQ4, L.aiQ5, L.aiQ6, L.aiQ7, L.aiQ8, L.aiQ9, L.aiQ10, L.aiQ11, L.aiQ12];
 
+  const handleGenerateSeasonReport = async () => {
+    if (!clubId) return;
+    setGeneratingSeasonReport(true);
+    try {
+      const { generateSeasonReport, type SeasonReportVolunteer, type SeasonReportTaskType, type SeasonReportBatch } = await import('@/lib/generateSeasonReport');
+      const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).single();
+      const { data: season } = await supabase.from('seasons').select('*').eq('club_id', clubId).eq('is_active', true).limit(1).maybeSingle();
+      if (!season) { toast.error(language === 'nl' ? 'Geen actief seizoen gevonden' : 'No active season found'); setGeneratingSeasonReport(false); return; }
+      const { data: seasonTasks } = await supabase.from('tasks').select('id, title').eq('club_id', clubId).gte('task_date', season.start_date).lte('task_date', season.end_date);
+      const taskIds = (seasonTasks || []).map((t: any) => t.id);
+      const { data: hourConfs } = taskIds.length > 0 ? await supabase.from('hour_confirmations').select('*').in('task_id', taskIds) : { data: [] as any[] };
+      const { data: contracts } = await supabase.from('season_contracts').select('volunteer_id, template_id').eq('season_id', season.id);
+      const templateIds = [...new Set((contracts || []).map((c: any) => c.template_id))];
+      let tmplCatMap = new Map<string, string>();
+      if (templateIds.length > 0) { const { data: tmpls } = await supabase.from('season_contract_templates').select('id, category').in('id', templateIds); (tmpls || []).forEach((t: any) => tmplCatMap.set(t.id, t.category)); }
+      const volIds = [...new Set((hourConfs || []).map((h: any) => h.volunteer_id))];
+      let profileMap = new Map<string, string>();
+      if (volIds.length > 0) { const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', volIds); (profiles || []).forEach((p: any) => profileMap.set(p.id, p.full_name || '—')); }
+      const volMap = new Map<string, SeasonReportVolunteer>();
+      (hourConfs || []).forEach((h: any) => {
+        const existing = volMap.get(h.volunteer_id) || { name: profileMap.get(h.volunteer_id) || '—', contractType: '', taskCount: 0, hours: 0, compensation: 0 };
+        existing.taskCount += 1; existing.hours += (h.final_hours || 0); existing.compensation += (h.final_amount || 0);
+        volMap.set(h.volunteer_id, existing);
+      });
+      (contracts || []).forEach((c: any) => { const v = volMap.get(c.volunteer_id); if (v) v.contractType = tmplCatMap.get(c.template_id) || ''; });
+      const taskTypeMap = new Map<string, SeasonReportTaskType>();
+      const taskTitleMap = new Map<string, string>();
+      (seasonTasks || []).forEach((t: any) => taskTitleMap.set(t.id, t.title));
+      (hourConfs || []).forEach((h: any) => {
+        const title = taskTitleMap.get(h.task_id) || 'Other';
+        const existing = taskTypeMap.get(title) || { type: title, count: 0, totalHours: 0, totalCompensation: 0 };
+        existing.count += 1; existing.totalHours += (h.final_hours || 0); existing.totalCompensation += (h.final_amount || 0);
+        taskTypeMap.set(title, existing);
+      });
+      const { data: batches } = await supabase.from('sepa_batches').select('reference, created_at, item_count, total_amount, status').eq('club_id', clubId);
+      const seasonBatches: SeasonReportBatch[] = (batches || []).filter((b: any) => b.created_at >= season.start_date && b.created_at <= season.end_date)
+        .map((b: any) => ({ reference: b.reference, date: b.created_at, itemCount: b.item_count || 0, totalAmount: b.total_amount || 0, status: b.status }));
+      const totalHours = [...volMap.values()].reduce((s, v) => s + v.hours, 0);
+      const totalComp = [...volMap.values()].reduce((s, v) => s + v.compensation, 0);
+      const doc = generateSeasonReport({
+        clubName: club?.name || '—', seasonName: season.name, seasonStart: season.start_date, seasonEnd: season.end_date,
+        totalVolunteers: volMap.size, totalTasks: taskIds.length, totalHours, totalCompensation: totalComp,
+        volunteers: [...volMap.values()].sort((a, b) => b.compensation - a.compensation),
+        taskTypes: [...taskTypeMap.values()].sort((a, b) => b.count - a.count),
+        sepaBatches: seasonBatches, language,
+      });
+      doc.save(`seizoensrapport-${season.name.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+      toast.success(language === 'nl' ? 'Seizoensrapport gedownload!' : 'Season report downloaded!');
+    } catch (err: any) { toast.error(err?.message || 'Error'); }
+    setGeneratingSeasonReport(false);
+  };
+
   if (loading) {
     return (<ClubPageLayout><DashboardSkeleton /></ClubPageLayout>);
   }
