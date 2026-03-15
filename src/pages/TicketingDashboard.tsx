@@ -514,6 +514,52 @@ const TicketingDashboard = () => {
   const sentCount = volunteers.filter(v => v.status === 'sent').length;
   const progressPercent = totalVolunteers > 0 ? Math.round((checkedInCount / totalVolunteers) * 100) : 0;
 
+  // Per-task progress
+  const taskProgress = useMemo(() => {
+    const map = new Map<string, { title: string; total: number; checkedIn: number }>();
+    volunteers.forEach(v => {
+      const key = v.task_id || '__none__';
+      if (!map.has(key)) map.set(key, { title: v.task_title || 'Onbekend', total: 0, checkedIn: 0 });
+      const entry = map.get(key)!;
+      entry.total++;
+      if (v.status === 'checked_in') entry.checkedIn++;
+    });
+    return Array.from(map.entries()).map(([id, data]) => ({ id, ...data }));
+  }, [volunteers]);
+
+  // Volunteers with sent but not checked-in tickets (for reminder)
+  const sentVolunteers = volunteers.filter(v => v.status === 'sent');
+
+  const handleSendReminders = async () => {
+    setSendingReminders(true);
+    try {
+      // Get volunteer emails
+      const volIds = sentVolunteers.map(v => v.volunteer_id);
+      const { data: profiles } = await supabase.from('profiles').select('id, email, full_name').in('id', volIds);
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+      let sent = 0;
+      for (const v of sentVolunteers) {
+        const profile = profileMap.get(v.volunteer_id);
+        if (!profile?.email) continue;
+        await supabase.functions.invoke('send-task-invite-email', {
+          body: {
+            to: profile.email,
+            volunteer_name: profile.full_name || profile.email,
+            task_title: v.task_title,
+            type: 'ticket_reminder',
+          },
+        });
+        sent++;
+      }
+      toast.success(`${labels.reminderSent} (${sent})`);
+    } catch (e: any) {
+      toast.error(e.message || labels.error);
+    }
+    setSendingReminders(false);
+    setShowReminderDialog(false);
+  };
+
   if (loading) {
     return (
       <ClubPageLayout><DashboardSkeleton /></ClubPageLayout>
