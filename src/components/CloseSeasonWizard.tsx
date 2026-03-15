@@ -97,8 +97,8 @@ const CloseSeasonWizard = ({ open, onClose, clubId, seasonId, seasonName, langua
     // Check which already have a sepa_batch_item
     if (confirmed.length > 0) {
       const hcIds = confirmed.map((h: any) => h.id);
-      const { data: batchItems } = await supabase
-        .from('sepa_batch_items')
+      const { data: batchItems } = await (supabase
+        .from('sepa_batch_items') as any)
         .select('hour_confirmation_id')
         .in('hour_confirmation_id', hcIds);
       const paidIds = new Set((batchItems || []).map((b: any) => b.hour_confirmation_id));
