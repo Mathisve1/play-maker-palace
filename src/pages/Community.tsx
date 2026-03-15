@@ -29,6 +29,7 @@ interface ClubWithStats {
   logo_url: string | null;
   description: string | null;
   task_count: number;
+  upcoming_task_count: number;
   volunteer_count: number;
   event_count: number;
   partner_count: number;
@@ -36,6 +37,12 @@ interface ClubWithStats {
   avg_rating: number;
   rating_count: number;
 }
+
+const BELGIAN_PROVINCES = [
+  'Antwerpen', 'Brussel', 'Henegouwen', 'Limburg', 'Luik',
+  'Luxemburg', 'Namen', 'Oost-Vlaanderen', 'Vlaams-Brabant',
+  'Waals-Brabant', 'West-Vlaanderen',
+];
 
 const communityLabels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
   nl: {
