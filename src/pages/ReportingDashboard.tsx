@@ -835,6 +835,12 @@ const ReportingDashboard = () => {
   return (
     <ClubPageLayout>
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Page-level tabs */}
+        <PageNavTabs tabs={[
+          { label: L.reporting, path: '/reporting' },
+          { label: 'Analytics', path: '/analytics' },
+          { label: language === 'nl' ? 'Audit Log' : language === 'fr' ? 'Journal d\'audit' : 'Audit Log', path: '/audit-log' },
+        ]} />
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold text-foreground">{L.reporting}</h1>
           <div className="flex gap-2">

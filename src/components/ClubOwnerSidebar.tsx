@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import { useActionCount } from '@/hooks/useActionCount';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
-  Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp, Moon, Sun, Bell, Search,
-  ScrollText,
+  LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut, Moon, Sun,
+  Search, Grid2X2, User, Settings,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
+import SidebarMoreSheet from '@/components/SidebarMoreSheet';
 import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -16,6 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Logo from '@/components/Logo';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -42,6 +42,7 @@ const ClubOwnerSidebar = ({
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
@@ -50,7 +51,6 @@ const ClubOwnerSidebar = ({
   useEffect(() => {
     if (!clubId) return;
     const fetchReviewCount = async () => {
-      // Pending reviews: completed signups for club's tasks without a club review
       const { data: clubTasks } = await supabase.from('tasks').select('id').eq('club_id', clubId);
       if (clubTasks && clubTasks.length > 0) {
         const clubTaskIds = clubTasks.map((t: any) => t.id);
@@ -89,29 +89,9 @@ const ClubOwnerSidebar = ({
   const mainItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
     { label: t3('Actielijst', 'Liste d\'actions', 'Action List'), icon: Inbox, path: '/command-center', badge: actionCount },
-    { label: t3('Evenementen & Taken', 'Événements & Tâches', 'Events & Tasks'), icon: CalendarPlus, path: '/events-manager' },
-    { label: 'Planning', icon: LayoutGrid, path: '/planning' },
-    { label: t3('Safety & Security', 'Sécurité', 'Safety & Security'), icon: ShieldAlert, path: '/safety' },
-    { label: t3('Berichten', 'Messages', 'Messages'), icon: MessageCircle, path: '/chat' },
-    { label: t3('Notificaties', 'Notifications', 'Notifications'), icon: Bell, path: '/notifications' },
-  ];
-
-  const managementItems = [
+    { label: t3('Evenementen', 'Événements', 'Events'), icon: CalendarPlus, path: '/events-manager' },
     { label: t3('Vrijwilligers', 'Bénévoles', 'Volunteers'), icon: Users, path: '/volunteer-management', badge: pendingReviewCount },
-    { label: t3('SEPA Vergoedingen', 'Indemnités SEPA', 'SEPA Payments'), icon: Banknote, path: '/sepa-payouts' },
-    { label: t3('Contract Builder', 'Contract Builder', 'Contract Builder'), icon: FileText, path: '/contract-builder' },
-    { label: t3('Sjablonen', 'Modèles', 'Templates'), icon: FileText, path: '/contract-templates' },
-    { label: t3('Seizoenscontracten', 'Contrats saisonniers', 'Season Contracts'), icon: CalendarPlus, path: '/season-contracts' },
-    { label: 'Briefings', icon: ClipboardList, path: '/briefing-builder' },
-    { label: 'Compliance', icon: Shield, path: '/compliance' },
-    { label: t3('Audit Log', 'Journal d\'audit', 'Audit Log'), icon: ScrollText, path: '/audit-log' },
-    { label: 'Ticketing', icon: Ticket, path: '/ticketing' },
-    { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
-    { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Award, path: '/loyalty' },
-    { label: t3('Partners', 'Partenaires', 'Partners'), icon: Handshake, path: '/external-partners' },
-    { label: t3('Facturatie', 'Facturation', 'Billing'), icon: CreditCard, path: '/billing' },
-    { label: t3('Rapportering', 'Rapports', 'Reporting'), icon: BarChart3, path: '/reporting' },
-    { label: t3('Analytics', 'Analytique', 'Analytics'), icon: TrendingUp, path: '/analytics' },
+    { label: t3('Rapporten', 'Rapports', 'Reports'), icon: BarChart3, path: '/reporting' },
   ];
 
   return (
@@ -163,76 +143,70 @@ const ClubOwnerSidebar = ({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {/* Meer knop */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setMoreOpen(true)} className="min-h-[48px]">
+                  <Grid2X2 className="w-5 h-5" />
+                  <span className="flex-1">{t3('Meer', 'Plus', 'More')}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>{t3('Beheer', 'Gestion', 'Management')}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {managementItems.map(item => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[48px]">
-                    <item.icon className="w-5 h-5" />
-                    <span className="flex-1">{item.label}</span>
-                    {'badge' in item && (item as any).badge > 0 && (
-                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center ml-auto">
-                        {(item as any).badge}
-                      </Badge>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {(onOpenProfile || onOpenSettings || onOpenMembers) && (
-          <SidebarGroup>
-            <SidebarGroupLabel>{t3('Instellingen', 'Paramètres', 'Settings')}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {onOpenProfile && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="min-h-[48px]">
-                      <User className="w-5 h-5" />
-                      <span>{t3('Mijn profiel', 'Mon profil', 'My profile')}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {onOpenMembers && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="min-h-[48px]">
-                      <Users className="w-5 h-5" />
-                      <span>{t3('Leden', 'Membres', 'Members')}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {onOpenSettings && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => { onOpenSettings(); setOpenMobile(false); }} className="min-h-[48px]">
-                      <Settings className="w-5 h-5" />
-                      <span>{t3('Instellingen', 'Paramètres', 'Settings')}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
+
+      <SidebarMoreSheet open={moreOpen} onOpenChange={setMoreOpen} />
 
       <SidebarSeparator />
 
       <SidebarFooter className="p-3">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={toggleTheme} className="min-h-[48px] text-muted-foreground">
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              <span>{theme === 'dark' ? t3('Licht thema', 'Thème clair', 'Light mode') : t3('Donker thema', 'Thème sombre', 'Dark mode')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {/* Compact settings row */}
+          {(onOpenProfile || onOpenSettings || onOpenMembers) && (
+            <SidebarMenuItem>
+              <div className="flex items-center gap-1 px-2 py-1">
+                {onOpenProfile && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
+                        <User className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t3('Mijn profiel', 'Mon profil', 'My profile')}</TooltipContent>
+                  </Tooltip>
+                )}
+                {onOpenMembers && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
+                        <Users className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t3('Leden', 'Membres', 'Members')}</TooltipContent>
+                  </Tooltip>
+                )}
+                {onOpenSettings && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => { onOpenSettings(); setOpenMobile(false); }} className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
+                        <Settings className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t3('Instellingen', 'Paramètres', 'Settings')}</TooltipContent>
+                  </Tooltip>
+                )}
+                <div className="flex-1" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button onClick={toggleTheme} className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
+                      {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{theme === 'dark' ? t3('Licht thema', 'Thème clair', 'Light mode') : t3('Donker thema', 'Thème sombre', 'Dark mode')}</TooltipContent>
+                </Tooltip>
+              </div>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onLogout} className="min-h-[48px] text-destructive hover:text-destructive">
               <LogOut className="w-5 h-5" />
