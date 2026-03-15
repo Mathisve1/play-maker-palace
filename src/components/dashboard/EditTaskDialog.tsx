@@ -90,6 +90,25 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
     const { error } = await supabase.from('tasks').update(updateData as any).eq('id', task.id);
     if (error) { toast.error(error.message); } else {
       toast.success(language === 'nl' ? 'Taak bijgewerkt!' : 'Task updated!');
+
+      // Notify partner admins if this is a partner task
+      try {
+        const { data: fullTask } = await supabase.from('tasks').select('partner_only, assigned_partner_id, club_id, title').eq('id', task.id).maybeSingle();
+        if (fullTask?.partner_only && fullTask?.assigned_partner_id) {
+          const { data: club } = await supabase.from('clubs').select('name').eq('id', fullTask.club_id).maybeSingle();
+          const { data: admins } = await supabase.from('partner_admins').select('user_id').eq('partner_id', fullTask.assigned_partner_id);
+          for (const a of admins || []) {
+            sendPush({
+              userId: a.user_id,
+              title: `📋 Taakupdate van ${club?.name || 'club'}`,
+              message: `${fullTask.title} is gewijzigd. Bekijk de details.`,
+              url: '/partner-dashboard',
+              type: 'task_update',
+            });
+          }
+        }
+      } catch { /* silent */ }
+
       onSaved({ title: form.title.trim(), description: form.description.trim() || null, task_date: form.task_date || null, location: form.location.trim() || null, spots_available: form.spots_available, contract_template_id: form.contract_template_id || null });
       onClose();
     }
