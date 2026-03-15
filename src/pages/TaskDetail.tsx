@@ -271,6 +271,14 @@ const TaskDetail = () => {
         setHasBriefing(!!(briefData && briefData.length > 0));
       });
 
+      // Check season contract status for this club
+      supabase.from('season_contracts').select('status').eq('volunteer_id', session.user.id).eq('club_id', taskData.club_id).then(({ data: scData }) => {
+        const contracts = scData || [];
+        if (contracts.some((c: any) => c.status === 'signed')) setContractStatus('signed');
+        else if (contracts.some((c: any) => c.status === 'sent' || c.status === 'pending')) setContractStatus('pending');
+        else setContractStatus('none');
+      });
+
       // Count signups + waitlist + likes in parallel
       const [signupRes, mySignupRes, likeRes, myLikeRes, waitlistRes, myWaitlistRes] = await Promise.all([
         supabase.from('task_signups').select('id', { count: 'exact', head: true }).eq('task_id', id!),
