@@ -187,7 +187,7 @@ const VolunteerDashboard = () => {
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
   // ===== Use ClubContext instead of re-fetching auth/profile =====
-  const { userId: contextUserId2, profile: contextProfile } = useClubContext();
+  const { userId: contextUserId2, profile: contextProfile, clubId: contextClubId } = useClubContext();
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
 
   // Sync profile from context on mount
