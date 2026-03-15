@@ -349,7 +349,14 @@ const PartnerDashboard = () => {
       <CardContent className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">{task.title}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">{task.title}</p>
+              {isRecentlyModified(task) && (
+                <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600 dark:text-amber-400 gap-0.5">
+                  <AlertTriangle className="w-2.5 h-2.5" />{nl ? 'Gewijzigd' : 'Modified'}
+                </Badge>
+              )}
+            </div>
             {task.event_title && <p className="text-[11px] text-primary mt-0.5">{task.event_title}</p>}
             {task.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{task.description}</p>}
             <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
