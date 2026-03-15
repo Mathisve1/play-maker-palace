@@ -27,6 +27,7 @@ const categoryEmoji: Record<string, string> = {
   overview: '👁️',
   shortcuts: '⚡',
   activity: '🔔',
+  season: '🏆',
 };
 
 export const WidgetLibrary = ({ availableWidgets, language, onAdd, onClose }: WidgetLibraryProps) => {

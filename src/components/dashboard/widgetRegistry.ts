@@ -182,9 +182,13 @@ export const DEFAULT_LAYOUT: WidgetInstance[] = [
   { i: 'w2', type: 'kpi_pending_signups', x: 1, y: 0, w: 1, h: 1 },
   { i: 'w3', type: 'kpi_active_volunteers', x: 2, y: 0, w: 1, h: 1 },
   { i: 'w4', type: 'kpi_unsigned_contracts', x: 3, y: 0, w: 1, h: 1 },
-  { i: 'w5', type: 'shortcuts', x: 0, y: 1, w: 2, h: 1 },
-  { i: 'w6', type: 'recent_activity', x: 2, y: 1, w: 2, h: 2 },
-  { i: 'w7', type: 'monthly_planning', x: 0, y: 2, w: 2, h: 1 },
+  { i: 'w5', type: 'season_progress', x: 0, y: 1, w: 2, h: 1 },
+  { i: 'w6', type: 'contract_status', x: 2, y: 1, w: 2, h: 1 },
+  { i: 'w7', type: 'attendance_rate', x: 0, y: 2, w: 2, h: 1 },
+  { i: 'w8', type: 'revenue', x: 2, y: 2, w: 2, h: 1 },
+  { i: 'w9', type: 'shortcuts', x: 0, y: 3, w: 2, h: 1 },
+  { i: 'w10', type: 'recent_activity', x: 2, y: 3, w: 2, h: 2 },
+  { i: 'w11', type: 'monthly_planning', x: 0, y: 4, w: 2, h: 1 },
 ];
 
 export function generateWidgetId(): string {

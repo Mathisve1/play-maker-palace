@@ -144,6 +144,14 @@ export const WidgetRenderer = ({
           </p>
         </div>
       );
+    case 'season_progress':
+      return <SeasonProgressWidget clubId={clubId} language={language} />;
+    case 'contract_status':
+      return <ContractStatusWidget clubId={clubId} language={language} />;
+    case 'attendance_rate':
+      return <AttendanceRateWidget clubId={clubId} language={language} />;
+    case 'revenue':
+      return <RevenueWidget clubId={clubId} language={language} />;
     default:
       return (
         <div className="w-full h-full bg-card rounded-2xl border border-dashed border-border p-4 flex items-center justify-center">
