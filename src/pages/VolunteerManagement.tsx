@@ -127,14 +127,23 @@ const VolunteerManagement = () => {
       return;
     }
 
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, avatar_url')
-      .in('id', volunteerIds);
+    const [profilesRes, reviewsRes] = await Promise.all([
+      supabase.from('profiles').select('id, full_name, email, avatar_url').in('id', volunteerIds),
+      supabase.from('task_reviews' as any).select('reviewee_id, rating').eq('reviewer_role', 'club').in('reviewee_id', volunteerIds),
+    ]);
 
+    const profiles = profilesRes.data || [];
     const templateMap = new Map(templates.map(t => [t.id, t]));
 
-    const rows: VolunteerRow[] = (profiles || []).map(p => {
+    // Calculate avg ratings
+    const ratingData: Record<string, { sum: number; count: number }> = {};
+    ((reviewsRes.data || []) as any[]).forEach((r: any) => {
+      if (!ratingData[r.reviewee_id]) ratingData[r.reviewee_id] = { sum: 0, count: 0 };
+      ratingData[r.reviewee_id].sum += r.rating;
+      ratingData[r.reviewee_id].count += 1;
+    });
+
+    const rows: VolunteerRow[] = profiles.map(p => {
       const volContracts = contracts
         .filter(c => c.volunteer_id === p.id)
         .map(c => {
@@ -148,6 +157,7 @@ const VolunteerManagement = () => {
         });
 
       const count = checkInCounts[p.id] || 0;
+      const rd = ratingData[p.id];
 
       return {
         id: p.id,
@@ -157,6 +167,8 @@ const VolunteerManagement = () => {
         contracts: volContracts,
         check_in_count: count,
         is_paying: count >= 4,
+        avg_rating: rd ? rd.sum / rd.count : null,
+        review_count: rd?.count || 0,
       };
     });
 
