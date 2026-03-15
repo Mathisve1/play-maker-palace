@@ -141,6 +141,16 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
       const skills = (skillsRes.data || []) as any[];
       const pastSignups = (signupsRes.data || []) as any[];
       const alreadySignedUp = new Set((existingSignups.data || []).map((s: any) => s.volunteer_id));
+      const seasonContracts = (contractsRes.data || []) as any[];
+
+      // Build contract status map per volunteer
+      const contractStatusMap = new Map<string, 'signed' | 'pending' | 'none'>();
+      volunteerIds.forEach(vid => contractStatusMap.set(vid, 'none'));
+      seasonContracts.forEach((sc: any) => {
+        const current = contractStatusMap.get(sc.volunteer_id);
+        if (sc.status === 'signed') contractStatusMap.set(sc.volunteer_id, 'signed');
+        else if (current !== 'signed' && (sc.status === 'sent' || sc.status === 'pending')) contractStatusMap.set(sc.volunteer_id, 'pending');
+      });
 
       // Already invited
       const alreadyInvited = new Set(
