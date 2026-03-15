@@ -116,19 +116,40 @@ export const WidgetRenderer = ({
           </p>
         </div>
       );
-    case 'compliance_overview':
+    case 'compliance_overview': {
+      const redCount = Array.from(complianceMap.values()).filter(c => c.status === 'red').length;
+      const declarationCount = Array.from(complianceMap.values()).filter(c => c.hasCurrentMonthDeclaration).length;
+
+      if (redCount > 0) {
+        return (
+          <div className="w-full h-full bg-destructive/5 rounded-2xl border border-destructive/20 p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/compliance')}>
+            <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <Shield className="w-6 h-6 text-destructive" />
+            </div>
+            <p className="text-2xl font-bold text-destructive">{redCount}</p>
+            <p className="text-xs text-destructive/80 mt-1 text-center font-medium">
+              ⚠️ {language === 'nl' ? 'vrijwilliger(s) plafond bereikt' : language === 'fr' ? 'bénévole(s) plafond atteint' : 'volunteer(s) limit reached'}
+            </p>
+            <p className="text-[10px] text-destructive mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              {language === 'nl' ? 'Bekijk compliance →' : 'View compliance →'}
+            </p>
+          </div>
+        );
+      }
+
       return (
         <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/compliance')}>
           <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
             <Shield className="w-6 h-6 text-green-600" />
           </div>
-          <p className="text-2xl font-bold text-foreground">{Array.from(complianceMap.values()).filter(c => c.hasCurrentMonthDeclaration).length}</p>
+          <p className="text-2xl font-bold text-foreground">{declarationCount}</p>
           <p className="text-xs text-muted-foreground mt-1">{language === 'nl' ? 'Vrijwilligers met verklaring' : 'Volunteers with declaration'}</p>
           <p className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {language === 'nl' ? 'Compliance bekijken →' : 'View compliance →'}
           </p>
         </div>
       );
+    }
     case 'payments_summary':
       return (
         <div className="w-full h-full bg-card rounded-2xl border border-border p-4 flex flex-col justify-center items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/sepa-payouts')}>
