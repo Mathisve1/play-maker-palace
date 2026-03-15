@@ -71,6 +71,11 @@ const PartnerDashboard = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
 
+  const now48hAgo = useMemo(() => new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), []);
+  const recentlyModifiedCount = useMemo(() =>
+    clubTasks.filter(t => t.updated_at && t.updated_at > now48hAgo).length
+  , [clubTasks, now48hAgo]);
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
