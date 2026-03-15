@@ -126,14 +126,15 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
       const volunteerIds = (memberships || []).map((m: any) => m.volunteer_id);
       if (volunteerIds.length === 0) { setLoading(false); return; }
 
-      // 2. Parallel: profiles, availability, skills, past signups, existing signups, season contracts
-      const [profilesRes, availRes, skillsRes, signupsRes, existingSignups, contractsRes] = await Promise.all([
+      // 2. Parallel: profiles, availability, skills, past signups, existing signups, season contracts, event availability
+      const [profilesRes, availRes, skillsRes, signupsRes, existingSignups, contractsRes, eventAvailRes] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email, avatar_url').in('id', volunteerIds),
         supabase.from('volunteer_availability').select('*').in('volunteer_id', volunteerIds),
         supabase.from('volunteer_skills').select('user_id, skill_name').in('user_id', volunteerIds),
         supabase.from('task_signups').select('volunteer_id, task_id').in('volunteer_id', volunteerIds).eq('status', 'assigned'),
         supabase.from('task_signups').select('volunteer_id, status').eq('task_id', task.id),
         supabase.from('season_contracts').select('volunteer_id, status').eq('club_id', task.club_id),
+        supabase.from('event_availability' as any).select('volunteer_id, status').eq('task_id', task.id),
       ]);
 
       const profiles = profilesRes.data || [];
@@ -142,6 +143,11 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
       const pastSignups = (signupsRes.data || []) as any[];
       const alreadySignedUp = new Set((existingSignups.data || []).map((s: any) => s.volunteer_id));
       const seasonContracts = (contractsRes.data || []) as any[];
+      const eventAvailData = (eventAvailRes.data || []) as any[];
+
+      // Build event availability map: volunteer_id -> status
+      const eventAvailMap = new Map<string, string>();
+      eventAvailData.forEach((ea: any) => eventAvailMap.set(ea.volunteer_id, ea.status));
 
       // Build contract status map per volunteer
       const contractStatusMap = new Map<string, 'signed' | 'pending' | 'none'>();
@@ -179,6 +185,13 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
           } else if (volAvail.length > 0) {
             score += 20; // Has availability set, but no date to match
           }
+
+          // Event-specific availability boost
+          const eventAvailStatus = eventAvailMap.get(p.id);
+          if (eventAvailStatus === 'available') score += 30;
+          else if (eventAvailStatus === 'maybe') score += 10;
+          else if (eventAvailStatus === 'unavailable') score -= 20;
+          if (eventAvailStatus === 'available') availMatch = true;
 
           // Skill match (check task title/description words)
           const volSkills = skills.filter((s: any) => s.user_id === p.id).map((s: any) => s.skill_name);

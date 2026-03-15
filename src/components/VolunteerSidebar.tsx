@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
-  HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home, TrendingUp,
+  HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home, TrendingUp, Calendar,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useOptionalClubContext } from '@/contexts/ClubContext';
@@ -17,7 +17,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
-export type VolunteerTab = 'dashboard' | 'season' | 'all' | 'mine' | 'monthly' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner' | 'safety';
+export type VolunteerTab = 'dashboard' | 'season' | 'all' | 'mine' | 'monthly' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner' | 'safety' | 'availability';
 
 interface VolunteerSidebarProps {
   activeTab: VolunteerTab;
@@ -54,6 +54,7 @@ const labels: Record<Language, Record<string, string>> = {
     academy: 'Academy',
     loyalty: 'Loyaliteit',
     safety: 'Veiligheidscontrole',
+    availability: 'Beschikbaarheid',
     settings: 'Instellingen',
     help: 'Hulp nodig?',
     logout: 'Uitloggen',
@@ -77,6 +78,7 @@ const labels: Record<Language, Record<string, string>> = {
     academy: 'Académie',
     loyalty: 'Fidélité',
     safety: 'Contrôle de sécurité',
+    availability: 'Disponibilité',
     settings: 'Paramètres',
     help: 'Besoin d\'aide?',
     logout: 'Déconnexion',
@@ -100,6 +102,7 @@ const labels: Record<Language, Record<string, string>> = {
     academy: 'Academy',
     loyalty: 'Loyalty',
     safety: 'Safety Check',
+    availability: 'Availability',
     settings: 'Settings',
     help: 'Need help?',
     logout: 'Log out',
@@ -207,6 +210,12 @@ const VolunteerSidebar = ({
                 <SidebarMenuButton isActive={activeTab === 'monthly'} onClick={() => handleNav('monthly')} className="min-h-[48px]">
                   <CalendarDays className="w-5 h-5" />
                   <span>{l.monthly}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'availability'} onClick={() => handleNav('availability')} className="min-h-[48px]">
+                  <Calendar className="w-5 h-5" />
+                  <span>{l.availability}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

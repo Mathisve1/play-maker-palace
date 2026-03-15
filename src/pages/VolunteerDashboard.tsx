@@ -41,6 +41,7 @@ import ReferralSection from '@/components/ReferralSection';
 import SkillsPassport from '@/components/SkillsPassport';
 import MicroLearningsSection from '@/components/MicroLearningsSection';
 import AvailabilityCalendar from '@/components/AvailabilityCalendar';
+import SeasonAvailabilityPicker from '@/components/SeasonAvailabilityPicker';
 import TaskReviewDialog from '@/components/TaskReviewDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -186,7 +187,7 @@ const VolunteerDashboard = () => {
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
   // ===== Use ClubContext instead of re-fetching auth/profile =====
-  const { userId: contextUserId2, profile: contextProfile } = useClubContext();
+  const { userId: contextUserId2, profile: contextProfile, clubId: contextClubId } = useClubContext();
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
 
   // Sync profile from context on mount
@@ -1053,6 +1054,12 @@ const VolunteerDashboard = () => {
         <VolunteerMonthlyTab language={language} userId={currentUserId} />
       )}
 
+      {/* ===== AVAILABILITY TAB ===== */}
+      {activeTab === 'availability' && currentUserId && contextClubId && (
+        <div className="max-w-4xl mx-auto">
+          <SeasonAvailabilityPicker userId={currentUserId} clubId={contextClubId} language={language} />
+        </div>
+      )}
 
       {activeTab === 'contracts' && (
         <VolunteerContractsTab contracts={myContracts} language={language} checkingContract={checkingContract} onCheckStatus={handleCheckContractStatus} userId={currentUserId} />
