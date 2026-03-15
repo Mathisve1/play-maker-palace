@@ -242,6 +242,19 @@ const ClubOwnerSidebar = ({
             </SidebarMenuItem>
           )}
           <SidebarMenuItem>
+            <SidebarMenuButton onClick={() => nav('/club-help')} className="min-h-[40px]">
+              <HelpCircle className="w-4 h-4" />
+              <span>{t3('Help', 'Aide', 'Help')}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={() => window.open('https://play-maker-palace.lovable.app/changelog', '_blank')} className="min-h-[40px]">
+              <Sparkles className="w-4 h-4" />
+              <span className="flex-1">{t3('Wat is nieuw?', 'Quoi de neuf ?', "What's new?")}</span>
+              <span className="text-[10px] text-muted-foreground">v1.0 — {t3('maart', 'mars', 'March')} 2026</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <SidebarMenuButton onClick={toggleTheme} className="min-h-[40px]">
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               <span>{theme === 'dark' ? t3('Licht thema', 'Thème clair', 'Light mode') : t3('Donker thema', 'Thème sombre', 'Dark mode')}</span>
