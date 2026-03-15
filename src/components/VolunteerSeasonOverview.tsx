@@ -75,8 +75,8 @@ const VolunteerSeasonOverview = ({ userId, language }: SeasonOverviewProps) => {
       // Parallel fetch: season contract, signups, badges
       const [contractRes, signupsRes, badgesRes] = await Promise.all([
         supabase
-          .from('season_contracts')
-          .select('id, status, signing_url, document_url, season_contract_templates(category), seasons(name)')
+          .from('season_contracts' as any)
+          .select('id, status, signing_url, document_url, template_id, season_id')
           .eq('volunteer_id', userId)
           .order('created_at', { ascending: false })
           .limit(1),
@@ -86,8 +86,8 @@ const VolunteerSeasonOverview = ({ userId, language }: SeasonOverviewProps) => {
           .eq('volunteer_id', userId)
           .eq('status', 'assigned'),
         supabase
-          .from('volunteer_badges')
-          .select('id, earned_at, badge_id, badge_definitions(name_nl, name_fr, name_en, description_nl, description_fr, description_en, icon)')
+          .from('volunteer_badges' as any)
+          .select('id, earned_at, badge_id')
           .eq('volunteer_id', userId)
           .order('earned_at', { ascending: false })
           .limit(10),
