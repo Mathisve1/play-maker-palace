@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
-  HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home,
+  HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home, TrendingUp,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useOptionalClubContext } from '@/contexts/ClubContext';
@@ -17,7 +17,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
-export type VolunteerTab = 'dashboard' | 'all' | 'mine' | 'monthly' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner' | 'safety';
+export type VolunteerTab = 'dashboard' | 'season' | 'all' | 'mine' | 'monthly' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner' | 'safety';
 
 interface VolunteerSidebarProps {
   activeTab: VolunteerTab;
@@ -40,6 +40,7 @@ interface VolunteerSidebarProps {
 const labels: Record<Language, Record<string, string>> = {
   nl: {
     dashboard: 'Dashboard',
+    season: 'Mijn Seizoen',
     allTasks: 'Alle Taken',
     myTasks: 'Mijn Taken',
     monthly: 'Maandplanning',
@@ -62,6 +63,7 @@ const labels: Record<Language, Record<string, string>> = {
   },
   fr: {
     dashboard: 'Tableau de bord',
+    season: 'Ma Saison',
     allTasks: 'Toutes les tâches',
     myTasks: 'Mes tâches',
     monthly: 'Planning mensuel',
@@ -84,6 +86,7 @@ const labels: Record<Language, Record<string, string>> = {
   },
   en: {
     dashboard: 'Dashboard',
+    season: 'My Season',
     allTasks: 'All Tasks',
     myTasks: 'My Tasks',
     monthly: 'Monthly Planning',
@@ -179,6 +182,12 @@ const VolunteerSidebar = ({
                 <SidebarMenuButton isActive={activeTab === 'dashboard'} onClick={() => handleNav('dashboard')} className="min-h-[48px]">
                   <LayoutDashboard className="w-5 h-5" />
                   <span>{l.dashboard}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'season'} onClick={() => handleNav('season')} className="min-h-[48px]">
+                  <TrendingUp className="w-5 h-5" />
+                  <span>{l.season}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

@@ -1007,6 +1007,11 @@ const VolunteerDashboard = () => {
         </div>
       )}
 
+      {/* ===== SEASON TAB ===== */}
+      {activeTab === 'season' && currentUserId && (
+        <VolunteerSeasonOverview userId={currentUserId} language={language} />
+      )}
+
       {/* ===== ACADEMY TAB ===== */}
       {activeTab === 'academy' && (
         <div className="max-w-5xl mx-auto">
