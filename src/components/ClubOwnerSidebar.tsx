@@ -39,7 +39,7 @@ const ClubOwnerSidebar = ({
   const { language } = useLanguage();
   const { actionCount } = useActionCount(clubId || null);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
-  const { theme, toggleTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
