@@ -79,6 +79,7 @@ const ContractTemplates = () => {
           { label: t('Vergoedingen', 'Indemnités', 'Payments'), path: '/sepa-payouts' },
           { label: 'Compliance', path: '/compliance' },
         ]} />
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">
               {t('Contractsjablonen', 'Modèles de contrat', 'Contract Templates')}

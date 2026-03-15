@@ -1308,6 +1308,7 @@ const ContractBuilder = () => {
           </div>
         </div>
       </div>
+      </div>
     </ClubPageLayout>
   );
 };
