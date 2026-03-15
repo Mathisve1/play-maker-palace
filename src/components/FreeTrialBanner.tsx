@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gift, ArrowRight, X } from 'lucide-react';
+import { Gift, ArrowRight, X, AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/i18n/LanguageContext';
 
@@ -13,20 +13,23 @@ interface Props {
 const bannerT = {
   nl: {
     free: 'Gratis testperiode',
-    contractsLeft: (used: number, limit: number) => `nog ${limit - used} gratis contract${limit - used !== 1 ? 'en' : ''} beschikbaar`,
-    expired: 'Je gratis periode is voorbij — contracten kosten nu €15/vrijwilliger/seizoen',
+    used: (used: number, limit: number) => `Je hebt ${used} van je ${limit} gratis contracttypes gebruikt.`,
+    remaining: (left: number) => `Nog ${left} gratis over.`,
+    expired: 'Vanaf je volgende contract betaal je €15 per vrijwilliger per seizoen.',
     moreInfo: 'Meer info',
   },
   fr: {
     free: 'Période d\'essai gratuite',
-    contractsLeft: (used: number, limit: number) => `encore ${limit - used} contrat${limit - used !== 1 ? 's' : ''} gratuit${limit - used !== 1 ? 's' : ''} disponible${limit - used !== 1 ? 's' : ''}`,
-    expired: 'Votre période d\'essai est terminée — les contrats coûtent maintenant €15/bénévole/saison',
+    used: (used: number, limit: number) => `Vous avez utilisé ${used} de vos ${limit} types de contrats gratuits.`,
+    remaining: (left: number) => `Encore ${left} gratuit${left !== 1 ? 's' : ''}.`,
+    expired: 'À partir de votre prochain contrat, vous payez €15 par bénévole par saison.',
     moreInfo: 'Plus d\'infos',
   },
   en: {
     free: 'Free trial',
-    contractsLeft: (used: number, limit: number) => `${limit - used} free contract${limit - used !== 1 ? 's' : ''} remaining`,
-    expired: 'Your free period has ended — contracts now cost €15/volunteer/season',
+    used: (used: number, limit: number) => `You've used ${used} of your ${limit} free contract types.`,
+    remaining: (left: number) => `${left} free remaining.`,
+    expired: 'From your next contract you pay €15 per volunteer per season.',
     moreInfo: 'More info',
   },
 };
@@ -49,8 +52,11 @@ const FreeTrialBanner = ({ clubId }: Props) => {
 
   if (!billing || dismissed) return null;
 
-  const isFree = billing.free_contracts_used < billing.free_contracts_limit;
-  const progress = (billing.free_contracts_used / billing.free_contracts_limit) * 100;
+  const used = billing.free_contracts_used;
+  const limit = billing.free_contracts_limit;
+  const left = Math.max(limit - used, 0);
+  const isFree = used < limit;
+  const progress = (used / limit) * 100;
 
   return (
     <AnimatePresence>
@@ -58,38 +64,63 @@ const FreeTrialBanner = ({ clubId }: Props) => {
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
-        className={`relative rounded-xl border px-4 py-3 mb-6 flex items-center gap-4 ${
+        className={`relative rounded-xl border px-4 py-3.5 mb-6 ${
           isFree
             ? 'bg-primary/5 border-primary/20'
-            : 'bg-orange-500/10 border-orange-500/30'
+            : 'bg-destructive/5 border-destructive/30'
         }`}
       >
-        <Gift className={`w-5 h-5 shrink-0 ${isFree ? 'text-primary' : 'text-orange-500'}`} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-sm font-medium ${isFree ? 'text-primary' : 'text-orange-600 dark:text-orange-400'}`}>
-              {isFree ? t.free : ''}
-            </span>
-            <span className="text-sm text-foreground">
-              {isFree
-                ? t.contractsLeft(billing.free_contracts_used, billing.free_contracts_limit)
-                : t.expired}
-            </span>
-          </div>
-          {isFree && (
-            <Progress value={progress} className="mt-2 h-1.5 max-w-xs" />
+        <div className="flex items-start gap-4">
+          {isFree ? (
+            <Gift className="w-5 h-5 shrink-0 mt-0.5 text-primary" />
+          ) : (
+            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-destructive" />
           )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-sm font-semibold ${isFree ? 'text-primary' : 'text-destructive'}`}>
+                {t.free}
+              </span>
+            </div>
+            <p className="text-sm text-foreground mt-1">
+              {t.used(used, limit)}{' '}
+              {isFree ? (
+                <span className="font-medium text-primary">{t.remaining(left)}</span>
+              ) : (
+                <span className="font-medium text-destructive">{t.expired}</span>
+              )}
+            </p>
+
+            {/* Progress bar with step indicators */}
+            <div className="mt-3 max-w-xs">
+              <Progress value={progress} className="h-2.5" />
+              <div className="flex justify-between mt-1.5">
+                {Array.from({ length: limit + 1 }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`text-[10px] font-medium ${
+                      i <= used
+                        ? isFree ? 'text-primary' : 'text-destructive'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    {i}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/billing')}
+            className={`shrink-0 text-xs font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
+              isFree
+                ? 'text-primary hover:bg-primary/10'
+                : 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+            }`}
+          >
+            {t.moreInfo} <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button
-          onClick={() => navigate('/billing')}
-          className={`shrink-0 text-xs font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
-            isFree
-              ? 'text-primary hover:bg-primary/10'
-              : 'bg-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-500/30'
-          }`}
-        >
-          {t.moreInfo} <ArrowRight className="w-3.5 h-3.5" />
-        </button>
         <button onClick={() => setDismissed(true)} className="absolute top-2 right-2 text-muted-foreground hover:text-foreground">
           <X className="w-3.5 h-3.5" />
         </button>

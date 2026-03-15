@@ -10,8 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
+import {
   CreditCard, Receipt, Users, Loader2, Download, Gift, AlertTriangle,
-  CheckCircle, Handshake, TrendingUp, FileText
+  CheckCircle, Handshake, TrendingUp, FileText, Package
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { generateInvoicePdf } from '@/lib/generateInvoicePdf';
@@ -28,6 +31,7 @@ const BillingDashboard = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [seatInput, setSeatInput] = useState('');
   const [savingSeats, setSavingSeats] = useState(false);
+  const [contractTypeBreakdown, setContractTypeBreakdown] = useState<{ category: string; count: number; cost: number }[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -60,6 +64,40 @@ const BillingDashboard = () => {
     setSeatInput(billingRes.data?.partner_seats_purchased?.toString() || '0');
     setEvents(eventsRes.data || []);
     setInvoices(invoicesRes.data || []);
+
+    // Fetch contract type breakdown for the active season
+    const { data: activeSeason } = await (supabase as any).from('seasons').select('id').eq('club_id', cId).eq('status', 'active').maybeSingle();
+    if (activeSeason) {
+      const { data: contracts } = await (supabase as any).from('season_contracts')
+        .select('template_id, volunteer_id, status')
+        .eq('club_id', cId)
+        .eq('season_id', activeSeason.id);
+      if (contracts && contracts.length > 0) {
+        const templateIds = [...new Set((contracts as any[]).map((c: any) => c.template_id))] as string[];
+        const { data: templates } = await (supabase as any).from('season_contract_templates')
+          .select('id, category')
+          .in('id', templateIds);
+        const catMap = new Map<string, string>();
+        (templates || []).forEach((t: any) => catMap.set(t.id, t.category || 'Other'));
+
+        const breakdown = new Map<string, { count: number }>();
+        contracts.forEach((c: any) => {
+          const cat = catMap.get(c.template_id) || 'Other';
+          const entry = breakdown.get(cat) || { count: 0 };
+          entry.count += 1;
+          breakdown.set(cat, entry);
+        });
+
+        const pricePerVol = (billingRes.data?.volunteer_price_cents || 1500) / 100;
+        setContractTypeBreakdown(
+          [...breakdown.entries()].map(([category, { count }]) => ({
+            category,
+            count,
+            cost: count * pricePerVol,
+          })).sort((a, b) => b.count - a.count)
+        );
+      }
+    }
   };
 
   const isFree = billing && billing.free_contracts_used < billing.free_contracts_limit;
@@ -273,6 +311,76 @@ const BillingDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Your plan — contract type breakdown */}
+            {contractTypeBreakdown.length > 0 && (
+              <Card className="mb-10">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Package className="w-5 h-5 text-primary" />
+                    <h3 className="text-lg font-heading font-bold text-foreground">
+                      {t('Jouw plan dit seizoen', 'Votre plan cette saison', 'Your plan this season')}
+                    </h3>
+                  </div>
+
+                  <div className="rounded-xl border border-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('Contracttype', 'Type de contrat', 'Contract type')}</TableHead>
+                          <TableHead className="text-right">{t('Actieve vrijwilligers', 'Bénévoles actifs', 'Active volunteers')}</TableHead>
+                          <TableHead className="text-right">{t('Kost dit seizoen', 'Coût cette saison', 'Cost this season')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {contractTypeBreakdown.map((row, i) => (
+                          <TableRow key={row.category}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {row.category}
+                                {i < 2 && isFree && (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {t('Gratis', 'Gratuit', 'Free')}
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">{row.count}</TableCell>
+                            <TableCell className="text-right font-medium">
+                              {i < 2 && isFree ? (
+                                <span className="text-primary">€0</span>
+                              ) : (
+                                <span>€{row.cost.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-muted/30 font-bold">
+                          <TableCell>{t('Totaal', 'Total', 'Total')}</TableCell>
+                          <TableCell className="text-right">
+                            {contractTypeBreakdown.reduce((s, r) => s + r.count, 0)}
+                          </TableCell>
+                          <TableCell className="text-right text-primary">
+                            €{(isFree
+                              ? contractTypeBreakdown.slice(2).reduce((s, r) => s + r.cost, 0)
+                              : contractTypeBreakdown.reduce((s, r) => s + r.cost, 0)
+                            ).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {t(
+                      '* De eerste 2 contracttypes zijn gratis. Vanaf het 3e contracttype betaal je €15 per vrijwilliger per seizoen.',
+                      '* Les 2 premiers types de contrats sont gratuits. À partir du 3e type, vous payez €15 par bénévole par saison.',
+                      '* The first 2 contract types are free. From the 3rd type, you pay €15 per volunteer per season.'
+                    )}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* FAQ */}
             <div className="space-y-4">
