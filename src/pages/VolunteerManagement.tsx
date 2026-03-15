@@ -298,6 +298,33 @@ const VolunteerManagement = () => {
 
   const handleBulkSetContractType = async () => {
     if (bulkContractTypes.size === 0 || selectedIds.size === 0) return;
+
+  const downloadCsv = (vols: VolunteerRow[], filename: string) => {
+    const clubName = clubInfo?.name || 'Club';
+    const header = [
+      t('Naam', 'Nom', 'Name'),
+      t('E-mail', 'E-mail', 'Email'),
+      'Status',
+      t('Taken voltooid', 'Tâches terminées', 'Tasks completed'),
+      t('Lid sinds', 'Membre depuis', 'Member since'),
+      'Club',
+    ].join(',');
+    const rows = vols.map(v => {
+      const status = v.contracts.length === 0
+        ? t('Geen contract', 'Pas de contrat', 'No contract')
+        : v.contracts.every(c => c.status === 'signed')
+          ? t('Getekend', 'Signé', 'Signed')
+          : t('In afwachting', 'En attente', 'Pending');
+      const joined = v.joined_at ? new Date(v.joined_at).toLocaleDateString() : '-';
+      return [`"${v.full_name}"`, v.email, `"${status}"`, v.task_count, joined, `"${clubName}"`].join(',');
+    });
+    const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    toast.success(t('CSV geëxporteerd', 'CSV exporté', 'CSV exported'));
+  };
     const vols = volunteers.filter(v => selectedIds.has(v.id) && v.membership_id);
     let success = 0;
     for (const vol of vols) {
