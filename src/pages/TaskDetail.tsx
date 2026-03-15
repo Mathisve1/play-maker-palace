@@ -233,6 +233,7 @@ const TaskDetail = () => {
   const [showSwapDialog, setShowSwapDialog] = useState(false);
   const [hasBriefing, setHasBriefing] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
+  const [contractStatus, setContractStatus] = useState<'signed' | 'pending' | 'none' | 'loading'>('loading');
 
   const l = labels[language];
 
