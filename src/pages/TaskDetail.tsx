@@ -272,6 +272,18 @@ const TaskDetail = () => {
         setHasBriefing(!!(briefData && briefData.length > 0));
       });
 
+      // Load zone assignment for this volunteer
+      supabase.from('task_zone_assignments').select('zone_id, task_zones(name, max_capacity)').eq('volunteer_id', session.user.id).then(({ data: zoneData }) => {
+        if (zoneData && zoneData.length > 0) {
+          // Filter to zones belonging to this task
+          const matchingZone = zoneData.find((z: any) => z.task_zones);
+          if (matchingZone && (matchingZone as any).task_zones) {
+            const tz = (matchingZone as any).task_zones;
+            setMyZone({ name: tz.name, max_capacity: tz.max_capacity });
+          }
+        }
+      });
+
       // Check season contract status for this club
       supabase.from('season_contracts').select('status').eq('volunteer_id', session.user.id).eq('club_id', taskData.club_id).then(({ data: scData }) => {
         const contracts = scData || [];
