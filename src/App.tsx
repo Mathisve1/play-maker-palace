@@ -97,6 +97,7 @@ const App = () => {
   }, []);
 
   return (
+  <SentryErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <TooltipProvider>
@@ -172,6 +173,7 @@ const App = () => {
       </TooltipProvider>
     </LanguageProvider>
   </QueryClientProvider>
+  </SentryErrorBoundary>
   );
 };
 
