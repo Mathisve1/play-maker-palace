@@ -815,14 +815,14 @@ const ReportingDashboard = () => {
         .map((b: any) => ({ reference: b.reference, date: b.created_at, itemCount: b.item_count || 0, totalAmount: b.total_amount || 0, status: b.status }));
       const totalHours = [...volMap.values()].reduce((s, v) => s + v.hours, 0);
       const totalComp = [...volMap.values()].reduce((s, v) => s + v.compensation, 0);
-      const doc = generateSeasonReport({
+      const reportDoc = await generateSeasonReport({
         clubName: club?.name || '—', seasonName: season.name, seasonStart: season.start_date, seasonEnd: season.end_date,
         totalVolunteers: volMap.size, totalTasks: taskIds.length, totalHours, totalCompensation: totalComp,
         volunteers: [...volMap.values()].sort((a, b) => b.compensation - a.compensation),
         taskTypes: [...taskTypeMap.values()].sort((a, b) => b.count - a.count),
         sepaBatches: seasonBatches, language,
       });
-      doc.save(`seizoensrapport-${season.name.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+      reportDoc.save(`seizoensrapport-${season.name.replace(/\s+/g, '-').toLowerCase()}.pdf`);
       toast.success(language === 'nl' ? 'Seizoensrapport gedownload!' : 'Season report downloaded!');
     } catch (err: any) { toast.error(err?.message || 'Error'); }
     setGeneratingSeasonReport(false);
