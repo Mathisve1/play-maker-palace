@@ -34,6 +34,8 @@ interface VolunteerRow {
   review_count: number;
   memberContractTypes: ContractTypeKey[];
   membership_id: string | null;
+  joined_at: string | null;
+  task_count: number;
 }
 
 const VolunteerManagement = () => {
