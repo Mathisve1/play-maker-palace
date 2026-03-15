@@ -833,6 +833,32 @@ const TaskDetail = () => {
             </motion.div>
           )}
 
+          {/* Briefing view */}
+          {isSignedUp && hasBriefing && currentUserId && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.26 }}>
+              {showBriefing ? (
+                <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                  <div className="p-3 border-b border-border flex justify-between items-center">
+                    <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary" />
+                      {language === 'nl' ? 'Briefing' : language === 'fr' ? 'Briefing' : 'Briefing'}
+                    </span>
+                    <button onClick={() => setShowBriefing(false)} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
+                  </div>
+                  <VolunteerBriefingView taskId={id!} language={language} userId={currentUserId} />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowBriefing(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <FileText className="w-4 h-4" />
+                  {language === 'nl' ? 'Briefing bekijken' : language === 'fr' ? 'Voir le briefing' : 'View briefing'}
+                </button>
+              )}
+            </motion.div>
+          )}
+
           {/* Weather widget */}
           {task.task_date && (task.location || task.clubs?.location) && (
             <WeatherWidget
