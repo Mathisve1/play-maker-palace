@@ -708,6 +708,10 @@ const VolunteerHelp = () => {
               <MessageCircle className="w-4 h-4" />
               {c.contactWhatsApp}
             </Button>
+            <Button className="gap-2" onClick={() => crispOpen()}>
+              <MessageCircle className="w-4 h-4" />
+              {c.lang === 'nl' ? 'Chat met support' : c.lang === 'fr' ? 'Chatter avec le support' : 'Chat with support'}
+            </Button>
           </div>
         </motion.div>
 
