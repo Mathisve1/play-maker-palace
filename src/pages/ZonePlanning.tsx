@@ -235,6 +235,50 @@ const ZonePlanning = () => {
   const [dragVolunteer, setDragVolunteer] = useState<string | null>(null);
   const [overviewMode, setOverviewMode] = useState(false);
 
+  const renderZoneOverview = (zoneList: Zone[], depth = 0): React.ReactNode => {
+    return zoneList.map(zone => {
+      const children = getChildren(zone.id);
+      const zoneAssigns = getAssignments(zone.id);
+      return (
+        <div key={zone.id} className={depth > 0 ? 'ml-6' : ''}>
+          <div className="rounded-xl border border-border bg-card p-4 mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              <h4 className="text-sm font-semibold text-foreground">{zone.name}</h4>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                {zoneAssigns.length}{zone.max_capacity ? `/${zone.max_capacity}` : ''}
+              </span>
+            </div>
+            {zoneAssigns.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {zoneAssigns.map(a => {
+                  const vol = getVolunteer(a.volunteer_id);
+                  const role = getVolunteerRole(a.volunteer_id);
+                  return (
+                    <div key={a.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-muted/50 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                        {vol?.full_name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                      <span className="text-foreground truncate max-w-[120px]">{vol?.full_name || vol?.email || l.unknown}</span>
+                      {role && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-medium text-white" style={{ background: role.color }}>
+                          {role.name}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">{l.dragHint}</p>
+            )}
+          </div>
+          {children.length > 0 && renderZoneOverview(children, depth + 1)}
+        </div>
+      );
+    });
+  };
+
   const renderZoneColumn = (zone: Zone, depth: number) => {
     const children = getChildren(zone.id);
     const zoneAssignments = getAssignments(zone.id);
