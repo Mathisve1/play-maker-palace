@@ -148,6 +148,7 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [completedBlocks, setCompletedBlocks] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState(-1); // -1 = intro, allBlocks.length = done
+  const [myZone, setMyZone] = useState<{ name: string; max_capacity: number | null } | null>(null);
   const l = labels[language];
 
   // Flatten all blocks across groups for step-by-step
