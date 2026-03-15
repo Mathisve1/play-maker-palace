@@ -9,8 +9,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   CalendarDays, Send, FileSignature, Download, CheckCircle, Clock,
-  Users, Plus, Loader2, Edit3, AlertCircle
+  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
