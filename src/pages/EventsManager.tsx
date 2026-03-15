@@ -260,6 +260,7 @@ const EventsManager = () => {
   const handleCreateLooseTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !newTask.title.trim()) return;
+    if (isDateInPast(newTask.task_date)) { toast.error(pastDateError()); return; }
     setCreatingTask(true);
     const locationStr = buildTaskLocationString();
     const insertData = {
