@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
 import * as Sentry from '@sentry/react';
 import { identifyUser, resetUser } from '@/lib/posthog';
+import { crispSetUser } from '@/lib/crisp';
 
 interface RequireAuthProps {
   children: React.ReactNode;
