@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Euro,
   Users, Trash2, Edit, Send, CalendarDays,
-  Copy, Loader2, Play,
+  Copy, Loader2, Play, ArrowRight,
 } from 'lucide-react';
 import SendContractConfirmDialog from '@/components/SendContractConfirmDialog';
 import MonthlyCalendarGrid from '@/components/monthly-planning/MonthlyCalendarGrid';
@@ -61,6 +62,9 @@ interface DaySignupClub {
   dispute_status: string; dispute_escalated_at: string | null;
   club_reported_checkout: string | null; volunteer_reported_checkout: string | null;
   volunteer_name?: string; volunteer_email?: string;
+  volunteer_avatar_url?: string | null;
+  contract_status?: string;
+  season_checkin_count?: number;
 }
 
 const MonthlyPlanning = () => {
@@ -86,6 +90,7 @@ const MonthlyPlanning = () => {
   const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
   const [copyingTasks, setCopyingTasks] = useState(false);
   const [generatingPayout, setGeneratingPayout] = useState(false);
+  const [copyingToNext, setCopyingToNext] = useState(false);
   const [contractVolunteer, setContractVolunteer] = useState<Enrollment | null>(null);
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
@@ -133,9 +138,28 @@ const MonthlyPlanning = () => {
         if (enrs.length > 0) {
           const { data: signupsData } = await supabase
             .from('monthly_day_signups').select('*').in('enrollment_id', enrs.map(e => e.id));
+
+          // Fetch season check-in counts for all volunteers in this plan
+          const volIds = [...new Set(enrs.map(e => e.volunteer_id))];
+          const { data: checkinCounts } = await supabase
+            .from('season_checkins')
+            .select('volunteer_id')
+            .in('volunteer_id', volIds);
+          const checkinMap = new Map<string, number>();
+          (checkinCounts || []).forEach((c: any) => {
+            checkinMap.set(c.volunteer_id, (checkinMap.get(c.volunteer_id) || 0) + 1);
+          });
+
           const enriched = (signupsData || []).map((s: any) => {
             const enr = enrs.find(e => e.id === s.enrollment_id);
-            return { ...s, volunteer_name: (enr?.profiles as any)?.full_name || t3('Onbekend', 'Inconnu', 'Unknown'), volunteer_email: (enr?.profiles as any)?.email || null };
+            return {
+              ...s,
+              volunteer_name: (enr?.profiles as any)?.full_name || t3('Onbekend', 'Inconnu', 'Unknown'),
+              volunteer_email: (enr?.profiles as any)?.email || null,
+              volunteer_avatar_url: (enr?.profiles as any)?.avatar_url || null,
+              contract_status: enr?.contract_status || 'none',
+              season_checkin_count: checkinMap.get(s.volunteer_id) || 0,
+            };
           });
           setDaySignups(enriched as DaySignupClub[]);
         } else { setDaySignups([]); }
@@ -444,6 +468,42 @@ const MonthlyPlanning = () => {
 
   const pendingDaySignups = daySignups.filter(ds => ds.status === 'pending');
   const assignedDaySignups = daySignups.filter(ds => ds.status === 'assigned');
+  const rejectedDaySignups = daySignups.filter(ds => ds.status === 'rejected');
+
+  const copyToNextMonth = async () => {
+    if (!plan || !clubId || tasks.length === 0) return;
+    setCopyingToNext(true);
+    try {
+      const nextM = viewMonth === 12 ? 1 : viewMonth + 1;
+      const nextY = viewMonth === 12 ? viewYear + 1 : viewYear;
+      // Check if next month plan exists, create if not
+      let { data: nextPlan } = await supabase.from('monthly_plans').select('id').eq('club_id', clubId).eq('year', nextY).eq('month', nextM).maybeSingle();
+      if (!nextPlan) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setCopyingToNext(false); return; }
+        const { data: created, error: createErr } = await supabase.from('monthly_plans').insert({
+          club_id: clubId, year: nextY, month: nextM,
+          title: `${MONTH_NAMES[language]?.[nextM - 1] || MONTH_NAMES.nl[nextM - 1]} ${nextY}`,
+          created_by: user.id, status: 'draft',
+        }).select().single();
+        if (createErr) throw createErr;
+        nextPlan = created;
+      }
+      const newDaysInMonth = getDaysInMonth(nextY, nextM);
+      const newTasks = tasks.map(t => {
+        const dayNum = new Date(t.task_date).getDate();
+        if (dayNum > newDaysInMonth) return null;
+        const newDate = `${nextY}-${String(nextM).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+        const { id, created_at, plan_id, ...rest } = t as any;
+        return { ...rest, plan_id: nextPlan!.id, task_date: newDate };
+      }).filter(Boolean);
+      if (!newTasks.length) { toast.error(t3('Geen taken konden worden gekopieerd', 'Aucune tâche copiée', 'No tasks could be copied')); setCopyingToNext(false); return; }
+      const { data: inserted, error } = await supabase.from('monthly_plan_tasks').insert(newTasks).select();
+      if (error) throw error;
+      toast.success(`${inserted!.length} ${t3('taken gekopieerd naar', 'tâches copiées vers', 'tasks copied to')} ${MONTH_NAMES[language]?.[nextM - 1] || MONTH_NAMES.nl[nextM - 1]} ${nextY}`);
+    } catch (err: any) { toast.error(err.message); }
+    setCopyingToNext(false);
+  };
 
   const handleConfirmHours = async (ds: any, task: any) => {
     const finalHours = ds.volunteer_reported_hours!;
@@ -528,6 +588,16 @@ const MonthlyPlanning = () => {
           </div>
         )}
 
+        {/* Day signup KPI bar */}
+        {plan && daySignups.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{daySignups.length}</p><p className="text-xs text-muted-foreground">{t3('Totaal ingeschreven', 'Total inscrit', 'Total signed up')}</p></CardContent></Card>
+            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-green-600">{assignedDaySignups.length}</p><p className="text-xs text-muted-foreground">{t3('Goedgekeurd', 'Approuvé', 'Approved')}</p></CardContent></Card>
+            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-yellow-600">{pendingDaySignups.length}</p><p className="text-xs text-muted-foreground">{t3('In afwachting', 'En attente', 'Pending')}</p></CardContent></Card>
+            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-destructive">{rejectedDaySignups.length}</p><p className="text-xs text-muted-foreground">{t3('Afgewezen', 'Refusé', 'Rejected')}</p></CardContent></Card>
+          </div>
+        )}
+
         {/* Create plan or show content */}
         {!plan && !loading ? (
           <Card className="p-12 text-center">
@@ -577,6 +647,32 @@ const MonthlyPlanning = () => {
                 <Badge variant="outline" className="text-sm py-2 px-4">
                   <Users className="w-4 h-4 mr-1" /> {enrollments.length} {t3('vrijwilliger(s)', 'bénévole(s)', 'volunteer(s)')}
                 </Badge>
+              )}
+              {plan.status === 'published' && tasks.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" disabled={copyingToNext}>
+                      {copyingToNext ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-2" />}
+                      {t3('Kopieer naar volgende maand', 'Copier vers le mois suivant', 'Copy to next month')}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t3('Taken kopiëren?', 'Copier les tâches ?', 'Copy tasks?')}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t3(
+                          `${tasks.length} taken worden gekopieerd naar ${MONTH_NAMES.nl[viewMonth === 12 ? 0 : viewMonth]} ${viewMonth === 12 ? viewYear + 1 : viewYear}. Bestaande taken in die maand blijven behouden. Inschrijvingen worden niet gekopieerd.`,
+                          `${tasks.length} tâches seront copiées vers ${MONTH_NAMES.fr[viewMonth === 12 ? 0 : viewMonth]} ${viewMonth === 12 ? viewYear + 1 : viewYear}. Les tâches existantes seront conservées. Les inscriptions ne seront pas copiées.`,
+                          `${tasks.length} tasks will be copied to ${MONTH_NAMES.en[viewMonth === 12 ? 0 : viewMonth]} ${viewMonth === 12 ? viewYear + 1 : viewYear}. Existing tasks in that month will be kept. Enrollments will not be copied.`
+                        )}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t3('Annuleren', 'Annuler', 'Cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={copyToNextMonth}>{t3('Kopiëren', 'Copier', 'Copy')}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
 

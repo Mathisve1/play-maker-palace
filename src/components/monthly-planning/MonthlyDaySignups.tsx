@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Ticket, Mail, UserCheck, UserX, Loader2, LogOut } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Clock, Ticket, Mail, UserCheck, UserX, Loader2, LogOut, FileSignature } from 'lucide-react';
 
 interface PlanTask {
   id: string;
@@ -26,6 +27,9 @@ interface DaySignupClub {
   dispute_status: string;
   volunteer_name?: string;
   volunteer_email?: string;
+  volunteer_avatar_url?: string | null;
+  contract_status?: string;
+  season_checkin_count?: number;
 }
 
 interface MonthlyDaySignupsProps {
@@ -43,6 +47,35 @@ interface MonthlyDaySignupsProps {
   onSendTicketEmail: (signup: DaySignupClub) => void;
   onCheckout: (signup: DaySignupClub) => void;
 }
+
+const contractBadge = (status: string | undefined, t3: (nl: string, fr: string, en: string) => string) => {
+  if (status === 'signed') return <Badge className="bg-green-600 text-[10px] gap-0.5"><FileSignature className="w-2.5 h-2.5" />{t3('Getekend', 'Signé', 'Signed')}</Badge>;
+  if (status === 'sent') return <Badge variant="secondary" className="text-[10px] gap-0.5"><FileSignature className="w-2.5 h-2.5" />{t3('In afwachting', 'En attente', 'Pending')}</Badge>;
+  return <Badge variant="outline" className="text-[10px] text-muted-foreground gap-0.5"><FileSignature className="w-2.5 h-2.5" />{t3('Niet verstuurd', 'Non envoyé', 'Not sent')}</Badge>;
+};
+
+const VolunteerInfo = ({ ds, t3 }: { ds: DaySignupClub; t3: (nl: string, fr: string, en: string) => string }) => {
+  const initials = (ds.volunteer_name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  return (
+    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+      <Avatar className="h-8 w-8 shrink-0">
+        {ds.volunteer_avatar_url && <AvatarImage src={ds.volunteer_avatar_url} />}
+        <AvatarFallback className="text-[10px] bg-muted">{initials}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-sm font-medium truncate">{ds.volunteer_name}</span>
+          {contractBadge(ds.contract_status, t3)}
+          {typeof ds.season_checkin_count === 'number' && (
+            <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+              {ds.season_checkin_count} {t3('check-ins', 'check-ins', 'check-ins')}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MonthlyDaySignups = ({
   pendingSignups, assignedSignups, tasks, language,
@@ -72,10 +105,8 @@ const MonthlyDaySignups = ({
                       <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(locale, { weekday: 'short' })}</p>
                       <p className="text-lg font-bold">{d.getDate()}</p>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
-                      <p className="text-xs text-muted-foreground">{task.start_time}–{task.end_time} · {task.location || ''}</p>
-                    </div>
+                    <VolunteerInfo ds={ds} t3={t3} />
+                    <span className="text-xs text-muted-foreground hidden sm:inline truncate max-w-[120px]">{task.title}</span>
                     <div className="flex gap-1.5 shrink-0">
                       <Button size="sm" variant="outline" className="gap-1 text-green-700" onClick={() => onAssign(ds.id)}>
                         <UserCheck className="w-3.5 h-3.5" /> {t3('Toekennen', 'Attribuer', 'Assign')}
@@ -115,16 +146,14 @@ const MonthlyDaySignups = ({
                       <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(locale, { weekday: 'short' })}</p>
                       <p className="text-lg font-bold">{d.getDate()}</p>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{ds.volunteer_name} — {task.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <Badge className="bg-green-600 text-[10px]">{t3('Toegekend', 'Attribué', 'Assigned')}</Badge>
-                        {hasTicket && <Badge variant="outline" className="text-[10px]">Ticket: {ds.ticket_barcode}</Badge>}
-                        {isCheckedIn && <Badge variant="outline" className="text-[10px] border-green-300 text-green-700">✓ {t3('Ingecheckt', 'Enregistré', 'Checked in')}</Badge>}
-                        {isCheckedOut && <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">⏹ {t3('Uitgecheckt', 'Sorti', 'Checked out')}</Badge>}
-                        {ds.dispute_status === 'open' && <Badge variant="destructive" className="text-[10px]">{t3('Geschil', 'Litige', 'Dispute')}</Badge>}
-                        {ds.dispute_status === 'escalated' && <Badge variant="destructive" className="text-[10px]">⚠️ {t3('Geëscaleerd', 'Escaladé', 'Escalated')}</Badge>}
-                      </div>
+                    <VolunteerInfo ds={ds} t3={t3} />
+                    <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                      <Badge className="bg-green-600 text-[10px]">{t3('Toegekend', 'Attribué', 'Assigned')}</Badge>
+                      {hasTicket && <Badge variant="outline" className="text-[10px]">Ticket</Badge>}
+                      {isCheckedIn && <Badge variant="outline" className="text-[10px] border-green-300 text-green-700">✓ {t3('In', 'In', 'In')}</Badge>}
+                      {isCheckedOut && <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">⏹ {t3('Uit', 'Sorti', 'Out')}</Badge>}
+                      {ds.dispute_status === 'open' && <Badge variant="destructive" className="text-[10px]">{t3('Geschil', 'Litige', 'Dispute')}</Badge>}
+                      {ds.dispute_status === 'escalated' && <Badge variant="destructive" className="text-[10px]">⚠️</Badge>}
                     </div>
                     <div className="flex gap-1.5 shrink-0 flex-wrap">
                       {!hasTicket && (
