@@ -78,7 +78,14 @@ const EventsManager = () => {
   const [newGroupWristbandLabel, setNewGroupWristbandLabel] = useState('');
   const [newGroupMaterialsNote, setNewGroupMaterialsNote] = useState('');
   const [duplicatingEvent, setDuplicatingEvent] = useState<string | null>(null);
+  const [duplicateDateDialog, setDuplicateDateDialog] = useState<string | null>(null);
+  const [duplicateNewDate, setDuplicateNewDate] = useState('');
   const [confirmDeleteEvent, setConfirmDeleteEvent] = useState<string | null>(null);
+  const [showTaskSetPicker, setShowTaskSetPicker] = useState(false);
+  const [taskSetPickerEventId, setTaskSetPickerEventId] = useState<string | null>(null);
+  const [taskSets, setTaskSets] = useState<{ id: string; name: string; items: { template_id: string }[] }[]>([]);
+  const [taskTemplatesMap, setTaskTemplatesMap] = useState<Record<string, any>>({});
+  const [applyingSet, setApplyingSet] = useState<string | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventData | null>(null);
   const [editEventForm, setEditEventForm] = useState({ title: '', description: '', event_date: '', location: '' });
