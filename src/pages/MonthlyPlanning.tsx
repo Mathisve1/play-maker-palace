@@ -588,6 +588,16 @@ const MonthlyPlanning = () => {
           </div>
         )}
 
+        {/* Day signup KPI bar */}
+        {plan && daySignups.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{daySignups.length}</p><p className="text-xs text-muted-foreground">{t3('Totaal ingeschreven', 'Total inscrit', 'Total signed up')}</p></CardContent></Card>
+            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-green-600">{assignedDaySignups.length}</p><p className="text-xs text-muted-foreground">{t3('Goedgekeurd', 'Approuvé', 'Approved')}</p></CardContent></Card>
+            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-yellow-600">{pendingDaySignups.length}</p><p className="text-xs text-muted-foreground">{t3('In afwachting', 'En attente', 'Pending')}</p></CardContent></Card>
+            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-destructive">{rejectedDaySignups.length}</p><p className="text-xs text-muted-foreground">{t3('Afgewezen', 'Refusé', 'Rejected')}</p></CardContent></Card>
+          </div>
+        )}
+
         {/* Create plan or show content */}
         {!plan && !loading ? (
           <Card className="p-12 text-center">
