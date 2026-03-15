@@ -100,6 +100,13 @@ const t = {
     noEvents: 'No events available',
     success: 'Success',
     error: 'Error',
+    sendReminder: 'Send reminder to all',
+    reminderConfirmTitle: 'Send reminder',
+    reminderConfirmDesc: 'You are about to send a reminder to {count} volunteer(s) with an unopened ticket.',
+    reminderSending: 'Sending...',
+    reminderSent: 'Reminders sent',
+    lastUpdate: 'Last update',
+    perTask: 'Per task',
   },
 };
 
