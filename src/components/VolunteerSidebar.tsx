@@ -34,6 +34,7 @@ interface VolunteerSidebarProps {
     tickets?: number;
     loyalty?: number;
     safety?: number;
+    safetyAlert?: boolean;
   };
 }
 
