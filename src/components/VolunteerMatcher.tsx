@@ -87,6 +87,7 @@ interface VolunteerMatcherProps {
 const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) => {
   const { language } = useLanguage();
   const { clubId, clubInfo } = useClubContext();
+  const navigate = useNavigate();
   const l = labels[language];
 
   const [matches, setMatches] = useState<MatchedVolunteer[]>([]);
