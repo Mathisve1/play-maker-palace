@@ -1054,6 +1054,12 @@ const VolunteerDashboard = () => {
         <VolunteerMonthlyTab language={language} userId={currentUserId} />
       )}
 
+      {/* ===== AVAILABILITY TAB ===== */}
+      {activeTab === 'availability' && currentUserId && clubId && (
+        <div className="max-w-4xl mx-auto">
+          <SeasonAvailabilityPicker userId={currentUserId} clubId={clubId} language={language} />
+        </div>
+      )}
 
       {activeTab === 'contracts' && (
         <VolunteerContractsTab contracts={myContracts} language={language} checkingContract={checkingContract} onCheckStatus={handleCheckContractStatus} userId={currentUserId} />
