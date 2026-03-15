@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, UserPlus, Copy, Trash2, Shield, ChevronDown, Info } from 'lucide-react';
+import { X, UserPlus, Copy, Trash2, Shield, ChevronDown, Info, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import ContractTypePicker, { ContractTypeKey } from '@/components/ContractTypePicker';
 
 type ClubRole = 'bestuurder' | 'beheerder' | 'medewerker';
 
@@ -10,7 +11,9 @@ interface Member {
   id: string;
   user_id: string;
   role: ClubRole;
+  membership_id?: string;
   profile?: { full_name: string | null; email: string | null };
+  contractTypes?: ContractTypeKey[];
 }
 
 interface Invitation {
@@ -56,6 +59,11 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   const [inviteRole, setInviteRole] = useState<ClubRole>('medewerker');
   const [inviting, setInviting] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState<string | null>(null);
+
+  // Contract type step for new invites
+  const [inviteStep, setInviteStep] = useState<'form' | 'contract-type'>('form');
+  const [selectedContractTypes, setSelectedContractTypes] = useState<Set<ContractTypeKey>>(new Set());
+  const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
 
   const canManage = isOwner || currentUserRole === 'bestuurder';
   const canInvite = canManage || currentUserRole === 'beheerder';
