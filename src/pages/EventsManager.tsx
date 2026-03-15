@@ -735,7 +735,7 @@ const EventsManager = () => {
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
 
                  {/* Date & Spots */}
-                 <div><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" value={newTask.task_date} onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
+                 <div><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" min={todayMin} value={newTask.task_date} onChange={e => setNewTask(p => ({ ...p, task_date: e.target.value }))} className={inputClass} /></div>
                  <div><label className={labelClass}>{t3('Plaatsen', 'Places', 'Spots')}</label><input type="number" min={1} value={newTask.spots_available} onChange={e => setNewTask(p => ({ ...p, spots_available: parseInt(e.target.value) || 1 }))} className={inputClass} /></div>
 
                  {/* Location (multi-field) */}
