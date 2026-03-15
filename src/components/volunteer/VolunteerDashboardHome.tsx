@@ -296,6 +296,33 @@ const VolunteerDashboardHome = ({
         </motion.div>
       )}
 
+      {/* Required trainings section */}
+      {requiredTrainings.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+          <h3 className="text-sm font-heading font-semibold text-foreground flex items-center gap-2 mb-3">
+            <BookOpen className="w-4 h-4 text-primary" />
+            {language === 'nl' ? 'Vereiste trainingen' : language === 'fr' ? 'Formations requises' : 'Required trainings'}
+          </h3>
+          <div className="space-y-2">
+            {requiredTrainings.map(tr => (
+              <div key={tr.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{tr.title}</p>
+                  <p className="text-xs text-muted-foreground">{tr.clubName}</p>
+                </div>
+                <button
+                  onClick={() => navigate(`/training/${tr.id}`)}
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+                >
+                  {language === 'nl' ? 'Start training' : language === 'fr' ? 'Démarrer' : 'Start training'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
