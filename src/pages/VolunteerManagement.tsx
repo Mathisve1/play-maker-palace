@@ -371,9 +371,16 @@ const VolunteerManagement = () => {
                   </Avatar>
 
                   {/* Name & email */}
-                  <div className="min-w-0 flex-1">
+                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground truncate">{vol.full_name}</p>
                     <p className="text-xs text-muted-foreground truncate">{vol.email}</p>
+                    {vol.avg_rating !== null && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                        <span className="text-xs font-medium text-foreground">{vol.avg_rating.toFixed(1)}</span>
+                        <span className="text-[10px] text-muted-foreground">({vol.review_count})</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Contract badges */}
