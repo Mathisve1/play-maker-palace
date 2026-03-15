@@ -39,6 +39,7 @@ const ClubOwnerSidebar = ({
   const [actionCount, setActionCount] = useState(0);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
