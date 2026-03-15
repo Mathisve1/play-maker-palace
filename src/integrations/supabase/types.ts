@@ -4878,6 +4878,7 @@ export type Database = {
           status: string
           task_date: string | null
           title: string
+          updated_at: string | null
           waitlist_enabled: boolean
           zone_signup_mode: string
           zone_visible_depth: number | null
@@ -4913,6 +4914,7 @@ export type Database = {
           status?: string
           task_date?: string | null
           title: string
+          updated_at?: string | null
           waitlist_enabled?: boolean
           zone_signup_mode?: string
           zone_visible_depth?: number | null
@@ -4948,6 +4950,7 @@ export type Database = {
           status?: string
           task_date?: string | null
           title?: string
+          updated_at?: string | null
           waitlist_enabled?: boolean
           zone_signup_mode?: string
           zone_visible_depth?: number | null

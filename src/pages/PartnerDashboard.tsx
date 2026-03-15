@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { sendPush, sendPushToClub } from '@/lib/sendPush';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2 } from 'lucide-react';
+import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PartnerSidebar from '@/components/PartnerSidebar';
 import PartnerDashboardHome from '@/components/partner/PartnerDashboardHome';
@@ -33,6 +34,7 @@ interface ClubTask {
   id: string; title: string; description: string | null; task_date: string | null;
   location: string | null; spots_available: number; event_id: string | null;
   event_title?: string | null; partner_acceptance_status: string; assigned_members: string[];
+  updated_at?: string | null;
 }
 
 const EMPTY_MEMBER = {
@@ -68,6 +70,11 @@ const PartnerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
+
+  const now48hAgo = useMemo(() => new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), []);
+  const recentlyModifiedCount = useMemo(() =>
+    clubTasks.filter(t => t.updated_at && t.updated_at > now48hAgo).length
+  , [clubTasks, now48hAgo]);
 
   useEffect(() => {
     const init = async () => {
@@ -114,7 +121,7 @@ const PartnerDashboard = () => {
 
   const fetchClubTasks = async (partnerId: string, clubId: string) => {
     const { data: tasks } = await supabase.from('tasks')
-      .select('id, title, description, task_date, location, spots_available, event_id, partner_acceptance_status')
+      .select('id, title, description, task_date, location, spots_available, event_id, partner_acceptance_status, updated_at')
       .eq('partner_only', true).eq('assigned_partner_id', partnerId).eq('club_id', clubId);
     const allTasks = tasks || [];
     const taskIds = allTasks.map(t => t.id);
@@ -136,6 +143,7 @@ const PartnerDashboard = () => {
       ...t, event_title: t.event_id ? eventMap[t.event_id] || null : null,
       partner_acceptance_status: t.partner_acceptance_status || 'pending',
       assigned_members: assignmentMap[t.id] || [],
+      updated_at: (t as any).updated_at || null,
     })));
   };
 
@@ -150,12 +158,38 @@ const PartnerDashboard = () => {
     const { error } = await supabase.from('tasks').update({ partner_acceptance_status: 'accepted' }).eq('id', taskId);
     if (error) { toast.error(error.message); return; }
     toast.success(nl ? 'Taak aanvaard!' : 'Task accepted!');
+    // Notify club
+    try {
+      const task = clubTasks.find(t => t.id === taskId);
+      if (partner && selectedClubId) {
+        sendPushToClub({
+          clubId: selectedClubId,
+          title: '✅ Taak geaccepteerd',
+          message: `${partner.name} heeft taak "${task?.title || ''}" geaccepteerd.`,
+          url: '/external-partners',
+          type: 'partner_response',
+        });
+      }
+    } catch { /* silent */ }
     await refreshAll();
   };
   const handleRejectTask = async (taskId: string) => {
     const { error } = await supabase.from('tasks').update({ partner_acceptance_status: 'rejected' }).eq('id', taskId);
     if (error) { toast.error(error.message); return; }
     toast.success(nl ? 'Taak geweigerd.' : 'Task rejected.');
+    // Notify club
+    try {
+      const task = clubTasks.find(t => t.id === taskId);
+      if (partner && selectedClubId) {
+        sendPushToClub({
+          clubId: selectedClubId,
+          title: '❌ Taak geweigerd',
+          message: `${partner.name} heeft taak "${task?.title || ''}" geweigerd.`,
+          url: '/external-partners',
+          type: 'partner_response',
+        });
+      }
+    } catch { /* silent */ }
     await refreshAll();
   };
 
@@ -276,6 +310,10 @@ const PartnerDashboard = () => {
   const acceptedTasks = clubTasks.filter(t => t.partner_acceptance_status === 'accepted');
   const rejectedTasks = clubTasks.filter(t => t.partner_acceptance_status === 'rejected');
 
+
+  const isRecentlyModified = (task: ClubTask) =>
+    task.updated_at != null && task.updated_at > now48hAgo;
+
   const MemberForm = ({ data, onChange, onSubmit, submitLabel, submitting }: {
     data: typeof EMPTY_MEMBER; onChange: (d: typeof EMPTY_MEMBER) => void;
     onSubmit: () => void; submitLabel: string; submitting: boolean;
@@ -312,7 +350,14 @@ const PartnerDashboard = () => {
       <CardContent className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">{task.title}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">{task.title}</p>
+              {isRecentlyModified(task) && (
+                <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600 dark:text-amber-400 gap-0.5">
+                  <AlertTriangle className="w-2.5 h-2.5" />{nl ? 'Gewijzigd' : 'Modified'}
+                </Badge>
+              )}
+            </div>
             {task.event_title && <p className="text-[11px] text-primary mt-0.5">{task.event_title}</p>}
             {task.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{task.description}</p>}
             <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground">
@@ -374,6 +419,7 @@ const PartnerDashboard = () => {
       setActiveTab={setActiveTab}
       onLogout={handleLogoutWrapped}
       onOpenProfile={() => setShowProfileDialog(true)}
+      tasksBadge={recentlyModifiedCount}
     />
   );
 
