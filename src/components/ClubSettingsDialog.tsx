@@ -182,18 +182,29 @@ const ClubSettingsDialog = ({ clubId, clubInfo, onClose, onUpdated, onRestartOnb
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
-            {t3('Annuleren', 'Annuler', 'Cancel')}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || !name.trim()}
-            className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : t3('Opslaan', 'Enregistrer', 'Save')}
-          </button>
+        <div className="flex items-center justify-between mt-6">
+          {onRestartOnboarding && (
+            <button
+              onClick={onRestartOnboarding}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              {t3('Onboarding opnieuw starten', "Relancer l'onboarding", 'Restart onboarding')}
+            </button>
+          )}
+          <div className="flex gap-3 ml-auto">
+            <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
+              {t3('Annuleren', 'Annuler', 'Cancel')}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !name.trim()}
+              className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? t3('Opslaan...', 'Enregistrement...', 'Saving...') : t3('Opslaan', 'Enregistrer', 'Save')}
+            </button>
+          </div>
         </div>
       </div>
     </div>
