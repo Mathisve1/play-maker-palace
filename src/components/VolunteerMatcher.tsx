@@ -32,6 +32,7 @@ interface MatchedVolunteer {
   availabilityMatch: boolean;
   skillMatch: string[];
   pastTasks: number;
+  contractStatus: 'signed' | 'pending' | 'none';
 }
 
 const labels = {
