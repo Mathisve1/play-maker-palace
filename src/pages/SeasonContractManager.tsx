@@ -279,12 +279,17 @@ const SeasonContractManager = () => {
         .map((b: any) => ({ reference: b.reference, date: b.created_at, itemCount: b.item_count || 0, totalAmount: b.total_amount || 0, status: b.status }));
       const totalHours = [...volMap.values()].reduce((s, v) => s + v.hours, 0);
       const totalComp = [...volMap.values()].reduce((s, v) => s + v.compensation, 0);
-      const doc = generateSeasonReport({
-        clubName: club?.name || '—', seasonName: activeSeason.name, seasonStart, seasonEnd,
+      const doc = await generateSeasonReport({
+        clubName: club?.name || '—', clubLogoUrl: club?.logo_url || null,
+        seasonName: activeSeason.name, seasonStart, seasonEnd,
         totalVolunteers: volMap.size, totalTasks: taskIds.length, totalHours, totalCompensation: totalComp,
         volunteers: [...volMap.values()].sort((a, b) => b.compensation - a.compensation),
         taskTypes: [...taskTypeMap.values()].sort((a, b) => b.count - a.count),
         sepaBatches: seasonBatches, language,
+        monthlyAttendance: monthlyAtt,
+        top5Volunteers: [...volMap.values()].sort((a, b) => b.taskCount - a.taskCount).slice(0, 5),
+        compensationPerContractType: compPerType,
+        contractStatus: contractStatusData,
       });
       doc.save(`seizoensrapport-${activeSeason.name.replace(/\s+/g, '-').toLowerCase()}.pdf`);
       toast.success(t('Seizoensrapport gedownload!', 'Rapport de saison téléchargé!', 'Season report downloaded!'));
