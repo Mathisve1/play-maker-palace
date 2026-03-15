@@ -332,6 +332,39 @@ const CommandCenter = () => {
     };
   }, [loadData]);
 
+  const handleSendReminder = async (taskId: string, taskTitle: string) => {
+    setSendingReminder(taskId);
+    const { data: signups } = await (supabase as any)
+      .from('task_signups')
+      .select('volunteer_id')
+      .eq('task_id', taskId)
+      .eq('status', 'assigned')
+      .is('checked_in_at', null);
+
+    const volIds = (signups || []).map((s: any) => s.volunteer_id);
+    let sent = 0;
+    for (const volId of volIds) {
+      await sendPush({
+        userId: volId,
+        title: t3('⏰ Herinnering', '⏰ Rappel', '⏰ Reminder'),
+        message: t3(`Vergeet niet: "${taskTitle}" is morgen!`, `N'oubliez pas: "${taskTitle}" est demain !`, `Don't forget: "${taskTitle}" is tomorrow!`),
+        url: `/task/${taskId}`,
+        type: 'task_reminder',
+      });
+      await supabase.from('notifications').insert({
+        user_id: volId,
+        title: t3('Herinnering', 'Rappel', 'Reminder'),
+        message: t3(`"${taskTitle}" is morgen. Vergeet niet te bevestigen!`, `"${taskTitle}" est demain. N'oubliez pas de confirmer !`, `"${taskTitle}" is tomorrow. Don't forget to confirm!`),
+        type: 'task',
+        metadata: { task_id: taskId, action: 'reminder' },
+      });
+      sent++;
+    }
+    toast.success(t3(`Herinnering verstuurd naar ${sent} vrijwilliger${sent > 1 ? 's' : ''}`, `Rappel envoyé à ${sent} bénévole${sent > 1 ? 's' : ''}`, `Reminder sent to ${sent} volunteer${sent > 1 ? 's' : ''}`));
+    setSendingReminder(null);
+    setTomorrowReminders(prev => prev.filter(r => r.taskId !== taskId));
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/club-login');
