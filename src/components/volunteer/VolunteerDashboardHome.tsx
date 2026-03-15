@@ -171,6 +171,16 @@ const VolunteerDashboardHome = ({
         <p className="text-muted-foreground mt-1">{dt.subtitle}</p>
       </motion.div>
 
+      {/* Today & Tomorrow planning */}
+      <TodayPlanningSection
+        language={language}
+        currentUserId={currentUserId}
+        profileName={profile?.full_name || profile?.email || ''}
+        tasks={tasks}
+        signups={signups}
+        getSignupStatus={getSignupStatus}
+      />
+
       {/* Onboarding Wizard */}
       {currentUserId && followedClubIds && followedClubIds.size > 0 && (
         <OnboardingWizard
