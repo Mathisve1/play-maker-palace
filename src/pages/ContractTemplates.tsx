@@ -251,27 +251,32 @@ const ContractTemplates = () => {
               </Button>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Object.entries(seasonTemplateNames).map(([cat, name]) => (
-                <Card key={cat} className="hover:shadow-md transition-shadow group">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <Badge variant="outline" className="text-[10px] mb-2">{categoryLabels[cat] || cat}</Badge>
-                        <p className="text-sm font-medium text-foreground">{name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t('Wettelijk conform seizoenscontract', 'Contrat saisonnier conforme', 'Legally compliant season contract')}
-                        </p>
+              {Object.entries(seasonTemplateNames).map(([cat, name]) => {
+                const dbTemplate = systemContracts.find(t => t.category === cat);
+                return (
+                  <Card key={cat} className="hover:shadow-md transition-shadow group">
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <Badge variant="outline" className="text-[10px] mb-2">{categoryLabels[cat] || cat}</Badge>
+                          <p className="text-sm font-medium text-foreground">{name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t('Wettelijk conform seizoenscontract', 'Contrat saisonnier conforme', 'Legally compliant season contract')}
+                          </p>
+                        </div>
+                        <FileText className="w-5 h-5 text-muted-foreground/50 shrink-0" />
                       </div>
-                      <FileText className="w-5 h-5 text-muted-foreground/50 shrink-0" />
-                    </div>
-                    <Button variant="outline" size="sm" className="mt-4 w-full"
-                      onClick={() => navigate(`/contract-builder?season_type=${cat}&club_id=${clubId}`)}>
-                      <Edit3 className="w-3.5 h-3.5 mr-1" />
-                      {t('Bewerken', 'Modifier', 'Edit')}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                      <Button variant="outline" size="sm" className="mt-4 w-full"
+                        onClick={() => navigate(dbTemplate
+                          ? `/contract-builder?templateId=${dbTemplate.id}&club_id=${clubId}`
+                          : `/contract-builder?season_type=${cat}&club_id=${clubId}`)}>
+                        <Edit3 className="w-3.5 h-3.5 mr-1" />
+                        {t('Bewerken', 'Modifier', 'Edit')}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {customContracts.length > 0 && (
