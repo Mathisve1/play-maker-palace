@@ -86,6 +86,7 @@ const labels: Record<Language, Record<string, string>> = {
   },
   en: {
     dashboard: 'Dashboard',
+    season: 'My Season',
     allTasks: 'All Tasks',
     myTasks: 'My Tasks',
     monthly: 'Monthly Planning',
