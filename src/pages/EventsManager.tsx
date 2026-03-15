@@ -10,7 +10,7 @@ import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
   PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
-  FileText, Save, ClipboardCheck, Send,
+  FileText, Save, ClipboardCheck, Send, UserCheck,
 } from 'lucide-react';
 import BulkMessageDialog from '@/components/BulkMessageDialog';
 import EventTemplateDialog from '@/components/EventTemplateDialog';
