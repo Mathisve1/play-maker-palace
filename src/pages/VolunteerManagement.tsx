@@ -330,6 +330,24 @@ const VolunteerManagement = () => {
                 </Button>
               </>
             )}
+            <Button variant="outline" size="sm" onClick={() => {
+              const header = ['Naam', 'E-mail', 'Contracttype(s)', 'Contractstatus', 'Aantal check-ins', 'Gemiddelde beoordeling'].join(',');
+              const rows = filtered.map(v => {
+                const types = v.contracts.map(c => categoryLabels[c.category] || c.template_name).join('; ') || '-';
+                const status = v.contracts.length === 0 ? 'Geen' : v.contracts.every(c => c.status === 'signed') ? 'Getekend' : 'In afwachting';
+                const rating = v.avg_rating !== null ? v.avg_rating.toFixed(1) : '-';
+                return [v.full_name, v.email, `"${types}"`, status, v.check_in_count, rating].join(',');
+              });
+              const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = 'vrijwilligers.csv'; a.click();
+              URL.revokeObjectURL(url);
+              toast.success(t('CSV geëxporteerd', 'CSV exporté', 'CSV exported'));
+            }} className="gap-1.5">
+              <Download className="w-4 h-4" />
+              {t('Exporteer lijst', 'Exporter la liste', 'Export list')}
+            </Button>
             <Button variant="outline" size="sm" onClick={loadData}>
               {t('Vernieuwen', 'Actualiser', 'Refresh')}
             </Button>
