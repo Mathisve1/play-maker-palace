@@ -186,6 +186,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
+          <CrispRouteGuard />
           <IOSInstallOverlay />
         </BrowserRouter>
       </TooltipProvider>
