@@ -6,7 +6,7 @@ import { useClubContext } from '@/contexts/ClubContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, MapPin, Calendar, Star, CheckCircle, Users, Award, Pencil, ArrowLeft, Phone, Mail } from 'lucide-react';
+import { Loader2, Calendar, Star, CheckCircle, Users, Award, Pencil, ArrowLeft, Phone, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import VolunteerBadges from '@/components/VolunteerBadges';
 import EditProfileDialog from '@/components/EditProfileDialog';
