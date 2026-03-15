@@ -45,6 +45,9 @@ const VolunteerManagement = () => {
   // Dialogs
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [showSendContract, setShowSendContract] = useState(false);
+  const [showBulkContractType, setShowBulkContractType] = useState(false);
+  const [bulkContractTypes, setBulkContractTypes] = useState<Set<ContractTypeKey>>(new Set());
+  const [filterMemberType, setFilterMemberType] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Auto-create season on first load
