@@ -70,6 +70,9 @@ const labels = {
     pushDisable: 'Uitschakelen',
     pushUnavailable: 'Pushmeldingen worden niet ondersteund in deze browser',
     pushDenied: 'Pushmeldingen zijn geblokkeerd. Wijzig dit in je browserinstellingen.',
+    themeTitle: 'Weergave',
+    lightMode: 'Licht thema',
+    darkMode: 'Donker thema',
   },
   fr: {
     title: 'Mon profil',
