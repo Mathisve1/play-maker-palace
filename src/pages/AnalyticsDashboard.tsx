@@ -118,27 +118,37 @@ const AnalyticsDashboard = () => {
     }).filter(e => e.spots > 0).reverse();
     setEventAttendance(eventData);
 
-    // === Retention (month-over-month) ===
+    // === Retention (month-over-month, using earliest signup per volunteer) ===
+    // Build a map: volunteer_id -> earliest signup month
+    const earliestSignup: Record<string, string> = {};
+    signups.forEach(s => {
+      const m = s.signed_up_at.slice(0, 7);
+      if (!earliestSignup[s.volunteer_id] || m < earliestSignup[s.volunteer_id]) {
+        earliestSignup[s.volunteer_id] = m;
+      }
+    });
+
     const retMonths: typeof retentionData = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = d.toISOString().slice(0, 7);
       const label = d.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { month: 'short' });
-      
-      const prevD = new Date(now.getFullYear(), now.getMonth() - i - 1, 1);
-      const prevMonthKey = prevD.toISOString().slice(0, 7);
 
       const activeThisMonth = new Set(
         signups.filter(s => s.signed_up_at.slice(0, 7) === monthKey).map(s => s.volunteer_id)
       );
-      const activePrevMonth = new Set(
-        signups.filter(s => s.signed_up_at.slice(0, 7) === prevMonthKey).map(s => s.volunteer_id)
-      );
 
-      const returning = [...activeThisMonth].filter(v => activePrevMonth.has(v)).length;
-      const newV = activeThisMonth.size - returning;
-      const rate = activePrevMonth.size > 0 ? Math.round((returning / activePrevMonth.size) * 100) : 0;
+      let returning = 0;
+      let newV = 0;
+      activeThisMonth.forEach(vid => {
+        if (earliestSignup[vid] && earliestSignup[vid] < monthKey) {
+          returning++;
+        } else {
+          newV++;
+        }
+      });
 
+      const rate = (returning + newV) > 0 ? Math.round((returning / (returning + newV)) * 100) : 0;
       retMonths.push({ month: label, returning, new: newV, total: activeThisMonth.size, rate });
     }
     setRetentionData(retMonths);
