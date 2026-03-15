@@ -4115,6 +4115,61 @@ export type Database = {
           },
         ]
       }
+      task_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+          reviewer_role: string
+          task_signup_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+          reviewer_role: string
+          task_signup_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          reviewee_id?: string
+          reviewer_id?: string
+          reviewer_role?: string
+          task_signup_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_reviews_reviewee_id_fkey"
+            columns: ["reviewee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_reviews_task_signup_id_fkey"
+            columns: ["task_signup_id"]
+            isOneToOne: false
+            referencedRelation: "task_signups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_signups: {
         Row: {
           id: string
