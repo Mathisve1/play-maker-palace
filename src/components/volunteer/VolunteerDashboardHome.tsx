@@ -457,7 +457,7 @@ const VolunteerDashboardHome = ({
         )}
       </div>
 
-      {currentUserId && <VolunteerLoyaltyProgress userId={currentUserId} language={language} />}
+      {currentUserId && <VolunteerLoyaltyProgress userId={currentUserId} language={language} totalPoints={0} />}
       <NearbyClubsWidget userId={currentUserId} language={language} />
       <VolunteerActivitiesSection items={activityItems} language={language} />
       {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
