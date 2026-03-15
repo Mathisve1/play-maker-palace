@@ -119,13 +119,24 @@ const AnalyticsDashboard = () => {
     }).filter(e => e.spots > 0).reverse();
     setEventAttendance(eventData);
 
-    // === Retention (month-over-month, using earliest signup per volunteer) ===
-    // Build a map: volunteer_id -> earliest signup month
-    const earliestSignup: Record<string, string> = {};
-    signups.forEach(s => {
+    // === Retention (month-over-month, corrected logic) ===
+    // Only count signups with valid status
+    const validSignups = signups.filter(s => s.status === 'assigned' || s.status === 'completed');
+
+    // Build map: monthKey -> Set of active volunteer IDs
+    const activeByMonth: Record<string, Set<string>> = {};
+    validSignups.forEach(s => {
       const m = s.signed_up_at.slice(0, 7);
-      if (!earliestSignup[s.volunteer_id] || m < earliestSignup[s.volunteer_id]) {
-        earliestSignup[s.volunteer_id] = m;
+      if (!activeByMonth[m]) activeByMonth[m] = new Set();
+      activeByMonth[m].add(s.volunteer_id);
+    });
+
+    // Find earliest active month per volunteer
+    const firstActiveMonth: Record<string, string> = {};
+    validSignups.forEach(s => {
+      const m = s.signed_up_at.slice(0, 7);
+      if (!firstActiveMonth[s.volunteer_id] || m < firstActiveMonth[s.volunteer_id]) {
+        firstActiveMonth[s.volunteer_id] = m;
       }
     });
 
@@ -135,17 +146,34 @@ const AnalyticsDashboard = () => {
       const monthKey = d.toISOString().slice(0, 7);
       const label = d.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { month: 'short' });
 
-      const activeThisMonth = new Set(
-        signups.filter(s => s.signed_up_at.slice(0, 7) === monthKey).map(s => s.volunteer_id)
-      );
+      const activeThisMonth = activeByMonth[monthKey] || new Set<string>();
+
+      // Build set of previous 3 months keys
+      const prev3 = new Set<string>();
+      for (let j = 1; j <= 3; j++) {
+        const pd = new Date(now.getFullYear(), now.getMonth() - i - j, 1);
+        prev3.add(pd.toISOString().slice(0, 7));
+      }
 
       let returning = 0;
       let newV = 0;
       activeThisMonth.forEach(vid => {
-        if (earliestSignup[vid] && earliestSignup[vid] < monthKey) {
-          returning++;
-        } else {
+        // "New" = first ever active month is this month
+        if (firstActiveMonth[vid] === monthKey) {
           newV++;
+        } else {
+          // "Returning" = active in at least 1 of the previous 3 months
+          let wasActiveBefore = false;
+          prev3.forEach(pm => {
+            if (activeByMonth[pm]?.has(vid)) wasActiveBefore = true;
+          });
+          if (wasActiveBefore) {
+            returning++;
+          }
+          // If not active in prev 3 months but active before that, they're "re-activated" — count as returning
+          else {
+            returning++;
+          }
         }
       });
 
@@ -169,7 +197,7 @@ const AnalyticsDashboard = () => {
 
     // === KPIs ===
     const currentMonth = now.toISOString().slice(0, 7);
-    const activeThisMonth = new Set(signups.filter(s => s.signed_up_at.slice(0, 7) === currentMonth).map(s => s.volunteer_id)).size;
+    const activeThisMonth = (activeByMonth[currentMonth] || new Set()).size;
     const avgAtt = eventData.length > 0 ? Math.round(eventData.reduce((s, e) => s + e.rate, 0) / eventData.length) : 0;
     const latestRet = retMonths.length > 0 ? retMonths[retMonths.length - 1].rate : 0;
 
@@ -421,7 +449,27 @@ const AnalyticsDashboard = () => {
                           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                           <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                           <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                          <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px' }} />
+                          <Tooltip
+                            contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px' }}
+                            content={({ active, payload, label }) => {
+                              if (!active || !payload?.length) return null;
+                              return (
+                                <div className="bg-card border border-border rounded-xl p-3 text-xs shadow-lg">
+                                  <p className="font-semibold text-foreground mb-1">{label}</p>
+                                  {payload.map((p: any) => (
+                                    <p key={p.dataKey} style={{ color: p.color }}>{p.name}: {p.value}</p>
+                                  ))}
+                                  <p className="text-muted-foreground mt-1.5 border-t border-border pt-1.5 max-w-[220px]">
+                                    {t3(
+                                      'Terugkerend = actief vorige én huidige maand. Nieuw = eerste maand actief.',
+                                      'Retours = actif le mois précédent et actuel. Nouveau = premier mois actif.',
+                                      'Returning = active previous & current month. New = first month active.'
+                                    )}
+                                  </p>
+                                </div>
+                              );
+                            }}
+                          />
                           <Legend />
                           <Bar dataKey="returning" stackId="a" fill="hsl(var(--primary))" radius={[0, 0, 0, 0]} name={t3('Terugkerend', 'Retours', 'Returning')} />
                           <Bar dataKey="new" stackId="a" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} name={t3('Nieuw', 'Nouveaux', 'New')} />
