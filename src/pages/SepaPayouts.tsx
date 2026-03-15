@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { sendPush } from '@/lib/sendPush';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import PageNavTabs from '@/components/PageNavTabs';
@@ -447,6 +448,33 @@ const SepaPayouts = () => {
       );
     }
     toast.success(t3('SEPA XML gedownload!', 'SEPA XML téléchargé !', 'SEPA XML downloaded!'));
+
+    // Send push notifications to volunteers in this batch
+    try {
+      const batchId = pendingDownloadBatchId;
+      const { data: items } = await supabase.from('sepa_batch_items')
+        .select('volunteer_id, amount, task_id')
+        .eq('batch_id', batchId)
+        .eq('error_flag', false);
+      if (items && items.length > 0) {
+        const taskIds = [...new Set(items.map(i => i.task_id).filter(Boolean))];
+        let taskMap: Record<string, string> = {};
+        if (taskIds.length > 0) {
+          const { data: tasks } = await supabase.from('tasks').select('id, title').in('id', taskIds);
+          (tasks || []).forEach(t => { taskMap[t.id] = t.title; });
+        }
+        await Promise.allSettled(items.map(item =>
+          sendPush({
+            userId: item.volunteer_id,
+            title: '💶 Vergoeding verwerkt',
+            message: `Goed nieuws! Jouw vergoeding van €${item.amount.toFixed(2)} voor ${taskMap[item.task_id] || 'een taak'} is verwerkt en wordt binnenkort gestort.`,
+            url: '/volunteer-dashboard',
+            type: 'payout',
+          })
+        ));
+      }
+    } catch { /* silent */ }
+
     init();
   };
 
