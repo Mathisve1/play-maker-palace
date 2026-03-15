@@ -162,7 +162,7 @@ const AuditLog = () => {
   const locale = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
 
   return (
-    <ClubPageLayout title={t3('Audit Log', 'Journal d\'audit', 'Audit Log')}>
+    <ClubPageLayout>
       <div className="space-y-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
