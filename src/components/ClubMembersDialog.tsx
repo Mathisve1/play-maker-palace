@@ -159,16 +159,14 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
 
     if (error) {
       toast.error(error.message);
-    } else if (data) {
-      // Send email via edge function
-      try {
-        // Get club name for the email
-        const { data: club } = await supabase
-          .from('clubs')
-          .select('name')
-          .eq('id', clubId)
-          .maybeSingle();
+      setInviting(false);
+      return;
+    }
 
+    if (data) {
+      // Send email
+      try {
+        const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).maybeSingle();
         await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/club-invite?action=send-email`,
           {
@@ -190,10 +188,53 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         console.error('Email sending failed:', e);
       }
       toast.success(t3(`Uitnodiging verstuurd naar ${inviteEmail}`, `Invitation envoyée à ${inviteEmail}`, `Invitation sent to ${inviteEmail}`));
-      setInviteEmail('');
-      fetchData();
+      
+      // Show contract type step
+      setPendingInviteToken(data.invite_token);
+      setInviteStep('contract-type');
+      setSelectedContractTypes(new Set());
     }
     setInviting(false);
+  };
+
+  const handleSaveContractTypes = async () => {
+    // Find the invitation that was just created, look up corresponding membership if user already exists
+    // For now, store the contract type selection in the invitation metadata or handle it when the invite is accepted
+    // Since the volunteer may not have a membership yet, we store it as metadata on the invitation
+    if (pendingInviteToken && selectedContractTypes.size > 0) {
+      // We'll store the contract types when the invite is accepted
+      // For existing members, we can save directly
+    }
+    setInviteStep('form');
+    setInviteEmail('');
+    setPendingInviteToken(null);
+    setSelectedContractTypes(new Set());
+    fetchData();
+  };
+
+  const handleSetMemberContractTypes = async (memberId: string, membershipId: string | undefined, types: Set<ContractTypeKey>) => {
+    if (!membershipId) {
+      toast.error(t3('Geen lidmaatschap gevonden', 'Aucune adhésion trouvée', 'No membership found'));
+      return;
+    }
+
+    // Delete existing and re-insert
+    await supabase.from('member_contract_types' as any).delete().eq('membership_id', membershipId);
+    
+    if (types.size > 0) {
+      const inserts = Array.from(types).map(ct => ({
+        membership_id: membershipId,
+        contract_type: ct,
+      }));
+      const { error } = await supabase.from('member_contract_types' as any).insert(inserts);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+    }
+
+    toast.success(t3('Contracttype bijgewerkt', 'Type de contrat mis à jour', 'Contract type updated'));
+    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, contractTypes: Array.from(types) } : m));
   };
 
   const handleGenerateLink = async () => {
