@@ -365,11 +365,25 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
                           <CheckCircle className="w-3.5 h-3.5 mr-1" />
                           {l.invited}
                         </Badge>
+                      ) : vol.contractStatus === 'none' ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span>
+                                <Button size="sm" disabled>
+                                  <AlertCircle className="w-3.5 h-3.5 mr-1" />{l.invite}
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>{l.noContractTooltip}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ) : (
                         <Button
                           size="sm"
                           onClick={() => handleInvite(vol)}
                           disabled={inviting === vol.id}
+                          variant={vol.contractStatus === 'pending' ? 'outline' : 'default'}
                         >
                           {inviting === vol.id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
