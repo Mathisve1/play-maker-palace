@@ -365,10 +365,19 @@ const Chat = () => {
     return () => { supabase.removeChannel(channel); };
   }, [activeConversation, userId, conversations, participantNames]);
 
-  // Auto-scroll
+  // Auto-scroll only when user is at the bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!isUserScrolledRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
+
+  const handleMessagesScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    isUserScrolledRef.current = distanceFromBottom > 100;
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
