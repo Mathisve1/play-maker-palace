@@ -221,6 +221,7 @@ const Community = () => {
       const enriched: ClubWithStats[] = clubsData.map(c => ({
         ...c,
         task_count: taskCounts[c.id] || 0,
+        upcoming_task_count: upcomingCounts[c.id] || 0,
         volunteer_count: volunteerSets[c.id]?.size || 0,
         event_count: eventCounts[c.id] || 0,
         partner_count: partnerCounts[c.id] || 0,
