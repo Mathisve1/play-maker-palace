@@ -264,6 +264,11 @@ const TaskDetail = () => {
         if (clubData) setAllowShiftSwaps(!!clubData.allow_shift_swaps);
       });
 
+      // Check if task has a briefing
+      supabase.from('briefings').select('id').eq('task_id', id!).limit(1).then(({ data: briefData }) => {
+        setHasBriefing(!!(briefData && briefData.length > 0));
+      });
+
       // Count signups + waitlist + likes in parallel
       const [signupRes, mySignupRes, likeRes, myLikeRes, waitlistRes, myWaitlistRes] = await Promise.all([
         supabase.from('task_signups').select('id', { count: 'exact', head: true }).eq('task_id', id!),
