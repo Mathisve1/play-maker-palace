@@ -289,7 +289,7 @@ const ContractTemplates = () => {
                           {new Date(tmpl.created_at).toLocaleDateString()}
                         </p>
                         <Button variant="outline" size="sm" className="mt-4 w-full"
-                          onClick={() => navigate(`/contract-builder?template=${tmpl.id}`)}>
+                          onClick={() => navigate(`/contract-builder?template_id=${tmpl.id}&club_id=${clubId}`)}>
                           <Edit3 className="w-3.5 h-3.5 mr-1" />
                           {t('Bewerken', 'Modifier', 'Edit')}
                         </Button>
