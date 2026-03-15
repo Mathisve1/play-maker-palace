@@ -794,7 +794,7 @@ const ReportingDashboard = () => {
       const volIds = [...new Set((hourConfs || []).map((h: any) => h.volunteer_id))];
       let profileMap = new Map<string, string>();
       if (volIds.length > 0) { const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', volIds); (profiles || []).forEach((p: any) => profileMap.set(p.id, p.full_name || '—')); }
-      const volMap = new Map<string, SeasonReportVolunteer>();
+      const volMap = new Map<string, any>();
       (hourConfs || []).forEach((h: any) => {
         const existing = volMap.get(h.volunteer_id) || { name: profileMap.get(h.volunteer_id) || '—', contractType: '', taskCount: 0, hours: 0, compensation: 0 };
         existing.taskCount += 1; existing.hours += (h.final_hours || 0); existing.compensation += (h.final_amount || 0);
