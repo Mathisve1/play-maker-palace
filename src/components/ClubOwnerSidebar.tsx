@@ -154,25 +154,43 @@ const ClubOwnerSidebar = ({
       <SidebarSeparator />
 
       <SidebarContent>
-        {/* Groep 1 — Navigatie */}
-        <SidebarGroup>
-          <SidebarGroupLabel>{t3('Navigatie', 'Navigation', 'Navigation')}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainItems.map(renderMenuItem)}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Groep 1 — Navigatie (inklapbaar, standaard open) */}
+        <Collapsible defaultOpen className="group/nav">
+          <SidebarGroup>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="cursor-pointer hover:bg-muted/50 rounded-md transition-colors">
+                {t3('Navigatie', 'Navigation', 'Navigation')}
+                <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/nav:rotate-180" />
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {mainItems.map(renderMenuItem)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
 
-        {/* Groep 2 — Communicatie (altijd open) */}
-        <SidebarGroup>
-          <SidebarGroupLabel>{t3('Communicatie', 'Communication', 'Communication')}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {commsItems.map(renderMenuItem)}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Groep 2 — Communicatie (inklapbaar, standaard open) */}
+        <Collapsible defaultOpen className="group/comms">
+          <SidebarGroup>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="cursor-pointer hover:bg-muted/50 rounded-md transition-colors">
+                {t3('Communicatie', 'Communication', 'Communication')}
+                <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/comms:rotate-180" />
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {commsItems.map(renderMenuItem)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
 
         {/* Groep 3 — Beheer (inklapbaar) */}
         <Collapsible defaultOpen={beheerIsActive} className="group/collapsible">
