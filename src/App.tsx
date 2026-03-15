@@ -55,6 +55,7 @@ const CommunityPartnerDetail = lazy(() => import("./pages/CommunityPartnerDetail
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
 const VolunteerHelp = lazy(() => import("./pages/VolunteerHelp"));
 const StressTest = lazy(() => import("./pages/StressTest"));
+const EventAttendance = lazy(() => import("./pages/EventAttendance"));
 const VolunteerManagement = lazy(() => import("./pages/VolunteerManagement"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const MyClubs = lazy(() => import("./pages/MyClubs"));
