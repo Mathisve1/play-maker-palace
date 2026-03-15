@@ -205,6 +205,7 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
             availabilityMatch: availMatch,
             skillMatch: matchingSkills,
             pastTasks: pastCount,
+            contractStatus: contractStatusMap.get(p.id) || 'none',
           };
         })
         .sort((a, b) => b.matchScore - a.matchScore);
