@@ -468,6 +468,42 @@ const MonthlyPlanning = () => {
 
   const pendingDaySignups = daySignups.filter(ds => ds.status === 'pending');
   const assignedDaySignups = daySignups.filter(ds => ds.status === 'assigned');
+  const rejectedDaySignups = daySignups.filter(ds => ds.status === 'rejected');
+
+  const copyToNextMonth = async () => {
+    if (!plan || !clubId || tasks.length === 0) return;
+    setCopyingToNext(true);
+    try {
+      const nextM = viewMonth === 12 ? 1 : viewMonth + 1;
+      const nextY = viewMonth === 12 ? viewYear + 1 : viewYear;
+      // Check if next month plan exists, create if not
+      let { data: nextPlan } = await supabase.from('monthly_plans').select('id').eq('club_id', clubId).eq('year', nextY).eq('month', nextM).maybeSingle();
+      if (!nextPlan) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setCopyingToNext(false); return; }
+        const { data: created, error: createErr } = await supabase.from('monthly_plans').insert({
+          club_id: clubId, year: nextY, month: nextM,
+          title: `${MONTH_NAMES[language]?.[nextM - 1] || MONTH_NAMES.nl[nextM - 1]} ${nextY}`,
+          created_by: user.id, status: 'draft',
+        }).select().single();
+        if (createErr) throw createErr;
+        nextPlan = created;
+      }
+      const newDaysInMonth = getDaysInMonth(nextY, nextM);
+      const newTasks = tasks.map(t => {
+        const dayNum = new Date(t.task_date).getDate();
+        if (dayNum > newDaysInMonth) return null;
+        const newDate = `${nextY}-${String(nextM).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+        const { id, created_at, plan_id, ...rest } = t as any;
+        return { ...rest, plan_id: nextPlan!.id, task_date: newDate };
+      }).filter(Boolean);
+      if (!newTasks.length) { toast.error(t3('Geen taken konden worden gekopieerd', 'Aucune tâche copiée', 'No tasks could be copied')); setCopyingToNext(false); return; }
+      const { data: inserted, error } = await supabase.from('monthly_plan_tasks').insert(newTasks).select();
+      if (error) throw error;
+      toast.success(`${inserted!.length} ${t3('taken gekopieerd naar', 'tâches copiées vers', 'tasks copied to')} ${MONTH_NAMES[language]?.[nextM - 1] || MONTH_NAMES.nl[nextM - 1]} ${nextY}`);
+    } catch (err: any) { toast.error(err.message); }
+    setCopyingToNext(false);
+  };
 
   const handleConfirmHours = async (ds: any, task: any) => {
     const finalHours = ds.volunteer_reported_hours!;
