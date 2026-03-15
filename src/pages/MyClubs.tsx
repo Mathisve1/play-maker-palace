@@ -4,10 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import DashboardLayout from '@/components/DashboardLayout';
+import VolunteerSidebar, { VolunteerTab } from '@/components/VolunteerSidebar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Loader2, Star, Search, Building2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import EditProfileDialog from '@/components/EditProfileDialog';
 import { Loader2, Star, Search, Building2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 

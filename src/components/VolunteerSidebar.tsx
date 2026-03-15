@@ -220,6 +220,12 @@ const VolunteerSidebar = ({
                   <span>{l.clubSearch}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => handleExternalNav('/my-clubs')} className="min-h-[48px]">
+                  <Home className="w-5 h-5" />
+                  <span>{l.myClubs}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
