@@ -791,6 +791,10 @@ const ReportingDashboard = () => {
             <Button variant="outline" size="sm" className="gap-1.5" onClick={exportPDF}>
               <FileDown className="w-4 h-4" /> PDF
             </Button>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleGenerateSeasonReport} disabled={generatingSeasonReport}>
+              {generatingSeasonReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              {language === 'nl' ? 'Seizoensrapport' : language === 'fr' ? 'Rapport saison' : 'Season report'}
+            </Button>
           </div>
         </div>
         {/* ── Filters ─────────────────────────────────────────── */}

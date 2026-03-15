@@ -351,6 +351,12 @@ const SeasonContractManager = () => {
                   </div>
                 </CardContent>
               </Card>
+              <div className="mt-4 flex justify-end">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={handleGenerateSeasonReport} disabled={generatingReport}>
+                  {generatingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                  {t('Genereer seizoensrapport', 'Générer rapport de saison', 'Generate season report')}
+                </Button>
+              </div>
             </TabsContent>
 
             {/* Tab 2: Send contracts */}
