@@ -741,7 +741,7 @@ const ReportingDashboard = () => {
           <Calendar className="w-4 h-4" />{format(date, 'dd MMM yyyy')}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0 z-50" align="start">
         <CalendarComponent mode="single" selected={date} onSelect={(d) => d && onChange(d)} initialFocus className="p-3 pointer-events-auto" />
       </PopoverContent>
     </Popover>
