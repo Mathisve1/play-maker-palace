@@ -307,6 +307,7 @@ const MonthlyPlanning = () => {
 
   const addOrUpdateTask = async () => {
     if (!plan) return;
+    if (!taskForm.title.trim()) { toast.error(t3('Titel mag niet leeg zijn.', 'Le titre ne peut pas être vide.', 'Title cannot be empty.')); return; }
     const payload = {
       plan_id: plan.id, task_date: selectedDate!, title: taskForm.title, category: taskForm.category,
       description: taskForm.description || null, location: taskForm.location || null,
