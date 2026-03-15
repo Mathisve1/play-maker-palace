@@ -17,12 +17,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const now = new Date();
-    const invoiceMonth = now.getMonth() + 1; // 1-12
+    const invoiceMonth = now.getMonth() + 1;
     const invoiceYear = now.getFullYear();
 
     console.log(`Generating monthly invoices for ${invoiceMonth}/${invoiceYear}`);
 
-    // Get all clubs with billing
     const { data: billingRecords } = await supabase
       .from("club_billing")
       .select("*");
@@ -36,7 +35,7 @@ serve(async (req) => {
     const results: any[] = [];
 
     for (const billing of billingRecords) {
-      // Check if invoice already exists for this month
+      // Check if invoice already exists
       const { data: existing } = await supabase
         .from("monthly_invoices")
         .select("id")
@@ -50,8 +49,17 @@ serve(async (req) => {
         continue;
       }
 
-      // Calculate costs
-      const volunteerCount = billing.current_season_volunteers_billed || 0;
+      // Count unique volunteers with is_billable = true season contracts for this club
+      const { data: billableContracts } = await supabase
+        .from("season_contracts")
+        .select("volunteer_id")
+        .eq("club_id", billing.club_id)
+        .eq("is_billable", true);
+
+      const uniqueBillableVolunteers = new Set(
+        (billableContracts || []).map((c: any) => c.volunteer_id)
+      );
+      const volunteerCount = uniqueBillableVolunteers.size;
       const volunteerAmountCents = volunteerCount * (billing.volunteer_price_cents || 1500);
 
       const partnerSeats = billing.partner_seats_purchased || 0;
@@ -59,13 +67,11 @@ serve(async (req) => {
 
       const totalAmountCents = volunteerAmountCents + partnerAmountCents;
 
-      // Skip if nothing to bill
       if (totalAmountCents === 0) {
         results.push({ club_id: billing.club_id, status: "nothing_to_bill" });
         continue;
       }
 
-      // Create invoice
       const { data: invoice, error: invoiceError } = await supabase
         .from("monthly_invoices")
         .insert({
@@ -88,7 +94,6 @@ serve(async (req) => {
         continue;
       }
 
-      // Log billing event
       await supabase.from("billing_events").insert({
         club_id: billing.club_id,
         event_type: "invoice_created",
@@ -98,6 +103,7 @@ serve(async (req) => {
           month: invoiceMonth,
           year: invoiceYear,
           volunteer_count: volunteerCount,
+          billable_types: billing.free_contracts_used > 2 ? billing.free_contracts_used - 2 : 0,
           partner_seats: partnerSeats,
         },
       });
