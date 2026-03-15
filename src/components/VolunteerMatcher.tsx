@@ -49,6 +49,10 @@ const labels = {
     tasks: 'taken',
     matchScore: 'Match',
     sending: 'E-mail wordt verstuurd...',
+    contractOk: 'Contract OK',
+    contractPending: 'Contract in behandeling',
+    noContract: 'Geen contract',
+    noContractTooltip: 'Vrijwilliger heeft nog geen seizoenscontract',
   },
   fr: {
     title: 'Chercher des Bénévoles',
