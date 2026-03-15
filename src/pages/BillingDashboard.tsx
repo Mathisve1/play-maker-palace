@@ -434,30 +434,62 @@ const BillingDashboard = () => {
 
           {/* Partner seats */}
           <TabsContent value="seats">
-            <Card>
-              <CardContent className="p-5 space-y-4">
-                <div>
-                  <h3 className="font-medium text-foreground mb-1">{t('Partner zitjes beheren', 'Gérer les sièges partenaires', 'Manage partner seats')}</h3>
-                  <p className="text-sm text-muted-foreground">
+            <div className="space-y-4">
+              {/* Explainer */}
+              <Card>
+                <CardContent className="p-5 space-y-3">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Handshake className="w-5 h-5 text-primary" />
+                    {t('Wat zijn partner zitjes?', 'Que sont les sièges partenaires ?', 'What are partner seats?')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {t(
-                      'Koop zitjes voor externe partners. €15 per zitje per seizoen.',
-                      'Achetez des sièges pour partenaires externes. €15/siège/saison.',
-                      'Buy seats for external partners. €15/seat/season.'
+                      'Partner zitjes zijn onbenoemde plaatsen die je inkoopt voor externe partners (bv. security, catering, EHBO). In tegenstelling tot vrijwilligers, waar je pas betaalt na hun 3e check-in, koop je zitjes vooraf per seizoen.',
+                      'Les sièges partenaires sont des places anonymes que vous achetez pour des partenaires externes (ex. sécurité, restauration, premiers secours). Contrairement aux bénévoles, où vous payez après leur 3e check-in, les sièges sont achetés à l\'avance par saison.',
+                      'Partner seats are unnamed spots you purchase for external partners (e.g. security, catering, first aid). Unlike volunteers, where you only pay after their 3rd check-in, seats are purchased upfront per season.'
                     )}
                   </p>
-                </div>
-                <div className="flex items-end gap-3">
-                  <div className="flex-1 max-w-xs">
-                    <Label>{t('Aantal zitjes', 'Nombre de sièges', 'Number of seats')}</Label>
-                    <Input type="number" min="0" value={seatInput} onChange={e => setSeatInput(e.target.value)} />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <p className="text-lg font-bold text-foreground">€15</p>
+                      <p className="text-xs text-muted-foreground">{t('per zitje / seizoen', 'par siège / saison', 'per seat / season')}</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <p className="text-lg font-bold text-foreground">{t('Onbenoemd', 'Anonyme', 'Unnamed')}</p>
+                      <p className="text-xs text-muted-foreground">{t('Vrij toewijsbaar', 'Librement assignable', 'Freely assignable')}</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <p className="text-lg font-bold text-foreground">{t('Vooraf', 'À l\'avance', 'Upfront')}</p>
+                      <p className="text-xs text-muted-foreground">{t('Gefactureerd bij aankoop', 'Facturé à l\'achat', 'Billed on purchase')}</p>
+                    </div>
                   </div>
-                  <Button onClick={updateSeats} disabled={savingSeats}>
-                    {savingSeats ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                    {t('Opslaan', 'Enregistrer', 'Save')}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Manage */}
+              <Card>
+                <CardContent className="p-5 space-y-4">
+                  <h3 className="font-medium text-foreground">{t('Aantal zitjes aanpassen', 'Modifier le nombre de sièges', 'Adjust seat count')}</h3>
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1 max-w-xs">
+                      <Label>{t('Aantal zitjes', 'Nombre de sièges', 'Number of seats')}</Label>
+                      <Input type="number" min="0" value={seatInput} onChange={e => setSeatInput(e.target.value)} />
+                    </div>
+                    <Button onClick={updateSeats} disabled={savingSeats}>
+                      {savingSeats ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                      {t('Opslaan', 'Enregistrer', 'Save')}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t(
+                      'Huidige kosten: €' + currentSeatCost.toFixed(2) + ' voor ' + (billing?.partner_seats_purchased || 0) + ' zitjes dit seizoen.',
+                      'Coût actuel : €' + currentSeatCost.toFixed(2) + ' pour ' + (billing?.partner_seats_purchased || 0) + ' sièges cette saison.',
+                      'Current cost: €' + currentSeatCost.toFixed(2) + ' for ' + (billing?.partner_seats_purchased || 0) + ' seats this season.'
+                    )}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Invoices */}
