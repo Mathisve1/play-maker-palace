@@ -23,7 +23,17 @@ import IncidentMap from '@/components/safety/IncidentMap';
 import ClosingProcedureManager from '@/components/safety/ClosingProcedureManager';
 import VolunteerClosingView from '@/components/safety/VolunteerClosingView';
 import { generateSafetyReportPdf, type SafetyIncidentForPdf, type SafetyZoneForPdf, type ClosingTaskForPdf } from '@/lib/generateSafetyReportPdf';
-import { sendPush, sendPushToClub } from '@/lib/sendPush';
+import { sendPush, sendPushToClub, sendPushToEventVolunteers } from '@/lib/sendPush';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Types
 interface SafetyZone {
@@ -145,7 +155,9 @@ const SafetyDashboard = () => {
   const [teamIncidents, setTeamIncidents] = useState<SafetyIncident[]>([]);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; avatar_url: string | null; roleName: string }[]>([]);
   const flashTimeout = useRef<NodeJS.Timeout>();
-
+  const [showAlarmConfirm, setShowAlarmConfirm] = useState(false);
+  const [sendingAlarm, setSendingAlarm] = useState(false);
+  const [autoNotifyUrgent, setAutoNotifyUrgent] = useState(true);
 
   const toggleBrowserFullscreen = (ref: React.RefObject<HTMLDivElement | null>, entering: boolean) => {
     if (entering && ref.current) {
@@ -446,6 +458,21 @@ const SafetyDashboard = () => {
 
     // Push to safety team + club admin
     notifySafetyTeam(type.label, eventId, clubId);
+
+    // Auto-notify ALL volunteers on urgent/critical incidents
+    if (autoNotifyUrgent && (type.default_priority === 'high' || type.default_priority === 'critical')) {
+      sendPushToEventVolunteers({
+        eventId,
+        title: `🚨 ${type.label} — ${eventTitle}`,
+        message: t3(
+          'Gelieve de instructies van het veiligheidsteam te volgen.',
+          'Veuillez suivre les instructions de l\'équipe de sécurité.',
+          'Please follow the safety team\'s instructions.'
+        ),
+        url: `/safety/${eventId}`,
+        type: 'safety_alarm',
+      });
+    }
   };
 
   // ── Steward: Step 2 — update with details ──
@@ -537,6 +564,40 @@ const SafetyDashboard = () => {
       await sendPushToClub({ clubId: cId, title, message, url, type: 'safety' });
     } catch (e) {
       console.warn('[Safety] notifySafetyTeam failed:', e);
+    }
+  };
+
+  // ── Send alarm to ALL event volunteers ──
+  const handleSendAlarm = async () => {
+    if (!eventId) return;
+    setSendingAlarm(true);
+    try {
+      await sendPushToEventVolunteers({
+        eventId,
+        title: `🚨 ${t3('Urgente melding', 'Alerte urgente', 'Urgent alert')} — ${eventTitle}`,
+        message: t3(
+          'Gelieve de instructies van het veiligheidsteam te volgen.',
+          'Veuillez suivre les instructions de l\'équipe de sécurité.',
+          'Please follow the safety team\'s instructions.'
+        ),
+        url: `/safety/${eventId}`,
+        type: 'safety_alarm',
+      });
+      if (clubId) {
+        await sendPushToClub({
+          clubId,
+          title: `🚨 ${t3('Alarmmelding verstuurd', 'Alerte envoyée', 'Alarm sent')} — ${eventTitle}`,
+          message: t3('Een alarmmelding is verstuurd naar alle vrijwilligers.', 'Une alerte a été envoyée à tous les bénévoles.', 'An alarm has been sent to all volunteers.'),
+          url: `/safety/${eventId}`,
+          type: 'safety_alarm',
+        });
+      }
+      toast.success(t3('🚨 Alarmmelding verstuurd naar alle vrijwilligers!', '🚨 Alerte envoyée à tous les bénévoles !', '🚨 Alarm sent to all volunteers!'));
+    } catch {
+      toast.error(t3('Fout bij verzenden alarm', 'Erreur lors de l\'envoi', 'Error sending alarm'));
+    } finally {
+      setSendingAlarm(false);
+      setShowAlarmConfirm(false);
     }
   };
 
@@ -1204,6 +1265,17 @@ const SafetyDashboard = () => {
             )}
             {isLive && (
               <Button
+                variant="destructive"
+                size="sm"
+                className="gap-1.5 font-bold"
+                onClick={() => setShowAlarmConfirm(true)}
+                disabled={sendingAlarm}
+              >
+                🚨 {t3('Stuur alarmmelding', 'Envoyer alerte', 'Send alarm')}
+              </Button>
+            )}
+            {isLive && (
+              <Button
                 variant="outline"
                 size="sm"
                 className="gap-1.5 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
@@ -1230,6 +1302,22 @@ const SafetyDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Auto-notify toggle */}
+        {isLive && (
+          <div className="mb-4 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border">
+            <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+            <span className="text-sm text-foreground flex-1">
+              {t3('Automatisch notificeren bij urgent incident', 'Notification auto. pour incident urgent', 'Auto-notify on urgent incident')}
+            </span>
+            <button
+              onClick={() => setAutoNotifyUrgent(!autoNotifyUrgent)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${autoNotifyUrgent ? 'bg-destructive/15 text-destructive' : 'bg-muted text-muted-foreground'}`}
+            >
+              {autoNotifyUrgent ? t3('Actief', 'Actif', 'Active') : t3('Uit', 'Désactivé', 'Off')}
+            </button>
+          </div>
+        )}
 
         {/* PRE-EVENT: Checklist progress + GO LIVE */}
         {!isLive && (
@@ -1595,7 +1683,33 @@ const SafetyDashboard = () => {
           )}
         </AnimatePresence>
 
-        {/* Photo Lightbox — portaled into fullscreen element when active */}
+        {/* Alarm Confirmation Dialog */}
+        <AlertDialog open={showAlarmConfirm} onOpenChange={setShowAlarmConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>🚨 {t3('Alarmmelding versturen?', 'Envoyer une alerte ?', 'Send alarm?')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t3(
+                  'Dit stuurt een pushmelding naar ALLE vrijwilligers actief bij dit evenement. Doorgaan?',
+                  'Ceci enverra une notification push à TOUS les bénévoles actifs à cet événement. Continuer ?',
+                  'This will send a push notification to ALL volunteers active at this event. Continue?'
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t3('Annuleren', 'Annuler', 'Cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSendAlarm}
+                disabled={sendingAlarm}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {sendingAlarm ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
+                {t3('Ja, stuur alarm', 'Oui, envoyer', 'Yes, send alarm')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {createPortal(
           <AnimatePresence>
             {lightboxUrl && (

@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, ArrowLeft, CalendarDays, MapPin, Loader2, Radio, ClipboardList, FileDown, RefreshCw } from 'lucide-react';
+import { Shield, ArrowLeft, CalendarDays, MapPin, Loader2, Radio, ClipboardList, FileDown, RefreshCw, Bell, BellOff } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { generateSafetyReportPdf, type SafetyIncidentForPdf, type SafetyZoneForPdf, type ClosingTaskForPdf } from '@/lib/generateSafetyReportPdf';
 
@@ -16,6 +17,7 @@ const SafetyEventHub = () => {
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [loading, setLoading] = useState(true);
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [pushActive, setPushActive] = useState(false);
   const [event, setEvent] = useState<{ title: string; event_date: string | null; location: string | null; status: string; is_live: boolean; club_id: string } | null>(null);
 
   useEffect(() => {
@@ -27,6 +29,12 @@ const SafetyEventHub = () => {
         .eq('id', eventId)
         .maybeSingle();
       setEvent(data);
+      // Check if push notifications are active (user has a push subscription)
+      try {
+        const reg = await navigator.serviceWorker?.getRegistration();
+        const sub = await reg?.pushManager?.getSubscription();
+        setPushActive(!!sub);
+      } catch { setPushActive(false); }
       setLoading(false);
     })();
   }, [eventId]);
@@ -246,6 +254,31 @@ const SafetyEventHub = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Push notification status */}
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border">
+          {pushActive ? (
+            <>
+              <Bell className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-sm text-foreground flex-1">
+                {t3('Push notificaties', 'Notifications push', 'Push notifications')}
+              </span>
+              <Badge variant="default" className="text-[10px] gap-1">
+                ✓ {t3('Actief', 'Actif', 'Active')}
+              </Badge>
+            </>
+          ) : (
+            <>
+              <BellOff className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-muted-foreground flex-1">
+                {t3('Push notificaties', 'Notifications push', 'Push notifications')}
+              </span>
+              <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
+                {t3('Inactief', 'Inactif', 'Inactive')}
+              </Badge>
+            </>
+          )}
+        </div>
       </div>
     </ClubPageLayout>
   );

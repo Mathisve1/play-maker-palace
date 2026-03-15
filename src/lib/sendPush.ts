@@ -66,6 +66,46 @@ export async function sendPushToClub(opts: {
 }
 
 /**
+ * Send push to ALL volunteers with active task_signups for a given event.
+ */
+export async function sendPushToEventVolunteers(opts: {
+  eventId: string;
+  title: string;
+  message: string;
+  url?: string;
+  type?: string;
+}) {
+  try {
+    // Get all tasks for this event
+    const { data: tasks } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('event_id', opts.eventId);
+
+    if (!tasks || tasks.length === 0) return;
+
+    const taskIds = tasks.map(t => t.id);
+    // Get all assigned/pending volunteers for those tasks
+    const { data: signups } = await supabase
+      .from('task_signups')
+      .select('volunteer_id')
+      .in('task_id', taskIds)
+      .in('status', ['assigned', 'pending']);
+
+    if (!signups || signups.length === 0) return;
+
+    const uniqueIds = [...new Set(signups.map(s => s.volunteer_id))];
+    await Promise.allSettled(
+      uniqueIds.map(uid =>
+        sendPush({ userId: uid, title: opts.title, message: opts.message, url: opts.url, type: opts.type })
+      )
+    );
+  } catch (e) {
+    console.warn('[Push] sendPushToEventVolunteers failed:', e);
+  }
+}
+
+/**
  * Send push to all followers of a club.
  */
 export async function sendPushToFollowers(opts: {
