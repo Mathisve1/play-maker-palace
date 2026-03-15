@@ -11,7 +11,7 @@ interface WidgetLibraryProps {
 }
 
 const iconMap: Record<string, any> = {
-  CalendarDays, Clock, Users, FileSignature, Ticket, Activity: MessageCircle, Zap, Calendar, Shield, Euro, BarChart3, GraduationCap,
+  CalendarDays, Clock, Users, FileSignature, Ticket, Activity: MessageCircle, Zap, Calendar, Shield, Euro, BarChart3, GraduationCap, CalendarRange, Inbox, CreditCard,
 };
 
 const categoryLabels: Record<string, Record<string, string>> = {
