@@ -994,7 +994,7 @@ const SepaPayouts = () => {
           </div>
         </div>
 
-        {/* Search + Table */}
+        {/* Search + Smart Batch + Table */}
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           <div className="p-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="relative w-full sm:w-80">
@@ -1006,17 +1006,31 @@ const SepaPayouts = () => {
                 className="pl-9"
               />
             </div>
-            <Button
-              onClick={handleGenerateSepa}
-              disabled={selected.size === 0 || generating || !clubIban.trim() || !batchMessage.trim()}
-              className="gap-2 w-full sm:w-auto"
-            >
-              {generating ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Genereren...</>
-              ) : (
-                <><FileSignature className="w-4 h-4" /> SEPA XML Genereren ({selected.size})</>
-              )}
-            </Button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={handleSmartBatch}
+                disabled={smartBatchLoading}
+                className="gap-2 flex-1 sm:flex-none"
+              >
+                {smartBatchLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {t3('Analyseren...', 'Analyse...', 'Analyzing...')}</>
+                ) : (
+                  <><Zap className="w-4 h-4" /> Smart Batch</>
+                )}
+              </Button>
+              <Button
+                onClick={handleGenerateSepa}
+                disabled={selected.size === 0 || generating || !clubIban.trim() || !batchMessage.trim()}
+                className="gap-2 flex-1 sm:flex-none"
+              >
+                {generating ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Genereren...</>
+                ) : (
+                  <><FileSignature className="w-4 h-4" /> SEPA XML ({selected.size})</>
+                )}
+              </Button>
+            </div>
           </div>
 
           {filtered.length === 0 ? (
