@@ -488,6 +488,74 @@ const VolunteerSeasonOverview = ({ userId, language }: SeasonOverviewProps) => {
         </motion.div>
       )}
 
+      {/* SEPA Payments section */}
+      {sepaPayments.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.42 }}
+          className="bg-card rounded-2xl p-5 border border-border"
+        >
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" />
+            {t3(language, 'Vergoedingen', 'Remboursements', 'Reimbursements')}
+          </h3>
+
+          {/* Season summary */}
+          <div className="flex items-center justify-between mb-3 p-3 rounded-lg bg-muted/50 border border-border">
+            <div>
+              <p className="text-xs text-muted-foreground">
+                {t3(language, 'Ontvangen dit seizoen', 'Reçu cette saison', 'Received this season')}
+              </p>
+              <p className="text-lg font-bold text-foreground">
+                €{sepaPayments.reduce((s, p) => s + p.amount, 0).toFixed(2)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">
+                {t3(language, 'Maximaal toegestaan', 'Maximum autorisé', 'Maximum allowed')}
+              </p>
+              <p className="text-lg font-bold text-foreground">€{maxPlafond.toFixed(2)}</p>
+            </div>
+          </div>
+
+          {/* Payment rows */}
+          <div className="space-y-2">
+            {sepaPayments.map(payment => {
+              const statusLabel = payment.status === 'downloaded' || payment.status === 'signed'
+                ? t3(language, 'Uitgevoerd', 'Exécuté', 'Executed')
+                : payment.status === 'awaiting_signature'
+                ? t3(language, 'In behandeling', 'En traitement', 'Processing')
+                : t3(language, 'Gepland', 'Planifié', 'Planned');
+
+              const statusColor = payment.status === 'downloaded' || payment.status === 'signed'
+                ? 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20'
+                : payment.status === 'awaiting_signature'
+                ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/20'
+                : 'bg-muted text-muted-foreground border-border';
+
+              return (
+                <div key={payment.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {payment.created_at ? new Date(payment.created_at).toLocaleDateString(
+                        language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB',
+                        { day: 'numeric', month: 'short', year: 'numeric' }
+                      ) : '—'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-mono">{payment.batch_reference}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`text-[10px] ${statusColor}`}>{statusLabel}</Badge>
+                    <span className="text-sm font-semibold text-foreground">€{payment.amount.toFixed(2)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
       {/* GDPR block */}
       <Collapsible open={showGdpr} onOpenChange={setShowGdpr}>
         <motion.div
