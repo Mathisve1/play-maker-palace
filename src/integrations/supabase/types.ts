@@ -4560,6 +4560,7 @@ export type Database = {
       }
       task_signups: {
         Row: {
+          checked_in_at: string | null
           id: string
           signed_up_at: string
           status: string
@@ -4567,6 +4568,7 @@ export type Database = {
           volunteer_id: string
         }
         Insert: {
+          checked_in_at?: string | null
           id?: string
           signed_up_at?: string
           status?: string
@@ -4574,6 +4576,7 @@ export type Database = {
           volunteer_id: string
         }
         Update: {
+          checked_in_at?: string | null
           id?: string
           signed_up_at?: string
           status?: string
