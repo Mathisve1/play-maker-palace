@@ -455,6 +455,38 @@ const SeasonContractManager = () => {
                 </div>
               )}
             </TabsContent>
+            {/* Tab 4: Archived seasons */}
+            {archivedSeasons.length > 0 && (
+              <TabsContent value="archived">
+                <div className="space-y-3">
+                  {archivedSeasons.map((s: any) => (
+                    <Card key={s.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-muted">
+                              <Archive className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">{s.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(s.start_date).toLocaleDateString()} → {new Date(s.end_date).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {t('Afgesloten', 'Clôturé', 'Closed')}
+                            </Badge>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
           </>
         )}
