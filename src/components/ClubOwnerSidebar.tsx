@@ -148,6 +148,7 @@ const ClubOwnerSidebar = ({
     { label: t3('Contracten', 'Contrats', 'Contracts'), icon: FileText, path: '/contract-builder' },
     { label: 'Briefings', icon: ClipboardList, path: '/briefing-builder' },
     { label: 'Compliance', icon: Shield, path: '/compliance' },
+    { label: t3('Audit Log', 'Journal d\'audit', 'Audit Log'), icon: ScrollText, path: '/audit-log' },
     { label: 'Ticketing', icon: Ticket, path: '/ticketing' },
     { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
     { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Award, path: '/loyalty' },
