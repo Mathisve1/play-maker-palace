@@ -815,6 +815,25 @@ const BriefingBuilder = () => {
                 placeholder={t3('Briefing titel', 'Titre du briefing', 'Briefing title')}
                 className="text-xl font-heading font-semibold border-none shadow-none px-0 focus-visible:ring-0 h-auto"
               />
+              {/* Scheduled send */}
+              <div className="flex items-center gap-2 mt-2">
+                <Timer className="w-4 h-4 text-muted-foreground" />
+                <Select
+                  value={plannedSendHours !== null ? String(plannedSendHours) : 'manual'}
+                  onValueChange={v => setPlannedSendHours(v === 'manual' ? null : Number(v))}
+                >
+                  <SelectTrigger className="h-8 w-56 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">{t3('Handmatig versturen', 'Envoi manuel', 'Manual send')}</SelectItem>
+                    <SelectItem value="6">{t3('6 uur voor taak', '6h avant la tâche', '6h before task')}</SelectItem>
+                    <SelectItem value="12">{t3('12 uur voor taak', '12h avant la tâche', '12h before task')}</SelectItem>
+                    <SelectItem value="24">{t3('24 uur voor taak (aanbevolen)', '24h avant (recommandé)', '24h before (recommended)')}</SelectItem>
+                    <SelectItem value="48">{t3('48 uur voor taak', '48h avant la tâche', '48h before task')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Groups with DnD */}
