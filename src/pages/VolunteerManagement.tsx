@@ -112,14 +112,15 @@ const VolunteerManagement = () => {
     }
 
     // Parallel: contracts, templates, check-ins, club members, memberships
-    const [contractsRes, templatesRes, checkInsRes, membersRes, membershipsRes] = await Promise.all([
+    const [contractsRes, templatesRes, checkInsRes, membersRes, membershipsRes, taskSignupsRes] = await Promise.all([
       supabase.from('season_contracts').select('id, volunteer_id, status, template_id, signing_url, signed_at').eq('club_id', clubId),
       supabase.from('season_contract_templates').select('id, name, category').or(`club_id.eq.${clubId},is_system.eq.true`),
       season
         ? supabase.from('season_checkins').select('volunteer_id, season_contract_id').eq('club_id', clubId)
         : Promise.resolve({ data: [] as any[] }),
       supabase.from('club_members').select('user_id').eq('club_id', clubId),
-      supabase.from('club_memberships').select('id, volunteer_id').eq('club_id', clubId),
+      supabase.from('club_memberships').select('id, volunteer_id, joined_at').eq('club_id', clubId),
+      supabase.from('task_signups').select('volunteer_id, task_id, status').eq('status', 'completed'),
     ]);
 
     const contracts = contractsRes.data || [];
