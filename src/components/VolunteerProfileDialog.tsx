@@ -222,8 +222,17 @@ const VolunteerProfileDialog = ({
           {volunteer.email && (
             <p className="text-sm text-muted-foreground">{volunteer.email}</p>
           )}
-          {volunteer.bio && (
+           {volunteer.bio && (
             <p className="text-sm text-muted-foreground text-center mt-1 italic">"{volunteer.bio}"</p>
+          )}
+          {ratingInfo && (
+            <div className="flex items-center gap-1.5 mt-2">
+              {[1, 2, 3, 4, 5].map(s => (
+                <Star key={s} className={`w-4 h-4 ${s <= Math.round(ratingInfo.avg) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'}`} />
+              ))}
+              <span className="text-sm font-medium text-foreground ml-1">{ratingInfo.avg.toFixed(1)}</span>
+              <span className="text-xs text-muted-foreground">({ratingInfo.count})</span>
+            </div>
           )}
         </div>
 
