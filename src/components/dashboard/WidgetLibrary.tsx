@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Plus, X, CalendarDays, Clock, Users, FileSignature, Ticket, Zap, Calendar, MessageCircle, Shield, Euro, BarChart3, GraduationCap } from 'lucide-react';
+import { Plus, X, CalendarDays, Clock, Users, FileSignature, Ticket, Zap, Calendar, MessageCircle, Shield, Euro, BarChart3, GraduationCap, CalendarRange, Inbox, CreditCard } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { WidgetDefinition } from './widgetRegistry';
 
