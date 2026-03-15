@@ -336,6 +336,7 @@ const TicketingDashboard = () => {
             ? { ...v, status: updated.status, checked_in_at: updated.checked_in_at, external_ticket_id: updated.external_ticket_id, error_message: updated.error_message, id: updated.id }
             : v
         ));
+        setLastUpdateTime(new Date());
       })
       .subscribe();
 
