@@ -22,7 +22,7 @@ interface VolunteerRow {
   full_name: string;
   email: string;
   avatar_url: string | null;
-  contracts: { id: string; status: string; category: string; template_name: string }[];
+  contracts: { id: string; status: string; category: string; template_name: string; signing_url: string | null; signed_at: string | null }[];
   check_in_count: number;
   is_paying: boolean;
   avg_rating: number | null;
