@@ -1,200 +1,214 @@
-import { useEffect, useState } from 'react';
-import { Gift, Trophy, CheckCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { sendPush } from '@/lib/sendPush';
+import { motion } from 'framer-motion';
+import { Trophy, Star, Award, Medal, Crown, Clock, Hourglass, Users, Globe, Moon, Zap, Share2 } from 'lucide-react';
+import { Language } from '@/i18n/translations';
+import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
-import type { Language } from '@/i18n/translations';
+import confetti from 'canvas-confetti';
 
-interface Enrollment {
+const t3 = (lang: Language, nl: string, fr: string, en: string) =>
+  lang === 'nl' ? nl : lang === 'fr' ? fr : en;
+
+interface BadgeDef {
   id: string;
-  tasks_completed: number;
-  points_earned: number;
-  reward_claimed: boolean;
-  claimed_at: string | null;
-  program: {
-    id: string;
-    name: string;
-    required_tasks: number;
-    required_points: number | null;
-    points_based: boolean;
-    reward_description: string;
-    club_id: string;
-    club_name: string;
-  };
+  key: string;
+  name_nl: string;
+  name_fr: string;
+  name_en: string;
+  description_nl: string | null;
+  description_fr: string | null;
+  description_en: string | null;
+  icon: string;
+  condition_type: string;
+  threshold: number;
 }
 
-const labels = {
-  nl: { title: 'Mijn loyaliteitsbeloningen', inProgress: 'Bezig', rewardAvailable: 'Beloning beschikbaar!', claimed: 'Beloning opgeëist', claim: 'Beloning claimen', tasks: 'taken', points: 'punten', claimedOn: 'Opgeëist op' },
-  fr: { title: 'Mes récompenses de fidélité', inProgress: 'En cours', rewardAvailable: 'Récompense disponible!', claimed: 'Récompense réclamée', claim: 'Réclamer', tasks: 'tâches', points: 'points', claimedOn: 'Réclamé le' },
-  en: { title: 'My loyalty rewards', inProgress: 'In progress', rewardAvailable: 'Reward available!', claimed: 'Reward claimed', claim: 'Claim reward', tasks: 'tasks', points: 'points', claimedOn: 'Claimed on' },
+interface EarnedBadge {
+  badge_id: string;
+  earned_at: string;
+}
+
+const iconMap: Record<string, any> = {
+  star: Star, trophy: Trophy, medal: Medal, crown: Crown,
+  clock: Clock, hourglass: Hourglass, users: Users, globe: Globe,
+  moon: Moon, zap: Zap, award: Award,
 };
 
 interface Props {
   userId: string;
   language: Language;
+  totalPoints: number;
+  refreshKey?: number;
 }
 
-const VolunteerLoyaltyProgress = ({ userId, language }: Props) => {
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [claiming, setClaiming] = useState<string | null>(null);
-  const l = labels[language as keyof typeof labels] || labels.nl;
+const VolunteerLoyaltyProgress = ({ userId, language, totalPoints, refreshKey }: Props) => {
+  const [allBadges, setAllBadges] = useState<BadgeDef[]>([]);
+  const [earned, setEarned] = useState<Map<string, string>>(new Map());
+  const [stats, setStats] = useState<Record<string, number>>({});
 
-  useEffect(() => {
-    loadEnrollments();
+  const load = useCallback(async () => {
+    const [{ data: defs }, { data: userBadges }] = await Promise.all([
+      supabase.from('badge_definitions').select('*').order('threshold'),
+      supabase.from('volunteer_badges').select('badge_id, earned_at').eq('user_id', userId),
+    ]);
+    if (defs) setAllBadges(defs);
+    if (userBadges) {
+      const newEarned = new Map(userBadges.map((b: EarnedBadge) => [b.badge_id, b.earned_at]));
+
+      // Confetti for newly seen badges
+      const seenKey = `loyalty-badges-seen-${userId}`;
+      const seenRaw = localStorage.getItem(seenKey);
+      const seen = seenRaw ? new Set(JSON.parse(seenRaw)) : new Set();
+      let hasNew = false;
+      newEarned.forEach((_, id) => {
+        if (!seen.has(id)) { hasNew = true; seen.add(id); }
+      });
+      if (hasNew) {
+        localStorage.setItem(seenKey, JSON.stringify([...seen]));
+        setTimeout(() => confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }), 300);
+      }
+      setEarned(newEarned);
+    }
+
+    const [{ count: taskCount }, { data: hourData }] = await Promise.all([
+      supabase.from('task_signups').select('id', { count: 'exact', head: true }).eq('volunteer_id', userId).eq('status', 'assigned'),
+      supabase.from('hour_confirmations').select('final_hours').eq('volunteer_id', userId).eq('status', 'confirmed'),
+    ]);
+    const totalHours = (hourData || []).reduce((s, h) => s + (h.final_hours || 0), 0);
+    setStats({ tasks_completed: taskCount || 0, hours_worked: totalHours });
   }, [userId]);
 
-  const loadEnrollments = async () => {
-    const { data } = await supabase
-      .from('loyalty_enrollments')
-      .select('id, tasks_completed, points_earned, reward_claimed, claimed_at, program_id, loyalty_programs(id, name, required_tasks, required_points, points_based, reward_description, club_id, clubs(name))')
-      .eq('volunteer_id', userId);
+  useEffect(() => { load(); }, [load, refreshKey]);
 
-    if (data) {
-      const mapped: Enrollment[] = data
-        .filter((e: any) => e.loyalty_programs)
-        .map((e: any) => ({
-          id: e.id,
-          tasks_completed: e.tasks_completed,
-          points_earned: e.points_earned,
-          reward_claimed: e.reward_claimed,
-          claimed_at: e.claimed_at,
-          program: {
-            id: e.loyalty_programs.id,
-            name: e.loyalty_programs.name,
-            required_tasks: e.loyalty_programs.required_tasks,
-            required_points: e.loyalty_programs.required_points,
-            points_based: e.loyalty_programs.points_based,
-            reward_description: e.loyalty_programs.reward_description,
-            club_id: e.loyalty_programs.club_id,
-            club_name: e.loyalty_programs.clubs?.name || '',
-          },
-        }));
-      setEnrollments(mapped);
-    }
-    setLoading(false);
-  };
+  const earnedBadges = allBadges.filter(b => earned.has(b.id));
+  const lockedBadges = allBadges.filter(b => !earned.has(b.id));
 
-  const getStatus = (e: Enrollment): 'in_progress' | 'available' | 'claimed' => {
-    if (e.reward_claimed) return 'claimed';
-    const threshold = e.program.points_based
-      ? (e.program.required_points || 0)
-      : e.program.required_tasks;
-    const current = e.program.points_based ? e.points_earned : e.tasks_completed;
-    return current >= threshold ? 'available' : 'in_progress';
-  };
+  const nextBadge = lockedBadges.length > 0 ? lockedBadges[0] : null;
+  const nextProgress = nextBadge
+    ? Math.min(100, ((stats[nextBadge.condition_type] || 0) / nextBadge.threshold) * 100)
+    : 100;
+  const nextRemaining = nextBadge ? Math.max(0, nextBadge.threshold - (stats[nextBadge.condition_type] || 0)) : 0;
 
-  const handleClaim = async (enrollment: Enrollment) => {
-    setClaiming(enrollment.id);
-    const { error } = await supabase
-      .from('loyalty_enrollments')
-      .update({ reward_claimed: true, claimed_at: new Date().toISOString() })
-      .eq('id', enrollment.id);
+  const getBadgeName = (b: BadgeDef) => language === 'nl' ? b.name_nl : language === 'fr' ? b.name_fr : b.name_en;
+  const getBadgeDesc = (b: BadgeDef) => language === 'nl' ? b.description_nl : language === 'fr' ? b.description_fr : b.description_en;
 
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+  const handleShare = (badge: BadgeDef) => {
+    const name = getBadgeName(badge);
+    const text = t3(language,
+      `Ik heb de "${name}" badge verdiend als vrijwilliger! 🏆`,
+      `J'ai gagné le badge "${name}" en tant que bénévole ! 🏆`,
+      `I earned the "${name}" badge as a volunteer! 🏆`
+    );
+    if (navigator.share) {
+      navigator.share({ title: name, text, url: window.location.origin });
     } else {
-      toast({
-        title: '🎁',
-        description: enrollment.program.reward_description,
-      });
-      // Notify club owner
-      sendPush({
-        userId,
-        title: '🎁 Beloning opgeëist!',
-        message: `Je hebt je beloning opgeëist bij ${enrollment.program.club_name}: ${enrollment.program.reward_description}`,
-        url: '/dashboard',
-        type: 'loyalty',
-      });
-      loadEnrollments();
+      navigator.clipboard.writeText(text);
+      toast.success(t3(language, 'Gekopieerd!', 'Copié !', 'Copied!'));
     }
-    setClaiming(null);
   };
-
-  if (loading || enrollments.length === 0) return null;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-      <h2 className="text-lg font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-primary" />
-        {l.title}
-      </h2>
-      <div className="space-y-3">
-        {enrollments.map((enrollment) => {
-          const status = getStatus(enrollment);
-          const isPB = enrollment.program.points_based;
-          const threshold = isPB ? (enrollment.program.required_points || 0) : enrollment.program.required_tasks;
-          const current = isPB ? enrollment.points_earned : enrollment.tasks_completed;
-          const pct = threshold > 0 ? Math.min(100, (current / threshold) * 100) : 0;
-
-          return (
-            <div
-              key={enrollment.id}
-              className={`bg-card rounded-2xl p-4 shadow-sm border transition-all ${
-                status === 'available' ? 'border-primary/30 bg-primary/5' : 'border-border'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{enrollment.program.name}</p>
-                  <p className="text-xs text-muted-foreground">{enrollment.program.club_name}</p>
-                </div>
-                <div className="shrink-0">
-                  {status === 'claimed' && (
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-foreground flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" /> {l.claimed}
-                    </span>
-                  )}
-                  {status === 'available' && (
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/15 text-primary flex items-center gap-1 animate-pulse">
-                      <Gift className="w-3 h-3" /> {l.rewardAvailable}
-                    </span>
-                  )}
-                  {status === 'in_progress' && (
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground">
-                      {l.inProgress}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span>{current} / {threshold} {isPB ? l.points : l.tasks}</span>
-                  <span>{Math.round(pct)}%</span>
-                </div>
-                <Progress value={pct} className="h-2" />
-              </div>
-
-              <p className="text-xs text-muted-foreground mt-2">
-                🎁 {enrollment.program.reward_description}
-              </p>
-
-              {status === 'available' && (
-                <Button
-                  size="sm"
-                  className="mt-3 w-full rounded-xl"
-                  onClick={() => handleClaim(enrollment)}
-                  disabled={claiming === enrollment.id}
-                >
-                  <Gift className="w-4 h-4 mr-1.5" />
-                  {l.claim}
-                </Button>
-              )}
-
-              {status === 'claimed' && enrollment.claimed_at && (
-                <p className="text-[11px] text-muted-foreground mt-2">
-                  {l.claimedOn} {new Date(enrollment.claimed_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB')}
-                </p>
-              )}
-            </div>
-          );
-        })}
+    <div className="space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-3 gap-3">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-2xl p-4 border border-border text-center shadow-sm">
+          <Star className="w-5 h-5 text-primary mx-auto mb-1" />
+          <p className="text-2xl font-heading font-bold text-foreground">{totalPoints}</p>
+          <p className="text-[11px] text-muted-foreground">{t3(language, 'Punten', 'Points', 'Points')}</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="bg-card rounded-2xl p-4 border border-border text-center shadow-sm">
+          <Trophy className="w-5 h-5 text-primary mx-auto mb-1" />
+          <p className="text-2xl font-heading font-bold text-foreground">{earnedBadges.length}</p>
+          <p className="text-[11px] text-muted-foreground">{t3(language, 'Badges', 'Badges', 'Badges')}</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-card rounded-2xl p-4 border border-border text-center shadow-sm">
+          <Award className="w-5 h-5 text-primary mx-auto mb-1" />
+          <p className="text-2xl font-heading font-bold text-foreground">{allBadges.length > 0 ? `${earnedBadges.length}/${allBadges.length}` : '—'}</p>
+          <p className="text-[11px] text-muted-foreground">{t3(language, 'Voltooid', 'Complétés', 'Completed')}</p>
+        </motion.div>
       </div>
-    </motion.div>
+
+      {/* Next badge progress */}
+      {nextBadge && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+          className="bg-card rounded-2xl p-4 border border-border shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            {(() => { const Icon = iconMap[nextBadge.icon] || Award; return <Icon className="w-5 h-5 text-primary" />; })()}
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                {t3(language, 'Volgende badge', 'Prochain badge', 'Next badge')}: {getBadgeName(nextBadge)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t3(language, `Nog ${nextRemaining} nodig`, `Encore ${nextRemaining} nécessaire(s)`, `${nextRemaining} more needed`)}
+              </p>
+            </div>
+          </div>
+          <Progress value={nextProgress} className="h-2" />
+        </motion.div>
+      )}
+
+      {/* All badges grid */}
+      <div>
+        <h2 className="text-lg font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-primary" />
+          {t3(language, 'Alle badges', 'Tous les badges', 'All badges')}
+        </h2>
+
+        {earnedBadges.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
+            {earnedBadges.map(badge => {
+              const Icon = iconMap[badge.icon] || Award;
+              const name = getBadgeName(badge);
+              const earnedAt = earned.get(badge.id);
+              return (
+                <motion.div key={badge.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                  className="relative group bg-card rounded-2xl p-3 border border-primary/20 text-center shadow-sm">
+                  <div className="w-10 h-10 mx-auto rounded-xl bg-primary/10 flex items-center justify-center mb-1.5">
+                    <Icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <p className="text-[11px] font-semibold text-foreground truncate">{name}</p>
+                  {earnedAt && (
+                    <p className="text-[9px] text-muted-foreground mt-0.5">
+                      {new Date(earnedAt).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short' })}
+                    </p>
+                  )}
+                  <button onClick={() => handleShare(badge)}
+                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-muted">
+                    <Share2 className="w-3 h-3 text-muted-foreground" />
+                  </button>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {lockedBadges.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+            {lockedBadges.map(badge => {
+              const Icon = iconMap[badge.icon] || Award;
+              const name = getBadgeName(badge);
+              const remaining = Math.max(0, badge.threshold - (stats[badge.condition_type] || 0));
+              return (
+                <div key={badge.id} className="bg-card rounded-2xl p-3 border border-border text-center opacity-40 grayscale"
+                  title={getBadgeDesc(badge) || ''}>
+                  <div className="w-10 h-10 mx-auto rounded-xl bg-muted flex items-center justify-center mb-1.5">
+                    <Icon className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-[11px] font-medium text-muted-foreground truncate">{name}</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                    {t3(language, `${remaining} nog`, `${remaining} restant(s)`, `${remaining} more`)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
