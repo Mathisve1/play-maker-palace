@@ -58,6 +58,7 @@ const StressTest = lazy(() => import("./pages/StressTest"));
 const VolunteerManagement = lazy(() => import("./pages/VolunteerManagement"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const MyClubs = lazy(() => import("./pages/MyClubs"));
+const VolunteerProfile = lazy(() => import("./pages/VolunteerProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
@@ -141,6 +142,7 @@ const App = () => {
             <Route path="/stress-test" element={<RequireAuth redirectTo="/club-login"><StressTest /></RequireAuth>} />
             <Route path="/volunteer-management" element={<RequireAuth redirectTo="/club-login"><VolunteerManagement /></RequireAuth>} />
             <Route path="/my-clubs" element={<RequireAuth><MyClubs /></RequireAuth>} />
+            <Route path="/volunteer/:id" element={<RequireAuth><VolunteerProfile /></RequireAuth>} />
             <Route path="/analytics" element={<RequireAuth redirectTo="/club-login"><AnalyticsDashboard /></RequireAuth>} />
             <Route path="/notifications" element={<RequireAuth><NotificationCenter /></RequireAuth>} />
             <Route path="/reset-password" element={<ResetPassword />} />

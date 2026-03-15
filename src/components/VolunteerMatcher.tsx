@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useClubContext } from '@/contexts/ClubContext';
@@ -86,6 +87,7 @@ interface VolunteerMatcherProps {
 const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) => {
   const { language } = useLanguage();
   const { clubId, clubInfo } = useClubContext();
+  const navigate = useNavigate();
   const l = labels[language];
 
   const [matches, setMatches] = useState<MatchedVolunteer[]>([]);
@@ -268,7 +270,7 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
                       isInvited ? 'bg-primary/5 border-primary/20' : 'bg-card border-border hover:bg-muted/30'
                     }`}
                   >
-                    <Avatar className="h-10 w-10 shrink-0">
+                    <Avatar className="h-10 w-10 shrink-0 cursor-pointer" onClick={() => { onOpenChange(false); navigate(`/volunteer/${vol.id}`); }}>
                       {vol.avatar_url && <AvatarImage src={vol.avatar_url} alt={vol.full_name || ''} />}
                       <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
                         {(vol.full_name || vol.email || '?')[0].toUpperCase()}
@@ -277,7 +279,12 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground truncate">{vol.full_name || vol.email}</p>
+                        <p
+                          className="text-sm font-medium text-foreground truncate cursor-pointer hover:underline"
+                          onClick={() => { onOpenChange(false); navigate(`/volunteer/${vol.id}`); }}
+                        >
+                          {vol.full_name || vol.email}
+                        </p>
                         <Badge variant="outline" className="text-[10px] shrink-0">
                           <Star className="w-3 h-3 mr-0.5 text-amber-500" />
                           {vol.matchScore}%
