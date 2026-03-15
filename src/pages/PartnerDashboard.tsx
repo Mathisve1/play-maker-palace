@@ -138,6 +138,7 @@ const PartnerDashboard = () => {
       ...t, event_title: t.event_id ? eventMap[t.event_id] || null : null,
       partner_acceptance_status: t.partner_acceptance_status || 'pending',
       assigned_members: assignmentMap[t.id] || [],
+      updated_at: (t as any).updated_at || null,
     })));
   };
 
