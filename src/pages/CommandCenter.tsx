@@ -64,6 +64,7 @@ const CommandCenter = () => {
   const [tomorrowReminders, setTomorrowReminders] = useState<{ taskId: string; taskTitle: string; count: number }[]>([]);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
   const [showBulkMessage, setShowBulkMessage] = useState(false);
+  const [unsignedContractCount, setUnsignedContractCount] = useState(0);
 
   const t = language === 'nl' ? {
     title: 'Actielijst',
