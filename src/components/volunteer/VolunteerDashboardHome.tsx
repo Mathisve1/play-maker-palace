@@ -110,6 +110,30 @@ const VolunteerDashboardHome = ({
     checkBriefings();
   }, [currentUserId, signups, tasks]);
 
+  // Check for active safety incidents on today's events
+  useEffect(() => {
+    if (!currentUserId || signups.length === 0) return;
+    const checkSafety = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const myTaskIds = signups.filter(s => s.status === 'assigned').map(s => s.task_id);
+      if (myTaskIds.length === 0) return;
+
+      const myTasks = tasks.filter(t => myTaskIds.includes(t.id) && t.task_date?.slice(0, 10) === today);
+      const eventIds = [...new Set(myTasks.map(t => t.event_id).filter(Boolean))];
+      if (eventIds.length === 0) return;
+
+      const { data: incidents } = await supabase
+        .from('safety_incidents')
+        .select('id')
+        .in('event_id', eventIds)
+        .neq('status', 'opgelost')
+        .limit(1);
+
+      setActiveSafetyAlert((incidents?.length || 0) > 0);
+    };
+    checkSafety();
+  }, [currentUserId, signups, tasks]);
+
   const totalEarned = myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0)
     + sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
 
