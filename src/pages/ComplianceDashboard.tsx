@@ -41,6 +41,7 @@ const labels = {
     active: 'Actief',
     blocked: 'Geblokkeerd',
     yearlyLimit: 'Jaarplafond 2026',
+    trainings: 'Trainingen',
     totalVolunteers: 'Vrijwilligers',
     greenCount: 'Legaal',
     orangeCount: 'Let op',
