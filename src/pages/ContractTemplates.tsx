@@ -265,7 +265,7 @@ const ContractTemplates = () => {
                       <FileText className="w-5 h-5 text-muted-foreground/50 shrink-0" />
                     </div>
                     <Button variant="outline" size="sm" className="mt-4 w-full"
-                      onClick={() => navigate(`/contract-builder?season_type=${cat}`)}>
+                      onClick={() => navigate(`/contract-builder?season_type=${cat}&club_id=${clubId}`)}>
                       <Edit3 className="w-3.5 h-3.5 mr-1" />
                       {t('Bewerken', 'Modifier', 'Edit')}
                     </Button>
