@@ -90,6 +90,7 @@ const MonthlyPlanning = () => {
   const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
   const [copyingTasks, setCopyingTasks] = useState(false);
   const [generatingPayout, setGeneratingPayout] = useState(false);
+  const [copyingToNext, setCopyingToNext] = useState(false);
   const [contractVolunteer, setContractVolunteer] = useState<Enrollment | null>(null);
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoDeleteLoading, setDemoDeleteLoading] = useState(false);
