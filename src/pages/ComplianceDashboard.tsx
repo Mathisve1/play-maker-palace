@@ -161,7 +161,27 @@ const ComplianceDashboard = () => {
         .select('id, full_name, email, avatar_url, compliance_blocked')
         .in('id', uniqueIds);
 
-      setVolunteers((profiles as VolunteerEntry[]) || []);
+      // Fetch required trainings for this club
+      const { data: reqTrainings } = await supabase.from('club_required_trainings' as any).select('training_id').eq('club_id', contextClubId);
+      const requiredIds = (reqTrainings || []).map((r: any) => r.training_id);
+
+      // Fetch volunteer certificates for required trainings
+      let certMap = new Map<string, number>();
+      if (requiredIds.length > 0) {
+        const { data: certs } = await supabase.from('volunteer_certificates')
+          .select('volunteer_id, training_id')
+          .in('volunteer_id', uniqueIds)
+          .in('training_id', requiredIds);
+        (certs || []).forEach((c: any) => {
+          certMap.set(c.volunteer_id, (certMap.get(c.volunteer_id) || 0) + 1);
+        });
+      }
+
+      setVolunteers(((profiles as any[]) || []).map(p => ({
+        ...p,
+        trainingCompleted: certMap.get(p.id) || 0,
+        trainingRequired: requiredIds.length,
+      })) as VolunteerEntry[]);
 
       const cMap = await fetchBatchComplianceData(uniqueIds);
       setComplianceMap(cMap);
