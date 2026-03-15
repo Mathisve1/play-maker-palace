@@ -23,6 +23,7 @@ import { generateSeasonReport, type SeasonReportVolunteer, type SeasonReportTask
 
 const SeasonContractManager = () => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const [clubId, setClubId] = useState<string | null>(null);
