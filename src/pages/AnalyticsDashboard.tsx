@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { motion } from 'framer-motion';
-import { TrendingUp, Users, CalendarCheck, BarChart3, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { TrendingUp, Users, CalendarCheck, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/DashboardLayout';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import ClubPageLayout from '@/components/ClubPageLayout';
@@ -118,27 +119,37 @@ const AnalyticsDashboard = () => {
     }).filter(e => e.spots > 0).reverse();
     setEventAttendance(eventData);
 
-    // === Retention (month-over-month) ===
+    // === Retention (month-over-month, using earliest signup per volunteer) ===
+    // Build a map: volunteer_id -> earliest signup month
+    const earliestSignup: Record<string, string> = {};
+    signups.forEach(s => {
+      const m = s.signed_up_at.slice(0, 7);
+      if (!earliestSignup[s.volunteer_id] || m < earliestSignup[s.volunteer_id]) {
+        earliestSignup[s.volunteer_id] = m;
+      }
+    });
+
     const retMonths: typeof retentionData = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = d.toISOString().slice(0, 7);
       const label = d.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { month: 'short' });
-      
-      const prevD = new Date(now.getFullYear(), now.getMonth() - i - 1, 1);
-      const prevMonthKey = prevD.toISOString().slice(0, 7);
 
       const activeThisMonth = new Set(
         signups.filter(s => s.signed_up_at.slice(0, 7) === monthKey).map(s => s.volunteer_id)
       );
-      const activePrevMonth = new Set(
-        signups.filter(s => s.signed_up_at.slice(0, 7) === prevMonthKey).map(s => s.volunteer_id)
-      );
 
-      const returning = [...activeThisMonth].filter(v => activePrevMonth.has(v)).length;
-      const newV = activeThisMonth.size - returning;
-      const rate = activePrevMonth.size > 0 ? Math.round((returning / activePrevMonth.size) * 100) : 0;
+      let returning = 0;
+      let newV = 0;
+      activeThisMonth.forEach(vid => {
+        if (earliestSignup[vid] && earliestSignup[vid] < monthKey) {
+          returning++;
+        } else {
+          newV++;
+        }
+      });
 
+      const rate = (returning + newV) > 0 ? Math.round((returning / (returning + newV)) * 100) : 0;
       retMonths.push({ month: label, returning, new: newV, total: activeThisMonth.size, rate });
     }
     setRetentionData(retMonths);
@@ -217,6 +228,33 @@ const AnalyticsDashboard = () => {
     return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
+  const exportCsv = useCallback(() => {
+    let headers: string[] = [];
+    let rows: string[][] = [];
+
+    if (tab === 'volunteers') {
+      headers = [t3('Maand', 'Mois', 'Month'), t3('Nieuw', 'Nouveaux', 'New'), t3('Cumulatief', 'Cumulatif', 'Cumulative')];
+      rows = volunteerGrowth.map(r => [r.month, String(r.count), String(r.cumulative)]);
+    } else if (tab === 'events') {
+      headers = [t3('Event', 'Événement', 'Event'), t3('Plaatsen', 'Places', 'Spots'), t3('Aanmeldingen', 'Inscriptions', 'Signups'), t3('Opkomst %', 'Présence %', 'Attendance %')];
+      rows = eventAttendance.map(r => [r.name, String(r.spots), String(r.signups), `${r.rate}%`]);
+    } else {
+      headers = [t3('Maand', 'Mois', 'Month'), t3('Terugkerend', 'Retours', 'Returning'), t3('Nieuw', 'Nouveaux', 'New'), t3('Totaal', 'Total', 'Total'), t3('Retentie %', 'Rétention %', 'Retention %')];
+      rows = retentionData.map(r => [r.month, String(r.returning), String(r.new), String(r.total), `${r.rate}%`]);
+    }
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-${tab}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [tab, volunteerGrowth, eventAttendance, retentionData, language]);
+
+
+
   return (
     <ClubPageLayout>
       <div className="max-w-6xl mx-auto space-y-6">
@@ -227,13 +265,19 @@ const AnalyticsDashboard = () => {
           { label: 'Audit Log', path: '/audit-log' },
         ]} />
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
-            {t3('Analytics', 'Analytique', 'Analytics')} 📊
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t3('Inzichten in vrijwilligersgroei, opkomst en retentie', 'Aperçu de la croissance, présence et rétention', 'Insights into volunteer growth, attendance and retention')}
-          </p>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
+              {t3('Analytics', 'Analytique', 'Analytics')} 📊
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {t3('Inzichten in vrijwilligersgroei, opkomst en retentie', 'Aperçu de la croissance, présence et rétention', 'Insights into volunteer growth, attendance and retention')}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={exportCsv} className="shrink-0 gap-1.5">
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">{t3('Exporteer CSV', 'Exporter CSV', 'Export CSV')}</span>
+          </Button>
         </motion.div>
 
         {/* KPI Cards */}
