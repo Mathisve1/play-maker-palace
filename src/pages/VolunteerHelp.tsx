@@ -710,7 +710,7 @@ const VolunteerHelp = () => {
             </Button>
             <Button className="gap-2" onClick={() => crispOpen()}>
               <MessageCircle className="w-4 h-4" />
-              {c.lang === 'nl' ? 'Chat met support' : c.lang === 'fr' ? 'Chatter avec le support' : 'Chat with support'}
+              {language === 'nl' ? 'Chat met support' : language === 'fr' ? 'Chatter avec le support' : 'Chat with support'}
             </Button>
           </div>
         </motion.div>
