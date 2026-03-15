@@ -160,7 +160,22 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
 
   useEffect(() => {
     loadBriefing();
+    loadZoneAssignment();
   }, [taskId]);
+
+  const loadZoneAssignment = async () => {
+    const { data: zones } = await supabase.from('task_zones').select('id, name, max_capacity').eq('task_id', taskId);
+    if (!zones || zones.length === 0) return;
+    const zoneIds = zones.map(z => z.id);
+    const { data: assignments } = await supabase.from('task_zone_assignments')
+      .select('zone_id')
+      .eq('volunteer_id', userId)
+      .in('zone_id', zoneIds);
+    if (assignments && assignments.length > 0) {
+      const zone = zones.find(z => z.id === assignments[0].zone_id);
+      if (zone) setMyZone({ name: zone.name, max_capacity: zone.max_capacity });
+    }
+  };
 
   // Cache to localStorage for offline access
   const cacheData = useCallback((data: BriefingData) => {
