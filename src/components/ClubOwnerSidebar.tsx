@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, ClipboardList, CreditCard, Shield, ShieldAlert,
   Ticket, Award, BarChart3, Handshake, LogOut, Settings, Banknote, MessageCircle,
-  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp, Moon, Sun, Bell,
+  CalendarPlus, LayoutGrid, Inbox, User, TrendingUp, Moon, Sun, Bell, Search,
 } from 'lucide-react';
+import GlobalSearch from '@/components/GlobalSearch';
 import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -38,6 +39,7 @@ const ClubOwnerSidebar = ({
   const [actionCount, setActionCount] = useState(0);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
   const isActive = (path: string) => location.pathname === path;
@@ -171,7 +173,16 @@ const ClubOwnerSidebar = ({
             </div>
           </div>
         )}
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="mt-2 flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-muted/50 text-muted-foreground text-xs hover:bg-muted transition-colors"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span className="flex-1 text-left">{t3('Zoeken...', 'Rechercher...', 'Search...')}</span>
+          <kbd className="hidden md:inline-flex h-5 items-center gap-0.5 rounded border border-border bg-background px-1.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
+        </button>
       </SidebarHeader>
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} clubId={clubId} isClubOwner={true} />
 
       <SidebarSeparator />
 

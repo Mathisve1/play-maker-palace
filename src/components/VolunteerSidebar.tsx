@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
   CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
   HelpCircle, Building2, Shield, CalendarDays, Moon, Sun, Home,
 } from 'lucide-react';
+import GlobalSearch from '@/components/GlobalSearch';
+import { useOptionalClubContext } from '@/contexts/ClubContext';
 import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -110,6 +113,8 @@ const VolunteerSidebar = ({
   const { setOpenMobile } = useSidebar();
   const l = labels[language];
   const { theme, toggleTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const clubCtx = useOptionalClubContext();
 
   const handleNav = (tab: VolunteerTab) => {
     setActiveTab(tab);
@@ -151,7 +156,16 @@ const VolunteerSidebar = ({
             <p className="text-[11px] text-muted-foreground truncate">{l.settings}</p>
           </div>
         </button>
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="mt-2 flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-muted/50 text-muted-foreground text-xs hover:bg-muted transition-colors"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span className="flex-1 text-left">{language === 'nl' ? 'Zoeken...' : language === 'fr' ? 'Rechercher...' : 'Search...'}</span>
+          <kbd className="hidden md:inline-flex h-5 items-center gap-0.5 rounded border border-border bg-background px-1.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
+        </button>
       </SidebarHeader>
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} clubId={clubCtx?.clubId} isClubOwner={false} />
 
       <SidebarSeparator />
 
