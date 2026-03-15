@@ -1055,9 +1055,9 @@ const VolunteerDashboard = () => {
       )}
 
       {/* ===== AVAILABILITY TAB ===== */}
-      {activeTab === 'availability' && currentUserId && clubId && (
+      {activeTab === 'availability' && currentUserId && contextClubId && (
         <div className="max-w-4xl mx-auto">
-          <SeasonAvailabilityPicker userId={currentUserId} clubId={clubId} language={language} />
+          <SeasonAvailabilityPicker userId={currentUserId} clubId={contextClubId} language={language} />
         </div>
       )}
 
