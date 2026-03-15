@@ -680,6 +680,7 @@ const VolunteerDashboard = () => {
         tickets: myTickets.length,
         loyalty: loyaltyPrograms.length,
         safety: safetyPendingCount,
+        safetyAlert: safetyAlertActive,
       }}
     />
   );
