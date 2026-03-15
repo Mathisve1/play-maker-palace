@@ -86,6 +86,7 @@ const labels: Record<Language, Record<string, string>> = {
     monthly: 'Monthly Planning',
     messages: 'Messages',
     clubSearch: 'Find Clubs',
+    myClubs: 'My Clubs',
     payments: 'Payments',
     contracts: 'Contracts',
     briefings: 'Briefings',
