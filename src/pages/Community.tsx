@@ -339,18 +339,21 @@ const Community = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <div className="relative flex-1 min-w-[140px] max-w-[200px]">
-                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  placeholder={cl.cityFilter}
-                  value={cityQuery}
-                  onChange={e => setCityQuery(e.target.value)}
-                  className="pl-8 h-9 text-xs rounded-xl bg-card"
-                />
-              </div>
+              <Select value={filterProvince} onValueChange={setFilterProvince}>
+                <SelectTrigger className="w-[180px] h-9 rounded-xl text-xs bg-card">
+                  <MapPin className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+                  <SelectValue placeholder={cl.allProvinces} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{cl.allProvinces}</SelectItem>
+                  {BELGIAN_PROVINCES.map(p => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                <Checkbox checked={openOnly} onCheckedChange={v => setOpenOnly(v === true)} />
-                {cl.openOnly}
+                <Switch checked={seekingVolunteers} onCheckedChange={setSeekingVolunteers} />
+                {cl.seekingVolunteers}
               </label>
             </div>
           </motion.div>

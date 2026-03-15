@@ -55,9 +55,16 @@ const ClubCard = ({ club, index, onToggleFollow, toggling }: {
             </Badge>
           </div>
         )}
-        {club.sport && (
-          <Badge variant="secondary" className="absolute top-3 right-3 text-[10px]">{club.sport}</Badge>
-        )}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+          {club.upcoming_task_count > 0 && (
+            <Badge className="bg-accent text-accent-foreground text-[10px] gap-1 animate-pulse">
+              {club.upcoming_task_count} {cl.openTasks}
+            </Badge>
+          )}
+          {club.sport && (
+            <Badge variant="secondary" className="text-[10px]">{club.sport}</Badge>
+          )}
+        </div>
       </div>
 
       <div className="px-5 -mt-10 relative z-10">
