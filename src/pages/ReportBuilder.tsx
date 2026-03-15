@@ -826,9 +826,6 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/reporting')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
             <div>
               <h1 className="text-lg font-bold flex items-center gap-2">
                 <LayoutDashboard className="h-5 w-5" />
