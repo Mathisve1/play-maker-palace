@@ -503,19 +503,30 @@ const SeasonContractManager = () => {
             onCreated={() => loadData(clubId)}
           />
           {activeSeason && (
-            <SendSeasonContractDialog
-              open={showSendContract}
-              onClose={() => setShowSendContract(false)}
-              clubId={clubId}
-              seasonId={activeSeason.id}
-              language={language}
-              volunteers={volunteersWithoutContract}
-              preSelectedIds={[...selectedVols]}
-              onSent={() => {
-                setSelectedVols(new Set());
-                loadData(clubId);
-              }}
-            />
+            <>
+              <SendSeasonContractDialog
+                open={showSendContract}
+                onClose={() => setShowSendContract(false)}
+                clubId={clubId}
+                seasonId={activeSeason.id}
+                language={language}
+                volunteers={volunteersWithoutContract}
+                preSelectedIds={[...selectedVols]}
+                onSent={() => {
+                  setSelectedVols(new Set());
+                  loadData(clubId);
+                }}
+              />
+              <CloseSeasonWizard
+                open={showCloseWizard}
+                onClose={() => setShowCloseWizard(false)}
+                clubId={clubId}
+                seasonId={activeSeason.id}
+                seasonName={activeSeason.name}
+                language={language}
+                onCompleted={() => loadData(clubId)}
+              />
+            </>
           )}
         </>
       )}
