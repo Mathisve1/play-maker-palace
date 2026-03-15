@@ -1673,6 +1673,51 @@ export type Database = {
         }
         Relationships: []
       }
+      event_availability: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          status: string
+          task_id: string | null
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_availability_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_availability_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_chats: {
         Row: {
           attachment_url: string | null
