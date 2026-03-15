@@ -229,6 +229,69 @@ const SeasonContractManager = () => {
     });
   };
 
+  const [generatingReport, setGeneratingReport] = useState(false);
+
+  const handleGenerateSeasonReport = async () => {
+    if (!clubId || !activeSeason) return;
+    setGeneratingReport(true);
+    try {
+      const seasonStart = activeSeason.start_date;
+      const seasonEnd = activeSeason.end_date;
+      const { data: club } = await supabase.from('clubs').select('name, logo_url').eq('id', clubId).single();
+      const { data: seasonTasks } = await supabase.from('tasks').select('id, title').eq('club_id', clubId).gte('task_date', seasonStart).lte('task_date', seasonEnd);
+      const taskIds = (seasonTasks || []).map((t: any) => t.id);
+      const { data: hourConfs } = taskIds.length > 0
+        ? await supabase.from('hour_confirmations').select('*').in('task_id', taskIds)
+        : { data: [] as any[] };
+      const { data: contracts } = await supabase.from('season_contracts').select('volunteer_id, template_id').eq('season_id', activeSeason.id);
+      const templateIds = [...new Set((contracts || []).map((c: any) => c.template_id))];
+      let tmplCatMap = new Map<string, string>();
+      if (templateIds.length > 0) {
+        const { data: tmpls } = await supabase.from('season_contract_templates').select('id, category').in('id', templateIds);
+        (tmpls || []).forEach((t: any) => tmplCatMap.set(t.id, t.category));
+      }
+      const volIds = [...new Set((hourConfs || []).map((h: any) => h.volunteer_id))];
+      let profileMap = new Map<string, string>();
+      if (volIds.length > 0) {
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', volIds);
+        (profiles || []).forEach((p: any) => profileMap.set(p.id, p.full_name || '—'));
+      }
+      const volMap = new Map<string, SeasonReportVolunteer>();
+      (hourConfs || []).forEach((h: any) => {
+        const existing = volMap.get(h.volunteer_id) || { name: profileMap.get(h.volunteer_id) || '—', contractType: '', taskCount: 0, hours: 0, compensation: 0 };
+        existing.taskCount += 1;
+        existing.hours += (h.final_hours || 0);
+        existing.compensation += (h.final_amount || 0);
+        volMap.set(h.volunteer_id, existing);
+      });
+      (contracts || []).forEach((c: any) => { const v = volMap.get(c.volunteer_id); if (v) v.contractType = tmplCatMap.get(c.template_id) || ''; });
+      const taskTypeMap = new Map<string, SeasonReportTaskType>();
+      const taskTitleMap = new Map<string, string>();
+      (seasonTasks || []).forEach((t: any) => taskTitleMap.set(t.id, t.title));
+      (hourConfs || []).forEach((h: any) => {
+        const title = taskTitleMap.get(h.task_id) || 'Other';
+        const existing = taskTypeMap.get(title) || { type: title, count: 0, totalHours: 0, totalCompensation: 0 };
+        existing.count += 1; existing.totalHours += (h.final_hours || 0); existing.totalCompensation += (h.final_amount || 0);
+        taskTypeMap.set(title, existing);
+      });
+      const { data: batches } = await supabase.from('sepa_batches').select('reference, created_at, item_count, total_amount, status').eq('club_id', clubId);
+      const seasonBatches: SeasonReportBatch[] = (batches || []).filter((b: any) => b.created_at >= seasonStart && b.created_at <= seasonEnd)
+        .map((b: any) => ({ reference: b.reference, date: b.created_at, itemCount: b.item_count || 0, totalAmount: b.total_amount || 0, status: b.status }));
+      const totalHours = [...volMap.values()].reduce((s, v) => s + v.hours, 0);
+      const totalComp = [...volMap.values()].reduce((s, v) => s + v.compensation, 0);
+      const doc = generateSeasonReport({
+        clubName: club?.name || '—', seasonName: activeSeason.name, seasonStart, seasonEnd,
+        totalVolunteers: volMap.size, totalTasks: taskIds.length, totalHours, totalCompensation: totalComp,
+        volunteers: [...volMap.values()].sort((a, b) => b.compensation - a.compensation),
+        taskTypes: [...taskTypeMap.values()].sort((a, b) => b.count - a.count),
+        sepaBatches: seasonBatches, language,
+      });
+      doc.save(`seizoensrapport-${activeSeason.name.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+      toast.success(t('Seizoensrapport gedownload!', 'Rapport de saison téléchargé!', 'Season report downloaded!'));
+    } catch (err: any) { toast.error(err?.message || 'Error'); }
+    setGeneratingReport(false);
+  };
+
   if (loading) {
     return (
       <ClubPageLayout>
