@@ -148,7 +148,7 @@ export const DashboardGrid = ({ layout, onLayoutChange, onReset, language, rende
         layouts={{ lg: gridLayout, md: gridLayout, sm: gridLayout.map(l => ({ ...l, w: Math.min(l.w, 2), x: l.x % 2 })) }}
         breakpoints={{ lg: 1024, md: 768, sm: 0 }}
         cols={{ lg: 4, md: 2, sm: 1 }}
-        rowHeight={140}
+        rowHeight={150}
         margin={[16, 16]}
         dragConfig={{ enabled: editMode, handle: '.widget-drag-handle' }}
         resizeConfig={{ enabled: editMode }}

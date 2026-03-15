@@ -858,8 +858,8 @@ const ReportingDashboard = () => {
               <span className="text-sm font-medium text-foreground">{L.filters}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.from}</label><DatePicker date={dateFrom} onChange={setDateFrom} /></div>
-              <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.to}</label><DatePicker date={dateTo} onChange={setDateTo} /></div>
+              <div className="space-y-1.5"><label className="block text-xs font-medium text-muted-foreground mb-1">{L.from}</label><DatePicker date={dateFrom} onChange={setDateFrom} /></div>
+              <div className="space-y-1.5"><label className="block text-xs font-medium text-muted-foreground mb-1">{L.to}</label><DatePicker date={dateTo} onChange={setDateTo} /></div>
               <div className="space-y-1"><label className="text-xs text-muted-foreground">{L.event}</label>
                 <Select value={selectedEventId} onValueChange={setSelectedEventId}><SelectTrigger><SelectValue placeholder={L.allEvents} /></SelectTrigger>
                   <SelectContent><SelectItem value="all">{L.allEvents}</SelectItem>{events.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}</SelectContent></Select>
