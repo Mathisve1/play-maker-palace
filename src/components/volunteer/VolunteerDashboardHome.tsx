@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText, AlertTriangle } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText, AlertTriangle, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -54,6 +54,7 @@ const VolunteerDashboardHome = ({
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
   const [upcomingBriefings, setUpcomingBriefings] = useState<{ taskId: string; taskTitle: string; taskDate: string }[]>([]);
   const [activeSafetyAlert, setActiveSafetyAlert] = useState(false);
+  const [requiredTrainings, setRequiredTrainings] = useState<{ id: string; title: string; clubName: string }[]>([]);
   // Check for unread briefings within 48h
   useEffect(() => {
     if (!currentUserId || signups.length === 0) return;
@@ -133,6 +134,32 @@ const VolunteerDashboardHome = ({
     };
     checkSafety();
   }, [currentUserId, signups, tasks]);
+
+  // Fetch required trainings the volunteer hasn't completed
+  useEffect(() => {
+    if (!currentUserId || !followedClubIds || followedClubIds.size === 0) return;
+    const fetchRequired = async () => {
+      const clubIds = [...followedClubIds];
+      const { data: reqData } = await supabase.from('club_required_trainings' as any)
+        .select('training_id, club_id')
+        .in('club_id', clubIds);
+      if (!reqData || reqData.length === 0) { setRequiredTrainings([]); return; }
+
+      const trainingIds = [...new Set((reqData as any[]).map(r => r.training_id))];
+      const [trainingsRes, certsRes, clubsRes] = await Promise.all([
+        supabase.from('academy_trainings').select('id, title, club_id').in('id', trainingIds),
+        supabase.from('volunteer_certificates').select('training_id').eq('volunteer_id', currentUserId).in('training_id', trainingIds),
+        supabase.from('clubs').select('id, name').in('id', clubIds),
+      ]);
+      const certifiedIds = new Set((certsRes.data || []).map((c: any) => c.training_id));
+      const clubNameMap = new Map((clubsRes.data || []).map((c: any) => [c.id, c.name]));
+      const incomplete = (trainingsRes.data || [])
+        .filter((t: any) => !certifiedIds.has(t.id))
+        .map((t: any) => ({ id: t.id, title: t.title, clubName: clubNameMap.get(t.club_id) || '' }));
+      setRequiredTrainings(incomplete);
+    };
+    fetchRequired();
+  }, [currentUserId, followedClubIds, myCertifiedTrainingIds]);
 
   const totalEarned = myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0)
     + sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
@@ -266,6 +293,33 @@ const VolunteerDashboardHome = ({
               </span>
             </button>
           ))}
+        </motion.div>
+      )}
+
+      {/* Required trainings section */}
+      {requiredTrainings.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+          <h3 className="text-sm font-heading font-semibold text-foreground flex items-center gap-2 mb-3">
+            <BookOpen className="w-4 h-4 text-primary" />
+            {language === 'nl' ? 'Vereiste trainingen' : language === 'fr' ? 'Formations requises' : 'Required trainings'}
+          </h3>
+          <div className="space-y-2">
+            {requiredTrainings.map(tr => (
+              <div key={tr.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{tr.title}</p>
+                  <p className="text-xs text-muted-foreground">{tr.clubName}</p>
+                </div>
+                <button
+                  onClick={() => navigate(`/training/${tr.id}`)}
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+                >
+                  {language === 'nl' ? 'Start training' : language === 'fr' ? 'Démarrer' : 'Start training'}
+                </button>
+              </div>
+            ))}
+          </div>
         </motion.div>
       )}
 

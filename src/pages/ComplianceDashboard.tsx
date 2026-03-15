@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Clock, Search, MoreHorizontal, Mail, Ban, User, Loader2 } from 'lucide-react';
+import { ShieldCheck, Clock, Search, MoreHorizontal, Mail, Ban, User, Loader2, BookOpen } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import PageNavTabs from '@/components/PageNavTabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -23,6 +23,8 @@ interface VolunteerEntry {
   email: string | null;
   avatar_url: string | null;
   compliance_blocked?: boolean;
+  trainingCompleted?: number;
+  trainingRequired?: number;
 }
 
 const labels = {
@@ -39,6 +41,7 @@ const labels = {
     active: 'Actief',
     blocked: 'Geblokkeerd',
     yearlyLimit: 'Jaarplafond 2026',
+    trainings: 'Trainingen',
     totalVolunteers: 'Vrijwilligers',
     greenCount: 'Legaal',
     orangeCount: 'Let op',
@@ -67,6 +70,7 @@ const labels = {
     active: 'Actif',
     blocked: 'Bloqué',
     yearlyLimit: 'Plafond annuel 2026',
+    trainings: 'Formations',
     totalVolunteers: 'Bénévoles',
     greenCount: 'Légal',
     orangeCount: 'Attention',
@@ -95,6 +99,7 @@ const labels = {
     active: 'Active',
     blocked: 'Blocked',
     yearlyLimit: 'Yearly limit 2026',
+    trainings: 'Trainings',
     totalVolunteers: 'Volunteers',
     greenCount: 'Legal',
     orangeCount: 'Warning',
@@ -156,7 +161,27 @@ const ComplianceDashboard = () => {
         .select('id, full_name, email, avatar_url, compliance_blocked')
         .in('id', uniqueIds);
 
-      setVolunteers((profiles as VolunteerEntry[]) || []);
+      // Fetch required trainings for this club
+      const { data: reqTrainings } = await supabase.from('club_required_trainings' as any).select('training_id').eq('club_id', contextClubId);
+      const requiredIds = (reqTrainings || []).map((r: any) => r.training_id);
+
+      // Fetch volunteer certificates for required trainings
+      let certMap = new Map<string, number>();
+      if (requiredIds.length > 0) {
+        const { data: certs } = await supabase.from('volunteer_certificates')
+          .select('volunteer_id, training_id')
+          .in('volunteer_id', uniqueIds)
+          .in('training_id', requiredIds);
+        (certs || []).forEach((c: any) => {
+          certMap.set(c.volunteer_id, (certMap.get(c.volunteer_id) || 0) + 1);
+        });
+      }
+
+      setVolunteers(((profiles as any[]) || []).map(p => ({
+        ...p,
+        trainingCompleted: certMap.get(p.id) || 0,
+        trainingRequired: requiredIds.length,
+      })) as VolunteerEntry[]);
 
       const cMap = await fetchBatchComplianceData(uniqueIds);
       setComplianceMap(cMap);
@@ -360,6 +385,16 @@ const ComplianceDashboard = () => {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
+                        {vol.trainingRequired! > 0 && (
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                            vol.trainingCompleted === vol.trainingRequired
+                              ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400'
+                              : 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+                          }`}>
+                            <BookOpen className="w-3 h-3 inline mr-0.5" />
+                            {vol.trainingCompleted}/{vol.trainingRequired} {vol.trainingCompleted === vol.trainingRequired ? '✅' : ''}
+                          </span>
+                        )}
                         {compliance?.declarationsPending && (
                           <Badge variant="secondary" className="gap-1 text-[10px]">
                             <Clock className="w-3 h-3" />

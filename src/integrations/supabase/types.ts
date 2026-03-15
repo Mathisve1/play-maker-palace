@@ -1335,6 +1335,49 @@ export type Database = {
           },
         ]
       }
+      club_required_trainings: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          training_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          training_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_required_trainings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_required_trainings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_required_trainings_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "academy_trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clubs: {
         Row: {
           allow_shift_swaps: boolean

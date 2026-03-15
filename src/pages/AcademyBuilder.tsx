@@ -9,7 +9,7 @@ import {
   ChevronDown, ChevronUp, Eye, EyeOff, Loader2, ArrowLeft, Award, Save, Users,
   HelpCircle, Copy, Type, Heading1, Heading2, Minus, AlignLeft, AlignCenter, AlignRight,
   Bold, Italic, Palette, Youtube, Upload, ToggleLeft, ToggleRight, CheckSquare, Square,
-  Wand2, Bot, MessageSquare, CalendarDays, MapPin, UserCheck, QrCode, Send
+  Wand2, Bot, MessageSquare, CalendarDays, MapPin, UserCheck, QrCode, Send, ShieldCheck
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { useClubContext } from '@/contexts/ClubContext';
@@ -760,7 +760,9 @@ const AcademyBuilder = () => {
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editCertDesignId, setEditCertDesignId] = useState<string>('');
+  const [editRequiredForCompliance, setEditRequiredForCompliance] = useState(false);
   const [certDesigns, setCertDesigns] = useState<{ id: string; name: string }[]>([]);
+  const [requiredTrainingIds, setRequiredTrainingIds] = useState<Set<string>>(new Set());
   // AI Assistant state
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [aiTopic, setAiTopic] = useState('');
@@ -775,12 +777,14 @@ const AcademyBuilder = () => {
     if (!contextClubId) return;
     const init = async () => {
       setClubId(contextClubId);
-      const [trainingsRes, designsRes] = await Promise.all([
+      const [trainingsRes, designsRes, reqRes] = await Promise.all([
         supabase.from('academy_trainings').select('*').eq('club_id', contextClubId).order('created_at', { ascending: false }),
         supabase.from('certificate_designs').select('id, name').eq('club_id', contextClubId),
+        supabase.from('club_required_trainings' as any).select('training_id').eq('club_id', contextClubId),
       ]);
       setTrainings((trainingsRes.data as Training[]) || []);
       setCertDesigns((designsRes.data || []) as { id: string; name: string }[]);
+      setRequiredTrainingIds(new Set((reqRes.data || []).map((r: any) => r.training_id)));
       setLoading(false);
     };
     init();
@@ -836,6 +840,7 @@ const AcademyBuilder = () => {
   const selectTraining = (t: Training) => {
     setSelectedTraining(t.id); setEditTitle(t.title); setEditDesc(t.description || '');
     setEditCertDesignId(t.certificate_design_id || '');
+    setEditRequiredForCompliance(requiredTrainingIds.has(t.id));
     loadTrainingDetail(t.id);
     loadTrainingEvents(t.id);
   };
@@ -876,6 +881,15 @@ const AcademyBuilder = () => {
       for (const [oldModId, mqData] of Object.entries(moduleQuizzes)) {
         const realModId = savedModuleIds[oldModId] || oldModId;
         await saveQuiz(selectedTraining, realModId, mqData.quiz, mqData.questions, mqData.passingScore, mqData.isPractice);
+      }
+
+      // Save compliance requirement
+      if (editRequiredForCompliance && !requiredTrainingIds.has(selectedTraining)) {
+        await supabase.from('club_required_trainings' as any).insert({ club_id: clubId, training_id: selectedTraining });
+        setRequiredTrainingIds(prev => new Set([...prev, selectedTraining]));
+      } else if (!editRequiredForCompliance && requiredTrainingIds.has(selectedTraining)) {
+        await supabase.from('club_required_trainings' as any).delete().eq('club_id', clubId).eq('training_id', selectedTraining);
+        setRequiredTrainingIds(prev => { const s = new Set(prev); s.delete(selectedTraining); return s; });
       }
 
       toast.success(l.saved);
@@ -1430,6 +1444,21 @@ const AcademyBuilder = () => {
                   <Button variant="outline" size="sm" onClick={() => navigate('/academy/certificate-builder')} className="gap-1.5 shrink-0">
                     <Plus className="w-3.5 h-3.5" /> {language === 'nl' ? 'Nieuw sjabloon' : language === 'fr' ? 'Nouveau' : 'New template'}
                   </Button>
+                </div>
+              </div>
+
+              {/* ─── Compliance Toggle ─── */}
+              <div className="bg-card rounded-2xl border border-border p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-primary" /> {language === 'nl' ? 'Verplicht voor compliance' : language === 'fr' ? 'Obligatoire pour conformité' : 'Required for compliance'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'nl' ? 'Wanneer ingeschakeld, moeten vrijwilligers deze training voltooien om compliant te zijn.' : language === 'fr' ? 'Si activé, les bénévoles doivent terminer cette formation pour être conformes.' : 'When enabled, volunteers must complete this training for compliance.'}
+                    </p>
+                  </div>
+                  <Switch checked={editRequiredForCompliance} onCheckedChange={setEditRequiredForCompliance} />
                 </div>
               </div>
 
