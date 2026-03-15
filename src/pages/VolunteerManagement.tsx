@@ -443,6 +443,15 @@ const VolunteerManagement = () => {
                         <span className="text-[10px] text-muted-foreground">({vol.review_count})</span>
                       </div>
                     )}
+                    {vol.memberContractTypes.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {vol.memberContractTypes.map(ct => (
+                          <span key={ct} className="inline-flex px-1.5 py-0.5 rounded text-[10px] bg-secondary/50 text-secondary-foreground font-medium capitalize">
+                            {ct.replace('_', ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Contract badges */}
