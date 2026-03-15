@@ -537,6 +537,34 @@ const VolunteerManagement = () => {
               onSent={loadData}
             />
           )}
+
+          {/* Bulk contract type dialog */}
+          {showBulkContractType && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setShowBulkContractType(false)}>
+              <div className="bg-card rounded-2xl shadow-elevated p-6 w-full max-w-md max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <h3 className="text-lg font-heading font-semibold text-foreground mb-1">
+                  {t('Contracttype instellen', 'Définir le type de contrat', 'Set contract type')}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {t(`Voor ${selectedIds.size} geselecteerde vrijwilligers`, `Pour ${selectedIds.size} bénévoles sélectionnés`, `For ${selectedIds.size} selected volunteers`)}
+                </p>
+                <ContractTypePicker
+                  selected={bulkContractTypes}
+                  onChange={setBulkContractTypes}
+                  language={language}
+                  multiSelect={true}
+                />
+                <div className="flex gap-2 mt-4">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowBulkContractType(false)}>
+                    {t('Annuleren', 'Annuler', 'Cancel')}
+                  </Button>
+                  <Button className="flex-1" onClick={handleBulkSetContractType} disabled={bulkContractTypes.size === 0}>
+                    {t('Opslaan', 'Enregistrer', 'Save')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </ClubPageLayout>
