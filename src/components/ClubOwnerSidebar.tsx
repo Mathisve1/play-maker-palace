@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useActionCount } from '@/hooks/useActionCount';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut, Moon, Sun,
+  LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut,
   Search, User, Settings, MessageCircle, Bell, ShieldAlert, Ticket, Handshake,
   CreditCard, Award, Heart, ChevronDown, HelpCircle, Sparkles,
 } from 'lucide-react';
