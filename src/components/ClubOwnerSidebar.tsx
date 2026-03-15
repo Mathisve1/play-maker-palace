@@ -162,51 +162,36 @@ const ClubOwnerSidebar = ({
       <SidebarFooter className="p-3">
         <SidebarMenu>
           {/* Compact settings row */}
-          {(onOpenProfile || onOpenSettings || onOpenMembers) && (
+          {onOpenProfile && (
             <SidebarMenuItem>
-              <div className="flex items-center gap-1 px-2 py-1">
-                {onOpenProfile && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
-                        <User className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">{t3('Mijn profiel', 'Mon profil', 'My profile')}</TooltipContent>
-                  </Tooltip>
-                )}
-                {onOpenMembers && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
-                        <Users className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">{t3('Leden', 'Membres', 'Members')}</TooltipContent>
-                  </Tooltip>
-                )}
-                {onOpenSettings && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button onClick={() => { onOpenSettings(); setOpenMobile(false); }} className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
-                        <Settings className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">{t3('Instellingen', 'Paramètres', 'Settings')}</TooltipContent>
-                  </Tooltip>
-                )}
-                <div className="flex-1" />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button onClick={toggleTheme} className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
-                      {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">{theme === 'dark' ? t3('Licht thema', 'Thème clair', 'Light mode') : t3('Donker thema', 'Thème sombre', 'Dark mode')}</TooltipContent>
-                </Tooltip>
-              </div>
+              <SidebarMenuButton onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="min-h-[40px]">
+                <User className="w-4 h-4" />
+                <span>{t3('Mijn profiel', 'Mon profil', 'My profile')}</span>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           )}
+          {onOpenMembers && (
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="min-h-[40px]">
+                <Users className="w-4 h-4" />
+                <span>{t3('Leden', 'Membres', 'Members')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+          {onOpenSettings && (
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => { onOpenSettings(); setOpenMobile(false); }} className="min-h-[40px]">
+                <Settings className="w-4 h-4" />
+                <span>{t3('Instellingen', 'Paramètres', 'Settings')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={toggleTheme} className="min-h-[40px]">
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              <span>{theme === 'dark' ? t3('Licht thema', 'Thème clair', 'Light mode') : t3('Donker thema', 'Thème sombre', 'Dark mode')}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onLogout} className="min-h-[48px] text-destructive hover:text-destructive">
               <LogOut className="w-5 h-5" />
