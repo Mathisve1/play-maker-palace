@@ -214,11 +214,13 @@ const MyClubs = () => {
         </div>
       </div>
 
-      {profileOpen && (
+      {profileOpen && userId && (
         <EditProfileDialog
           open={profileOpen}
           onOpenChange={setProfileOpen}
           onProfileUpdated={(p) => updateProfile(p)}
+          userId={userId}
+          language={language}
         />
       )}
     </DashboardLayout>
