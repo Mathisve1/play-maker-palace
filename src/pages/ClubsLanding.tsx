@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEOHead from '@/components/SEOHead';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import {
@@ -156,6 +157,11 @@ const ClubsLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Beheer vrijwilligers professioneel | De 12e Man"
+        description="Digitaal vrijwilligersbeheer voor sportclubs. Seizoenscontracten, compliance, planning en meer — alles in één platform."
+        canonical="/clubs"
+      />
       <Navbar />
 
       {/* Hero */}

@@ -12,3 +12,10 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /billing
+Disallow: /audit-log
+Disallow: /stress-test
+Disallow: /sepa-payouts
+
+Sitemap: https://play-maker-palace.lovable.app/sitemap.xml

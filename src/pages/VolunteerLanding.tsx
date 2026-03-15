@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from 'react';
+import SEOHead from '@/components/SEOHead';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import { Search, FileSignature, Smartphone, CreditCard, Shield, MapPin, Clock, CheckCircle, ArrowRight, Users, Star, Sparkles } from 'lucide-react';
@@ -116,6 +117,11 @@ const VolunteerLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Vind vrijwilligerswerk bij jouw sportclub | De 12e Man"
+        description="De 12e Man koppelt vrijwilligers aan sportclubs in België. Vind taken, teken contracten en word beloond voor je inzet."
+        canonical="/"
+      />
       <Navbar />
 
       {/* Hero */}
