@@ -3177,6 +3177,7 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           email: string | null
+          first_tour_seen: boolean | null
           full_name: string | null
           id: string
           in_app_notifications_enabled: boolean
@@ -3207,6 +3208,7 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
+          first_tour_seen?: boolean | null
           full_name?: string | null
           id: string
           in_app_notifications_enabled?: boolean
@@ -3237,6 +3239,7 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
+          first_tour_seen?: boolean | null
           full_name?: string | null
           id?: string
           in_app_notifications_enabled?: boolean
