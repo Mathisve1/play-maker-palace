@@ -74,7 +74,7 @@ const PushPermissionBanner = () => {
   if (!visible || dismissed) return null;
 
   return (
-    <div className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto animate-in fade-in slide-in-from-top-2 duration-300">
+    <div className="fixed bottom-4 left-4 right-4 z-[60] max-w-md mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="bg-card border border-border rounded-2xl shadow-elevated p-4 flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
           <Bell className="w-5 h-5 text-primary" />

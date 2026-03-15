@@ -13,6 +13,7 @@ interface Member {
   role: ClubRole;
   membership_id?: string;
   profile?: { full_name: string | null; email: string | null };
+  isPending?: boolean;
   contractTypes?: ContractTypeKey[];
 }
 
@@ -110,18 +111,35 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
         .select('id, full_name, email')
         .in('id', userIds);
 
+      // Fetch pending invitations to get emails for members without profiles
+      const { data: allInvitations } = await supabase
+        .from('club_invitations')
+        .select('email, status')
+        .eq('club_id', clubId);
+
       const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+      
       setMembers(
         membersData.map(m => {
           const prof = profileMap.get(m.user_id);
           const msId = membershipMap.get(m.user_id);
+          const hasName = prof?.full_name;
+          const hasEmail = prof?.email;
+          // If no profile name or email, try to find from accepted invitations
+          const invEmail = !hasEmail
+            ? (allInvitations || []).find(i => i.status === 'accepted' && i.email)?.email
+            : null;
+          const displayEmail = hasEmail || invEmail || null;
+          const isPending = !hasName && !hasEmail;
           return {
             ...m,
             role: m.role as ClubRole,
             membership_id: msId,
-            profile: prof
-              ? { full_name: prof.full_name || prof.email || null, email: prof.email }
-              : { full_name: null, email: null },
+            profile: {
+              full_name: hasName || null,
+              email: displayEmail,
+            },
+            isPending,
             contractTypes: msId ? contractTypeMap.get(msId) || [] : [],
           };
         })
@@ -458,12 +476,19 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
                   <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
                     {(member.profile?.full_name || member.profile?.email || '?')[0].toUpperCase()}
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {member.profile?.full_name || t3('Onbekend', 'Inconnu', 'Unknown')}
-                      {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">({t3('jij', 'vous', 'you')})</span>}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">{member.profile?.email}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {member.profile?.full_name || member.profile?.email || t3('Onbekend', 'Inconnu', 'Unknown')}
+                        {member.user_id === currentUserId && <span className="text-muted-foreground ml-1">({t3('jij', 'vous', 'you')})</span>}
+                        {member.isPending && (
+                          <span className="ml-2 inline-flex px-1.5 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-600 font-medium">
+                            {t3('Uitnodiging in afwachting', 'Invitation en attente', 'Invitation pending')}
+                          </span>
+                        )}
+                      </p>
+                      {member.profile?.email && member.profile?.full_name && (
+                        <p className="text-xs text-muted-foreground truncate">{member.profile.email}</p>
+                      )}
                     {member.contractTypes && member.contractTypes.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {member.contractTypes.map(ct => (
