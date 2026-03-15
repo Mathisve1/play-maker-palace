@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag, AlertCircle, BarChart3, Download } from 'lucide-react';
+import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star, Tag, AlertCircle, BarChart3, Download, MessageCircle, Eye } from 'lucide-react';
+import BulkMessageDialog from '@/components/BulkMessageDialog';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
@@ -33,10 +34,12 @@ interface VolunteerRow {
   review_count: number;
   memberContractTypes: ContractTypeKey[];
   membership_id: string | null;
+  joined_at: string | null;
+  task_count: number;
 }
 
 const VolunteerManagement = () => {
-  const { clubId } = useClubContext();
+  const { clubId, clubInfo, userId } = useClubContext();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
@@ -47,11 +50,14 @@ const VolunteerManagement = () => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [activeSeason, setActiveSeason] = useState<{ id: string; name: string } | null>(null);
+  const [filterTaskCount, setFilterTaskCount] = useState<string>('all');
+  const [filterJoinDate, setFilterJoinDate] = useState<string>('all');
 
   // Dialogs
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [showSendContract, setShowSendContract] = useState(false);
   const [showBulkContractType, setShowBulkContractType] = useState(false);
+  const [showBulkMessage, setShowBulkMessage] = useState(false);
   const [bulkContractTypes, setBulkContractTypes] = useState<Set<ContractTypeKey>>(new Set());
   const [filterMemberType, setFilterMemberType] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -106,14 +112,15 @@ const VolunteerManagement = () => {
     }
 
     // Parallel: contracts, templates, check-ins, club members, memberships
-    const [contractsRes, templatesRes, checkInsRes, membersRes, membershipsRes] = await Promise.all([
+    const [contractsRes, templatesRes, checkInsRes, membersRes, membershipsRes, taskSignupsRes] = await Promise.all([
       supabase.from('season_contracts').select('id, volunteer_id, status, template_id, signing_url, signed_at').eq('club_id', clubId),
       supabase.from('season_contract_templates').select('id, name, category').or(`club_id.eq.${clubId},is_system.eq.true`),
       season
         ? supabase.from('season_checkins').select('volunteer_id, season_contract_id').eq('club_id', clubId)
         : Promise.resolve({ data: [] as any[] }),
       supabase.from('club_members').select('user_id').eq('club_id', clubId),
-      supabase.from('club_memberships').select('id, volunteer_id').eq('club_id', clubId),
+      supabase.from('club_memberships').select('id, volunteer_id, joined_at').eq('club_id', clubId),
+      supabase.from('task_signups').select('volunteer_id, task_id, status').eq('status', 'completed'),
     ]);
 
     const contracts = contractsRes.data || [];
@@ -121,9 +128,16 @@ const VolunteerManagement = () => {
     const checkIns = (checkInsRes as any).data || [];
     const members = membersRes.data || [];
     const memberships = membershipsRes.data || [];
+    const taskSignups = (taskSignupsRes.data || []) as any[];
 
-    // Map volunteer_id -> membership_id
-    const membershipMap = new Map(memberships.map(m => [m.volunteer_id, m.id]));
+    // Map volunteer_id -> membership (with joined_at)
+    const membershipMap = new Map(memberships.map(m => [m.volunteer_id, { id: m.id, joined_at: (m as any).joined_at }]));
+
+    // Count completed tasks per volunteer
+    const taskCounts: Record<string, number> = {};
+    taskSignups.forEach((ts: any) => {
+      taskCounts[ts.volunteer_id] = (taskCounts[ts.volunteer_id] || 0) + 1;
+    });
 
     // Fetch member_contract_types
     const msIds = memberships.map(m => m.id);
@@ -189,7 +203,8 @@ const VolunteerManagement = () => {
 
       const count = checkInCounts[p.id] || 0;
       const rd = ratingData[p.id];
-      const msId = membershipMap.get(p.id) || null;
+      const ms = membershipMap.get(p.id) || null;
+      const msId = ms?.id || null;
 
       return {
         id: p.id,
@@ -203,6 +218,8 @@ const VolunteerManagement = () => {
         review_count: rd?.count || 0,
         memberContractTypes: msId ? ctMap.get(msId) || [] : [],
         membership_id: msId,
+        joined_at: ms?.joined_at || null,
+        task_count: taskCounts[p.id] || 0,
       };
     });
 
@@ -224,6 +241,7 @@ const VolunteerManagement = () => {
   };
 
   const filtered = useMemo(() => {
+    const now = Date.now();
     return volunteers.filter(v => {
       if (search && !v.full_name.toLowerCase().includes(search.toLowerCase()) && !v.email.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && !v.contracts.some(c => c.category === filterCategory)) return false;
@@ -233,9 +251,22 @@ const VolunteerManagement = () => {
       if (filterStatus === 'no_contract' && v.contracts.some(c => c.status === 'signed')) return false;
       if (filterStatus === 'paying' && !v.is_paying) return false;
       if (filterStatus === 'trial' && v.is_paying) return false;
+      // Task count filter
+      if (filterTaskCount === 'none' && v.task_count > 0) return false;
+      if (filterTaskCount === '1-5' && (v.task_count < 1 || v.task_count > 5)) return false;
+      if (filterTaskCount === '5+' && v.task_count < 5) return false;
+      // Join date filter
+      if (filterJoinDate !== 'all' && v.joined_at) {
+        const joinMs = now - new Date(v.joined_at).getTime();
+        const days = joinMs / (1000 * 60 * 60 * 24);
+        if (filterJoinDate === 'week' && days > 7) return false;
+        if (filterJoinDate === 'month' && days > 30) return false;
+        if (filterJoinDate === '3months' && days > 90) return false;
+        if (filterJoinDate === 'older' && days <= 90) return false;
+      } else if (filterJoinDate !== 'all' && !v.joined_at) return false;
       return true;
     });
-  }, [volunteers, search, filterCategory, filterStatus, filterMemberType]);
+  }, [volunteers, search, filterCategory, filterStatus, filterMemberType, filterTaskCount, filterJoinDate]);
 
   const stats = useMemo(() => ({
     total: volunteers.length,
@@ -263,6 +294,33 @@ const VolunteerManagement = () => {
   const openSendDialog = (ids?: string[]) => {
     if (ids) setSelectedIds(new Set(ids));
     setShowSendContract(true);
+  };
+
+  const downloadCsv = (vols: VolunteerRow[], filename: string) => {
+    const clubName = clubInfo?.name || 'Club';
+    const header = [
+      t('Naam', 'Nom', 'Name'),
+      t('E-mail', 'E-mail', 'Email'),
+      'Status',
+      t('Taken voltooid', 'Tâches terminées', 'Tasks completed'),
+      t('Lid sinds', 'Membre depuis', 'Member since'),
+      'Club',
+    ].join(',');
+    const rows = vols.map(v => {
+      const status = v.contracts.length === 0
+        ? t('Geen contract', 'Pas de contrat', 'No contract')
+        : v.contracts.every(c => c.status === 'signed')
+          ? t('Getekend', 'Signé', 'Signed')
+          : t('In afwachting', 'En attente', 'Pending');
+      const joined = v.joined_at ? new Date(v.joined_at).toLocaleDateString() : '-';
+      return [`"${v.full_name}"`, v.email, `"${status}"`, v.task_count, joined, `"${clubName}"`].join(',');
+    });
+    const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    toast.success(t('CSV geëxporteerd', 'CSV exporté', 'CSV exported'));
   };
 
   const handleBulkSetContractType = async () => {
@@ -324,27 +382,24 @@ const VolunteerManagement = () => {
                   <Send className="w-4 h-4" />
                   {t(`Contract versturen (${selectedIds.size})`, `Envoyer contrat (${selectedIds.size})`, `Send contract (${selectedIds.size})`)}
                 </Button>
+                <Button variant="outline" onClick={() => setShowBulkMessage(true)} className="gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  {t('Stuur bericht', 'Envoyer message', 'Send message')}
+                </Button>
                 <Button variant="outline" onClick={() => setShowBulkContractType(true)} className="gap-2">
                   <Tag className="w-4 h-4" />
                   {t('Stel contracttype in', 'Définir type', 'Set contract type')}
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const selVols = filtered.filter(v => selectedIds.has(v.id));
+                  downloadCsv(selVols, 'vrijwilligers-selectie.csv');
+                }} className="gap-1.5">
+                  <Download className="w-4 h-4" />
+                  {t('Exporteer selectie', 'Exporter sélection', 'Export selection')}
+                </Button>
               </>
             )}
-            <Button variant="outline" size="sm" onClick={() => {
-              const header = ['Naam', 'E-mail', 'Contracttype(s)', 'Contractstatus', 'Aantal check-ins', 'Gemiddelde beoordeling'].join(',');
-              const rows = filtered.map(v => {
-                const types = v.contracts.map(c => categoryLabels[c.category] || c.template_name).join('; ') || '-';
-                const status = v.contracts.length === 0 ? 'Geen' : v.contracts.every(c => c.status === 'signed') ? 'Getekend' : 'In afwachting';
-                const rating = v.avg_rating !== null ? v.avg_rating.toFixed(1) : '-';
-                return [v.full_name, v.email, `"${types}"`, status, v.check_in_count, rating].join(',');
-              });
-              const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url; a.download = 'vrijwilligers.csv'; a.click();
-              URL.revokeObjectURL(url);
-              toast.success(t('CSV geëxporteerd', 'CSV exporté', 'CSV exported'));
-            }} className="gap-1.5">
+            <Button variant="outline" size="sm" onClick={() => downloadCsv(filtered, 'vrijwilligers.csv')} className="gap-1.5">
               <Download className="w-4 h-4" />
               {t('Exporteer lijst', 'Exporter la liste', 'Export list')}
             </Button>
@@ -426,6 +481,30 @@ const VolunteerManagement = () => {
               <SelectItem value="no_contract">{t('Zonder geldig contract', 'Sans contrat valide', 'Without valid contract')}</SelectItem>
               <SelectItem value="paying">{t('Actief (≥4x)', 'Actif (≥4x)', 'Active (≥4x)')}</SelectItem>
               <SelectItem value="trial">{t('Proefperiode', 'Essai', 'Trial')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterTaskCount} onValueChange={setFilterTaskCount}>
+            <SelectTrigger className="w-full md:w-44">
+              <SelectValue placeholder={t('Taken', 'Tâches', 'Tasks')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('Alle taken', 'Toutes les tâches', 'All tasks')}</SelectItem>
+              <SelectItem value="none">{t('Geen taken', 'Aucune tâche', 'No tasks')}</SelectItem>
+              <SelectItem value="1-5">1-5 {t('taken', 'tâches', 'tasks')}</SelectItem>
+              <SelectItem value="5+">5+ {t('taken', 'tâches', 'tasks')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterJoinDate} onValueChange={setFilterJoinDate}>
+            <SelectTrigger className="w-full md:w-48">
+              <CalendarDays className="w-4 h-4 mr-2" />
+              <SelectValue placeholder={t('Lid sinds', 'Membre depuis', 'Member since')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('Alle', 'Tous', 'All')}</SelectItem>
+              <SelectItem value="week">{t('Laatste week', 'Dernière semaine', 'Last week')}</SelectItem>
+              <SelectItem value="month">{t('Laatste maand', 'Dernier mois', 'Last month')}</SelectItem>
+              <SelectItem value="3months">{t('Laatste 3 maanden', '3 derniers mois', 'Last 3 months')}</SelectItem>
+              <SelectItem value="older">{t('Langer geleden', 'Plus ancien', 'Older')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -562,6 +641,17 @@ const VolunteerManagement = () => {
                     <span className="hidden lg:inline">{t('Contract', 'Contrat', 'Contract')}</span>
                   </Button>
 
+                  {/* View profile button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 gap-1.5 text-xs"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/volunteer/${vol.id}`); }}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span className="hidden lg:inline">{t('Profiel', 'Profil', 'Profile')}</span>
+                  </Button>
+
                   {/* Navigate hint */}
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 hidden sm:block" />
                 </div>
@@ -645,6 +735,16 @@ const VolunteerManagement = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Bulk message dialog */}
+          {showBulkMessage && userId && (
+            <BulkMessageDialog
+              clubId={clubId}
+              clubOwnerId={userId}
+              onClose={() => setShowBulkMessage(false)}
+              preselectedVolunteers={filtered.filter(v => selectedIds.has(v.id)).map(v => ({ id: v.id, full_name: v.full_name, email: v.email }))}
+            />
           )}
         </>
       )}
