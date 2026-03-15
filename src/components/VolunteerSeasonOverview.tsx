@@ -63,6 +63,7 @@ const VolunteerSeasonOverview = ({ userId, language }: SeasonOverviewProps) => {
   const [stats, setStats] = useState({ totalTasks: 0, totalHours: 0, totalEarned: 0, clubs: 0 });
   const [monthlyData, setMonthlyData] = useState<MonthData[]>([]);
   const [badges, setBadges] = useState<BadgeData[]>([]);
+  const [sepaPayments, setSepaPayments] = useState<SepaPaymentItem[]>([]);
   const [showGdpr, setShowGdpr] = useState(false);
 
   const season = getSeasonRange();
