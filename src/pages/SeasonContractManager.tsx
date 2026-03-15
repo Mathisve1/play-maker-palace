@@ -9,8 +9,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   CalendarDays, Send, FileSignature, Download, CheckCircle, Clock,
-  Users, Plus, Loader2, Edit3, AlertCircle
+  Users, Plus, Loader2, Edit3, AlertCircle, CreditCard
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
 import SendSeasonContractDialog from '@/components/SendSeasonContractDialog';
@@ -37,6 +38,10 @@ const SeasonContractManager = () => {
   // Dialogs
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [showSendContract, setShowSendContract] = useState(false);
+  const [showBillingModal, setShowBillingModal] = useState(false);
+
+  // Billing
+  const [billing, setBilling] = useState<any>(null);
 
   const categoryLabels: Record<string, string> = {
     steward: 'Steward',
@@ -61,16 +66,22 @@ const SeasonContractManager = () => {
   }, []);
 
   const loadData = async (cId: string) => {
-    // Load active season
-    const { data: season } = await supabase
-      .from('seasons')
-      .select('*')
-      .eq('club_id', cId)
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
-    setActiveSeason(season);
+    // Load active season + billing in parallel
+    const [seasonRes, billingRes] = await Promise.all([
+      supabase.from('seasons').select('*').eq('club_id', cId).eq('is_active', true).limit(1).maybeSingle(),
+      supabase.from('club_billing').select('*').eq('club_id', cId).maybeSingle(),
+    ]);
 
+    setActiveSeason(seasonRes.data);
+
+    if (!billingRes.data) {
+      const { data: newBilling } = await supabase.from('club_billing').insert({ club_id: cId }).select().single();
+      setBilling(newBilling);
+    } else {
+      setBilling(billingRes.data);
+    }
+
+    const season = seasonRes.data;
     if (!season) return;
 
     // Load contract stats per template category
@@ -134,6 +145,39 @@ const SeasonContractManager = () => {
       const { data: profiles } = await supabase.from('profiles').select('id, full_name, email, avatar_url').in('id', memberIds);
       setVolunteers(profiles || []);
     }
+  };
+
+  const isFreeTrialExhausted = billing && billing.free_contracts_used >= billing.free_contracts_limit;
+
+  const handleSendClick = () => {
+    if (isFreeTrialExhausted) {
+      setShowBillingModal(true);
+    } else {
+      setShowSendContract(true);
+    }
+  };
+
+  const handleAcceptBilling = async () => {
+    if (!clubId || !activeSeason) return;
+    // Log billing events for each selected volunteer
+    for (const volId of selectedVols) {
+      await supabase.from('billing_events').insert({
+        club_id: clubId,
+        event_type: 'paid_contract_created',
+        volunteer_id: volId,
+        season_id: activeSeason.id,
+        amount_cents: billing?.volunteer_price_cents || 1500,
+      });
+    }
+    // Update billing counts
+    await supabase.from('club_billing')
+      .update({
+        current_season_volunteers_billed: (billing?.current_season_volunteers_billed || 0) + selectedVols.size,
+      })
+      .eq('club_id', clubId);
+
+    setShowBillingModal(false);
+    setShowSendContract(true);
   };
 
   const volunteersWithoutContract = useMemo(
@@ -246,7 +290,7 @@ const SeasonContractManager = () => {
                       <Button
                         size="sm"
                         disabled={selectedVols.size === 0}
-                        onClick={() => setShowSendContract(true)}
+                        onClick={handleSendClick}
                       >
                         <Send className="w-4 h-4 mr-1" />
                         {t(`Verstuur (${selectedVols.size})`, `Envoyer (${selectedVols.size})`, `Send (${selectedVols.size})`)}
@@ -358,6 +402,50 @@ const SeasonContractManager = () => {
           )}
         </>
       )}
+
+      {/* Billing upgrade modal */}
+      <Dialog open={showBillingModal} onOpenChange={setShowBillingModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" />
+              {t('Gratis testperiode verlopen', 'Période d\'essai expirée', 'Free trial expired')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-xl p-4 text-sm">
+              <p className="text-foreground font-medium mb-2">
+                {t(
+                  `Je hebt ${billing?.free_contracts_limit || 2} gratis contracten gebruikt.`,
+                  `Vous avez utilisé ${billing?.free_contracts_limit || 2} contrats gratuits.`,
+                  `You've used ${billing?.free_contracts_limit || 2} free contracts.`
+                )}
+              </p>
+              <p className="text-muted-foreground">
+                {t(
+                  `Wil je doorgaan voor €${((billing?.volunteer_price_cents || 1500) / 100).toFixed(2)} per vrijwilliger dit seizoen? Facturatie gebeurt maandelijks op de 1e.`,
+                  `Continuer pour €${((billing?.volunteer_price_cents || 1500) / 100).toFixed(2)} par bénévole cette saison? Facturation mensuelle le 1er.`,
+                  `Continue for €${((billing?.volunteer_price_cents || 1500) / 100).toFixed(2)} per volunteer this season? Billed monthly on the 1st.`
+                )}
+              </p>
+            </div>
+            <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
+              <p className="text-sm font-medium text-foreground">
+                {selectedVols.size} {t('vrijwilligers', 'bénévoles', 'volunteers')} × €{((billing?.volunteer_price_cents || 1500) / 100).toFixed(2)} = <span className="text-primary font-bold">€{((selectedVols.size * (billing?.volunteer_price_cents || 1500)) / 100).toFixed(2)}</span>
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBillingModal(false)}>
+              {t('Annuleren', 'Annuler', 'Cancel')}
+            </Button>
+            <Button onClick={handleAcceptBilling}>
+              <CreditCard className="w-4 h-4 mr-1" />
+              {t('Akkoord & verstuur', 'Accepter & envoyer', 'Accept & send')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ClubPageLayout>
   );
 };

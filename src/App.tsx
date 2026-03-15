@@ -66,6 +66,7 @@ const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
 const AuditLog = lazy(() => import("./pages/AuditLog"));
 const SeasonContractManager = lazy(() => import("./pages/SeasonContractManager"));
 const ContractTemplates = lazy(() => import("./pages/ContractTemplates"));
+const BillingDashboard = lazy(() => import("./pages/BillingDashboard"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -116,6 +117,7 @@ const App = () => {
             <Route path="/contract-builder" element={<RequireAuth redirectTo="/club-login"><ContractBuilder /></RequireAuth>} />
             <Route path="/contract-templates" element={<RequireAuth redirectTo="/club-login"><ContractTemplates /></RequireAuth>} />
             <Route path="/season-contracts" element={<RequireAuth redirectTo="/club-login"><SeasonContractManager /></RequireAuth>} />
+            <Route path="/billing" element={<RequireAuth redirectTo="/club-login"><BillingDashboard /></RequireAuth>} />
             <Route path="/briefing-builder" element={<RequireAuth redirectTo="/club-login"><BriefingBuilder /></RequireAuth>} />
             <Route path="/compliance" element={<RequireAuth redirectTo="/club-login"><ComplianceDashboard /></RequireAuth>} />
             <Route path="/loyalty" element={<RequireAuth redirectTo="/club-login"><LoyaltyPrograms /></RequireAuth>} />
