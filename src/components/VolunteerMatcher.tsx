@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, UserCheck, Send, Star, Clock, Award, CheckCircle } from 'lucide-react';
+import { Loader2, UserCheck, Send, Star, Clock, Award, CheckCircle, AlertCircle, FileSignature } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TaskForMatch {
   id: string;
@@ -31,6 +32,7 @@ interface MatchedVolunteer {
   availabilityMatch: boolean;
   skillMatch: string[];
   pastTasks: number;
+  contractStatus: 'signed' | 'pending' | 'none';
 }
 
 const labels = {
@@ -47,6 +49,10 @@ const labels = {
     tasks: 'taken',
     matchScore: 'Match',
     sending: 'E-mail wordt verstuurd...',
+    contractOk: 'Contract OK',
+    contractPending: 'Contract in behandeling',
+    noContract: 'Geen contract',
+    noContractTooltip: 'Vrijwilliger heeft nog geen seizoenscontract',
   },
   fr: {
     title: 'Chercher des Bénévoles',
@@ -61,6 +67,10 @@ const labels = {
     tasks: 'tâches',
     matchScore: 'Match',
     sending: "L'email est envoyé...",
+    contractOk: 'Contrat OK',
+    contractPending: 'Contrat en cours',
+    noContract: 'Pas de contrat',
+    noContractTooltip: 'Le bénévole n\'a pas encore de contrat saisonnier',
   },
   en: {
     title: 'Find Volunteers',
@@ -75,6 +85,10 @@ const labels = {
     tasks: 'tasks',
     matchScore: 'Match',
     sending: 'Sending email...',
+    contractOk: 'Contract OK',
+    contractPending: 'Contract pending',
+    noContract: 'No contract',
+    noContractTooltip: 'Volunteer does not have a season contract yet',
   },
 };
 
@@ -112,13 +126,14 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
       const volunteerIds = (memberships || []).map((m: any) => m.volunteer_id);
       if (volunteerIds.length === 0) { setLoading(false); return; }
 
-      // 2. Parallel: profiles, availability, skills, past signups, existing signups for this task
-      const [profilesRes, availRes, skillsRes, signupsRes, existingSignups] = await Promise.all([
+      // 2. Parallel: profiles, availability, skills, past signups, existing signups, season contracts
+      const [profilesRes, availRes, skillsRes, signupsRes, existingSignups, contractsRes] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email, avatar_url').in('id', volunteerIds),
         supabase.from('volunteer_availability').select('*').in('volunteer_id', volunteerIds),
         supabase.from('volunteer_skills').select('user_id, skill_name').in('user_id', volunteerIds),
         supabase.from('task_signups').select('volunteer_id, task_id').in('volunteer_id', volunteerIds).eq('status', 'assigned'),
         supabase.from('task_signups').select('volunteer_id, status').eq('task_id', task.id),
+        supabase.from('season_contracts').select('volunteer_id, status').eq('club_id', task.club_id),
       ]);
 
       const profiles = profilesRes.data || [];
@@ -126,6 +141,16 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
       const skills = (skillsRes.data || []) as any[];
       const pastSignups = (signupsRes.data || []) as any[];
       const alreadySignedUp = new Set((existingSignups.data || []).map((s: any) => s.volunteer_id));
+      const seasonContracts = (contractsRes.data || []) as any[];
+
+      // Build contract status map per volunteer
+      const contractStatusMap = new Map<string, 'signed' | 'pending' | 'none'>();
+      volunteerIds.forEach(vid => contractStatusMap.set(vid, 'none'));
+      seasonContracts.forEach((sc: any) => {
+        const current = contractStatusMap.get(sc.volunteer_id);
+        if (sc.status === 'signed') contractStatusMap.set(sc.volunteer_id, 'signed');
+        else if (current !== 'signed' && (sc.status === 'sent' || sc.status === 'pending')) contractStatusMap.set(sc.volunteer_id, 'pending');
+      });
 
       // Already invited
       const alreadyInvited = new Set(
@@ -180,6 +205,7 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
             availabilityMatch: availMatch,
             skillMatch: matchingSkills,
             pastTasks: pastCount,
+            contractStatus: contractStatusMap.get(p.id) || 'none',
           };
         })
         .sort((a, b) => b.matchScore - a.matchScore);
@@ -291,6 +317,23 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
                         </Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
+                        {/* Contract status badge */}
+                        {vol.contractStatus === 'signed' ? (
+                          <Badge className="text-[10px] bg-green-500/10 text-green-700 dark:text-green-400 border-0">
+                            <CheckCircle className="w-3 h-3 mr-0.5" />
+                            {l.contractOk}
+                          </Badge>
+                        ) : vol.contractStatus === 'pending' ? (
+                          <Badge className="text-[10px] bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-0">
+                            <Clock className="w-3 h-3 mr-0.5" />
+                            {l.contractPending}
+                          </Badge>
+                        ) : (
+                          <Badge className="text-[10px] bg-destructive/10 text-destructive border-0">
+                            <AlertCircle className="w-3 h-3 mr-0.5" />
+                            {l.noContract}
+                          </Badge>
+                        )}
                         {vol.availabilityMatch && (
                           <Badge variant="secondary" className="text-[10px]">
                             <Clock className="w-3 h-3 mr-0.5" />
@@ -322,11 +365,25 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
                           <CheckCircle className="w-3.5 h-3.5 mr-1" />
                           {l.invited}
                         </Badge>
+                      ) : vol.contractStatus === 'none' ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span>
+                                <Button size="sm" disabled>
+                                  <AlertCircle className="w-3.5 h-3.5 mr-1" />{l.invite}
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>{l.noContractTooltip}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ) : (
                         <Button
                           size="sm"
                           onClick={() => handleInvite(vol)}
                           disabled={inviting === vol.id}
+                          variant={vol.contractStatus === 'pending' ? 'outline' : 'default'}
                         >
                           {inviting === vol.id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

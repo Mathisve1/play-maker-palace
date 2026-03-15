@@ -225,6 +225,7 @@ const VolunteerManagement = () => {
       if (filterMemberType !== 'all' && !v.memberContractTypes.includes(filterMemberType as ContractTypeKey)) return false;
       if (filterStatus === 'signed' && !v.contracts.some(c => c.status === 'signed')) return false;
       if (filterStatus === 'pending' && !v.contracts.some(c => c.status !== 'signed')) return false;
+      if (filterStatus === 'no_contract' && v.contracts.some(c => c.status === 'signed')) return false;
       if (filterStatus === 'paying' && !v.is_paying) return false;
       if (filterStatus === 'trial' && v.is_paying) return false;
       return true;
@@ -380,6 +381,7 @@ const VolunteerManagement = () => {
               <SelectItem value="all">{t('Alle', 'Tous', 'All')}</SelectItem>
               <SelectItem value="signed">{t('Getekend', 'Signé', 'Signed')}</SelectItem>
               <SelectItem value="pending">{t('In afwachting', 'En attente', 'Pending')}</SelectItem>
+              <SelectItem value="no_contract">{t('Zonder geldig contract', 'Sans contrat valide', 'Without valid contract')}</SelectItem>
               <SelectItem value="paying">{t('Actief (≥4x)', 'Actif (≥4x)', 'Active (≥4x)')}</SelectItem>
               <SelectItem value="trial">{t('Proefperiode', 'Essai', 'Trial')}</SelectItem>
             </SelectContent>

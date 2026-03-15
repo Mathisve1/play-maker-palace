@@ -233,6 +233,7 @@ const TaskDetail = () => {
   const [showSwapDialog, setShowSwapDialog] = useState(false);
   const [hasBriefing, setHasBriefing] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
+  const [contractStatus, setContractStatus] = useState<'signed' | 'pending' | 'none' | 'loading'>('loading');
 
   const l = labels[language];
 
@@ -268,6 +269,14 @@ const TaskDetail = () => {
       // Check if task has a briefing
       supabase.from('briefings').select('id').eq('task_id', id!).limit(1).then(({ data: briefData }) => {
         setHasBriefing(!!(briefData && briefData.length > 0));
+      });
+
+      // Check season contract status for this club
+      supabase.from('season_contracts').select('status').eq('volunteer_id', session.user.id).eq('club_id', taskData.club_id).then(({ data: scData }) => {
+        const contracts = scData || [];
+        if (contracts.some((c: any) => c.status === 'signed')) setContractStatus('signed');
+        else if (contracts.some((c: any) => c.status === 'sent' || c.status === 'pending')) setContractStatus('pending');
+        else setContractStatus('none');
       });
 
       // Count signups + waitlist + likes in parallel
@@ -550,6 +559,29 @@ const TaskDetail = () => {
       </header>
 
       <main className="px-4 py-6 pb-tab-bar max-w-3xl mx-auto">
+        {/* Contract warning banner */}
+        {contractStatus !== 'loading' && contractStatus !== 'signed' && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 flex items-start gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                {language === 'nl'
+                  ? `Je hebt nog geen geldig seizoenscontract voor ${task.clubs?.name || 'deze club'}. Je kunt je inschrijven maar de club moet je nog goedkeuren.`
+                  : language === 'fr'
+                  ? `Vous n'avez pas encore de contrat saisonnier valide pour ${task.clubs?.name || 'ce club'}. Vous pouvez vous inscrire mais le club doit encore vous approuver.`
+                  : `You don't have a valid season contract for ${task.clubs?.name || 'this club'} yet. You can sign up but the club still needs to approve you.`}
+              </p>
+              <button
+                onClick={() => navigate('/volunteer-dashboard?tab=contracts')}
+                className="mt-2 text-xs font-medium text-yellow-700 dark:text-yellow-300 hover:underline"
+              >
+                {language === 'nl' ? 'Bekijk mijn contracten →' : language === 'fr' ? 'Voir mes contrats →' : 'View my contracts →'}
+              </button>
+            </div>
+          </motion.div>
+        )}
         {/* Hero section */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex flex-wrap items-center gap-2 mb-3">
