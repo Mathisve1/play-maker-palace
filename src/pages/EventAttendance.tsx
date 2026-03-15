@@ -337,7 +337,7 @@ const EventAttendance = () => {
 
                         {/* Status chip */}
                         {isCheckedIn ? (
-                          <Badge className="bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20 text-xs gap-1">
+                          <Badge className="bg-accent/15 text-accent border-accent/20 text-xs gap-1">
                             <CheckCircle className="w-3 h-3" />{l.present}
                           </Badge>
                         ) : (
