@@ -6,6 +6,7 @@ import { useClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ShieldCheck, Clock, AlertTriangle, Search } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
+import PageNavTabs from '@/components/PageNavTabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Language } from '@/i18n/translations';
 import { Badge } from '@/components/ui/badge';
