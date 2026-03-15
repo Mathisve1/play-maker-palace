@@ -339,7 +339,16 @@ const VolunteerManagement = () => {
             </motion.div>
           ))}
         </div>
+        <Tabs defaultValue="list" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="list">{t('Vrijwilligers', 'Bénévoles', 'Volunteers')}</TabsTrigger>
+            <TabsTrigger value="season" className="gap-1.5">
+              <BarChart3 className="w-3.5 h-3.5" />
+              {t('Seizoensoverzicht', 'Aperçu saison', 'Season overview')}
+            </TabsTrigger>
+          </TabsList>
 
+          <TabsContent value="list" className="space-y-4">
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
