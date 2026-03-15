@@ -100,6 +100,7 @@ const EventsManager = () => {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
   const [bulkMessageEventId, setBulkMessageEventId] = useState<string | null>(null);
+  const [bulkMessageTask, setBulkMessageTask] = useState<{ id: string; title: string } | null>(null);
 
   // Adding task to group
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
