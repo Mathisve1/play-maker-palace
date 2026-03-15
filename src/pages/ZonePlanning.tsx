@@ -79,6 +79,7 @@ const zonePlanningLabels = {
     volunteerAssigned: 'Volunteer assigned!', assignmentRemoved: 'Assignment removed!',
     roleAssigned: 'Role assigned!', noRole: '— No role —', remove: 'Remove',
     taskNotFound: 'Task not found', unknown: 'Unknown',
+    volunteerOverview: 'Volunteer overview',
   },
 };
 
