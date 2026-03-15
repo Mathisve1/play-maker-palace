@@ -142,13 +142,32 @@ const VolunteerProfileDialog = ({
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [ratingInfo, setRatingInfo] = useState<{ avg: number; count: number } | null>(null);
   useEffect(() => {
-    if (!volunteer?.id || !open) { setCertificates([]); return; }
+    if (!volunteer?.id || !open) { setCertificates([]); setRatingInfo(null); return; }
     (async () => {
-      const { data } = await supabase
-        .from('volunteer_certificates')
-        .select('id, issue_date, score, type, training_id, club_id')
-        .eq('volunteer_id', volunteer.id)
-        .order('issue_date', { ascending: false });
+      // Fetch certificates and reviews in parallel
+      const [certRes, reviewRes] = await Promise.all([
+        supabase
+          .from('volunteer_certificates')
+          .select('id, issue_date, score, type, training_id, club_id')
+          .eq('volunteer_id', volunteer.id)
+          .order('issue_date', { ascending: false }),
+        (supabase as any)
+          .from('task_reviews')
+          .select('rating')
+          .eq('reviewee_id', volunteer.id),
+      ]);
+
+      // Process reviews
+      const reviews = (reviewRes.data || []) as { rating: number }[];
+      if (reviews.length > 0) {
+        const sum = reviews.reduce((s: number, r: { rating: number }) => s + r.rating, 0);
+        setRatingInfo({ avg: sum / reviews.length, count: reviews.length });
+      } else {
+        setRatingInfo(null);
+      }
+
+      // Process certificates
+      const data = certRes.data;
       if (data && data.length > 0) {
         const trainingIds = [...new Set(data.map(c => c.training_id))];
         const clubIds = [...new Set(data.map(c => c.club_id))];
