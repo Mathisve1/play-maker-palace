@@ -1422,6 +1422,11 @@ const ClubOwnerDashboard = () => {
           />
         </Suspense>
       )}
+      {showOnboarding && (
+        <Suspense fallback={null}>
+          <ClubOnboardingWizard onComplete={() => setShowOnboarding(false)} />
+        </Suspense>
+      )}
     </DashboardLayout>
   );
 };
