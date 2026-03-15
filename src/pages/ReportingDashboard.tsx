@@ -650,6 +650,59 @@ const ReportingDashboard = () => {
     return lines.join('\n');
   };
 
+  // ── AI summary generation ─────────────────────────────────────
+  const handleGenerateAiSummary = async () => {
+    if (aiSummaryLoading) return;
+    setAiSummaryLoading(true);
+    setAiSummaryError(false);
+    setAiSummary('');
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reporting-ai`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ question: L.aiSummaryPrompt, dataSummary: buildDataSummary() }),
+        }
+      );
+      if (!resp.ok) throw new Error('AI error');
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error('No reader');
+      const decoder = new TextDecoder();
+      let full = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+        for (const line of lines) {
+          const json = line.slice(6);
+          if (json === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(json);
+            const delta = parsed.choices?.[0]?.delta?.content || '';
+            full += delta;
+            setAiSummary(full);
+          } catch { /* skip */ }
+        }
+      }
+    } catch {
+      setAiSummaryError(true);
+    }
+    setAiSummaryLoading(false);
+  };
+
+  const handleCopyAiSummary = async () => {
+    await navigator.clipboard.writeText(aiSummary);
+    toast.success(L.aiSummaryCopied);
+  };
+
+  const handleAddSummaryToReport = () => {
+    // Store in localStorage for ReportBuilder to pick up
+    localStorage.setItem('report-ai-summary', aiSummary);
+    toast.success(L.aiSummaryAdded);
+  };
+
   // ── AI chat ───────────────────────────────────────────────────
   const handleAiQuestion = async () => {
     if (!aiQuestion.trim() || aiLoading) return;
