@@ -31,6 +31,7 @@ const BillingDashboard = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [seatInput, setSeatInput] = useState('');
   const [savingSeats, setSavingSeats] = useState(false);
+  const [contractTypeBreakdown, setContractTypeBreakdown] = useState<{ category: string; count: number; cost: number }[]>([]);
 
   useEffect(() => {
     const init = async () => {
