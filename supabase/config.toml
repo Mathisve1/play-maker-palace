@@ -45,3 +45,5 @@ project_id = "ebxpdscmebdmyqjwmpun"
     verify_jwt = false
   [functions.ticketing-webhook]
     verify_jwt = false
+  [functions.auto-send-season-contract]
+    verify_jwt = false
