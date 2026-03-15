@@ -67,6 +67,9 @@ const AuditLog = lazy(() => import("./pages/AuditLog"));
 const SeasonContractManager = lazy(() => import("./pages/SeasonContractManager"));
 const ContractTemplates = lazy(() => import("./pages/ContractTemplates"));
 const BillingDashboard = lazy(() => import("./pages/BillingDashboard"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -157,6 +160,9 @@ const App = () => {
             <Route path="/notifications" element={<RequireAuth><NotificationCenter /></RequireAuth>} />
             <Route path="/audit-log" element={<RequireAuth redirectTo="/club-login"><AuditLog /></RequireAuth>} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
