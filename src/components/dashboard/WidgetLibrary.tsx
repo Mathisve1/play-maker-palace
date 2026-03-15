@@ -19,6 +19,7 @@ const categoryLabels: Record<string, Record<string, string>> = {
   overview: { nl: 'Overzicht', en: 'Overview', fr: 'Aperçu' },
   shortcuts: { nl: 'Snelkoppelingen', en: 'Shortcuts', fr: 'Raccourcis' },
   activity: { nl: 'Activiteit', en: 'Activity', fr: 'Activité' },
+  season: { nl: 'Seizoen', en: 'Season', fr: 'Saison' },
 };
 
 const categoryEmoji: Record<string, string> = {
