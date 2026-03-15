@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus } from 'lucide-react';
+import { Users, Search, FileSignature, CheckCircle, Clock, UserCheck, Filter, Send, CalendarDays, ChevronRight, Plus, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import CreateSeasonDialog from '@/components/CreateSeasonDialog';
@@ -23,6 +23,8 @@ interface VolunteerRow {
   contracts: { id: string; status: string; category: string; template_name: string }[];
   check_in_count: number;
   is_paying: boolean;
+  avg_rating: number | null;
+  review_count: number;
 }
 
 const VolunteerManagement = () => {
@@ -125,14 +127,23 @@ const VolunteerManagement = () => {
       return;
     }
 
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, avatar_url')
-      .in('id', volunteerIds);
+    const [profilesRes, reviewsRes] = await Promise.all([
+      supabase.from('profiles').select('id, full_name, email, avatar_url').in('id', volunteerIds),
+      supabase.from('task_reviews' as any).select('reviewee_id, rating').eq('reviewer_role', 'club').in('reviewee_id', volunteerIds),
+    ]);
 
+    const profiles = profilesRes.data || [];
     const templateMap = new Map(templates.map(t => [t.id, t]));
 
-    const rows: VolunteerRow[] = (profiles || []).map(p => {
+    // Calculate avg ratings
+    const ratingData: Record<string, { sum: number; count: number }> = {};
+    ((reviewsRes.data || []) as any[]).forEach((r: any) => {
+      if (!ratingData[r.reviewee_id]) ratingData[r.reviewee_id] = { sum: 0, count: 0 };
+      ratingData[r.reviewee_id].sum += r.rating;
+      ratingData[r.reviewee_id].count += 1;
+    });
+
+    const rows: VolunteerRow[] = profiles.map(p => {
       const volContracts = contracts
         .filter(c => c.volunteer_id === p.id)
         .map(c => {
@@ -146,6 +157,7 @@ const VolunteerManagement = () => {
         });
 
       const count = checkInCounts[p.id] || 0;
+      const rd = ratingData[p.id];
 
       return {
         id: p.id,
@@ -155,6 +167,8 @@ const VolunteerManagement = () => {
         contracts: volContracts,
         check_in_count: count,
         is_paying: count >= 4,
+        avg_rating: rd ? rd.sum / rd.count : null,
+        review_count: rd?.count || 0,
       };
     });
 
@@ -357,9 +371,16 @@ const VolunteerManagement = () => {
                   </Avatar>
 
                   {/* Name & email */}
-                  <div className="min-w-0 flex-1">
+                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground truncate">{vol.full_name}</p>
                     <p className="text-xs text-muted-foreground truncate">{vol.email}</p>
+                    {vol.avg_rating !== null && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                        <span className="text-xs font-medium text-foreground">{vol.avg_rating.toFixed(1)}</span>
+                        <span className="text-[10px] text-muted-foreground">({vol.review_count})</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Contract badges */}

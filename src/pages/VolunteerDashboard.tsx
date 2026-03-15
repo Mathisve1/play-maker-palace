@@ -41,6 +41,7 @@ import ReferralSection from '@/components/ReferralSection';
 import SkillsPassport from '@/components/SkillsPassport';
 import MicroLearningsSection from '@/components/MicroLearningsSection';
 import AvailabilityCalendar from '@/components/AvailabilityCalendar';
+import TaskReviewDialog from '@/components/TaskReviewDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Task {
@@ -165,6 +166,8 @@ const VolunteerDashboard = () => {
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
   const [sepaPayouts, setSepaPayouts] = useState<SepaPayoutItem[]>([]);
   const [safetyPendingCount, setSafetyPendingCount] = useState(0);
+  const [pendingReviews, setPendingReviews] = useState<{ taskSignupId: string; taskTitle: string; clubName: string; clubOwnerId: string }[]>([]);
+  const [reviewTarget, setReviewTarget] = useState<{ taskSignupId: string; taskTitle: string; revieweeId: string } | null>(null);
 
   const [signupCounts, setSignupCounts] = useState<Record<string, number>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -397,6 +400,44 @@ const VolunteerDashboard = () => {
       }
 
       setLoading(false);
+
+      // Fetch pending reviews: completed tasks in last 14 days without a volunteer review
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      const { data: completedSignups } = await supabase
+        .from('task_signups')
+        .select('id, task_id, status')
+        .eq('volunteer_id', uid)
+        .eq('status', 'completed');
+
+      if (completedSignups && completedSignups.length > 0) {
+        const signupIds = completedSignups.map(s => s.id);
+        const completedTaskIds = completedSignups.map(s => s.task_id);
+
+        const [reviewsRes, reviewTasksRes] = await Promise.all([
+          supabase.from('task_reviews' as any).select('task_signup_id').in('task_signup_id', signupIds).eq('reviewer_role', 'volunteer'),
+          supabase.from('tasks').select('id, title, task_date, club_id, clubs(name, owner_id)').in('id', completedTaskIds),
+        ]);
+
+        const reviewedSignupIds = new Set((reviewsRes.data || []).map((r: any) => r.task_signup_id));
+        const reviewTaskMap = new Map((reviewTasksRes.data || []).map((t: any) => [t.id, t]));
+
+        const pending = completedSignups
+          .filter(s => !reviewedSignupIds.has(s.id))
+          .map(s => {
+            const task = reviewTaskMap.get(s.task_id) as any;
+            if (!task || (task.task_date && new Date(task.task_date) < fourteenDaysAgo)) return null;
+            return {
+              taskSignupId: s.id,
+              taskTitle: task.title,
+              clubName: task.clubs?.name || '',
+              clubOwnerId: task.clubs?.owner_id || '',
+            };
+          })
+          .filter(Boolean) as any[];
+
+        setPendingReviews(pending);
+      }
 
       // Check compliance – only prompt once per calendar month (first visit)
       const now = new Date();
@@ -1038,6 +1079,34 @@ const VolunteerDashboard = () => {
               className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring border border-border" />
           </div>
 
+          {/* Pending Reviews section (mine tab only) */}
+          {activeTab === 'mine' && pendingReviews.length > 0 && (
+            <div>
+              <h2 className="text-lg font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                {language === 'nl' ? 'Te beoordelen' : language === 'fr' ? 'À évaluer' : 'Pending reviews'}
+              </h2>
+              <div className="space-y-2">
+                {pendingReviews.map((pr) => (
+                  <motion.div key={pr.taskSignupId} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    className="bg-card rounded-2xl p-4 border border-yellow-200/50 dark:border-yellow-800/30 shadow-sm flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground truncate">{pr.taskTitle}</p>
+                      <p className="text-xs text-muted-foreground">{pr.clubName}</p>
+                    </div>
+                    <button
+                      onClick={() => setReviewTarget({ taskSignupId: pr.taskSignupId, taskTitle: pr.taskTitle, revieweeId: pr.clubOwnerId })}
+                      className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-colors flex items-center gap-1.5"
+                    >
+                      <Star className="w-3.5 h-3.5" />
+                      {language === 'nl' ? 'Beoordeel' : language === 'fr' ? 'Évaluer' : 'Review'}
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Events */}
           {filteredEvents.length > 0 && (
             <div>
@@ -1161,6 +1230,24 @@ const VolunteerDashboard = () => {
 
       {currentUserId && (
         <MonthlyComplianceDialog open={showComplianceDialog} onOpenChange={setShowComplianceDialog} userId={currentUserId} language={language} onCompleted={() => setShowComplianceDialog(false)} />
+      )}
+
+      {/* Task Review Dialog */}
+      {reviewTarget && currentUserId && (
+        <TaskReviewDialog
+          open={!!reviewTarget}
+          onOpenChange={(open) => { if (!open) setReviewTarget(null); }}
+          language={language}
+          taskSignupId={reviewTarget.taskSignupId}
+          taskTitle={reviewTarget.taskTitle}
+          reviewerId={currentUserId}
+          revieweeId={reviewTarget.revieweeId}
+          reviewerRole="volunteer"
+          onReviewed={() => {
+            setPendingReviews(prev => prev.filter(r => r.taskSignupId !== reviewTarget.taskSignupId));
+            setReviewTarget(null);
+          }}
+        />
       )}
     </DashboardLayout>
   );

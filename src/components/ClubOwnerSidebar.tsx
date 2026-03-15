@@ -36,6 +36,7 @@ const ClubOwnerSidebar = ({
   const { setOpenMobile } = useSidebar();
   const { language } = useLanguage();
   const [actionCount, setActionCount] = useState(0);
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
 
   const nav = (path: string) => { navigate(path); setOpenMobile(false); };
@@ -89,6 +90,32 @@ const ClubOwnerSidebar = ({
       }
 
       setActionCount(total);
+
+      // Pending reviews: completed signups for club's tasks without a club review
+      const { data: clubTasks } = await supabase.from('tasks').select('id').eq('club_id', clubId);
+      if (clubTasks && clubTasks.length > 0) {
+        const clubTaskIds = clubTasks.map((t: any) => t.id);
+        const { data: completedSignups } = await supabase
+          .from('task_signups')
+          .select('id')
+          .in('task_id', clubTaskIds)
+          .eq('status', 'completed');
+
+        if (completedSignups && completedSignups.length > 0) {
+          const sIds = completedSignups.map(s => s.id);
+          const { data: existingReviews } = await (supabase as any)
+            .from('task_reviews')
+            .select('task_signup_id')
+            .eq('reviewer_role', 'club')
+            .in('task_signup_id', sIds);
+          const reviewedIds = new Set((existingReviews || []).map((r: any) => r.task_signup_id));
+          setPendingReviewCount(sIds.filter(id => !reviewedIds.has(id)).length);
+        } else {
+          setPendingReviewCount(0);
+        }
+      } else {
+        setPendingReviewCount(0);
+      }
     };
     fetchCount();
 
@@ -113,7 +140,7 @@ const ClubOwnerSidebar = ({
   ];
 
   const managementItems = [
-    { label: t3('Vrijwilligers', 'Bénévoles', 'Volunteers'), icon: Users, path: '/volunteer-management' },
+    { label: t3('Vrijwilligers', 'Bénévoles', 'Volunteers'), icon: Users, path: '/volunteer-management', badge: pendingReviewCount },
     { label: t3('SEPA Vergoedingen', 'Indemnités SEPA', 'SEPA Payments'), icon: Banknote, path: '/sepa-payouts' },
     { label: t3('Contracten', 'Contrats', 'Contracts'), icon: FileText, path: '/contract-builder' },
     { label: 'Briefings', icon: ClipboardList, path: '/briefing-builder' },
@@ -178,7 +205,12 @@ const ClubOwnerSidebar = ({
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[48px]">
                     <item.icon className="w-5 h-5" />
-                    <span>{item.label}</span>
+                    <span className="flex-1">{item.label}</span>
+                    {'badge' in item && (item as any).badge > 0 && (
+                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center ml-auto">
+                        {(item as any).badge}
+                      </Badge>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

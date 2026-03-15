@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Mail, User, Calendar, Landmark, ShieldCheck, Award } from 'lucide-react';
+import { Mail, User, Calendar, Landmark, ShieldCheck, Award, Star } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -140,15 +140,34 @@ const VolunteerProfileDialog = ({
   signedUpAt,
 }: VolunteerProfileDialogProps) => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
-
+  const [ratingInfo, setRatingInfo] = useState<{ avg: number; count: number } | null>(null);
   useEffect(() => {
-    if (!volunteer?.id || !open) { setCertificates([]); return; }
+    if (!volunteer?.id || !open) { setCertificates([]); setRatingInfo(null); return; }
     (async () => {
-      const { data } = await supabase
-        .from('volunteer_certificates')
-        .select('id, issue_date, score, type, training_id, club_id')
-        .eq('volunteer_id', volunteer.id)
-        .order('issue_date', { ascending: false });
+      // Fetch certificates and reviews in parallel
+      const [certRes, reviewRes] = await Promise.all([
+        supabase
+          .from('volunteer_certificates')
+          .select('id, issue_date, score, type, training_id, club_id')
+          .eq('volunteer_id', volunteer.id)
+          .order('issue_date', { ascending: false }),
+        (supabase as any)
+          .from('task_reviews')
+          .select('rating')
+          .eq('reviewee_id', volunteer.id),
+      ]);
+
+      // Process reviews
+      const reviews = (reviewRes.data || []) as { rating: number }[];
+      if (reviews.length > 0) {
+        const sum = reviews.reduce((s: number, r: { rating: number }) => s + r.rating, 0);
+        setRatingInfo({ avg: sum / reviews.length, count: reviews.length });
+      } else {
+        setRatingInfo(null);
+      }
+
+      // Process certificates
+      const data = certRes.data;
       if (data && data.length > 0) {
         const trainingIds = [...new Set(data.map(c => c.training_id))];
         const clubIds = [...new Set(data.map(c => c.club_id))];
@@ -203,8 +222,17 @@ const VolunteerProfileDialog = ({
           {volunteer.email && (
             <p className="text-sm text-muted-foreground">{volunteer.email}</p>
           )}
-          {volunteer.bio && (
+           {volunteer.bio && (
             <p className="text-sm text-muted-foreground text-center mt-1 italic">"{volunteer.bio}"</p>
+          )}
+          {ratingInfo && (
+            <div className="flex items-center gap-1.5 mt-2">
+              {[1, 2, 3, 4, 5].map(s => (
+                <Star key={s} className={`w-4 h-4 ${s <= Math.round(ratingInfo.avg) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'}`} />
+              ))}
+              <span className="text-sm font-medium text-foreground ml-1">{ratingInfo.avg.toFixed(1)}</span>
+              <span className="text-xs text-muted-foreground">({ratingInfo.count})</span>
+            </div>
           )}
         </div>
 
