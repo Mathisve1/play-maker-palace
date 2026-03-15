@@ -9,6 +9,7 @@ import AiAssistantChat from './AiAssistantChat';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
 import * as Sentry from '@sentry/react';
+import { identifyUser, resetUser } from '@/lib/posthog';
 
 interface RequireAuthProps {
   children: React.ReactNode;
