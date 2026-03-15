@@ -213,6 +213,12 @@ const VolunteerSidebar = ({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'availability'} onClick={() => handleNav('availability')} className="min-h-[48px]">
+                  <Calendar className="w-5 h-5" />
+                  <span>{l.availability}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton isActive={activeTab === 'safety'} onClick={() => handleNav('safety')} className="min-h-[48px]">
                   <Shield className="w-5 h-5" />
                   <span>{l.safety}</span>
