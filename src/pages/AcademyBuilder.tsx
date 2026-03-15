@@ -840,6 +840,7 @@ const AcademyBuilder = () => {
   const selectTraining = (t: Training) => {
     setSelectedTraining(t.id); setEditTitle(t.title); setEditDesc(t.description || '');
     setEditCertDesignId(t.certificate_design_id || '');
+    setEditRequiredForCompliance(requiredTrainingIds.has(t.id));
     loadTrainingDetail(t.id);
     loadTrainingEvents(t.id);
   };
