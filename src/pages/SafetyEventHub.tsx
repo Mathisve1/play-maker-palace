@@ -17,6 +17,7 @@ const SafetyEventHub = () => {
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const [loading, setLoading] = useState(true);
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [pushActive, setPushActive] = useState(false);
   const [event, setEvent] = useState<{ title: string; event_date: string | null; location: string | null; status: string; is_live: boolean; club_id: string } | null>(null);
 
   useEffect(() => {
