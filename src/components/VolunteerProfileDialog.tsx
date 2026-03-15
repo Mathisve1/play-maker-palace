@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Mail, User, Calendar, Landmark, ShieldCheck, Award, Star } from 'lucide-react';
+import { Mail, User, Calendar, Landmark, ShieldCheck, Award, Star, Download, Loader2 } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface VolunteerProfile {
   id: string;
