@@ -252,9 +252,8 @@ const AnalyticsDashboard = () => {
     a.click();
     URL.revokeObjectURL(url);
   }, [tab, volunteerGrowth, eventAttendance, retentionData, language]);
-    if (trend === 'down') return <ArrowDownRight className="w-4 h-4 text-destructive" />;
-    return <Minus className="w-4 h-4 text-muted-foreground" />;
-  };
+
+
 
   return (
     <ClubPageLayout>
