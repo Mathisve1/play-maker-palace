@@ -23,7 +23,17 @@ import IncidentMap from '@/components/safety/IncidentMap';
 import ClosingProcedureManager from '@/components/safety/ClosingProcedureManager';
 import VolunteerClosingView from '@/components/safety/VolunteerClosingView';
 import { generateSafetyReportPdf, type SafetyIncidentForPdf, type SafetyZoneForPdf, type ClosingTaskForPdf } from '@/lib/generateSafetyReportPdf';
-import { sendPush, sendPushToClub } from '@/lib/sendPush';
+import { sendPush, sendPushToClub, sendPushToEventVolunteers } from '@/lib/sendPush';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Types
 interface SafetyZone {
