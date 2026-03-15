@@ -102,7 +102,7 @@ const VolunteerManagement = () => {
 
     // Parallel: contracts, templates, check-ins, club members, memberships
     const [contractsRes, templatesRes, checkInsRes, membersRes, membershipsRes] = await Promise.all([
-      supabase.from('season_contracts').select('id, volunteer_id, status, template_id').eq('club_id', clubId),
+      supabase.from('season_contracts').select('id, volunteer_id, status, template_id, signing_url, signed_at').eq('club_id', clubId),
       supabase.from('season_contract_templates').select('id, name, category').or(`club_id.eq.${clubId},is_system.eq.true`),
       season
         ? supabase.from('season_checkins').select('volunteer_id, season_contract_id').eq('club_id', clubId)
