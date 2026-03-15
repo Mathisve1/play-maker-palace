@@ -60,6 +60,19 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   const [inviteRole, setInviteRole] = useState<ClubRole>('medewerker');
   const [inviting, setInviting] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState<string | null>(null);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close role dropdown on outside click
+  useEffect(() => {
+    if (!showRoleDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(e.target as Node)) {
+        setShowRoleDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showRoleDropdown]);
 
   // Contract type step for new invites
   const [inviteStep, setInviteStep] = useState<'form' | 'contract-type'>('form');
