@@ -81,6 +81,7 @@ const SeasonContractManager = () => {
     ]);
 
     setActiveSeason(seasonRes.data);
+    setArchivedSeasons(archivedRes.data || []);
 
     if (!billingRes.data) {
       const { data: newBilling } = await supabase.from('club_billing').insert({ club_id: cId }).select().single();
