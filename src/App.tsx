@@ -63,6 +63,7 @@ const VolunteerProfile = lazy(() => import("./pages/VolunteerProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
+const AuditLog = lazy(() => import("./pages/AuditLog"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -147,6 +148,7 @@ const App = () => {
             <Route path="/volunteer/:id" element={<RequireAuth><VolunteerProfile /></RequireAuth>} />
             <Route path="/analytics" element={<RequireAuth redirectTo="/club-login"><AnalyticsDashboard /></RequireAuth>} />
             <Route path="/notifications" element={<RequireAuth><NotificationCenter /></RequireAuth>} />
+            <Route path="/audit-log" element={<RequireAuth redirectTo="/club-login"><AuditLog /></RequireAuth>} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
