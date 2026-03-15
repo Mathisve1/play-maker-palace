@@ -357,6 +357,18 @@ const VolunteerManagement = () => {
               ))}
             </SelectContent>
           </Select>
+          <Select value={filterMemberType} onValueChange={setFilterMemberType}>
+            <SelectTrigger className="w-full md:w-48">
+              <Tag className="w-4 h-4 mr-2" />
+              <SelectValue placeholder={t('Lidtype', 'Type membre', 'Member type')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('Alle lidtypes', 'Tous les types', 'All member types')}</SelectItem>
+              {CONTRACT_TYPES.map(ct => (
+                <SelectItem key={ct.key} value={ct.key}>{ct.icon} {language === 'nl' ? ct.nl : language === 'fr' ? ct.fr : ct.en}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-full md:w-48">
               <SelectValue placeholder="Status" />
