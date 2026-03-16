@@ -754,70 +754,9 @@ const VolunteerDashboard = () => {
         />
       )}
 
-      {/* ===== SEASON TAB ===== */}
-      {activeTab === 'season' && currentUserId && (
-        <VolunteerSeasonOverview userId={currentUserId} language={language} />
-      )}
-
-      {/* ===== ACADEMY TAB ===== */}
-      {activeTab === 'academy' && (
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-6">Academy</h1>
-          <AcademyTab language={language} navigate={navigate} />
-        </div>
-      )}
-
-      {/* ===== TICKETS TAB ===== */}
-      {activeTab === 'tickets' && (
-        <VolunteerTicketsTab tickets={myTickets} language={language} profile={profile} userId={contextUserId2 || undefined} />
-      )}
-
-      {/* ===== LOYALTY TAB ===== */}
-      {activeTab === 'loyalty' && (
-        <div className="max-w-5xl mx-auto space-y-6">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">
-            {language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'}
-          </h1>
-          {currentUserId && (
-            <VolunteerLoyaltyProgress
-              userId={currentUserId}
-              language={language}
-              totalPoints={Object.values(loyaltyEnrollments).reduce((s, e) => s + (e.points_earned || 0), 0)}
-              refreshKey={badgeRefreshKey}
-            />
-          )}
-          <VolunteerLoyaltyTab programs={loyaltyPrograms} enrollments={loyaltyEnrollments} language={language} enrollingProgram={enrollingProgram} onEnroll={handleEnrollLoyalty} userId={currentUserId} />
-        </div>
-      )}
-
-      {/* ===== BRIEFINGS TAB ===== */}
-      {activeTab === 'briefings' && (
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-6">Briefings</h1>
-          <VolunteerBriefingsList language={language} userId={currentUserId} />
-        </div>
-      )}
-
-      {/* ===== PARTNER TAB ===== */}
-      {activeTab === 'partner' && currentUserId && (
-        <VolunteerPartnerTab language={language} userId={currentUserId} navigate={navigate} />
-      )}
-
-      {/* ===== SAFETY TAB ===== */}
-      {activeTab === 'safety' && currentUserId && (
-        <VolunteerSafetyTab language={language} userId={currentUserId} onPendingCountChange={setSafetyPendingCount} />
-      )}
-
       {/* ===== MONTHLY TAB ===== */}
       {activeTab === 'monthly' && currentUserId && (
         <VolunteerMonthlyTab language={language} userId={currentUserId} />
-      )}
-
-      {/* ===== AVAILABILITY TAB ===== */}
-      {activeTab === 'availability' && currentUserId && contextClubId && (
-        <div className="max-w-4xl mx-auto">
-          <SeasonAvailabilityPicker userId={currentUserId} clubId={contextClubId} language={language} />
-        </div>
       )}
 
       {activeTab === 'contracts' && (
@@ -829,11 +768,10 @@ const VolunteerDashboard = () => {
         <VolunteerPaymentsTab sepaPayouts={sepaPayouts} language={language} />
       )}
 
-      {/* ===== ALL TASKS / MINE TASKS ===== */}
-      {(activeTab === 'all' || activeTab === 'mine') && (
+      {/* ===== MY TASKS ===== */}
+      {activeTab === 'mine' && (
         <>
-          {/* Pending Reviews section (mine tab only) */}
-          {activeTab === 'mine' && pendingReviews.length > 0 && (
+          {pendingReviews.length > 0 && (
             <div className="max-w-5xl mx-auto mb-4">
               <h2 className="text-lg font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Star className="w-5 h-5 text-yellow-500" />
@@ -862,7 +800,7 @@ const VolunteerDashboard = () => {
           <VolunteerTasksList
             language={language}
             currentUserId={currentUserId}
-            activeTab={activeTab as 'all' | 'mine'}
+            activeTab="mine"
             mineSubTab={mineSubTab}
             setMineSubTab={setMineSubTab}
             searchQuery={searchQuery}
@@ -882,7 +820,6 @@ const VolunteerDashboard = () => {
             onSignContract={handleSignContract}
             onSelectEvent={(event) => setSelectedEvent(event)}
             onSignupComplete={() => {
-              // Refresh signups after quick signup
               supabase.from('task_signups').select('*').eq('volunteer_id', currentUserId)
                 .then(({ data }) => { if (data) setSignups(data as TaskSignup[]); });
             }}
