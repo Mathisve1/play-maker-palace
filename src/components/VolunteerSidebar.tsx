@@ -210,10 +210,16 @@ const VolunteerSidebar = ({
           <SidebarGroupLabel>{l.community}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem data-tour="vol-sidebar-messages">
+              <SidebarMenuItem data-tour="vol-sidebar-clubs">
                 <SidebarMenuButton onClick={() => handleExternalNav('/community')} className="min-h-[48px]">
                   <Users className="w-5 h-5" />
-                  <span>{l.clubsMessages}</span>
+                  <span>{l.clubs}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem data-tour="vol-sidebar-messages">
+                <SidebarMenuButton onClick={() => handleExternalNav('/chat')} className="min-h-[48px]">
+                  <MessageCircle className="w-5 h-5" />
+                  <span>{l.messages}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
