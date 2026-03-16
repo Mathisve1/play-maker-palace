@@ -186,8 +186,9 @@ type SubView = 'planning' | 'availability';
 
 const YEARLY_CAP = 3233.91;
 
-const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => {
+const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabProps) => {
   const l = labels[language];
+  const [subView, setSubView] = useState<SubView>('planning');
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth() + 1);
