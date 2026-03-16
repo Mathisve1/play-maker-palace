@@ -351,24 +351,20 @@ const BillingDashboard = () => {
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Anna — 5 {t('taken', 'tâches', 'tasks')}</span>
-                      <span className="font-medium text-foreground">€15</span>
+                      <span className="text-primary">Steward</span>
+                      <span className="font-medium text-primary">€0 ✓ ({t('gratis type', 'type gratuit', 'free type')})</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Ben — 3 {t('taken', 'tâches', 'tasks')}</span>
-                      <span className="font-medium text-foreground">€15</span>
+                      <span className="text-primary">Bar & Catering</span>
+                      <span className="font-medium text-primary">€0 ✓ ({t('gratis type', 'type gratuit', 'free type')})</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-primary">Chris — 2 {t('taken', 'tâches', 'tasks')}</span>
-                      <span className="font-medium text-primary">€0 ✓</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-primary">Dana — 1 {t('taak', 'tâche', 'task')}</span>
-                      <span className="font-medium text-primary">€0 ✓</span>
+                      <span className="text-muted-foreground">{t('Terrein & Materiaal', 'Terrain & Matériel', 'Terrain & Material')} — 8 {t('vrijwilligers', 'bénévoles', 'volunteers')}</span>
+                      <span className="font-medium text-foreground">8 × €15 = €120</span>
                     </div>
                     <div className="border-t border-border pt-3 flex justify-between font-bold">
                       <span className="text-foreground">{t('Totaal', 'Total', 'Total')}</span>
-                      <span className="text-primary">€30 / {t('seizoen', 'saison', 'season')}</span>
+                      <span className="text-primary">€120 / {t('seizoen', 'saison', 'season')}</span>
                     </div>
                   </div>
                 </CardContent>
