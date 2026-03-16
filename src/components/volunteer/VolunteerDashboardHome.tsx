@@ -57,6 +57,7 @@ const VolunteerDashboardHome = ({
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
   const [upcomingBriefings, setUpcomingBriefings] = useState<{ taskId: string; taskTitle: string; taskDate: string }[]>([]);
   const [activeSafetyAlert, setActiveSafetyAlert] = useState(false);
+  const [safetySheetOpen, setSafetySheetOpen] = useState(false);
   const [requiredTrainings, setRequiredTrainings] = useState<{ id: string; title: string; clubName: string }[]>([]);
   const [zoneAssignments, setZoneAssignments] = useState<Record<string, string>>({});
   // Check for unread briefings within 48h
