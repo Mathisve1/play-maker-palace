@@ -138,7 +138,7 @@ const VolunteerDashboard = () => {
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<VolunteerTab>(() => {
     // Fallback: if a removed tab was somehow persisted, default to dashboard
-    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments'];
+    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments', 'grow'];
     return 'dashboard';
   });
   
