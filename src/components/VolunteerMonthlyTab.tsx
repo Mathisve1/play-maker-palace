@@ -11,10 +11,11 @@ import { useComplianceData } from '@/hooks/useComplianceData';
 import {
   Calendar, CalendarDays, Clock, MapPin, Euro, CheckCircle,
   ChevronLeft, ChevronRight, FileSignature, Users, AlertTriangle,
-  Loader2, QrCode, ShieldCheck, XCircle, Hourglass,
+  Loader2, QrCode, ShieldCheck, XCircle, Hourglass, CalendarCheck,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
+import SeasonAvailabilityPicker from '@/components/SeasonAvailabilityPicker';
 
 const MONTH_NAMES: Record<Language, string[]> = {
   nl: ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'],
@@ -178,12 +179,16 @@ const labels: Record<Language, Record<string, string>> = {
 interface VolunteerMonthlyTabProps {
   language: Language;
   userId: string;
+  clubId?: string;
 }
+
+type SubView = 'planning' | 'availability';
 
 const YEARLY_CAP = 3233.91;
 
-const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => {
+const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabProps) => {
   const l = labels[language];
+  const [subView, setSubView] = useState<SubView>('planning');
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth() + 1);
@@ -366,15 +371,54 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
     return <Badge variant="secondary" className="text-[10px]">{l.waitingAssignment}</Badge>;
   };
 
+  const subViewLabels = {
+    planning: language === 'nl' ? 'Planning' : language === 'fr' ? 'Planning' : 'Planning',
+    availability: language === 'nl' ? 'Beschikbaarheid' : language === 'fr' ? 'Disponibilité' : 'Availability',
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
           <CalendarDays className="w-6 h-6 text-primary" />
-          {l.title}
+          {language === 'nl' ? 'Kalender' : language === 'fr' ? 'Calendrier' : 'Calendar'}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">{l.subtitle}</p>
       </div>
+
+      {/* Sub-view switcher */}
+      <div className="flex gap-2 border-b border-border pb-0">
+        {(['planning', 'availability'] as SubView[]).map(view => (
+          <button
+            key={view}
+            onClick={() => setSubView(view)}
+            className={`px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${
+              subView === view
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {view === 'availability' && <CalendarCheck className="w-4 h-4 inline mr-1.5 -mt-0.5" />}
+            {view === 'planning' && <CalendarDays className="w-4 h-4 inline mr-1.5 -mt-0.5" />}
+            {subViewLabels[view]}
+          </button>
+        ))}
+      </div>
+
+      {/* Availability sub-view */}
+      {subView === 'availability' && clubId && (
+        <SeasonAvailabilityPicker userId={userId} clubId={clubId} language={language} />
+      )}
+      {subView === 'availability' && !clubId && (
+        <div className="text-center py-16 text-muted-foreground">
+          <CalendarCheck className="w-14 h-14 mx-auto mb-4 opacity-20" />
+          <p>{language === 'nl' ? 'Volg eerst een club om je beschikbaarheid in te stellen.' : language === 'fr' ? 'Suivez d\'abord un club pour définir votre disponibilité.' : 'Follow a club first to set your availability.'}</p>
+        </div>
+      )}
+
+      {/* Planning sub-view */}
+      {subView === 'planning' && (
+      <>
 
       {isWarning && (
         <Card className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-900/20">
@@ -683,6 +727,8 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
           )}
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
   );
 };
