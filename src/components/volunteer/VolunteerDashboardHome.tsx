@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, ClipboardList, TrendingUp, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, ClipboardList, TrendingUp, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet, Search, ArrowRight } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
