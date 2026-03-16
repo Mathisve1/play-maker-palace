@@ -525,7 +525,14 @@ const VolunteerDashboardHome = ({
         )}
       </div>
 
-      {/* ═══ SECTION 5 — MEER OVER MIJN SEIZOEN (accordion) ═══ */}
+      {/* ═══ SECTION 5 — ACTIVITEITEN & COMPLIANCE ═══ */}
+      <VolunteerActivitiesSection items={activityItemsTyped} language={language} />
+      {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
+      {currentUserId && todayAssignedEvents.map(event => (
+        <EventGroupChat key={event.id} eventId={event.id} eventTitle={event.title} userId={currentUserId} language={language} />
+      ))}
+
+      {/* ═══ SECTION 6 — MEER OVER MIJN SEIZOEN (accordion) ═══ */}
       <div>
         <h2 className="text-lg font-heading font-semibold text-foreground mb-3">
           {language === 'nl' ? 'Meer details' : language === 'fr' ? 'Plus de détails' : 'More details'}
@@ -609,13 +616,6 @@ const VolunteerDashboardHome = ({
           </AccordionItem>
         </Accordion>
       </div>
-
-      {/* ═══ SECTION 6 — ACTIVITEITEN & COMPLIANCE ═══ */}
-      <VolunteerActivitiesSection items={activityItemsTyped} language={language} />
-      {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
-      {currentUserId && todayAssignedEvents.map(event => (
-        <EventGroupChat key={event.id} eventId={event.id} eventTitle={event.title} userId={currentUserId} language={language} />
-      ))}
 
       {/* Safety Sheet */}
       <Sheet open={safetySheetOpen} onOpenChange={setSafetySheetOpen}>
