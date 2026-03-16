@@ -285,8 +285,8 @@ const VolunteerDashboardHome = ({
           onStepAction={(step) => {
             if (step === 'profile_complete') setShowProfileDialog(true);
             else if (step === 'contract_signed') setActiveTab('contracts');
-            else if (step === 'training_done') setActiveTab('academy');
-            else if (step === 'first_task') setActiveTab('all');
+            else if (step === 'training_done') window.open('/volunteer-training', '_self');
+            else if (step === 'first_task') setActiveTab('mine');
           }}
         />
       )}
