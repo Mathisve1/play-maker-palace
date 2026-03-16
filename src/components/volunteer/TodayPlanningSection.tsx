@@ -17,6 +17,7 @@ interface Props {
   tasks: VolunteerTask[];
   signups: TaskSignup[];
   getSignupStatus: (taskId: string) => string | null;
+  zoneAssignments?: Record<string, string>;
 }
 
 const labels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
