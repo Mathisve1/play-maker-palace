@@ -85,7 +85,7 @@ function formatCountdown(taskDate: string, l: Record<string, string>): string {
   return `${l.startsIn} ${m}${l.minutes}`;
 }
 
-const TodayPlanningSection = ({ language, currentUserId, profileName, tasks, signups, getSignupStatus }: Props) => {
+const TodayPlanningSection = ({ language, currentUserId, profileName, tasks, signups, getSignupStatus, zoneAssignments = {} }: Props) => {
   const navigate = useNavigate();
   const l = labels[language as keyof typeof labels] || labels.nl;
 
