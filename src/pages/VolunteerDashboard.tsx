@@ -688,7 +688,7 @@ const VolunteerDashboard = () => {
   const sidebarEl = (
     <VolunteerSidebar
       activeTab={activeTab}
-      setActiveTab={(tab) => { setActiveTab(tab); if (tab === 'mine') setMineSubTab('pending'); }}
+      setActiveTab={(tab) => { setActiveTab(tab); }}
       profile={profile}
       language={language}
       onLogout={handleLogout}
