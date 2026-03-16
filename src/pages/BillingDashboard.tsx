@@ -39,8 +39,6 @@ const BillingDashboard = () => {
   const [seatInput, setSeatInput] = useState('');
   const [savingSeats, setSavingSeats] = useState(false);
   const [volunteerUsage, setVolunteerUsage] = useState<VolunteerUsageRow[]>([]);
-  const [contractTypes, setContractTypes] = useState<{ type: string; count: number; isFree: boolean }[]>([]);
-  const [freeUsed, setFreeUsed] = useState(0);
 
   useEffect(() => {
     const init = async () => {
