@@ -481,6 +481,23 @@ const VolunteerDashboardHome = ({
       {currentUserId && events.filter(e => tasks.some(t => t.event_id === e.id && signups.some(s => s.task_id === t.id && s.status === 'assigned'))).slice(0, 2).map(event => (
         <EventGroupChat key={event.id} eventId={event.id} eventTitle={event.title} userId={currentUserId} language={language} />
       ))}
+
+      {/* Safety Sheet */}
+      <Sheet open={safetySheetOpen} onOpenChange={setSafetySheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-destructive" />
+              {language === 'nl' ? 'Veiligheidscontrole' : language === 'fr' ? 'Contrôle de sécurité' : 'Safety check'}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <Suspense fallback={<div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+              <VolunteerSafetyTab userId={currentUserId} language={language} />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
