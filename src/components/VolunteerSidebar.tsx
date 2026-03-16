@@ -41,7 +41,8 @@ const labels: Record<Language, Record<string, string>> = {
     contracts: 'Contracten',
     payments: 'Vergoedingen',
     grow: 'Groeien',
-    clubsMessages: 'Clubs & Berichten',
+    clubs: 'Clubs',
+    messages: 'Berichten',
     settings: 'Instellingen',
     help: 'Hulp nodig?',
     logout: 'Uitloggen',
@@ -56,7 +57,8 @@ const labels: Record<Language, Record<string, string>> = {
     contracts: 'Contrats',
     payments: 'Remboursements',
     grow: 'Progresser',
-    clubsMessages: 'Clubs & Messages',
+    clubs: 'Clubs',
+    messages: 'Messages',
     settings: 'Paramètres',
     help: 'Besoin d\'aide?',
     logout: 'Déconnexion',
@@ -71,7 +73,8 @@ const labels: Record<Language, Record<string, string>> = {
     contracts: 'Contracts',
     payments: 'Payments',
     grow: 'Grow',
-    clubsMessages: 'Clubs & Messages',
+    clubs: 'Clubs',
+    messages: 'Messages',
     settings: 'Settings',
     help: 'Need help?',
     logout: 'Log out',
@@ -207,10 +210,16 @@ const VolunteerSidebar = ({
           <SidebarGroupLabel>{l.community}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem data-tour="vol-sidebar-messages">
+              <SidebarMenuItem data-tour="vol-sidebar-clubs">
                 <SidebarMenuButton onClick={() => handleExternalNav('/community')} className="min-h-[48px]">
                   <Users className="w-5 h-5" />
-                  <span>{l.clubsMessages}</span>
+                  <span>{l.clubs}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem data-tour="vol-sidebar-messages">
+                <SidebarMenuButton onClick={() => handleExternalNav('/chat')} className="min-h-[48px]">
+                  <MessageCircle className="w-5 h-5" />
+                  <span>{l.messages}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
