@@ -205,7 +205,7 @@ const VolunteerDashboardHome = ({
       const db = b.task_date ? new Date(b.task_date).getTime() : Infinity;
       return da - db;
     })
-    .slice(0, 5);
+    .slice(0, 3);
 
   // Activity items
   const activityItems = (() => {
