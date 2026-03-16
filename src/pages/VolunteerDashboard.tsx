@@ -705,11 +705,7 @@ const VolunteerDashboard = () => {
         pending: pendingSignups.length,
         assigned: assignedSignups.length,
         payments: myPayments.length + sepaPayouts.length,
-        contracts: myContracts.length,
-        tickets: myTickets.length,
-        loyalty: loyaltyPrograms.length,
-        safety: safetyPendingCount,
-        safetyAlert: safetyAlertActive,
+        contracts: myContracts.filter(c => c.status === 'pending').length,
       }}
     />
   );
