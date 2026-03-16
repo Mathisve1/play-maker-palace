@@ -792,29 +792,10 @@ const VolunteerDashboard = () => {
           <VolunteerTasksList
             language={language}
             currentUserId={currentUserId}
-            activeTab="mine"
-            mineSubTab={mineSubTab}
-            setMineSubTab={setMineSubTab}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
             tasks={tasks}
             signups={signups}
-            events={events}
-            followedClubIds={followedClubIds}
-            signupCounts={signupCounts}
-            likeCounts={likeCounts}
-            myLikes={myLikes}
-            myCertifiedTrainingIds={myCertifiedTrainingIds}
             myContracts={myContracts}
-            isSignedUp={isSignedUp}
             getSignupStatus={getSignupStatus}
-            onLikeToggle={handleLikeToggle}
-            onSignContract={handleSignContract}
-            onSelectEvent={(event) => setSelectedEvent(event)}
-            onSignupComplete={() => {
-              supabase.from('task_signups').select('*').eq('volunteer_id', currentUserId)
-                .then(({ data }) => { if (data) setSignups(data as TaskSignup[]); });
-            }}
           />
         </>
       )}
