@@ -761,6 +761,18 @@ const VolunteerDashboard = () => {
         <VolunteerPaymentsTab sepaPayouts={sepaPayouts} language={language} />
       )}
 
+      {/* ===== GROW TAB ===== */}
+      {activeTab === 'grow' && currentUserId && (
+        <VolunteerGrowTab
+          language={language}
+          userId={currentUserId}
+          loyaltyPrograms={loyaltyPrograms}
+          loyaltyEnrollments={loyaltyEnrollments}
+          enrollingProgram={enrollingProgram}
+          onEnroll={handleEnrollLoyalty}
+        />
+      )}
+
       {/* ===== MY TASKS ===== */}
       {activeTab === 'mine' && (
         <>
