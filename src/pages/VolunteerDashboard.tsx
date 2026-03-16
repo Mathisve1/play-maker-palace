@@ -786,7 +786,7 @@ const VolunteerDashboard = () => {
               refreshKey={badgeRefreshKey}
             />
           )}
-          <VolunteerLoyaltyTab programs={loyaltyPrograms} enrollments={loyaltyEnrollments} language={language} enrollingProgram={enrollingProgram} onEnroll={handleEnrollLoyalty} />
+          <VolunteerLoyaltyTab programs={loyaltyPrograms} enrollments={loyaltyEnrollments} language={language} enrollingProgram={enrollingProgram} onEnroll={handleEnrollLoyalty} userId={currentUserId} />
         </div>
       )}
 
