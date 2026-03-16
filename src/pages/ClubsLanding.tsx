@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import {
   FileSignature, Users, CreditCard, ClipboardList, Shield, CheckCircle,
-  ArrowRight, Sparkles, Quote, Smartphone, BarChart3, AlertTriangle, Lock,
+  ArrowRight, Sparkles, Smartphone, BarChart3, AlertTriangle, Lock,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
