@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { VolunteerBriefingsList } from '@/components/VolunteerBriefingView';
 import { sendPush, sendPushToClub } from '@/lib/sendPush';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { useComplianceData } from '@/hooks/useComplianceData';
 import {
   Calendar, CalendarDays, Clock, MapPin, Euro, CheckCircle,
   ChevronLeft, ChevronRight, FileSignature, Users, AlertTriangle,
-  Loader2, QrCode, ShieldCheck, XCircle, Hourglass, CalendarCheck,
+  Loader2, QrCode, ShieldCheck, XCircle, Hourglass, CalendarCheck, FileText,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
@@ -182,7 +183,7 @@ interface VolunteerMonthlyTabProps {
   clubId?: string;
 }
 
-type SubView = 'planning' | 'availability';
+type SubView = 'planning' | 'availability' | 'briefings';
 
 const YEARLY_CAP = 3233.91;
 
@@ -371,9 +372,10 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
     return <Badge variant="secondary" className="text-[10px]">{l.waitingAssignment}</Badge>;
   };
 
-  const subViewLabels = {
-    planning: language === 'nl' ? 'Planning' : language === 'fr' ? 'Planning' : 'Planning',
-    availability: language === 'nl' ? 'Beschikbaarheid' : language === 'fr' ? 'Disponibilité' : 'Availability',
+  const subViewLabels: Record<SubView, { label: string; icon: typeof CalendarDays }> = {
+    planning: { label: language === 'nl' ? 'Planning' : language === 'fr' ? 'Planning' : 'Planning', icon: CalendarDays },
+    availability: { label: language === 'nl' ? 'Beschikbaarheid' : language === 'fr' ? 'Disponibilité' : 'Availability', icon: CalendarCheck },
+    briefings: { label: language === 'nl' ? 'Mijn Briefings' : language === 'fr' ? 'Mes Briefings' : 'My Briefings', icon: FileText },
   };
 
   return (
@@ -388,21 +390,23 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
 
       {/* Sub-view switcher */}
       <div className="flex gap-2 border-b border-border pb-0">
-        {(['planning', 'availability'] as SubView[]).map(view => (
-          <button
-            key={view}
-            onClick={() => setSubView(view)}
-            className={`px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${
-              subView === view
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {view === 'availability' && <CalendarCheck className="w-4 h-4 inline mr-1.5 -mt-0.5" />}
-            {view === 'planning' && <CalendarDays className="w-4 h-4 inline mr-1.5 -mt-0.5" />}
-            {subViewLabels[view]}
-          </button>
-        ))}
+        {(['planning', 'availability', 'briefings'] as SubView[]).map(view => {
+          const { label, icon: Icon } = subViewLabels[view];
+          return (
+            <button
+              key={view}
+              onClick={() => setSubView(view)}
+              className={`px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${
+                subView === view
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Availability sub-view */}
@@ -728,6 +732,11 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
         </DialogContent>
       </Dialog>
       </>
+      )}
+
+      {/* Briefings sub-view */}
+      {subView === 'briefings' && (
+        <VolunteerBriefingsList language={language} userId={userId} />
       )}
     </div>
   );
