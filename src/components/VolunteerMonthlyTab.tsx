@@ -179,7 +179,10 @@ const labels: Record<Language, Record<string, string>> = {
 interface VolunteerMonthlyTabProps {
   language: Language;
   userId: string;
+  clubId?: string;
 }
+
+type SubView = 'planning' | 'availability';
 
 const YEARLY_CAP = 3233.91;
 
