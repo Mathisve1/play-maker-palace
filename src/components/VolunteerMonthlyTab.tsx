@@ -372,9 +372,10 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
     return <Badge variant="secondary" className="text-[10px]">{l.waitingAssignment}</Badge>;
   };
 
-  const subViewLabels = {
-    planning: language === 'nl' ? 'Planning' : language === 'fr' ? 'Planning' : 'Planning',
-    availability: language === 'nl' ? 'Beschikbaarheid' : language === 'fr' ? 'Disponibilité' : 'Availability',
+  const subViewLabels: Record<SubView, { label: string; icon: typeof CalendarDays }> = {
+    planning: { label: language === 'nl' ? 'Planning' : language === 'fr' ? 'Planning' : 'Planning', icon: CalendarDays },
+    availability: { label: language === 'nl' ? 'Beschikbaarheid' : language === 'fr' ? 'Disponibilité' : 'Availability', icon: CalendarCheck },
+    briefings: { label: language === 'nl' ? 'Mijn Briefings' : language === 'fr' ? 'Mes Briefings' : 'My Briefings', icon: FileText },
   };
 
   return (
