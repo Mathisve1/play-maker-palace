@@ -252,12 +252,15 @@ const ComplianceDashboard = () => {
     init();
   }, [contextClubId]);
 
-  /* ── Fix: send warning via email queue (enqueue_email RPC) instead of broken EF call ── */
+  /* ── Send warning via email queue (enqueue_email RPC) ── */
   const handleSendWarning = async (vol: VolunteerEntry) => {
     setActionLoading(vol.id);
     try {
       const compliance = complianceMap.get(vol.id);
-      const pctUsed = compliance ? Math.round(compliance.percentUsed) : 0;
+      if (!compliance || !vol.email) throw new Error('No data');
+      const pctUsed = Math.round(compliance.percentUsed);
+      const statusLabel = compliance.status === 'green' ? t.statusGreen
+        : compliance.status === 'orange' ? t.statusOrange : t.statusRed;
 
       const subject = language === 'nl'
         ? `⚠️ Je nadert het jaarplafond bij ${clubName}`
@@ -265,25 +268,55 @@ const ComplianceDashboard = () => {
           ? `⚠️ Vous approchez du plafond annuel chez ${clubName}`
           : `⚠️ You are approaching the annual limit at ${clubName}`;
 
-      const html = `<p>${language === 'nl'
-        ? `Beste ${vol.full_name || 'vrijwilliger'},<br><br>Je hebt ${pctUsed}% van het jaarplafond van €${YEARLY_LIMIT.toFixed(2)} bereikt. Neem contact op met de club als je vragen hebt.<br><br>Met vriendelijke groeten,<br>${clubName}`
+      const html = language === 'nl'
+        ? `<p>Beste ${vol.full_name || 'vrijwilliger'},</p>
+           <p>Hieronder een overzicht van je huidige compliance status bij <strong>${clubName}</strong>:</p>
+           <ul>
+             <li><strong>Uren dit jaar:</strong> ${compliance.totalHours.toFixed(1)} h</li>
+             <li><strong>Wettelijk maximum:</strong> ${HOURS_LIMIT} h / €${YEARLY_LIMIT.toFixed(2)}</li>
+             <li><strong>Resterende capaciteit:</strong> ${compliance.remainingHours.toFixed(1)} h / €${compliance.remainingBudget.toFixed(2)}</li>
+             <li><strong>Status:</strong> ${statusLabel} (${pctUsed}%)</li>
+           </ul>
+           <p>Neem contact op met de club als je vragen hebt.</p>
+           <p>Met vriendelijke groeten,<br>${clubName}</p>`
         : language === 'fr'
-          ? `Cher(e) ${vol.full_name || 'bénévole'},<br><br>Vous avez atteint ${pctUsed}% du plafond annuel de €${YEARLY_LIMIT.toFixed(2)}. Contactez le club si vous avez des questions.<br><br>Cordialement,<br>${clubName}`
-          : `Dear ${vol.full_name || 'volunteer'},<br><br>You have reached ${pctUsed}% of the annual limit of €${YEARLY_LIMIT.toFixed(2)}. Contact the club if you have questions.<br><br>Best regards,<br>${clubName}`
-      }</p>`;
+          ? `<p>Cher(e) ${vol.full_name || 'bénévole'},</p>
+             <p>Voici un aperçu de votre statut de conformité chez <strong>${clubName}</strong> :</p>
+             <ul>
+               <li><strong>Heures cette année :</strong> ${compliance.totalHours.toFixed(1)} h</li>
+               <li><strong>Maximum légal :</strong> ${HOURS_LIMIT} h / €${YEARLY_LIMIT.toFixed(2)}</li>
+               <li><strong>Capacité restante :</strong> ${compliance.remainingHours.toFixed(1)} h / €${compliance.remainingBudget.toFixed(2)}</li>
+               <li><strong>Statut :</strong> ${statusLabel} (${pctUsed}%)</li>
+             </ul>
+             <p>Contactez le club si vous avez des questions.</p>
+             <p>Cordialement,<br>${clubName}</p>`
+          : `<p>Dear ${vol.full_name || 'volunteer'},</p>
+             <p>Here is an overview of your current compliance status at <strong>${clubName}</strong>:</p>
+             <ul>
+               <li><strong>Hours this year:</strong> ${compliance.totalHours.toFixed(1)} h</li>
+               <li><strong>Legal maximum:</strong> ${HOURS_LIMIT} h / €${YEARLY_LIMIT.toFixed(2)}</li>
+               <li><strong>Remaining capacity:</strong> ${compliance.remainingHours.toFixed(1)} h / €${compliance.remainingBudget.toFixed(2)}</li>
+               <li><strong>Status:</strong> ${statusLabel} (${pctUsed}%)</li>
+             </ul>
+             <p>Contact the club if you have questions.</p>
+             <p>Best regards,<br>${clubName}</p>`;
 
+      const messageId = `compliance-warning-${vol.id}-${Date.now()}`;
       const { error } = await supabase.rpc('enqueue_email' as any, {
         queue_name: 'transactional_emails',
-        payload: JSON.stringify({
+        payload: {
           to: vol.email,
           subject,
           html,
           from: `De 12e Man <noreply@de12eman.be>`,
-        }),
+          message_id: messageId,
+          queued_at: new Date().toISOString(),
+          label: 'compliance-warning',
+        },
       });
 
       if (error) throw error;
-      toast.success(t.warningSent);
+      toast.success(language === 'nl' ? 'Herinnering gepland ✓' : language === 'fr' ? 'Rappel planifié ✓' : 'Reminder scheduled ✓');
     } catch (e: any) {
       toast.error(e.message || 'Error');
     }
@@ -353,7 +386,7 @@ const ComplianceDashboard = () => {
     toast.success(t.reportDownloaded);
   }, [complianceMap, clubName, language, t]);
 
-  /* ── New: Send compliance reminder via email queue ── */
+  /* ── Send compliance reminder via email queue ── */
   const handleSendReminder = async (vol: VolunteerEntry) => {
     setActionLoading(vol.id);
     try {
@@ -364,18 +397,22 @@ const ComplianceDashboard = () => {
       const bodyText = t.reminderBody(vol.full_name || vol.email, pct, YEARLY_LIMIT, Math.round(compliance.totalHours), HOURS_LIMIT);
       const html = `<p>${bodyText.replace(/\n/g, '<br>')}<br>${clubName}</p>`;
 
+      const messageId = `compliance-reminder-${vol.id}-${Date.now()}`;
       const { error } = await supabase.rpc('enqueue_email' as any, {
         queue_name: 'transactional_emails',
-        payload: JSON.stringify({
+        payload: {
           to: vol.email,
           subject: t.reminderSubject,
           html,
           from: `De 12e Man <noreply@de12eman.be>`,
-        }),
+          message_id: messageId,
+          queued_at: new Date().toISOString(),
+          label: 'compliance-reminder',
+        },
       });
 
       if (error) throw error;
-      toast.success(t.reminderSent);
+      toast.success(language === 'nl' ? 'Herinnering gepland ✓' : language === 'fr' ? 'Rappel planifié ✓' : 'Reminder scheduled ✓');
     } catch (e: any) {
       toast.error(e.message || 'Error');
     }
