@@ -323,9 +323,9 @@ const BillingDashboard = () => {
                   </div>
                   <ul className="space-y-4 text-sm">
                     {[
-                      { step: '1', text: t('Elke vrijwilliger kan 2 taken gratis voltooien per seizoen', 'Chaque bénévole peut effectuer 2 tâches gratuitement par saison', 'Each volunteer can complete 2 tasks for free per season'), highlight: true },
-                      { step: '2', text: t('Bij de 3e voltooide taak wordt €15 automatisch gefactureerd voor die vrijwilliger', 'À la 3e tâche complétée, €15 est facturé automatiquement pour ce bénévole', 'At the 3rd completed task, €15 is automatically invoiced for that volunteer'), highlight: false },
-                      { step: '3', text: t('Alle volgende taken dat seizoen: geen extra kost', 'Toutes les tâches suivantes cette saison : sans frais', 'All subsequent tasks that season: no extra cost'), highlight: false },
+                      { step: '1', text: t('Kies je eerste 2 vrijwilligerstypes — volledig gratis', 'Choisissez vos 2 premiers types de bénévoles — entièrement gratuit', 'Choose your first 2 volunteer types — completely free'), highlight: true },
+                      { step: '2', text: t('Gebruik je een 3e, 4e of 5e type? Dan betaal je €15/vrijwilliger/seizoen voor dat extra type', 'Vous utilisez un 3e, 4e ou 5e type ? Alors vous payez 15€/bénévole/saison pour ce type supplémentaire', 'Using a 3rd, 4th or 5th type? You pay €15/volunteer/season for that extra type'), highlight: false },
+                      { step: '3', text: t('Alle taken binnen een type: geen extra kost', 'Toutes les tâches au sein d\'un type : aucun frais supplémentaire', 'All tasks within a type: no extra cost'), highlight: false },
                       { step: '✓', text: t('Teller reset bij elk nieuw seizoen', 'Compteur réinitialisé chaque saison', 'Counter resets each new season'), highlight: false },
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3">
