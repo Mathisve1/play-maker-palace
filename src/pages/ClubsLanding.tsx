@@ -263,36 +263,6 @@ const ClubsLanding = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{l.testimonialTitle}</h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {[
-              { quote: l.testimonial1Quote, name: l.testimonial1Name, role: l.testimonial1Role },
-              { quote: l.testimonial2Quote, name: l.testimonial2Name, role: l.testimonial2Role },
-            ].map((t, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-card rounded-2xl p-8 shadow-card border border-border/50"
-              >
-                <Quote className="w-8 h-8 text-primary/20 mb-4" />
-                <p className="text-foreground italic leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.role}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Trust badges */}
       <section className="py-16 px-4">
