@@ -171,6 +171,12 @@ const TodayPlanningSection = ({ language, currentUserId, profileName, tasks, sig
             >
               {task.title}
             </button>
+            {zoneAssignments[task.id] && (
+              <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/15 text-accent-foreground w-fit">
+                <Layers className="w-3 h-3" />
+                {language === 'fr' ? 'Zone :' : 'Zone:'} {zoneAssignments[task.id]}
+              </span>
+            )}
             <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">
               {task.clubs?.name && <span>{task.clubs.name}</span>}
               {task.task_date && (
