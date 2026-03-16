@@ -171,6 +171,18 @@ const BillingDashboard = () => {
           {t('Facturatie & Abonnement', 'Facturation & Abonnement', 'Billing & Subscription')}
         </h1>
 
+        {/* Info banner */}
+        <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <p className="text-sm text-foreground leading-relaxed">
+            {t(
+              'Uw eerste 2 taken per vrijwilliger zijn gratis elk seizoen. Elke vrijwilliger die 3 of meer taken voltooit in dit seizoen wordt gefactureerd aan €15.',
+              'Vos 2 premières tâches par bénévole sont gratuites chaque saison. Chaque bénévole qui complète 3 tâches ou plus cette saison est facturé à 15€.',
+              'Your first 2 tasks per volunteer are free each season. Each volunteer completing 3 or more tasks this season is billed at €15.'
+            )}
+          </p>
+        </div>
+
         {/* Status cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {/* Billing model */}
@@ -179,11 +191,11 @@ const BillingDashboard = () => {
               <div className="flex items-center gap-2 mb-3">
                 <Gift className="w-5 h-5 text-primary" />
                 <span className="text-sm font-medium text-foreground">
-                  {t('Per-contracttype model', 'Modèle par type de contrat', 'Per-contract-type model')}
+                  {t('Per-vrijwilliger model', 'Modèle par bénévole', 'Per-volunteer model')}
                 </span>
               </div>
-              <p className="text-2xl font-bold text-foreground">2 {t('gratis types', 'types gratuits', 'free types')}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t('per club per seizoen', 'par club par saison', 'per club per season')}</p>
+              <p className="text-2xl font-bold text-foreground">2 {t('gratis taken', 'tâches gratuites', 'free tasks')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('per vrijwilliger per seizoen', 'par bénévole par saison', 'per volunteer per season')}</p>
             </CardContent>
           </Card>
 
@@ -211,68 +223,6 @@ const BillingDashboard = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Season total */}
-        <Card className="border-primary/20">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">{t('Totale seizoenskost', 'Coût total de la saison', 'Total season cost')}</p>
-              <p className="text-3xl font-bold text-primary">€{totalSeasonCost.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t('Facturatie op de 1e van elke maand', 'Facturation le 1er de chaque mois', 'Billed on the 1st of each month')}</p>
-            </div>
-            <TrendingUp className="w-10 h-10 text-primary/20" />
-          </CardContent>
-        </Card>
-
-        {/* Contract Types Progress */}
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              <h3 className="font-heading font-semibold text-foreground">
-                {t('Contracttypes', 'Types de contrat', 'Contract types')}
-              </h3>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {Math.min(freeUsed, 2)} {t('van 2 gratis types gebruikt', 'de 2 types gratuits utilisés', 'of 2 free types used')}
-                </span>
-                {freeUsed > 2 && (
-                  <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
-                    {freeUsed - 2} {t('betalend type(s)', 'type(s) payant(s)', 'paid type(s)')}
-                  </Badge>
-                )}
-              </div>
-              <Progress value={Math.min((freeUsed / 2) * 100, 100)} className="h-2" />
-            </div>
-            {contractTypes.length > 0 && (
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {contractTypes.map(ct => (
-                  <div key={ct.type} className={`rounded-xl p-3 border ${ct.isFree ? 'border-primary/20 bg-primary/5' : 'border-destructive/20 bg-destructive/5'}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-foreground capitalize">{ct.type.replace(/_/g, ' ')}</span>
-                      {ct.isFree ? (
-                        <Badge variant="secondary" className="text-[10px]">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          {t('Gratis', 'Gratuit', 'Free')}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive">
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          €15/{t('vrijwilliger', 'bénévole', 'volunteer')}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {ct.count} {t('contract(en)', 'contrat(s)', 'contract(s)')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         <Tabs defaultValue="pricing" className="space-y-4">
           <TabsList>
