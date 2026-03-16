@@ -390,21 +390,23 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
 
       {/* Sub-view switcher */}
       <div className="flex gap-2 border-b border-border pb-0">
-        {(['planning', 'availability'] as SubView[]).map(view => (
-          <button
-            key={view}
-            onClick={() => setSubView(view)}
-            className={`px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${
-              subView === view
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {view === 'availability' && <CalendarCheck className="w-4 h-4 inline mr-1.5 -mt-0.5" />}
-            {view === 'planning' && <CalendarDays className="w-4 h-4 inline mr-1.5 -mt-0.5" />}
-            {subViewLabels[view]}
-          </button>
-        ))}
+        {(['planning', 'availability', 'briefings'] as SubView[]).map(view => {
+          const { label, icon: Icon } = subViewLabels[view];
+          return (
+            <button
+              key={view}
+              onClick={() => setSubView(view)}
+              className={`px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${
+                subView === view
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Availability sub-view */}
