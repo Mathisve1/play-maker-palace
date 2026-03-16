@@ -140,7 +140,7 @@ const VolunteerDashboard = () => {
     const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments'];
     return 'dashboard';
   });
-  const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned' | 'history'>('pending');
+  
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
   const [myContracts, setMyContracts] = useState<SignatureContract[]>([]);
@@ -688,7 +688,7 @@ const VolunteerDashboard = () => {
   const sidebarEl = (
     <VolunteerSidebar
       activeTab={activeTab}
-      setActiveTab={(tab) => { setActiveTab(tab); if (tab === 'mine') setMineSubTab('pending'); }}
+      setActiveTab={(tab) => { setActiveTab(tab); }}
       profile={profile}
       language={language}
       onLogout={handleLogout}
@@ -792,29 +792,10 @@ const VolunteerDashboard = () => {
           <VolunteerTasksList
             language={language}
             currentUserId={currentUserId}
-            activeTab="mine"
-            mineSubTab={mineSubTab}
-            setMineSubTab={setMineSubTab}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
             tasks={tasks}
             signups={signups}
-            events={events}
-            followedClubIds={followedClubIds}
-            signupCounts={signupCounts}
-            likeCounts={likeCounts}
-            myLikes={myLikes}
-            myCertifiedTrainingIds={myCertifiedTrainingIds}
             myContracts={myContracts}
-            isSignedUp={isSignedUp}
             getSignupStatus={getSignupStatus}
-            onLikeToggle={handleLikeToggle}
-            onSignContract={handleSignContract}
-            onSelectEvent={(event) => setSelectedEvent(event)}
-            onSignupComplete={() => {
-              supabase.from('task_signups').select('*').eq('volunteer_id', currentUserId)
-                .then(({ data }) => { if (data) setSignups(data as TaskSignup[]); });
-            }}
           />
         </>
       )}
