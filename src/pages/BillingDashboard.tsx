@@ -96,6 +96,7 @@ const BillingDashboard = () => {
         );
       }
     }
+  };
 
 
   const billedCount = billing?.current_season_volunteers_billed || 0;
