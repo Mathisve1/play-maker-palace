@@ -29,6 +29,7 @@ interface VolunteerSidebarProps {
     assigned?: number;
     contracts?: number;
     payments?: number;
+    loyalty?: number;
   };
 }
 
