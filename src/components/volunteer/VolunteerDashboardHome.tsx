@@ -405,7 +405,7 @@ const VolunteerDashboardHome = ({
           <div className="bg-card rounded-2xl border border-border p-8 text-center">
             <ClipboardList className="w-10 h-10 mx-auto mb-2 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">{dt.noMyTasks}</p>
-            <button onClick={() => setActiveTab('all')} className="mt-3 px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+            <button onClick={() => setActiveTab('mine')} className="mt-3 px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
               {dt.allTasks} →
             </button>
           </div>
