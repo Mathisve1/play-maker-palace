@@ -386,7 +386,7 @@ const ComplianceDashboard = () => {
     toast.success(t.reportDownloaded);
   }, [complianceMap, clubName, language, t]);
 
-  /* ── New: Send compliance reminder via email queue ── */
+  /* ── Send compliance reminder via email queue ── */
   const handleSendReminder = async (vol: VolunteerEntry) => {
     setActionLoading(vol.id);
     try {
@@ -397,18 +397,22 @@ const ComplianceDashboard = () => {
       const bodyText = t.reminderBody(vol.full_name || vol.email, pct, YEARLY_LIMIT, Math.round(compliance.totalHours), HOURS_LIMIT);
       const html = `<p>${bodyText.replace(/\n/g, '<br>')}<br>${clubName}</p>`;
 
+      const messageId = `compliance-reminder-${vol.id}-${Date.now()}`;
       const { error } = await supabase.rpc('enqueue_email' as any, {
         queue_name: 'transactional_emails',
-        payload: JSON.stringify({
+        payload: {
           to: vol.email,
           subject: t.reminderSubject,
           html,
           from: `De 12e Man <noreply@de12eman.be>`,
-        }),
+          message_id: messageId,
+          queued_at: new Date().toISOString(),
+          label: 'compliance-reminder',
+        },
       });
 
       if (error) throw error;
-      toast.success(t.reminderSent);
+      toast.success(language === 'nl' ? 'Herinnering gepland ✓' : language === 'fr' ? 'Rappel planifié ✓' : 'Reminder scheduled ✓');
     } catch (e: any) {
       toast.error(e.message || 'Error');
     }
