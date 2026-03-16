@@ -727,6 +727,8 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
           )}
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
   );
 };
