@@ -1,7 +1,8 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText, AlertTriangle, BookOpen, Layers } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, ClipboardList, TrendingUp, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -204,52 +205,70 @@ const VolunteerDashboardHome = ({
       const db = b.task_date ? new Date(b.task_date).getTime() : Infinity;
       return da - db;
     })
-    .slice(0, 5);
+    .slice(0, 3);
 
-  // Activity items
-  const activityItems = (() => {
-    const items: { id: string; type: 'contract' | 'briefing' | 'training' | 'partner_invite'; title: string; subtitle?: string; action: () => void; actionLabel: string; urgent?: boolean }[] = [];
-    myContracts.filter(c => c.status === 'pending' && c.signing_url).forEach(c => {
-      items.push({
-        id: `contract-${c.id}`, type: 'contract',
-        title: language === 'nl' ? 'Contract ondertekenen' : language === 'fr' ? 'Signer le contrat' : 'Sign contract',
-        subtitle: c.task_title ? `${c.task_title}${c.club_name ? ` · ${c.club_name}` : ''}` : c.club_name,
-        action: () => window.open(c.signing_url!, '_blank'),
-        actionLabel: language === 'nl' ? 'Ondertekenen' : 'Sign', urgent: true,
-      });
+  // Action required items
+  const actionItems: { id: string; type: string; title: string; subtitle?: string; action: () => void; actionLabel: string }[] = [];
+  myContracts.filter(c => c.status === 'pending' && c.signing_url).forEach(c => {
+    actionItems.push({
+      id: `contract-${c.id}`, type: 'contract',
+      title: language === 'nl' ? 'Contract ondertekenen' : language === 'fr' ? 'Signer le contrat' : 'Sign contract',
+      subtitle: c.task_title ? `${c.task_title}${c.club_name ? ` · ${c.club_name}` : ''}` : c.club_name,
+      action: () => window.open(c.signing_url!, '_blank'),
+      actionLabel: language === 'nl' ? 'Ondertekenen' : language === 'fr' ? 'Signer' : 'Sign',
     });
-    if (followedClubIds && followedClubIds.size > 0) {
-      const requiredTrainings = new Map<string, { taskTitle: string; clubName: string }>();
-      tasks.forEach(t => {
-        if (t.required_training_id && !myCertifiedTrainingIds.has(t.required_training_id) && followedClubIds!.has(t.club_id)) {
-          if (!requiredTrainings.has(t.required_training_id)) {
-            requiredTrainings.set(t.required_training_id, { taskTitle: t.title, clubName: t.clubs?.name || '' });
-          }
-        }
-      });
-      requiredTrainings.forEach((info, trainingId) => {
-        items.push({
-          id: `training-${trainingId}`, type: 'training',
-          title: language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required',
-          subtitle: `${info.taskTitle} · ${info.clubName}`,
-          action: () => window.open('/volunteer-training', '_self'),
-          actionLabel: language === 'nl' ? 'Bekijken' : 'View',
-        });
-      });
-    }
-    return items;
-  })();
+  });
+  upcomingBriefings.forEach(b => {
+    actionItems.push({
+      id: `briefing-${b.taskId}`, type: 'briefing',
+      title: language === 'nl' ? 'Briefing lezen' : language === 'fr' ? 'Lire le briefing' : 'Read briefing',
+      subtitle: b.taskTitle,
+      action: () => navigate(`/task/${b.taskId}`),
+      actionLabel: language === 'nl' ? 'Bekijken' : language === 'fr' ? 'Voir' : 'View',
+    });
+  });
+  requiredTrainings.forEach(tr => {
+    actionItems.push({
+      id: `training-${tr.id}`, type: 'training',
+      title: language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required',
+      subtitle: `${tr.title} · ${tr.clubName}`,
+      action: () => navigate(`/training/${tr.id}`),
+      actionLabel: language === 'nl' ? 'Start' : language === 'fr' ? 'Démarrer' : 'Start',
+    });
+  });
+
+  const [showAllActions, setShowAllActions] = useState(false);
+  const visibleActions = showAllActions ? actionItems : actionItems.slice(0, 3);
+
+  // Legacy activity items for VolunteerActivitiesSection
+  const activityItemsTyped = actionItems.map(a => ({
+    ...a, type: a.type as 'contract' | 'briefing' | 'training' | 'partner_invite', urgent: a.type === 'contract',
+  }));
+
+  // Loyalty points (from sepa + payments)
+  const loyaltyPoints = sepaPayouts.filter(s => !s.error_flag).reduce((sum, s) => sum + Math.floor(s.amount), 0);
+
+  // Today's date formatted
+  const todayFormatted = new Date().toLocaleDateString(
+    language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB',
+    { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+  );
+
+  // Today's assigned events for chat
+  const todayAssignedEvents = events.filter(e =>
+    tasks.some(t => t.event_id === e.id && signups.some(s => s.task_id === t.id && s.status === 'assigned'))
+  ).slice(0, 2);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-8">
+
+      {/* ═══ SECTION 1 — HERO ZONE ═══ */}
+
       {/* Safety alert banner */}
       {activeSafetyAlert && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
-          onClick={() => setSafetySheetOpen(true)}
-        >
+          onClick={() => setSafetySheetOpen(true)}>
           <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
           <p className="text-sm font-medium text-destructive flex-1">
             {language === 'nl' ? '⚠️ Er is een veiligheidsmelding voor jouw evenement vandaag.' :
@@ -260,12 +279,12 @@ const VolunteerDashboardHome = ({
         </motion.div>
       )}
 
-      {/* Welcome */}
+      {/* Welcome + date */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
           {dt.welcome}, {profile?.full_name || profile?.email || ''}! 👋
         </h1>
-        <p className="text-muted-foreground mt-1">{dt.subtitle}</p>
+        <p className="text-sm text-muted-foreground mt-1 capitalize">{todayFormatted}</p>
       </motion.div>
 
       {/* Today & Tomorrow planning */}
@@ -296,111 +315,78 @@ const VolunteerDashboardHome = ({
         />
       )}
 
-      {/* Briefing banner */}
-      {upcomingBriefings.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          {upcomingBriefings.map(b => (
-            <button
-              key={b.taskId}
-              onClick={() => navigate(`/task/${b.taskId}`)}
-              className="w-full flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-2xl p-4 mb-2 text-left hover:bg-primary/15 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">
-                  {language === 'nl' ? '📋 Briefing beschikbaar' : language === 'fr' ? '📋 Briefing disponible' : '📋 Briefing available'}
-                </p>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {b.taskTitle}
-                  {b.taskDate && ` · ${new Date(b.taskDate).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
-                </p>
-              </div>
-              <span className="text-xs font-medium text-primary shrink-0">
-                {language === 'nl' ? 'Bekijken →' : language === 'fr' ? 'Voir →' : 'View →'}
-              </span>
-            </button>
-          ))}
+      {/* ═══ SECTION 2 — STATS STRIP ═══ */}
+      <div className="grid grid-cols-3 gap-3">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center">
+          <div className="w-8 h-8 mx-auto rounded-xl bg-accent/10 flex items-center justify-center mb-1.5">
+            <CheckCircle className="w-4 h-4 text-accent" />
+          </div>
+          <p className="text-xl font-heading font-bold text-foreground">{assignedSignups.length}</p>
+          <p className="text-[11px] text-muted-foreground">{dt.tasksCompleted}</p>
         </motion.div>
-      )}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center">
+          <div className="w-8 h-8 mx-auto rounded-xl bg-primary/10 flex items-center justify-center mb-1.5">
+            <Wallet className="w-4 h-4 text-primary" />
+          </div>
+          <p className="text-xl font-heading font-bold text-foreground">€{totalEarned.toFixed(0)}</p>
+          <p className="text-[11px] text-muted-foreground">{dt.totalEarned}</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center">
+          <div className="w-8 h-8 mx-auto rounded-xl bg-secondary/10 flex items-center justify-center mb-1.5">
+            <Sparkles className="w-4 h-4 text-secondary-foreground" />
+          </div>
+          <p className="text-xl font-heading font-bold text-foreground">{loyaltyPoints}</p>
+          <p className="text-[11px] text-muted-foreground">{language === 'nl' ? 'Punten' : 'Points'}</p>
+        </motion.div>
+      </div>
 
-      {/* Required trainings section */}
-      {requiredTrainings.length > 0 && (
+      {/* ═══ SECTION 3 — ACTIE VEREIST ═══ */}
+      {actionItems.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
           className="bg-card rounded-2xl border border-border p-5 shadow-sm">
           <h3 className="text-sm font-heading font-semibold text-foreground flex items-center gap-2 mb-3">
-            <BookOpen className="w-4 h-4 text-primary" />
-            {language === 'nl' ? 'Vereiste trainingen' : language === 'fr' ? 'Formations requises' : 'Required trainings'}
+            <AlertTriangle className="w-4 h-4 text-primary" />
+            {language === 'nl' ? 'Actie vereist' : language === 'fr' ? 'Action requise' : 'Action required'}
+            <span className="ml-auto text-[10px] font-normal text-muted-foreground px-2 py-0.5 rounded-full bg-primary/10 text-primary">{actionItems.length}</span>
           </h3>
           <div className="space-y-2">
-            {requiredTrainings.map(tr => (
-              <div key={tr.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{tr.title}</p>
-                  <p className="text-xs text-muted-foreground">{tr.clubName}</p>
+            {visibleActions.map(item => (
+              <div key={item.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    item.type === 'contract' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                    item.type === 'briefing' ? 'bg-primary/10' : 'bg-accent/10'
+                  }`}>
+                    {item.type === 'contract' ? <FileSignature className="w-4 h-4 text-orange-600 dark:text-orange-400" /> :
+                     item.type === 'briefing' ? <FileText className="w-4 h-4 text-primary" /> :
+                     <BookOpen className="w-4 h-4 text-accent-foreground" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                    {item.subtitle && <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>}
+                  </div>
                 </div>
-                <button
-                  onClick={() => navigate(`/training/${tr.id}`)}
-                  className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
-                >
-                  {language === 'nl' ? 'Start training' : language === 'fr' ? 'Démarrer' : 'Start training'}
+                <button onClick={item.action}
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity">
+                  {item.actionLabel}
                 </button>
               </div>
             ))}
           </div>
+          {actionItems.length > 3 && !showAllActions && (
+            <button onClick={() => setShowAllActions(true)}
+              className="mt-3 text-xs font-medium text-primary hover:underline flex items-center gap-1">
+              {language === 'nl' ? `Toon alles (${actionItems.length})` : language === 'fr' ? `Tout afficher (${actionItems.length})` : `Show all (${actionItems.length})`}
+              <ChevronDown className="w-3 h-3" />
+            </button>
+          )}
         </motion.div>
       )}
 
-      {/* Search bar */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-        <input type="text" placeholder={dt.searchPlaceholder} value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)} onFocus={() => setActiveTab('mine')}
-          className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring border border-border shadow-sm" />
-      </div>
-
-      {/* Bento Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="bg-card rounded-2xl p-5 shadow-sm border border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center"><TrendingUp className="w-4 h-4 text-primary" /></div>
-          </div>
-          <p className="text-2xl font-heading font-bold text-foreground">€{totalEarned.toFixed(0)}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{dt.totalEarned}</p>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="bg-card rounded-2xl p-5 shadow-sm border border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-accent" /></div>
-          </div>
-          <p className="text-2xl font-heading font-bold text-foreground">{assignedSignups.length}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{dt.tasksCompleted}</p>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="bg-card rounded-2xl p-5 shadow-sm border border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center"><ClipboardList className="w-4 h-4 text-secondary" /></div>
-          </div>
-          <p className="text-2xl font-heading font-bold text-foreground">{pendingSignups.length}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{dt.pending}</p>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="bg-card rounded-2xl p-5 shadow-sm border border-border cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate('/chat')}>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center"><MessageCircle className="w-4 h-4 text-primary" /></div>
-          </div>
-          <p className="text-sm font-semibold text-foreground">{dt.recentMessages}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{dt.goToMessages} →</p>
-        </motion.div>
-      </div>
-
-      {/* Upcoming Tasks */}
+      {/* ═══ SECTION 4 — KOMENDE TAKEN ═══ */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-heading font-semibold text-foreground">{dt.upcomingTasks}</h2>
@@ -463,22 +449,95 @@ const VolunteerDashboardHome = ({
         )}
       </div>
 
-      {currentUserId && <VolunteerLoyaltyProgress userId={currentUserId} language={language} totalPoints={0} />}
-      <NearbyClubsWidget userId={currentUserId} language={language} />
-      <VolunteerActivitiesSection items={activityItems} language={language} />
+      {/* ═══ SECTION 5 — MEER OVER MIJN SEIZOEN (accordion) ═══ */}
+      <div>
+        <h2 className="text-lg font-heading font-semibold text-foreground mb-3">
+          {language === 'nl' ? 'Meer details' : language === 'fr' ? 'Plus de détails' : 'More details'}
+        </h2>
+        <Accordion type="multiple" className="space-y-2">
+          <AccordionItem value="season" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
+            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+              {language === 'nl' ? 'Mijn Seizoen' : language === 'fr' ? 'Ma Saison' : 'My Season'}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4">
+              {currentUserId && <VolunteerSeasonOverview userId={currentUserId} language={language} />}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="financials" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
+            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+              {language === 'nl' ? 'Vergoedingen' : language === 'fr' ? 'Remboursements' : 'Payments'}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4">
+              {currentUserId && <VolunteerFinancialDashboard userId={currentUserId} language={language} />}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="badges" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
+            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+              {language === 'nl' ? 'Badges & Loyaliteit' : language === 'fr' ? 'Badges & Fidélité' : 'Badges & Loyalty'}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-4">
+              {currentUserId && <VolunteerLoyaltyProgress userId={currentUserId} language={language} totalPoints={loyaltyPoints} />}
+              {currentUserId && <VolunteerBadges userId={currentUserId} language={language} />}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="skills" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
+            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+              {language === 'nl' ? 'Skills & Academy' : language === 'fr' ? 'Compétences & Académie' : 'Skills & Academy'}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-4">
+              {currentUserId && <SkillsPassport userId={currentUserId} language={language} />}
+              {currentUserId && <MicroLearningsSection userId={currentUserId} language={language} />}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="clubs" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
+            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+              {language === 'nl' ? 'Clubs in de buurt' : language === 'fr' ? 'Clubs à proximité' : 'Nearby clubs'}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4">
+              <NearbyClubsWidget userId={currentUserId} language={language} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="calendar" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
+            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+              {language === 'nl' ? 'Kalender sync' : language === 'fr' ? 'Sync calendrier' : 'Calendar sync'}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4">
+              {currentUserId && <CalendarSyncSection userId={currentUserId} language={language} />}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="referral" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
+            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+              {language === 'nl' ? 'Vrienden werven' : language === 'fr' ? 'Parrainer des amis' : 'Refer friends'}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4">
+              {currentUserId && <ReferralSection userId={currentUserId} language={language} />}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="preferences" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
+            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+              {language === 'nl' ? 'Taakaanbevelingen' : language === 'fr' ? 'Recommandations' : 'Task recommendations'}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4">
+              {currentUserId && (
+                <VolunteerTaskPreferences userId={currentUserId} language={language} tasks={tasks}
+                  signedUpTaskIds={new Set(signups.map(s => s.task_id))} onNavigateToTask={(taskId) => navigate(`/task/${taskId}`)} />
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+
+      {/* ═══ SECTION 6 — ACTIVITEITEN & COMPLIANCE ═══ */}
+      <VolunteerActivitiesSection items={activityItemsTyped} language={language} />
       {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
-      {currentUserId && <VolunteerSeasonOverview userId={currentUserId} language={language} />}
-      {currentUserId && <VolunteerFinancialDashboard userId={currentUserId} language={language} />}
-      {currentUserId && <VolunteerBadges userId={currentUserId} language={language} />}
-      {currentUserId && <SkillsPassport userId={currentUserId} language={language} />}
-      {currentUserId && <MicroLearningsSection userId={currentUserId} language={language} />}
-      {currentUserId && <CalendarSyncSection userId={currentUserId} language={language} />}
-      {currentUserId && <ReferralSection userId={currentUserId} language={language} />}
-      {currentUserId && (
-        <VolunteerTaskPreferences userId={currentUserId} language={language} tasks={tasks}
-          signedUpTaskIds={new Set(signups.map(s => s.task_id))} onNavigateToTask={(taskId) => navigate(`/task/${taskId}`)} />
-      )}
-      {currentUserId && events.filter(e => tasks.some(t => t.event_id === e.id && signups.some(s => s.task_id === t.id && s.status === 'assigned'))).slice(0, 2).map(event => (
+      {currentUserId && todayAssignedEvents.map(event => (
         <EventGroupChat key={event.id} eventId={event.id} eventTitle={event.title} userId={currentUserId} language={language} />
       ))}
 
