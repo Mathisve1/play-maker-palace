@@ -32,9 +32,8 @@ const t3Map = {
     feat3Desc: 'Je onkostenvergoeding wordt automatisch berekend en uitbetaald.',
     feat4: 'Seizoensoverzicht',
     feat4Desc: 'Volg je uren, vergoedingen en compliance-status in realtime.',
-    socialTitle: 'Reeds actief bij top sportclubs',
-    socialClubs: 'KAA Gent, Club Brugge en KV Kortrijk',
-    socialSubtitle: 'Sluit je aan bij honderden vrijwilligers die al via het platform werken.',
+    socialTitle: 'Sluit je aan bij een groeiend netwerk',
+    socialSubtitle: 'Ontdek clubs in je buurt en begin vandaag nog met vrijwilligerswerk.',
     ctaTitle: 'Word vandaag nog vrijwilliger',
     ctaSubtitle: 'Maak je account aan en ontdek welke clubs jouw hulp nodig hebben.',
     ctaButton: 'Aan de slag',
@@ -60,9 +59,8 @@ const t3Map = {
     feat3Desc: 'Vos indemnités sont calculées et versées automatiquement.',
     feat4: 'Aperçu saisonnier',
     feat4Desc: 'Suivez vos heures, indemnités et statut de conformité en temps réel.',
-    socialTitle: 'Déjà actif dans les meilleurs clubs',
-    socialClubs: 'KAA Gent, Club Brugge et KV Kortrijk',
-    socialSubtitle: 'Rejoignez des centaines de bénévoles qui utilisent déjà la plateforme.',
+    socialTitle: 'Rejoignez un réseau en pleine croissance',
+    socialSubtitle: 'Découvrez des clubs près de chez vous et commencez à faire du bénévolat.',
     ctaTitle: 'Devenez bénévole aujourd\'hui',
     ctaSubtitle: 'Créez votre compte et découvrez quels clubs ont besoin de vous.',
     ctaButton: 'Commencer',
@@ -88,8 +86,7 @@ const t3Map = {
     feat3Desc: 'Your expenses are automatically calculated and paid out.',
     feat4: 'Season overview',
     feat4Desc: 'Track your hours, compensation and compliance status in real time.',
-    socialTitle: 'Already active at top sports clubs',
-    socialClubs: 'KAA Gent, Club Brugge and KV Kortrijk',
+    socialTitle: 'Join a growing network',
     socialSubtitle: 'Join hundreds of volunteers already working through the platform.',
     ctaTitle: 'Become a volunteer today',
     ctaSubtitle: 'Create your account and discover which clubs need your help.',
@@ -235,8 +232,7 @@ const VolunteerLanding = () => {
                 <Star key={i} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               ))}
             </div>
-            <h3 className="text-xl font-heading font-bold text-foreground mb-2">{l.socialTitle}</h3>
-            <p className="text-primary font-semibold text-lg mb-3">{l.socialClubs}</p>
+            <h3 className="text-xl font-heading font-bold text-foreground mb-3">{l.socialTitle}</h3>
             <p className="text-muted-foreground">{l.socialSubtitle}</p>
             <div className="flex items-center justify-center gap-6 mt-8 text-muted-foreground text-sm">
               <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary" /> 500+ {language === 'nl' ? 'vrijwilligers' : language === 'fr' ? 'bénévoles' : 'volunteers'}</span>

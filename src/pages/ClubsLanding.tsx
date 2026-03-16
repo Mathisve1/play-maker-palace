@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Link } from 'react-router-dom';
 import {
   FileSignature, Users, CreditCard, ClipboardList, Shield, CheckCircle,
-  ArrowRight, Sparkles, Quote, Smartphone, BarChart3, AlertTriangle, Lock,
+  ArrowRight, Sparkles, Smartphone, BarChart3, AlertTriangle, Lock,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -24,13 +24,13 @@ const t3Map = {
     freeDesc: 'Perfect om te testen',
     freePrice: '€0',
     freePeriod: 'voor altijd',
-    freeFeatures: ['2 seizoenscontracten', 'Alle platformfeatures', 'Briefing builder', 'Community & badges'],
+    freeFeatures: ['2 gratis taken per vrijwilliger per seizoen', 'Alle platformfeatures', 'Briefing builder', 'Community & badges'],
     paid: 'Groeiplan',
     paidDesc: 'Voor actieve clubs',
     paidPrice: '€15',
     paidPeriod: 'per vrijwilliger / seizoen',
-    paidFeatures: ['Onbeperkt contracten', 'SEPA-uitbetalingen', 'Automatische facturatie', 'Partnerzitjes (bulk)', 'Prioritaire support'],
-    paidNote: 'Betaal enkel voor actieve vrijwilligers',
+    paidFeatures: ['Onbeperkte vrijwilligers & taken', 'SEPA-uitbetalingen', 'Automatische facturatie', 'Partnerzitjes (bulk)', 'Prioritaire support'],
+    paidNote: 'Pas vanaf de 3e voltooide taak per vrijwilliger per seizoen',
     featuresTitle: 'Alles wat je club nodig heeft',
     feat1: 'Seizoenscontracten', feat1Desc: 'Digitale contracten met e-handtekening via DocuSeal. Automatisch verstuurd bij onboarding.',
     feat2: 'SEPA-uitbetalingen', feat2Desc: 'Genereer SEPA-bestanden en betaal alle vrijwilligers in één klik uit.',
@@ -38,13 +38,6 @@ const t3Map = {
     feat4: 'Aanwezigheidsregistratie', feat4Desc: 'QR-code check-in met automatische urenregistratie.',
     feat5: 'Veiligheidsmodule', feat5Desc: 'Incident-logging, sluitingsprocedures en veiligheidsteams.',
     feat6: 'Rapportage & compliance', feat6Desc: 'Seizoensrapporten, financiële overzichten en compliance-tracking.',
-    testimonialTitle: 'Wat clubs zeggen',
-    testimonial1Quote: 'We besparen minstens 10 uur administratie per wedstrijd. De briefing tool alleen al is het waard.',
-    testimonial1Name: 'Tom Verhoeven',
-    testimonial1Role: 'Coördinator vrijwilligers, KAA Gent',
-    testimonial2Quote: 'Eindelijk een platform dat de Belgische vrijwilligerswetgeving begrijpt. Contracten en vergoedingen lopen nu volledig automatisch.',
-    testimonial2Name: 'Sarah De Smet',
-    testimonial2Role: 'Operationeel manager, Club Brugge',
     trustTitle: 'Gebouwd op vertrouwen',
     trust1: 'GDPR-conform',
     trust2: 'Belgische vrijwilligerswetgeving',
@@ -64,13 +57,13 @@ const t3Map = {
     freeDesc: 'Parfait pour tester',
     freePrice: '€0',
     freePeriod: 'pour toujours',
-    freeFeatures: ['2 contrats saisonniers', 'Toutes les fonctionnalités', 'Briefing builder', 'Communauté & badges'],
+    freeFeatures: ['2 tâches gratuites par bénévole par saison', 'Toutes les fonctionnalités', 'Briefing builder', 'Communauté & badges'],
     paid: 'Plan croissance',
     paidDesc: 'Pour les clubs actifs',
     paidPrice: '€15',
     paidPeriod: 'par bénévole / saison',
-    paidFeatures: ['Contrats illimités', 'Paiements SEPA', 'Facturation automatique', 'Sièges partenaires', 'Support prioritaire'],
-    paidNote: 'Payez uniquement pour les bénévoles actifs',
+    paidFeatures: ['Bénévoles & tâches illimités', 'Paiements SEPA', 'Facturation automatique', 'Sièges partenaires', 'Support prioritaire'],
+    paidNote: 'Uniquement à partir de la 3e tâche complétée par bénévole par saison',
     featuresTitle: 'Tout ce dont votre club a besoin',
     feat1: 'Contrats saisonniers', feat1Desc: 'Contrats numériques avec signature électronique via DocuSeal.',
     feat2: 'Paiements SEPA', feat2Desc: 'Générez des fichiers SEPA et payez tous les bénévoles en un clic.',
@@ -78,13 +71,6 @@ const t3Map = {
     feat4: 'Enregistrement de présence', feat4Desc: 'Check-in par QR-code avec enregistrement automatique des heures.',
     feat5: 'Module de sécurité', feat5Desc: 'Journal des incidents, procédures de clôture et équipes de sécurité.',
     feat6: 'Rapports & conformité', feat6Desc: 'Rapports saisonniers, aperçus financiers et suivi de conformité.',
-    testimonialTitle: 'Ce que disent les clubs',
-    testimonial1Quote: 'Nous économisons au moins 10 heures d\'administration par match.',
-    testimonial1Name: 'Tom Verhoeven',
-    testimonial1Role: 'Coordinateur bénévoles, KAA Gent',
-    testimonial2Quote: 'Enfin une plateforme qui comprend la législation belge sur le bénévolat.',
-    testimonial2Name: 'Sarah De Smet',
-    testimonial2Role: 'Manager opérationnel, Club Brugge',
     trustTitle: 'Construit sur la confiance',
     trust1: 'Conforme RGPD',
     trust2: 'Législation belge du bénévolat',
@@ -104,13 +90,13 @@ const t3Map = {
     freeDesc: 'Perfect to test',
     freePrice: '€0',
     freePeriod: 'forever',
-    freeFeatures: ['2 season contracts', 'All platform features', 'Briefing builder', 'Community & badges'],
+    freeFeatures: ['2 free tasks per volunteer per season', 'All platform features', 'Briefing builder', 'Community & badges'],
     paid: 'Growth plan',
     paidDesc: 'For active clubs',
     paidPrice: '€15',
     paidPeriod: 'per volunteer / season',
-    paidFeatures: ['Unlimited contracts', 'SEPA payouts', 'Automated invoicing', 'Partner seats (bulk)', 'Priority support'],
-    paidNote: 'Only pay for active volunteers',
+    paidFeatures: ['Unlimited volunteers & tasks', 'SEPA payouts', 'Automated invoicing', 'Partner seats (bulk)', 'Priority support'],
+    paidNote: 'Only from the 3rd completed task per volunteer per season',
     featuresTitle: 'Everything your club needs',
     feat1: 'Season contracts', feat1Desc: 'Digital contracts with e-signatures via DocuSeal. Automatically sent during onboarding.',
     feat2: 'SEPA payouts', feat2Desc: 'Generate SEPA files and pay all volunteers in one click.',
@@ -118,13 +104,6 @@ const t3Map = {
     feat4: 'Attendance tracking', feat4Desc: 'QR code check-in with automatic hour registration.',
     feat5: 'Safety module', feat5Desc: 'Incident logging, closing procedures and safety teams.',
     feat6: 'Reporting & compliance', feat6Desc: 'Season reports, financial overviews and compliance tracking.',
-    testimonialTitle: 'What clubs say',
-    testimonial1Quote: 'We save at least 10 hours of administration per match. The briefing tool alone is worth it.',
-    testimonial1Name: 'Tom Verhoeven',
-    testimonial1Role: 'Volunteer coordinator, KAA Gent',
-    testimonial2Quote: 'Finally a platform that understands Belgian volunteering legislation. Contracts and compensation run fully automatically.',
-    testimonial2Name: 'Sarah De Smet',
-    testimonial2Role: 'Operations manager, Club Brugge',
     trustTitle: 'Built on trust',
     trust1: 'GDPR compliant',
     trust2: 'Belgian volunteer legislation',
@@ -284,36 +263,6 @@ const ClubsLanding = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{l.testimonialTitle}</h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {[
-              { quote: l.testimonial1Quote, name: l.testimonial1Name, role: l.testimonial1Role },
-              { quote: l.testimonial2Quote, name: l.testimonial2Name, role: l.testimonial2Role },
-            ].map((t, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-card rounded-2xl p-8 shadow-card border border-border/50"
-              >
-                <Quote className="w-8 h-8 text-primary/20 mb-4" />
-                <p className="text-foreground italic leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.role}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Trust badges */}
       <section className="py-16 px-4">
