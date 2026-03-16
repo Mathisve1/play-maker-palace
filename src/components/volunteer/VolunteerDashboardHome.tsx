@@ -207,39 +207,57 @@ const VolunteerDashboardHome = ({
     })
     .slice(0, 3);
 
-  // Activity items
-  const activityItems = (() => {
-    const items: { id: string; type: 'contract' | 'briefing' | 'training' | 'partner_invite'; title: string; subtitle?: string; action: () => void; actionLabel: string; urgent?: boolean }[] = [];
-    myContracts.filter(c => c.status === 'pending' && c.signing_url).forEach(c => {
-      items.push({
-        id: `contract-${c.id}`, type: 'contract',
-        title: language === 'nl' ? 'Contract ondertekenen' : language === 'fr' ? 'Signer le contrat' : 'Sign contract',
-        subtitle: c.task_title ? `${c.task_title}${c.club_name ? ` · ${c.club_name}` : ''}` : c.club_name,
-        action: () => window.open(c.signing_url!, '_blank'),
-        actionLabel: language === 'nl' ? 'Ondertekenen' : 'Sign', urgent: true,
-      });
+  // Action required items
+  const actionItems: { id: string; type: string; title: string; subtitle?: string; action: () => void; actionLabel: string }[] = [];
+  myContracts.filter(c => c.status === 'pending' && c.signing_url).forEach(c => {
+    actionItems.push({
+      id: `contract-${c.id}`, type: 'contract',
+      title: language === 'nl' ? 'Contract ondertekenen' : language === 'fr' ? 'Signer le contrat' : 'Sign contract',
+      subtitle: c.task_title ? `${c.task_title}${c.club_name ? ` · ${c.club_name}` : ''}` : c.club_name,
+      action: () => window.open(c.signing_url!, '_blank'),
+      actionLabel: language === 'nl' ? 'Ondertekenen' : language === 'fr' ? 'Signer' : 'Sign',
     });
-    if (followedClubIds && followedClubIds.size > 0) {
-      const requiredTrainings = new Map<string, { taskTitle: string; clubName: string }>();
-      tasks.forEach(t => {
-        if (t.required_training_id && !myCertifiedTrainingIds.has(t.required_training_id) && followedClubIds!.has(t.club_id)) {
-          if (!requiredTrainings.has(t.required_training_id)) {
-            requiredTrainings.set(t.required_training_id, { taskTitle: t.title, clubName: t.clubs?.name || '' });
-          }
-        }
-      });
-      requiredTrainings.forEach((info, trainingId) => {
-        items.push({
-          id: `training-${trainingId}`, type: 'training',
-          title: language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required',
-          subtitle: `${info.taskTitle} · ${info.clubName}`,
-          action: () => window.open('/volunteer-training', '_self'),
-          actionLabel: language === 'nl' ? 'Bekijken' : 'View',
-        });
-      });
-    }
-    return items;
-  })();
+  });
+  upcomingBriefings.forEach(b => {
+    actionItems.push({
+      id: `briefing-${b.taskId}`, type: 'briefing',
+      title: language === 'nl' ? 'Briefing lezen' : language === 'fr' ? 'Lire le briefing' : 'Read briefing',
+      subtitle: b.taskTitle,
+      action: () => navigate(`/task/${b.taskId}`),
+      actionLabel: language === 'nl' ? 'Bekijken' : language === 'fr' ? 'Voir' : 'View',
+    });
+  });
+  requiredTrainings.forEach(tr => {
+    actionItems.push({
+      id: `training-${tr.id}`, type: 'training',
+      title: language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required',
+      subtitle: `${tr.title} · ${tr.clubName}`,
+      action: () => navigate(`/training/${tr.id}`),
+      actionLabel: language === 'nl' ? 'Start' : language === 'fr' ? 'Démarrer' : 'Start',
+    });
+  });
+
+  const [showAllActions, setShowAllActions] = useState(false);
+  const visibleActions = showAllActions ? actionItems : actionItems.slice(0, 3);
+
+  // Legacy activity items for VolunteerActivitiesSection
+  const activityItems = actionItems.map(a => ({
+    ...a, urgent: a.type === 'contract',
+  }));
+
+  // Loyalty points (from sepa + payments)
+  const loyaltyPoints = sepaPayouts.filter(s => !s.error_flag).reduce((sum, s) => sum + Math.floor(s.amount), 0);
+
+  // Today's date formatted
+  const todayFormatted = new Date().toLocaleDateString(
+    language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB',
+    { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+  );
+
+  // Today's assigned events for chat
+  const todayAssignedEvents = events.filter(e =>
+    tasks.some(t => t.event_id === e.id && signups.some(s => s.task_id === t.id && s.status === 'assigned'))
+  ).slice(0, 2);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
