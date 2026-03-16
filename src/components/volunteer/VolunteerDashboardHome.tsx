@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText, AlertTriangle, BookOpen, Layers } from 'lucide-react';
