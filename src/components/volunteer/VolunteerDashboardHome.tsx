@@ -345,6 +345,80 @@ const VolunteerDashboardHome = ({
         </motion.div>
       </div>
 
+      {/* ═══ TASK SEARCH ═══ */}
+      {(() => {
+        const sports = [...new Set(tasks.map(t => t.clubs?.sport).filter(Boolean))] as string[];
+        const isSearching = taskSearch.trim().length > 0 || sportFilter;
+        const filtered = isSearching
+          ? tasks.filter(t => {
+              const signupStatus = getSignupStatus(t.id);
+              if (signupStatus) return false; // already signed up
+              const matchesText = !taskSearch.trim() || t.title.toLowerCase().includes(taskSearch.toLowerCase()) || t.clubs?.name?.toLowerCase().includes(taskSearch.toLowerCase());
+              const matchesSport = !sportFilter || t.clubs?.sport === sportFilter;
+              return matchesText && matchesSport;
+            }).slice(0, 5)
+          : [];
+        return (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+            <h3 className="text-sm font-heading font-semibold text-foreground flex items-center gap-2 mb-3">
+              <Search className="w-4 h-4 text-primary" />
+              {language === 'nl' ? 'Taken zoeken' : language === 'fr' ? 'Chercher des tâches' : 'Search tasks'}
+            </h3>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                value={taskSearch}
+                onChange={e => setTaskSearch(e.target.value)}
+                placeholder={language === 'nl' ? 'Zoek taken bij clubs...' : language === 'fr' ? 'Chercher des tâches...' : 'Search tasks...'}
+                className="w-full rounded-xl border border-border bg-muted/30 py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              />
+            </div>
+            {sports.length > 0 && (
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none">
+                {sports.map(sport => (
+                  <button key={sport} onClick={() => setSportFilter(prev => prev === sport ? null : sport)}
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      sportFilter === sport
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                    }`}>
+                    {sport}
+                  </button>
+                ))}
+              </div>
+            )}
+            {isSearching && filtered.length > 0 && (
+              <div className="mt-3 space-y-1.5">
+                {filtered.map(task => (
+                  <div key={task.id} onClick={() => navigate(`/task/${task.id}`)}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
+                        {task.clubs?.name && <span>{task.clubs.name}</span>}
+                        {task.task_date && <span>· {new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>}
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {isSearching && filtered.length === 0 && (
+              <p className="mt-3 text-xs text-muted-foreground text-center py-2">
+                {language === 'nl' ? 'Geen taken gevonden.' : language === 'fr' ? 'Aucune tâche trouvée.' : 'No tasks found.'}
+              </p>
+            )}
+            <button onClick={() => navigate('/community')}
+              className="mt-3 text-xs font-medium text-primary hover:underline flex items-center gap-1">
+              {language === 'nl' ? 'Alle taken bekijken' : language === 'fr' ? 'Voir toutes les tâches' : 'View all tasks'} →
+            </button>
+          </motion.div>
+        );
+      })()}
+
       {/* ═══ SECTION 3 — ACTIE VEREIST ═══ */}
       {actionItems.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
