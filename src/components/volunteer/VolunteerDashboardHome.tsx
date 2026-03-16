@@ -248,14 +248,15 @@ const VolunteerDashboardHome = ({
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
-          onClick={() => { /* safety alert navigates via live event redirect */ }}
+          onClick={() => setSafetySheetOpen(true)}
         >
           <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-          <p className="text-sm font-medium text-destructive">
+          <p className="text-sm font-medium text-destructive flex-1">
             {language === 'nl' ? '⚠️ Er is een veiligheidsmelding voor jouw evenement vandaag.' :
              language === 'fr' ? '⚠️ Il y a un signalement de sécurité pour votre événement aujourd\'hui.' :
              '⚠️ There is a safety alert for your event today.'}
           </p>
+          <Shield className="w-4 h-4 text-destructive shrink-0" />
         </motion.div>
       )}
 
