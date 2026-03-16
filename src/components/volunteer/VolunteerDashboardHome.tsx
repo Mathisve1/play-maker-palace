@@ -271,6 +271,7 @@ const VolunteerDashboardHome = ({
         tasks={tasks}
         signups={signups}
         getSignupStatus={getSignupStatus}
+        zoneAssignments={zoneAssignments}
       />
 
       {/* Onboarding Wizard */}
@@ -427,7 +428,7 @@ const VolunteerDashboardHome = ({
                     {zoneAssignments[task.id] && (
                       <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/15 text-accent-foreground w-fit">
                         <Layers className="w-3 h-3" />
-                        Zone: {zoneAssignments[task.id]}
+                        {language === 'fr' ? 'Zone :' : 'Zone:'} {zoneAssignments[task.id]}
                       </span>
                     )}
                     <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">

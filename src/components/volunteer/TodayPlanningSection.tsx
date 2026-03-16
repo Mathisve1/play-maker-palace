@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, MapPin, AlertTriangle, Navigation, Calendar, CheckCircle, Loader2 } from 'lucide-react';
+import { Clock, MapPin, AlertTriangle, Navigation, Calendar, CheckCircle, Loader2, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -17,6 +17,7 @@ interface Props {
   tasks: VolunteerTask[];
   signups: TaskSignup[];
   getSignupStatus: (taskId: string) => string | null;
+  zoneAssignments?: Record<string, string>;
 }
 
 const labels: Record<'nl' | 'fr' | 'en', Record<string, string>> = {
@@ -84,7 +85,7 @@ function formatCountdown(taskDate: string, l: Record<string, string>): string {
   return `${l.startsIn} ${m}${l.minutes}`;
 }
 
-const TodayPlanningSection = ({ language, currentUserId, profileName, tasks, signups, getSignupStatus }: Props) => {
+const TodayPlanningSection = ({ language, currentUserId, profileName, tasks, signups, getSignupStatus, zoneAssignments = {} }: Props) => {
   const navigate = useNavigate();
   const l = labels[language as keyof typeof labels] || labels.nl;
 
@@ -170,6 +171,12 @@ const TodayPlanningSection = ({ language, currentUserId, profileName, tasks, sig
             >
               {task.title}
             </button>
+            {zoneAssignments[task.id] && (
+              <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/15 text-accent-foreground w-fit">
+                <Layers className="w-3 h-3" />
+                {language === 'fr' ? 'Zone :' : 'Zone:'} {zoneAssignments[task.id]}
+              </span>
+            )}
             <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">
               {task.clubs?.name && <span>{task.clubs.name}</span>}
               {task.task_date && (
