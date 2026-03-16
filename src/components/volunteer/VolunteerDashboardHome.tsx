@@ -20,6 +20,9 @@ import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import EventGroupChat from '@/components/EventGroupChat';
 import TodayPlanningSection from '@/components/volunteer/TodayPlanningSection';
 import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Shield } from 'lucide-react';
+const VolunteerSafetyTab = lazy(() => import('@/components/VolunteerSafetyTab'));
 import type { VolunteerTask, TaskSignup, VolunteerPayment, SignatureContract, SepaPayoutItem, VolunteerEventData } from '@/types/volunteer';
 import { volunteerDashboardLabels } from '@/types/volunteer';
 
