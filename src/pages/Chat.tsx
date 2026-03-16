@@ -92,6 +92,13 @@ const Chat = () => {
   const [groupChats, setGroupChats] = useState<GroupChatEntry[]>([]);
   const [activeConversation, setActiveConversation] = useState<string | null>(conversationId || null);
   const [activeGroupChat, setActiveGroupChat] = useState<string | null>(null);
+  const [chatFilter, setChatFilter] = useState<'all' | 'group' | 'private'>('all');
+
+  const filteredEmpty = useMemo(() => {
+    if (chatFilter === 'all') return conversations.length === 0 && groupChats.length === 0;
+    if (chatFilter === 'group') return groupChats.length === 0;
+    return conversations.length === 0;
+  }, [chatFilter, conversations.length, groupChats.length]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
