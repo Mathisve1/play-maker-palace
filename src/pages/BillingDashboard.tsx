@@ -204,11 +204,11 @@ const BillingDashboard = () => {
               <div className="flex items-center gap-2 mb-3">
                 <Gift className="w-5 h-5 text-primary" />
                 <span className="text-sm font-medium text-foreground">
-                  {t('Per-vrijwilliger model', 'Modèle par bénévole', 'Per-volunteer model')}
+                  {t('Per-contracttype model', 'Modèle par type de contrat', 'Per-contract-type model')}
                 </span>
               </div>
-              <p className="text-2xl font-bold text-foreground">2 {t('gratis taken', 'tâches gratuites', 'free tasks')}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t('per vrijwilliger per seizoen', 'par bénévole par saison', 'per volunteer per season')}</p>
+              <p className="text-2xl font-bold text-foreground">2 {t('gratis types', 'types gratuits', 'free types')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('per club per seizoen', 'par club par saison', 'per club per season')}</p>
             </CardContent>
           </Card>
 
@@ -323,9 +323,9 @@ const BillingDashboard = () => {
                   </div>
                   <ul className="space-y-4 text-sm">
                     {[
-                      { step: '1', text: t('Elke vrijwilliger kan 2 taken gratis voltooien per seizoen', 'Chaque bénévole peut effectuer 2 tâches gratuitement par saison', 'Each volunteer can complete 2 tasks for free per season'), highlight: true },
-                      { step: '2', text: t('Bij de 3e voltooide taak wordt €15 automatisch gefactureerd voor die vrijwilliger', 'À la 3e tâche complétée, €15 est facturé automatiquement pour ce bénévole', 'At the 3rd completed task, €15 is automatically invoiced for that volunteer'), highlight: false },
-                      { step: '3', text: t('Alle volgende taken dat seizoen: geen extra kost', 'Toutes les tâches suivantes cette saison : sans frais', 'All subsequent tasks that season: no extra cost'), highlight: false },
+                      { step: '1', text: t('Kies je eerste 2 vrijwilligerstypes — volledig gratis', 'Choisissez vos 2 premiers types de bénévoles — entièrement gratuit', 'Choose your first 2 volunteer types — completely free'), highlight: true },
+                      { step: '2', text: t('Gebruik je een 3e, 4e of 5e type? Dan betaal je €15/vrijwilliger/seizoen voor dat extra type', 'Vous utilisez un 3e, 4e ou 5e type ? Alors vous payez 15€/bénévole/saison pour ce type supplémentaire', 'Using a 3rd, 4th or 5th type? You pay €15/volunteer/season for that extra type'), highlight: false },
+                      { step: '3', text: t('Alle taken binnen een type: geen extra kost', 'Toutes les tâches au sein d\'un type : aucun frais supplémentaire', 'All tasks within a type: no extra cost'), highlight: false },
                       { step: '✓', text: t('Teller reset bij elk nieuw seizoen', 'Compteur réinitialisé chaque saison', 'Counter resets each new season'), highlight: false },
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3">
@@ -351,24 +351,20 @@ const BillingDashboard = () => {
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Anna — 5 {t('taken', 'tâches', 'tasks')}</span>
-                      <span className="font-medium text-foreground">€15</span>
+                      <span className="text-primary">Steward</span>
+                      <span className="font-medium text-primary">€0 ✓ ({t('gratis type', 'type gratuit', 'free type')})</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Ben — 3 {t('taken', 'tâches', 'tasks')}</span>
-                      <span className="font-medium text-foreground">€15</span>
+                      <span className="text-primary">Bar & Catering</span>
+                      <span className="font-medium text-primary">€0 ✓ ({t('gratis type', 'type gratuit', 'free type')})</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-primary">Chris — 2 {t('taken', 'tâches', 'tasks')}</span>
-                      <span className="font-medium text-primary">€0 ✓</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-primary">Dana — 1 {t('taak', 'tâche', 'task')}</span>
-                      <span className="font-medium text-primary">€0 ✓</span>
+                      <span className="text-muted-foreground">{t('Terrein & Materiaal', 'Terrain & Matériel', 'Terrain & Material')} — 8 {t('vrijwilligers', 'bénévoles', 'volunteers')}</span>
+                      <span className="font-medium text-foreground">8 × €15 = €120</span>
                     </div>
                     <div className="border-t border-border pt-3 flex justify-between font-bold">
                       <span className="text-foreground">{t('Totaal', 'Total', 'Total')}</span>
-                      <span className="text-primary">€30 / {t('seizoen', 'saison', 'season')}</span>
+                      <span className="text-primary">€120 / {t('seizoen', 'saison', 'season')}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -384,25 +380,25 @@ const BillingDashboard = () => {
                 {
                   q: t('Wanneer betaal ik?', 'Quand est-ce que je paie ?', 'When do I pay?'),
                   a: t(
-                    'Je betaalt automatisch €15 per vrijwilliger die meer dan 2 taken voltooit in een seizoen. Facturatie gebeurt maandelijks op de 1e.',
-                    'Vous payez automatiquement €15 par bénévole qui effectue plus de 2 tâches par saison. Facturation mensuelle le 1er.',
-                    'You automatically pay €15 per volunteer who completes more than 2 tasks in a season. Billed monthly on the 1st.'
+                    'Je betaalt pas als je meer dan 2 contracttypes gebruikt. Vanaf het 3e type betaal je €15 per vrijwilliger per seizoen voor dat type. Facturatie gebeurt maandelijks op de 1e.',
+                    'Vous ne payez qu\'à partir du 3e type de contrat utilisé. Vous payez alors 15€ par bénévole par saison pour ce type. Facturation mensuelle le 1er.',
+                    'You only pay when using more than 2 contract types. From the 3rd type, you pay €15 per volunteer per season for that type. Billed monthly on the 1st.'
                   ),
                 },
                 {
-                  q: t('Wat als een vrijwilliger maar 2 taken doet?', 'Et si un bénévole ne fait que 2 tâches ?', 'What if a volunteer only does 2 tasks?'),
+                  q: t('Wat als mijn club maar 2 types gebruikt?', 'Et si mon club n\'utilise que 2 types ?', 'What if my club only uses 2 types?'),
                   a: t(
-                    'Dan is het volledig gratis! Je betaalt enkel voor vrijwilligers die 3 of meer taken voltooien.',
-                    'C\'est entièrement gratuit ! Vous ne payez que pour les bénévoles qui effectuent 3 tâches ou plus.',
-                    'It\'s completely free! You only pay for volunteers who complete 3 or more tasks.'
+                    'Dan is het volledig gratis! Je betaalt enkel wanneer je een 3e, 4e of 5e contracttype activeert.',
+                    'C\'est entièrement gratuit ! Vous ne payez que lorsque vous activez un 3e, 4e ou 5e type de contrat.',
+                    'It\'s completely free! You only pay when you activate a 3rd, 4th or 5th contract type.'
                   ),
                 },
                 {
                   q: t('Reset de teller per seizoen?', 'Le compteur se réinitialise-t-il par saison ?', 'Does the counter reset per season?'),
                   a: t(
-                    'Ja! Bij elk nieuw seizoen begint elke vrijwilliger opnieuw met 2 gratis taken.',
-                    'Oui ! Chaque nouvelle saison, chaque bénévole recommence avec 2 tâches gratuites.',
-                    'Yes! Each new season, every volunteer starts fresh with 2 free tasks.'
+                    'Ja! Bij elk nieuw seizoen begint de teller van contracttypes opnieuw op 0.',
+                    'Oui ! Chaque nouvelle saison, le compteur de types de contrat repart à 0.',
+                    'Yes! Each new season, the contract type counter resets to 0.'
                   ),
                 },
                 {
