@@ -29,6 +29,7 @@ interface VolunteerSidebarProps {
     assigned?: number;
     contracts?: number;
     payments?: number;
+    loyalty?: number;
   };
 }
 
@@ -194,6 +195,7 @@ const VolunteerSidebar = ({
                 <SidebarMenuButton isActive={activeTab === 'grow'} onClick={() => handleNav('grow')} className="min-h-[48px]">
                   <TrendingUp className="w-5 h-5" />
                   <span>{l.grow}</span>
+                  <Badge count={counts.loyalty} />
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

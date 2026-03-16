@@ -19,6 +19,7 @@ import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerDashboardHome from '@/components/volunteer/VolunteerDashboardHome';
 import VolunteerTasksList from '@/components/volunteer/VolunteerTasksList';
 import VolunteerGrowTab from '@/components/volunteer/VolunteerGrowTab';
+import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
 import VolunteerOnboardingWizard from '@/components/VolunteerOnboardingWizard';
 import VolunteerOnboardingTour from '@/components/VolunteerOnboardingTour';
 import TaskReviewDialog from '@/components/TaskReviewDialog';
@@ -138,7 +139,7 @@ const VolunteerDashboard = () => {
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<VolunteerTab>(() => {
     // Fallback: if a removed tab was somehow persisted, default to dashboard
-    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments'];
+    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments', 'grow'];
     return 'dashboard';
   });
   
@@ -697,8 +698,9 @@ const VolunteerDashboard = () => {
       counts={{
         pending: pendingSignups.length,
         assigned: assignedSignups.length,
-        payments: myPayments.length + sepaPayouts.length,
+      payments: myPayments.length + sepaPayouts.length,
         contracts: myContracts.filter(c => c.status === 'pending').length,
+        loyalty: loyaltyPrograms.filter(p => !loyaltyEnrollments[p.id]).length || undefined,
       }}
     />
   );
@@ -810,6 +812,16 @@ const VolunteerDashboard = () => {
             myContracts={myContracts}
             getSignupStatus={getSignupStatus}
           />
+          {myTickets.length > 0 && (
+            <div className="mt-8">
+              <VolunteerTicketsTab
+                tickets={myTickets}
+                language={language}
+                profile={profile}
+                userId={currentUserId}
+              />
+            </div>
+          )}
         </>
       )}
 
