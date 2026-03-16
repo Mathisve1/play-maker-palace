@@ -238,6 +238,8 @@ const VolunteerDashboardHome = ({
   });
 
   const [showAllActions, setShowAllActions] = useState(false);
+  const [taskSearch, setTaskSearch] = useState('');
+  const [sportFilter, setSportFilter] = useState<string | null>(null);
   const visibleActions = showAllActions ? actionItems : actionItems.slice(0, 3);
 
   // Legacy activity items for VolunteerActivitiesSection
