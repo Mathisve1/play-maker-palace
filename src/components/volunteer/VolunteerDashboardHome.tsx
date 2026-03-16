@@ -228,7 +228,7 @@ const VolunteerDashboardHome = ({
           id: `training-${trainingId}`, type: 'training',
           title: language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required',
           subtitle: `${info.taskTitle} · ${info.clubName}`,
-          action: () => setActiveTab('academy'),
+          action: () => window.open('/volunteer-training', '_self'),
           actionLabel: language === 'nl' ? 'Bekijken' : 'View',
         });
       });
