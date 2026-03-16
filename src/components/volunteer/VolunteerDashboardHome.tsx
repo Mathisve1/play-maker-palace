@@ -271,6 +271,7 @@ const VolunteerDashboardHome = ({
         tasks={tasks}
         signups={signups}
         getSignupStatus={getSignupStatus}
+        zoneAssignments={zoneAssignments}
       />
 
       {/* Onboarding Wizard */}
