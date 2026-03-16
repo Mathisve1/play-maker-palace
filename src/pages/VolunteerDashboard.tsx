@@ -23,8 +23,6 @@ import VolunteerOnboardingTour from '@/components/VolunteerOnboardingTour';
 import TaskReviewDialog from '@/components/TaskReviewDialog';
 import { Star } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
-import { motion } from 'framer-motion';
 interface Task {
   id: string;
   title: string;
