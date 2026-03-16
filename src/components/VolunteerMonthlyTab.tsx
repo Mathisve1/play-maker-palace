@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { VolunteerBriefingsList } from '@/components/VolunteerBriefingView';
 import { sendPush, sendPushToClub } from '@/lib/sendPush';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
