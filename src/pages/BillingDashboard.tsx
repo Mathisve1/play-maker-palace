@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import {
   CreditCard, Receipt, Users, Loader2, Download, Gift, AlertTriangle,
-  CheckCircle, Handshake, TrendingUp, FileText, Package
+  CheckCircle, Handshake, TrendingUp, FileText, Info
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { generateInvoicePdf } from '@/lib/generateInvoicePdf';
@@ -39,8 +39,6 @@ const BillingDashboard = () => {
   const [seatInput, setSeatInput] = useState('');
   const [savingSeats, setSavingSeats] = useState(false);
   const [volunteerUsage, setVolunteerUsage] = useState<VolunteerUsageRow[]>([]);
-  const [contractTypes, setContractTypes] = useState<{ type: string; count: number; isFree: boolean }[]>([]);
-  const [freeUsed, setFreeUsed] = useState(0);
 
   useEffect(() => {
     const init = async () => {
@@ -66,10 +64,8 @@ const BillingDashboard = () => {
     if (!billingRes.data) {
       const { data: newBilling } = await supabase.from('club_billing').insert({ club_id: cId }).select().single();
       setBilling(newBilling);
-      setFreeUsed(0);
     } else {
       setBilling(billingRes.data);
-      setFreeUsed(billingRes.data.free_contracts_used || 0);
     }
     setSeatInput(billingRes.data?.partner_seats_purchased?.toString() || '0');
     setEvents(eventsRes.data || []);
@@ -101,27 +97,6 @@ const BillingDashboard = () => {
       }
     }
 
-    // Fetch contract type distribution
-    const { data: contracts } = await (supabase as any)
-      .from('season_contracts')
-      .select('contract_type, is_billable')
-      .eq('club_id', cId)
-      .not('contract_type', 'is', null);
-
-    if (contracts && contracts.length > 0) {
-      const typeMap: Record<string, { count: number; isFree: boolean }> = {};
-      contracts.forEach((c: any) => {
-        if (!typeMap[c.contract_type]) {
-          typeMap[c.contract_type] = { count: 0, isFree: !c.is_billable };
-        }
-        typeMap[c.contract_type].count++;
-      });
-      setContractTypes(
-        Object.entries(typeMap).map(([type, data]) => ({ type, ...data }))
-          .sort((a, b) => (a.isFree === b.isFree ? 0 : a.isFree ? -1 : 1))
-      );
-    }
-  };
 
   const billedCount = billing?.current_season_volunteers_billed || 0;
   const currentVolunteerCost = billedCount * ((billing?.volunteer_price_cents || 1500) / 100);
@@ -196,6 +171,18 @@ const BillingDashboard = () => {
           {t('Facturatie & Abonnement', 'Facturation & Abonnement', 'Billing & Subscription')}
         </h1>
 
+        {/* Info banner */}
+        <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <p className="text-sm text-foreground leading-relaxed">
+            {t(
+              'Uw eerste 2 taken per vrijwilliger zijn gratis elk seizoen. Elke vrijwilliger die 3 of meer taken voltooit in dit seizoen wordt gefactureerd aan €15.',
+              'Vos 2 premières tâches par bénévole sont gratuites chaque saison. Chaque bénévole qui complète 3 tâches ou plus cette saison est facturé à 15€.',
+              'Your first 2 tasks per volunteer are free each season. Each volunteer completing 3 or more tasks this season is billed at €15.'
+            )}
+          </p>
+        </div>
+
         {/* Status cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {/* Billing model */}
@@ -204,11 +191,11 @@ const BillingDashboard = () => {
               <div className="flex items-center gap-2 mb-3">
                 <Gift className="w-5 h-5 text-primary" />
                 <span className="text-sm font-medium text-foreground">
-                  {t('Per-contracttype model', 'Modèle par type de contrat', 'Per-contract-type model')}
+                  {t('Per-vrijwilliger model', 'Modèle par bénévole', 'Per-volunteer model')}
                 </span>
               </div>
-              <p className="text-2xl font-bold text-foreground">2 {t('gratis types', 'types gratuits', 'free types')}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t('per club per seizoen', 'par club par saison', 'per club per season')}</p>
+              <p className="text-2xl font-bold text-foreground">2 {t('gratis taken', 'tâches gratuites', 'free tasks')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('per vrijwilliger per seizoen', 'par bénévole par saison', 'per volunteer per season')}</p>
             </CardContent>
           </Card>
 
@@ -237,68 +224,6 @@ const BillingDashboard = () => {
           </Card>
         </div>
 
-        {/* Season total */}
-        <Card className="border-primary/20">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">{t('Totale seizoenskost', 'Coût total de la saison', 'Total season cost')}</p>
-              <p className="text-3xl font-bold text-primary">€{totalSeasonCost.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t('Facturatie op de 1e van elke maand', 'Facturation le 1er de chaque mois', 'Billed on the 1st of each month')}</p>
-            </div>
-            <TrendingUp className="w-10 h-10 text-primary/20" />
-          </CardContent>
-        </Card>
-
-        {/* Contract Types Progress */}
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              <h3 className="font-heading font-semibold text-foreground">
-                {t('Contracttypes', 'Types de contrat', 'Contract types')}
-              </h3>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {Math.min(freeUsed, 2)} {t('van 2 gratis types gebruikt', 'de 2 types gratuits utilisés', 'of 2 free types used')}
-                </span>
-                {freeUsed > 2 && (
-                  <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
-                    {freeUsed - 2} {t('betalend type(s)', 'type(s) payant(s)', 'paid type(s)')}
-                  </Badge>
-                )}
-              </div>
-              <Progress value={Math.min((freeUsed / 2) * 100, 100)} className="h-2" />
-            </div>
-            {contractTypes.length > 0 && (
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {contractTypes.map(ct => (
-                  <div key={ct.type} className={`rounded-xl p-3 border ${ct.isFree ? 'border-primary/20 bg-primary/5' : 'border-destructive/20 bg-destructive/5'}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-foreground capitalize">{ct.type.replace(/_/g, ' ')}</span>
-                      {ct.isFree ? (
-                        <Badge variant="secondary" className="text-[10px]">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          {t('Gratis', 'Gratuit', 'Free')}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive">
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          €15/{t('vrijwilliger', 'bénévole', 'volunteer')}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {ct.count} {t('contract(en)', 'contrat(s)', 'contract(s)')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         <Tabs defaultValue="pricing" className="space-y-4">
           <TabsList>
             <TabsTrigger value="pricing">{t('Prijzen', 'Tarifs', 'Pricing')}</TabsTrigger>
@@ -323,9 +248,9 @@ const BillingDashboard = () => {
                   </div>
                   <ul className="space-y-4 text-sm">
                     {[
-                      { step: '1', text: t('Kies je eerste 2 vrijwilligerstypes — volledig gratis', 'Choisissez vos 2 premiers types de bénévoles — entièrement gratuit', 'Choose your first 2 volunteer types — completely free'), highlight: true },
-                      { step: '2', text: t('Gebruik je een 3e, 4e of 5e type? Dan betaal je €15/vrijwilliger/seizoen voor dat extra type', 'Vous utilisez un 3e, 4e ou 5e type ? Alors vous payez 15€/bénévole/saison pour ce type supplémentaire', 'Using a 3rd, 4th or 5th type? You pay €15/volunteer/season for that extra type'), highlight: false },
-                      { step: '3', text: t('Alle taken binnen een type: geen extra kost', 'Toutes les tâches au sein d\'un type : aucun frais supplémentaire', 'All tasks within a type: no extra cost'), highlight: false },
+                      { step: '1', text: t('Elke vrijwilliger kan 2 taken gratis voltooien per seizoen', 'Chaque bénévole peut effectuer 2 tâches gratuitement par saison', 'Each volunteer can complete 2 tasks for free per season'), highlight: true },
+                      { step: '2', text: t('Vanaf de 3e voltooide taak wordt €15 gefactureerd voor die vrijwilliger (eenmalig per seizoen)', 'À partir de la 3e tâche complétée, 15€ sont facturés pour ce bénévole (une fois par saison)', 'From the 3rd completed task, €15 is billed for that volunteer (once per season)'), highlight: false },
+                      { step: '3', text: t('Daarna onbeperkt taken — geen extra kosten', 'Ensuite tâches illimitées — sans frais supplémentaires', 'Then unlimited tasks — no extra costs'), highlight: false },
                       { step: '✓', text: t('Teller reset bij elk nieuw seizoen', 'Compteur réinitialisé chaque saison', 'Counter resets each new season'), highlight: false },
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3">
@@ -344,27 +269,31 @@ const BillingDashboard = () => {
                 <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4">
-                    <Package className="w-5 h-5 text-primary" />
+                    <TrendingUp className="w-5 h-5 text-primary" />
                     <h3 className="text-lg font-heading font-bold text-foreground">
                       {t('Voorbeeldberekening', 'Exemple de calcul', 'Example calculation')}
                     </h3>
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-primary">Steward</span>
-                      <span className="font-medium text-primary">€0 ✓ ({t('gratis type', 'type gratuit', 'free type')})</span>
+                      <span className="text-muted-foreground">Anna — 2 {t('taken', 'tâches', 'tasks')}</span>
+                      <span className="font-medium text-primary">€0 ✓ ({t('gratis', 'gratuit', 'free')})</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-primary">Bar & Catering</span>
-                      <span className="font-medium text-primary">€0 ✓ ({t('gratis type', 'type gratuit', 'free type')})</span>
+                      <span className="text-muted-foreground">Bert — 1 {t('taak', 'tâche', 'task')}</span>
+                      <span className="font-medium text-primary">€0 ✓ ({t('gratis', 'gratuit', 'free')})</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t('Terrein & Materiaal', 'Terrain & Matériel', 'Terrain & Material')} — 8 {t('vrijwilligers', 'bénévoles', 'volunteers')}</span>
-                      <span className="font-medium text-foreground">8 × €15 = €120</span>
+                      <span className="text-muted-foreground">Clara — 5 {t('taken', 'tâches', 'tasks')}</span>
+                      <span className="font-medium text-foreground">€15 ({t('3e taak bereikt', '3e tâche atteinte', '3rd task reached')})</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">David — 4 {t('taken', 'tâches', 'tasks')}</span>
+                      <span className="font-medium text-foreground">€15</span>
                     </div>
                     <div className="border-t border-border pt-3 flex justify-between font-bold">
                       <span className="text-foreground">{t('Totaal', 'Total', 'Total')}</span>
-                      <span className="text-primary">€120 / {t('seizoen', 'saison', 'season')}</span>
+                      <span className="text-primary">€30 / {t('seizoen', 'saison', 'season')}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -380,25 +309,25 @@ const BillingDashboard = () => {
                 {
                   q: t('Wanneer betaal ik?', 'Quand est-ce que je paie ?', 'When do I pay?'),
                   a: t(
-                    'Je betaalt pas als je meer dan 2 contracttypes gebruikt. Vanaf het 3e type betaal je €15 per vrijwilliger per seizoen voor dat type. Facturatie gebeurt maandelijks op de 1e.',
-                    'Vous ne payez qu\'à partir du 3e type de contrat utilisé. Vous payez alors 15€ par bénévole par saison pour ce type. Facturation mensuelle le 1er.',
-                    'You only pay when using more than 2 contract types. From the 3rd type, you pay €15 per volunteer per season for that type. Billed monthly on the 1st.'
+                    'Je betaalt pas wanneer een vrijwilliger meer dan 2 taken voltooit in een seizoen. Op dat moment wordt eenmalig €15 gefactureerd voor die vrijwilliger. Facturatie gebeurt maandelijks op de 1e.',
+                    'Vous ne payez que lorsqu\'un bénévole complète plus de 2 tâches dans une saison. À ce moment, 15€ sont facturés une seule fois pour ce bénévole. Facturation mensuelle le 1er.',
+                    'You only pay when a volunteer completes more than 2 tasks in a season. At that point, €15 is billed once for that volunteer. Billed monthly on the 1st.'
                   ),
                 },
                 {
-                  q: t('Wat als mijn club maar 2 types gebruikt?', 'Et si mon club n\'utilise que 2 types ?', 'What if my club only uses 2 types?'),
+                  q: t('Wat als een vrijwilliger maar 2 taken doet?', 'Et si un bénévole ne fait que 2 tâches ?', 'What if a volunteer only does 2 tasks?'),
                   a: t(
-                    'Dan is het volledig gratis! Je betaalt enkel wanneer je een 3e, 4e of 5e contracttype activeert.',
-                    'C\'est entièrement gratuit ! Vous ne payez que lorsque vous activez un 3e, 4e ou 5e type de contrat.',
-                    'It\'s completely free! You only pay when you activate a 3rd, 4th or 5th contract type.'
+                    'Dan is het volledig gratis! Je betaalt pas vanaf de 3e voltooide taak van die vrijwilliger.',
+                    'C\'est entièrement gratuit ! Vous ne payez qu\'à partir de la 3e tâche complétée de ce bénévole.',
+                    'It\'s completely free! You only pay from the 3rd completed task of that volunteer.'
                   ),
                 },
                 {
                   q: t('Reset de teller per seizoen?', 'Le compteur se réinitialise-t-il par saison ?', 'Does the counter reset per season?'),
                   a: t(
-                    'Ja! Bij elk nieuw seizoen begint de teller van contracttypes opnieuw op 0.',
-                    'Oui ! Chaque nouvelle saison, le compteur de types de contrat repart à 0.',
-                    'Yes! Each new season, the contract type counter resets to 0.'
+                    'Ja! Bij elk nieuw seizoen begint de teller van voltooide taken per vrijwilliger opnieuw op 0.',
+                    'Oui ! Chaque nouvelle saison, le compteur de tâches complétées par bénévole repart à 0.',
+                    'Yes! Each new season, the completed tasks counter per volunteer resets to 0.'
                   ),
                 },
                 {
