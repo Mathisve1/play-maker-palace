@@ -140,7 +140,7 @@ const VolunteerDashboard = () => {
     const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments'];
     return 'dashboard';
   });
-  const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned' | 'history'>('pending');
+  
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
   const [myContracts, setMyContracts] = useState<SignatureContract[]>([]);
