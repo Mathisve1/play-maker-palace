@@ -528,19 +528,46 @@ const Chat = () => {
       <div className="flex flex-col md:flex-row overflow-hidden -m-4 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)]">
         {/* Conversation list */}
         <div className={`${(activeConversation || activeGroupChat) ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto`}>
-          <div className="p-4 border-b border-border">
+          <div className="p-4 border-b border-border space-y-3">
             <h2 className="font-heading font-semibold text-foreground">{l.title}</h2>
+            <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
+              {([
+                { key: 'all', nl: 'Alles', fr: 'Tout', en: 'All' },
+                { key: 'group', nl: 'Groep', fr: 'Groupe', en: 'Group' },
+                { key: 'private', nl: 'Privé', fr: 'Privé', en: 'Private' },
+              ] as const).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setChatFilter(tab.key)}
+                  className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors ${
+                    chatFilter === tab.key
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {language === 'nl' ? tab.nl : language === 'fr' ? tab.fr : tab.en}
+                  {tab.key === 'group' && groupChats.length > 0 && (
+                    <span className="ml-1 text-[10px] text-muted-foreground">({groupChats.length})</span>
+                  )}
+                  {tab.key === 'private' && conversations.length > 0 && (
+                    <span className="ml-1 text-[10px] text-muted-foreground">({conversations.length})</span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Group Chats Section */}
-          {groupChats.length > 0 && (
+          {(chatFilter === 'all' || chatFilter === 'group') && groupChats.length > 0 && (
             <>
-              <div className="px-4 pt-3 pb-1">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5" />
-                  {language === 'nl' ? 'Groepschats' : language === 'fr' ? 'Chats de groupe' : 'Group Chats'}
-                </p>
-              </div>
+              {chatFilter === 'all' && (
+                <div className="px-4 pt-3 pb-1">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" />
+                    {language === 'nl' ? 'Groepschats' : language === 'fr' ? 'Chats de groupe' : 'Group Chats'}
+                  </p>
+                </div>
+              )}
               {groupChats.map(gc => (
                 <button
                   key={`gc-${gc.id}`}
@@ -571,49 +598,52 @@ const Chat = () => {
           )}
 
           {/* 1-on-1 Conversations Section */}
-          {conversations.length > 0 && (
-            <div className="px-4 pt-3 pb-1">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <MessageCircle className="w-3.5 h-3.5" />
-                {language === 'nl' ? 'Privéberichten' : language === 'fr' ? 'Messages privés' : 'Direct Messages'}
-              </p>
-            </div>
+          {(chatFilter === 'all' || chatFilter === 'private') && conversations.length > 0 && (
+            <>
+              {chatFilter === 'all' && (
+                <div className="px-4 pt-3 pb-1">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    {language === 'nl' ? 'Privéberichten' : language === 'fr' ? 'Messages privés' : 'Direct Messages'}
+                  </p>
+                </div>
+              )}
+              {conversations.map(convo => (
+                <button
+                  key={convo.id}
+                  onClick={() => { setActiveConversation(convo.id); setActiveGroupChat(null); }}
+                  className={`w-full text-left px-4 py-3 border-b border-border transition-colors hover:bg-muted/50 ${
+                    activeConversation === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-foreground text-sm truncate">
+                      {getConversationDisplayName(convo)}
+                    </p>
+                    {(convo.unread_count || 0) > 0 && (
+                      <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground min-w-[18px] text-center">
+                        {convo.unread_count}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {convo.tasks?.title || 'Gesprek'} · {convo.tasks?.clubs?.name || ''}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(convo.updated_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
+                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </p>
+                </button>
+              ))}
+            </>
           )}
-          {conversations.length === 0 && groupChats.length === 0 ? (
+          {filteredEmpty && (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <MessageCircle className="w-12 h-12 text-muted-foreground/30 mb-3" />
               <p className="text-muted-foreground">{l.noConversations}</p>
               <p className="text-sm text-muted-foreground/70 mt-1">{l.startFromTask}</p>
             </div>
-          ) : (
-            conversations.map(convo => (
-              <button
-                key={convo.id}
-                onClick={() => { setActiveConversation(convo.id); setActiveGroupChat(null); }}
-                className={`w-full text-left px-4 py-3 border-b border-border transition-colors hover:bg-muted/50 ${
-                  activeConversation === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-foreground text-sm truncate">
-                    {getConversationDisplayName(convo)}
-                  </p>
-                  {(convo.unread_count || 0) > 0 && (
-                    <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground min-w-[18px] text-center">
-                      {convo.unread_count}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {convo.tasks?.title || 'Gesprek'} · {convo.tasks?.clubs?.name || ''}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(convo.updated_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
-                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                  })}
-                </p>
-              </button>
-            ))
           )}
         </div>
 
