@@ -811,6 +811,16 @@ const VolunteerDashboard = () => {
             myContracts={myContracts}
             getSignupStatus={getSignupStatus}
           />
+          {myTickets.length > 0 && (
+            <div className="mt-8">
+              <VolunteerTicketsTab
+                tickets={myTickets}
+                language={language}
+                profile={profile}
+                userId={currentUserId}
+              />
+            </div>
+          )}
         </>
       )}
 
