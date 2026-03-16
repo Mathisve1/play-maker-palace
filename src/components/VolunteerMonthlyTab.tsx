@@ -733,6 +733,11 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
       </Dialog>
       </>
       )}
+
+      {/* Briefings sub-view */}
+      {subView === 'briefings' && (
+        <VolunteerBriefingsList language={language} userId={userId} />
+      )}
     </div>
   );
 };
