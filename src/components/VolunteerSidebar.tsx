@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
-  CreditCard, FileSignature, LogOut, HelpCircle, CalendarDays,
+  CreditCard, FileSignature, LogOut, HelpCircle, CalendarDays, TrendingUp,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useOptionalClubContext } from '@/contexts/ClubContext';
