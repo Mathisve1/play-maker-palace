@@ -11,23 +11,15 @@ import { VolunteerBriefingsList } from '@/components/VolunteerBriefingView';
 import MonthlyComplianceDialog from '@/components/MonthlyComplianceDialog';
 import { useComplianceData } from '@/hooks/useComplianceData';
 import EventDetailDialog from '@/components/EventDetailDialog';
-import AcademyTab from '@/components/AcademyTab';
 import DashboardLayout from '@/components/DashboardLayout';
 import VolunteerSidebar, { VolunteerTab } from '@/components/VolunteerSidebar';
-import VolunteerPartnerTab from '@/components/VolunteerPartnerTab';
-import VolunteerSafetyTab from '@/components/VolunteerSafetyTab';
 import VolunteerMonthlyTab from '@/components/VolunteerMonthlyTab';
-import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
 import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab';
 import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
-import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
-import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
 import VolunteerDashboardHome from '@/components/volunteer/VolunteerDashboardHome';
 import VolunteerTasksList from '@/components/volunteer/VolunteerTasksList';
 import VolunteerOnboardingWizard from '@/components/VolunteerOnboardingWizard';
 import VolunteerOnboardingTour from '@/components/VolunteerOnboardingTour';
-import VolunteerSeasonOverview from '@/components/VolunteerSeasonOverview';
-import SeasonAvailabilityPicker from '@/components/SeasonAvailabilityPicker';
 import TaskReviewDialog from '@/components/TaskReviewDialog';
 import { Star } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -143,7 +135,11 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<VolunteerTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<VolunteerTab>(() => {
+    // Fallback: if a removed tab was somehow persisted, default to dashboard
+    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments'];
+    return 'dashboard';
+  });
   const [mineSubTab, setMineSubTab] = useState<'pending' | 'assigned' | 'history'>('pending');
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
@@ -701,11 +697,7 @@ const VolunteerDashboard = () => {
         pending: pendingSignups.length,
         assigned: assignedSignups.length,
         payments: myPayments.length + sepaPayouts.length,
-        contracts: myContracts.length,
-        tickets: myTickets.length,
-        loyalty: loyaltyPrograms.length,
-        safety: safetyPendingCount,
-        safetyAlert: safetyAlertActive,
+        contracts: myContracts.filter(c => c.status === 'pending').length,
       }}
     />
   );
@@ -754,70 +746,9 @@ const VolunteerDashboard = () => {
         />
       )}
 
-      {/* ===== SEASON TAB ===== */}
-      {activeTab === 'season' && currentUserId && (
-        <VolunteerSeasonOverview userId={currentUserId} language={language} />
-      )}
-
-      {/* ===== ACADEMY TAB ===== */}
-      {activeTab === 'academy' && (
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-6">Academy</h1>
-          <AcademyTab language={language} navigate={navigate} />
-        </div>
-      )}
-
-      {/* ===== TICKETS TAB ===== */}
-      {activeTab === 'tickets' && (
-        <VolunteerTicketsTab tickets={myTickets} language={language} profile={profile} userId={contextUserId2 || undefined} />
-      )}
-
-      {/* ===== LOYALTY TAB ===== */}
-      {activeTab === 'loyalty' && (
-        <div className="max-w-5xl mx-auto space-y-6">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-2">
-            {language === 'nl' ? 'Loyaliteit' : language === 'fr' ? 'Fidélité' : 'Loyalty'}
-          </h1>
-          {currentUserId && (
-            <VolunteerLoyaltyProgress
-              userId={currentUserId}
-              language={language}
-              totalPoints={Object.values(loyaltyEnrollments).reduce((s, e) => s + (e.points_earned || 0), 0)}
-              refreshKey={badgeRefreshKey}
-            />
-          )}
-          <VolunteerLoyaltyTab programs={loyaltyPrograms} enrollments={loyaltyEnrollments} language={language} enrollingProgram={enrollingProgram} onEnroll={handleEnrollLoyalty} userId={currentUserId} />
-        </div>
-      )}
-
-      {/* ===== BRIEFINGS TAB ===== */}
-      {activeTab === 'briefings' && (
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-heading font-bold text-foreground mb-6">Briefings</h1>
-          <VolunteerBriefingsList language={language} userId={currentUserId} />
-        </div>
-      )}
-
-      {/* ===== PARTNER TAB ===== */}
-      {activeTab === 'partner' && currentUserId && (
-        <VolunteerPartnerTab language={language} userId={currentUserId} navigate={navigate} />
-      )}
-
-      {/* ===== SAFETY TAB ===== */}
-      {activeTab === 'safety' && currentUserId && (
-        <VolunteerSafetyTab language={language} userId={currentUserId} onPendingCountChange={setSafetyPendingCount} />
-      )}
-
       {/* ===== MONTHLY TAB ===== */}
       {activeTab === 'monthly' && currentUserId && (
         <VolunteerMonthlyTab language={language} userId={currentUserId} />
-      )}
-
-      {/* ===== AVAILABILITY TAB ===== */}
-      {activeTab === 'availability' && currentUserId && contextClubId && (
-        <div className="max-w-4xl mx-auto">
-          <SeasonAvailabilityPicker userId={currentUserId} clubId={contextClubId} language={language} />
-        </div>
       )}
 
       {activeTab === 'contracts' && (
@@ -829,11 +760,10 @@ const VolunteerDashboard = () => {
         <VolunteerPaymentsTab sepaPayouts={sepaPayouts} language={language} />
       )}
 
-      {/* ===== ALL TASKS / MINE TASKS ===== */}
-      {(activeTab === 'all' || activeTab === 'mine') && (
+      {/* ===== MY TASKS ===== */}
+      {activeTab === 'mine' && (
         <>
-          {/* Pending Reviews section (mine tab only) */}
-          {activeTab === 'mine' && pendingReviews.length > 0 && (
+          {pendingReviews.length > 0 && (
             <div className="max-w-5xl mx-auto mb-4">
               <h2 className="text-lg font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Star className="w-5 h-5 text-yellow-500" />
@@ -862,7 +792,7 @@ const VolunteerDashboard = () => {
           <VolunteerTasksList
             language={language}
             currentUserId={currentUserId}
-            activeTab={activeTab as 'all' | 'mine'}
+            activeTab="mine"
             mineSubTab={mineSubTab}
             setMineSubTab={setMineSubTab}
             searchQuery={searchQuery}
@@ -882,7 +812,6 @@ const VolunteerDashboard = () => {
             onSignContract={handleSignContract}
             onSelectEvent={(event) => setSelectedEvent(event)}
             onSignupComplete={() => {
-              // Refresh signups after quick signup
               supabase.from('task_signups').select('*').eq('volunteer_id', currentUserId)
                 .then(({ data }) => { if (data) setSignups(data as TaskSignup[]); });
             }}

@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Search, ClipboardList, MessageCircle, Users, Bell,
-  CreditCard, FileSignature, Ticket, Gift, Award, LogOut, Settings,
-  HelpCircle, Building2, Shield, CalendarDays, Home, TrendingUp, Calendar,
+  LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
+  CreditCard, FileSignature, LogOut, HelpCircle, CalendarDays,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useOptionalClubContext } from '@/contexts/ClubContext';
@@ -16,7 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
-export type VolunteerTab = 'dashboard' | 'season' | 'all' | 'mine' | 'monthly' | 'payments' | 'contracts' | 'briefings' | 'loyalty' | 'tickets' | 'academy' | 'partner' | 'safety' | 'availability';
+export type VolunteerTab = 'dashboard' | 'mine' | 'monthly' | 'contracts' | 'payments';
 
 interface VolunteerSidebarProps {
   activeTab: VolunteerTab;
@@ -28,87 +27,53 @@ interface VolunteerSidebarProps {
   counts?: {
     pending?: number;
     assigned?: number;
-    payments?: number;
     contracts?: number;
-    tickets?: number;
-    loyalty?: number;
-    safety?: number;
-    safetyAlert?: boolean;
+    payments?: number;
   };
 }
 
 const labels: Record<Language, Record<string, string>> = {
   nl: {
     dashboard: 'Dashboard',
-    season: 'Mijn Seizoen',
-    allTasks: 'Alle Taken',
     myTasks: 'Mijn Taken',
-    monthly: 'Maandplanning',
-    messages: 'Berichten',
-    clubSearch: 'Club Zoeken',
-    myClubs: 'Mijn Clubs',
-    payments: 'Vergoedingen',
+    calendar: 'Kalender',
     contracts: 'Contracten',
-    briefings: 'Briefings',
-    tickets: 'Tickets',
-    academy: 'Academy',
-    loyalty: 'Loyaliteit',
-    safety: 'Veiligheidscontrole',
-    availability: 'Beschikbaarheid',
+    payments: 'Vergoedingen',
+    clubsMessages: 'Clubs & Berichten',
     settings: 'Instellingen',
     help: 'Hulp nodig?',
     logout: 'Uitloggen',
     overview: 'Overzicht',
-    communication: 'Communicatie',
     manage: 'Beheer',
+    community: 'Community',
   },
   fr: {
     dashboard: 'Tableau de bord',
-    season: 'Ma Saison',
-    allTasks: 'Toutes les tâches',
     myTasks: 'Mes tâches',
-    monthly: 'Planning mensuel',
-    messages: 'Messages',
-    clubSearch: 'Chercher un club',
-    myClubs: 'Mes Clubs',
-    payments: 'Remboursements',
+    calendar: 'Calendrier',
     contracts: 'Contrats',
-    briefings: 'Briefings',
-    tickets: 'Tickets',
-    academy: 'Académie',
-    loyalty: 'Fidélité',
-    safety: 'Contrôle de sécurité',
-    availability: 'Disponibilité',
+    payments: 'Remboursements',
+    clubsMessages: 'Clubs & Messages',
     settings: 'Paramètres',
     help: 'Besoin d\'aide?',
     logout: 'Déconnexion',
     overview: 'Aperçu',
-    communication: 'Communication',
     manage: 'Gestion',
+    community: 'Communauté',
   },
   en: {
     dashboard: 'Dashboard',
-    season: 'My Season',
-    allTasks: 'All Tasks',
     myTasks: 'My Tasks',
-    monthly: 'Monthly Planning',
-    messages: 'Messages',
-    clubSearch: 'Find Clubs',
-    myClubs: 'My Clubs',
-    payments: 'Payments',
+    calendar: 'Calendar',
     contracts: 'Contracts',
-    briefings: 'Briefings',
-    tickets: 'Tickets',
-    academy: 'Academy',
-    loyalty: 'Loyalty',
-    safety: 'Safety Check',
-    availability: 'Availability',
+    payments: 'Payments',
+    clubsMessages: 'Clubs & Messages',
     settings: 'Settings',
     help: 'Need help?',
     logout: 'Log out',
     overview: 'Overview',
-    communication: 'Communication',
     manage: 'Manage',
+    community: 'Community',
   },
 };
 
@@ -186,18 +151,6 @@ const VolunteerSidebar = ({
                   <span>{l.dashboard}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'season'} onClick={() => handleNav('season')} className="min-h-[48px]">
-                  <TrendingUp className="w-5 h-5" />
-                  <span>{l.season}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'all'} onClick={() => handleNav('all')} className="min-h-[48px]">
-                  <Search className="w-5 h-5" />
-                  <span>{l.allTasks}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               <SidebarMenuItem data-tour="vol-sidebar-tasks">
                 <SidebarMenuButton isActive={activeTab === 'mine'} onClick={() => handleNav('mine')} className="min-h-[48px]">
                   <ClipboardList className="w-5 h-5" />
@@ -208,58 +161,7 @@ const VolunteerSidebar = ({
               <SidebarMenuItem>
                 <SidebarMenuButton isActive={activeTab === 'monthly'} onClick={() => handleNav('monthly')} className="min-h-[48px]">
                   <CalendarDays className="w-5 h-5" />
-                  <span>{l.monthly}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem data-tour="vol-sidebar-availability">
-                <SidebarMenuButton isActive={activeTab === 'availability'} onClick={() => handleNav('availability')} className="min-h-[48px]">
-                  <Calendar className="w-5 h-5" />
-                  <span>{l.availability}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'safety'} onClick={() => handleNav('safety')} className="min-h-[48px]">
-                  <div className="relative">
-                    <Shield className="w-5 h-5" />
-                    {counts.safetyAlert && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
-                    )}
-                  </div>
-                  <span>{l.safety}</span>
-                  <Badge count={counts.safety} />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Communication group */}
-        <SidebarGroup>
-          <SidebarGroupLabel>{l.communication}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem data-tour="vol-sidebar-messages">
-                <SidebarMenuButton onClick={() => handleExternalNav('/chat')} className="min-h-[48px]">
-                  <MessageCircle className="w-5 h-5" />
-                  <span>{l.messages}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => handleExternalNav('/notifications')} className="min-h-[48px]">
-                  <Bell className="w-5 h-5" />
-                  <span>{language === 'nl' ? 'Notificaties' : language === 'fr' ? 'Notifications' : 'Notifications'}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => handleExternalNav('/community')} className="min-h-[48px]">
-                  <Users className="w-5 h-5" />
-                  <span>{l.clubSearch}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => handleExternalNav('/my-clubs')} className="min-h-[48px]">
-                  <Home className="w-5 h-5" />
-                  <span>{l.myClubs}</span>
+                  <span>{l.calendar}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -271,13 +173,6 @@ const VolunteerSidebar = ({
           <SidebarGroupLabel>{l.manage}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'payments'} onClick={() => handleNav('payments')} className="min-h-[48px]">
-                  <CreditCard className="w-5 h-5" />
-                  <span>{l.payments}</span>
-                  <Badge count={counts.payments} />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               <SidebarMenuItem data-tour="vol-sidebar-contracts">
                 <SidebarMenuButton isActive={activeTab === 'contracts'} onClick={() => handleNav('contracts')} className="min-h-[48px]">
                   <FileSignature className="w-5 h-5" />
@@ -286,35 +181,25 @@ const VolunteerSidebar = ({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'briefings'} onClick={() => handleNav('briefings')} className="min-h-[48px]">
-                  <ClipboardList className="w-5 h-5" />
-                  <span>{l.briefings}</span>
+                <SidebarMenuButton isActive={activeTab === 'payments'} onClick={() => handleNav('payments')} className="min-h-[48px]">
+                  <CreditCard className="w-5 h-5" />
+                  <span>{l.payments}</span>
+                  <Badge count={counts.payments} />
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'tickets'} onClick={() => handleNav('tickets')} className="min-h-[48px]">
-                  <Ticket className="w-5 h-5" />
-                  <span>{l.tickets}</span>
-                  <Badge count={counts.tickets} />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'academy'} onClick={() => handleNav('academy')} className="min-h-[48px]">
-                  <Award className="w-5 h-5" />
-                  <span>{l.academy}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'loyalty'} onClick={() => handleNav('loyalty')} className="min-h-[48px]">
-                  <Gift className="w-5 h-5" />
-                  <span>{l.loyalty}</span>
-                  <Badge count={counts.loyalty} />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'partner'} onClick={() => handleNav('partner')} className="min-h-[48px]">
-                  <Building2 className="w-5 h-5" />
-                  <span>{language === 'nl' ? 'Partner' : language === 'fr' ? 'Partenaire' : 'Partner'}</span>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Community group */}
+        <SidebarGroup>
+          <SidebarGroupLabel>{l.community}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem data-tour="vol-sidebar-messages">
+                <SidebarMenuButton onClick={() => handleExternalNav('/community')} className="min-h-[48px]">
+                  <Users className="w-5 h-5" />
+                  <span>{l.clubsMessages}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

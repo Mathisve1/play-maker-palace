@@ -228,7 +228,7 @@ const VolunteerDashboardHome = ({
           id: `training-${trainingId}`, type: 'training',
           title: language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required',
           subtitle: `${info.taskTitle} · ${info.clubName}`,
-          action: () => setActiveTab('academy'),
+          action: () => window.open('/volunteer-training', '_self'),
           actionLabel: language === 'nl' ? 'Bekijken' : 'View',
         });
       });
@@ -244,7 +244,7 @@ const VolunteerDashboardHome = ({
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
-          onClick={() => setActiveTab('safety')}
+          onClick={() => { /* safety alert navigates via live event redirect */ }}
         >
           <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
           <p className="text-sm font-medium text-destructive">
@@ -285,8 +285,8 @@ const VolunteerDashboardHome = ({
           onStepAction={(step) => {
             if (step === 'profile_complete') setShowProfileDialog(true);
             else if (step === 'contract_signed') setActiveTab('contracts');
-            else if (step === 'training_done') setActiveTab('academy');
-            else if (step === 'first_task') setActiveTab('all');
+            else if (step === 'training_done') window.open('/volunteer-training', '_self');
+            else if (step === 'first_task') setActiveTab('mine');
           }}
         />
       )}
@@ -351,7 +351,7 @@ const VolunteerDashboardHome = ({
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <input type="text" placeholder={dt.searchPlaceholder} value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)} onFocus={() => setActiveTab('all')}
+          onChange={e => setSearchQuery(e.target.value)} onFocus={() => setActiveTab('mine')}
           className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring border border-border shadow-sm" />
       </div>
 
@@ -405,7 +405,7 @@ const VolunteerDashboardHome = ({
           <div className="bg-card rounded-2xl border border-border p-8 text-center">
             <ClipboardList className="w-10 h-10 mx-auto mb-2 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">{dt.noMyTasks}</p>
-            <button onClick={() => setActiveTab('all')} className="mt-3 px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+            <button onClick={() => setActiveTab('mine')} className="mt-3 px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
               {dt.allTasks} →
             </button>
           </div>
