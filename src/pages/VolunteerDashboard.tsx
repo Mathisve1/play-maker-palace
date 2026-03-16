@@ -748,7 +748,7 @@ const VolunteerDashboard = () => {
 
       {/* ===== MONTHLY TAB ===== */}
       {activeTab === 'monthly' && currentUserId && (
-        <VolunteerMonthlyTab language={language} userId={currentUserId} />
+        <VolunteerMonthlyTab language={language} userId={currentUserId} clubId={contextClubId || undefined} />
       )}
 
       {activeTab === 'contracts' && (

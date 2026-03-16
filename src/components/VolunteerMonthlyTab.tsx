@@ -11,10 +11,11 @@ import { useComplianceData } from '@/hooks/useComplianceData';
 import {
   Calendar, CalendarDays, Clock, MapPin, Euro, CheckCircle,
   ChevronLeft, ChevronRight, FileSignature, Users, AlertTriangle,
-  Loader2, QrCode, ShieldCheck, XCircle, Hourglass,
+  Loader2, QrCode, ShieldCheck, XCircle, Hourglass, CalendarCheck,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
+import SeasonAvailabilityPicker from '@/components/SeasonAvailabilityPicker';
 
 const MONTH_NAMES: Record<Language, string[]> = {
   nl: ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'],
