@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, CheckCircle, MessageCircle, ClipboardList, TrendingUp, Search, FileText, AlertTriangle, BookOpen, Layers } from 'lucide-react';
@@ -20,6 +20,9 @@ import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import EventGroupChat from '@/components/EventGroupChat';
 import TodayPlanningSection from '@/components/volunteer/TodayPlanningSection';
 import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Shield } from 'lucide-react';
+const VolunteerSafetyTab = lazy(() => import('@/components/VolunteerSafetyTab'));
 import type { VolunteerTask, TaskSignup, VolunteerPayment, SignatureContract, SepaPayoutItem, VolunteerEventData } from '@/types/volunteer';
 import { volunteerDashboardLabels } from '@/types/volunteer';
 
@@ -54,6 +57,7 @@ const VolunteerDashboardHome = ({
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
   const [upcomingBriefings, setUpcomingBriefings] = useState<{ taskId: string; taskTitle: string; taskDate: string }[]>([]);
   const [activeSafetyAlert, setActiveSafetyAlert] = useState(false);
+  const [safetySheetOpen, setSafetySheetOpen] = useState(false);
   const [requiredTrainings, setRequiredTrainings] = useState<{ id: string; title: string; clubName: string }[]>([]);
   const [zoneAssignments, setZoneAssignments] = useState<Record<string, string>>({});
   // Check for unread briefings within 48h
@@ -244,14 +248,15 @@ const VolunteerDashboardHome = ({
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
-          onClick={() => { /* safety alert navigates via live event redirect */ }}
+          onClick={() => setSafetySheetOpen(true)}
         >
           <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-          <p className="text-sm font-medium text-destructive">
+          <p className="text-sm font-medium text-destructive flex-1">
             {language === 'nl' ? '⚠️ Er is een veiligheidsmelding voor jouw evenement vandaag.' :
              language === 'fr' ? '⚠️ Il y a un signalement de sécurité pour votre événement aujourd\'hui.' :
              '⚠️ There is a safety alert for your event today.'}
           </p>
+          <Shield className="w-4 h-4 text-destructive shrink-0" />
         </motion.div>
       )}
 
@@ -476,6 +481,23 @@ const VolunteerDashboardHome = ({
       {currentUserId && events.filter(e => tasks.some(t => t.event_id === e.id && signups.some(s => s.task_id === t.id && s.status === 'assigned'))).slice(0, 2).map(event => (
         <EventGroupChat key={event.id} eventId={event.id} eventTitle={event.title} userId={currentUserId} language={language} />
       ))}
+
+      {/* Safety Sheet */}
+      <Sheet open={safetySheetOpen} onOpenChange={setSafetySheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-destructive" />
+              {language === 'nl' ? 'Veiligheidscontrole' : language === 'fr' ? 'Contrôle de sécurité' : 'Safety check'}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <Suspense fallback={<div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+              <VolunteerSafetyTab userId={currentUserId} language={language} />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
