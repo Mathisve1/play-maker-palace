@@ -380,25 +380,25 @@ const BillingDashboard = () => {
                 {
                   q: t('Wanneer betaal ik?', 'Quand est-ce que je paie ?', 'When do I pay?'),
                   a: t(
-                    'Je betaalt automatisch €15 per vrijwilliger die meer dan 2 taken voltooit in een seizoen. Facturatie gebeurt maandelijks op de 1e.',
-                    'Vous payez automatiquement €15 par bénévole qui effectue plus de 2 tâches par saison. Facturation mensuelle le 1er.',
-                    'You automatically pay €15 per volunteer who completes more than 2 tasks in a season. Billed monthly on the 1st.'
+                    'Je betaalt pas als je meer dan 2 contracttypes gebruikt. Vanaf het 3e type betaal je €15 per vrijwilliger per seizoen voor dat type. Facturatie gebeurt maandelijks op de 1e.',
+                    'Vous ne payez qu\'à partir du 3e type de contrat utilisé. Vous payez alors 15€ par bénévole par saison pour ce type. Facturation mensuelle le 1er.',
+                    'You only pay when using more than 2 contract types. From the 3rd type, you pay €15 per volunteer per season for that type. Billed monthly on the 1st.'
                   ),
                 },
                 {
-                  q: t('Wat als een vrijwilliger maar 2 taken doet?', 'Et si un bénévole ne fait que 2 tâches ?', 'What if a volunteer only does 2 tasks?'),
+                  q: t('Wat als mijn club maar 2 types gebruikt?', 'Et si mon club n\'utilise que 2 types ?', 'What if my club only uses 2 types?'),
                   a: t(
-                    'Dan is het volledig gratis! Je betaalt enkel voor vrijwilligers die 3 of meer taken voltooien.',
-                    'C\'est entièrement gratuit ! Vous ne payez que pour les bénévoles qui effectuent 3 tâches ou plus.',
-                    'It\'s completely free! You only pay for volunteers who complete 3 or more tasks.'
+                    'Dan is het volledig gratis! Je betaalt enkel wanneer je een 3e, 4e of 5e contracttype activeert.',
+                    'C\'est entièrement gratuit ! Vous ne payez que lorsque vous activez un 3e, 4e ou 5e type de contrat.',
+                    'It\'s completely free! You only pay when you activate a 3rd, 4th or 5th contract type.'
                   ),
                 },
                 {
                   q: t('Reset de teller per seizoen?', 'Le compteur se réinitialise-t-il par saison ?', 'Does the counter reset per season?'),
                   a: t(
-                    'Ja! Bij elk nieuw seizoen begint elke vrijwilliger opnieuw met 2 gratis taken.',
-                    'Oui ! Chaque nouvelle saison, chaque bénévole recommence avec 2 tâches gratuites.',
-                    'Yes! Each new season, every volunteer starts fresh with 2 free tasks.'
+                    'Ja! Bij elk nieuw seizoen begint de teller van contracttypes opnieuw op 0.',
+                    'Oui ! Chaque nouvelle saison, le compteur de types de contrat repart à 0.',
+                    'Yes! Each new season, the contract type counter resets to 0.'
                   ),
                 },
                 {
