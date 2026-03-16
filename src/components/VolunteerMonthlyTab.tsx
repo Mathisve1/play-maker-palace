@@ -183,7 +183,7 @@ interface VolunteerMonthlyTabProps {
   clubId?: string;
 }
 
-type SubView = 'planning' | 'availability';
+type SubView = 'planning' | 'availability' | 'briefings';
 
 const YEARLY_CAP = 3233.91;
 
