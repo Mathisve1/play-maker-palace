@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Banknote, CheckCircle, Clock, AlertTriangle, Wallet } from 'lucide-react';
+import { Banknote, CheckCircle, Clock, AlertTriangle, Wallet, CreditCard } from 'lucide-react';
 
 interface SepaPayoutItem {
   id: string;
@@ -15,14 +15,24 @@ interface SepaPayoutItem {
   club_name?: string;
 }
 
+interface VolunteerPayment {
+  id: string;
+  task_id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paid_at: string | null;
+  created_at: string;
+  task_title?: string;
+  club_name?: string;
+}
+
 interface Props {
   sepaPayouts: SepaPayoutItem[];
+  payments: VolunteerPayment[];
   language: string;
 }
 
-/**
- * Add N business days (Mon-Fri) to a date.
- */
 function addBusinessDays(date: Date, days: number): Date {
   const result = new Date(date);
   let added = 0;
@@ -34,79 +44,142 @@ function addBusinessDays(date: Date, days: number): Date {
   return result;
 }
 
-const VolunteerPaymentsTab = ({ sepaPayouts, language }: Props) => {
-  const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+type UnifiedRow = {
+  id: string;
+  source: 'sepa' | 'payment';
+  amount: number;
+  date: string;
+  taskTitle: string;
+  clubName: string;
+  status: 'paid' | 'processing' | 'error';
+  statusLabel: string;
+  extra?: string;
+};
 
-  const paidTotal = sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
-  const processingTotal = sepaPayouts.filter(s => ['signed', 'awaiting_signature', 'pending'].includes(s.batch_status) && !s.error_flag).reduce((s, p) => s + p.amount, 0);
-  const seasonTotal = useMemo(() => sepaPayouts.filter(s => !s.error_flag).reduce((s, p) => s + p.amount, 0), [sepaPayouts]);
+const VolunteerPaymentsTab = ({ sepaPayouts, payments, language }: Props) => {
+  const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+  const locale = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
+
+  const rows = useMemo<UnifiedRow[]>(() => {
+    const sepaRows: UnifiedRow[] = sepaPayouts.map(s => {
+      const isExported = ['downloaded', 'signed'].includes(s.batch_status);
+      let status: UnifiedRow['status'] = 'processing';
+      let statusLabel = t('In behandeling', 'En cours', 'Processing');
+      if (s.error_flag) {
+        status = 'error';
+        statusLabel = t('Fout', 'Erreur', 'Error');
+      } else if (isExported) {
+        status = 'paid';
+        statusLabel = t('Betaald', 'Payé', 'Paid');
+      }
+      const est = addBusinessDays(new Date(s.created_at), 2);
+      return {
+        id: s.id,
+        source: 'sepa',
+        amount: s.amount,
+        date: s.created_at,
+        taskTitle: s.task_title || t('Taak', 'Tâche', 'Task'),
+        clubName: s.club_name || '',
+        status,
+        statusLabel,
+        extra: status === 'processing' ? `${t('Verwacht', 'Estimé', 'Expected')}: ${est.toLocaleDateString(locale, { day: 'numeric', month: 'short' })}` : undefined,
+      };
+    });
+
+    const payRows: UnifiedRow[] = payments.map(p => {
+      let status: UnifiedRow['status'] = 'processing';
+      let statusLabel = t('In behandeling', 'En cours', 'Processing');
+      if (p.status === 'succeeded' || p.status === 'paid') {
+        status = 'paid';
+        statusLabel = t('Betaald', 'Payé', 'Paid');
+      } else if (p.status === 'failed') {
+        status = 'error';
+        statusLabel = t('Fout', 'Erreur', 'Error');
+      }
+      return {
+        id: p.id,
+        source: 'payment',
+        amount: p.amount,
+        date: p.paid_at || p.created_at,
+        taskTitle: p.task_title || t('Taak', 'Tâche', 'Task'),
+        clubName: p.club_name || '',
+        status,
+        statusLabel,
+      };
+    });
+
+    return [...sepaRows, ...payRows].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [sepaPayouts, payments, language]);
+
+  const totalPaid = rows.filter(r => r.status === 'paid').reduce((s, r) => s + r.amount, 0);
+  const totalProcessing = rows.filter(r => r.status === 'processing').reduce((s, r) => s + r.amount, 0);
+
+  const statusStyles: Record<UnifiedRow['status'], { bg: string; text: string; icon: typeof CheckCircle }> = {
+    paid: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', icon: CheckCircle },
+    processing: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', icon: Clock },
+    error: { bg: 'bg-destructive/10', text: 'text-destructive', icon: AlertTriangle },
+  };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
-      <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{t('Vergoedingen', 'Remboursements', 'Payments')}</h1>
-      {sepaPayouts.length === 0 ? (
+    <div className="max-w-5xl mx-auto space-y-6">
+      <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
+        <Wallet className="w-6 h-6 text-primary" />
+        {t('Vergoedingen', 'Remboursements', 'Payments')}
+      </h1>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('Totaal ontvangen', 'Total reçu', 'Total received')}</p>
+          <p className="text-2xl font-heading font-bold text-green-600 dark:text-green-400 mt-1">€{totalPaid.toFixed(2)}</p>
+        </div>
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('In behandeling', 'En cours', 'Processing')}</p>
+          <p className="text-2xl font-heading font-bold text-orange-600 dark:text-orange-400 mt-1">€{totalProcessing.toFixed(2)}</p>
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
-          <Banknote className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>{t('Je hebt nog geen vergoedingen ontvangen.', 'Aucun remboursement.', 'No payments yet.')}</p>
+          <Banknote className="w-14 h-14 mx-auto mb-4 opacity-20" />
+          <p className="text-base font-medium">{t('Nog geen vergoedingen ontvangen.', 'Aucun remboursement reçu.', 'No payments received yet.')}</p>
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('Totaal dit seizoen', 'Total cette saison', 'Season total')}</p>
-              <p className="text-2xl font-heading font-bold text-foreground mt-1">€{seasonTotal.toFixed(2)}</p>
-            </div>
-            <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('Betaald', 'Payé', 'Paid')}</p>
-              <p className="text-2xl font-heading font-bold text-accent mt-1">€{paidTotal.toFixed(2)}</p>
-            </div>
-            <div className="bg-card rounded-2xl shadow-sm border border-border p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('Verwerken', 'En cours', 'Processing')}</p>
-              <p className="text-2xl font-heading font-bold text-primary mt-1">€{processingTotal.toFixed(2)}</p>
-            </div>
-          </div>
-
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-2">
-            <Banknote className="w-4 h-4 text-primary" />{t('SEPA Vergoedingen', 'Remboursements SEPA', 'SEPA Payments')}
-          </h3>
-          {sepaPayouts.map((payout, i) => {
-            const isExported = ['downloaded', 'signed'].includes(payout.batch_status);
-            const estimatedDate = addBusinessDays(new Date(payout.created_at), 2);
+        <div className="space-y-2">
+          {rows.map((row, i) => {
+            const st = statusStyles[row.status];
+            const Icon = st.icon;
             return (
-              <motion.div key={payout.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                className={`bg-card rounded-2xl p-5 shadow-sm border ${payout.error_flag ? 'border-destructive/30' : 'border-border'}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{payout.task_title || t('Taak', 'Tâche', 'Task')}</p>
-                    {payout.club_name && <p className="text-xs text-muted-foreground">{payout.club_name}</p>}
-                    <p className="text-lg font-heading font-bold text-foreground mt-1">€{payout.amount.toFixed(2)}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {t('Verwachte storting', 'Date estimée', 'Expected deposit')}: {estimatedDate.toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </p>
+              <motion.div key={row.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                className="bg-card rounded-xl p-4 shadow-sm border border-border hover:border-primary/20 transition-colors">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{row.taskTitle}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {row.clubName && <p className="text-xs text-muted-foreground">{row.clubName}</p>}
+                      {row.source === 'sepa' && (
+                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">SEPA</span>
+                      )}
+                    </div>
+                    {row.extra && <p className="text-[11px] text-muted-foreground mt-1">{row.extra}</p>}
                   </div>
-                  <div className="shrink-0">
-                    {payout.error_flag ? (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive">
-                        <AlertTriangle className="w-3.5 h-3.5" />{payout.error_message || t('Fout', 'Erreur', 'Error')}
-                      </span>
-                    ) : isExported ? (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
-                        <CheckCircle className="w-3.5 h-3.5" />{t('Geëxporteerd', 'Exporté', 'Exported')}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground">
-                        <Clock className="w-3.5 h-3.5" />{t('In verwerking', 'En cours', 'Processing')}
-                      </span>
-                    )}
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <p className={`text-base font-heading font-bold ${row.status === 'paid' ? 'text-green-600 dark:text-green-400' : row.status === 'error' ? 'text-destructive' : 'text-orange-600 dark:text-orange-400'}`}>
+                      €{row.amount.toFixed(2)}
+                    </p>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${st.bg} ${st.text}`}>
+                      <Icon className="w-3 h-3" />
+                      {row.statusLabel}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(row.date).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Ref: {payout.batch_reference} · {new Date(payout.created_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </p>
               </motion.div>
             );
           })}
-        </>
+        </div>
       )}
     </div>
   );
