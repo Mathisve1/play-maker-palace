@@ -232,8 +232,7 @@ const VolunteerLanding = () => {
                 <Star key={i} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               ))}
             </div>
-            <h3 className="text-xl font-heading font-bold text-foreground mb-2">{l.socialTitle}</h3>
-            <p className="text-primary font-semibold text-lg mb-3">{l.socialClubs}</p>
+            <h3 className="text-xl font-heading font-bold text-foreground mb-3">{l.socialTitle}</h3>
             <p className="text-muted-foreground">{l.socialSubtitle}</p>
             <div className="flex items-center justify-center gap-6 mt-8 text-muted-foreground text-sm">
               <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary" /> 500+ {language === 'nl' ? 'vrijwilligers' : language === 'fr' ? 'bénévoles' : 'volunteers'}</span>
