@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
-  CreditCard, FileSignature, LogOut, HelpCircle, CalendarDays,
+  CreditCard, FileSignature, LogOut, HelpCircle, CalendarDays, TrendingUp,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useOptionalClubContext } from '@/contexts/ClubContext';
@@ -15,7 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
-export type VolunteerTab = 'dashboard' | 'mine' | 'monthly' | 'contracts' | 'payments';
+export type VolunteerTab = 'dashboard' | 'mine' | 'monthly' | 'contracts' | 'payments' | 'grow';
 
 interface VolunteerSidebarProps {
   activeTab: VolunteerTab;
@@ -39,6 +39,7 @@ const labels: Record<Language, Record<string, string>> = {
     calendar: 'Kalender',
     contracts: 'Contracten',
     payments: 'Vergoedingen',
+    grow: 'Groeien',
     clubsMessages: 'Clubs & Berichten',
     settings: 'Instellingen',
     help: 'Hulp nodig?',
@@ -53,6 +54,7 @@ const labels: Record<Language, Record<string, string>> = {
     calendar: 'Calendrier',
     contracts: 'Contrats',
     payments: 'Remboursements',
+    grow: 'Progresser',
     clubsMessages: 'Clubs & Messages',
     settings: 'Paramètres',
     help: 'Besoin d\'aide?',
@@ -67,6 +69,7 @@ const labels: Record<Language, Record<string, string>> = {
     calendar: 'Calendar',
     contracts: 'Contracts',
     payments: 'Payments',
+    grow: 'Grow',
     clubsMessages: 'Clubs & Messages',
     settings: 'Settings',
     help: 'Need help?',
@@ -185,6 +188,12 @@ const VolunteerSidebar = ({
                   <CreditCard className="w-5 h-5" />
                   <span>{l.payments}</span>
                   <Badge count={counts.payments} />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={activeTab === 'grow'} onClick={() => handleNav('grow')} className="min-h-[48px]">
+                  <TrendingUp className="w-5 h-5" />
+                  <span>{l.grow}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
