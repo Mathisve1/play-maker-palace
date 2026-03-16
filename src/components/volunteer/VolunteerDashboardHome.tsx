@@ -241,8 +241,8 @@ const VolunteerDashboardHome = ({
   const visibleActions = showAllActions ? actionItems : actionItems.slice(0, 3);
 
   // Legacy activity items for VolunteerActivitiesSection
-  const activityItems = actionItems.map(a => ({
-    ...a, urgent: a.type === 'contract',
+  const activityItemsTyped = actionItems.map(a => ({
+    ...a, type: a.type as 'contract' | 'briefing' | 'training' | 'partner_invite', urgent: a.type === 'contract',
   }));
 
   // Loyalty points (from sepa + payments)
