@@ -697,8 +697,9 @@ const VolunteerDashboard = () => {
       counts={{
         pending: pendingSignups.length,
         assigned: assignedSignups.length,
-        payments: myPayments.length + sepaPayouts.length,
+      payments: myPayments.length + sepaPayouts.length,
         contracts: myContracts.filter(c => c.status === 'pending').length,
+        loyalty: loyaltyPrograms.filter(p => !loyaltyEnrollments[p.id]).length || undefined,
       }}
     />
   );
