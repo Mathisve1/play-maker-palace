@@ -204,11 +204,11 @@ const BillingDashboard = () => {
               <div className="flex items-center gap-2 mb-3">
                 <Gift className="w-5 h-5 text-primary" />
                 <span className="text-sm font-medium text-foreground">
-                  {t('Per-vrijwilliger model', 'Modèle par bénévole', 'Per-volunteer model')}
+                  {t('Per-contracttype model', 'Modèle par type de contrat', 'Per-contract-type model')}
                 </span>
               </div>
-              <p className="text-2xl font-bold text-foreground">2 {t('gratis taken', 'tâches gratuites', 'free tasks')}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t('per vrijwilliger per seizoen', 'par bénévole par saison', 'per volunteer per season')}</p>
+              <p className="text-2xl font-bold text-foreground">2 {t('gratis types', 'types gratuits', 'free types')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('per club per seizoen', 'par club par saison', 'per club per season')}</p>
             </CardContent>
           </Card>
 
