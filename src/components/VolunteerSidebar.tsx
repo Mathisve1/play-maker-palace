@@ -15,7 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Logo from '@/components/Logo';
 import { Language } from '@/i18n/translations';
 
-export type VolunteerTab = 'dashboard' | 'mine' | 'monthly' | 'contracts' | 'payments';
+export type VolunteerTab = 'dashboard' | 'mine' | 'monthly' | 'contracts' | 'payments' | 'grow';
 
 interface VolunteerSidebarProps {
   activeTab: VolunteerTab;
