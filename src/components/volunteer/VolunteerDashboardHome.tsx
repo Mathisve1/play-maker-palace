@@ -53,7 +53,7 @@ interface Props {
 const VolunteerDashboardHome = ({
   language, currentUserId, profile, followedClubIds, myContracts, myCertifiedTrainingIds,
   signups, tasks, events, myPayments, sepaPayouts, pendingSignups, assignedSignups,
-  complianceData, searchQuery, setSearchQuery, setActiveTab, setShowProfileDialog, getSignupStatus,
+  complianceData, loyaltyEnrollments, searchQuery, setSearchQuery, setActiveTab, setShowProfileDialog, getSignupStatus,
 }: Props) => {
   const navigate = useNavigate();
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
