@@ -1,4 +1,4 @@
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, BookOpen } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { useNavigate } from 'react-router-dom';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
@@ -66,8 +66,9 @@ const VolunteerGrowTab = ({ language, userId, loyaltyPrograms, loyaltyEnrollment
 
       {/* Academy section */}
       <section>
-        <h2 className="text-lg font-heading font-semibold text-foreground mb-1 flex items-center gap-2">
-          {t('Academy', 'Académie', 'Academy')}
+        <h2 className="text-xl font-heading font-bold text-foreground flex items-center gap-2 mb-2">
+          <BookOpen className="w-5 h-5 text-primary" />
+          {t('Trainingen & Academy', 'Formations & Académie', 'Trainings & Academy')}
         </h2>
         <AcademyTab language={language} navigate={navigate} />
       </section>
