@@ -698,7 +698,7 @@ const VolunteerDashboard = () => {
       counts={{
         pending: pendingSignups.length,
         assigned: assignedSignups.length,
-      payments: myPayments.length + sepaPayouts.length,
+      payments: [...myPayments.filter(p => p.status !== 'succeeded'), ...sepaPayouts.filter(s => s.batch_status !== 'downloaded' || s.error_flag)].length || undefined,
         contracts: myContracts.filter(c => c.status === 'pending').length,
         loyalty: loyaltyPrograms.filter(p => !loyaltyEnrollments[p.id]).length || undefined,
       }}
