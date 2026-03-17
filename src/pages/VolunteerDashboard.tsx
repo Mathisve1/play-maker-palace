@@ -746,6 +746,7 @@ const VolunteerDashboard = () => {
           setActiveTab={(tab) => setActiveTab(tab as VolunteerTab)}
           setShowProfileDialog={setShowProfileDialog}
           getSignupStatus={getSignupStatus}
+          loyaltyEnrollments={loyaltyEnrollments}
         />
       )}
 
