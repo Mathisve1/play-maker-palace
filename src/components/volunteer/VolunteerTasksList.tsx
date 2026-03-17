@@ -113,7 +113,7 @@ const VolunteerTasksList = ({
 
   const filterPills: { key: FilterMode; label: string }[] = [
     { key: 'upcoming', label: t3(language, 'Aankomend', 'À venir', 'Upcoming') },
-    { key: 'completed', label: t3(language, 'Afgerond', 'Terminé', 'Completed') },
+    { key: 'completed', label: t3(language, 'Geschiedenis', 'Historique', 'History') },
     { key: 'all', label: t3(language, 'Alles', 'Tout', 'All') },
   ];
 
