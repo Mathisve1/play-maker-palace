@@ -410,7 +410,7 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
       </div>
 
       {/* Availability sub-view */}
-      {subView === 'availability' && clubId && (
+      {subView === 'availability' && clubId && userId && (
         <SeasonAvailabilityPicker userId={userId} clubId={clubId} language={language} />
       )}
       {subView === 'availability' && !clubId && (
