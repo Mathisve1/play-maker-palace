@@ -72,10 +72,13 @@ const VolunteerTasksList = ({
 
     // Apply filter mode
     if (filter === 'upcoming') {
+      const grace = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24h ago
       list = list.filter(t => {
-        const isPast = t.task_date ? new Date(t.task_date) < now : false;
+        const taskDate = t.task_date ? new Date(t.task_date) : null;
         const isCompleted = t.signupStatus === 'completed';
-        return !isPast && !isCompleted;
+        if (isCompleted) return false;
+        if (!taskDate) return true;
+        return taskDate >= grace;
       });
     } else if (filter === 'completed') {
       list = list.filter(t => {
@@ -110,7 +113,7 @@ const VolunteerTasksList = ({
 
   const filterPills: { key: FilterMode; label: string }[] = [
     { key: 'upcoming', label: t3(language, 'Aankomend', 'À venir', 'Upcoming') },
-    { key: 'completed', label: t3(language, 'Afgerond', 'Terminé', 'Completed') },
+    { key: 'completed', label: t3(language, 'Geschiedenis', 'Historique', 'History') },
     { key: 'all', label: t3(language, 'Alles', 'Tout', 'All') },
   ];
 
