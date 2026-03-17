@@ -42,6 +42,7 @@ interface Props {
   pendingSignups: TaskSignup[];
   assignedSignups: TaskSignup[];
   complianceData: any;
+  loyaltyEnrollments: Record<string, { tasks_completed: number; points_earned: number; reward_claimed: boolean }>;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   setActiveTab: (tab: string) => void;
@@ -52,7 +53,7 @@ interface Props {
 const VolunteerDashboardHome = ({
   language, currentUserId, profile, followedClubIds, myContracts, myCertifiedTrainingIds,
   signups, tasks, events, myPayments, sepaPayouts, pendingSignups, assignedSignups,
-  complianceData, searchQuery, setSearchQuery, setActiveTab, setShowProfileDialog, getSignupStatus,
+  complianceData, loyaltyEnrollments, searchQuery, setSearchQuery, setActiveTab, setShowProfileDialog, getSignupStatus,
 }: Props) => {
   const navigate = useNavigate();
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
@@ -247,8 +248,8 @@ const VolunteerDashboardHome = ({
     ...a, type: a.type as 'contract' | 'briefing' | 'training' | 'partner_invite', urgent: a.type === 'contract',
   }));
 
-  // Loyalty points (from sepa + payments)
-  const loyaltyPoints = sepaPayouts.filter(s => !s.error_flag).reduce((sum, s) => sum + Math.floor(s.amount), 0);
+  // Loyalty points (from enrollments)
+  const loyaltyPoints = Object.values(loyaltyEnrollments).reduce((sum, e) => sum + (e?.points_earned || 0), 0);
 
   // Today's date formatted
   const todayFormatted = new Date().toLocaleDateString(
