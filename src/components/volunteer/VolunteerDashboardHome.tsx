@@ -42,6 +42,7 @@ interface Props {
   pendingSignups: TaskSignup[];
   assignedSignups: TaskSignup[];
   complianceData: any;
+  loyaltyEnrollments: Record<string, { tasks_completed: number; points_earned: number; reward_claimed: boolean }>;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   setActiveTab: (tab: string) => void;
