@@ -1,4 +1,4 @@
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, BookOpen } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { useNavigate } from 'react-router-dom';
 import VolunteerLoyaltyTab from '@/components/volunteer/VolunteerLoyaltyTab';
