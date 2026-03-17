@@ -735,7 +735,7 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
       )}
 
       {/* Briefings sub-view */}
-      {subView === 'briefings' && (
+      {subView === 'briefings' && userId && (
         <VolunteerBriefingsList language={language} userId={userId} />
       )}
     </div>
