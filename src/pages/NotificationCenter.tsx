@@ -35,6 +35,7 @@ const TYPE_CONFIG: Record<string, { icon: typeof Bell; label: Record<string, str
   safety: { icon: Shield, label: { nl: 'Veiligheid', fr: 'Sécurité', en: 'Safety' }, colorClass: 'text-destructive' },
   loyalty: { icon: Award, label: { nl: 'Loyaliteit', fr: 'Fidélité', en: 'Loyalty' }, colorClass: 'text-primary' },
   urgent: { icon: AlertTriangle, label: { nl: 'Urgent', fr: 'Urgent', en: 'Urgent' }, colorClass: 'text-destructive' },
+  spoed_oproep: { icon: Zap, label: { nl: 'Spoedoproep', fr: 'Appel urgent', en: 'Urgent call' }, colorClass: 'text-destructive' },
   default: { icon: Info, label: { nl: 'Algemeen', fr: 'Général', en: 'General' }, colorClass: 'text-muted-foreground' },
 };
 
