@@ -362,7 +362,7 @@ const BriefingBuilder = () => {
       setLoading(false);
     };
     init();
-  }, [taskId, clubId, navigate]);
+  }, [taskId, clubId, contextLoading, ctxUserId, navigate]);
 
   const loadBriefingData = async (bId: string, bTitle: string) => {
     setBriefingId(bId);
