@@ -1107,6 +1107,9 @@ const EventsManager = () => {
           <button onClick={() => setConfirmDeleteTask(task.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title={nl ? 'Verwijderen' : 'Delete'}>
             <Trash2 className="w-3.5 h-3.5" />
           </button>
+          <button onClick={() => setSpoedTask(task)} className="p-1.5 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors" title={t3('Spoedoproep', 'Appel urgent', 'Urgent call')}>
+            <Zap className="w-3.5 h-3.5" />
+          </button>
         </div>
       </motion.div>
     );
