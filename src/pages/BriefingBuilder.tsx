@@ -324,10 +324,10 @@ const BriefingBuilder = () => {
   // ─── Load briefing data ───
   useEffect(() => {
     if (!taskId || !clubId) return;
+    if (contextLoading) return;
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-      setUserId(session.user.id);
+      if (!ctxUserId) { navigate('/login'); return; }
+      setUserId(ctxUserId);
 
       const { data: task } = await supabase.from('tasks').select('title, task_date, start_time, end_time, location, briefing_location, briefing_time, club_id').eq('id', taskId).maybeSingle();
       if (task) {
