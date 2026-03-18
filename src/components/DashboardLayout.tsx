@@ -10,7 +10,7 @@ interface DashboardLayoutProps {
   userId?: string;
 }
 
-const DashboardLayout = ({ sidebar, children }: DashboardLayoutProps) => {
+const DashboardLayout = ({ sidebar, children, userId }: DashboardLayoutProps) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
