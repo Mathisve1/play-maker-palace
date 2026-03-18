@@ -65,7 +65,7 @@ const AnalyticsDashboard = () => {
     setLoading(true);
 
     const [membersRes, tasksRes, signupsRes, eventsRes] = await Promise.all([
-      supabase.from('club_members').select('user_id, created_at').eq('club_id', clubId),
+      supabase.from('club_memberships').select('volunteer_id, joined_at, status').eq('club_id', clubId).eq('status', 'actief'),
       supabase.from('tasks').select('id, title, spots_available, task_date, event_id').eq('club_id', clubId),
       supabase.from('task_signups').select('task_id, volunteer_id, status, signed_up_at'),
       supabase.from('events').select('id, title, event_date').eq('club_id', clubId).order('event_date', { ascending: false }).limit(50),
@@ -86,7 +86,7 @@ const AnalyticsDashboard = () => {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = d.toISOString().slice(0, 7);
       const label = d.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { month: 'short', year: '2-digit' });
-      const count = members.filter(m => m.created_at.slice(0, 7) === monthKey).length;
+      const count = members.filter(m => m.joined_at.slice(0, 7) === monthKey).length;
       cumulative += count;
       months.push({ month: label, count, cumulative });
     }
