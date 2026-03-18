@@ -137,11 +137,7 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<VolunteerTab>(() => {
-    // Fallback: if a removed tab was somehow persisted, default to dashboard
-    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments', 'grow'];
-    return 'dashboard';
-  });
+  const [activeTab, setActiveTab] = useState<VolunteerTab>('dashboard');
   
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
