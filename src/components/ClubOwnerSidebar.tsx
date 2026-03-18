@@ -102,7 +102,6 @@ const ClubOwnerSidebar = ({
     { label: t3('Facturatie', 'Facturation', 'Billing'), icon: CreditCard, path: '/billing' },
     { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
     { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Heart, path: '/loyalty' },
-    { label: t3('Help', 'Aide', 'Help'), icon: HelpCircle, path: '/club-help' },
   ];
 
   const beheerIsActive = beheerItems.some(item => isActive(item.path));
