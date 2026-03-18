@@ -182,6 +182,36 @@ const VolunteerDashboard = () => {
     }
   }, [contextProfile]);
 
+  // Realtime listener for spoed_oproep notifications
+  useEffect(() => {
+    if (!currentUserId) return;
+    const channel = supabase
+      .channel(`spoed-oproep-${currentUserId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${currentUserId}`,
+      }, (payload: any) => {
+        if (payload.new?.type === 'spoed_oproep') {
+          const taskId = payload.new?.metadata?.task_id;
+          const bonusText = payload.new?.metadata?.bonus_amount
+            ? ` (+€${payload.new.metadata.bonus_amount} bonus!)`
+            : '';
+          toast.warning(payload.new.title + bonusText, {
+            description: payload.new.message,
+            duration: 10000,
+            action: taskId ? {
+              label: language === 'nl' ? 'Bekijk taak' : language === 'fr' ? 'Voir tâche' : 'View task',
+              onClick: () => navigate(`/task/${taskId}`),
+            } : undefined,
+          });
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId, language, navigate]);
+
   useEffect(() => {
     const init = async () => {
       // Use contextUserId directly — don't wait for ClubContext to fully load
