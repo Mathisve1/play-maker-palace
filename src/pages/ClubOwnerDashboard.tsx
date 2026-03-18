@@ -933,6 +933,10 @@ const ClubOwnerDashboard = () => {
             <button onClick={(e) => { e.stopPropagation(); setMatcherTask(task); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
               <UserCheck className="w-3.5 h-3.5" /> {t3('Vrijwilligers zoeken', 'Chercher bénévoles', 'Find volunteers')}
             </button>
+            <button onClick={(e) => { e.stopPropagation(); setSpoedTask(task); }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
+              <Zap className="w-3.5 h-3.5" />
+              {t3('Spoedoproep', 'Appel urgent', 'Urgent call')}
+            </button>
             <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteTask(task.id); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors">
               <Trash2 className="w-3.5 h-3.5" /> {dt.deleteTask}
             </button>
