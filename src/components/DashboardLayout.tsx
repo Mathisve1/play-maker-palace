@@ -1,6 +1,7 @@
 import React from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import Logo from '@/components/Logo';
+import BottomTabBar from '@/components/BottomTabBar';
 
 interface DashboardLayoutProps {
   sidebar: React.ReactNode;
@@ -20,9 +21,10 @@ const DashboardLayout = ({ sidebar, children }: DashboardLayoutProps) => {
             <SidebarTrigger />
             <Logo size="sm" linkTo="/dashboard" />
           </header>
-          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
+          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto pb-[68px] md:pb-6 lg:pb-8">
             {children}
           </main>
+          <BottomTabBar />
         </div>
       </div>
     </SidebarProvider>

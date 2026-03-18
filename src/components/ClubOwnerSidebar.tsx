@@ -108,7 +108,7 @@ const ClubOwnerSidebar = ({
 
   const renderMenuItem = (item: { label: string; icon: any; path: string; badge?: number }) => (
     <SidebarMenuItem key={item.path}>
-      <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[44px]">
+      <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[48px]">
         <item.icon className="w-5 h-5" />
         <span className="flex-1">{item.label}</span>
         {item.badge != null && item.badge > 0 && (
@@ -216,7 +216,7 @@ const ClubOwnerSidebar = ({
         <SidebarMenu>
           {onOpenProfile && (
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="min-h-[40px]">
+              <SidebarMenuButton onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="min-h-[48px]">
                 <User className="w-4 h-4" />
                 <span>{t3('Mijn profiel', 'Mon profil', 'My profile')}</span>
               </SidebarMenuButton>
@@ -224,7 +224,7 @@ const ClubOwnerSidebar = ({
           )}
           {onOpenMembers && (
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="min-h-[40px]">
+              <SidebarMenuButton onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="min-h-[48px]">
                 <Users className="w-4 h-4" />
                 <span>{t3('Leden', 'Membres', 'Members')}</span>
               </SidebarMenuButton>
@@ -232,20 +232,20 @@ const ClubOwnerSidebar = ({
           )}
           {onOpenSettings && (
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => { onOpenSettings(); setOpenMobile(false); }} className="min-h-[40px]">
+              <SidebarMenuButton onClick={() => { onOpenSettings(); setOpenMobile(false); }} className="min-h-[48px]">
                 <Settings className="w-4 h-4" />
                 <span>{t3('Instellingen', 'Paramètres', 'Settings')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => nav('/club-help')} className="min-h-[40px]">
+            <SidebarMenuButton onClick={() => nav('/club-help')} className="min-h-[48px]">
               <HelpCircle className="w-4 h-4" />
               <span>{t3('Help', 'Aide', 'Help')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => window.open('https://play-maker-palace.lovable.app/changelog', '_blank')} className="min-h-[40px]">
+            <SidebarMenuButton onClick={() => window.open('https://play-maker-palace.lovable.app/changelog', '_blank')} className="min-h-[48px]">
               <Sparkles className="w-4 h-4" />
               <span className="flex-1">{t3('Wat is nieuw?', 'Quoi de neuf ?', "What's new?")}</span>
               <span className="text-[10px] text-muted-foreground">v1.0 — {t3('maart', 'mars', 'March')} 2026</span>
