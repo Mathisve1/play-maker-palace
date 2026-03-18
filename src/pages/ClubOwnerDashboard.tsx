@@ -463,7 +463,7 @@ const ClubOwnerDashboard = () => {
         supabase.from('academy_trainings').select('id, title').eq('club_id', clubId).eq('is_published', true).order('title'),
         supabase.from('external_partners').select('id, name, external_payroll').eq('club_id', clubId).order('name'),
         supabase.from('events').select('*').eq('club_id', clubId).order('event_date', { ascending: true }),
-        supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)').eq('club_id', clubId).order('task_date', { ascending: true }),
+        supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name), start_time, end_time').eq('club_id', clubId).order('task_date', { ascending: true }),
       ]);
 
       setContractTemplates(templatesRes.data || []);

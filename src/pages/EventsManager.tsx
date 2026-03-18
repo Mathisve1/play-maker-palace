@@ -178,7 +178,7 @@ const EventsManager = () => {
 
       const [evRes, taskRes, tmplRes, mpRes] = await Promise.all([
         supabase.from('events').select('*').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-        supabase.from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').eq('club_id', cId).order('task_date', { ascending: true }),
+        supabase.from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status, start_time, end_time').eq('club_id', cId).order('task_date', { ascending: true }),
         supabase.from('contract_templates').select('id, name').eq('club_id', cId).order('name'),
         supabase.from('monthly_plans').select('id, title, month, year, status').eq('club_id', cId).eq('status', 'open').order('year', { ascending: false }),
       ]);
