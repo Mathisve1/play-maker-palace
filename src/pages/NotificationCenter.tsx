@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, ArrowLeft, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff, Loader2, ThumbsUp, ThumbsDown, Star, Clock } from 'lucide-react';
+import { Bell, Check, CheckCheck, ArrowLeft, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff, Loader2, ThumbsUp, ThumbsDown, Star, Clock, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
