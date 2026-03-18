@@ -127,8 +127,8 @@ const BillingDashboard = () => {
 
   const eventTypeLabels: Record<string, string> = {
     volunteer_billed: t('Vrijwilliger gefactureerd', 'Bénévole facturé', 'Volunteer billed'),
-    free_contract_used: t('Gratis contract', 'Contrat gratuit', 'Free contract'),
-    paid_contract_created: t('Betaald contract', 'Contrat payant', 'Paid contract'),
+    free_contract_used: t('Gratis taak voltooid', 'Tâche gratuite complétée', 'Free task completed'),
+    paid_contract_created: t('Vrijwilliger gefactureerd (3e taak)', 'Bénévole facturé (3e tâche)', 'Volunteer billed (3rd task)'),
     payment_succeeded: t('Betaling geslaagd', 'Paiement réussi', 'Payment succeeded'),
     payment_failed: t('Betaling mislukt', 'Paiement échoué', 'Payment failed'),
     seats_updated: t('Zitjes bijgewerkt', 'Sièges mis à jour', 'Seats updated'),
