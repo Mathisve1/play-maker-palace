@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import MonthlyPlanningKPIs from '@/components/MonthlyPlanningKPIs';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3, UserCheck, Share2 } from 'lucide-react';
+import { Users, Calendar, MapPin, LogOut, CheckCircle, Clock, ChevronDown, ChevronUp, Plus, X, Settings, Shield, FileText, CreditCard, Send, Loader2, AlertTriangle, Download, Bell, FileSignature, Pencil, Trash2, User, MessageCircle, ClipboardList, Eye, CalendarDays, Layers, Timer, Copy, Gift, Star, Ticket, Handshake, BarChart3, UserCheck, Share2, Zap } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
@@ -38,6 +38,7 @@ const EditProfileDialog = lazy(() => import('@/components/EditProfileDialog'));
 const VolunteerMatcher = lazy(() => import('@/components/VolunteerMatcher'));
 const ClubOnboardingWizard = lazy(() => import('@/components/ClubOnboardingWizard'));
 const FreeTrialBanner = lazy(() => import('@/components/FreeTrialBanner'));
+const SpoedoproepDialog = lazy(() => import('@/components/SpoedoproepDialog'));
 
 interface VolunteerProfile {
   id: string;
@@ -347,6 +348,7 @@ const ClubOwnerDashboard = () => {
   const [complianceMap, setComplianceMap] = useState<Map<string, ComplianceStatus>>(new Map());
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [spoedTask, setSpoedTask] = useState<Task | null>(null);
 
   // Events state
   const [events, setEvents] = useState<EventData[]>([]);
@@ -931,6 +933,10 @@ const ClubOwnerDashboard = () => {
             <button onClick={(e) => { e.stopPropagation(); setMatcherTask(task); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
               <UserCheck className="w-3.5 h-3.5" /> {t3('Vrijwilligers zoeken', 'Chercher bénévoles', 'Find volunteers')}
             </button>
+            <button onClick={(e) => { e.stopPropagation(); setSpoedTask(task); }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
+              <Zap className="w-3.5 h-3.5" />
+              {t3('Spoedoproep', 'Appel urgent', 'Urgent call')}
+            </button>
             <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteTask(task.id); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors">
               <Trash2 className="w-3.5 h-3.5" /> {dt.deleteTask}
             </button>
@@ -1485,6 +1491,26 @@ const ClubOwnerDashboard = () => {
       {showOnboarding && (
         <Suspense fallback={null}>
           <ClubOnboardingWizard onComplete={() => setShowOnboarding(false)} />
+        </Suspense>
+      )}
+      {spoedTask && (
+        <Suspense fallback={null}>
+          <SpoedoproepDialog
+            open={!!spoedTask}
+            onOpenChange={(o) => { if (!o) setSpoedTask(null); }}
+            task={{
+              id: spoedTask.id,
+              title: spoedTask.title,
+              task_date: spoedTask.task_date || null,
+              start_time: null,
+              end_time: null,
+              location: spoedTask.location || null,
+              club_id: spoedTask.club_id || clubId || '',
+              spots_available: spoedTask.spots_available,
+              compensation_type: spoedTask.compensation_type,
+              hourly_rate: spoedTask.hourly_rate,
+            }}
+          />
         </Suspense>
       )}
     </DashboardLayout>

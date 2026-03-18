@@ -10,7 +10,7 @@ import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
   PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
-  FileText, Save, ClipboardCheck, Send, UserCheck,
+  FileText, Save, ClipboardCheck, Send, UserCheck, Zap,
 } from 'lucide-react';
 import BulkMessageDialog from '@/components/BulkMessageDialog';
 import EventTemplateDialog from '@/components/EventTemplateDialog';
@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskZoneDialog from '@/components/TaskZoneDialog';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
+import SpoedoproepDialog from '@/components/SpoedoproepDialog';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -110,6 +111,7 @@ const EventsManager = () => {
   // Zone dialog
   const [zoneDialogTask, setZoneDialogTask] = useState<{ id: string; title: string } | null>(null);
   const [safetyConfigEvent, setSafetyConfigEvent] = useState<{ eventId: string; clubId: string } | null>(null);
+  const [spoedTask, setSpoedTask] = useState<Task | null>(null);
 
   // Edit group
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
@@ -1004,6 +1006,22 @@ const EventsManager = () => {
         onCreateFromTemplate={handleCreateFromTemplate}
       />
     )}
+    {spoedTask && clubId && (
+      <SpoedoproepDialog
+        open={!!spoedTask}
+        onOpenChange={(o) => { if (!o) setSpoedTask(null); }}
+        task={{
+          id: spoedTask.id,
+          title: spoedTask.title,
+          task_date: spoedTask.task_date || null,
+          start_time: null,
+          end_time: null,
+          location: spoedTask.location || null,
+          club_id: clubId,
+          spots_available: spoedTask.spots_available,
+        }}
+      />
+    )}
 
     {/* Duplicate Event Date Picker */}
     <AnimatePresence>
@@ -1104,6 +1122,9 @@ const EventsManager = () => {
           </button>
           <button onClick={() => setConfirmDeleteTask(task.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title={nl ? 'Verwijderen' : 'Delete'}>
             <Trash2 className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => setSpoedTask(task)} className="p-1.5 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors" title={t3('Spoedoproep', 'Appel urgent', 'Urgent call')}>
+            <Zap className="w-3.5 h-3.5" />
           </button>
         </div>
       </motion.div>
@@ -1328,6 +1349,9 @@ const EventsManager = () => {
                               </button>
                               <button onClick={() => navigate(`/planning/${task.id}`)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors border border-border" title={nl ? 'Kanban planning' : 'Kanban planning'}>
                                 <LayoutGrid className="w-3.5 h-3.5" /> {nl ? 'Planning' : 'Planning'}
+                              </button>
+                              <button onClick={() => setSpoedTask(task)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors border border-amber-200 dark:border-amber-800">
+                                <Zap className="w-3.5 h-3.5" /> {t3('Spoed', 'Urgent', 'Urgent')}
                               </button>
                             </div>
                           </div>
