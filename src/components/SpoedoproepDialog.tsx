@@ -332,6 +332,8 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
       const clubName = clubCtx?.clubInfo?.name || 'Club';
 
       // ── Step C: Push notifications (batches of 10) ──
+      // The edge function also creates an in-app notification, so track who got push
+      const pushSentIds = new Set<string>();
       if (channelPush) {
         const pushTargets = poolIds.filter(id => {
           const p = profileMap.get(id);
@@ -355,14 +357,21 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
               });
             })
           );
-          pushCount += results.filter(r => r.status === 'fulfilled').length;
+          results.forEach((r, i) => {
+            if (r.status === 'fulfilled') {
+              pushSentIds.add(batch[i]);
+              pushCount++;
+            }
+          });
         }
       }
 
-      // ── Step D: In-app notifications (bulk insert) ──
+      // ── Step D: In-app notifications (only for users who didn't get push, since edge function already creates in-app) ──
       if (channelNotif) {
         const inAppRecords = poolIds
           .filter(id => {
+            // Skip users who already received in-app via push edge function
+            if (pushSentIds.has(id)) return false;
             const p = profileMap.get(id);
             return !p || p.in_app_notifications_enabled !== false;
           })
@@ -386,8 +395,9 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
 
         if (inAppRecords.length > 0) {
           await supabase.from('notifications').insert(inAppRecords);
-          notifCount = inAppRecords.length;
         }
+        // Total in-app = direct inserts + those created by push edge function
+        notifCount = inAppRecords.length + pushSentIds.size;
       }
 
       // ── Step E: Emails via enqueue_email (batches of 10) ──
