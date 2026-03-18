@@ -22,6 +22,9 @@ const DashboardLayout = ({ sidebar, children, userId }: DashboardLayoutProps) =>
           >
             <SidebarTrigger />
             <Logo size="sm" linkTo="/dashboard" />
+            <div className="ml-auto">
+              {userId && <NotificationBell userId={userId} />}
+            </div>
           </header>
           <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto pb-[68px] md:pb-6 lg:pb-8">
             {children}
