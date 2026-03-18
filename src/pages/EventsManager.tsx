@@ -38,6 +38,7 @@ interface Task {
   id: string; title: string; task_date: string | null; location: string | null;
   spots_available: number; event_id: string | null; event_group_id: string | null;
   partner_only?: boolean; assigned_partner_id?: string | null; status?: string;
+  start_time?: string | null; end_time?: string | null;
 }
 
 const GROUP_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
