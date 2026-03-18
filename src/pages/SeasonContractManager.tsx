@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useClubContext } from '@/contexts/ClubContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -24,6 +25,7 @@ import { generateSeasonReport, type SeasonReportVolunteer, type SeasonReportTask
 const SeasonContractManager = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { clubId: ctxClubId, loading: contextLoading } = useClubContext();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const [clubId, setClubId] = useState<string | null>(null);
@@ -63,18 +65,11 @@ const SeasonContractManager = () => {
   };
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: club } = await supabase.from('clubs').select('id').eq('owner_id', user.id).limit(1).single();
-      if (club) {
-        setClubId(club.id);
-        await loadData(club.id);
-      }
-      setLoading(false);
-    };
-    init();
-  }, []);
+    if (contextLoading) return;
+    if (!ctxClubId) { setLoading(false); return; }
+    setClubId(ctxClubId);
+    loadData(ctxClubId).then(() => setLoading(false));
+  }, [contextLoading, ctxClubId]);
 
   const loadData = async (cId: string) => {
     // Load active season + billing + archived seasons in parallel
