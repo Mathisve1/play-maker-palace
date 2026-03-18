@@ -1006,6 +1006,22 @@ const EventsManager = () => {
         onCreateFromTemplate={handleCreateFromTemplate}
       />
     )}
+    {spoedTask && clubId && (
+      <SpoedoproepDialog
+        open={!!spoedTask}
+        onOpenChange={(o) => { if (!o) setSpoedTask(null); }}
+        task={{
+          id: spoedTask.id,
+          title: spoedTask.title,
+          task_date: spoedTask.task_date || null,
+          start_time: null,
+          end_time: null,
+          location: spoedTask.location || null,
+          club_id: clubId,
+          spots_available: spoedTask.spots_available,
+        }}
+      />
+    )}
 
     {/* Duplicate Event Date Picker */}
     <AnimatePresence>
