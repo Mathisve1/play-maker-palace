@@ -536,8 +536,6 @@ const ClubOwnerDashboard = () => {
     // Fire KPIs in parallel with init (non-blocking)
     refreshKPIs(clubId);
     init();
-
-    init();
   }, [contextLoading, clubId, currentUserId, refreshKPIs]);
 
   // --- Handlers ---
