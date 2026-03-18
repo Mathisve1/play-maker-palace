@@ -1336,6 +1336,43 @@ const ClubOwnerDashboard = () => {
           </div>
         </motion.div>
 
+        {/* Urgent tasks banner */}
+        {urgentTasks.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-amber-950/40 p-4 mb-4"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                {language === 'nl'
+                  ? `⚡ ${urgentTasks.length} ${urgentTasks.length === 1 ? 'taak' : 'taken'} binnen 48 uur ${urgentTasks.length === 1 ? 'is' : 'zijn'} nog niet volledig bezet`
+                  : language === 'fr'
+                  ? `⚡ ${urgentTasks.length} tâche${urgentTasks.length > 1 ? 's' : ''} dans les 48h ${urgentTasks.length > 1 ? 'ne sont' : "n'est"} pas encore complète${urgentTasks.length > 1 ? 's' : ''}`
+                  : `⚡ ${urgentTasks.length} task${urgentTasks.length > 1 ? 's' : ''} within 48h ${urgentTasks.length > 1 ? 'are' : 'is'} not yet fully staffed`}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {urgentTasks.map(task => {
+                const taskSignups = signups[task.id] || [];
+                const assignedCount = taskSignups.filter((s: any) => s.status === 'assigned').length;
+                const missing = task.spots_available - assignedCount;
+                return (
+                  <button
+                    key={task.id}
+                    onClick={() => setSpoedTask(task)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-200/70 dark:bg-amber-800/50 text-amber-900 dark:text-amber-100 hover:bg-amber-300 dark:hover:bg-amber-700/60 transition-colors"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    {task.title} ({language === 'nl' ? `${missing} nodig` : language === 'fr' ? `${missing} requis` : `${missing} needed`})
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
         {/* Customizable Widget Grid */}
         {layoutLoaded && (
           <DashboardGrid
