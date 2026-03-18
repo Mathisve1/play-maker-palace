@@ -24,7 +24,7 @@ interface VolunteerSidebarProps {
   profile: { full_name: string; email: string; avatar_url?: string | null } | null;
   language: Language;
   onLogout: () => void;
-  onOpenProfile: () => void;
+  userId?: string;
   counts?: {
     pending?: number;
     assigned?: number;
