@@ -224,7 +224,7 @@ const ClubOwnerSidebar = ({
           )}
           {onOpenMembers && (
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="min-h-[40px]">
+              <SidebarMenuButton onClick={() => { onOpenMembers(); setOpenMobile(false); }} className="min-h-[48px]">
                 <Users className="w-4 h-4" />
                 <span>{t3('Leden', 'Membres', 'Members')}</span>
               </SidebarMenuButton>
