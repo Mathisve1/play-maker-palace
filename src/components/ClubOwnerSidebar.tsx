@@ -239,7 +239,7 @@ const ClubOwnerSidebar = ({
             </SidebarMenuItem>
           )}
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => nav('/club-help')} className="min-h-[40px]">
+            <SidebarMenuButton onClick={() => nav('/club-help')} className="min-h-[48px]">
               <HelpCircle className="w-4 h-4" />
               <span>{t3('Help', 'Aide', 'Help')}</span>
             </SidebarMenuButton>
