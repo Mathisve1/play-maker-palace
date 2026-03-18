@@ -81,6 +81,8 @@ interface Task {
   estimated_hours?: number | null;
   partner_only?: boolean;
   assigned_partner_id?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
 }
 
 interface EventData {
