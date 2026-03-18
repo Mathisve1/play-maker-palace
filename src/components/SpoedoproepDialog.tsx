@@ -10,10 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Zap, Users, ChevronRight, ChevronLeft, AlertTriangle, Check, Bell, Mail, Smartphone, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useOptionalClubContext } from '@/contexts/ClubContext';
 import { format } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { sendPush } from '@/lib/sendPush';
 import confetti from 'canvas-confetti';
 
 interface SpoedoproepProps {
@@ -42,8 +42,127 @@ interface SendResult {
   notifCount: number;
 }
 
+interface PoolProfile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  language: string | null;
+  push_notifications_enabled: boolean | null;
+  in_app_notifications_enabled: boolean | null;
+}
+
+// ── Chunk helper for batched processing ──
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
+// ── Build bonus text ──
+function buildBonusText(amount: number, type: BonusType, lang: string): string {
+  if (lang === 'nl') {
+    return type === 'bonus' ? `€${amount} bonus`
+      : type === 'double_points' ? 'Dubbele loyaliteitspunten'
+      : `€${amount} bonus + dubbele punten`;
+  }
+  if (lang === 'fr') {
+    return type === 'bonus' ? `${amount}€ de bonus`
+      : type === 'double_points' ? 'Points de fidélité doublés'
+      : `${amount}€ de bonus + points doublés`;
+  }
+  return type === 'bonus' ? `€${amount} bonus`
+    : type === 'double_points' ? 'Double loyalty points'
+    : `€${amount} bonus + double points`;
+}
+
+// ── Build HTML email ──
+function buildSpoedEmailHtml(opts: {
+  firstName: string;
+  taskTitle: string;
+  taskDate: string;
+  taskTime: string;
+  taskLocation: string;
+  spotsNeeded: number;
+  bonusText: string | null;
+  customMessage: string;
+  taskId: string;
+  clubName: string;
+  lang: string;
+}): string {
+  const { firstName, taskTitle, taskDate, taskTime, taskLocation, spotsNeeded, bonusText, customMessage, taskId, clubName, lang } = opts;
+
+  const ctaLabel = lang === 'nl' ? 'Schrijf je nu in' : lang === 'fr' ? 'Inscrivez-vous maintenant' : 'Sign up now';
+  const headerLabel = lang === 'nl' ? '🚨 SPOEDOPROEP' : lang === 'fr' ? '🚨 APPEL D\'URGENCE' : '🚨 URGENT CALL';
+  const spotsLabel = lang === 'nl' ? `${spotsNeeded} vrijwilligers nodig` : lang === 'fr' ? `${spotsNeeded} bénévoles nécessaires` : `${spotsNeeded} volunteers needed`;
+  const ctaUrl = `https://play-maker-palace.lovable.app/task/${taskId}`;
+
+  return `<!DOCTYPE html>
+<html lang="${lang}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;background:#f5f5f0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f0;padding:24px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+  <!-- Red urgent banner -->
+  <tr><td style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:24px 32px;text-align:center;">
+    <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">${headerLabel}</h1>
+    <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:14px;">${spotsLabel}</p>
+  </td></tr>
+
+  <!-- Body -->
+  <tr><td style="padding:32px;">
+    <p style="margin:0 0 16px;color:#1a1a1a;font-size:15px;">
+      ${lang === 'nl' ? `Hallo ${firstName},` : lang === 'fr' ? `Bonjour ${firstName},` : `Hi ${firstName},`}
+    </p>
+
+    <!-- Task info card -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;margin:0 0 20px;">
+      <tr><td style="padding:16px;">
+        <p style="margin:0 0 4px;font-weight:700;color:#1a1a1a;font-size:16px;">${taskTitle}</p>
+        ${taskDate ? `<p style="margin:0 0 2px;color:#555;font-size:13px;">📅 ${taskDate}</p>` : ''}
+        ${taskTime ? `<p style="margin:0 0 2px;color:#555;font-size:13px;">🕐 ${taskTime}</p>` : ''}
+        ${taskLocation ? `<p style="margin:0;color:#555;font-size:13px;">📍 ${taskLocation}</p>` : ''}
+      </td></tr>
+    </table>
+
+    <!-- Custom message -->
+    <p style="margin:0 0 20px;color:#333;font-size:14px;line-height:1.6;white-space:pre-wrap;">${customMessage}</p>
+
+    ${bonusText ? `
+    <!-- Bonus banner -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;margin:0 0 24px;">
+      <tr><td style="padding:14px 16px;text-align:center;">
+        <p style="margin:0;font-weight:700;color:#166534;font-size:15px;">💰 ${bonusText}</p>
+      </td></tr>
+    </table>
+    ` : ''}
+
+    <!-- CTA button -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td align="center" style="padding:8px 0 16px;">
+        <a href="${ctaUrl}" style="display:inline-block;background:#dc2626;color:#ffffff;font-weight:700;font-size:16px;padding:14px 40px;border-radius:8px;text-decoration:none;">
+          ${ctaLabel}
+        </a>
+      </td></tr>
+    </table>
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+    <p style="margin:0;color:#9ca3af;font-size:12px;">${clubName} — De 12e Man</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
 const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
   const { language } = useLanguage();
+  const clubCtx = useOptionalClubContext();
   const [step, setStep] = useState(1);
   const [poolSize, setPoolSize] = useState<number | null>(null);
   const [poolIds, setPoolIds] = useState<string[]>([]);
@@ -96,7 +215,7 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
     return `🚨 URGENT CALL — ${task.title} on ${formattedDate} at ${formattedTime} at ${task.location || '...'}. We urgently need ${task.spots_available} more volunteers.${bonusPart} Sign up now via the app!`;
   }, [task, formattedDate, formattedTime, bonusEnabled, bonusAmount, bonusType, language]);
 
-  // Load pool on open
+  // Load pool on open — also excludes volunteers already signed up for THIS task
   useEffect(() => {
     if (!open) {
       setStep(1);
@@ -108,45 +227,30 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
     const loadPool = async () => {
       setLoadingPool(true);
       try {
-        // Get active season
-        const { data: season } = await supabase
-          .from('seasons')
-          .select('id')
-          .eq('club_id', task.club_id)
-          .eq('is_active', true)
-          .limit(1)
-          .maybeSingle();
+        // Parallel: club tasks, memberships, already signed up for this task
+        const [clubTasksRes, membershipsRes, alreadySignedRes] = await Promise.all([
+          supabase.from('tasks').select('id').eq('club_id', task.club_id),
+          supabase.from('club_memberships').select('volunteer_id').eq('club_id', task.club_id).eq('status', 'actief'),
+          supabase.from('task_signups').select('volunteer_id').eq('task_id', task.id),
+        ]);
 
-        // Get tasks for this club
-        const { data: clubTasks } = await supabase
-          .from('tasks')
-          .select('id')
-          .eq('club_id', task.club_id);
+        const clubTaskIds = (clubTasksRes.data || []).map(t => t.id);
+        const memberVolunteers = (membershipsRes.data || []).map(m => m.volunteer_id);
+        const alreadyIds = new Set((alreadySignedRes.data || []).map(s => s.volunteer_id));
 
-        const taskIds = (clubTasks || []).map(t => t.id);
-
-        // Get signups with assigned/completed status
+        // Get signups with assigned/completed status for club tasks
         let signupVolunteers: string[] = [];
-        if (taskIds.length > 0) {
+        if (clubTaskIds.length > 0) {
           const { data: signups } = await supabase
             .from('task_signups')
             .select('volunteer_id')
-            .in('task_id', taskIds)
+            .in('task_id', clubTaskIds)
             .in('status', ['assigned', 'completed']);
           signupVolunteers = (signups || []).map(s => s.volunteer_id);
         }
 
-        // Get active club memberships
-        const { data: memberships } = await supabase
-          .from('club_memberships')
-          .select('volunteer_id')
-          .eq('club_id', task.club_id)
-          .eq('status', 'actief');
-
-        const memberVolunteers = (memberships || []).map(m => m.volunteer_id);
-
-        // Deduplicate
-        const uniqueIds = [...new Set([...signupVolunteers, ...memberVolunteers])];
+        // Deduplicate + exclude already signed up
+        const uniqueIds = [...new Set([...signupVolunteers, ...memberVolunteers])].filter(id => !alreadyIds.has(id));
         setPoolIds(uniqueIds);
         setPoolSize(uniqueIds.length);
       } catch (e) {
@@ -158,7 +262,7 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
     };
 
     loadPool();
-  }, [open, task.club_id]);
+  }, [open, task.club_id, task.id]);
 
   // Set default message when opening or when bonus changes
   useEffect(() => {
@@ -205,65 +309,145 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
   }, [result]);
 
   const handleSend = async () => {
+    if (poolIds.length === 0) return;
     setSending(true);
     let pushCount = 0;
     let emailCount = 0;
     let notifCount = 0;
 
     try {
-      const promises: Promise<void>[] = [];
+      // ── Step A: Pool is already loaded in poolIds (with dedup + exclusion) ──
 
-      for (const volunteerId of poolIds) {
-        // Push
-        if (channelPush) {
-          promises.push(
-            sendPush({
-              userId: volunteerId,
-              title: t('🚨 Spoedoproep', '🚨 Appel d\'urgence', '🚨 Urgent Call'),
-              message: message.slice(0, 200),
-              url: `/volunteer-dashboard`,
-              type: 'urgent',
-            }).then(() => { pushCount++; })
-          );
-        }
+      // ── Step B: Fetch profiles + push preferences ──
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, language, push_notifications_enabled, in_app_notifications_enabled')
+        .in('id', poolIds);
 
-        // In-app notification
-        if (channelNotif) {
-          promises.push(
-            (async () => {
-              await supabase.from('notifications').insert({
-                user_id: volunteerId,
-                title: t('🚨 Spoedoproep', '🚨 Appel d\'urgence', '🚨 Urgent Call'),
-                message: message.slice(0, 500),
-                type: 'urgent',
-                metadata: { task_id: task.id, action: 'spoedoproep' } as any,
+      const profileMap = new Map<string, PoolProfile>();
+      for (const p of (profiles || []) as PoolProfile[]) {
+        profileMap.set(p.id, p);
+      }
+
+      const clubName = clubCtx?.clubInfo?.name || 'Club';
+
+      // ── Step C: Push notifications (batches of 10) ──
+      if (channelPush) {
+        const pushTargets = poolIds.filter(id => {
+          const p = profileMap.get(id);
+          return !p || p.push_notifications_enabled !== false;
+        });
+
+        const pushBatches = chunkArray(pushTargets, 10);
+        for (const batch of pushBatches) {
+          const results = await Promise.allSettled(
+            batch.map(userId => {
+              const p = profileMap.get(userId);
+              const lang = p?.language || 'nl';
+              return supabase.functions.invoke('send-native-push', {
+                body: {
+                  user_id: userId,
+                  type: 'spoed_oproep',
+                  title: lang === 'nl' ? '🚨 Spoedoproep!' : lang === 'fr' ? '🚨 Appel d\'urgence!' : '🚨 Urgent Call!',
+                  message: message.slice(0, 200),
+                  url: `/task/${task.id}`,
+                },
               });
-              notifCount++;
-            })()
+            })
           );
-        }
-
-        // Email via queue
-        if (channelEmail) {
-          promises.push(
-            (async () => {
-              await supabase.rpc('enqueue_email', {
-                queue_name: 'transactional_emails',
-                payload: {
-                  to_user_id: volunteerId,
-                  template_name: 'spoedoproep',
-                  subject: t('🚨 Spoedoproep: ' + task.title, '🚨 Appel d\'urgence: ' + task.title, '🚨 Urgent Call: ' + task.title),
-                  body: message,
-                  metadata: { task_id: task.id, bonus_enabled: bonusEnabled, bonus_amount: bonusAmount },
-                } as any,
-              });
-              emailCount++;
-            })()
-          );
+          pushCount += results.filter(r => r.status === 'fulfilled').length;
         }
       }
 
-      await Promise.allSettled(promises);
+      // ── Step D: In-app notifications (bulk insert) ──
+      if (channelNotif) {
+        const inAppRecords = poolIds
+          .filter(id => {
+            const p = profileMap.get(id);
+            return !p || p.in_app_notifications_enabled !== false;
+          })
+          .map(id => {
+            const p = profileMap.get(id);
+            const lang = p?.language || 'nl';
+            return {
+              user_id: id,
+              type: 'spoed_oproep',
+              title: lang === 'nl' ? '🚨 Spoedoproep!' : lang === 'fr' ? '🚨 Appel d\'urgence!' : '🚨 Urgent Call!',
+              message: message.slice(0, 500),
+              metadata: {
+                task_id: task.id,
+                task_title: task.title,
+                club_id: task.club_id,
+                bonus_amount: bonusEnabled ? bonusAmount : null,
+                bonus_type: bonusEnabled ? bonusType : null,
+              } as any,
+            };
+          });
+
+        if (inAppRecords.length > 0) {
+          await supabase.from('notifications').insert(inAppRecords);
+          notifCount = inAppRecords.length;
+        }
+      }
+
+      // ── Step E: Emails via enqueue_email (batches of 10) ──
+      if (channelEmail) {
+        const emailTargets = poolIds.filter(id => {
+          const p = profileMap.get(id);
+          return p?.email;
+        });
+
+        const emailBatches = chunkArray(emailTargets, 10);
+        for (const batch of emailBatches) {
+          const results = await Promise.allSettled(
+            batch.map(userId => {
+              const p = profileMap.get(userId)!;
+              const lang = p.language || 'nl';
+              const localDate = task.task_date
+                ? new Date(task.task_date).toLocaleDateString(
+                    lang === 'nl' ? 'nl-BE' : lang === 'fr' ? 'fr-BE' : 'en-GB',
+                    { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+                  )
+                : '';
+
+              const emailHtml = buildSpoedEmailHtml({
+                firstName: p.full_name?.split(' ')[0] || (lang === 'nl' ? 'Vrijwilliger' : lang === 'fr' ? 'Bénévole' : 'Volunteer'),
+                taskTitle: task.title,
+                taskDate: localDate,
+                taskTime: task.start_time || '',
+                taskLocation: task.location || '',
+                spotsNeeded: task.spots_available,
+                bonusText: bonusEnabled ? buildBonusText(bonusAmount, bonusType, lang) : null,
+                customMessage: message,
+                taskId: task.id,
+                clubName,
+                lang,
+              });
+
+              const subject = lang === 'nl'
+                ? `🚨 Spoedoproep: ${task.title} — ${localDate}`
+                : lang === 'fr'
+                ? `🚨 Appel d'urgence: ${task.title} — ${localDate}`
+                : `🚨 Urgent Call: ${task.title} — ${localDate}`;
+
+              return supabase.rpc('enqueue_email' as any, {
+                queue_name: 'transactional_emails',
+                payload: {
+                  to: p.email,
+                  subject,
+                  html: emailHtml,
+                  from: `De 12e Man <noreply@de12eman.be>`,
+                  message_id: `spoed-${task.id}-${p.id}-${Date.now()}@de12eman.be`,
+                  queued_at: new Date().toISOString(),
+                  label: 'spoed-oproep',
+                },
+              });
+            })
+          );
+          emailCount += results.filter(r => r.status === 'fulfilled').length;
+        }
+      }
+
       setResult({ pushCount, emailCount, notifCount });
       setStep(3);
     } catch (e) {
