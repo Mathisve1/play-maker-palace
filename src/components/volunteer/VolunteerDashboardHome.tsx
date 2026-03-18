@@ -435,10 +435,12 @@ const VolunteerDashboardHome = ({
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                     item.type === 'contract' ? 'bg-orange-100 dark:bg-orange-900/30' :
-                    item.type === 'briefing' ? 'bg-primary/10' : 'bg-accent/10'
+                    item.type === 'briefing' ? 'bg-primary/10' :
+                    item.type === 'training' ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-accent/10'
                   }`}>
                     {item.type === 'contract' ? <FileSignature className="w-4 h-4 text-orange-600 dark:text-orange-400" /> :
                      item.type === 'briefing' ? <FileText className="w-4 h-4 text-primary" /> :
+                     item.type === 'training' ? <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" /> :
                      <BookOpen className="w-4 h-4 text-accent-foreground" />}
                   </div>
                   <div className="min-w-0">
