@@ -332,6 +332,8 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
       const clubName = clubCtx?.clubInfo?.name || 'Club';
 
       // ── Step C: Push notifications (batches of 10) ──
+      // The edge function also creates an in-app notification, so track who got push
+      const pushSentIds = new Set<string>();
       if (channelPush) {
         const pushTargets = poolIds.filter(id => {
           const p = profileMap.get(id);
@@ -355,7 +357,12 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
               });
             })
           );
-          pushCount += results.filter(r => r.status === 'fulfilled').length;
+          results.forEach((r, i) => {
+            if (r.status === 'fulfilled') {
+              pushSentIds.add(batch[i]);
+              pushCount++;
+            }
+          });
         }
       }
 
