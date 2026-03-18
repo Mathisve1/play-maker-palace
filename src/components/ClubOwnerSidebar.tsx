@@ -245,7 +245,7 @@ const ClubOwnerSidebar = ({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => window.open('https://play-maker-palace.lovable.app/changelog', '_blank')} className="min-h-[40px]">
+            <SidebarMenuButton onClick={() => window.open('https://play-maker-palace.lovable.app/changelog', '_blank')} className="min-h-[48px]">
               <Sparkles className="w-4 h-4" />
               <span className="flex-1">{t3('Wat is nieuw?', 'Quoi de neuf ?', "What's new?")}</span>
               <span className="text-[10px] text-muted-foreground">v1.0 — {t3('maart', 'mars', 'March')} 2026</span>
