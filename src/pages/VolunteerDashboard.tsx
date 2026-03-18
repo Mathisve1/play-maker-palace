@@ -721,6 +721,7 @@ const VolunteerDashboard = () => {
       language={language}
       onLogout={handleLogout}
       onOpenProfile={() => setShowProfileDialog(true)}
+      userId={currentUserId}
       counts={{
         pending: pendingSignups.length,
         assigned: assignedSignups.length,
