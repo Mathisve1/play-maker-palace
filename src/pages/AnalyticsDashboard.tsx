@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useClubContext } from '@/contexts/ClubContext';
 import { motion } from 'framer-motion';
 import { TrendingUp, Users, CalendarCheck, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ const CHART_COLORS = [
 const AnalyticsDashboard = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { userId, clubId: ctxClubId, clubInfo: ctxClubInfo, profile: ctxProfile, loading: contextLoading } = useClubContext();
   const [tab, setTab] = useState<TabKey>('volunteers');
   const [loading, setLoading] = useState(true);
   const [clubId, setClubId] = useState<string | null>(null);
@@ -44,27 +46,14 @@ const AnalyticsDashboard = () => {
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/club-login'); return; }
-
-      const { data: profileData } = await supabase.from('profiles').select('full_name, email, avatar_url').eq('id', session.user.id).maybeSingle();
-      setProfile(profileData);
-
-      // Find club
-      const { data: club } = await supabase.from('clubs').select('id, name, logo_url').eq('owner_id', session.user.id).maybeSingle();
-      if (!club) {
-        const { data: membership } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1).maybeSingle();
-        if (membership) {
-          const { data: c } = await supabase.from('clubs').select('id, name, logo_url').eq('id', membership.club_id).maybeSingle();
-          if (c) { setClubId(c.id); setClubInfo(c); }
-        }
-      } else {
-        setClubId(club.id); setClubInfo(club);
-      }
-    };
-    init();
-  }, []);
+    if (contextLoading) return;
+    if (!userId) { navigate('/club-login'); return; }
+    if (ctxClubId) {
+      setClubId(ctxClubId);
+      setClubInfo(ctxClubInfo);
+      setProfile(ctxProfile);
+    }
+  }, [contextLoading, userId, ctxClubId]);
 
   useEffect(() => {
     if (!clubId) return;
@@ -76,7 +65,7 @@ const AnalyticsDashboard = () => {
     setLoading(true);
 
     const [membersRes, tasksRes, signupsRes, eventsRes] = await Promise.all([
-      supabase.from('club_members').select('user_id, created_at').eq('club_id', clubId),
+      supabase.from('club_memberships').select('volunteer_id, joined_at, status').eq('club_id', clubId).eq('status', 'actief'),
       supabase.from('tasks').select('id, title, spots_available, task_date, event_id').eq('club_id', clubId),
       supabase.from('task_signups').select('task_id, volunteer_id, status, signed_up_at'),
       supabase.from('events').select('id, title, event_date').eq('club_id', clubId).order('event_date', { ascending: false }).limit(50),
@@ -97,7 +86,7 @@ const AnalyticsDashboard = () => {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = d.toISOString().slice(0, 7);
       const label = d.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', { month: 'short', year: '2-digit' });
-      const count = members.filter(m => m.created_at.slice(0, 7) === monthKey).length;
+      const count = members.filter(m => m.joined_at.slice(0, 7) === monthKey).length;
       cumulative += count;
       months.push({ month: label, count, cumulative });
     }
