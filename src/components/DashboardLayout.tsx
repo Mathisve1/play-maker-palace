@@ -2,10 +2,12 @@ import React from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import Logo from '@/components/Logo';
 import BottomTabBar from '@/components/BottomTabBar';
+import NotificationBell from '@/components/NotificationBell';
 
 interface DashboardLayoutProps {
   sidebar: React.ReactNode;
   children: React.ReactNode;
+  userId?: string;
 }
 
 const DashboardLayout = ({ sidebar, children }: DashboardLayoutProps) => {
