@@ -312,18 +312,14 @@ const BriefingBuilder = () => {
   // ─── Task selector loader ───
   useEffect(() => {
     if (taskId && clubId) return;
+    if (contextLoading) return;
+    if (!ctxUserId) { navigate('/club-login'); return; }
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/club-login'); return; }
-      const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
-      const { data: memberClubs } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
-      const clubIds = [...(ownedClubs || []).map(c => c.id), ...(memberClubs || []).map(c => c.club_id)];
-      if (clubIds.length === 0) { navigate('/club-dashboard'); return; }
-      const { data: tasks } = await supabase.from('tasks').select('id, title, club_id, task_date').in('club_id', clubIds).order('task_date', { ascending: false });
+      const { data: tasks } = await supabase.from('tasks').select('id, title, club_id, task_date').eq('club_id', ctxClubId!).order('task_date', { ascending: false });
       setAvailableTasks(tasks || []);
       setTaskSelectorLoading(false);
     })();
-  }, [taskId, clubId, navigate]);
+  }, [taskId, clubId, contextLoading, ctxUserId, ctxClubId, navigate]);
 
   // ─── Load briefing data ───
   useEffect(() => {
