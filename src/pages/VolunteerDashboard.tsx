@@ -732,7 +732,7 @@ const VolunteerDashboard = () => {
   );
 
   return (
-    <DashboardLayout sidebar={sidebarEl}>
+    <DashboardLayout sidebar={sidebarEl} userId={currentUserId}>
       {/* Volunteer Onboarding Wizard overlay */}
       {showVolunteerOnboarding && currentUserId && contextClubId && (
         <VolunteerOnboardingWizard
