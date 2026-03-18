@@ -231,10 +231,10 @@ const VolunteerDashboardHome = ({
   requiredTrainings.forEach(tr => {
     actionItems.push({
       id: `training-${tr.id}`, type: 'training',
-      title: language === 'nl' ? 'Training vereist' : language === 'fr' ? 'Formation requise' : 'Training required',
+      title: language === 'nl' ? 'Verplichte training' : language === 'fr' ? 'Formation obligatoire' : 'Required training',
       subtitle: `${tr.title} · ${tr.clubName}`,
-      action: () => navigate(`/training/${tr.id}`),
-      actionLabel: language === 'nl' ? 'Start' : language === 'fr' ? 'Démarrer' : 'Start',
+      action: () => navigate('/academy'),
+      actionLabel: language === 'nl' ? 'Bekijk' : language === 'fr' ? 'Voir' : 'View',
     });
   });
 
