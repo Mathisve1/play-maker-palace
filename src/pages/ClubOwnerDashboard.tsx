@@ -1493,6 +1493,26 @@ const ClubOwnerDashboard = () => {
           <ClubOnboardingWizard onComplete={() => setShowOnboarding(false)} />
         </Suspense>
       )}
+      {spoedTask && (
+        <Suspense fallback={null}>
+          <SpoedoproepDialog
+            open={!!spoedTask}
+            onOpenChange={(o) => { if (!o) setSpoedTask(null); }}
+            task={{
+              id: spoedTask.id,
+              title: spoedTask.title,
+              task_date: spoedTask.task_date || null,
+              start_time: null,
+              end_time: null,
+              location: spoedTask.location || null,
+              club_id: spoedTask.club_id || clubId || '',
+              spots_available: spoedTask.spots_available,
+              compensation_type: spoedTask.compensation_type,
+              hourly_rate: spoedTask.hourly_rate,
+            }}
+          />
+        </Suspense>
+      )}
     </DashboardLayout>
   );
 };
