@@ -111,6 +111,7 @@ const EventsManager = () => {
   // Zone dialog
   const [zoneDialogTask, setZoneDialogTask] = useState<{ id: string; title: string } | null>(null);
   const [safetyConfigEvent, setSafetyConfigEvent] = useState<{ eventId: string; clubId: string } | null>(null);
+  const [spoedTask, setSpoedTask] = useState<Task | null>(null);
 
   // Edit group
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
