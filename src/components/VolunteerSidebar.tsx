@@ -87,7 +87,7 @@ const labels: Record<Language, Record<string, string>> = {
 };
 
 const VolunteerSidebar = ({
-  activeTab, setActiveTab, profile, language, onLogout, onOpenProfile, counts = {},
+  activeTab, setActiveTab, profile, language, onLogout, onOpenProfile, userId, counts = {},
 }: VolunteerSidebarProps) => {
   const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
