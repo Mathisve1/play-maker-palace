@@ -230,29 +230,35 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
         // In-app notification
         if (channelNotif) {
           promises.push(
-            supabase.from('notifications').insert({
-              user_id: volunteerId,
-              title: t('🚨 Spoedoproep', '🚨 Appel d\'urgence', '🚨 Urgent Call'),
-              message: message.slice(0, 500),
-              type: 'urgent',
-              metadata: { task_id: task.id, action: 'spoedoproep' },
-            }).then(() => { notifCount++; })
+            (async () => {
+              await supabase.from('notifications').insert({
+                user_id: volunteerId,
+                title: t('🚨 Spoedoproep', '🚨 Appel d\'urgence', '🚨 Urgent Call'),
+                message: message.slice(0, 500),
+                type: 'urgent',
+                metadata: { task_id: task.id, action: 'spoedoproep' } as any,
+              });
+              notifCount++;
+            })()
           );
         }
 
         // Email via queue
         if (channelEmail) {
           promises.push(
-            supabase.rpc('enqueue_email', {
-              queue_name: 'transactional_emails',
-              payload: {
-                to_user_id: volunteerId,
-                template_name: 'spoedoproep',
-                subject: t('🚨 Spoedoproep: ' + task.title, '🚨 Appel d\'urgence: ' + task.title, '🚨 Urgent Call: ' + task.title),
-                body: message,
-                metadata: { task_id: task.id, bonus_enabled: bonusEnabled, bonus_amount: bonusAmount },
-              },
-            }).then(() => { emailCount++; })
+            (async () => {
+              await supabase.rpc('enqueue_email', {
+                queue_name: 'transactional_emails',
+                payload: {
+                  to_user_id: volunteerId,
+                  template_name: 'spoedoproep',
+                  subject: t('🚨 Spoedoproep: ' + task.title, '🚨 Appel d\'urgence: ' + task.title, '🚨 Urgent Call: ' + task.title),
+                  body: message,
+                  metadata: { task_id: task.id, bonus_enabled: bonusEnabled, bonus_amount: bonusAmount },
+                } as any,
+              });
+              emailCount++;
+            })()
           );
         }
       }
