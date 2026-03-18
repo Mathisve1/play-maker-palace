@@ -117,8 +117,9 @@ const VolunteerSidebar = ({
   return (
     <Sidebar collapsible="offcanvas" className="border-r border-border">
       <SidebarHeader className="p-4 pb-2">
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center justify-between">
           <Logo size="sm" linkTo="/dashboard" />
+          {userId && <NotificationBell userId={userId} />}
         </div>
         <button
           onClick={onOpenProfile}
