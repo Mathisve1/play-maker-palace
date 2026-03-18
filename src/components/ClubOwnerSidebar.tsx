@@ -216,7 +216,7 @@ const ClubOwnerSidebar = ({
         <SidebarMenu>
           {onOpenProfile && (
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="min-h-[40px]">
+              <SidebarMenuButton onClick={() => { onOpenProfile(); setOpenMobile(false); }} className="min-h-[48px]">
                 <User className="w-4 h-4" />
                 <span>{t3('Mijn profiel', 'Mon profil', 'My profile')}</span>
               </SidebarMenuButton>
