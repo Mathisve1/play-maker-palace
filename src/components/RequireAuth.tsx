@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, RefreshCw } from 'lucide-react';
 import PushPermissionBanner from './PushPermissionBanner';
-import { syncOneSignalUser } from '@/lib/onesignal';
+import { autoResubscribeIfNeeded } from '@/lib/pushNotifications';
 import { ClubProvider } from '@/contexts/ClubContext';
 import AiAssistantChat from './AiAssistantChat';
 import { Button } from '@/components/ui/button';
@@ -51,9 +51,9 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
     Sentry.setUser({ id: sessionUser.id, email: sessionUser.email || undefined });
     // Set PostHog user context
     identifyUser(sessionUser.id, { email: sessionUser.email || undefined });
-    // Non-blocking: profile creation and push sync happen in background
+    // Non-blocking: profile creation and native push migration happen in background
     void ensureProfileExists(sessionUser).catch(e => console.warn('RequireAuth: ensureProfileExists failed', e));
-    void syncOneSignalUser(sessionUser.id).catch(() => {});
+    void autoResubscribeIfNeeded().catch(() => {});
     // Set Crisp user context
     if (sessionUser.email) {
       crispSetUser(sessionUser.email, { user_id: sessionUser.id });
