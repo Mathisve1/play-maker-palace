@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, ArrowLeft, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff, Loader2, ThumbsUp, ThumbsDown, Star, Clock } from 'lucide-react';
+import { Bell, Check, CheckCheck, ArrowLeft, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff, Loader2, ThumbsUp, ThumbsDown, Star, Clock, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
@@ -35,6 +35,7 @@ const TYPE_CONFIG: Record<string, { icon: typeof Bell; label: Record<string, str
   safety: { icon: Shield, label: { nl: 'Veiligheid', fr: 'Sécurité', en: 'Safety' }, colorClass: 'text-destructive' },
   loyalty: { icon: Award, label: { nl: 'Loyaliteit', fr: 'Fidélité', en: 'Loyalty' }, colorClass: 'text-primary' },
   urgent: { icon: AlertTriangle, label: { nl: 'Urgent', fr: 'Urgent', en: 'Urgent' }, colorClass: 'text-destructive' },
+  spoed_oproep: { icon: Zap, label: { nl: 'Spoedoproep', fr: 'Appel urgent', en: 'Urgent call' }, colorClass: 'text-destructive' },
   default: { icon: Info, label: { nl: 'Algemeen', fr: 'Général', en: 'General' }, colorClass: 'text-muted-foreground' },
 };
 

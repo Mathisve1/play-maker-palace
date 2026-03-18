@@ -81,6 +81,8 @@ interface Task {
   estimated_hours?: number | null;
   partner_only?: boolean;
   assigned_partner_id?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
 }
 
 interface EventData {
@@ -461,7 +463,7 @@ const ClubOwnerDashboard = () => {
         supabase.from('academy_trainings').select('id, title').eq('club_id', clubId).eq('is_published', true).order('title'),
         supabase.from('external_partners').select('id, name, external_payroll').eq('club_id', clubId).order('name'),
         supabase.from('events').select('*').eq('club_id', clubId).order('event_date', { ascending: true }),
-        supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name)').eq('club_id', clubId).order('task_date', { ascending: true }),
+        supabase.from('tasks').select('id, title, description, task_date, location, spots_available, status, club_id, contract_template_id, contract_templates(name), start_time, end_time').eq('club_id', clubId).order('task_date', { ascending: true }),
       ]);
 
       setContractTemplates(templatesRes.data || []);
@@ -1552,8 +1554,8 @@ const ClubOwnerDashboard = () => {
               id: spoedTask.id,
               title: spoedTask.title,
               task_date: spoedTask.task_date || null,
-              start_time: null,
-              end_time: null,
+              start_time: spoedTask.start_time || null,
+              end_time: spoedTask.end_time || null,
               location: spoedTask.location || null,
               club_id: spoedTask.club_id || clubId || '',
               spots_available: spoedTask.spots_available,

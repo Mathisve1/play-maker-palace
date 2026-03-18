@@ -29,7 +29,7 @@ const NotificationBell = ({ userId }: { userId: string }) => {
     language === 'nl' ? nlStr : language === 'fr' ? frStr : enStr;
 
   const unreadCount = notifications.filter(n => !n.read).length;
-  const hasUrgent = notifications.some(n => !n.read && n.type === 'urgent');
+  const hasUrgent = notifications.some(n => !n.read && (n.type === 'urgent' || n.type === 'spoed_oproep'));
 
   const fetchNotifications = async () => {
     const { data } = await supabase

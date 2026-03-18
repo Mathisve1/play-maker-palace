@@ -38,6 +38,7 @@ interface Task {
   id: string; title: string; task_date: string | null; location: string | null;
   spots_available: number; event_id: string | null; event_group_id: string | null;
   partner_only?: boolean; assigned_partner_id?: string | null; status?: string;
+  start_time?: string | null; end_time?: string | null;
 }
 
 const GROUP_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
@@ -177,7 +178,7 @@ const EventsManager = () => {
 
       const [evRes, taskRes, tmplRes, mpRes] = await Promise.all([
         supabase.from('events').select('*').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-        supabase.from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status').eq('club_id', cId).order('task_date', { ascending: true }),
+        supabase.from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status, start_time, end_time').eq('club_id', cId).order('task_date', { ascending: true }),
         supabase.from('contract_templates').select('id, name').eq('club_id', cId).order('name'),
         supabase.from('monthly_plans').select('id, title, month, year, status').eq('club_id', cId).eq('status', 'open').order('year', { ascending: false }),
       ]);
@@ -1014,8 +1015,8 @@ const EventsManager = () => {
           id: spoedTask.id,
           title: spoedTask.title,
           task_date: spoedTask.task_date || null,
-          start_time: null,
-          end_time: null,
+          start_time: spoedTask.start_time || null,
+          end_time: spoedTask.end_time || null,
           location: spoedTask.location || null,
           club_id: clubId,
           spots_available: spoedTask.spots_available,
