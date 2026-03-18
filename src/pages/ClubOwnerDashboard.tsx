@@ -350,6 +350,19 @@ const ClubOwnerDashboard = () => {
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [spoedTask, setSpoedTask] = useState<Task | null>(null);
 
+  const urgentTasks = useMemo(() => {
+    const now = new Date();
+    const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    return tasks.filter(t => {
+      if (!t.task_date) return false;
+      const taskDate = new Date(t.task_date);
+      if (taskDate < now || taskDate > in48h) return false;
+      const taskSignups = signups[t.id] || [];
+      const assignedCount = taskSignups.filter((s: any) => s.status === 'assigned').length;
+      return assignedCount < t.spots_available;
+    });
+  }, [tasks, signups]);
+
   // Events state
   const [events, setEvents] = useState<EventData[]>([]);
   const [eventGroups, setEventGroups] = useState<EventGroup[]>([]);
