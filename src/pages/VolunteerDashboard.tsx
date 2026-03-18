@@ -23,7 +23,7 @@ import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
 import VolunteerOnboardingWizard from '@/components/VolunteerOnboardingWizard';
 import VolunteerOnboardingTour from '@/components/VolunteerOnboardingTour';
 import TaskReviewDialog from '@/components/TaskReviewDialog';
-import { Star } from 'lucide-react';
+import { Star, Ticket } from 'lucide-react';
 import { motion } from 'framer-motion';
 interface Task {
   id: string;
@@ -809,16 +809,25 @@ const VolunteerDashboard = () => {
             myContracts={myContracts}
             getSignupStatus={getSignupStatus}
           />
-          {myTickets.length > 0 && (
-            <div className="mt-8">
+          <div className="mt-8">
+            {myTickets.length > 0 ? (
               <VolunteerTicketsTab
                 tickets={myTickets}
                 language={language}
                 profile={profile}
                 userId={currentUserId}
               />
-            </div>
-          )}
+            ) : (
+              <div className="rounded-2xl border border-border bg-card p-8 text-center space-y-2">
+                <Ticket className="w-8 h-8 mx-auto text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  {language === 'nl' ? 'Nog geen tickets — tickets verschijnen hier zodra je wordt ingeschreven voor een evenement.' :
+                   language === 'fr' ? 'Aucun billet pour l\'instant — les billets apparaîtront ici dès que vous êtes inscrit à un événement.' :
+                   'No tickets yet — tickets will appear here once you\'re enrolled for an event.'}
+                </p>
+              </div>
+            )}
+          </div>
         </>
       )}
 
