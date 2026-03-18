@@ -366,10 +366,12 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
         }
       }
 
-      // ── Step D: In-app notifications (bulk insert) ──
+      // ── Step D: In-app notifications (only for users who didn't get push, since edge function already creates in-app) ──
       if (channelNotif) {
         const inAppRecords = poolIds
           .filter(id => {
+            // Skip users who already received in-app via push edge function
+            if (pushSentIds.has(id)) return false;
             const p = profileMap.get(id);
             return !p || p.in_app_notifications_enabled !== false;
           })
