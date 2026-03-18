@@ -395,8 +395,9 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
 
         if (inAppRecords.length > 0) {
           await supabase.from('notifications').insert(inAppRecords);
-          notifCount = inAppRecords.length;
         }
+        // Total in-app = direct inserts + those created by push edge function
+        notifCount = inAppRecords.length + pushSentIds.size;
       }
 
       // ── Step E: Emails via enqueue_email (batches of 10) ──
