@@ -108,7 +108,7 @@ const ClubOwnerSidebar = ({
 
   const renderMenuItem = (item: { label: string; icon: any; path: string; badge?: number }) => (
     <SidebarMenuItem key={item.path}>
-      <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[44px]">
+      <SidebarMenuButton isActive={isActive(item.path)} onClick={() => nav(item.path)} className="min-h-[48px]">
         <item.icon className="w-5 h-5" />
         <span className="flex-1">{item.label}</span>
         {item.badge != null && item.badge > 0 && (
