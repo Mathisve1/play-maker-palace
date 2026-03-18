@@ -193,7 +193,7 @@ const NotificationBell = ({ userId }: { userId: string }) => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-2 w-80 max-h-[min(24rem,calc(100vh-8rem))] overflow-y-auto bg-card rounded-xl shadow-elevated border border-border z-50"
+                className="absolute left-0 top-full mt-2 w-80 max-h-[min(24rem,calc(100vh-8rem))] overflow-y-auto bg-card rounded-xl shadow-elevated border border-border z-50"
               >
                 <div className="p-3 border-b border-border flex items-center justify-between sticky top-0 bg-card z-10 rounded-t-xl">
                   <span className="text-sm font-semibold text-foreground">
