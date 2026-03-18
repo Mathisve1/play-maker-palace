@@ -1334,6 +1334,9 @@ const EventsManager = () => {
                               <button onClick={() => navigate(`/planning/${task.id}`)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors border border-border" title={nl ? 'Kanban planning' : 'Kanban planning'}>
                                 <LayoutGrid className="w-3.5 h-3.5" /> {nl ? 'Planning' : 'Planning'}
                               </button>
+                              <button onClick={() => setSpoedTask(task)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors border border-amber-200 dark:border-amber-800">
+                                <Zap className="w-3.5 h-3.5" /> {t3('Spoed', 'Urgent', 'Urgent')}
+                              </button>
                             </div>
                           </div>
                         ))}
