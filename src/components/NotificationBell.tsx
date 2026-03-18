@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react';
 import { Bell, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '@/components/ui/sheet';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Notification {
   id: string;
@@ -24,6 +29,7 @@ const NotificationBell = ({ userId }: { userId: string }) => {
   const [open, setOpen] = useState(false);
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const t3 = (nlStr: string, frStr: string, enStr: string) =>
     language === 'nl' ? nlStr : language === 'fr' ? frStr : enStr;
@@ -67,7 +73,7 @@ const NotificationBell = ({ userId }: { userId: string }) => {
   const markAllRead = async () => {
     const unread = notifications.filter(n => !n.read);
     if (unread.length === 0) return;
-    
+
     await supabase
       .from('notifications')
       .update({ read: true })
@@ -86,38 +92,73 @@ const NotificationBell = ({ userId }: { userId: string }) => {
     else navigate('/notifications');
   };
 
+  const handleOpen = () => {
+    setOpen(true);
+    if (unreadCount > 0) markAllRead();
+  };
+
+  const notificationList = (
+    <>
+      {notifications.length === 0 ? (
+        <div className="p-6 text-center text-sm text-muted-foreground">
+          {t3('Geen notificaties', 'Aucune notification', 'No notifications')}
+        </div>
+      ) : (
+        <div>
+          {notifications.map(n => {
+            const isUrgent = n.type === 'urgent';
+            return (
+              <div
+                key={n.id}
+                className={`p-3 border-b border-border last:border-0 transition-colors cursor-pointer hover:bg-muted/50 active:bg-muted
+                  ${isUrgent && !n.read ? 'bg-destructive/5' : !n.read ? 'bg-primary/5' : ''}`}
+                onClick={() => handleNotificationClick(n)}
+              >
+                <div className="flex items-center gap-1.5">
+                  {isUrgent && <span className="w-2 h-2 rounded-full bg-destructive animate-pulse shrink-0" />}
+                  <p className={`text-sm text-foreground ${!n.read ? 'font-semibold' : 'font-medium'}`}>{n.title}</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">
+                  {formatDistanceToNow(new Date(n.created_at), {
+                    addSuffix: true,
+                    locale: DATE_LOCALES[language] || nl,
+                  })}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="relative">
       <button
-        onClick={() => { setOpen(!open); if (!open && unreadCount > 0) markAllRead(); }}
-        className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
+        onClick={handleOpen}
+        className="relative p-2 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
         title={t3('Notificaties', 'Notifications', 'Notifications')}
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[10px] font-bold rounded-full flex items-center justify-center
+          <span className={`absolute top-1 right-1 w-4 h-4 text-[10px] font-bold rounded-full flex items-center justify-center
             ${hasUrgent ? 'bg-destructive text-destructive-foreground animate-pulse' : 'bg-destructive text-destructive-foreground'}`}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-card rounded-xl shadow-elevated border border-border z-50"
-            >
-              <div className="p-3 border-b border-border flex items-center justify-between">
-                <span className="text-sm font-semibold text-foreground">
+      {/* Mobile: bottom sheet */}
+      {isMobile ? (
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="bottom" className="p-0 rounded-t-2xl max-h-[85vh] flex flex-col">
+            <SheetHeader className="p-4 pb-2 border-b border-border shrink-0">
+              <div className="flex items-center justify-between">
+                <SheetTitle className="text-base">
                   {t3('Notificaties', 'Notifications', 'Notifications')}
-                </span>
-                <div className="flex items-center gap-2">
+                </SheetTitle>
+                <div className="flex items-center gap-3">
                   {notifications.length > 0 && (
                     <button
                       onClick={markAllRead}
@@ -135,42 +176,53 @@ const NotificationBell = ({ userId }: { userId: string }) => {
                   </button>
                 </div>
               </div>
-
-              {notifications.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">
-                  {t3('Geen notificaties', 'Aucune notification', 'No notifications')}
-                </div>
-              ) : (
-                <div>
-                  {notifications.map(n => {
-                    const isUrgent = n.type === 'urgent';
-                    return (
-                      <div
-                        key={n.id}
-                        className={`p-3 border-b border-border last:border-0 transition-colors cursor-pointer hover:bg-muted/50
-                          ${isUrgent && !n.read ? 'bg-destructive/5' : !n.read ? 'bg-primary/5' : ''}`}
-                        onClick={() => handleNotificationClick(n)}
+            </SheetHeader>
+            <ScrollArea className="flex-1 overflow-y-auto">
+              {notificationList}
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        /* Desktop: dropdown */
+        <AnimatePresence>
+          {open && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-2 w-80 max-h-[min(24rem,calc(100vh-8rem))] overflow-y-auto bg-card rounded-xl shadow-elevated border border-border z-50"
+              >
+                <div className="p-3 border-b border-border flex items-center justify-between sticky top-0 bg-card z-10 rounded-t-xl">
+                  <span className="text-sm font-semibold text-foreground">
+                    {t3('Notificaties', 'Notifications', 'Notifications')}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={markAllRead}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        <div className="flex items-center gap-1.5">
-                          {isUrgent && <span className="w-2 h-2 rounded-full bg-destructive animate-pulse shrink-0" />}
-                          <p className={`text-sm text-foreground ${!n.read ? 'font-semibold' : 'font-medium'}`}>{n.title}</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
-                        <p className="text-[11px] text-muted-foreground/60 mt-1">
-                          {formatDistanceToNow(new Date(n.created_at), {
-                            addSuffix: true,
-                            locale: DATE_LOCALES[language] || nl,
-                          })}
-                        </p>
-                      </div>
-                    );
-                  })}
+                        {t3('Alles gelezen', 'Tout lu', 'Mark all read')}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setOpen(false); navigate('/notifications'); }}
+                      className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                    >
+                      {t3('Alle bekijken', 'Voir tout', 'View all')}
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
-              )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                {notificationList}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 };
