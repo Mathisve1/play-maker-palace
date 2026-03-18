@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import NotificationBell from '@/components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
