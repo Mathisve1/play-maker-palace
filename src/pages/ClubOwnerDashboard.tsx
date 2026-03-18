@@ -348,6 +348,7 @@ const ClubOwnerDashboard = () => {
   const [complianceMap, setComplianceMap] = useState<Map<string, ComplianceStatus>>(new Map());
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [spoedTask, setSpoedTask] = useState<Task | null>(null);
 
   // Events state
   const [events, setEvents] = useState<EventData[]>([]);
