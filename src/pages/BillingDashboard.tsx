@@ -358,11 +358,21 @@ const BillingDashboard = () => {
             ) : (
               <Card>
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
                     <Users className="w-5 h-5 text-primary" />
                     <h3 className="text-lg font-heading font-bold text-foreground">
                       {t('Gebruik per vrijwilliger', 'Utilisation par bénévole', 'Usage per volunteer')}
                     </h3>
+                  </div>
+                  <div className="flex items-start gap-2 mb-4 rounded-lg bg-muted/50 border border-border p-3">
+                    <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {t(
+                        'De eerste 2 voltooide taken per vrijwilliger per seizoen zijn gratis. Vanaf de 3e voltooide taak betaal je eenmalig €15 voor die vrijwilliger.',
+                        'Les 2 premières tâches complétées par bénévole par saison sont gratuites. À partir de la 3e tâche complétée, vous payez une seule fois 15€ pour ce bénévole.',
+                        'The first 2 completed tasks per volunteer per season are free. From the 3rd completed task, you pay a one-time €15 for that volunteer.'
+                      )}
+                    </p>
                   </div>
                   <div className="rounded-xl border border-border overflow-hidden">
                     <Table>
