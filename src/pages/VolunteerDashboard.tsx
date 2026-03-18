@@ -721,6 +721,7 @@ const VolunteerDashboard = () => {
       language={language}
       onLogout={handleLogout}
       onOpenProfile={() => setShowProfileDialog(true)}
+      userId={currentUserId}
       counts={{
         pending: pendingSignups.length,
         assigned: assignedSignups.length,
@@ -732,7 +733,7 @@ const VolunteerDashboard = () => {
   );
 
   return (
-    <DashboardLayout sidebar={sidebarEl}>
+    <DashboardLayout sidebar={sidebarEl} userId={currentUserId}>
       {/* Volunteer Onboarding Wizard overlay */}
       {showVolunteerOnboarding && currentUserId && contextClubId && (
         <VolunteerOnboardingWizard

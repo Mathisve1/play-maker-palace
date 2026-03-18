@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import NotificationBell from '@/components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
@@ -24,6 +25,7 @@ interface VolunteerSidebarProps {
   language: Language;
   onLogout: () => void;
   onOpenProfile: () => void;
+  userId?: string;
   counts?: {
     pending?: number;
     assigned?: number;
@@ -85,7 +87,7 @@ const labels: Record<Language, Record<string, string>> = {
 };
 
 const VolunteerSidebar = ({
-  activeTab, setActiveTab, profile, language, onLogout, onOpenProfile, counts = {},
+  activeTab, setActiveTab, profile, language, onLogout, onOpenProfile, userId, counts = {},
 }: VolunteerSidebarProps) => {
   const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
@@ -115,8 +117,9 @@ const VolunteerSidebar = ({
   return (
     <Sidebar collapsible="offcanvas" className="border-r border-border">
       <SidebarHeader className="p-4 pb-2">
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center justify-between">
           <Logo size="sm" linkTo="/dashboard" />
+          {userId && <NotificationBell userId={userId} />}
         </div>
         <button
           onClick={onOpenProfile}
