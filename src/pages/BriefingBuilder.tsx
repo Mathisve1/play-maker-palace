@@ -4,6 +4,7 @@ import { Language } from '@/i18n/translations';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -271,6 +272,7 @@ const DroppableGroup = ({ id, children }: { id: string; children: React.ReactNod
 // ─── Main Component ───
 const BriefingBuilder = () => {
   const { language } = useLanguage();
+  const { userId: ctxUserId, clubId: ctxClubId, loading: contextLoading } = useClubContext();
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -310,26 +312,22 @@ const BriefingBuilder = () => {
   // ─── Task selector loader ───
   useEffect(() => {
     if (taskId && clubId) return;
+    if (contextLoading) return;
+    if (!ctxUserId) { navigate('/club-login'); return; }
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/club-login'); return; }
-      const { data: ownedClubs } = await supabase.from('clubs').select('id').eq('owner_id', session.user.id);
-      const { data: memberClubs } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id);
-      const clubIds = [...(ownedClubs || []).map(c => c.id), ...(memberClubs || []).map(c => c.club_id)];
-      if (clubIds.length === 0) { navigate('/club-dashboard'); return; }
-      const { data: tasks } = await supabase.from('tasks').select('id, title, club_id, task_date').in('club_id', clubIds).order('task_date', { ascending: false });
+      const { data: tasks } = await supabase.from('tasks').select('id, title, club_id, task_date').eq('club_id', ctxClubId!).order('task_date', { ascending: false });
       setAvailableTasks(tasks || []);
       setTaskSelectorLoading(false);
     })();
-  }, [taskId, clubId, navigate]);
+  }, [taskId, clubId, contextLoading, ctxUserId, ctxClubId, navigate]);
 
   // ─── Load briefing data ───
   useEffect(() => {
     if (!taskId || !clubId) return;
+    if (contextLoading) return;
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
-      setUserId(session.user.id);
+      if (!ctxUserId) { navigate('/login'); return; }
+      setUserId(ctxUserId);
 
       const { data: task } = await supabase.from('tasks').select('title, task_date, start_time, end_time, location, briefing_location, briefing_time, club_id').eq('id', taskId).maybeSingle();
       if (task) {
@@ -364,7 +362,7 @@ const BriefingBuilder = () => {
       setLoading(false);
     };
     init();
-  }, [taskId, clubId, navigate]);
+  }, [taskId, clubId, contextLoading, ctxUserId, navigate]);
 
   const loadBriefingData = async (bId: string, bTitle: string) => {
     setBriefingId(bId);

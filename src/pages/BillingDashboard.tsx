@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useClubContext } from '@/contexts/ClubContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -28,6 +29,7 @@ interface VolunteerUsageRow {
 
 const BillingDashboard = () => {
   const { language } = useLanguage();
+  const { clubId: ctxClubId, clubInfo, loading: contextLoading } = useClubContext();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const [clubId, setClubId] = useState<string | null>(null);
@@ -41,18 +43,12 @@ const BillingDashboard = () => {
   const [volunteerUsage, setVolunteerUsage] = useState<VolunteerUsageRow[]>([]);
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: club } = await supabase.from('clubs').select('id, name').eq('owner_id', user.id).limit(1).single();
-      if (!club) { setLoading(false); return; }
-      setClubId(club.id);
-      setClubName(club.name);
-      await loadData(club.id);
-      setLoading(false);
-    };
-    init();
-  }, []);
+    if (contextLoading) return;
+    if (!ctxClubId) { setLoading(false); return; }
+    setClubId(ctxClubId);
+    setClubName(clubInfo?.name || '');
+    loadData(ctxClubId).then(() => setLoading(false));
+  }, [contextLoading, ctxClubId]);
 
   const loadData = async (cId: string) => {
     const [billingRes, eventsRes, invoicesRes] = await Promise.all([
