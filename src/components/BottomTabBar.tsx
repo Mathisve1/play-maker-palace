@@ -32,9 +32,9 @@ const partnerTabs = (l: Record<string, string>) => [
 ];
 
 const tabLabels: Record<Language, Record<string, string>> = {
-  nl: { home: 'Home', tasks: 'Taken', tickets: 'Tickets', chat: 'Chat', profile: 'Profiel', actions: 'Acties', events: 'Events', volunteers: 'Vrijwilligers', attendance: 'Aanwezigheid', staff: 'Team' },
-  fr: { home: 'Accueil', tasks: 'Tâches', tickets: 'Tickets', chat: 'Chat', profile: 'Profil', actions: 'Actions', events: 'Événements', volunteers: 'Bénévoles', attendance: 'Présences', staff: 'Équipe' },
-  en: { home: 'Home', tasks: 'Tasks', tickets: 'Tickets', chat: 'Chat', profile: 'Profile', actions: 'Actions', events: 'Events', volunteers: 'Volunteers', attendance: 'Attendance', staff: 'Staff' },
+  nl: { home: 'Home', tasks: 'Taken', calendar: 'Kalender', chat: 'Chat', profile: 'Contracten', actions: 'Acties', events: 'Events', volunteers: 'Vrijwilligers', attendance: 'Aanwezigheid', staff: 'Team' },
+  fr: { home: 'Accueil', tasks: 'Tâches', calendar: 'Calendrier', chat: 'Chat', profile: 'Contrats', actions: 'Actions', events: 'Événements', volunteers: 'Bénévoles', attendance: 'Présences', staff: 'Équipe' },
+  en: { home: 'Home', tasks: 'Tasks', calendar: 'Calendar', chat: 'Chat', profile: 'Contracts', actions: 'Actions', events: 'Events', volunteers: 'Volunteers', attendance: 'Attendance', staff: 'Staff' },
 };
 
 function detectRole(pathname: string): Role | null {
