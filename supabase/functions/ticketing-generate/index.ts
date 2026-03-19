@@ -1048,7 +1048,7 @@ Deno.serve(async (req) => {
     // ========== ACTION: test ==========
     if (action === "test") {
       try {
-        const result = await adapter.testConnection(config);
+        const result = await adapter!.testConnection(config);
         await supabase.from("ticketing_logs").insert({
           club_id,
           action: "test_connection",
@@ -1056,7 +1056,7 @@ Deno.serve(async (req) => {
           response_payload: result,
           status: "success",
         });
-        return new Response(JSON.stringify({ success: true, ...result }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ ...result, success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       } catch (e: any) {
         await supabase.from("ticketing_logs").insert({
           club_id,
@@ -1418,7 +1418,7 @@ Deno.serve(async (req) => {
 
       // Non-Eventbrite: use legacy adapter flow
       try {
-        const result = await adapter.createTicket(config, { id: volunteer_id, name: profile?.full_name, email: profile?.email });
+        const result = await adapter!.createTicket(config, { id: volunteer_id, name: profile?.full_name, email: profile?.email });
 
         const { data: existing } = await supabase
           .from("volunteer_tickets")
