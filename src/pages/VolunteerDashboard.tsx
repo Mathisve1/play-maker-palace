@@ -129,6 +129,7 @@ interface EventGroup {
 const VolunteerDashboard = () => {
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [signups, setSignups] = useState<TaskSignup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +138,12 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<VolunteerTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<VolunteerTab>(() => {
+    const urlTab = searchParams.get('tab');
+    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments', 'grow', 'tickets' as VolunteerTab, 'profile' as VolunteerTab];
+    if (urlTab && validTabs.includes(urlTab as VolunteerTab)) return urlTab as VolunteerTab;
+    return 'dashboard';
+  });
   
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
