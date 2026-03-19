@@ -409,15 +409,9 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
         })}
       </div>
 
-      {/* Availability sub-view */}
-      {subView === 'availability' && clubId && userId && (
+      {/* Availability sub-view — always show, works globally across all clubs */}
+      {subView === 'availability' && userId && (
         <SeasonAvailabilityPicker userId={userId} clubId={clubId} language={language} />
-      )}
-      {subView === 'availability' && !clubId && (
-        <div className="text-center py-16 text-muted-foreground">
-          <CalendarCheck className="w-14 h-14 mx-auto mb-4 opacity-20" />
-          <p>{language === 'nl' ? 'Volg eerst een club om je beschikbaarheid in te stellen.' : language === 'fr' ? 'Suivez d\'abord un club pour définir votre disponibilité.' : 'Follow a club first to set your availability.'}</p>
-        </div>
       )}
 
       {/* Planning sub-view */}
