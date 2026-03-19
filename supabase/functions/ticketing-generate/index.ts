@@ -1418,7 +1418,7 @@ Deno.serve(async (req) => {
 
       // Non-Eventbrite: use legacy adapter flow
       try {
-        const result = await adapter.createTicket(config, { id: volunteer_id, name: profile?.full_name, email: profile?.email });
+        const result = await adapter!.createTicket(config, { id: volunteer_id, name: profile?.full_name, email: profile?.email });
 
         const { data: existing } = await supabase
           .from("volunteer_tickets")

@@ -50,8 +50,8 @@ export async function sendPushToClub(opts: {
       .eq('club_id', opts.clubId);
     
     for (const m of members || []) {
-      if (m.role === 'bestuurder' || m.role === 'beheerder') {
-        userIds.add(m.user_id);
+      if (m.club_role === 'bestuurder' || m.club_role === 'beheerder') {
+        userIds.add(m.volunteer_id);
       }
     }
 
