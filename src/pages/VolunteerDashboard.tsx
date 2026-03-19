@@ -823,6 +823,15 @@ const VolunteerDashboard = () => {
         />
       )}
 
+      {/* ===== CLUB TASKS BROWSER ===== */}
+      {(activeTab as string) === 'club-tasks' && currentUserId && (
+        <VolunteerClubTasksBrowser
+          language={language}
+          userId={currentUserId}
+          onBack={() => setActiveTab('dashboard')}
+        />
+      )}
+
       {/* ===== MY TASKS ===== */}
       {activeTab === 'mine' && (
         <>
