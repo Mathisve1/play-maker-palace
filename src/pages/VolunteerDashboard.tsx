@@ -178,7 +178,10 @@ const VolunteerDashboard = () => {
   // Sync tab from URL search params
   useEffect(() => {
     const urlTab = searchParams.get('tab');
-    if (urlTab && urlTab !== activeTab) {
+    if (urlTab === 'profile') {
+      setShowProfileDialog(true);
+      setActiveTab('dashboard');
+    } else if (urlTab && urlTab !== activeTab) {
       setActiveTab(urlTab as VolunteerTab);
     } else if (!urlTab && activeTab !== 'dashboard') {
       setActiveTab('dashboard');
