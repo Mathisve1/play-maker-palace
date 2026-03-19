@@ -76,16 +76,16 @@ const BottomTabBar = () => {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 md:hidden no-select"
-      style={{
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        paddingLeft: 'env(safe-area-inset-left, 0px)',
-        paddingRight: 'env(safe-area-inset-right, 0px)',
-      }}
     >
       <div className="bg-background/95 backdrop-blur-2xl border-t border-border/50"
         style={{ WebkitBackdropFilter: 'blur(24px)' }}
       >
-        <div className="flex items-center justify-around h-[64px]">
+        <div className="flex items-center justify-around h-[64px]"
+          style={{
+            paddingLeft: 'env(safe-area-inset-left, 0px)',
+            paddingRight: 'env(safe-area-inset-right, 0px)',
+          }}
+        >
           {tabs.map((tab) => {
             const active = isActive(tab);
             const Icon = tab.icon;
@@ -104,6 +104,8 @@ const BottomTabBar = () => {
             );
           })}
         </div>
+        {/* Safe area spacer below tabs */}
+        <div style={{ height: 'env(safe-area-inset-bottom, 0px)', background: 'hsl(var(--background))' }} />
       </div>
     </nav>
   );

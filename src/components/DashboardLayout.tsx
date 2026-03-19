@@ -26,7 +26,7 @@ const DashboardLayout = ({ sidebar, children, userId }: DashboardLayoutProps) =>
               {userId && <NotificationBell userId={userId} />}
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto pb-[84px] md:pb-6 lg:pb-8">
+          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto md:pb-6 lg:pb-8" style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px) + 16px)' }}>
             {children}
           </main>
           <BottomTabBar />
