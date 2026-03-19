@@ -186,10 +186,27 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
           const volAvail = availability.filter((a: any) => a.volunteer_id === p.id);
           let availMatch = false;
           if (taskDow !== null && volAvail.length > 0) {
-            availMatch = volAvail.some((a: any) => a.day_of_week === taskDow);
-            if (availMatch) score += 40;
+            // Check day match AND time overlap
+            const daySlots = volAvail.filter((a: any) => a.day_of_week === taskDow);
+            if (daySlots.length > 0) {
+              // If task has specific times, check overlap
+              if (task.start_time && task.end_time) {
+                const taskStart = task.start_time.slice(0, 5);
+                const taskEnd = task.end_time.slice(0, 5);
+                const timeMatch = daySlots.some((a: any) => {
+                  const slotStart = (a.start_time || '').slice(0, 5);
+                  const slotEnd = (a.end_time || '').slice(0, 5);
+                  return slotStart <= taskStart && slotEnd >= taskEnd;
+                });
+                if (timeMatch) { availMatch = true; score += 50; }
+                else { availMatch = true; score += 25; } // Day matches but time partial
+              } else {
+                availMatch = true;
+                score += 40;
+              }
+            }
           } else if (volAvail.length > 0) {
-            score += 20; // Has availability set, but no date to match
+            score += 20;
           }
 
           // Event-specific availability boost
