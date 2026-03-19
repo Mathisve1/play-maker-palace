@@ -92,7 +92,14 @@ const BottomTabBar = () => {
             return (
               <button
                 key={tab.label}
-                onClick={() => navigate(tab.path)}
+                onClick={() => {
+                  if (tab.path.includes('?')) {
+                    const [pathname, search] = tab.path.split('?');
+                    navigate({ pathname, search: `?${search}` });
+                  } else {
+                    navigate(tab.path);
+                  }
+                }}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 flex-1 h-full min-h-[48px] min-w-[48px] transition-colors active:opacity-70",
                   active ? "text-primary" : "text-muted-foreground"
