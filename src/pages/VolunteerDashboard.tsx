@@ -17,6 +17,7 @@ import VolunteerMonthlyTab from '@/components/VolunteerMonthlyTab';
 import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab';
 import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerDashboardHome from '@/components/volunteer/VolunteerDashboardHome';
+import VolunteerClubTasksBrowser from '@/components/volunteer/VolunteerClubTasksBrowser';
 import VolunteerTasksList from '@/components/volunteer/VolunteerTasksList';
 import VolunteerGrowTab from '@/components/volunteer/VolunteerGrowTab';
 import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
@@ -140,7 +141,7 @@ const VolunteerDashboard = () => {
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<VolunteerTab>(() => {
     const urlTab = searchParams.get('tab');
-    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments', 'grow', 'tickets' as VolunteerTab, 'profile' as VolunteerTab];
+    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments', 'grow', 'tickets' as VolunteerTab, 'profile' as VolunteerTab, 'club-tasks' as VolunteerTab];
     if (urlTab && validTabs.includes(urlTab as VolunteerTab)) return urlTab as VolunteerTab;
     return 'dashboard';
   });
@@ -819,6 +820,15 @@ const VolunteerDashboard = () => {
           loyaltyEnrollments={loyaltyEnrollments}
           enrollingProgram={enrollingProgram}
           onEnroll={handleEnrollLoyalty}
+        />
+      )}
+
+      {/* ===== CLUB TASKS BROWSER ===== */}
+      {(activeTab as string) === 'club-tasks' && currentUserId && (
+        <VolunteerClubTasksBrowser
+          language={language}
+          userId={currentUserId}
+          onBack={() => setActiveTab('dashboard')}
         />
       )}
 
