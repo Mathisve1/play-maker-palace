@@ -1,11 +1,11 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, ClipboardList, TrendingUp, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet, Search, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, ClipboardList, TrendingUp, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet, Search, ArrowRight, Heart, Clock } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import VolunteerActivitiesSection from '@/components/VolunteerActivitiesSection';
 import ComplianceBadge from '@/components/ComplianceBadge';
@@ -26,6 +26,23 @@ import { Shield } from 'lucide-react';
 const VolunteerSafetyTab = lazy(() => import('@/components/VolunteerSafetyTab'));
 import type { VolunteerTask, TaskSignup, VolunteerPayment, SignatureContract, SepaPayoutItem, VolunteerEventData } from '@/types/volunteer';
 import { volunteerDashboardLabels } from '@/types/volunteer';
+
+interface FollowedClubTask {
+  id: string;
+  title: string;
+  task_date: string | null;
+  location: string | null;
+  spots_available: number;
+  club_id: string;
+  signup_count: number;
+  clubs: { name: string; logo_url?: string | null } | null;
+}
+
+interface ScoredTask {
+  task: VolunteerTask;
+  score: number;
+  reasons: string[];
+}
 
 interface Props {
   language: Language;
@@ -62,6 +79,9 @@ const VolunteerDashboardHome = ({
   const [safetySheetOpen, setSafetySheetOpen] = useState(false);
   const [requiredTrainings, setRequiredTrainings] = useState<{ id: string; title: string; clubName: string }[]>([]);
   const [zoneAssignments, setZoneAssignments] = useState<Record<string, string>>({});
+  const [followedClubTasksRaw, setFollowedClubTasksRaw] = useState<FollowedClubTask[]>([]);
+  const [prefs, setPrefs] = useState<{ categories?: string[]; time_prefs?: string[] } | null>(null);
+  const [recommendedTasks, setRecommendedTasks] = useState<ScoredTask[]>([]);
   // Check for unread briefings within 48h
   useEffect(() => {
     if (!currentUserId || signups.length === 0) return;
@@ -190,6 +210,101 @@ const VolunteerDashboardHome = ({
     fetchRequired();
   }, [currentUserId, followedClubIds, myCertifiedTrainingIds]);
 
+  // Fetch tasks from followed clubs + user preferences
+  useEffect(() => {
+    if (!currentUserId) return;
+    const fetchData = async () => {
+      const { data: prefData } = await supabase
+        .from('profiles')
+        .select('preferences')
+        .eq('id', currentUserId)
+        .maybeSingle();
+      setPrefs((prefData?.preferences as any) || null);
+
+      if (!followedClubIds || followedClubIds.size === 0) {
+        setFollowedClubTasksRaw([]);
+        return;
+      }
+      const clubIds = [...followedClubIds];
+      const now = new Date().toISOString();
+      const { data } = await (supabase as any)
+        .from('tasks')
+        .select('id, title, task_date, location, spots_available, club_id, clubs(name, logo_url)')
+        .in('club_id', clubIds)
+        .eq('status', 'open')
+        .gte('task_date', now)
+        .order('task_date', { ascending: true })
+        .limit(20);
+      if (!data) { setFollowedClubTasksRaw([]); return; }
+      const taskIds = (data as any[]).map((t: any) => t.id);
+      const { data: signupData } = await supabase
+        .from('task_signups')
+        .select('task_id')
+        .in('task_id', taskIds);
+      const countMap: Record<string, number> = {};
+      (signupData || []).forEach((s: any) => { countMap[s.task_id] = (countMap[s.task_id] || 0) + 1; });
+      setFollowedClubTasksRaw(
+        (data as any[]).map((t: any) => ({ ...t, signup_count: countMap[t.id] || 0 }))
+      );
+    };
+    fetchData();
+  }, [currentUserId, followedClubIds]);
+
+  // Score tasks for "Aanbevolen voor jou"
+  useEffect(() => {
+    if (!prefs || !tasks.length) { setRecommendedTasks([]); return; }
+    const signedUpIds = new Set(signups.map(s => s.task_id));
+    const tasksArr = tasks as any[];
+    const clubsWorkedFor = new Set(
+      signups.map(s => tasksArr.find(t => t.id === s.task_id)?.club_id).filter(Boolean)
+    );
+    const now = new Date();
+    const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const categories: string[] = (prefs as any).categories || [];
+    const timePrefs: string[] = (prefs as any).time_prefs || [];
+    const categoryKeywords: Record<string, string[]> = {
+      steward: ['steward'],
+      bar_catering: ['bar', 'catering', 'drank', 'horeca'],
+      terrain_material: ['terrain', 'material', 'veld', 'materiaal'],
+      admin_ticketing: ['admin', 'ticketing', 'kassa'],
+      event_support: ['event', 'evenement', 'support'],
+      cleaning: ['cleaning', 'schoonmaak'],
+    };
+    const scored = tasksArr
+      .filter(t => !signedUpIds.has(t.id) && t.task_date && new Date(t.task_date) >= now)
+      .map(t => {
+        let score = 0;
+        const reasons: string[] = [];
+        for (const cat of categories) {
+          const keywords = categoryKeywords[cat] || [cat];
+          if (keywords.some((kw: string) => t.title.toLowerCase().includes(kw))) {
+            score += 30;
+            if (!reasons.includes('category')) reasons.push('category');
+          }
+        }
+        if (followedClubIds?.has(t.club_id)) { score += 50; reasons.push('followed'); }
+        const startTime = (t as any).start_time || t.task_date;
+        if (timePrefs.length > 0 && startTime) {
+          const dt = new Date(startTime);
+          const hours = dt.getHours();
+          const dow = dt.getDay();
+          if (
+            (timePrefs.includes('ochtend') && hours >= 6 && hours < 12) ||
+            (timePrefs.includes('middag') && hours >= 12 && hours < 17) ||
+            (timePrefs.includes('avond') && hours >= 17 && hours < 23) ||
+            (timePrefs.includes('weekend') && (dow === 0 || dow === 6))
+          ) { score += 20; reasons.push('time'); }
+        }
+        if (clubsWorkedFor.has(t.club_id)) { score += 15; reasons.push('experience'); }
+        if (t.task_date && new Date(t.task_date) <= in7Days) { score += 10; reasons.push('soon'); }
+        return { task: t as VolunteerTask, score, reasons };
+      })
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+    setRecommendedTasks(scored);
+  }, [prefs, tasks, signups, followedClubIds]);
+
   const totalEarned = myPayments.filter(p => p.status === 'succeeded').reduce((s, p) => s + p.amount, 0)
     + sepaPayouts.filter(s => s.batch_status === 'downloaded' && !s.error_flag).reduce((s, p) => s + p.amount, 0);
 
@@ -263,17 +378,17 @@ const VolunteerDashboardHome = ({
   ).slice(0, 2);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-6">
 
       {/* ═══ SECTION 1 — HERO ZONE ═══ */}
 
       {/* Safety alert banner */}
       {activeSafetyAlert && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
+          className="flex items-center gap-3 p-5 rounded-2xl bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
           onClick={() => setSafetySheetOpen(true)}>
-          <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-          <p className="text-sm font-medium text-destructive flex-1">
+          <AlertTriangle className="w-6 h-6 text-destructive shrink-0" />
+          <p className="text-base font-semibold text-destructive flex-1">
             {language === 'nl' ? '⚠️ Er is een veiligheidsmelding voor jouw evenement vandaag.' :
              language === 'fr' ? '⚠️ Il y a un signalement de sécurité pour votre événement aujourd\'hui.' :
              '⚠️ There is a safety alert for your event today.'}
@@ -283,11 +398,12 @@ const VolunteerDashboardHome = ({
       )}
 
       {/* Welcome + date */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/0 border border-primary/10 p-5">
+        <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
           {dt.welcome}, {profile?.full_name || profile?.email || ''}! 👋
         </h1>
-        <p className="text-sm text-muted-foreground mt-1 capitalize">{todayFormatted}</p>
+        <p className="text-base text-muted-foreground mt-2 capitalize">{todayFormatted}</p>
       </motion.div>
 
       {/* Today & Tomorrow planning */}
@@ -321,30 +437,123 @@ const VolunteerDashboardHome = ({
       {/* ═══ SECTION 2 — STATS STRIP ═══ */}
       <div className="grid grid-cols-3 gap-3">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center">
-          <div className="w-8 h-8 mx-auto rounded-xl bg-accent/10 flex items-center justify-center mb-1.5">
-            <CheckCircle className="w-4 h-4 text-accent" />
+          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center flex flex-col items-center gap-2">
+          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+            <CheckCircle className="w-5 h-5 text-accent" />
           </div>
-          <p className="text-xl font-heading font-bold text-foreground">{assignedSignups.length}</p>
-          <p className="text-[11px] text-muted-foreground">{dt.tasksCompleted}</p>
+          <p className="text-2xl font-heading font-bold text-foreground leading-none">{assignedSignups.length}</p>
+          <p className="text-xs text-muted-foreground leading-tight">{dt.tasksCompleted}</p>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center">
-          <div className="w-8 h-8 mx-auto rounded-xl bg-primary/10 flex items-center justify-center mb-1.5">
-            <Wallet className="w-4 h-4 text-primary" />
+          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center flex flex-col items-center gap-2">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Wallet className="w-5 h-5 text-primary" />
           </div>
-          <p className="text-xl font-heading font-bold text-foreground">€{totalEarned.toFixed(0)}</p>
-          <p className="text-[11px] text-muted-foreground">{dt.totalEarned}</p>
+          <p className="text-2xl font-heading font-bold text-foreground leading-none">€{totalEarned.toFixed(0)}</p>
+          <p className="text-xs text-muted-foreground leading-tight">{dt.totalEarned}</p>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center">
-          <div className="w-8 h-8 mx-auto rounded-xl bg-secondary/10 flex items-center justify-center mb-1.5">
-            <Sparkles className="w-4 h-4 text-secondary-foreground" />
+          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center flex flex-col items-center gap-2">
+          <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-secondary-foreground" />
           </div>
-          <p className="text-xl font-heading font-bold text-foreground">{loyaltyPoints}</p>
-          <p className="text-[11px] text-muted-foreground">{language === 'nl' ? 'Punten' : 'Points'}</p>
+          <p className="text-2xl font-heading font-bold text-foreground leading-none">{loyaltyPoints}</p>
+          <p className="text-xs text-muted-foreground leading-tight">{language === 'nl' ? 'Punten' : 'Points'}</p>
         </motion.div>
       </div>
+
+      {/* ═══ TAKEN VAN JOUW CLUBS ═══ */}
+      {followedClubIds && followedClubIds.size > 0 && (() => {
+        const filtered = followedClubTasksRaw
+          .filter(t => !signups.some(s => s.task_id === t.id))
+          .slice(0, 5);
+        if (filtered.length === 0) return null;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl border border-amber-200/60 dark:border-amber-800/40 p-5 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
+                <Heart className="w-5 h-5 text-amber-500" />
+                {language === 'nl' ? 'Taken van jouw clubs' : language === 'fr' ? 'Tâches de vos clubs' : 'Tasks from your clubs'}
+              </h3>
+              <button
+                onClick={() => navigate('/community')}
+                className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+              >
+                {language === 'nl' ? 'Bekijk alle' : language === 'fr' ? 'Voir tout' : 'View all'} →
+              </button>
+            </div>
+            <div className="space-y-3">
+              {filtered.map((task, i) => {
+                const freeSpots = task.spots_available - task.signup_count;
+                return (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30"
+                  >
+                    <Avatar className="h-11 w-11 shrink-0 rounded-xl">
+                      {task.clubs?.logo_url && <AvatarImage src={task.clubs.logo_url} alt={task.clubs?.name || ''} />}
+                      <AvatarFallback className="rounded-xl text-sm font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                        {(task.clubs?.name || '?')[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 shrink-0">
+                          <Heart className="w-2.5 h-2.5" />
+                          {language === 'nl' ? 'Jouw club' : language === 'fr' ? 'Ton club' : 'Your club'}
+                        </span>
+                      </div>
+                      <p className="text-base font-semibold text-foreground truncate">{task.title}</p>
+                      <div className="flex flex-wrap gap-2 mt-1 text-sm text-muted-foreground">
+                        {task.clubs?.name && <span>{task.clubs.name}</span>}
+                        {task.task_date && (
+                          <span className="flex items-center gap-0.5">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(task.task_date).toLocaleDateString(
+                              language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB',
+                              { weekday: 'short', day: 'numeric', month: 'short' }
+                            )}
+                          </span>
+                        )}
+                        {task.location && (
+                          <span className="flex items-center gap-0.5">
+                            <MapPin className="w-3.5 h-3.5" />{task.location}
+                          </span>
+                        )}
+                        <span className="font-medium text-foreground">
+                          {freeSpots > 0
+                            ? `${freeSpots} ${language === 'nl' ? 'plaatsen vrij' : language === 'fr' ? 'places libres' : 'spots left'}`
+                            : (language === 'nl' ? 'Volzet' : language === 'fr' ? 'Complet' : 'Full')}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/task/${task.id}`)}
+                      disabled={freeSpots <= 0}
+                      className="shrink-0 h-12 px-4 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                    >
+                      {language === 'nl' ? 'Inschrijven' : language === 'fr' ? "S'inscrire" : 'Sign up'}
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => navigate('/community')}
+              className="mt-4 w-full h-12 rounded-xl border border-border text-sm font-semibold text-primary hover:bg-muted/30 transition-colors flex items-center justify-center gap-2"
+            >
+              {language === 'nl' ? 'Bekijk alle taken van deze clubs' : language === 'fr' ? 'Voir toutes les tâches de ces clubs' : 'View all tasks from your clubs'} →
+            </button>
+          </motion.div>
+        );
+      })()}
 
       {/* ═══ TASK SEARCH ═══ */}
       {(() => {
@@ -362,18 +571,82 @@ const VolunteerDashboardHome = ({
         return (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-            <h3 className="text-sm font-heading font-semibold text-foreground flex items-center gap-2 mb-3">
-              <Search className="w-4 h-4 text-primary" />
+            <h3 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2 mb-4">
+              <Search className="w-5 h-5 text-primary" />
               {language === 'nl' ? 'Taken zoeken' : language === 'fr' ? 'Chercher des tâches' : 'Search tasks'}
             </h3>
+
+            {/* Aanbevolen voor jou */}
+            {prefs && recommendedTasks.length > 0 && (
+              <div className="mb-4">
+                <p className="text-base font-semibold text-foreground flex items-center gap-2 mb-3">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  {language === 'nl' ? 'Aanbevolen voor jou' : language === 'fr' ? 'Recommandé pour vous' : 'Recommended for you'}
+                </p>
+                <div className="space-y-2">
+                  {recommendedTasks.map((scored) => (
+                    <div
+                      key={scored.task.id}
+                      onClick={() => navigate(`/task/${scored.task.id}`)}
+                      className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/15 hover:bg-primary/10 cursor-pointer transition-colors min-h-[64px]"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-semibold text-foreground truncate">{scored.task.title}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {scored.reasons.includes('followed') && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                              <Heart className="w-3 h-3" />
+                              {language === 'nl' ? 'Jouw club' : language === 'fr' ? 'Ton club' : 'Your club'}
+                            </span>
+                          )}
+                          {scored.reasons.includes('category') && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                              {language === 'nl' ? 'Jouw categorie' : language === 'fr' ? 'Ta catégorie' : 'Your category'}
+                            </span>
+                          )}
+                          {scored.reasons.includes('time') && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary-foreground">
+                              <Clock className="w-3 h-3" />
+                              {language === 'nl' ? 'Jouw tijdstip' : language === 'fr' ? 'Ton créneau' : 'Your time'}
+                            </span>
+                          )}
+                          {scored.reasons.includes('experience') && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-700 dark:text-green-400">
+                              {language === 'nl' ? 'Ervaring' : language === 'fr' ? 'Expérience' : 'Experience'}
+                            </span>
+                          )}
+                          {scored.reasons.includes('soon') && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-700 dark:text-orange-400">
+                              {language === 'nl' ? 'Binnenkort' : language === 'fr' ? 'Bientôt' : 'Coming up'}
+                            </span>
+                          )}
+                        </div>
+                        {(scored.task as any).task_date && (
+                          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date((scored.task as any).task_date).toLocaleDateString(
+                              language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB',
+                              { weekday: 'short', day: 'numeric', month: 'short' }
+                            )}
+                            {(scored.task as any).clubs?.name && ` · ${(scored.task as any).clubs.name}`}
+                          </p>
+                        )}
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
                 value={taskSearch}
                 onChange={e => setTaskSearch(e.target.value)}
                 placeholder={language === 'nl' ? 'Zoek taken bij clubs...' : language === 'fr' ? 'Chercher des tâches...' : 'Search tasks...'}
-                className="w-full rounded-xl border border-border bg-muted/30 py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                className="w-full h-12 rounded-xl border border-border bg-muted/30 pl-12 pr-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               />
             </div>
             {sports.length > 0 && (
@@ -394,10 +667,10 @@ const VolunteerDashboardHome = ({
               <div className="mt-3 space-y-1.5">
                 {filtered.map(task => (
                   <div key={task.id} onClick={() => navigate(`/task/${task.id}`)}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors">
+                    className="flex items-center gap-3 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors min-h-[60px]">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
-                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-base font-semibold text-foreground truncate">{task.title}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
                         {task.clubs?.name && <span>{task.clubs.name}</span>}
                         {task.task_date && <span>· {new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>}
                       </div>
@@ -413,7 +686,7 @@ const VolunteerDashboardHome = ({
               </p>
             )}
             <button onClick={() => navigate('/community')}
-              className="mt-3 text-xs font-medium text-primary hover:underline flex items-center gap-1">
+              className="mt-4 w-full h-12 rounded-xl border border-border text-sm font-semibold text-primary hover:bg-muted/30 transition-colors flex items-center justify-center gap-2">
               {language === 'nl' ? 'Alle taken bekijken' : language === 'fr' ? 'Voir toutes les tâches' : 'View all tasks'} →
             </button>
           </motion.div>
@@ -424,32 +697,32 @@ const VolunteerDashboardHome = ({
       {actionItems.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
           className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-          <h3 className="text-sm font-heading font-semibold text-foreground flex items-center gap-2 mb-3">
-            <AlertTriangle className="w-4 h-4 text-primary" />
+          <h3 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2 mb-4">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
             {language === 'nl' ? 'Actie vereist' : language === 'fr' ? 'Action requise' : 'Action required'}
-            <span className="ml-auto text-[10px] font-normal text-muted-foreground px-2 py-0.5 rounded-full bg-primary/10 text-primary">{actionItems.length}</span>
+            <span className="ml-auto text-xs font-semibold text-primary px-2 py-0.5 rounded-full bg-primary/10">{actionItems.length}</span>
           </h3>
           <div className="space-y-2">
             {visibleActions.map(item => (
-              <div key={item.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+              <div key={item.id} className="flex items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                     item.type === 'contract' ? 'bg-orange-100 dark:bg-orange-900/30' :
                     item.type === 'briefing' ? 'bg-primary/10' :
                     item.type === 'training' ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-accent/10'
                   }`}>
-                    {item.type === 'contract' ? <FileSignature className="w-4 h-4 text-orange-600 dark:text-orange-400" /> :
-                     item.type === 'briefing' ? <FileText className="w-4 h-4 text-primary" /> :
-                     item.type === 'training' ? <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" /> :
-                     <BookOpen className="w-4 h-4 text-accent-foreground" />}
+                    {item.type === 'contract' ? <FileSignature className="w-5 h-5 text-orange-600 dark:text-orange-400" /> :
+                     item.type === 'briefing' ? <FileText className="w-5 h-5 text-primary" /> :
+                     item.type === 'training' ? <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" /> :
+                     <BookOpen className="w-5 h-5 text-accent-foreground" />}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                    {item.subtitle && <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>}
+                    <p className="text-base font-semibold text-foreground truncate">{item.title}</p>
+                    {item.subtitle && <p className="text-sm text-muted-foreground truncate">{item.subtitle}</p>}
                   </div>
                 </div>
                 <button onClick={item.action}
-                  className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity">
+                  className="shrink-0 h-12 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity whitespace-nowrap">
                   {item.actionLabel}
                 </button>
               </div>
@@ -457,7 +730,7 @@ const VolunteerDashboardHome = ({
           </div>
           {actionItems.length > 3 && !showAllActions && (
             <button onClick={() => setShowAllActions(true)}
-              className="mt-3 text-xs font-medium text-primary hover:underline flex items-center gap-1">
+              className="mt-4 text-sm font-medium text-primary hover:underline flex items-center gap-1.5">
               {language === 'nl' ? `Toon alles (${actionItems.length})` : language === 'fr' ? `Tout afficher (${actionItems.length})` : `Show all (${actionItems.length})`}
               <ChevronDown className="w-3 h-3" />
             </button>
@@ -468,13 +741,13 @@ const VolunteerDashboardHome = ({
       {/* ═══ SECTION 4 — KOMENDE TAKEN ═══ */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-heading font-semibold text-foreground">{dt.upcomingTasks}</h2>
+          <h2 className="text-xl font-heading font-bold text-foreground">{dt.upcomingTasks}</h2>
           <button onClick={() => setActiveTab('mine')} className="text-xs font-medium text-primary hover:underline">{dt.viewAll} →</button>
         </div>
         {myUpcomingTasks.length === 0 ? (
           <div className="bg-card rounded-2xl border border-border p-8 text-center">
             <ClipboardList className="w-10 h-10 mx-auto mb-2 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">{dt.noMyTasks}</p>
+            <p className="text-base text-muted-foreground">{dt.noMyTasks}</p>
             <button onClick={() => setActiveTab('mine')} className="mt-3 px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
               {dt.allTasks} →
             </button>
@@ -487,21 +760,21 @@ const VolunteerDashboardHome = ({
               return (
                 <motion.div key={task.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                   onClick={() => navigate(`/task/${task.id}`)}
-                  className={`bg-card rounded-2xl p-4 shadow-sm border cursor-pointer hover:shadow-md transition-all flex items-center gap-4 ${isAssigned ? 'border-accent/30' : 'border-border'}`}>
-                  <Avatar className="h-10 w-10 shrink-0 rounded-xl">
-                    <AvatarFallback className="rounded-xl text-xs font-bold bg-secondary/10 text-secondary">
+                  className={`bg-card rounded-2xl p-5 shadow-sm border cursor-pointer hover:shadow-md transition-all flex items-center gap-4 ${isAssigned ? 'border-l-4 border-l-accent border-t-border border-r-border border-b-border' : 'border-border'}`}>
+                  <Avatar className="h-12 w-12 shrink-0 rounded-xl">
+                    <AvatarFallback className="rounded-xl text-sm font-bold bg-secondary/10 text-secondary">
                       {(task.clubs?.name || '?')[0]}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{task.title}</p>
+                    <p className="text-base font-semibold text-foreground truncate">{task.title}</p>
                     {zoneAssignments[task.id] && (
-                      <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/15 text-accent-foreground w-fit">
-                        <Layers className="w-3 h-3" />
+                      <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-accent/15 text-accent-foreground w-fit">
+                        <Layers className="w-3.5 h-3.5" />
                         {language === 'fr' ? 'Zone :' : 'Zone:'} {zoneAssignments[task.id]}
                       </span>
                     )}
-                    <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-muted-foreground">
+                    <div className="flex flex-wrap gap-2 mt-1 text-sm text-muted-foreground">
                       {task.clubs?.name && <span>{task.clubs.name}</span>}
                       {task.task_date && (
                         <span className="flex items-center gap-0.5">
@@ -516,9 +789,9 @@ const VolunteerDashboardHome = ({
                   </div>
                   <div className="shrink-0">
                     {isAssigned ? (
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-foreground flex items-center gap-1"><CheckCircle className="w-3 h-3" />{dt.assigned}</span>
+                      <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-accent/15 text-accent-foreground flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" />{dt.assigned}</span>
                     ) : (
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">{dt.pending}</span>
+                      <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{dt.pending}</span>
                     )}
                   </div>
                 </motion.div>
@@ -530,12 +803,12 @@ const VolunteerDashboardHome = ({
 
       {/* ═══ SECTION 5 — MEER OVER MIJN SEIZOEN (accordion) ═══ */}
       <div>
-        <h2 className="text-lg font-heading font-semibold text-foreground mb-3">
+        <h2 className="text-xl font-heading font-bold text-foreground mb-4">
           {language === 'nl' ? 'Meer details' : language === 'fr' ? 'Plus de détails' : 'More details'}
         </h2>
         <Accordion type="multiple" className="space-y-2">
           <AccordionItem value="season" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
               {language === 'nl' ? 'Mijn Seizoen' : language === 'fr' ? 'Ma Saison' : 'My Season'}
             </AccordionTrigger>
             <AccordionContent className="pb-4">
@@ -544,7 +817,7 @@ const VolunteerDashboardHome = ({
           </AccordionItem>
 
           <AccordionItem value="financials" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
               {language === 'nl' ? 'Vergoedingen' : language === 'fr' ? 'Remboursements' : 'Payments'}
             </AccordionTrigger>
             <AccordionContent className="pb-4">
@@ -553,7 +826,7 @@ const VolunteerDashboardHome = ({
           </AccordionItem>
 
           <AccordionItem value="badges" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
               {language === 'nl' ? 'Badges & Loyaliteit' : language === 'fr' ? 'Badges & Fidélité' : 'Badges & Loyalty'}
             </AccordionTrigger>
             <AccordionContent className="pb-4 space-y-4">
@@ -563,7 +836,7 @@ const VolunteerDashboardHome = ({
           </AccordionItem>
 
           <AccordionItem value="skills" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
               {language === 'nl' ? 'Skills & Academy' : language === 'fr' ? 'Compétences & Académie' : 'Skills & Academy'}
             </AccordionTrigger>
             <AccordionContent className="pb-4 space-y-4">
@@ -573,7 +846,7 @@ const VolunteerDashboardHome = ({
           </AccordionItem>
 
           <AccordionItem value="clubs" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
               {language === 'nl' ? 'Clubs in de buurt' : language === 'fr' ? 'Clubs à proximité' : 'Nearby clubs'}
             </AccordionTrigger>
             <AccordionContent className="pb-4">
@@ -582,7 +855,7 @@ const VolunteerDashboardHome = ({
           </AccordionItem>
 
           <AccordionItem value="calendar" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
               {language === 'nl' ? 'Kalender sync' : language === 'fr' ? 'Sync calendrier' : 'Calendar sync'}
             </AccordionTrigger>
             <AccordionContent className="pb-4">
@@ -591,7 +864,7 @@ const VolunteerDashboardHome = ({
           </AccordionItem>
 
           <AccordionItem value="referral" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
               {language === 'nl' ? 'Vrienden werven' : language === 'fr' ? 'Parrainer des amis' : 'Refer friends'}
             </AccordionTrigger>
             <AccordionContent className="pb-4">
@@ -600,7 +873,7 @@ const VolunteerDashboardHome = ({
           </AccordionItem>
 
           <AccordionItem value="preferences" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
               {language === 'nl' ? 'Taakaanbevelingen' : language === 'fr' ? 'Recommandations' : 'Task recommendations'}
             </AccordionTrigger>
             <AccordionContent className="pb-4">

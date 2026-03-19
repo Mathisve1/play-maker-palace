@@ -77,7 +77,7 @@ const BottomTabBar = () => {
       <div className="bg-background/95 backdrop-blur-2xl border-t border-border/50"
         style={{ WebkitBackdropFilter: 'blur(24px)' }}
       >
-        <div className="flex items-center justify-around h-[52px]">
+        <div className="flex items-center justify-around h-[64px]">
           {tabs.map((tab) => {
             const active = isActive(tab);
             const Icon = tab.icon;
@@ -86,12 +86,12 @@ const BottomTabBar = () => {
                 key={tab.label}
                 onClick={() => navigate(tab.path)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-h-[48px] min-w-[48px] transition-colors active:opacity-70",
+                  "flex flex-col items-center justify-center gap-1 flex-1 h-full min-h-[48px] min-w-[48px] transition-colors active:opacity-70",
                   active ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <Icon className={cn("w-5 h-5", active && "stroke-[2.5]")} />
-                <span className="text-[10px] font-medium">{tab.label}</span>
+                <Icon className={cn("w-6 h-6", active && "stroke-[2.5]")} />
+                <span className="text-xs font-semibold tracking-wide">{tab.label}</span>
               </button>
             );
           })}

@@ -45,7 +45,7 @@ export async function sendPushToClub(opts: {
 
     // Get club members with admin/beheerder roles
     const { data: members } = await supabase
-      .from('club_members')
+      .from('club_memberships')
       .select('user_id, role')
       .eq('club_id', opts.clubId);
     

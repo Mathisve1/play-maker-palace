@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/, /^\/push\//],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        globIgnores: ['**/push/**', '**/OneSignal*'],
+        globIgnores: ['**/push/**'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // Skip waiting so new SW activates immediately
         skipWaiting: true,

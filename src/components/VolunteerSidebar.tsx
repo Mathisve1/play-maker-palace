@@ -125,20 +125,20 @@ const VolunteerSidebar = ({
           onClick={onOpenProfile}
           className="mt-3 flex items-center gap-3 rounded-xl p-2 -mx-2 hover:bg-sidebar-accent transition-colors w-full text-left min-h-[48px]"
         >
-          <Avatar className="h-9 w-9 shrink-0">
+          <Avatar className="h-11 w-11 shrink-0">
             {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name || ''} />}
             <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
               {(profile?.full_name || profile?.email || '?')[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-sidebar-foreground truncate">{profile?.full_name || profile?.email || ''}</p>
-            <p className="text-[11px] text-muted-foreground truncate">{l.settings}</p>
+            <p className="text-base font-semibold text-sidebar-foreground truncate">{profile?.full_name || profile?.email || ''}</p>
+            <p className="text-sm text-muted-foreground truncate">{l.settings}</p>
           </div>
         </button>
         <button
           onClick={() => setSearchOpen(true)}
-          className="mt-2 flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-muted/50 text-muted-foreground text-xs hover:bg-muted transition-colors"
+          className="mt-2 flex items-center gap-2 w-full px-3 py-2.5 rounded-lg bg-muted/50 text-muted-foreground text-sm hover:bg-muted transition-colors min-h-[44px]"
         >
           <Search className="w-3.5 h-3.5" />
           <span className="flex-1 text-left">{language === 'nl' ? 'Zoeken...' : language === 'fr' ? 'Rechercher...' : 'Search...'}</span>

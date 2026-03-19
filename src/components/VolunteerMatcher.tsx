@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, UserCheck, Send, Star, Clock, Award, CheckCircle, AlertCircle, FileSignature } from 'lucide-react';
+import { Loader2, UserCheck, Send, Star, Clock, Award, CheckCircle, AlertCircle, FileSignature, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -33,6 +33,7 @@ interface MatchedVolunteer {
   skillMatch: string[];
   pastTasks: number;
   contractStatus: 'signed' | 'pending' | 'none';
+  isFollower: boolean;
 }
 
 const labels = {
@@ -53,6 +54,7 @@ const labels = {
     contractPending: 'Contract in behandeling',
     noContract: 'Geen contract',
     noContractTooltip: 'Vrijwilliger heeft nog geen seizoenscontract',
+    follower: 'Volger',
   },
   fr: {
     title: 'Chercher des Bénévoles',
@@ -71,6 +73,7 @@ const labels = {
     contractPending: 'Contrat en cours',
     noContract: 'Pas de contrat',
     noContractTooltip: 'Le bénévole n\'a pas encore de contrat saisonnier',
+    follower: 'Abonné',
   },
   en: {
     title: 'Find Volunteers',
@@ -89,6 +92,7 @@ const labels = {
     contractPending: 'Contract pending',
     noContract: 'No contract',
     noContractTooltip: 'Volunteer does not have a season contract yet',
+    follower: 'Follower',
   },
 };
 
@@ -127,7 +131,7 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
       if (volunteerIds.length === 0) { setLoading(false); return; }
 
       // 2. Parallel: profiles, availability, skills, past signups, existing signups, season contracts, event availability
-      const [profilesRes, availRes, skillsRes, signupsRes, existingSignups, contractsRes, eventAvailRes] = await Promise.all([
+      const [profilesRes, availRes, skillsRes, signupsRes, existingSignups, contractsRes, eventAvailRes, clubFollowsRes] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email, avatar_url').in('id', volunteerIds),
         supabase.from('volunteer_availability').select('*').in('volunteer_id', volunteerIds),
         supabase.from('volunteer_skills').select('user_id, skill_name').in('user_id', volunteerIds),
@@ -135,6 +139,7 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
         supabase.from('task_signups').select('volunteer_id, status').eq('task_id', task.id),
         supabase.from('season_contracts').select('volunteer_id, status').eq('club_id', task.club_id),
         supabase.from('event_availability' as any).select('volunteer_id, status').eq('task_id', task.id),
+        supabase.from('club_follows').select('user_id').eq('club_id', task.club_id),
       ]);
 
       const profiles = profilesRes.data || [];
@@ -144,6 +149,7 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
       const alreadySignedUp = new Set((existingSignups.data || []).map((s: any) => s.volunteer_id));
       const seasonContracts = (contractsRes.data || []) as any[];
       const eventAvailData = (eventAvailRes.data || []) as any[];
+      const followerIds = new Set((clubFollowsRes.data || []).map((f: any) => f.user_id));
 
       // Build event availability map: volunteer_id -> status
       const eventAvailMap = new Map<string, string>();
@@ -209,6 +215,9 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
           if (p.full_name) score += 5;
           if (p.avatar_url) score += 5;
 
+          // Club follow bonus
+          if (followerIds.has(p.id)) score += 25;
+
           return {
             id: p.id,
             full_name: p.full_name,
@@ -219,6 +228,7 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
             skillMatch: matchingSkills,
             pastTasks: pastCount,
             contractStatus: contractStatusMap.get(p.id) || 'none',
+            isFollower: followerIds.has(p.id),
           };
         })
         .sort((a, b) => b.matchScore - a.matchScore);
@@ -345,6 +355,12 @@ const VolunteerMatcher = ({ open, onOpenChange, task }: VolunteerMatcherProps) =
                           <Badge className="text-[10px] bg-destructive/10 text-destructive border-0">
                             <AlertCircle className="w-3 h-3 mr-0.5" />
                             {l.noContract}
+                          </Badge>
+                        )}
+                        {vol.isFollower && (
+                          <Badge className="text-[10px] bg-pink-500/10 text-pink-700 dark:text-pink-400 border-0">
+                            <Heart className="w-3 h-3 mr-0.5" />
+                            {l.follower}
                           </Badge>
                         )}
                         {vol.availabilityMatch && (

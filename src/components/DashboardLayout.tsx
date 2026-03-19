@@ -18,7 +18,7 @@ const DashboardLayout = ({ sidebar, children, userId }: DashboardLayoutProps) =>
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile header with safe-area for PWA notch/statusbar */}
           <header
-            className="min-h-14 flex items-center gap-3 border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40 px-4 pt-[env(safe-area-inset-top)] md:hidden"
+            className="min-h-[60px] flex items-center gap-3 border-b border-border bg-card/90 backdrop-blur-xl sticky top-0 z-40 px-4 pt-[env(safe-area-inset-top)] md:hidden"
           >
             <SidebarTrigger />
             <Logo size="sm" linkTo="/dashboard" />
@@ -26,7 +26,7 @@ const DashboardLayout = ({ sidebar, children, userId }: DashboardLayoutProps) =>
               {userId && <NotificationBell userId={userId} />}
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto pb-[68px] md:pb-6 lg:pb-8">
+          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto pb-[84px] md:pb-6 lg:pb-8">
             {children}
           </main>
           <BottomTabBar />
