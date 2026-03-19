@@ -175,6 +175,16 @@ const VolunteerDashboard = () => {
   const [enrollingProgram, setEnrollingProgram] = useState<string | null>(null);
   const [badgeRefreshKey, setBadgeRefreshKey] = useState(0);
 
+  // Sync tab from URL search params
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab as VolunteerTab);
+    } else if (!urlTab && activeTab !== 'dashboard') {
+      setActiveTab('dashboard');
+    }
+  }, [searchParams]);
+
   const { data: complianceData } = useComplianceData(currentUserId || null);
 
   // ===== Use ClubContext instead of re-fetching auth/profile =====
