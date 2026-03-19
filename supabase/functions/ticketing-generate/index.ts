@@ -1048,7 +1048,7 @@ Deno.serve(async (req) => {
     // ========== ACTION: test ==========
     if (action === "test") {
       try {
-        const result = await adapter.testConnection(config);
+        const result = await adapter!.testConnection(config);
         await supabase.from("ticketing_logs").insert({
           club_id,
           action: "test_connection",
