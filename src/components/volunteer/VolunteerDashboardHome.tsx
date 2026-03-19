@@ -546,7 +546,7 @@ const VolunteerDashboardHome = ({
               })}
             </div>
             <button
-              onClick={() => navigate('/community')}
+              onClick={() => setActiveTab('club-tasks')}
               className="mt-4 w-full h-12 rounded-xl border border-border text-sm font-semibold text-primary hover:bg-muted/30 transition-colors flex items-center justify-center gap-2"
             >
               {language === 'nl' ? 'Bekijk alle taken van deze clubs' : language === 'fr' ? 'Voir toutes les tâches de ces clubs' : 'View all tasks from your clubs'} →
