@@ -50,13 +50,14 @@ export default defineConfig(({ mode }) => ({
             urlPattern: /^https:\/\/.*\.supabase\.co\/auth\//,
             handler: 'NetworkOnly',
           },
-          // API data — stale-while-revalidate for instant cached responses
+          // API data — network first so PWA always gets fresh data
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\//,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 600 },
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 100, maxAgeSeconds: 300 },
             },
           },
           // Google Fonts stylesheets — stale-while-revalidate
