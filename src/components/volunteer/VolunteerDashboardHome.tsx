@@ -480,7 +480,7 @@ const VolunteerDashboardHome = ({
                 {language === 'nl' ? 'Taken van jouw clubs' : language === 'fr' ? 'Tâches de vos clubs' : 'Tasks from your clubs'}
               </h3>
               <button
-                onClick={() => navigate('/community')}
+                onClick={() => setActiveTab('club-tasks')}
                 className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
               >
                 {language === 'nl' ? 'Bekijk alle' : language === 'fr' ? 'Voir tout' : 'View all'} →
