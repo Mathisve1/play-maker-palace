@@ -2,9 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { Calendar, Clock, RotateCcw, CalendarDays, Loader2, Check } from 'lucide-react';
+import { Calendar, Clock, RotateCcw, CalendarDays, Loader2, Check, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -17,65 +16,70 @@ interface AvailabilitySlot {
   specific_date?: string | null;
 }
 
-const TIME_SLOTS = [
-  { key: 'morning', start: '06:00', end: '12:00' },
-  { key: 'afternoon', start: '12:00', end: '18:00' },
-  { key: 'evening', start: '18:00', end: '23:00' },
-] as const;
-
 const labels = {
   nl: {
     title: 'Mijn Beschikbaarheid',
-    subtitle: 'Geef aan wanneer je beschikbaar bent',
+    subtitle: 'Geef aan wanneer je beschikbaar bent — clubs kunnen dit zien bij het plannen',
     recurring: 'Wekelijks',
     specific: 'Specifieke datum',
-    morning: 'Ochtend',
-    afternoon: 'Middag',
-    evening: 'Avond',
     days: ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'],
     daysFull: ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'],
     save: 'Opslaan',
     saving: 'Opslaan...',
     saved: 'Beschikbaarheid opgeslagen!',
     selectDate: 'Kies een datum',
-    timeRange: '06:00 - 23:00',
+    addSlot: 'Tijdslot toevoegen',
+    from: 'Van',
+    to: 'Tot',
+    noSlots: 'Tik op een dag om tijdslots toe te voegen',
+    removeSlot: 'Verwijderen',
   },
   fr: {
     title: 'Ma Disponibilité',
-    subtitle: 'Indiquez quand vous êtes disponible',
+    subtitle: 'Indiquez quand vous êtes disponible — les clubs peuvent le voir lors de la planification',
     recurring: 'Hebdomadaire',
     specific: 'Date spécifique',
-    morning: 'Matin',
-    afternoon: 'Après-midi',
-    evening: 'Soir',
     days: ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'],
     daysFull: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'],
     save: 'Enregistrer',
     saving: 'Enregistrement...',
     saved: 'Disponibilité enregistrée !',
     selectDate: 'Choisir une date',
-    timeRange: '06:00 - 23:00',
+    addSlot: 'Ajouter un créneau',
+    from: 'De',
+    to: 'À',
+    noSlots: 'Appuyez sur un jour pour ajouter des créneaux',
+    removeSlot: 'Supprimer',
   },
   en: {
     title: 'My Availability',
-    subtitle: 'Indicate when you are available',
+    subtitle: 'Indicate when you are available — clubs can see this when planning',
     recurring: 'Weekly',
     specific: 'Specific date',
-    morning: 'Morning',
-    afternoon: 'Afternoon',
-    evening: 'Evening',
     days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     daysFull: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
     save: 'Save',
     saving: 'Saving...',
     saved: 'Availability saved!',
     selectDate: 'Pick a date',
-    timeRange: '06:00 - 23:00',
+    addSlot: 'Add time slot',
+    from: 'From',
+    to: 'To',
+    noSlots: 'Tap a day to add time slots',
+    removeSlot: 'Remove',
   },
 };
 
-// Map: Monday=0 ... Sunday=6 internally, stored as day_of_week 1-7 (ISO) mapped to 0-6
-const toDow = (displayIdx: number) => (displayIdx + 1) % 7; // 0=Mon→1, 6=Sun→0
+// Monday=0 ... Sunday=6 display, stored as ISO day_of_week 0-6
+const toDow = (displayIdx: number) => (displayIdx + 1) % 7;
+const fromDow = (dow: number) => (dow + 6) % 7;
+
+interface SlotEntry {
+  key: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+}
 
 interface AvailabilityCalendarProps {
   userId: string;
@@ -87,12 +91,11 @@ const AvailabilityCalendar = ({ userId }: AvailabilityCalendarProps) => {
 
   const [mode, setMode] = useState<'recurring' | 'specific'>('recurring');
   const [selectedDate, setSelectedDate] = useState('');
-  const [slots, setSlots] = useState<Set<string>>(new Set());
+  const [slots, setSlots] = useState<SlotEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
-
-  const slotKey = (day: number, timeKey: string) => `${day}-${timeKey}`;
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   const loadSlots = useCallback(async () => {
     const { data } = await supabase
@@ -101,33 +104,58 @@ const AvailabilityCalendar = ({ userId }: AvailabilityCalendarProps) => {
       .eq('volunteer_id', userId);
 
     if (data) {
-      const set = new Set<string>();
-      data.forEach((row: any) => {
-        const timeSlot = TIME_SLOTS.find(ts => ts.start === row.start_time?.slice(0, 5));
-        if (timeSlot) {
-          set.add(slotKey(row.day_of_week, timeSlot.key));
-        }
-      });
-      setSlots(set);
+      const entries: SlotEntry[] = data.map((row: any) => ({
+        key: `${row.day_of_week}-${row.start_time}-${row.end_time}`,
+        day_of_week: row.day_of_week,
+        start_time: row.start_time?.slice(0, 5) || '09:00',
+        end_time: row.end_time?.slice(0, 5) || '17:00',
+      }));
+      setSlots(entries);
     }
     setLoading(false);
   }, [userId]);
 
   useEffect(() => { loadSlots(); }, [loadSlots]);
 
-  const toggleSlot = (day: number, timeKey: string) => {
-    const key = slotKey(day, timeKey);
-    setSlots(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const getDaySlots = (dow: number) => slots.filter(s => s.day_of_week === dow);
+
+  const addSlot = (dow: number) => {
+    const existing = getDaySlots(dow);
+    const lastEnd = existing.length > 0 ? existing[existing.length - 1].end_time : '08:00';
+    const newStart = lastEnd;
+    const newEnd = `${Math.min(parseInt(lastEnd.split(':')[0]) + 3, 23).toString().padStart(2, '0')}:00`;
+    const entry: SlotEntry = {
+      key: `${dow}-${newStart}-${newEnd}-${Date.now()}`,
+      day_of_week: dow,
+      start_time: newStart,
+      end_time: newEnd,
+    };
+    setSlots(prev => [...prev, entry]);
+    setDirty(true);
+    setExpandedDay(dow);
+  };
+
+  const removeSlot = (key: string) => {
+    setSlots(prev => prev.filter(s => s.key !== key));
+    setDirty(true);
+  };
+
+  const updateSlotTime = (key: string, field: 'start_time' | 'end_time', value: string) => {
+    setSlots(prev => prev.map(s => s.key === key ? { ...s, [field]: value, key: field === 'start_time' || field === 'end_time' ? `${s.day_of_week}-${field === 'start_time' ? value : s.start_time}-${field === 'end_time' ? value : s.end_time}-${Date.now()}` : s.key } : s));
     setDirty(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
+
+    // Validate: end > start for all slots
+    for (const s of slots) {
+      if (s.end_time <= s.start_time) {
+        toast({ title: '⚠️', description: language === 'nl' ? `Eindtijd moet na starttijd liggen (${l.daysFull[fromDow(s.day_of_week)]})` : language === 'fr' ? `L'heure de fin doit être après l'heure de début` : `End time must be after start time`, variant: 'destructive' });
+        setSaving(false);
+        return;
+      }
+    }
 
     // Delete all existing recurring availability
     await supabase
@@ -136,27 +164,18 @@ const AvailabilityCalendar = ({ userId }: AvailabilityCalendarProps) => {
       .eq('volunteer_id', userId)
       .eq('is_recurring', true);
 
-    // Insert active slots
-    const inserts: Omit<AvailabilitySlot, 'id'>[] = [];
-    slots.forEach(key => {
-      const [dayStr, timeKey] = key.split('-');
-      const day = parseInt(dayStr);
-      const ts = TIME_SLOTS.find(t => t.key === timeKey);
-      if (ts) {
-        inserts.push({
-          day_of_week: day,
-          start_time: ts.start,
-          end_time: ts.end,
-          is_recurring: true,
-          specific_date: mode === 'specific' && selectedDate ? selectedDate : null,
-        });
-      }
-    });
+    // Insert all current slots
+    if (slots.length > 0) {
+      const inserts = slots.map(s => ({
+        volunteer_id: userId,
+        day_of_week: s.day_of_week,
+        start_time: s.start_time,
+        end_time: s.end_time,
+        is_recurring: true,
+        specific_date: mode === 'specific' && selectedDate ? selectedDate : null,
+      }));
 
-    if (inserts.length > 0) {
-      const { error } = await supabase.from('volunteer_availability').insert(
-        inserts.map(s => ({ ...s, volunteer_id: userId }))
-      );
+      const { error } = await supabase.from('volunteer_availability').insert(inserts);
       if (error) {
         toast({ title: 'Error', description: error.message, variant: 'destructive' });
         setSaving(false);
@@ -177,8 +196,6 @@ const AvailabilityCalendar = ({ userId }: AvailabilityCalendarProps) => {
     );
   }
 
-  const slotLabels = { morning: l.morning, afternoon: l.afternoon, evening: l.evening };
-
   return (
     <div className="space-y-4">
       {/* Mode toggle */}
@@ -187,101 +204,142 @@ const AvailabilityCalendar = ({ userId }: AvailabilityCalendarProps) => {
           size="sm"
           variant={mode === 'recurring' ? 'default' : 'outline'}
           onClick={() => setMode('recurring')}
-          className="text-xs"
+          className="text-sm min-h-[44px]"
         >
-          <RotateCcw className="w-3.5 h-3.5 mr-1" />
+          <RotateCcw className="w-4 h-4 mr-1.5" />
           {l.recurring}
         </Button>
         <Button
           size="sm"
           variant={mode === 'specific' ? 'default' : 'outline'}
           onClick={() => setMode('specific')}
-          className="text-xs"
+          className="text-sm min-h-[44px]"
         >
-          <CalendarDays className="w-3.5 h-3.5 mr-1" />
+          <CalendarDays className="w-4 h-4 mr-1.5" />
           {l.specific}
         </Button>
       </div>
 
       {mode === 'specific' && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
           <input
             type="date"
             value={selectedDate}
             onChange={e => setSelectedDate(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring"
+            className="px-3 py-3 rounded-xl border border-input bg-background text-foreground text-base focus:ring-2 focus:ring-ring w-full min-h-[48px]"
           />
         </motion.div>
       )}
 
-      {/* Calendar grid */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[500px]">
-          {/* Header row */}
-          <div className="grid grid-cols-[80px_repeat(7,1fr)] gap-1 mb-1">
-            <div className="flex items-center justify-center">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-            </div>
-            {l.days.map((day, i) => (
-              <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-2">
-                {day}
-              </div>
-            ))}
-          </div>
+      {/* Day cards with time slots */}
+      <div className="space-y-2">
+        {Array.from({ length: 7 }, (_, displayIdx) => {
+          const dow = toDow(displayIdx);
+          const daySlots = getDaySlots(dow);
+          const isExpanded = expandedDay === dow;
+          const hasSlots = daySlots.length > 0;
 
-          {/* Time slot rows */}
-          {TIME_SLOTS.map((ts) => (
-            <div key={ts.key} className="grid grid-cols-[80px_repeat(7,1fr)] gap-1 mb-1">
-              <div className="flex items-center justify-center text-[11px] text-muted-foreground font-medium">
-                {slotLabels[ts.key]}
-              </div>
-              {Array.from({ length: 7 }, (_, dayIdx) => {
-                const dow = toDow(dayIdx);
-                const key = slotKey(dow, ts.key);
-                const isActive = slots.has(key);
-
-                return (
-                  <motion.button
-                    key={key}
-                    whileTap={{ scale: 0.9 }}
-                    whileHover={{ scale: 1.05 }}
-                    onClick={() => toggleSlot(dow, ts.key)}
-                    className={cn(
-                      'h-12 rounded-xl border-2 transition-all duration-200 flex items-center justify-center',
-                      isActive
-                        ? 'bg-primary/15 border-primary text-primary shadow-sm'
-                        : 'bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/60 hover:border-muted-foreground/20'
+          return (
+            <motion.div
+              key={dow}
+              className={cn(
+                'rounded-xl border transition-colors',
+                hasSlots ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
+              )}
+            >
+              {/* Day header */}
+              <button
+                onClick={() => setExpandedDay(isExpanded ? null : dow)}
+                className="w-full flex items-center justify-between p-4 min-h-[56px] text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    'w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold',
+                    hasSlots ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  )}>
+                    {l.days[displayIdx]}
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-foreground">{l.daysFull[displayIdx]}</p>
+                    {hasSlots && (
+                      <p className="text-sm text-muted-foreground">
+                        {daySlots.map(s => `${s.start_time} – ${s.end_time}`).join(', ')}
+                      </p>
                     )}
+                  </div>
+                </div>
+                {hasSlots && (
+                  <Check className="w-5 h-5 text-primary shrink-0" />
+                )}
+              </button>
+
+              {/* Expanded: time slot editor */}
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
                   >
-                    <AnimatePresence mode="wait">
-                      {isActive && (
-                        <motion.div
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                        >
-                          <Check className="w-5 h-5" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+                    <div className="px-4 pb-4 space-y-3">
+                      {daySlots.map((slot) => (
+                        <div key={slot.key} className="flex items-center gap-2 bg-background rounded-lg p-3 border border-border">
+                          <div className="flex-1 flex items-center gap-2">
+                            <label className="text-sm text-muted-foreground shrink-0">{l.from}</label>
+                            <input
+                              type="time"
+                              value={slot.start_time}
+                              onChange={e => updateSlotTime(slot.key, 'start_time', e.target.value)}
+                              className="flex-1 px-2 py-2 rounded-lg border border-input bg-background text-foreground text-base min-h-[44px]"
+                            />
+                          </div>
+                          <div className="flex-1 flex items-center gap-2">
+                            <label className="text-sm text-muted-foreground shrink-0">{l.to}</label>
+                            <input
+                              type="time"
+                              value={slot.end_time}
+                              onChange={e => updateSlotTime(slot.key, 'end_time', e.target.value)}
+                              className="flex-1 px-2 py-2 rounded-lg border border-input bg-background text-foreground text-base min-h-[44px]"
+                            />
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => removeSlot(slot.key)}
+                            className="text-destructive hover:text-destructive min-h-[44px] min-w-[44px]"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+
+                      <Button
+                        variant="outline"
+                        onClick={() => addSlot(dow)}
+                        className="w-full min-h-[48px] text-base gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        {l.addSlot}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-4 rounded bg-primary/15 border-2 border-primary" />
           <span>{language === 'nl' ? 'Beschikbaar' : language === 'fr' ? 'Disponible' : 'Available'}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-4 rounded bg-muted/30 border-2 border-transparent" />
-          <span>{language === 'nl' ? 'Niet beschikbaar' : language === 'fr' ? 'Non disponible' : 'Not available'}</span>
+          <span>{language === 'nl' ? 'Niet ingesteld' : language === 'fr' ? 'Non défini' : 'Not set'}</span>
         </div>
       </div>
 
@@ -293,7 +351,7 @@ const AvailabilityCalendar = ({ userId }: AvailabilityCalendarProps) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
           >
-            <Button onClick={handleSave} disabled={saving} className="w-full">
+            <Button onClick={handleSave} disabled={saving} className="w-full min-h-[52px] text-base">
               {saving ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{l.saving}</>
               ) : (

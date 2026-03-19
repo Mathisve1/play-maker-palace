@@ -16,40 +16,44 @@ interface EventItem {
   end_time: string | null;
   location: string | null;
   clubName: string;
+  clubId: string;
 }
 
 type AvailStatus = 'available' | 'unavailable' | 'maybe';
 
 const labels = {
   nl: {
-    title: 'Seizoensbeschikbaarheid',
+    title: 'Beschikbaarheid per evenement',
     subtitle: 'Geef aan voor welke evenementen je beschikbaar bent',
     available: 'Beschikbaar',
     unavailable: 'Niet beschikbaar',
     maybe: 'Misschien',
-    noEvents: 'Geen toekomstige evenementen gevonden',
+    noEvents: 'Geen toekomstige evenementen gevonden bij je clubs',
+    noClubs: 'Volg eerst een club om evenementen te zien',
     saved: 'Beschikbaarheid opgeslagen',
     task: 'Taak',
     event: 'Evenement',
   },
   fr: {
-    title: 'Disponibilité saisonnière',
+    title: 'Disponibilité par événement',
     subtitle: 'Indiquez votre disponibilité pour chaque événement',
     available: 'Disponible',
     unavailable: 'Indisponible',
     maybe: 'Peut-être',
-    noEvents: 'Aucun événement futur trouvé',
+    noEvents: 'Aucun événement futur trouvé dans vos clubs',
+    noClubs: 'Suivez d\'abord un club pour voir les événements',
     saved: 'Disponibilité enregistrée',
     task: 'Tâche',
     event: 'Événement',
   },
   en: {
-    title: 'Season Availability',
+    title: 'Availability per event',
     subtitle: 'Indicate your availability for each event',
     available: 'Available',
     unavailable: 'Unavailable',
     maybe: 'Maybe',
-    noEvents: 'No upcoming events found',
+    noEvents: 'No upcoming events found at your clubs',
+    noClubs: 'Follow a club first to see events',
     saved: 'Availability saved',
     task: 'Task',
     event: 'Event',
@@ -58,7 +62,7 @@ const labels = {
 
 interface Props {
   userId: string;
-  clubId: string;
+  clubId?: string;
   language: Language;
 }
 
@@ -70,24 +74,45 @@ const SeasonAvailabilityPicker = ({ userId, clubId, language }: Props) => {
   const [statuses, setStatuses] = useState<Map<string, AvailStatus>>(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [followedClubIds, setFollowedClubIds] = useState<string[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     const now = new Date().toISOString();
 
-    // Fetch tasks and events in parallel, plus existing signups and availability
+    // Get all clubs this volunteer follows/is member of
+    let clubIds: string[] = [];
+    if (clubId) {
+      clubIds = [clubId];
+    } else {
+      const [membershipsRes, followsRes] = await Promise.all([
+        supabase.from('club_memberships').select('club_id').eq('volunteer_id', userId).eq('status', 'actief'),
+        supabase.from('club_follows').select('club_id').eq('user_id', userId),
+      ]);
+      const memberClubs = (membershipsRes.data || []).map((m: any) => m.club_id);
+      const followClubs = (followsRes.data || []).map((f: any) => f.club_id);
+      clubIds = [...new Set([...memberClubs, ...followClubs])];
+    }
+    setFollowedClubIds(clubIds);
+
+    if (clubIds.length === 0) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch tasks and events from ALL followed clubs
     const [tasksRes, eventsRes, signupsRes, availRes] = await Promise.all([
-      supabase.from('tasks').select('id, title, task_date, start_time, end_time, location, clubs(name)')
-        .eq('club_id', clubId).gte('task_date', now.split('T')[0]).order('task_date', { ascending: true }),
-      supabase.from('events').select('id, title, event_date, location, clubs(name)')
-        .eq('club_id', clubId).gte('event_date', now.split('T')[0]).order('event_date', { ascending: true }),
+      supabase.from('tasks').select('id, title, task_date, start_time, end_time, location, club_id, clubs(name)')
+        .in('club_id', clubIds).gte('task_date', now.split('T')[0]).order('task_date', { ascending: true }),
+      supabase.from('events').select('id, title, event_date, location, club_id, clubs(name)')
+        .in('club_id', clubIds).gte('event_date', now.split('T')[0]).order('event_date', { ascending: true }),
       supabase.from('task_signups').select('task_id').eq('volunteer_id', userId),
       supabase.from('event_availability' as any).select('task_id, event_id, status').eq('volunteer_id', userId),
     ]);
 
     const signedUpTaskIds = new Set((signupsRes.data || []).map((s: any) => s.task_id));
 
-    // Build items: tasks not yet signed up for
     const taskItems: EventItem[] = (tasksRes.data || [])
       .filter((t: any) => !signedUpTaskIds.has(t.id))
       .map((t: any) => ({
@@ -99,6 +124,7 @@ const SeasonAvailabilityPicker = ({ userId, clubId, language }: Props) => {
         end_time: t.end_time,
         location: t.location,
         clubName: (t.clubs as any)?.name || '',
+        clubId: t.club_id,
       }));
 
     const eventItems: EventItem[] = (eventsRes.data || []).map((e: any) => ({
@@ -110,9 +136,9 @@ const SeasonAvailabilityPicker = ({ userId, clubId, language }: Props) => {
       end_time: null,
       location: e.location,
       clubName: (e.clubs as any)?.name || '',
+      clubId: e.club_id,
     }));
 
-    // Merge and sort
     const all = [...taskItems, ...eventItems].sort((a, b) => {
       const da = a.date || '';
       const db = b.date || '';
@@ -120,7 +146,6 @@ const SeasonAvailabilityPicker = ({ userId, clubId, language }: Props) => {
     });
     setItems(all);
 
-    // Load existing availability
     const avMap = new Map<string, AvailStatus>();
     ((availRes.data || []) as any[]).forEach((a: any) => {
       const key = a.task_id || a.event_id;
@@ -148,9 +173,7 @@ const SeasonAvailabilityPicker = ({ userId, clubId, language }: Props) => {
     if (item.type === 'task') payload.task_id = item.id;
     else payload.event_id = item.id;
 
-    // Upsert
     if (current) {
-      // Update existing
       const filter = item.type === 'task'
         ? supabase.from('event_availability' as any).update({ status, updated_at: new Date().toISOString() } as any).eq('volunteer_id', userId).eq('task_id', item.id)
         : supabase.from('event_availability' as any).update({ status, updated_at: new Date().toISOString() } as any).eq('volunteer_id', userId).eq('event_id', item.id);
@@ -186,11 +209,20 @@ const SeasonAvailabilityPicker = ({ userId, clubId, language }: Props) => {
     );
   }
 
+  if (followedClubIds.length === 0) {
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30" />
+        <p className="text-base">{l.noClubs}</p>
+      </div>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <div className="text-center py-16 text-muted-foreground">
         <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30" />
-        <p>{l.noEvents}</p>
+        <p className="text-base">{l.noEvents}</p>
       </div>
     );
   }
@@ -221,67 +253,66 @@ const SeasonAvailabilityPicker = ({ userId, clubId, language }: Props) => {
               }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Badge variant="outline" className="text-[10px]">
                       {item.type === 'task' ? l.task : l.event}
                     </Badge>
-                    <span className="text-[10px] text-muted-foreground">{item.clubName}</span>
+                    <span className="text-xs font-medium text-primary">{item.clubName}</span>
                   </div>
-                  <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
-                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                  <p className="text-base font-semibold text-foreground truncate">{item.title}</p>
+                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-sm text-muted-foreground">
                     {item.date && (
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />{formatDate(item.date)}
+                        <Calendar className="w-3.5 h-3.5" />{formatDate(item.date)}
                       </span>
                     )}
                     {item.start_time && (
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="w-3.5 h-3.5" />
                         {formatTime(item.start_time)}
                         {item.end_time && ` — ${formatTime(item.end_time)}`}
                       </span>
                     )}
                     {item.location && (
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />{item.location}
+                        <MapPin className="w-3.5 h-3.5" />{item.location}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Action buttons */}
-                <div className="flex items-center gap-1.5 shrink-0">
+                {/* Action buttons — large touch targets */}
+                <div className="flex items-center gap-2 shrink-0">
                   {isSaving ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   ) : (
                     <>
                       <Button
-                        size="sm"
+                        size="lg"
                         variant={currentStatus === 'available' ? 'default' : 'outline'}
-                        className={`text-xs gap-1 ${currentStatus === 'available' ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' : ''}`}
+                        className={`text-sm gap-1.5 min-h-[48px] ${currentStatus === 'available' ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' : ''}`}
                         onClick={() => handleSetStatus(item, 'available')}
                       >
-                        <Check className="w-3.5 h-3.5" />
+                        <Check className="w-4 h-4" />
                         <span className="hidden sm:inline">{l.available}</span>
                       </Button>
                       <Button
-                        size="sm"
+                        size="lg"
                         variant={currentStatus === 'maybe' ? 'default' : 'outline'}
-                        className={`text-xs gap-1 ${currentStatus === 'maybe' ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500' : ''}`}
+                        className={`text-sm gap-1.5 min-h-[48px] ${currentStatus === 'maybe' ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500' : ''}`}
                         onClick={() => handleSetStatus(item, 'maybe')}
                       >
-                        <HelpCircle className="w-3.5 h-3.5" />
+                        <HelpCircle className="w-4 h-4" />
                         <span className="hidden sm:inline">{l.maybe}</span>
                       </Button>
                       <Button
-                        size="sm"
+                        size="lg"
                         variant={currentStatus === 'unavailable' ? 'default' : 'outline'}
-                        className={`text-xs gap-1 ${currentStatus === 'unavailable' ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground border-destructive' : ''}`}
+                        className={`text-sm gap-1.5 min-h-[48px] ${currentStatus === 'unavailable' ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground border-destructive' : ''}`}
                         onClick={() => handleSetStatus(item, 'unavailable')}
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-4 h-4" />
                         <span className="hidden sm:inline">{l.unavailable}</span>
                       </Button>
                     </>
