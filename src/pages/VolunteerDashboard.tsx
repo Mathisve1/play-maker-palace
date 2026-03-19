@@ -17,6 +17,7 @@ import VolunteerMonthlyTab from '@/components/VolunteerMonthlyTab';
 import VolunteerContractsTab from '@/components/volunteer/VolunteerContractsTab';
 import VolunteerPaymentsTab from '@/components/volunteer/VolunteerPaymentsTab';
 import VolunteerDashboardHome from '@/components/volunteer/VolunteerDashboardHome';
+import VolunteerClubTasksBrowser from '@/components/volunteer/VolunteerClubTasksBrowser';
 import VolunteerTasksList from '@/components/volunteer/VolunteerTasksList';
 import VolunteerGrowTab from '@/components/volunteer/VolunteerGrowTab';
 import VolunteerTicketsTab from '@/components/volunteer/VolunteerTicketsTab';
