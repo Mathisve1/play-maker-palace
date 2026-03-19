@@ -10,9 +10,9 @@ type Role = 'volunteer' | 'club' | 'partner';
 const volunteerTabs = (l: Record<string, string>) => [
   { icon: Home, label: l.home, path: '/dashboard', match: ['/dashboard'] },
   { icon: ClipboardList, label: l.tasks, path: '/dashboard?tab=mine', match: [] },
-  { icon: Ticket, label: l.tickets, path: '/dashboard?tab=tickets', match: [] },
+  { icon: CalendarPlus, label: l.calendar, path: '/dashboard?tab=monthly', match: [] },
   { icon: MessageCircle, label: l.chat, path: '/chat', match: ['/chat'] },
-  { icon: User, label: l.profile, path: '/dashboard?tab=profile', match: [] },
+  { icon: User, label: l.profile, path: '/dashboard?tab=contracts', match: [] },
 ];
 
 const clubTabs = (l: Record<string, string>) => [
