@@ -59,8 +59,16 @@ const BottomTabBar = () => {
   const tabs = role === 'club' ? clubTabs(l) : role === 'partner' ? partnerTabs(l) : volunteerTabs(l);
 
   const isActive = (tab: typeof tabs[0]) => {
+    const fullUrl = location.pathname + location.search;
+    // Exact match for query-param tabs
+    if (tab.path.includes('?')) {
+      return fullUrl === tab.path;
+    }
+    // Path-prefix match for simple routes
     if (tab.match && tab.match.length > 0) {
-      return tab.match.some(m => location.pathname.startsWith(m));
+      // Only match if there's no tab query param (so /dashboard matches Home but not /dashboard?tab=mine)
+      const hasTabParam = new URLSearchParams(location.search).has('tab');
+      return !hasTabParam && tab.match.some(m => location.pathname.startsWith(m));
     }
     return false;
   };
