@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, ClipboardList, MessageCircle, User, Ticket, Inbox, Users, CalendarPlus, BarChart3, UserCheck, Handshake } from 'lucide-react';
+import { Home, ClipboardList, MessageCircle, User, Inbox, Users, CalendarPlus, BarChart3, UserCheck, Handshake, FileSignature } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
