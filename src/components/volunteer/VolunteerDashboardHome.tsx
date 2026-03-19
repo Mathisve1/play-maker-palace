@@ -18,7 +18,7 @@ import CalendarSyncSection from '@/components/CalendarSyncSection';
 import ReferralSection from '@/components/ReferralSection';
 import NearbyClubsWidget from '@/components/community/NearbyClubsWidget';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
-import EventGroupChat from '@/components/EventGroupChat';
+
 import TodayPlanningSection from '@/components/volunteer/TodayPlanningSection';
 import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -889,9 +889,6 @@ const VolunteerDashboardHome = ({
       {/* ═══ SECTION 6 — ACTIVITEITEN & COMPLIANCE ═══ */}
       <VolunteerActivitiesSection items={activityItemsTyped} language={language} />
       {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
-      {currentUserId && todayAssignedEvents.map(event => (
-        <EventGroupChat key={event.id} eventId={event.id} eventTitle={event.title} userId={currentUserId} language={language} />
-      ))}
 
       {/* Safety Sheet */}
       <Sheet open={safetySheetOpen} onOpenChange={setSafetySheetOpen}>
