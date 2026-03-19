@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { trackEvent } from '@/lib/posthog';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
@@ -129,6 +129,7 @@ interface EventGroup {
 const VolunteerDashboard = () => {
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [signups, setSignups] = useState<TaskSignup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +138,12 @@ const VolunteerDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<VolunteerTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<VolunteerTab>(() => {
+    const urlTab = searchParams.get('tab');
+    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments', 'grow', 'tickets' as VolunteerTab, 'profile' as VolunteerTab];
+    if (urlTab && validTabs.includes(urlTab as VolunteerTab)) return urlTab as VolunteerTab;
+    return 'dashboard';
+  });
   
   const [_signingContract, _setSigningContract] = useState<string | null>(null);
   const [myPayments, setMyPayments] = useState<VolunteerPayment[]>([]);
@@ -168,6 +174,16 @@ const VolunteerDashboard = () => {
   const [loyaltyEnrollments, setLoyaltyEnrollments] = useState<Record<string, { id: string; tasks_completed: number; points_earned: number; reward_claimed: boolean }>>({});
   const [enrollingProgram, setEnrollingProgram] = useState<string | null>(null);
   const [badgeRefreshKey, setBadgeRefreshKey] = useState(0);
+
+  // Sync tab from URL search params
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab as VolunteerTab);
+    } else if (!urlTab && activeTab !== 'dashboard') {
+      setActiveTab('dashboard');
+    }
+  }, [searchParams]);
 
   const { data: complianceData } = useComplianceData(currentUserId || null);
 

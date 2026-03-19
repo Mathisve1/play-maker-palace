@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, ClipboardList, MessageCircle, User, Ticket, Inbox, Users, CalendarPlus, BarChart3, UserCheck, Handshake } from 'lucide-react';
+import { Home, ClipboardList, MessageCircle, User, Inbox, Users, CalendarPlus, BarChart3, UserCheck, Handshake, FileSignature } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -10,9 +10,9 @@ type Role = 'volunteer' | 'club' | 'partner';
 const volunteerTabs = (l: Record<string, string>) => [
   { icon: Home, label: l.home, path: '/dashboard', match: ['/dashboard'] },
   { icon: ClipboardList, label: l.tasks, path: '/dashboard?tab=mine', match: [] },
-  { icon: Ticket, label: l.tickets, path: '/dashboard?tab=tickets', match: [] },
+  { icon: CalendarPlus, label: l.calendar, path: '/dashboard?tab=monthly', match: [] },
   { icon: MessageCircle, label: l.chat, path: '/chat', match: ['/chat'] },
-  { icon: User, label: l.profile, path: '/dashboard?tab=profile', match: [] },
+  { icon: FileSignature, label: l.profile, path: '/dashboard?tab=contracts', match: [] },
 ];
 
 const clubTabs = (l: Record<string, string>) => [
@@ -32,9 +32,9 @@ const partnerTabs = (l: Record<string, string>) => [
 ];
 
 const tabLabels: Record<Language, Record<string, string>> = {
-  nl: { home: 'Home', tasks: 'Taken', tickets: 'Tickets', chat: 'Chat', profile: 'Profiel', actions: 'Acties', events: 'Events', volunteers: 'Vrijwilligers', attendance: 'Aanwezigheid', staff: 'Team' },
-  fr: { home: 'Accueil', tasks: 'Tâches', tickets: 'Tickets', chat: 'Chat', profile: 'Profil', actions: 'Actions', events: 'Événements', volunteers: 'Bénévoles', attendance: 'Présences', staff: 'Équipe' },
-  en: { home: 'Home', tasks: 'Tasks', tickets: 'Tickets', chat: 'Chat', profile: 'Profile', actions: 'Actions', events: 'Events', volunteers: 'Volunteers', attendance: 'Attendance', staff: 'Staff' },
+  nl: { home: 'Home', tasks: 'Taken', calendar: 'Kalender', chat: 'Chat', profile: 'Contracten', actions: 'Acties', events: 'Events', volunteers: 'Vrijwilligers', attendance: 'Aanwezigheid', staff: 'Team' },
+  fr: { home: 'Accueil', tasks: 'Tâches', calendar: 'Calendrier', chat: 'Chat', profile: 'Contrats', actions: 'Actions', events: 'Événements', volunteers: 'Bénévoles', attendance: 'Présences', staff: 'Équipe' },
+  en: { home: 'Home', tasks: 'Tasks', calendar: 'Calendar', chat: 'Chat', profile: 'Contracts', actions: 'Actions', events: 'Events', volunteers: 'Volunteers', attendance: 'Attendance', staff: 'Staff' },
 };
 
 function detectRole(pathname: string): Role | null {
@@ -59,8 +59,16 @@ const BottomTabBar = () => {
   const tabs = role === 'club' ? clubTabs(l) : role === 'partner' ? partnerTabs(l) : volunteerTabs(l);
 
   const isActive = (tab: typeof tabs[0]) => {
+    const fullUrl = location.pathname + location.search;
+    // Exact match for query-param tabs
+    if (tab.path.includes('?')) {
+      return fullUrl === tab.path;
+    }
+    // Path-prefix match for simple routes
     if (tab.match && tab.match.length > 0) {
-      return tab.match.some(m => location.pathname.startsWith(m));
+      // Only match if there's no tab query param (so /dashboard matches Home but not /dashboard?tab=mine)
+      const hasTabParam = new URLSearchParams(location.search).has('tab');
+      return !hasTabParam && tab.match.some(m => location.pathname.startsWith(m));
     }
     return false;
   };
