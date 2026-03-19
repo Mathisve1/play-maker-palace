@@ -141,7 +141,7 @@ const VolunteerDashboard = () => {
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<VolunteerTab>(() => {
     const urlTab = searchParams.get('tab');
-    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments', 'grow', 'tickets' as VolunteerTab, 'profile' as VolunteerTab];
+    const validTabs: VolunteerTab[] = ['dashboard', 'mine', 'monthly', 'contracts', 'payments', 'grow', 'tickets' as VolunteerTab, 'profile' as VolunteerTab, 'club-tasks' as VolunteerTab];
     if (urlTab && validTabs.includes(urlTab as VolunteerTab)) return urlTab as VolunteerTab;
     return 'dashboard';
   });
