@@ -889,9 +889,6 @@ const VolunteerDashboardHome = ({
       {/* ═══ SECTION 6 — ACTIVITEITEN & COMPLIANCE ═══ */}
       <VolunteerActivitiesSection items={activityItemsTyped} language={language} />
       {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
-      {currentUserId && todayAssignedEvents.map(event => (
-        <EventGroupChat key={event.id} eventId={event.id} eventTitle={event.title} userId={currentUserId} language={language} />
-      ))}
 
       {/* Safety Sheet */}
       <Sheet open={safetySheetOpen} onOpenChange={setSafetySheetOpen}>
