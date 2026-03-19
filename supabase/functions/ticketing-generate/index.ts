@@ -1056,7 +1056,7 @@ Deno.serve(async (req) => {
           response_payload: result,
           status: "success",
         });
-        return new Response(JSON.stringify({ success: true, ...result }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ ...result, success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       } catch (e: any) {
         await supabase.from("ticketing_logs").insert({
           club_id,
