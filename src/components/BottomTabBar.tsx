@@ -12,7 +12,7 @@ const volunteerTabs = (l: Record<string, string>) => [
   { icon: ClipboardList, label: l.tasks, path: '/dashboard?tab=mine', match: [] },
   { icon: CalendarPlus, label: l.calendar, path: '/dashboard?tab=monthly', match: [] },
   { icon: MessageCircle, label: l.chat, path: '/chat', match: ['/chat'] },
-  { icon: User, label: l.profile, path: '/dashboard?tab=contracts', match: [] },
+  { icon: FileSignature, label: l.profile, path: '/dashboard?tab=contracts', match: [] },
 ];
 
 const clubTabs = (l: Record<string, string>) => [
