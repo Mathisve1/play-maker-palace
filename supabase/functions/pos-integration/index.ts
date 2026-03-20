@@ -17,7 +17,13 @@ const corsHeaders = {
  *   { "action": "VERIFY" | "CONSUME_CANTEEN", "card_uid": "<string>", "amount_eur"?: number }
  *
  * VERIFY response:
- *   { success: true, user_id, full_name, canteen_balance_eur, fanshop_discount_active }
+ *   {
+ *     success: true,
+ *     user_id, full_name, canteen_balance_eur, fanshop_discount_active,
+ *     checked_in_tasks: [{ task_id, task_title, start_time, location }]
+ *     // checked_in_tasks is non-empty when the scan auto-checked the volunteer
+ *     // into upcoming/ongoing task(s) on the Live Command Center.
+ *   }
  *
  * CONSUME_CANTEEN response (success):
  *   { success: true, canteen_balance_eur: <remaining> }
@@ -105,16 +111,30 @@ serve(async (req) => {
   // ── 4a. VERIFY — return volunteer info + reward balances ─────────────────
 
   if (action === 'VERIFY') {
-    const [profileRes, rewardsRes] = await Promise.all([
+    // Run profile lookup, rewards lookup, and attendance auto-check-in in parallel.
+    // auto_checkin_on_card_scan() finds any task starting within 120 min (or ongoing)
+    // and flips attendance_status → 'checked_in', making the gray dot turn green
+    // on the Live Command Center instantly — no app interaction needed from the volunteer.
+    const [profileRes, rewardsRes, checkinRes] = await Promise.all([
       supabase.from('profiles').select('full_name').eq('id', userId).single(),
       supabase.from('volunteer_rewards')
         .select('canteen_balance_eur, fanshop_discount_active')
         .eq('user_id', userId)
         .eq('club_id', clubId)
         .maybeSingle(),
+      supabase.rpc('auto_checkin_on_card_scan', {
+        p_user_id: userId,
+        p_club_id: clubId,
+      }),
     ]);
 
-    const rewards = rewardsRes.data;
+    if (checkinRes.error) {
+      // Non-fatal: log but don't fail the VERIFY response
+      console.error('auto_checkin_on_card_scan error:', checkinRes.error);
+    }
+
+    const rewards      = rewardsRes.data;
+    const checkedInTasks = checkinRes.data ?? [];
 
     return json({
       success: true,
@@ -122,6 +142,9 @@ serve(async (req) => {
       full_name:                profileRes.data?.full_name || 'Onbekend',
       canteen_balance_eur:      rewards?.canteen_balance_eur      ?? 0,
       fanshop_discount_active:  rewards?.fanshop_discount_active  ?? false,
+      checked_in_tasks:         checkedInTasks,
+      // checked_in_tasks is [] when no upcoming task found,
+      // or [{ task_id, task_title, start_time, location }] for each auto-checked task.
     });
   }
 
