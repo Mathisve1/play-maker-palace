@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, CalendarDays, Wallet, Trophy, GraduationCap,
-  MapPin, CalendarSync, Gift, ListChecks,
+  MapPin, CalendarSync, Gift, ListChecks, Heart,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -19,6 +19,7 @@ import ReferralSection from '@/components/ReferralSection';
 import NearbyClubsWidget from '@/components/community/NearbyClubsWidget';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
+import BuddiesCard from '@/components/volunteer/BuddiesCard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -63,6 +64,8 @@ const PAGE_LABELS: Record<Language, Record<string, string>> = {
     referralDesc: 'Nodig vrienden uit en verdien beloningen',
     preferences: 'Taakaanbevelingen',
     preferencesDesc: 'Stel in welke taken het beste bij jou passen',
+    buddies: '👫 Mijn Vaste Maatjes',
+    buddiesDesc: 'Werk samen met een vast maatje — jij kiest wie, de club ziet wie er al meedoet',
   },
   fr: {
     title: 'Mes Détails & Préférences',
@@ -83,6 +86,8 @@ const PAGE_LABELS: Record<Language, Record<string, string>> = {
     referralDesc: 'Invitez des amis et gagnez des récompenses',
     preferences: 'Recommandations de tâches',
     preferencesDesc: 'Configurez quelles tâches vous conviennent le mieux',
+    buddies: '👫 Mes Équipiers Fixes',
+    buddiesDesc: 'Travaillez avec un équipier fixe — vous choisissez, le club voit qui participe',
   },
   en: {
     title: 'My Details & Preferences',
@@ -103,6 +108,8 @@ const PAGE_LABELS: Record<Language, Record<string, string>> = {
     referralDesc: 'Invite friends and earn rewards',
     preferences: 'Task recommendations',
     preferencesDesc: 'Configure which tasks suit you best',
+    buddies: '👫 My Regular Buddies',
+    buddiesDesc: 'Work with a regular buddy — you choose who, the club sees who\'s joining',
   },
 };
 
@@ -270,7 +277,16 @@ const VolunteerDetails = () => {
           </div>
         </SectionCard>
 
-        {/* 4 — Skills & Academy */}
+        {/* 4 — Buddies */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.17 }}
+        >
+          <BuddiesCard userId={userId} language={language as Language} />
+        </motion.div>
+
+        {/* 5 — Skills & Academy */}
         <SectionCard
           delay={0.2}
           headerBg="bg-violet-500/5"

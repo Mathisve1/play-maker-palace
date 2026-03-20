@@ -3,11 +3,12 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Calendar, Search, CheckCircle, Clock, CircleDot,
-  CreditCard, MapPinned, ClipboardList, Users,
+  CreditCard, MapPinned, ClipboardList, Users, AlertTriangle,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { VolunteerTask, TaskSignup, SignatureContract } from '@/types/volunteer';
 import { Language } from '@/i18n/translations';
+import ShiftSwapModal from './ShiftSwapModal';
 
 type FilterMode = 'upcoming' | 'completed' | 'all';
 
@@ -30,6 +31,9 @@ const VolunteerTasksList = ({
   const [filter, setFilter] = useState<FilterMode>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [zoneMap, setZoneMap] = useState<Record<string, string>>({});
+  const [swapTarget, setSwapTarget] = useState<{ id: string; title: string; date?: string | null } | null>(null);
+  // Track tasks that have an active searching swap (to show a "searching" badge)
+  const [activeSwapTaskIds, setActiveSwapTaskIds] = useState<Set<string>>(new Set());
 
   const locale = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
 
@@ -52,6 +56,23 @@ const VolunteerTasksList = ({
           if (taskId && zoneName) map[taskId] = zoneName;
         });
         setZoneMap(map);
+      }
+    };
+    load();
+  }, [currentUserId, myTaskIds.length]);
+
+  // Load active shift swaps for this user's tasks
+  useEffect(() => {
+    if (!currentUserId || myTaskIds.length === 0) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from('shift_swaps')
+        .select('task_id')
+        .eq('original_user_id', currentUserId)
+        .eq('status', 'searching')
+        .in('task_id', myTaskIds);
+      if (data) {
+        setActiveSwapTaskIds(new Set(data.map(r => r.task_id)));
       }
     };
     load();
@@ -136,7 +157,7 @@ const VolunteerTasksList = ({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-5 relative">
       {/* Header */}
       <h1 className="text-2xl font-heading font-bold text-foreground">
         {t3(language, 'Mijn Taken', 'Mes tâches', 'My Tasks')}
@@ -206,14 +227,23 @@ const VolunteerTasksList = ({
             const zoneName = zoneMap[task.id];
             const hasExpense = task.expense_reimbursement && task.expense_amount;
 
+            const isUpcoming = status !== 'completed' && (
+              !task.task_date || new Date(task.task_date) >= new Date(Date.now() - 24 * 60 * 60 * 1000)
+            );
+            const hasActiveSwap = activeSwapTaskIds.has(task.id);
+
             return (
               <motion.div
                 key={task.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
-                onClick={() => navigate(`/task/${task.id}`)}
-                className="bg-card rounded-2xl p-4 sm:p-5 shadow-sm border border-border hover:shadow-md hover:border-primary/20 transition-all cursor-pointer"
+                className={`bg-card rounded-2xl p-4 sm:p-5 shadow-sm border transition-all ${
+                  hasActiveSwap
+                    ? 'border-orange-400 dark:border-orange-600'
+                    : 'border-border hover:shadow-md hover:border-primary/20 cursor-pointer'
+                }`}
+                onClick={hasActiveSwap ? undefined : () => navigate(`/task/${task.id}`)}
               >
                 {/* Club row */}
                 <div className="flex items-center gap-2 mb-2">
@@ -285,11 +315,48 @@ const VolunteerTasksList = ({
                       €{task.expense_amount}
                     </span>
                   )}
+
+                  {/* Active swap badge */}
+                  {hasActiveSwap && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                      <AlertTriangle className="w-3 h-3" />
+                      {t3(language, 'Vervanger gezocht', 'Remplaçant cherché', 'Seeking replacement')}
+                    </span>
+                  )}
                 </div>
+
+                {/* Vervanging Nodig button — upcoming tasks only, no active swap */}
+                {isUpcoming && !hasActiveSwap && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSwapTarget({ id: task.id, title: task.title, date: task.task_date });
+                    }}
+                    className="mt-4 w-full h-12 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-base flex items-center justify-center gap-2 transition-colors shadow-sm shadow-red-600/20"
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    {t3(language, 'Vervanging Nodig', 'Remplacement Nécessaire', 'Need a Replacement')}
+                  </button>
+                )}
               </motion.div>
             );
           })}
         </div>
+      )}
+
+      {/* Shift Swap Modal */}
+      {swapTarget && (
+        <ShiftSwapModal
+          taskId={swapTarget.id}
+          taskTitle={swapTarget.title}
+          taskDate={swapTarget.date}
+          userId={currentUserId}
+          language={language}
+          onClose={() => setSwapTarget(null)}
+          onSuccess={() => {
+            setActiveSwapTaskIds(prev => new Set([...prev, swapTarget.id]));
+          }}
+        />
       )}
     </div>
   );

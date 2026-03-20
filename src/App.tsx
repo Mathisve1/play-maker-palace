@@ -75,6 +75,8 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const VolunteerDetails = lazy(() => import("./pages/VolunteerDetails"));
+const DonationGoals = lazy(() => import("./pages/DonationGoals"));
+const ShiftSwapDetail = lazy(() => import("./pages/ShiftSwapDetail"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -185,6 +187,8 @@ const App = () => {
             <Route path="/terms" element={<TermsOfUse />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/volunteer-details" element={<RequireAuth><VolunteerDetails /></RequireAuth>} />
+            <Route path="/club-dashboard/donations" element={<RequireAuth><DonationGoals /></RequireAuth>} />
+            <Route path="/shift-swap/:id" element={<RequireAuth><ShiftSwapDetail /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

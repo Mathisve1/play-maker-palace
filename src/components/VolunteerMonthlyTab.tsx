@@ -159,6 +159,8 @@ const labels: Record<Language, Record<string, string>> = {
     myRegularTasks: 'Mijn aangemelde taken',
     noClubMembership: 'Je bent nog geen lid van een club.',
     signUpConfirm: 'Aanmelden',
+    buddyAlso: 'Gezellig samen met',
+    buddyAlsoSuffix: '!',
     // Briefings tab
     briefings: 'Mijn Briefings',
     planning: 'Planning',
@@ -204,6 +206,8 @@ const labels: Record<Language, Record<string, string>> = {
     myRegularTasks: 'Mes tâches inscrites',
     noClubMembership: "Vous n'êtes pas encore membre d'un club.",
     signUpConfirm: "S'inscrire",
+    buddyAlso: 'Super avec',
+    buddyAlsoSuffix: ' !',
     briefings: 'Mes Briefings',
     planning: 'Planning',
   },
@@ -248,6 +252,8 @@ const labels: Record<Language, Record<string, string>> = {
     myRegularTasks: 'My signed-up tasks',
     noClubMembership: 'You are not a member of any club yet.',
     signUpConfirm: 'Sign up',
+    buddyAlso: 'Fun together with',
+    buddyAlsoSuffix: '!',
     briefings: 'My Briefings',
     planning: 'Planning',
   },
@@ -291,6 +297,8 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
   const [myTaskSignups, setMyTaskSignups] = useState<MyTaskSignup[]>([]);
   const [loadingClubTasks, setLoadingClubTasks] = useState(false);
   const [signingUpTaskId, setSigningUpTaskId] = useState<string | null>(null);
+  const [buddyTaskIds, setBuddyTaskIds] = useState<Set<string>>(new Set());
+  const [buddyName, setBuddyName] = useState<string | null>(null);
 
   // Dialog state
   const [showHoursDialog, setShowHoursDialog] = useState(false);
@@ -369,9 +377,54 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
       .gte('task_date', today)
       .order('task_date');
 
-    setClubTasks(
-      ((openTasks || []) as unknown as ClubTask[]).filter(t => !signedUpTaskIds.has(t.id))
-    );
+    const filteredClubTasks = ((openTasks || []) as unknown as ClubTask[]).filter(t => !signedUpTaskIds.has(t.id));
+    setClubTasks(filteredClubTasks);
+
+    // ── Phase 3: buddy highlight + sort ──────────────────────────────────────
+    const { data: buddyRows } = await supabase
+      .from('volunteer_buddies')
+      .select('requester_id, receiver_id, status')
+      .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
+      .eq('status', 'accepted')
+      .limit(1);
+
+    if (buddyRows && buddyRows.length > 0) {
+      const row = buddyRows[0];
+      const buddyId = row.requester_id === userId ? row.receiver_id : row.requester_id;
+
+      // Fetch buddy's name
+      const { data: buddyProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', buddyId)
+        .single();
+      setBuddyName(buddyProfile?.full_name || null);
+
+      const openTaskIds = filteredClubTasks.map(t => t.id);
+      if (openTaskIds.length > 0) {
+        const { data: buddySignups } = await supabase
+          .from('task_signups')
+          .select('task_id')
+          .eq('volunteer_id', buddyId)
+          .in('task_id', openTaskIds);
+        const ids = new Set((buddySignups || []).map((s: any) => s.task_id));
+        setBuddyTaskIds(ids);
+
+        // Sort: buddy tasks first, then by task_date
+        if (ids.size > 0) {
+          setClubTasks([
+            ...filteredClubTasks.filter(t => ids.has(t.id)),
+            ...filteredClubTasks.filter(t => !ids.has(t.id)),
+          ]);
+        }
+      } else {
+        setBuddyTaskIds(new Set());
+      }
+    } else {
+      setBuddyName(null);
+      setBuddyTaskIds(new Set());
+    }
+
     setLoadingClubTasks(false);
   };
 
@@ -916,8 +969,9 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                       <CardContent className="space-y-3">
                         {clubTasks.map(task => {
                           const isSigningUp = signingUpTaskId === task.id;
+                          const buddyJoining = buddyTaskIds.has(task.id);
                           return (
-                            <div key={task.id} className="flex items-start gap-4 p-4 rounded-xl border bg-card hover:bg-muted/30 transition-colors">
+                            <div key={task.id} className={`flex items-start gap-4 p-4 rounded-xl border transition-colors ${buddyJoining ? 'border-2 border-pink-400 bg-pink-50 dark:bg-pink-950/20 shadow-sm' : 'border bg-card hover:bg-muted/30'}`}>
                               {/* Club logo */}
                               <div className="shrink-0 mt-0.5">
                                 {task.clubs?.logo_url ? (
@@ -930,6 +984,13 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-base text-foreground">{task.title}</p>
+                                {buddyJoining && (
+                                  <div className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full bg-pink-100 border border-pink-300 text-pink-800 text-sm font-bold">
+                                    <span>🧡</span>
+                                    <span>{l.buddyAlso} {buddyName || '…'}{l.buddyAlsoSuffix}</span>
+                                  </div>
+                                )}
+                                <div>
                                 {task.clubs?.name && (
                                   <p className="text-sm text-primary font-medium mt-0.5">{task.clubs.name}</p>
                                 )}
@@ -947,6 +1008,7 @@ const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => 
                                 {task.description && (
                                   <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{task.description}</p>
                                 )}
+                                </div>{/* close wrapping div */}
                               </div>
                               <Button
                                 size="sm"

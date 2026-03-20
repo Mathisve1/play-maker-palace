@@ -61,6 +61,8 @@ const VolunteerManagement = () => {
   const [bulkContractTypes, setBulkContractTypes] = useState<Set<ContractTypeKey>>(new Set());
   const [filterMemberType, setFilterMemberType] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Part B: predicted sub-locations — volunteer_id → most-recent predicted slot for this club
+  const [predictedSlots, setPredictedSlots] = useState<Record<string, string>>({});
 
   // Auto-create season on first load
   const ensureSeason = useCallback(async () => {
@@ -230,6 +232,37 @@ const VolunteerManagement = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Part B: load most-recent predicted sub-location per volunteer for this club's tasks
+  useEffect(() => {
+    if (!clubId || volunteers.length === 0) return;
+    const load = async () => {
+      // Get all task IDs for this club
+      const { data: taskIds } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('club_id', clubId);
+      if (!taskIds || taskIds.length === 0) return;
+
+      const ids = taskIds.map(t => t.id);
+      const { data: rows } = await supabase
+        .from('task_signups')
+        .select('volunteer_id, predicted_sub_location, created_at')
+        .in('task_id', ids)
+        .not('predicted_sub_location', 'is', null)
+        .order('created_at', { ascending: false });
+
+      // Keep only the most recent prediction per volunteer
+      const map: Record<string, string> = {};
+      (rows || []).forEach((r: any) => {
+        if (!map[r.volunteer_id] && r.predicted_sub_location) {
+          map[r.volunteer_id] = r.predicted_sub_location;
+        }
+      });
+      setPredictedSlots(map);
+    };
+    load();
+  }, [clubId, volunteers.length]);
 
   const categoryLabels: Record<string, string> = {
     steward: 'Steward',
@@ -578,6 +611,18 @@ const VolunteerManagement = () => {
                               {ct.replace('_', ' ')}
                             </span>
                           ))}
+                        </div>
+                      )}
+                      {/* Part B: Predicted sub-location badge */}
+                      {predictedSlots[vol.id] && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-800/40">
+                            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                              <circle cx="12" cy="10" r="3" />
+                            </svg>
+                            {predictedSlots[vol.id]}
+                          </span>
                         </div>
                       )}
                     </div>

@@ -644,11 +644,27 @@ const VolunteerDashboard = () => {
       setSignups(prev => [...prev, { task_id: taskId, status: 'pending' }]);
       setSignupCounts(prev => ({ ...prev, [taskId]: (prev[taskId] || 0) + 1 }));
       setBadgeRefreshKey(k => k + 1);
-      // Push to club admins
+      // Push to club admins + run sub-location prediction (fire-and-forget)
       const { data: task } = await supabase.from('tasks').select('club_id, title').eq('id', taskId).maybeSingle();
       if (task?.club_id) {
         const volName = profile?.full_name || 'Vrijwilliger';
         sendPushToClub({ clubId: task.club_id, title: '📋 Nieuwe inschrijving', message: `${volName} heeft zich ingeschreven voor "${task.title}"`, url: '/club-dashboard', type: 'new_signup' });
+      }
+      // Part B: Predict sub-location from history and persist on the signup row
+      if (task?.title && currentUserId) {
+        supabase.rpc('predict_volunteer_sublocation', {
+          p_user_id: currentUserId,
+          p_task_title: task.title,
+        }).then(({ data: predicted }) => {
+          if (predicted) {
+            supabase
+              .from('task_signups')
+              .update({ predicted_sub_location: predicted })
+              .eq('task_id', taskId)
+              .eq('volunteer_id', currentUserId)
+              .then();
+          }
+        });
       }
     }
     setSigningUp(null);
@@ -822,7 +838,7 @@ const VolunteerDashboard = () => {
 
       {/* ===== PAYMENTS TAB ===== */}
       {activeTab === 'payments' && (
-        <VolunteerPaymentsTab sepaPayouts={sepaPayouts} payments={myPayments} language={language} />
+        <VolunteerPaymentsTab sepaPayouts={sepaPayouts} payments={myPayments} language={language} userId={currentUserId || undefined} />
       )}
 
       {/* ===== GROW TAB ===== */}
