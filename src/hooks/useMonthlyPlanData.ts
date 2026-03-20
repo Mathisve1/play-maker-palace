@@ -109,8 +109,10 @@ export function useMonthlyPlanData(viewYear: number, viewMonth: number, t3: (nl:
   const rejectDaySignup = async (signupId: string) => {
     const { error } = await supabase.from('monthly_day_signups').update({ status: 'rejected' }).eq('id', signupId);
     if (error) { toast.error(error.message); return; }
+    const ds = daySignups.find(s => s.id === signupId);
     setDaySignups(prev => prev.map(s => s.id === signupId ? { ...s, status: 'rejected' } : s));
     toast.success(t3('Dag-aanmelding afgewezen.', 'Inscription journalière refusée.', 'Day signup rejected.'));
+    if (ds) sendPush({ userId: ds.volunteer_id, title: '❌ Dag-aanmelding afgewezen', message: 'Je dag-aanmelding is helaas afgewezen.', url: '/dashboard', type: 'day_rejected' });
   };
 
   const generateTicketForSignup = async (signup: DaySignupClub) => {
