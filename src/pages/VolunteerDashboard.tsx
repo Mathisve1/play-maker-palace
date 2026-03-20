@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { trackEvent } from '@/lib/posthog';
+import { sendPushToClub } from '@/lib/sendPush';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -643,6 +644,12 @@ const VolunteerDashboard = () => {
       setSignups(prev => [...prev, { task_id: taskId, status: 'pending' }]);
       setSignupCounts(prev => ({ ...prev, [taskId]: (prev[taskId] || 0) + 1 }));
       setBadgeRefreshKey(k => k + 1);
+      // Push to club admins
+      const { data: task } = await supabase.from('tasks').select('club_id, title').eq('id', taskId).maybeSingle();
+      if (task?.club_id) {
+        const volName = profile?.full_name || 'Vrijwilliger';
+        sendPushToClub({ clubId: task.club_id, title: '📋 Nieuwe inschrijving', message: `${volName} heeft zich ingeschreven voor "${task.title}"`, url: '/club-dashboard', type: 'new_signup' });
+      }
     }
     setSigningUp(null);
   };
@@ -653,6 +660,13 @@ const VolunteerDashboard = () => {
     if (error) { toast.error(error.message); } else {
       setSignups(prev => prev.filter(s => s.task_id !== taskId));
       setSignupCounts(prev => ({ ...prev, [taskId]: Math.max((prev[taskId] || 1) - 1, 0) }));
+      // Push to club admins for cancellation
+      const { data: task } = await supabase.from('tasks').select('club_id, title, task_date').eq('id', taskId).maybeSingle();
+      if (task?.club_id) {
+        const volName = profile?.full_name || 'Vrijwilliger';
+        const isUrgent = task.task_date && (new Date(task.task_date).getTime() - Date.now()) < 48 * 60 * 60 * 1000;
+        sendPushToClub({ clubId: task.club_id, title: isUrgent ? '⚠️ Dringende afmelding!' : '📋 Afmelding', message: `${volName} heeft zich afgemeld voor "${task.title}"`, url: '/club-dashboard', type: isUrgent ? 'urgent_cancellation' : 'cancellation' });
+      }
     }
   };
 

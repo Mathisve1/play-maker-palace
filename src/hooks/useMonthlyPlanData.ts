@@ -91,8 +91,10 @@ export function useMonthlyPlanData(viewYear: number, viewMonth: number, t3: (nl:
   const rejectEnrollment = async (enrollmentId: string) => {
     const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' }).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
+    const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'rejected' } : e));
     toast.success(t3('Inschrijving afgewezen.', 'Inscription refusée.', 'Enrollment rejected.'));
+    if (enr) sendPush({ userId: enr.volunteer_id, title: '❌ Inschrijving afgewezen', message: 'Je maandelijkse inschrijving is helaas afgewezen.', url: '/dashboard', type: 'enrollment_rejected' });
   };
 
   const assignDaySignup = async (signupId: string) => {
@@ -107,8 +109,10 @@ export function useMonthlyPlanData(viewYear: number, viewMonth: number, t3: (nl:
   const rejectDaySignup = async (signupId: string) => {
     const { error } = await supabase.from('monthly_day_signups').update({ status: 'rejected' }).eq('id', signupId);
     if (error) { toast.error(error.message); return; }
+    const ds = daySignups.find(s => s.id === signupId);
     setDaySignups(prev => prev.map(s => s.id === signupId ? { ...s, status: 'rejected' } : s));
     toast.success(t3('Dag-aanmelding afgewezen.', 'Inscription journalière refusée.', 'Day signup rejected.'));
+    if (ds) sendPush({ userId: ds.volunteer_id, title: '❌ Dag-aanmelding afgewezen', message: 'Je dag-aanmelding is helaas afgewezen.', url: '/dashboard', type: 'day_rejected' });
   };
 
   const generateTicketForSignup = async (signup: DaySignupClub) => {

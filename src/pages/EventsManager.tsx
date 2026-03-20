@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { sendPushToFollowers } from '@/lib/sendPush';
+import { sendPushToFollowers, sendPushToClubMembers } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -305,7 +305,10 @@ const EventsManager = () => {
       }
       toast.success(t3('Taak aangemaakt!', 'Tâche créée!', 'Task created!'));
       setTasks(prev => [...prev, data]); setShowCreateTask(false); resetNewTask(); setSelectedMonthlyPlanId('');
-      if (clubId) sendPushToFollowers({ clubId, title: '🆕 Nieuwe taak', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/community', type: 'club_new_task' });
+      if (clubId) {
+        sendPushToFollowers({ clubId, title: '🆕 Nieuwe taak', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/community', type: 'club_new_task' });
+        sendPushToClubMembers({ clubId, title: '🆕 Nieuwe taak beschikbaar', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/dashboard', type: 'new_task_available' });
+      }
     }
     setCreatingTask(false);
   };
@@ -339,7 +342,11 @@ const EventsManager = () => {
       event_id: addingTaskToGroup.eventId, event_group_id: addingTaskToGroup.groupId,
     } as any).select('id, title, task_date, location, spots_available, event_id, event_group_id').maybeSingle();
     if (error) toast.error(error.message);
-    else if (data) { toast.success(t3('Taak toegevoegd!', 'Tâche ajoutée!', 'Task added!')); setTasks(prev => [...prev, data]); setAddingTaskToGroup(null); setGroupTaskForm({ title: '', task_date: '', location: '', spots_available: 1 }); }
+    else if (data) {
+      toast.success(t3('Taak toegevoegd!', 'Tâche ajoutée!', 'Task added!'));
+      setTasks(prev => [...prev, data]); setAddingTaskToGroup(null); setGroupTaskForm({ title: '', task_date: '', location: '', spots_available: 1 });
+      if (clubId) sendPushToClubMembers({ clubId, title: '🆕 Nieuwe taak beschikbaar', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/dashboard', type: 'new_task_available' });
+    }
     setCreatingGroupTask(false);
   };
 

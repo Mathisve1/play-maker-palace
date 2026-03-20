@@ -1428,13 +1428,23 @@ Deno.serve(async (req) => {
         console.error("DB insert error:", dbError);
       }
 
-      // Notify volunteer
+      // Notify volunteer (in-app)
       await adminClient.from("notifications").insert({
         user_id: volunteer_id,
         title: "Nieuw seizoenscontract",
         message: `Je hebt een nieuw seizoenscontract (${tmpl.name}) ontvangen om te ondertekenen.`,
         type: "contract_sent",
       });
+
+      // Push notification to volunteer
+      try {
+        const pushUrl = `${supabaseUrl}/functions/v1/send-native-push`;
+        await fetch(pushUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${anonKey}` },
+          body: JSON.stringify({ user_id: volunteer_id, title: '📝 Nieuw contract!', message: `Er staat een nieuw seizoenscontract (${tmpl.name}) klaar om te ondertekenen.`, url: '/dashboard', type: 'contract_sent' }),
+        });
+      } catch (e) { console.warn('Push for contract_sent failed:', e); }
 
       console.log("Season contract created:", submissionId, "signing_url:", signingUrl);
 

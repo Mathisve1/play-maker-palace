@@ -130,3 +130,31 @@ export async function sendPushToFollowers(opts: {
     console.warn('[Push] sendPushToFollowers failed:', e);
   }
 }
+
+/**
+ * Send push to all active club members (vrijwilligers).
+ */
+export async function sendPushToClubMembers(opts: {
+  clubId: string;
+  title: string;
+  message: string;
+  url?: string;
+  type?: string;
+}) {
+  try {
+    const { data: members } = await supabase
+      .from('club_memberships')
+      .select('volunteer_id')
+      .eq('club_id', opts.clubId)
+      .eq('status', 'actief');
+
+    const uniqueIds = [...new Set((members || []).map(m => m.volunteer_id))];
+    await Promise.allSettled(
+      uniqueIds.map(uid =>
+        sendPush({ userId: uid, title: opts.title, message: opts.message, url: opts.url, type: opts.type })
+      )
+    );
+  } catch (e) {
+    console.warn('[Push] sendPushToClubMembers failed:', e);
+  }
+}

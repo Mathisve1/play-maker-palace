@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { sendPushToClub } from '@/lib/sendPush';
 import { Language } from '@/i18n/translations';
 import { MapPin, Calendar, Clock, Search, Users, ArrowLeft, Loader2, Heart, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -172,6 +173,11 @@ const VolunteerClubTasksBrowser = ({ language, userId, onBack }: Props) => {
     } else {
       setSignedUpIds(prev => new Set(prev).add(taskId));
       toast.success(l.success);
+      // Push to club admins
+      const task = tasks.find(t => t.id === taskId);
+      if (task?.club_id) {
+        sendPushToClub({ clubId: task.club_id, title: '📋 Nieuwe inschrijving', message: `Een vrijwilliger heeft zich ingeschreven voor "${task.title}"`, url: '/club-dashboard', type: 'new_signup' });
+      }
     }
     setSigningUp(null);
   };
