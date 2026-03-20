@@ -10,7 +10,7 @@ import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
   PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
-  FileText, Save, ClipboardCheck, Send, UserCheck, Zap,
+  FileText, Save, ClipboardCheck, Send, UserCheck, Zap, Wand2, Clock,
 } from 'lucide-react';
 import BulkMessageDialog from '@/components/BulkMessageDialog';
 import EventTemplateDialog from '@/components/EventTemplateDialog';
@@ -55,8 +55,10 @@ const EventsManager = () => {
 
   // Create event
   const [showCreateEvent, setShowCreateEvent] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' });
+  const [newEvent, setNewEvent] = useState({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '', kickoff_time: '', shift_template_id: '' });
   const [creatingEvent, setCreatingEvent] = useState(false);
+  const [shiftTemplates, setShiftTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
 
   // Create loose task
   const [showCreateTask, setShowCreateTask] = useState(false);
@@ -176,16 +178,18 @@ const EventsManager = () => {
       if (!cId) { setLoading(false); return; }
       setClubId(cId);
 
-      const [evRes, taskRes, tmplRes, mpRes] = await Promise.all([
+      const [evRes, taskRes, tmplRes, mpRes, stRes] = await Promise.all([
         supabase.from('events').select('*').eq('club_id', cId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
         supabase.from('tasks').select('id, title, task_date, location, spots_available, event_id, event_group_id, partner_only, assigned_partner_id, status, start_time, end_time').eq('club_id', cId).order('task_date', { ascending: true }),
         supabase.from('contract_templates').select('id, name').eq('club_id', cId).order('name'),
         supabase.from('monthly_plans').select('id, title, month, year, status').eq('club_id', cId).eq('status', 'open').order('year', { ascending: false }),
+        (supabase as any).from('shift_templates').select('id, name').eq('club_id', cId).order('name'),
       ]);
       setEvents(evRes.data || []);
       setTasks(taskRes.data || []);
       setContractTemplates(tmplRes.data || []);
       setMonthlyPlans((mpRes.data || []).map((p: any) => ({ id: p.id, title: p.title, month: p.month, year: p.year })));
+      setShiftTemplates(stRes.data || []);
 
       if (evRes.data?.length) {
         const eventIds = evRes.data.map((e: any) => e.id);
@@ -241,14 +245,28 @@ const EventsManager = () => {
     if (isDateInPast(newEvent.event_date)) { toast.error(pastDateError()); return; }
     setCreatingEvent(true);
     const locationStr = buildLocationString();
-    const { data, error } = await supabase.from('events').insert({
+    const { data, error } = await (supabase as any).from('events').insert({
       club_id: clubId, title: newEvent.title.trim(), description: newEvent.description.trim() || null,
       event_date: newEvent.event_date || null, location: locationStr,
-    } as any).select('*').maybeSingle();
-    if (error) toast.error(error.message);
-    else if (data) {
-      toast.success(t3('Evenement aangemaakt!', 'Événement créé!', 'Event created!'));
-      setEvents(prev => [data, ...prev]); setShowCreateEvent(false); setNewEvent({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '' });
+      kickoff_time: newEvent.kickoff_time || null,
+    }).select('*').maybeSingle();
+    if (error) { toast.error(error.message); setCreatingEvent(false); return; }
+    if (data) {
+      // Apply shift template if selected
+      if (newEvent.shift_template_id) {
+        setApplyingTemplate(true);
+        const { error: rpcError } = await (supabase as any).rpc('apply_shift_template_to_event', {
+          p_event_id: data.id, p_template_id: newEvent.shift_template_id,
+        });
+        if (rpcError) toast.error(t3('Sjabloon kon niet worden toegepast: ', 'Erreur lors de l\'application du modèle: ', 'Template error: ') + rpcError.message);
+        else toast.success(t3('Evenement aangemaakt en sjabloon toegepast!', 'Événement créé et modèle appliqué!', 'Event created and template applied!'));
+        setApplyingTemplate(false);
+      } else {
+        toast.success(t3('Evenement aangemaakt!', 'Événement créé!', 'Event created!'));
+      }
+      setEvents(prev => [data, ...prev]);
+      setShowCreateEvent(false);
+      setNewEvent({ title: '', description: '', event_date: '', location: '', street: '', number: '', postalCode: '', city: '', country: 'België', locationNote: '', kickoff_time: '', shift_template_id: '' });
       if (clubId) sendPushToFollowers({ clubId, title: '🆕 Nieuw evenement', message: `"${data.title}" is aangemaakt. Bekijk het in de community!`, url: '/community', type: 'club_new_event' });
     }
     setCreatingEvent(false);
@@ -707,6 +725,17 @@ const EventsManager = () => {
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Titel', 'Titre', 'Title')} *</label><input type="text" required maxLength={200} value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} className={inputClass} /></div>
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Beschrijving', 'Description', 'Description')}</label><textarea rows={2} value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} /></div>
                  <div className="sm:col-span-2"><label className={labelClass}>{t3('Datum', 'Date', 'Date')}</label><input type="datetime-local" min={todayMin} value={newEvent.event_date} onChange={e => setNewEvent(p => ({ ...p, event_date: e.target.value }))} className={inputClass} /></div>
+                 <div>
+                   <label className={labelClass}><Clock className="inline w-3 h-3 mr-1" />{t3('Aftrapuur (voor sjabloon)', 'Heure de coup d\'envoi', 'Kickoff time (for template)')}</label>
+                   <input type="time" value={newEvent.kickoff_time} onChange={e => setNewEvent(p => ({ ...p, kickoff_time: e.target.value }))} className={inputClass} placeholder="15:00" />
+                 </div>
+                 <div>
+                   <label className={labelClass}><Wand2 className="inline w-3 h-3 mr-1" />{t3('Shift-sjabloon (optioneel)', 'Modèle de shifts (optionnel)', 'Shift template (optional)')}</label>
+                   <select value={newEvent.shift_template_id} onChange={e => setNewEvent(p => ({ ...p, shift_template_id: e.target.value }))} className={inputClass}>
+                     <option value="">{t3('— Geen sjabloon —', '— Aucun modèle —', '— No template —')}</option>
+                     {shiftTemplates.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
+                   </select>
+                 </div>
                  <div className="sm:col-span-2">
                    <label className={labelClass}>{t3('Locatie', 'Lieu', 'Location')}</label>
                    <div className="grid gap-3 sm:grid-cols-4">
@@ -733,8 +762,9 @@ const EventsManager = () => {
               </div>
               <div className="flex justify-end gap-3 mt-6">
                  <button type="button" onClick={() => setShowCreateEvent(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{t3('Annuleren', 'Annuler', 'Cancel')}</button>
-                 <button type="submit" disabled={creatingEvent || !newEvent.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50">
-                   {creatingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : t3('Aanmaken', 'Créer', 'Create')}
+                 <button type="submit" disabled={creatingEvent || applyingTemplate || !newEvent.title.trim()} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
+                   {(creatingEvent || applyingTemplate) ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                   {applyingTemplate ? t3('Sjabloon toepassen...', 'Application du modèle...', 'Applying template...') : t3('Aanmaken', 'Créer', 'Create')}
                 </button>
               </div>
             </motion.form>
@@ -1187,6 +1217,9 @@ const EventsManager = () => {
                 </button>
                 <button onClick={() => loadTaskSetsForPicker(event.id)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-accent text-accent-foreground hover:bg-accent/80 transition-colors touch-target">
                   <FileText className="w-3.5 h-3.5" /> {t3('Taken uit set', 'Tâches depuis ensemble', 'Tasks from set')}
+                </button>
+                <button onClick={() => navigate(`/events/${event.id}`)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 text-white hover:opacity-90 transition-opacity touch-target shadow-sm">
+                  <Wand2 className="w-3.5 h-3.5" /> {t3('Auto-Vul Magie', 'Remplissage auto', 'Auto-Fill')}
                 </button>
               </div>
 
