@@ -33,12 +33,11 @@ const ShiftSwapApprovals = ({ clubId, language }: ShiftSwapApprovalsProps) => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase
         .from('shift_swaps')
-        .select('id, task_id, requester_id, target_id, reason, created_at')
-        .eq('club_id', clubId)
-        .eq('status', 'pending_club')
-        .order('created_at', { ascending: true });
+        .select('id, task_id, original_user_id, replacement_user_id, reason, created_at')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true }) as any);
 
       if (!data || data.length === 0) { setSwaps([]); setLoading(false); return; }
 

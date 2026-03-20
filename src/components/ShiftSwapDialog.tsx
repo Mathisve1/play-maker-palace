@@ -97,12 +97,12 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
     if (!selectedTarget) return;
     setSending(true);
     const { error } = await supabase.from('shift_swaps').insert({
-      club_id: clubId,
       task_id: taskId,
-      requester_id: currentUserId,
-      target_id: selectedTarget,
-      reason: reason.trim() || null,
-    });
+      original_user_id: currentUserId,
+      replacement_user_id: selectedTarget,
+      reason: reason.trim() || 'Shift ruil',
+      status: 'pending',
+    } as any);
     if (error) toast.error(error.message);
     else {
       toast.success(t3(language, 'Ruilverzoek verstuurd!', 'Demande envoyée!', 'Swap request sent!'));
