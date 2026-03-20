@@ -78,6 +78,7 @@ const VolunteerDetails = lazy(() => import("./pages/VolunteerDetails"));
 const DonationGoals = lazy(() => import("./pages/DonationGoals"));
 const ShiftSwapDetail = lazy(() => import("./pages/ShiftSwapDetail"));
 const KassaPasjesBeheer = lazy(() => import("./pages/KassaPasjesBeheer"));
+const ShiftTemplates = lazy(() => import("./pages/ShiftTemplates"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -191,6 +192,7 @@ const App = () => {
             <Route path="/club-dashboard/donations" element={<RequireAuth><DonationGoals /></RequireAuth>} />
             <Route path="/shift-swap/:id" element={<RequireAuth><ShiftSwapDetail /></RequireAuth>} />
             <Route path="/kassa-pasjes" element={<RequireAuth redirectTo="/club-login"><KassaPasjesBeheer /></RequireAuth>} />
+            <Route path="/shift-templates" element={<RequireAuth redirectTo="/club-login"><ShiftTemplates /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

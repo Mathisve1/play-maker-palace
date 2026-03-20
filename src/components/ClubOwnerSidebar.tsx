@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut,
   Search, User, Settings, MessageCircle, Bell, ShieldAlert, Ticket, Handshake,
-  CreditCard, Award, Heart, HelpCircle, ScanLine, X,
+  CreditCard, Award, Heart, HelpCircle, ScanLine, X, Layers,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -145,6 +145,7 @@ const ClubOwnerSidebar = ({
   ];
 
   const beheerItems = [
+    { label: t3('Sjablonen', 'Modèles', 'Templates'), icon: Layers, path: '/shift-templates' },
     { label: t3('Safety & Security', 'Sécurité', 'Safety & Security'), icon: ShieldAlert, path: '/safety' },
     { label: 'Ticketing', icon: Ticket, path: '/ticketing' },
     { label: t3('Partners', 'Partenaires', 'Partners'), icon: Handshake, path: '/external-partners' },
