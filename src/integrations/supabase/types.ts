@@ -1462,6 +1462,57 @@ export type Database = {
           },
         ]
       }
+      club_reward_settings: {
+        Row: {
+          club_id: string
+          created_at: string
+          fanshop_credit_enabled: boolean
+          fanshop_credit_per_shift: number
+          free_coffee_enabled: boolean
+          free_drinks_enabled: boolean
+          free_drinks_per_shift: number
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          fanshop_credit_enabled?: boolean
+          fanshop_credit_per_shift?: number
+          free_coffee_enabled?: boolean
+          free_drinks_enabled?: boolean
+          free_drinks_per_shift?: number
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          fanshop_credit_enabled?: boolean
+          fanshop_credit_per_shift?: number
+          free_coffee_enabled?: boolean
+          free_drinks_enabled?: boolean
+          free_drinks_per_shift?: number
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_reward_settings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_reward_settings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clubs: {
         Row: {
           allow_shift_swaps: boolean
