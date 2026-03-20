@@ -31,7 +31,7 @@ interface Task {
   location: string | null;
   event_id: string | null;
   club_id: string;
-  max_volunteers: number | null;
+  description?: string | null;
 }
 
 interface TaskSignup {
