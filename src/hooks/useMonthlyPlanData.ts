@@ -91,8 +91,10 @@ export function useMonthlyPlanData(viewYear: number, viewMonth: number, t3: (nl:
   const rejectEnrollment = async (enrollmentId: string) => {
     const { error } = await supabase.from('monthly_enrollments').update({ approval_status: 'rejected' }).eq('id', enrollmentId);
     if (error) { toast.error(error.message); return; }
+    const enr = enrollments.find(e => e.id === enrollmentId);
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, approval_status: 'rejected' } : e));
     toast.success(t3('Inschrijving afgewezen.', 'Inscription refusée.', 'Enrollment rejected.'));
+    if (enr) sendPush({ userId: enr.volunteer_id, title: '❌ Inschrijving afgewezen', message: 'Je maandelijkse inschrijving is helaas afgewezen.', url: '/dashboard', type: 'enrollment_rejected' });
   };
 
   const assignDaySignup = async (signupId: string) => {
