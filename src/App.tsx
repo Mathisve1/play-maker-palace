@@ -80,6 +80,7 @@ const ShiftSwapDetail = lazy(() => import("./pages/ShiftSwapDetail"));
 const KassaPasjesBeheer = lazy(() => import("./pages/KassaPasjesBeheer"));
 const ShiftTemplates = lazy(() => import("./pages/ShiftTemplates"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
+const LiveOpvolging = lazy(() => import("./pages/LiveOpvolging"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -195,6 +196,7 @@ const App = () => {
             <Route path="/kassa-pasjes" element={<RequireAuth redirectTo="/club-login"><KassaPasjesBeheer /></RequireAuth>} />
             <Route path="/shift-templates" element={<RequireAuth redirectTo="/club-login"><ShiftTemplates /></RequireAuth>} />
             <Route path="/events/:eventId" element={<RequireAuth redirectTo="/club-login"><EventDetail /></RequireAuth>} />
+            <Route path="/events/:eventId/live" element={<RequireAuth redirectTo="/club-login"><LiveOpvolging /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

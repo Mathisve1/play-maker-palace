@@ -10,7 +10,7 @@ import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
   PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
-  FileText, Save, ClipboardCheck, Send, UserCheck, Zap, Wand2, Clock,
+  FileText, Save, ClipboardCheck, Send, UserCheck, Zap, Wand2, Clock, Activity,
 } from 'lucide-react';
 import BulkMessageDialog from '@/components/BulkMessageDialog';
 import EventTemplateDialog from '@/components/EventTemplateDialog';
@@ -1220,6 +1220,9 @@ const EventsManager = () => {
                 </button>
                 <button onClick={() => navigate(`/events/${event.id}`)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 text-white hover:opacity-90 transition-opacity touch-target shadow-sm">
                   <Wand2 className="w-3.5 h-3.5" /> {t3('Auto-Vul Magie', 'Remplissage auto', 'Auto-Fill')}
+                </button>
+                <button onClick={() => navigate(`/events/${event.id}/live`)} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors touch-target shadow-sm">
+                  <Activity className="w-3.5 h-3.5" /> {t3('Live Opvolging', 'Suivi en direct', 'Go Live')}
                 </button>
               </div>
 
