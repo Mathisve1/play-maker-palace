@@ -1335,6 +1335,42 @@ export type Database = {
           },
         ]
       }
+      club_pos_settings: {
+        Row: {
+          club_id: string
+          created_at: string
+          pos_api_key: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          pos_api_key?: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          pos_api_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_pos_settings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_pos_settings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_referrals: {
         Row: {
           bonus_points_awarded: number
@@ -1673,6 +1709,106 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donation_goals: {
+        Row: {
+          club_id: string
+          created_at: string
+          description: string | null
+          id: string
+          raised_amount: number
+          status: string
+          target_amount: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          raised_amount?: number
+          status?: string
+          target_amount: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          raised_amount?: number
+          status?: string
+          target_amount?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_goals_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_goals_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donation_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          donation_goal_id: string
+          id: string
+          task_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          donation_goal_id: string
+          id?: string
+          task_id: string
+          volunteer_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          donation_goal_id?: string
+          id?: string
+          task_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_transactions_donation_goal_id_fkey"
+            columns: ["donation_goal_id"]
+            isOneToOne: false
+            referencedRelation: "donation_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_transactions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_transactions_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3489,6 +3625,65 @@ export type Database = {
         }
         Relationships: []
       }
+      reserve_lists: {
+        Row: {
+          club_id: string
+          created_at: string
+          event_date: string | null
+          event_id: string | null
+          id: string
+          task_type: string | null
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          event_date?: string | null
+          event_id?: string | null
+          id?: string
+          task_type?: string | null
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          event_date?: string | null
+          event_id?: string | null
+          id?: string
+          task_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reserve_lists_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reserve_lists_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reserve_lists_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reserve_lists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safety_checklist_items: {
         Row: {
           assigned_team_id: string | null
@@ -4403,60 +4598,51 @@ export type Database = {
       }
       shift_swaps: {
         Row: {
-          club_approved_at: string | null
-          club_approved_by: string | null
-          club_id: string
           created_at: string
           id: string
-          reason: string | null
-          requester_id: string
+          notified_at: string | null
+          original_user_id: string
+          reason: string
+          replacement_user_id: string | null
+          resolved_at: string | null
           status: string
-          target_id: string
-          target_responded_at: string | null
           task_id: string
-          updated_at: string
         }
         Insert: {
-          club_approved_at?: string | null
-          club_approved_by?: string | null
-          club_id: string
           created_at?: string
           id?: string
-          reason?: string | null
-          requester_id: string
+          notified_at?: string | null
+          original_user_id: string
+          reason: string
+          replacement_user_id?: string | null
+          resolved_at?: string | null
           status?: string
-          target_id: string
-          target_responded_at?: string | null
           task_id: string
-          updated_at?: string
         }
         Update: {
-          club_approved_at?: string | null
-          club_approved_by?: string | null
-          club_id?: string
           created_at?: string
           id?: string
-          reason?: string | null
-          requester_id?: string
+          notified_at?: string | null
+          original_user_id?: string
+          reason?: string
+          replacement_user_id?: string | null
+          resolved_at?: string | null
           status?: string
-          target_id?: string
-          target_responded_at?: string | null
           task_id?: string
-          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "shift_swaps_club_id_fkey"
-            columns: ["club_id"]
+            foreignKeyName: "shift_swaps_original_user_id_fkey"
+            columns: ["original_user_id"]
             isOneToOne: false
-            referencedRelation: "clubs"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "shift_swaps_club_id_fkey"
-            columns: ["club_id"]
+            foreignKeyName: "shift_swaps_replacement_user_id_fkey"
+            columns: ["replacement_user_id"]
             isOneToOne: false
-            referencedRelation: "clubs_safe"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -4662,25 +4848,31 @@ export type Database = {
         Row: {
           checked_in_at: string | null
           id: string
+          predicted_sub_location: string | null
           signed_up_at: string
           status: string
           task_id: string
+          thankyou_sent_at: string | null
           volunteer_id: string
         }
         Insert: {
           checked_in_at?: string | null
           id?: string
+          predicted_sub_location?: string | null
           signed_up_at?: string
           status?: string
           task_id: string
+          thankyou_sent_at?: string | null
           volunteer_id: string
         }
         Update: {
           checked_in_at?: string | null
           id?: string
+          predicted_sub_location?: string | null
           signed_up_at?: string
           status?: string
           task_id?: string
+          thankyou_sent_at?: string | null
           volunteer_id?: string
         }
         Relationships: [
@@ -5428,6 +5620,48 @@ export type Database = {
           },
         ]
       }
+      volunteer_buddies: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_buddies_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_buddies_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_certificates: {
         Row: {
           certificate_design_id: string | null
@@ -5566,6 +5800,55 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      volunteer_club_cards: {
+        Row: {
+          card_uid: string
+          club_id: string
+          id: string
+          is_digital: boolean
+          linked_at: string
+          user_id: string
+        }
+        Insert: {
+          card_uid: string
+          club_id: string
+          id?: string
+          is_digital?: boolean
+          linked_at?: string
+          user_id: string
+        }
+        Update: {
+          card_uid?: string
+          club_id?: string
+          id?: string
+          is_digital?: boolean
+          linked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_club_cards_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_club_cards_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_club_cards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5739,6 +6022,55 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      volunteer_rewards: {
+        Row: {
+          club_id: string
+          fanshop_discount_active: boolean
+          free_drinks_balance: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          fanshop_discount_active?: boolean
+          free_drinks_balance?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          fanshop_discount_active?: boolean
+          free_drinks_balance?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_rewards_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_rewards_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -6025,6 +6357,10 @@ export type Database = {
       }
     }
     Functions: {
+      consume_drink_balance: {
+        Args: { p_club_id: string; p_user_id: string }
+        Returns: number
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -6091,6 +6427,10 @@ export type Database = {
         }
         Returns: number
       }
+      predict_volunteer_sublocation: {
+        Args: { p_task_title: string; p_user_id: string }
+        Returns: string
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -6098,6 +6438,19 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      regenerate_pos_api_key: { Args: { p_club_id: string }; Returns: string }
+      rpc_consume_pos_perk: {
+        Args: {
+          p_card_uid: string
+          p_perk_type?: string
+          p_pos_api_key: string
+        }
+        Returns: Json
+      }
+      rpc_verify_pos_card: {
+        Args: { p_card_uid: string; p_pos_api_key: string }
+        Returns: Json
       }
     }
     Enums: {
