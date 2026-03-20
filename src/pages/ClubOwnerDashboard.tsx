@@ -847,8 +847,8 @@ const ClubOwnerDashboard = () => {
     setDeletingTask(null);
   };
 
-  const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
-  const labelClass = "block text-xs font-medium text-muted-foreground mb-1";
+  const inputClass = "w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 transition-colors";
+  const labelClass = "block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1";
 
   // Derived data
   const now = new Date();
@@ -877,22 +877,22 @@ const ClubOwnerDashboard = () => {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: i * 0.03 }}
-        className="bg-card rounded-2xl shadow-card border border-transparent overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden"
       >
         <button
           onClick={() => setExpandedTask(isExpanded ? null : task.id)}
-          className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors"
+          className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
         >
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-heading font-semibold text-foreground">{task.title}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">{task.title}</h3>
               {(task as any).partner_only && (
                 <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-accent/20 text-accent-foreground flex items-center gap-0.5">
                   <Handshake className="w-3 h-3" /> Partner
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
               {task.task_date && (
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
@@ -913,12 +913,12 @@ const ClubOwnerDashboard = () => {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {pendingCount > 0 && (
-              <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-secondary text-secondary-foreground">
+              <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
                 {pendingCount} {dt.pending.toLowerCase()}
               </span>
             )}
             {assignedCount > 0 && (
-              <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-accent/20 text-accent-foreground">
+              <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                 {assignedCount} {dt.assigned.toLowerCase()}
               </span>
             )}
@@ -927,7 +927,7 @@ const ClubOwnerDashboard = () => {
         </button>
 
         {isExpanded && (
-          <div className="flex items-center gap-2 px-5 pt-3 flex-wrap">
+          <div className="flex items-center gap-2 px-4 py-3 flex-wrap bg-gray-50/70 dark:bg-gray-800/30 border-b border-gray-100 dark:border-gray-800">
             <button onClick={(e) => { e.stopPropagation(); handleStartEdit(task); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors">
               <Pencil className="w-3.5 h-3.5" /> {dt.editTask}
             </button>
@@ -959,8 +959,8 @@ const ClubOwnerDashboard = () => {
         )}
 
         {isExpanded && (
-          <div className="border-t border-border px-5 pb-5">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mt-4 mb-3">
+          <div className="border-t border-gray-100 dark:border-gray-800 px-5 pb-5">
+            <h4 className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mt-4 mb-3">
               {dt.signups} ({taskSignups.length})
             </h4>
             {taskSignups.length === 0 ? (
@@ -970,8 +970,8 @@ const ClubOwnerDashboard = () => {
                 {taskSignups.map(signup => (
                   <div
                     key={signup.id}
-                    className={`flex items-center justify-between gap-3 p-3 rounded-xl transition-colors ${
-                      signup.status === 'assigned' ? 'bg-accent/10 border border-accent/20' : 'bg-muted/30 border border-transparent'
+                    className={`flex items-center justify-between gap-3 p-3 rounded-lg transition-colors border ${
+                      signup.status === 'assigned' ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/50' : 'bg-transparent border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'
                     }`}
                   >
                     <button
@@ -987,7 +987,7 @@ const ClubOwnerDashboard = () => {
                       </Avatar>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-medium text-foreground truncate">{signup.volunteer?.full_name || t3('Onbekend', 'Inconnu', 'Unknown')}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{signup.volunteer?.full_name || t3('Onbekend', 'Inconnu', 'Unknown')}</p>
                           <ComplianceBadge compliance={complianceMap.get(signup.volunteer_id) || null} language={language} compact />
                         </div>
                         <p className="text-xs text-muted-foreground truncate">{signup.volunteer?.email || ''}</p>
@@ -1114,9 +1114,9 @@ const ClubOwnerDashboard = () => {
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
       onSubmit={onSubmit}
-      className="bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden"
+      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 overflow-hidden"
     >
-      <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{dt.newTask}</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{dt.newTask}</h2>
       {/* Partner-only task - moved to top */}
       {externalPartners.length > 0 && (
         <div className="mb-4 bg-muted/50 rounded-xl p-4 border border-border">
@@ -1282,8 +1282,8 @@ const ClubOwnerDashboard = () => {
         {/* Partner-only section is now at the top of the form */}
       </div>
       <div className="flex justify-end gap-3 mt-6">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
-        <button type="submit" disabled={creatingTask || !newTask.title.trim() || (!selectedTemplateId && !(newTask.partner_only && newTask.assigned_partner_id && externalPartners.find(p => p.id === newTask.assigned_partner_id)?.external_payroll)) || (newTask.partner_only && !newTask.assigned_partner_id)} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">{dt.cancel}</button>
+        <button type="submit" disabled={creatingTask || !newTask.title.trim() || (!selectedTemplateId && !(newTask.partner_only && newTask.assigned_partner_id && externalPartners.find(p => p.id === newTask.assigned_partner_id)?.external_payroll)) || (newTask.partner_only && !newTask.assigned_partner_id)} className="px-5 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           {creatingTask ? dt.creating : dt.create}
         </button>
       </div>
@@ -1304,7 +1304,7 @@ const ClubOwnerDashboard = () => {
 
   return (
     <DashboardLayout sidebar={sidebarEl}>
-      <main className="max-w-4xl mx-auto space-y-8">
+      <main className="max-w-5xl mx-auto space-y-6">
         {/* Free Trial Banner */}
         {clubId && (
           <Suspense fallback={null}>
@@ -1312,26 +1312,26 @@ const ClubOwnerDashboard = () => {
           </Suspense>
         )}
 
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-heading font-bold text-foreground">{dt.title}</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{dt.title}</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               {language === 'nl' ? 'Overzicht van je club' : language === 'fr' ? 'Aperçu de votre club' : 'Your club overview'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => {
                 const url = `${window.location.origin}/club/${clubId}`;
                 navigator.clipboard.writeText(url);
                 toast.success(language === 'nl' ? 'Wervingslink gekopieerd!' : language === 'fr' ? 'Lien copié !' : 'Recruitment link copied!');
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <Share2 className="w-4 h-4" />
               {language === 'nl' ? 'Deel wervingspagina' : language === 'fr' ? 'Partager' : 'Share recruitment page'}
             </button>
-            <button onClick={() => navigate('/events-manager')} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+            <button onClick={() => navigate('/events-manager')} className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors">
               <Plus className="w-4 h-4" />
               {language === 'nl' ? 'Nieuw' : language === 'fr' ? 'Nouveau' : 'New'}
             </button>
@@ -1343,7 +1343,7 @@ const ClubOwnerDashboard = () => {
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-amber-950/40 p-4 mb-4"
+            className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4"
           >
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400" />
@@ -1414,9 +1414,9 @@ const ClubOwnerDashboard = () => {
                 <motion.button
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   onClick={() => navigate('/compliance')}
-                  className="w-full rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-left hover:bg-destructive/15 transition-colors"
+                  className="w-full rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-4 text-left hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
                 >
-                  <span className="text-sm font-semibold text-destructive flex items-center gap-2">
+                  <span className="text-sm font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
                     🚨 {redCount} {language === 'nl' ? 'vrijwilliger(s) hebben het jaarplafond overschreden. Actie vereist →' : language === 'fr' ? 'bénévole(s) ont dépassé le plafond annuel. Action requise →' : 'volunteer(s) exceeded the yearly limit. Action required →'}
                   </span>
                 </motion.button>
@@ -1425,7 +1425,7 @@ const ClubOwnerDashboard = () => {
                 <motion.button
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   onClick={() => navigate('/compliance')}
-                  className="w-full rounded-2xl border border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/20 p-4 text-left hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors"
+                  className="w-full rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 p-4 text-left hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors"
                 >
                   <span className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
                     ⚠️ {orangeCount} {language === 'nl' ? 'vrijwilliger(s) naderen het fiscale jaarplafond. Bekijk compliance →' : language === 'fr' ? 'bénévole(s) approchent du plafond annuel. Voir conformité →' : 'volunteer(s) approaching the yearly limit. View compliance →'}
