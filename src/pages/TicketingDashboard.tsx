@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
-import { ArrowLeft, CalendarDays, Radio, Ticket, Loader2, Send, Users, QrCode, Mail, CheckCircle2, AlertCircle, Search, UserCheck, Clock, Bell } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Radio, Ticket, Loader2, Send, Users, QrCode, Mail, CheckCircle2, AlertCircle, Search, UserCheck, Clock, Bell, CreditCard } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -47,6 +47,7 @@ const t = {
     reminderSent: 'Herinneringen verstuurd',
     lastUpdate: 'Laatste update',
     perTask: 'Per taak',
+    rfidTab: 'Inchecken via Clubkaart',
   },
   fr: {
     back: 'Retour au tableau de bord',
@@ -77,6 +78,7 @@ const t = {
     reminderSent: 'Rappels envoyés',
     lastUpdate: 'Dernière mise à jour',
     perTask: 'Par tâche',
+    rfidTab: 'Enregistrement Carte Club',
   },
   en: {
     back: 'Back to dashboard',
@@ -107,6 +109,7 @@ const t = {
     reminderSent: 'Reminders sent',
     lastUpdate: 'Last update',
     perTask: 'Per task',
+    rfidTab: 'Check-in via Club Card',
   },
 };
 
@@ -148,6 +151,12 @@ const TicketingDashboard = () => {
   const [showReminderDialog, setShowReminderDialog] = useState(false);
   const [sendingReminders, setSendingReminders] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+
+  // RFID / club-card check-in state
+  const [rfidInput, setRfidInput] = useState('');
+  const [rfidProcessing, setRfidProcessing] = useState(false);
+  const [rfidResult, setRfidResult] = useState<{ type: 'success' | 'error' | 'already'; name?: string } | null>(null);
+  const rfidInputRef = useRef<HTMLInputElement>(null);
 
   const { clubId: contextClubId } = useClubContext();
 
@@ -560,6 +569,87 @@ const TicketingDashboard = () => {
     setShowReminderDialog(false);
   };
 
+  // Auto-focus RFID input when switching to rfid tab
+  useEffect(() => {
+    if (activeTab === 'rfid') {
+      setTimeout(() => rfidInputRef.current?.focus(), 150);
+    }
+  }, [activeTab]);
+
+  // Clear RFID result after 5 s and re-focus
+  useEffect(() => {
+    if (!rfidResult) return;
+    const t = setTimeout(() => {
+      setRfidResult(null);
+      rfidInputRef.current?.focus();
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [rfidResult]);
+
+  const handleRfidScan = useCallback(async (uid: string) => {
+    const trimmed = uid.trim();
+    if (!trimmed || !clubId || !selectedEventId || rfidProcessing) return;
+    setRfidProcessing(true);
+    setRfidResult(null);
+    try {
+      // 1. Resolve card_uid → user_id for this club
+      const { data: cardRow } = await supabase
+        .from('volunteer_club_cards')
+        .select('user_id')
+        .eq('club_id', clubId)
+        .eq('card_uid', trimmed)
+        .maybeSingle();
+
+      if (!cardRow) {
+        setRfidResult({ type: 'error' });
+        return;
+      }
+
+      // Fetch name in parallel with ticket lookup
+      const [profileRes, ticketRes] = await Promise.all([
+        supabase.from('profiles').select('full_name').eq('id', cardRow.user_id).maybeSingle(),
+        supabase.from('volunteer_tickets')
+          .select('id, status')
+          .eq('club_id', clubId)
+          .eq('event_id', selectedEventId)
+          .eq('volunteer_id', cardRow.user_id)
+          .maybeSingle(),
+      ]);
+
+      const name = profileRes.data?.full_name || 'Onbekend';
+
+      if (!ticketRes.data) {
+        setRfidResult({ type: 'error' });
+        return;
+      }
+
+      if (ticketRes.data.status === 'checked_in') {
+        setRfidResult({ type: 'already', name });
+        return;
+      }
+
+      // 2. Mark as checked in
+      await supabase
+        .from('volunteer_tickets')
+        .update({ status: 'checked_in', checked_in_at: new Date().toISOString() })
+        .eq('id', ticketRes.data.id);
+
+      setRfidResult({ type: 'success', name });
+
+      // Sync local volunteers list
+      setVolunteers(prev => prev.map(v =>
+        v.volunteer_id === cardRow.user_id
+          ? { ...v, status: 'checked_in', checked_in_at: new Date().toISOString() }
+          : v
+      ));
+    } catch {
+      setRfidResult({ type: 'error' });
+    } finally {
+      setRfidProcessing(false);
+      setRfidInput('');
+    }
+  }, [clubId, selectedEventId, rfidProcessing]);
+
   if (loading) {
     return (
       <ClubPageLayout><DashboardSkeleton /></ClubPageLayout>
@@ -577,7 +667,7 @@ const TicketingDashboard = () => {
           </Button>
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="planning" className="gap-2">
               <CalendarDays className="w-4 h-4" />
               {labels.planning}
@@ -589,6 +679,11 @@ const TicketingDashboard = () => {
             <TabsTrigger value="scan" className="gap-2" onClick={() => navigate('/scan')}>
               <QrCode className="w-4 h-4" />
               Scanner
+            </TabsTrigger>
+            <TabsTrigger value="rfid" className="gap-2">
+              <CreditCard className="w-4 h-4" />
+              <span className="hidden sm:inline">{labels.rfidTab}</span>
+              <span className="sm:hidden">RFID</span>
             </TabsTrigger>
           </TabsList>
 
@@ -864,6 +959,127 @@ const TicketingDashboard = () => {
               )}
             </div>
           </TabsContent>
+          {/* RFID / CLUB CARD CHECK-IN TAB */}
+          <TabsContent value="rfid">
+            <div className="max-w-xl mx-auto space-y-5">
+
+              {/* Event selector */}
+              <Select value={isMonthlyPlan ? `mp_${selectedEventId}` : selectedEventId} onValueChange={handleSelectChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={labels.selectEvent} />
+                </SelectTrigger>
+                <SelectContent>
+                  {events.map(e => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.title} {e.event_date ? `(${new Date(e.event_date).toLocaleDateString()})` : ''}
+                    </SelectItem>
+                  ))}
+                  {monthlyPlans.length > 0 && events.length > 0 && (
+                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Maandplannen</div>
+                  )}
+                  {monthlyPlans.map(mp => (
+                    <SelectItem key={`mp_${mp.id}`} value={`mp_${mp.id}`}>
+                      📅 {mp.title || `Maandplan ${mp.month}/${mp.year}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {selectedEventId ? (
+                <>
+                  {/* Result banner — shown for 5 s after each scan */}
+                  {rfidResult && (
+                    <div className={`rounded-2xl p-8 flex flex-col items-center gap-3 text-center border-2 ${
+                      rfidResult.type === 'success'
+                        ? 'bg-emerald-500/10 border-emerald-500'
+                        : rfidResult.type === 'already'
+                        ? 'bg-amber-500/10 border-amber-500'
+                        : 'bg-red-500/10 border-red-500'
+                    }`}>
+                      {rfidResult.type === 'success' ? (
+                        <>
+                          <CheckCircle2 className="w-16 h-16 text-emerald-600" />
+                          <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+                            {language === 'nl' ? `Welkom ${rfidResult.name}!` : language === 'fr' ? `Bienvenue ${rfidResult.name}!` : `Welcome ${rfidResult.name}!`}
+                          </p>
+                          <p className="text-lg text-emerald-600 dark:text-emerald-500">
+                            {language === 'nl' ? 'Ticket geldig ✓' : language === 'fr' ? 'Billet valide ✓' : 'Ticket valid ✓'}
+                          </p>
+                        </>
+                      ) : rfidResult.type === 'already' ? (
+                        <>
+                          <AlertCircle className="w-16 h-16 text-amber-600" />
+                          <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{rfidResult.name}</p>
+                          <p className="text-lg text-amber-600 dark:text-amber-500">
+                            {language === 'nl' ? 'Al ingecheckt' : language === 'fr' ? 'Déjà enregistré' : 'Already checked in'}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-16 h-16 text-red-600" />
+                          <p className="text-2xl font-bold text-red-700 dark:text-red-400">
+                            {language === 'nl' ? 'Geen geldig ticket' : language === 'fr' ? 'Aucun billet valide' : 'No valid ticket'}
+                          </p>
+                          <p className="text-lg text-red-600 dark:text-red-500">
+                            {language === 'nl' ? 'Geen ticket gevonden voor deze kaart.' : language === 'fr' ? 'Aucun billet trouvé pour cette carte.' : 'No ticket found for this card.'}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Scanner input area */}
+                  <div className="bg-card rounded-2xl border-2 border-dashed border-border p-8 flex flex-col items-center gap-5">
+                    <CreditCard className="w-12 h-12 text-muted-foreground" />
+                    <p className="text-lg font-semibold text-foreground text-center">
+                      {language === 'nl'
+                        ? 'Scan of houd de clubkaart voor de lezer'
+                        : language === 'fr'
+                        ? 'Scannez ou présentez la carte club au lecteur'
+                        : 'Scan or present the club card to the reader'}
+                    </p>
+                    <input
+                      ref={rfidInputRef}
+                      type="text"
+                      value={rfidInput}
+                      onChange={(e) => setRfidInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleRfidScan(rfidInput);
+                        }
+                      }}
+                      placeholder={
+                        language === 'nl' ? 'Scan clubkaart hier...' :
+                        language === 'fr' ? 'Scannez la carte club ici...' :
+                        'Scan club card here...'
+                      }
+                      disabled={rfidProcessing}
+                      autoComplete="off"
+                      className="w-full max-w-sm h-14 rounded-xl border border-input bg-background px-4 text-center text-lg font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground/50 disabled:opacity-50"
+                    />
+                    {rfidProcessing ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{language === 'nl' ? 'Verwerken...' : language === 'fr' ? 'Traitement...' : 'Processing...'}</span>
+                      </div>
+                    ) : !rfidResult ? (
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                        {language === 'nl' ? 'Klaar om te scannen' : language === 'fr' ? 'Prêt à scanner' : 'Ready to scan'}
+                      </p>
+                    ) : null}
+                  </div>
+                </>
+              ) : (
+                <div className="py-16 flex flex-col items-center gap-3 text-muted-foreground">
+                  <CreditCard className="w-10 h-10 opacity-30" />
+                  <p className="text-sm">{labels.selectEvent}</p>
+                </div>
+              )}
+
+            </div>
+          </TabsContent>
+
         </Tabs>
       </div>
 
