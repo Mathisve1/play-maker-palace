@@ -4,7 +4,7 @@ import { X, ArrowLeftRight, Loader2, Check, XCircle, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Language } from '@/i18n/translations';
-import { sendPush } from '@/lib/sendPush';
+import { sendPush, sendPushToClub } from '@/lib/sendPush';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface ShiftSwapDialogProps {
