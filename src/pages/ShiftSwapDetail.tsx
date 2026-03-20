@@ -58,7 +58,7 @@ const L: Record<Language, Record<string, string>> = {
     cancelled: 'Dit verzoek is geannuleerd.',
     expired: 'Dit verzoek is verlopen.',
     successTitle: 'Gelukt! 🎉',
-    successMsg: (name: string) => `${name} krijgt meteen een berichtje. Bedankt om te springen!`,
+    successMsg: `Bedankt om te springen! De oorspronkelijke vrijwilliger krijgt een berichtje.`,
     errorMsg: 'Er ging iets mis. Probeer opnieuw.',
     loading: 'Even laden...',
     notFound: 'Dit verzoek bestaat niet of is al verlopen.',
@@ -84,7 +84,7 @@ const L: Record<Language, Record<string, string>> = {
     cancelled: 'Cette demande a été annulée.',
     expired: 'Cette demande a expiré.',
     successTitle: 'Super ! 🎉',
-    successMsg: (name: string) => `${name} reçoit un message immédiatement. Merci de prendre le relais !`,
+    successMsg: `Merci de prendre le relais ! Le bénévole original reçoit un message.`,
     errorMsg: 'Une erreur s\'est produite. Réessayez.',
     loading: 'Chargement...',
     notFound: 'Cette demande n\'existe pas ou a déjà expiré.',
@@ -110,7 +110,7 @@ const L: Record<Language, Record<string, string>> = {
     cancelled: 'This request was cancelled.',
     expired: 'This request has expired.',
     successTitle: 'Done! 🎉',
-    successMsg: (name: string) => `${name} gets a notification right away. Thanks for stepping up!`,
+    successMsg: `Thanks for stepping up! The original volunteer gets a notification.`,
     errorMsg: 'Something went wrong. Please try again.',
     loading: 'Loading...',
     notFound: 'This request doesn\'t exist or has already expired.',
@@ -213,9 +213,8 @@ const ShiftSwapDetail = () => {
       }
 
       setAccepted(true);
-      const originalFirstName = swap.original_volunteer.full_name.split(' ')[0];
       toast.success(l.successTitle, {
-        description: (l.successMsg as (name: string) => string)(originalFirstName),
+        description: l.successMsg,
         duration: 6000,
       });
     } catch (err) {
@@ -419,7 +418,7 @@ const ShiftSwapDetail = () => {
             <CheckCircle2 className="w-12 h-12 mx-auto text-green-600 dark:text-green-400" />
             <p className="text-xl font-bold text-foreground">{l.successTitle}</p>
             <p className="text-base text-muted-foreground">
-              {(l.successMsg as (name: string) => string)(original_volunteer.full_name.split(' ')[0])}
+              {l.successMsg}
             </p>
             <button
               onClick={() => navigate('/dashboard')}
