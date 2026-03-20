@@ -173,6 +173,11 @@ const VolunteerClubTasksBrowser = ({ language, userId, onBack }: Props) => {
     } else {
       setSignedUpIds(prev => new Set(prev).add(taskId));
       toast.success(l.success);
+      // Push to club admins
+      const task = tasks.find(t => t.id === taskId);
+      if (task?.club_id) {
+        sendPushToClub({ clubId: task.club_id, title: '📋 Nieuwe inschrijving', message: `Een vrijwilliger heeft zich ingeschreven voor "${task.title}"`, url: '/club-dashboard', type: 'new_signup' });
+      }
     }
     setSigningUp(null);
   };
