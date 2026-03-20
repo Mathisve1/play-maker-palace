@@ -536,8 +536,8 @@ const Chat = () => {
         {/* Conversation list */}
         <div className={`${(activeConversation || activeGroupChat) ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card overflow-y-auto`}>
           <div className="p-4 border-b border-border space-y-3">
-            <h2 className="font-heading font-semibold text-foreground">{l.title}</h2>
-            <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
+            <h2 className="font-heading text-lg font-bold text-foreground">{l.title}</h2>
+            <div className="flex gap-1 bg-muted rounded-xl p-1">
               {([
                 { key: 'all', nl: 'Alles', fr: 'Tout', en: 'All' },
                 { key: 'group', nl: 'Groep', fr: 'Groupe', en: 'Group' },
@@ -546,18 +546,18 @@ const Chat = () => {
                 <button
                   key={tab.key}
                   onClick={() => setChatFilter(tab.key)}
-                  className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors ${
+                  className={`flex-1 text-sm font-medium py-2 rounded-lg transition-all ${
                     chatFilter === tab.key
-                      ? 'bg-background text-foreground shadow-sm'
+                      ? 'bg-card text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {language === 'nl' ? tab.nl : language === 'fr' ? tab.fr : tab.en}
                   {tab.key === 'group' && groupChats.length > 0 && (
-                    <span className="ml-1 text-[10px] text-muted-foreground">({groupChats.length})</span>
+                    <span className="ml-1 text-xs text-muted-foreground">({groupChats.length})</span>
                   )}
                   {tab.key === 'private' && conversations.length > 0 && (
-                    <span className="ml-1 text-[10px] text-muted-foreground">({conversations.length})</span>
+                    <span className="ml-1 text-xs text-muted-foreground">({conversations.length})</span>
                   )}
                 </button>
               ))}
@@ -568,8 +568,8 @@ const Chat = () => {
           {(chatFilter === 'all' || chatFilter === 'group') && groupChats.length > 0 && (
             <>
               {chatFilter === 'all' && (
-                <div className="px-4 pt-3 pb-1">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <div className="px-4 pt-4 pb-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5" />
                     {language === 'nl' ? 'Groepschats' : language === 'fr' ? 'Chats de groupe' : 'Group Chats'}
                   </p>
@@ -579,21 +579,21 @@ const Chat = () => {
                 <button
                   key={`gc-${gc.id}`}
                   onClick={() => { setActiveGroupChat(gc.id); setActiveConversation(null); }}
-                  className={`w-full text-left px-4 py-3 border-b border-border transition-colors hover:bg-muted/50 ${
-                    activeGroupChat === gc.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''
+                  className={`w-full text-left px-4 py-3.5 border-b border-border/50 transition-all hover:bg-muted/40 ${
+                    activeGroupChat === gc.id ? 'bg-primary/5 border-l-[3px] border-l-primary' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Users className="w-3.5 h-3.5 text-primary" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="w-5 h-5 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground text-sm truncate">{gc.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{gc.club_name}</p>
+                      <p className="font-semibold text-foreground text-base truncate">{gc.title}</p>
+                      <p className="text-sm text-muted-foreground truncate">{gc.club_name}</p>
                     </div>
                   </div>
                   {gc.last_message_at && (
-                    <p className="text-[11px] text-muted-foreground mt-1 ml-9">
+                    <p className="text-xs text-muted-foreground mt-1.5 ml-[52px]">
                       {new Date(gc.last_message_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
                         day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                       })}
@@ -608,60 +608,73 @@ const Chat = () => {
           {(chatFilter === 'all' || chatFilter === 'private') && conversations.length > 0 && (
             <>
               {chatFilter === 'all' && (
-                <div className="px-4 pt-3 pb-1">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <div className="px-4 pt-4 pb-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <MessageCircle className="w-3.5 h-3.5" />
                     {language === 'nl' ? 'Privéberichten' : language === 'fr' ? 'Messages privés' : 'Direct Messages'}
                   </p>
                 </div>
               )}
-              {conversations.map(convo => (
-                <button
-                  key={convo.id}
-                  onClick={() => { setActiveConversation(convo.id); setActiveGroupChat(null); }}
-                  className={`w-full text-left px-4 py-3 border-b border-border transition-colors hover:bg-muted/50 ${
-                    activeConversation === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-foreground text-sm truncate">
-                      {getConversationDisplayName(convo)}
+              {conversations.map(convo => {
+                const displayName = getConversationDisplayName(convo);
+                const initial = displayName.charAt(0).toUpperCase();
+                return (
+                  <button
+                    key={convo.id}
+                    onClick={() => { setActiveConversation(convo.id); setActiveGroupChat(null); }}
+                    className={`w-full text-left px-4 py-3.5 border-b border-border/50 transition-all hover:bg-muted/40 ${
+                      activeConversation === convo.id ? 'bg-primary/5 border-l-[3px] border-l-primary' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-bold text-secondary">{initial}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-foreground text-base truncate">
+                            {displayName}
+                          </p>
+                          {(convo.unread_count || 0) > 0 && (
+                            <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-primary text-primary-foreground min-w-[22px] text-center">
+                              {convo.unread_count}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate mt-0.5">
+                          {convo.tasks?.title || 'Gesprek'} · {convo.tasks?.clubs?.name || ''}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 ml-[52px]">
+                      {new Date(convo.updated_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
+                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                      })}
                     </p>
-                    {(convo.unread_count || 0) > 0 && (
-                      <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground min-w-[18px] text-center">
-                        {convo.unread_count}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {convo.tasks?.title || 'Gesprek'} · {convo.tasks?.clubs?.name || ''}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(convo.updated_at).toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
-                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                    })}
-                  </p>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </>
           )}
           {filteredEmpty && (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-              <MessageCircle className="w-12 h-12 text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">{l.noConversations}</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">{l.startFromTask}</p>
+              <div className="w-16 h-16 rounded-3xl bg-muted flex items-center justify-center mb-4">
+                <MessageCircle className="w-8 h-8 text-muted-foreground/40" />
+              </div>
+              <p className="text-base text-foreground font-medium">{l.noConversations}</p>
+              <p className="text-sm text-muted-foreground mt-1">{l.startFromTask}</p>
             </div>
           )}
         </div>
 
         {/* Messages area */}
-        <div className={`${(!activeConversation && !activeGroupChat) ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}>
+        <div className={`${(!activeConversation && !activeGroupChat) ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-background`}>
           {activeGroupChat && userId ? (
             <>
-              <div className="px-4 py-2 border-b border-border bg-card md:hidden">
+              <div className="px-4 py-3 border-b border-border bg-card md:hidden">
                 <button
                   onClick={() => setActiveGroupChat(null)}
-                  className="text-sm text-muted-foreground hover:text-foreground"
+                  className="text-base text-muted-foreground hover:text-foreground font-medium"
                 >
                   ← {l.back}
                 </button>
@@ -676,8 +689,13 @@ const Chat = () => {
               </div>
             </>
           ) : !activeConversation ? (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <MessageCircle className="w-16 h-16 opacity-20" />
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+              <div className="w-20 h-20 rounded-3xl bg-muted flex items-center justify-center mb-4">
+                <MessageCircle className="w-10 h-10 opacity-30" />
+              </div>
+              <p className="text-base text-muted-foreground">
+                {language === 'nl' ? 'Selecteer een gesprek' : language === 'fr' ? 'Sélectionnez une conversation' : 'Select a conversation'}
+              </p>
             </div>
           ) : (
             <>
@@ -685,68 +703,105 @@ const Chat = () => {
               <div className="px-4 py-3 border-b border-border bg-card flex items-center gap-3">
                 <button
                   onClick={() => setActiveConversation(null)}
-                  className="md:hidden text-sm text-muted-foreground hover:text-foreground"
+                  className="md:hidden text-base text-muted-foreground hover:text-foreground font-medium"
                 >
                   ← {l.back}
                 </button>
-                <p className="font-medium text-foreground text-sm">{otherName}</p>
+                <div className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-bold text-secondary">{otherName.charAt(0)?.toUpperCase()}</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-base">{otherName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {conversations.find(c => c.id === activeConversation)?.tasks?.title || ''}
+                  </p>
+                </div>
               </div>
 
               {/* Messages */}
-              <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
-                {messages.map(msg => {
+              <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-1">
+                {messages.map((msg, idx) => {
                   const isMe = msg.sender_id === userId;
+                  const prevMsg = idx > 0 ? messages[idx - 1] : null;
+                  const nextMsg = idx < messages.length - 1 ? messages[idx + 1] : null;
+                  const isContinuation = prevMsg?.sender_id === msg.sender_id;
+                  const isLastInGroup = !nextMsg || nextMsg.sender_id !== msg.sender_id;
+                  const spacingClass = !isContinuation && idx > 0 ? 'mt-4' : 'mt-1';
+
                   return (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, y: 8 }}
+                      initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                      transition={{ duration: 0.2 }}
+                      className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''} ${spacingClass}`}
                     >
-                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                        isMe
-                          ? 'bg-primary text-primary-foreground rounded-br-md'
-                          : 'bg-muted text-foreground rounded-bl-md'
-                      }`}>
-                        {msg.attachment_url && msg.attachment_type === 'image' && (
-                          <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="block mb-1.5">
-                            <img src={msg.attachment_url} alt={msg.attachment_name || 'Afbeelding'} className="max-w-full rounded-lg max-h-60 object-cover" />
-                          </a>
+                      {/* Avatar (only for last message in group, left side) */}
+                      {!isMe && isLastInGroup ? (
+                        <div className="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0 mb-0.5">
+                          <span className="text-[11px] font-bold text-secondary">{otherName.charAt(0)?.toUpperCase()}</span>
+                        </div>
+                      ) : !isMe ? (
+                        <div className="w-8 shrink-0" />
+                      ) : null}
+
+                      <div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
+                        {/* Sender name for first in group */}
+                        {!isMe && !isContinuation && (
+                          <p className="text-xs font-medium text-muted-foreground mb-1 ml-1">{otherName}</p>
                         )}
-                        {msg.attachment_url && msg.attachment_type === 'audio' && (
-                          <audio controls src={msg.attachment_url} className="max-w-full mb-1.5" />
-                        )}
-                        {msg.attachment_url && msg.attachment_type === 'document' && (
-                          <a
-                            href={msg.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`flex items-center gap-2 mb-1.5 px-3 py-2 rounded-lg ${isMe ? 'bg-primary-foreground/10' : 'bg-background/50'}`}
-                          >
-                            <FileText className="w-4 h-4 shrink-0" />
-                            <span className="text-xs truncate">{msg.attachment_name || 'Document'}</span>
-                          </a>
-                        )}
-                        {msg.content && !(msg.attachment_url && msg.content === `📎 ${msg.attachment_name}`) && (
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                        )}
-                        {msg.attachment_url && msg.content === `📎 ${msg.attachment_name}` && !msg.attachment_type && (
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                        )}
-                        <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : ''}`}>
-                          <span className={`text-[10px] ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                            {new Date(msg.created_at).toLocaleTimeString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
-                              hour: '2-digit', minute: '2-digit'
-                            })}
-                          </span>
-                          {isMe && (
-                            msg.read ? (
-                              <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/80" />
-                            ) : (
-                              <Check className="w-3 h-3 text-primary-foreground/50" />
-                            )
+
+                        <div className={`rounded-2xl px-4 py-2.5 ${
+                          isMe
+                            ? `bg-primary text-primary-foreground ${isLastInGroup ? 'rounded-br-md' : ''}`
+                            : `bg-card border border-border text-foreground ${isLastInGroup ? 'rounded-bl-md' : ''}`
+                        }`}
+                          style={!isMe ? { boxShadow: 'var(--shadow-card)' } : undefined}
+                        >
+                          {msg.attachment_url && msg.attachment_type === 'image' && (
+                            <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="block mb-1.5">
+                              <img src={msg.attachment_url} alt={msg.attachment_name || 'Afbeelding'} className="max-w-full rounded-lg max-h-60 object-cover" />
+                            </a>
+                          )}
+                          {msg.attachment_url && msg.attachment_type === 'audio' && (
+                            <audio controls src={msg.attachment_url} className="max-w-full mb-1.5" />
+                          )}
+                          {msg.attachment_url && msg.attachment_type === 'document' && (
+                            <a
+                              href={msg.attachment_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-2 mb-1.5 px-3 py-2 rounded-lg ${isMe ? 'bg-primary-foreground/10' : 'bg-muted'}`}
+                            >
+                              <FileText className="w-4 h-4 shrink-0" />
+                              <span className="text-sm truncate">{msg.attachment_name || 'Document'}</span>
+                            </a>
+                          )}
+                          {msg.content && !(msg.attachment_url && msg.content === `📎 ${msg.attachment_name}`) && (
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                          )}
+                          {msg.attachment_url && msg.content === `📎 ${msg.attachment_name}` && !msg.attachment_type && (
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                           )}
                         </div>
+
+                        {/* Timestamp + read status */}
+                        {isLastInGroup && (
+                          <div className={`flex items-center gap-1 mt-1 px-1 ${isMe ? 'flex-row-reverse' : ''}`}>
+                            <span className="text-[11px] text-muted-foreground">
+                              {new Date(msg.created_at).toLocaleTimeString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
+                                hour: '2-digit', minute: '2-digit'
+                              })}
+                            </span>
+                            {isMe && (
+                              msg.read ? (
+                                <CheckCheck className="w-3.5 h-3.5 text-primary" />
+                              ) : (
+                                <Check className="w-3 h-3 text-muted-foreground" />
+                              )
+                            )}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   );
@@ -757,16 +812,16 @@ const Chat = () => {
               {/* Attachment preview */}
               {attachmentFile && (
                 <div className="border-t border-border bg-card px-3 pt-2">
-                  <div className="flex items-center gap-2 max-w-3xl mx-auto p-2 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2 max-w-3xl mx-auto p-2.5 rounded-xl bg-muted">
                     {attachmentPreview ? (
-                      <img src={attachmentPreview} alt="Preview" className="w-12 h-12 rounded object-cover" />
+                      <img src={attachmentPreview} alt="Preview" className="w-12 h-12 rounded-lg object-cover" />
                     ) : attachmentFile.type.startsWith('audio/') ? (
                       <Music className="w-5 h-5 text-muted-foreground" />
                     ) : (
                       <FileText className="w-5 h-5 text-muted-foreground" />
                     )}
-                    <span className="text-xs text-foreground truncate flex-1">{attachmentFile.name}</span>
-                    <button onClick={clearAttachment} className="text-muted-foreground hover:text-foreground">
+                    <span className="text-sm text-foreground truncate flex-1">{attachmentFile.name}</span>
+                    <button onClick={clearAttachment} className="text-muted-foreground hover:text-foreground p-1">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -777,21 +832,23 @@ const Chat = () => {
               <div className="border-t border-border bg-card p-3" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}>
                 {recording ? (
                   <div className="flex items-center gap-2 max-w-3xl mx-auto">
-                    <div className="flex items-center gap-2 flex-1 px-4 py-2.5 rounded-xl border border-destructive/50 bg-destructive/5">
-                      <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                      <span className="text-sm text-destructive font-medium">{formatRecordingTime(recordingTime)}</span>
-                      <span className="text-xs text-muted-foreground">Opname bezig...</span>
+                    <div className="flex items-center gap-2 flex-1 px-4 py-3 rounded-2xl border border-destructive/30 bg-destructive/5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
+                      <span className="text-base text-destructive font-semibold">{formatRecordingTime(recordingTime)}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {language === 'nl' ? 'Opname bezig...' : language === 'fr' ? 'Enregistrement...' : 'Recording...'}
+                      </span>
                     </div>
                     <button
                       onClick={stopRecording}
-                      className="px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
+                      className="p-3 rounded-2xl bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
                       title="Stop opname"
                     >
-                      <Square className="w-4 h-4" />
+                      <Square className="w-5 h-5" />
                     </button>
                   </div>
                 ) : (
-                  <div className="flex gap-2 max-w-3xl mx-auto">
+                  <div className="flex gap-2 max-w-3xl mx-auto items-end">
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -801,17 +858,17 @@ const Chat = () => {
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-2.5 rounded-xl border border-input bg-background text-muted-foreground hover:text-foreground transition-colors"
-                      title="Bijlage toevoegen"
+                      className="p-3 rounded-2xl border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted transition-colors touch-target"
+                      title={language === 'nl' ? 'Bijlage toevoegen' : language === 'fr' ? 'Ajouter une pièce jointe' : 'Add attachment'}
                     >
-                      <Paperclip className="w-4 h-4" />
+                      <Paperclip className="w-5 h-5" />
                     </button>
                     <button
                       onClick={startRecording}
-                      className="px-3 py-2.5 rounded-xl border border-input bg-background text-muted-foreground hover:text-foreground transition-colors"
-                      title="Audio opnemen"
+                      className="p-3 rounded-2xl border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted transition-colors touch-target"
+                      title={language === 'nl' ? 'Audio opnemen' : language === 'fr' ? 'Enregistrer audio' : 'Record audio'}
                     >
-                      <Mic className="w-4 h-4" />
+                      <Mic className="w-5 h-5" />
                     </button>
                     <input
                       type="text"
@@ -819,14 +876,14 @@ const Chat = () => {
                       onChange={e => setNewMessage(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                       placeholder={l.typeMessage}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="flex-1 px-4 py-3 rounded-2xl border border-input bg-background text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                     <button
                       onClick={handleSend}
                       disabled={(!newMessage.trim() && !attachmentFile) || sending}
-                      className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                      className="p-3 rounded-2xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 touch-target"
                     >
-                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                     </button>
                   </div>
                 )}

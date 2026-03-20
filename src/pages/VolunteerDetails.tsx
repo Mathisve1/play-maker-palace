@@ -31,7 +31,7 @@ interface Task {
   location: string | null;
   event_id: string | null;
   club_id: string;
-  max_volunteers: number | null;
+  description: string | null;
 }
 
 interface TaskSignup {
@@ -178,7 +178,7 @@ const VolunteerDetails = () => {
         const taskIds = fetchedSignups.map(s => s.task_id);
         const { data: taskData } = await supabase
           .from('tasks')
-          .select('id, title, task_date, location, event_id, club_id, max_volunteers')
+          .select('id, title, task_date, location, event_id, club_id, description')
           .in('id', taskIds);
         setTasks((taskData || []) as Task[]);
       }
