@@ -305,7 +305,10 @@ const EventsManager = () => {
       }
       toast.success(t3('Taak aangemaakt!', 'Tâche créée!', 'Task created!'));
       setTasks(prev => [...prev, data]); setShowCreateTask(false); resetNewTask(); setSelectedMonthlyPlanId('');
-      if (clubId) sendPushToFollowers({ clubId, title: '🆕 Nieuwe taak', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/community', type: 'club_new_task' });
+      if (clubId) {
+        sendPushToFollowers({ clubId, title: '🆕 Nieuwe taak', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/community', type: 'club_new_task' });
+        sendPushToClubMembers({ clubId, title: '🆕 Nieuwe taak beschikbaar', message: `"${data.title}" is beschikbaar. Meld je aan!`, url: '/dashboard', type: 'new_task_available' });
+      }
     }
     setCreatingTask(false);
   };
