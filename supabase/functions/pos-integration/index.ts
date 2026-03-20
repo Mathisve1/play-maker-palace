@@ -14,16 +14,16 @@ const corsHeaders = {
  *   The API key identifies WHICH club is calling — no shared secret.
  *
  * Request body:
- *   { "action": "VERIFY" | "CONSUME_DRINK", "card_uid": "<string>" }
+ *   { "action": "VERIFY" | "CONSUME_CANTEEN", "card_uid": "<string>", "amount_eur"?: number }
  *
  * VERIFY response:
- *   { success: true, user_id, full_name, free_drinks_balance, fanshop_discount_active }
+ *   { success: true, user_id, full_name, canteen_balance_eur, fanshop_discount_active }
  *
- * CONSUME_DRINK response (success):
- *   { success: true, free_drinks_balance: <remaining> }
+ * CONSUME_CANTEEN response (success):
+ *   { success: true, canteen_balance_eur: <remaining> }
  *
- * CONSUME_DRINK response (insufficient balance):
- *   { success: false, reason: "insufficient_balance" }
+ * CONSUME_CANTEEN response (insufficient balance):
+ *   { success: false, reason: "insufficient_balance", canteen_balance_eur: 0 }
  *
  * Error responses:
  *   401 — missing/invalid API key
@@ -73,12 +73,16 @@ serve(async (req) => {
 
   let action: string;
   let card_uid: string;
+  let amount_eur: number;
   try {
     const body = await req.json();
-    action   = (body.action || '').toUpperCase();
-    card_uid = (body.card_uid || '').trim();
+    action     = (body.action || '').toUpperCase();
+    card_uid   = (body.card_uid || '').trim();
+    amount_eur = typeof body.amount_eur === 'number' && body.amount_eur > 0
+      ? body.amount_eur
+      : 0.01; // safe fallback minimum
     if (!action || !card_uid) throw new Error('missing fields');
-    if (!['VERIFY', 'CONSUME_DRINK'].includes(action)) throw new Error('invalid action');
+    if (!['VERIFY', 'CONSUME_CANTEEN'].includes(action)) throw new Error('invalid action');
   } catch (e) {
     return json({ success: false, error: `Invalid body: ${String(e)}` }, 400);
   }
@@ -101,11 +105,10 @@ serve(async (req) => {
   // ── 4a. VERIFY — return volunteer info + reward balances ─────────────────
 
   if (action === 'VERIFY') {
-    // Fetch profile + rewards in parallel
     const [profileRes, rewardsRes] = await Promise.all([
       supabase.from('profiles').select('full_name').eq('id', userId).single(),
       supabase.from('volunteer_rewards')
-        .select('free_drinks_balance, fanshop_discount_active')
+        .select('canteen_balance_eur, fanshop_discount_active')
         .eq('user_id', userId)
         .eq('club_id', clubId)
         .maybeSingle(),
@@ -115,37 +118,41 @@ serve(async (req) => {
 
     return json({
       success: true,
-      user_id:               userId,
-      full_name:             profileRes.data?.full_name || 'Onbekend',
-      free_drinks_balance:   rewards?.free_drinks_balance   ?? 0,
-      fanshop_discount_active: rewards?.fanshop_discount_active ?? false,
+      user_id:                  userId,
+      full_name:                profileRes.data?.full_name || 'Onbekend',
+      canteen_balance_eur:      rewards?.canteen_balance_eur      ?? 0,
+      fanshop_discount_active:  rewards?.fanshop_discount_active  ?? false,
     });
   }
 
-  // ── 4b. CONSUME_DRINK — atomically decrement 1 drink ─────────────────────
+  // ── 4b. CONSUME_CANTEEN — atomically deduct Euro amount from wallet ────────
 
-  if (action === 'CONSUME_DRINK') {
-    // consume_drink_balance() is a SECURITY DEFINER RPC that does:
+  if (action === 'CONSUME_CANTEEN') {
+    // consume_canteen_balance() is a SECURITY DEFINER RPC that does:
     //   UPDATE volunteer_rewards
-    //   SET free_drinks_balance = free_drinks_balance - 1
-    //   WHERE user_id = p_user_id AND club_id = p_club_id AND free_drinks_balance > 0
-    //   RETURNING free_drinks_balance
-    // Returns NULL if balance was 0 or row doesn't exist.
+    //   SET canteen_balance_eur = canteen_balance_eur - p_amount
+    //   WHERE user_id = p_user_id AND club_id = p_club_id
+    //     AND canteen_balance_eur >= p_amount
+    //   RETURNING canteen_balance_eur
+    // Returns NULL if balance was insufficient or row doesn't exist.
 
     const { data: newBalance, error: consumeErr } = await supabase
-      .rpc('consume_drink_balance', { p_user_id: userId, p_club_id: clubId });
+      .rpc('consume_canteen_balance', {
+        p_user_id: userId,
+        p_club_id: clubId,
+        p_amount:  amount_eur,
+      });
 
     if (consumeErr) {
-      console.error('consume_drink_balance error:', consumeErr);
-      return json({ success: false, error: 'Internal error during drink deduction' }, 500);
+      console.error('consume_canteen_balance error:', consumeErr);
+      return json({ success: false, error: 'Internal error during canteen deduction' }, 500);
     }
 
     if (newBalance === null) {
-      // Balance was 0 or no rewards row exists for this volunteer at this club
-      return json({ success: false, reason: 'insufficient_balance', free_drinks_balance: 0 });
+      return json({ success: false, reason: 'insufficient_balance', canteen_balance_eur: 0 });
     }
 
-    return json({ success: true, free_drinks_balance: newBalance });
+    return json({ success: true, canteen_balance_eur: newBalance });
   }
 
   // Should never reach here due to action validation above

@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
 import {
   CreditCard, QrCode, Camera, X, CheckCircle2,
-  Loader2, Smartphone, Beer, Tag,
+  Loader2, Smartphone, Wallet, Tag,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
@@ -19,7 +19,7 @@ interface ClubEntry {
   club_name: string;
   club_logo: string | null;
   card: { id: string; card_uid: string; is_digital: boolean } | null;
-  rewards: { free_drinks_balance: number; fanshop_discount_active: boolean } | null;
+  rewards: { canteen_balance_eur: number; fanshop_discount_active: boolean } | null;
 }
 
 interface Props {
@@ -44,8 +44,7 @@ const L: Record<Language, Record<string, string>> = {
     linked: 'Gekoppeld!',
     linkError: 'Koppelen mislukt. Probeer opnieuw.',
     generating: 'Aanmaken...',
-    drinks: 'gratis drankje',
-    drinkPlural: 'gratis drankjes',
+    canteenBalance: 'Kantine Tegoed',
     discount: 'Fanshopkorting actief',
     yourQr: 'Jouw digitale clubkaart',
     showAtBar: 'Toon aan de kassa bij de club.',
@@ -64,8 +63,7 @@ const L: Record<Language, Record<string, string>> = {
     linked: 'Lié !',
     linkError: 'Échec de la liaison. Réessayez.',
     generating: 'Création...',
-    drinks: 'boisson gratuite',
-    drinkPlural: 'boissons gratuites',
+    canteenBalance: 'Crédit Cantine',
     discount: 'Réduction fanshop active',
     yourQr: 'Votre carte de club numérique',
     showAtBar: 'Montrez-la à la caisse du club.',
@@ -84,8 +82,7 @@ const L: Record<Language, Record<string, string>> = {
     linked: 'Linked!',
     linkError: 'Link failed. Please try again.',
     generating: 'Creating...',
-    drinks: 'free drink',
-    drinkPlural: 'free drinks',
+    canteenBalance: 'Canteen Credit',
     discount: 'Fanshop discount active',
     yourQr: 'Your digital club card',
     showAtBar: 'Show this at the club checkout.',
@@ -126,11 +123,11 @@ const MijnClubkaarten = ({ userId, language }: Props) => {
     // Cards + rewards in parallel
     const [cardsRes, rewardsRes] = await Promise.all([
       supabase.from('volunteer_club_cards').select('club_id, id, card_uid, is_digital').eq('user_id', userId).in('club_id', clubIds),
-      supabase.from('volunteer_rewards').select('club_id, free_drinks_balance, fanshop_discount_active').eq('user_id', userId).in('club_id', clubIds),
+      (supabase as any).from('volunteer_rewards').select('club_id, canteen_balance_eur, fanshop_discount_active').eq('user_id', userId).in('club_id', clubIds),
     ]);
 
     const cardMap = new Map((cardsRes.data || []).map(c => [c.club_id, c]));
-    const rewardsMap = new Map((rewardsRes.data || []).map(r => [r.club_id, r]));
+    const rewardsMap = new Map((rewardsRes.data || []).map((r: any) => [r.club_id, r]));
 
     setClubs(memberships.map(m => ({
       club_id: m.club_id,
@@ -142,8 +139,8 @@ const MijnClubkaarten = ({ userId, language }: Props) => {
         is_digital: cardMap.get(m.club_id)!.is_digital,
       } : null,
       rewards: rewardsMap.get(m.club_id) ? {
-        free_drinks_balance: rewardsMap.get(m.club_id)!.free_drinks_balance,
-        fanshop_discount_active: rewardsMap.get(m.club_id)!.fanshop_discount_active,
+        canteen_balance_eur: rewardsMap.get(m.club_id)!.canteen_balance_eur ?? 0,
+        fanshop_discount_active: rewardsMap.get(m.club_id)!.fanshop_discount_active ?? false,
       } : null,
     })));
 
@@ -245,12 +242,12 @@ const MijnClubkaarten = ({ userId, language }: Props) => {
             </div>
 
             {/* Rewards strip */}
-            {entry.rewards && (entry.rewards.free_drinks_balance > 0 || entry.rewards.fanshop_discount_active) && (
+            {entry.rewards && (entry.rewards.canteen_balance_eur > 0 || entry.rewards.fanshop_discount_active) && (
               <div className="flex flex-wrap gap-2 px-4 pb-3">
-                {entry.rewards.free_drinks_balance > 0 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-sm font-semibold border border-amber-200 dark:border-amber-800/40">
-                    <Beer className="w-3.5 h-3.5" />
-                    {entry.rewards.free_drinks_balance}× {entry.rewards.free_drinks_balance === 1 ? l.drinks : l.drinkPlural}
+                {entry.rewards.canteen_balance_eur > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-sm font-semibold border border-emerald-200 dark:border-emerald-800/40">
+                    <Wallet className="w-3.5 h-3.5" />
+                    €{entry.rewards.canteen_balance_eur.toFixed(2)} {l.canteenBalance}
                   </span>
                 )}
                 {entry.rewards.fanshop_discount_active && (

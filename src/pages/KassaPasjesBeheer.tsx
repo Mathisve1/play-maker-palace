@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Terminal, Eye, EyeOff, Copy, Check,
-  RefreshCw, Loader2, Gift, Coffee, ShoppingBag,
-  Beer, Save,
+  RefreshCw, Loader2, Gift, ShoppingBag,
+  Wallet, Save,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
@@ -31,11 +31,11 @@ const L: Record<Language, Record<string, string>> = {
     noKeyDesc: 'Genereer een sleutel om je kassasysteem te koppelen.',
     rewardsTitle: 'Standaard Vrijwilligers Beloningen',
     rewardsDesc: 'Stel in wat vrijwilligers verdienen per shift.',
-    drinksToggle: 'Gratis Drankbonnetjes',
-    drinksCount: 'Aantal per shift',
+    canteenToggle: 'Kantine Tegoed (€)',
+    canteenDesc: 'Vrijwilligers ontvangen automatisch euro-tegoed op hun kantineportemonnee na elke afgewerkte shift.',
+    canteenAmount: 'Tegoed per shift (€)',
     fanshopToggle: 'Fanshop Tegoed',
     fanshopAmount: 'Tegoed per shift (€)',
-    coffeeToggle: 'Gratis Koffie/Thee',
     saveConfig: 'Configuratie Opslaan',
     saved: 'Beloningen opgeslagen!',
     saveError: 'Opslaan mislukt. Probeer opnieuw.',
@@ -53,11 +53,11 @@ const L: Record<Language, Record<string, string>> = {
     noKeyDesc: 'Générez une clé pour connecter votre caisse.',
     rewardsTitle: 'Récompenses Bénévoles Standard',
     rewardsDesc: 'Configurez ce que les bénévoles gagnent par shift.',
-    drinksToggle: 'Bons de boisson gratuits',
-    drinksCount: 'Nombre par shift',
+    canteenToggle: 'Crédit Cantine (€)',
+    canteenDesc: 'Les bénévoles reçoivent automatiquement un crédit en euros sur leur portefeuille cantine après chaque shift effectué.',
+    canteenAmount: 'Crédit par shift (€)',
     fanshopToggle: 'Crédit Fanshop',
     fanshopAmount: 'Crédit par shift (€)',
-    coffeeToggle: 'Café/Thé gratuit',
     saveConfig: 'Enregistrer la configuration',
     saved: 'Récompenses enregistrées !',
     saveError: 'Échec. Réessayez.',
@@ -75,11 +75,11 @@ const L: Record<Language, Record<string, string>> = {
     noKeyDesc: 'Generate a key to connect your POS system.',
     rewardsTitle: 'Default Volunteer Rewards',
     rewardsDesc: 'Configure what volunteers earn per shift.',
-    drinksToggle: 'Free Drink Vouchers',
-    drinksCount: 'Amount per shift',
+    canteenToggle: 'Canteen Credit (€)',
+    canteenDesc: 'Volunteers automatically receive Euro credit in their canteen wallet after each completed shift.',
+    canteenAmount: 'Credit per shift (€)',
     fanshopToggle: 'Fanshop Credit',
     fanshopAmount: 'Credit per shift (€)',
-    coffeeToggle: 'Free Coffee/Tea',
     saveConfig: 'Save Configuration',
     saved: 'Rewards saved!',
     saveError: 'Save failed. Try again.',
@@ -100,14 +100,14 @@ const KassaPasjesBeheer = () => {
   const [copied, setCopied] = useState(false);
   const [genLoading, setGenLoading] = useState(false);
 
-  // Rewards state
-  const [drinksEnabled, setDrinksEnabled] = useState(false);
-  const [drinksCount, setDrinksCount] = useState(2);
+  // Rewards state — Kantine Tegoed (€)
+  const [canteenEnabled, setCanteenEnabled] = useState(false);
+  const [canteenAmount, setCanteenAmount] = useState('2.50');
+  // Fanshop credit (unchanged)
   const [fanshopEnabled, setFanshopEnabled] = useState(false);
   const [fanshopAmount, setFanshopAmount] = useState('2.50');
-  const [coffeeEnabled, setCoffeeEnabled] = useState(false);
-  const [savingRewards, setSavingRewards] = useState(false);
 
+  const [savingRewards, setSavingRewards] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // ── Load data ────────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ const KassaPasjesBeheer = () => {
         .maybeSingle(),
       (supabase as any)
         .from('club_reward_settings')
-        .select('*')
+        .select('canteen_enabled, canteen_reward_eur, fanshop_credit_enabled, fanshop_credit_per_shift')
         .eq('club_id', clubId)
         .maybeSingle(),
     ]);
@@ -133,11 +133,10 @@ const KassaPasjesBeheer = () => {
 
     if (rewardsRes.data) {
       const r = rewardsRes.data;
-      setDrinksEnabled(r.free_drinks_enabled);
-      setDrinksCount(r.free_drinks_per_shift);
-      setFanshopEnabled(r.fanshop_credit_enabled);
-      setFanshopAmount(String(r.fanshop_credit_per_shift));
-      setCoffeeEnabled(r.free_coffee_enabled);
+      setCanteenEnabled(r.canteen_enabled ?? false);
+      setCanteenAmount(String(r.canteen_reward_eur ?? '2.50'));
+      setFanshopEnabled(r.fanshop_credit_enabled ?? false);
+      setFanshopAmount(String(r.fanshop_credit_per_shift ?? '2.50'));
     }
 
     setLoading(false);
@@ -171,11 +170,10 @@ const KassaPasjesBeheer = () => {
 
     const payload = {
       club_id: clubId,
-      free_drinks_enabled: drinksEnabled,
-      free_drinks_per_shift: drinksCount,
+      canteen_enabled: canteenEnabled,
+      canteen_reward_eur: parseFloat(canteenAmount) || 0,
       fanshop_credit_enabled: fanshopEnabled,
       fanshop_credit_per_shift: parseFloat(fanshopAmount) || 0,
-      free_coffee_enabled: coffeeEnabled,
     };
 
     const { error } = await (supabase as any)
@@ -296,39 +294,44 @@ const KassaPasjesBeheer = () => {
           </div>
 
           <div className="p-5 sm:p-6 space-y-6">
-            {/* ── Drink vouchers ─────────────────────────────────────── */}
+
+            {/* ── Kantine Tegoed (€) ──────────────────────────────────── */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Beer className="w-5 h-5 text-amber-500" />
-                  <Label htmlFor="drinks-toggle" className="text-base font-medium text-foreground cursor-pointer">
-                    {l.drinksToggle}
+                  <Wallet className="w-5 h-5 text-emerald-600" />
+                  <Label htmlFor="canteen-toggle" className="text-base font-medium text-foreground cursor-pointer">
+                    {l.canteenToggle}
                   </Label>
                 </div>
                 <Switch
-                  id="drinks-toggle"
-                  checked={drinksEnabled}
-                  onCheckedChange={setDrinksEnabled}
+                  id="canteen-toggle"
+                  checked={canteenEnabled}
+                  onCheckedChange={setCanteenEnabled}
                 />
               </div>
-              {drinksEnabled && (
+              <p className="text-sm text-muted-foreground pl-8">{l.canteenDesc}</p>
+              {canteenEnabled && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   className="pl-8"
                 >
-                  <Label htmlFor="drinks-count" className="text-sm text-muted-foreground mb-1.5 block">
-                    {l.drinksCount}
+                  <Label htmlFor="canteen-amount" className="text-sm text-muted-foreground mb-1.5 block">
+                    {l.canteenAmount}
                   </Label>
-                  <Input
-                    id="drinks-count"
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={drinksCount}
-                    onChange={e => setDrinksCount(parseInt(e.target.value) || 1)}
-                    className="w-24 h-10"
-                  />
+                  <div className="relative w-36">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-emerald-600">€</span>
+                    <Input
+                      id="canteen-amount"
+                      type="number"
+                      min={0}
+                      step={0.25}
+                      value={canteenAmount}
+                      onChange={e => setCanteenAmount(e.target.value)}
+                      className="pl-7 h-10"
+                    />
+                  </div>
                 </motion.div>
               )}
             </div>
@@ -359,7 +362,7 @@ const KassaPasjesBeheer = () => {
                   <Label htmlFor="fanshop-amount" className="text-sm text-muted-foreground mb-1.5 block">
                     {l.fanshopAmount}
                   </Label>
-                  <div className="relative w-32">
+                  <div className="relative w-36">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">€</span>
                     <Input
                       id="fanshop-amount"
@@ -373,23 +376,6 @@ const KassaPasjesBeheer = () => {
                   </div>
                 </motion.div>
               )}
-            </div>
-
-            <div className="border-t border-border" />
-
-            {/* ── Free coffee ────────────────────────────────────────── */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Coffee className="w-5 h-5 text-orange-500" />
-                <Label htmlFor="coffee-toggle" className="text-base font-medium text-foreground cursor-pointer">
-                  {l.coffeeToggle}
-                </Label>
-              </div>
-              <Switch
-                id="coffee-toggle"
-                checked={coffeeEnabled}
-                onCheckedChange={setCoffeeEnabled}
-              />
             </div>
           </div>
 
