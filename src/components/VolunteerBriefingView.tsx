@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
-import { Clock, MapPin, FileText, Coffee, Phone, CheckSquare, ChevronRight, Route, PenLine, CheckCircle, Image, Video, ArrowLeft } from 'lucide-react';
+import { Clock, MapPin, FileText, Coffee, Phone, CheckSquare, ChevronRight, Route, PenLine, CheckCircle, Image, ArrowLeft, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -142,6 +142,49 @@ interface VolunteerBriefingViewProps {
   fullscreen?: boolean;
 }
 
+// ─── Translation helper ───────────────────────────────────────────────────────
+
+async function translateField(
+  table: string, id: string, field: string, text: string, lang: Language
+): Promise<string> {
+  try {
+    const { data } = await supabase.functions.invoke('translate-content', {
+      body: { source_table: table, source_id: id, source_field: field, text, target_language: lang },
+    });
+    return data?.translated_text || text;
+  } catch {
+    return text;
+  }
+}
+
+async function buildTranslations(data: BriefingData, lang: Language): Promise<Record<string, string>> {
+  const result: Record<string, string> = {};
+  const calls: Promise<void>[] = [];
+
+  const add = (key: string, table: string, id: string, field: string, text: string) => {
+    if (!text?.trim()) return;
+    calls.push(translateField(table, id, field, text, lang).then(t => { result[key] = t; }));
+  };
+
+  // Briefing title
+  add('briefing:title', 'briefings', data.id, 'title', data.title);
+
+  for (const group of data.groups) {
+    for (const block of group.blocks) {
+      if (block.title) add(`block:${block.id}:title`, 'briefing_blocks', block.id, 'title', block.title);
+      if (block.description) add(`block:${block.id}:description`, 'briefing_blocks', block.id, 'description', block.description);
+      for (const item of block.checklist_items) {
+        add(`item:${item.id}:label`, 'briefing_checklist_items', item.id, 'label', item.label);
+      }
+    }
+  }
+
+  await Promise.allSettled(calls);
+  return result;
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments, fullscreen = false }: VolunteerBriefingViewProps) => {
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -149,7 +192,13 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
   const [completedBlocks, setCompletedBlocks] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState(-1); // -1 = intro, allBlocks.length = done
   const [myZone, setMyZone] = useState<{ name: string; max_capacity: number | null } | null>(null);
+  // Translation state
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [translating, setTranslating] = useState(false);
   const l = labels[language];
+
+  // Helper: get translated text or fall back to original
+  const t = useCallback((key: string, fallback: string) => translations[key] || fallback, [translations]);
 
   // Flatten all blocks across groups for step-by-step
   const allBlocks = briefing ? briefing.groups.flatMap(g => g.blocks) : [];
@@ -325,6 +374,15 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
     setCompletedBlocks(newCompletedBlocks);
     cacheData(briefingData);
 
+    // Trigger dynamic translation for non-Dutch users
+    if (language !== 'nl') {
+      setTranslating(true);
+      buildTranslations(briefingData, language).then(result => {
+        setTranslations(result);
+        setTranslating(false);
+      });
+    }
+
     // If all blocks completed, go to done screen
     const allBl = groups.flatMap(g => g.blocks);
     if (allBl.length > 0 && allBl.every(bl => newCompletedBlocks.has(bl.id))) {
@@ -413,6 +471,14 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
 
   return (
     <div className={wrapperClass}>
+      {/* Translation indicator */}
+      {translating && (
+        <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
+          <Globe className="w-3.5 h-3.5 animate-pulse" />
+          {language === 'fr' ? 'Traduction en cours...' : 'Translating...'}
+        </div>
+      )}
+
       {/* Progress header */}
       {!isIntro && !isDone && (
         <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3 space-y-2" style={{ paddingTop: fullscreen ? 'max(env(safe-area-inset-top, 0px), 12px)' : undefined }}>
@@ -446,7 +512,7 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
                 <FileText className="w-10 h-10 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-heading font-bold text-foreground">{briefing.title}</h1>
+                <h1 className="text-2xl font-heading font-bold text-foreground">{t('briefing:title', briefing.title)}</h1>
                 <p className="text-muted-foreground mt-2 text-lg">
                   {totalSteps} {l.step.toLowerCase()}{totalSteps !== 1 ? (language === 'nl' ? 'pen' : 's') : ''}
                 </p>
@@ -501,6 +567,7 @@ const VolunteerBriefingView = ({ taskId, language, userId, onNavigateToPayments,
                 onToggleCheck={toggleCheck}
                 language={language}
                 labels={l}
+                translations={translations}
               />
 
               {/* Navigation buttons */}
@@ -576,14 +643,19 @@ const StepBlock = ({
   onToggleCheck,
   language,
   labels: l,
+  translations,
 }: {
   block: BlockData;
   checkedItems: Set<string>;
   onToggleCheck: (id: string) => void;
   language: Language;
-  labels: typeof import('./VolunteerBriefingView').default extends never ? any : any;
+  labels: Record<string, string>;
+  translations: Record<string, string>;
 }) => {
   const Icon = blockIcons[block.type] || FileText;
+  // Translation helpers for this block
+  const blockTitle = translations[`block:${block.id}:title`] || block.title;
+  const blockDesc = translations[`block:${block.id}:description`] || block.description;
 
   return (
     <div className="space-y-5">
@@ -593,7 +665,7 @@ const StepBlock = ({
           <Icon className="w-6 h-6 text-primary" />
         </div>
         <h2 className="text-xl font-heading font-bold text-foreground leading-snug">
-          {block.title || block.type.replace(/_/g, ' ')}
+          {blockTitle || block.type.replace(/_/g, ' ')}
         </h2>
       </div>
 
@@ -617,27 +689,23 @@ const StepBlock = ({
         </div>
       )}
 
-      {/* Description */}
-      {block.description && (
+      {/* Description — show translated if available */}
+      {blockDesc && block.type !== 'media' && (
         <p className="text-lg leading-relaxed text-foreground whitespace-pre-wrap">
-          {block.description}
+          {blockDesc}
         </p>
       )}
 
-      {/* Media (images/videos in description URLs) */}
+      {/* Media (images/videos in description URLs — do NOT translate, it's a URL list) */}
       {block.type === 'media' && block.description && (
         <div className="space-y-3">
           {block.description.split('\n').filter(line => line.trim()).map((url, i) => {
             const trimmed = url.trim();
             if (/\.(mp4|webm|mov)(\?|$)/i.test(trimmed)) {
-              return (
-                <video key={i} src={trimmed} controls className="w-full rounded-2xl" playsInline />
-              );
+              return <video key={i} src={trimmed} controls className="w-full rounded-2xl" playsInline />;
             }
             if (/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(trimmed) || trimmed.startsWith('http')) {
-              return (
-                <img key={i} src={trimmed} alt="" className="w-full rounded-2xl object-cover" loading="lazy" />
-              );
+              return <img key={i} src={trimmed} alt="" className="w-full rounded-2xl object-cover" loading="lazy" />;
             }
             return null;
           })}
@@ -677,11 +745,12 @@ const StepBlock = ({
         </div>
       )}
 
-      {/* Checklist — large touch targets */}
+      {/* Checklist — large touch targets, translated labels */}
       {block.type === 'checklist' && block.checklist_items.length > 0 && (
         <div className="space-y-3">
           {block.checklist_items.map(item => {
             const checked = checkedItems.has(item.id);
+            const itemLabel = translations[`item:${item.id}:label`] || item.label;
             return (
               <button
                 key={item.id}
@@ -700,7 +769,7 @@ const StepBlock = ({
                 <span className={`text-base font-medium transition-all ${
                   checked ? 'text-muted-foreground line-through' : 'text-foreground'
                 }`}>
-                  {item.label}
+                  {itemLabel}
                 </span>
               </button>
             );

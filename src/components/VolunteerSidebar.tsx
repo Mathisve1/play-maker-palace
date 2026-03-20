@@ -3,7 +3,7 @@ import NotificationBell from '@/components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, ClipboardList, MessageCircle, Users,
-  CreditCard, FileSignature, LogOut, HelpCircle, CalendarDays, TrendingUp,
+  CreditCard, FileSignature, LogOut, HelpCircle, CalendarDays, TrendingUp, LayoutList,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useOptionalClubContext } from '@/contexts/ClubContext';
@@ -51,6 +51,7 @@ const labels: Record<Language, Record<string, string>> = {
     overview: 'Overzicht',
     manage: 'Beheer',
     community: 'Community',
+    details: 'Mijn Details & Voorkeuren',
   },
   fr: {
     dashboard: 'Tableau de bord',
@@ -67,6 +68,7 @@ const labels: Record<Language, Record<string, string>> = {
     overview: 'Aperçu',
     manage: 'Gestion',
     community: 'Communauté',
+    details: 'Mes Détails & Préférences',
   },
   en: {
     dashboard: 'Dashboard',
@@ -83,6 +85,7 @@ const labels: Record<Language, Record<string, string>> = {
     overview: 'Overview',
     manage: 'Manage',
     community: 'Community',
+    details: 'My Details & Preferences',
   },
 };
 
@@ -202,6 +205,12 @@ const VolunteerSidebar = ({
                   <TrendingUp className="w-5 h-5" />
                   <span>{l.grow}</span>
                   <Badge count={counts.loyalty} />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => handleExternalNav('/volunteer-details')} className="min-h-[48px]">
+                  <LayoutList className="w-5 h-5" />
+                  <span>{l.details}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

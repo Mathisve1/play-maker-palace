@@ -74,6 +74,7 @@ const BillingDashboard = lazy(() => import("./pages/BillingDashboard"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
+const VolunteerDetails = lazy(() => import("./pages/VolunteerDetails"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -183,6 +184,7 @@ const App = () => {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfUse />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/volunteer-details" element={<RequireAuth><VolunteerDetails /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

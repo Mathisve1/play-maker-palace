@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { VolunteerBriefingsList } from '@/components/VolunteerBriefingView';
-import { sendPush, sendPushToClub } from '@/lib/sendPush';
+import { sendPushToClub } from '@/lib/sendPush';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,11 +12,15 @@ import { useComplianceData } from '@/hooks/useComplianceData';
 import {
   Calendar, CalendarDays, Clock, MapPin, Euro, CheckCircle,
   ChevronLeft, ChevronRight, FileSignature, Users, AlertTriangle,
-  Loader2, QrCode, ShieldCheck, XCircle, Hourglass, CalendarCheck, FileText,
+  Loader2, QrCode, XCircle, Hourglass, CalendarCheck, FileText,
+  ClipboardList,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
-import SeasonAvailabilityPicker from '@/components/SeasonAvailabilityPicker';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants & types
+// ─────────────────────────────────────────────────────────────────────────────
 
 const MONTH_NAMES: Record<Language, string[]> = {
   nl: ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'],
@@ -78,10 +82,43 @@ interface Enrollment {
   approval_status: string;
 }
 
+// Regular task types (from tasks table, not monthly plans)
+interface ClubTask {
+  id: string;
+  title: string;
+  task_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  location: string | null;
+  club_id: string;
+  max_volunteers: number | null;
+  description: string | null;
+  clubs?: { name: string; logo_url: string | null };
+}
+
+interface MyTaskSignup {
+  id: string;
+  task_id: string;
+  status: string;
+  tasks?: {
+    id: string;
+    title: string;
+    task_date: string | null;
+    start_time: string | null;
+    end_time: string | null;
+    location: string | null;
+    clubs?: { name: string; logo_url: string | null };
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Labels
+// ─────────────────────────────────────────────────────────────────────────────
+
 const labels: Record<Language, Record<string, string>> = {
   nl: {
     title: 'Maandplanning',
-    subtitle: 'Bekijk beschikbare maandplannen en schrijf je in',
+    subtitle: 'Bekijk jouw planning en open taken bij je club',
     noPlans: 'Geen gepubliceerde maandplannen gevonden',
     enroll: 'Inschrijven voor deze maand',
     enrolled: 'Ingeschreven',
@@ -110,10 +147,25 @@ const labels: Record<Language, Record<string, string>> = {
     assigned: 'Toegekend',
     contractRequired: 'Je contract moet eerst getekend zijn voordat je je kunt aanmelden voor dagen.',
     approvalRequired: 'Je inschrijving moet eerst goedgekeurd worden door de club.',
+    // Planning toggle
+    mySignups: 'Mijn Inschrijvingen',
+    openTasks: 'Open Taken',
+    mySignupsDesc: 'Taken waar je al voor aangemeld bent',
+    openTasksDesc: 'Beschikbare taken bij jouw club',
+    // Regular club tasks
+    openClubTasks: 'Open taken bij jouw club',
+    noOpenTasks: 'Geen open taken gevonden bij jouw club.',
+    noMySignups: 'Je bent nog niet aangemeld voor taken.',
+    myRegularTasks: 'Mijn aangemelde taken',
+    noClubMembership: 'Je bent nog geen lid van een club.',
+    signUpConfirm: 'Aanmelden',
+    // Briefings tab
+    briefings: 'Mijn Briefings',
+    planning: 'Planning',
   },
   fr: {
     title: 'Planning mensuel',
-    subtitle: 'Consultez les plans mensuels et inscrivez-vous',
+    subtitle: 'Consultez votre planning et les tâches ouvertes dans votre club',
     noPlans: 'Aucun plan mensuel publié',
     enroll: "S'inscrire pour ce mois",
     enrolled: 'Inscrit',
@@ -142,10 +194,22 @@ const labels: Record<Language, Record<string, string>> = {
     assigned: 'Attribué',
     contractRequired: "Votre contrat doit d'abord être signé avant de pouvoir vous inscrire.",
     approvalRequired: "Votre inscription doit d'abord être approuvée par le club.",
+    mySignups: 'Mes Inscriptions',
+    openTasks: 'Tâches Ouvertes',
+    mySignupsDesc: 'Tâches auxquelles vous êtes déjà inscrit',
+    openTasksDesc: 'Tâches disponibles dans votre club',
+    openClubTasks: 'Tâches ouvertes dans votre club',
+    noOpenTasks: 'Aucune tâche ouverte dans votre club.',
+    noMySignups: "Vous n'êtes pas encore inscrit à des tâches.",
+    myRegularTasks: 'Mes tâches inscrites',
+    noClubMembership: "Vous n'êtes pas encore membre d'un club.",
+    signUpConfirm: "S'inscrire",
+    briefings: 'Mes Briefings',
+    planning: 'Planning',
   },
   en: {
     title: 'Monthly Planning',
-    subtitle: 'View available monthly plans and sign up',
+    subtitle: 'View your schedule and open tasks at your club',
     noPlans: 'No published monthly plans found',
     enroll: 'Enroll for this month',
     enrolled: 'Enrolled',
@@ -174,8 +238,24 @@ const labels: Record<Language, Record<string, string>> = {
     assigned: 'Assigned',
     contractRequired: 'Your contract must be signed before you can sign up for days.',
     approvalRequired: 'Your enrollment must be approved by the club first.',
+    mySignups: 'My Sign-ups',
+    openTasks: 'Open Tasks',
+    mySignupsDesc: 'Tasks you are already signed up for',
+    openTasksDesc: 'Available tasks at your club',
+    openClubTasks: 'Open tasks at your club',
+    noOpenTasks: 'No open tasks found at your club.',
+    noMySignups: 'You are not signed up for any tasks yet.',
+    myRegularTasks: 'My signed-up tasks',
+    noClubMembership: 'You are not a member of any club yet.',
+    signUpConfirm: 'Sign up',
+    briefings: 'My Briefings',
+    planning: 'Planning',
   },
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface VolunteerMonthlyTabProps {
   language: Language;
@@ -183,13 +263,20 @@ interface VolunteerMonthlyTabProps {
   clubId?: string;
 }
 
-type SubView = 'planning' | 'availability' | 'briefings';
+type SubView = 'planning' | 'briefings';
+type PlanView = 'mine' | 'open';
 
 const YEARLY_CAP = 3233.91;
 
-const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabProps) => {
+const VolunteerMonthlyTab = ({ language, userId }: VolunteerMonthlyTabProps) => {
   const l = labels[language];
+
+  // Sub-view: Planning or Briefings
   const [subView, setSubView] = useState<SubView>('planning');
+  // Plan view toggle: My sign-ups or Open tasks
+  const [planView, setPlanView] = useState<PlanView>('mine');
+
+  // Monthly plan data
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth() + 1);
@@ -198,8 +285,15 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [daySignups, setDaySignups] = useState<DaySignup[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Regular tasks (from tasks table)
+  const [clubTasks, setClubTasks] = useState<ClubTask[]>([]);
+  const [myTaskSignups, setMyTaskSignups] = useState<MyTaskSignup[]>([]);
+  const [loadingClubTasks, setLoadingClubTasks] = useState(false);
+  const [signingUpTaskId, setSigningUpTaskId] = useState<string | null>(null);
+
+  // Dialog state
   const [showHoursDialog, setShowHoursDialog] = useState(false);
-  const [showCheckoutConfirm, setShowCheckoutConfirm] = useState(false);
   const [selectedSignup, setSelectedSignup] = useState<DaySignup | null>(null);
   const [selectedTask, setSelectedTask] = useState<PlanTask | null>(null);
   const [hoursInput, setHoursInput] = useState('');
@@ -212,6 +306,9 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
   const isWarning = compliancePercentage >= 80 && !isBlocked;
 
   useEffect(() => { loadData(); }, [viewYear, viewMonth, userId]);
+  useEffect(() => { loadClubTaskData(); }, [userId]);
+
+  // ── Monthly plan data ──────────────────────────────────────────────────────
 
   const loadData = async () => {
     setLoading(true);
@@ -240,12 +337,51 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
     setLoading(false);
   };
 
+  // ── Regular club task data ─────────────────────────────────────────────────
+
+  const loadClubTaskData = async () => {
+    setLoadingClubTasks(true);
+    // My regular task signups
+    const { data: signupData } = await supabase
+      .from('task_signups')
+      .select('id, task_id, status, tasks(id, title, task_date, start_time, end_time, location, clubs(name, logo_url))')
+      .eq('volunteer_id', userId)
+      .order('created_at', { ascending: false });
+    setMyTaskSignups((signupData || []) as unknown as MyTaskSignup[]);
+
+    // Open tasks at volunteer's clubs
+    const { data: memberships } = await supabase
+      .from('club_memberships')
+      .select('club_id')
+      .eq('volunteer_id', userId)
+      .eq('status', 'actief');
+
+    if (!memberships?.length) { setClubTasks([]); setLoadingClubTasks(false); return; }
+
+    const clubIds = memberships.map(m => m.club_id);
+    const signedUpTaskIds = new Set((signupData || []).map((s: any) => s.task_id));
+
+    const today = new Date().toISOString().split('T')[0];
+    const { data: openTasks } = await supabase
+      .from('tasks')
+      .select('id, title, task_date, start_time, end_time, location, club_id, max_volunteers, description, clubs(name, logo_url)')
+      .in('club_id', clubIds)
+      .gte('task_date', today)
+      .order('task_date');
+
+    setClubTasks(
+      ((openTasks || []) as unknown as ClubTask[]).filter(t => !signedUpTaskIds.has(t.id))
+    );
+    setLoadingClubTasks(false);
+  };
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+
   const enrollInPlan = async (planId: string) => {
     if (isBlocked) { toast.error(l.complianceBlocked); return; }
     const { error } = await supabase.from('monthly_enrollments').insert({ plan_id: planId, volunteer_id: userId });
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Ingeschreven! Wacht op goedkeuring van de club.' : 'Enrolled! Waiting for club approval.');
-    // Notify club of new enrollment
     const plan = plans.find(p => p.id === planId);
     if (plan) {
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
@@ -255,7 +391,6 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
   };
 
   const signUpForDay = async (enrollmentId: string, planTaskId: string) => {
-    // No longer generate barcode client-side - club will generate ticket after assignment
     const { error } = await supabase.from('monthly_day_signups').insert({
       enrollment_id: enrollmentId,
       plan_task_id: planTaskId,
@@ -263,7 +398,6 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
     });
     if (error) { toast.error(error.message); return; }
     toast.success(language === 'nl' ? 'Aangemeld! Wacht op bevestiging van de club.' : 'Signed up! Waiting for club confirmation.');
-    // Notify club of day signup
     const task = tasks.find(t => t.id === planTaskId);
     const plan = plans.find(p => task && p.id === task.plan_id);
     if (plan) {
@@ -271,6 +405,31 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
       sendPushToClub({ clubId: plan.club_id, title: '📅 Nieuwe dag-aanmelding', message: `${profile?.full_name || 'Een vrijwilliger'} heeft zich aangemeld voor ${task?.title || 'een taak'}.`, url: '/command-center', type: 'new_day_signup' });
     }
     loadData();
+  };
+
+  const signUpForClubTask = async (taskId: string) => {
+    if (isBlocked) { toast.error(l.complianceBlocked); return; }
+    setSigningUpTaskId(taskId);
+    const { error } = await supabase.from('task_signups').insert({
+      task_id: taskId,
+      volunteer_id: userId,
+      status: 'pending',
+    });
+    setSigningUpTaskId(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success(language === 'nl' ? '🎉 Aangemeld! De club neemt contact met je op.' : language === 'fr' ? '🎉 Inscrit !' : '🎉 Signed up!');
+    const task = clubTasks.find(t => t.id === taskId);
+    if (task) {
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+      sendPushToClub({
+        clubId: task.club_id,
+        title: language === 'nl' ? '🎉 Nieuwe aanmelding' : 'New signup',
+        message: `${profile?.full_name || 'Een vrijwilliger'} heeft zich aangemeld voor "${task.title}".`,
+        url: '/command-center',
+        type: 'new_signup',
+      });
+    }
+    loadClubTaskData();
   };
 
   const submitHours = async () => {
@@ -295,7 +454,6 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
   const confirmCheckout = async (agree: boolean) => {
     if (!selectedSignup) return;
     if (agree) {
-      // Volunteer agrees with club's checkout time
       const hours = selectedSignup.club_reported_hours || 0;
       const task = tasks.find(t => t.id === selectedSignup.plan_task_id);
       const rate = task?.hourly_rate || 0;
@@ -308,13 +466,12 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
       } as any).eq('id', selectedSignup.id);
       toast.success(language === 'nl' ? `Akkoord: ${hours.toFixed(1)}u — €${finalAmount.toFixed(2)}` : `Agreed: ${hours.toFixed(1)}h — €${finalAmount.toFixed(2)}`);
     } else {
-      // Volunteer disputes — opens dispute
       await supabase.from('monthly_day_signups').update({
         dispute_status: 'open', hour_status: 'disputed',
       } as any).eq('id', selectedSignup.id);
       toast.info(language === 'nl' ? 'Geschil geopend. Bespreek via chat met de club.' : 'Dispute opened. Discuss via chat with the club.');
     }
-    setShowCheckoutConfirm(false); setSelectedSignup(null);
+    setSelectedSignup(null);
     loadData();
   };
 
@@ -331,6 +488,8 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
     loadData();
   };
 
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
   const prevMonth = () => { if (viewMonth === 1) { setViewMonth(12); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
   const nextMonth = () => { if (viewMonth === 12) { setViewMonth(1); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
 
@@ -346,7 +505,11 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
 
   const isSignedUp = (taskId: string) => daySignups.some(ds => ds.plan_task_id === taskId);
   const getSignup = (taskId: string) => daySignups.find(ds => ds.plan_task_id === taskId);
-  const tasksByDate = tasks.reduce<Record<string, PlanTask[]>>((acc, t) => { if (!acc[t.task_date]) acc[t.task_date] = []; acc[t.task_date].push(t); return acc; }, {});
+  const tasksByDate = tasks.reduce<Record<string, PlanTask[]>>((acc, t) => {
+    if (!acc[t.task_date]) acc[t.task_date] = [];
+    acc[t.task_date].push(t);
+    return acc;
+  }, {});
   const mySignedUpTasks = tasks.filter(t => isSignedUp(t.id));
   const estimatedMonthTotal = mySignedUpTasks.reduce((sum, t) => {
     if (t.compensation_type === 'daily' && t.daily_rate) return sum + t.daily_rate;
@@ -354,10 +517,8 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
     return sum;
   }, 0);
 
-  // Helper: can volunteer sign up for days?
-  const canSignUpForDays = (enrollment: Enrollment) => {
-    return enrollment.approval_status === 'approved' && enrollment.contract_status === 'signed';
-  };
+  const canSignUpForDays = (enrollment: Enrollment) =>
+    enrollment.approval_status === 'approved' && enrollment.contract_status === 'signed';
 
   const enrollmentStatusMessage = (enrollment: Enrollment) => {
     if (enrollment.approval_status === 'pending') return { icon: Hourglass, text: l.waitingApproval, color: 'border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' };
@@ -372,14 +533,25 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
     return <Badge variant="secondary" className="text-[10px]">{l.waitingAssignment}</Badge>;
   };
 
-  const subViewLabels: Record<SubView, { label: string; icon: typeof CalendarDays }> = {
-    planning: { label: language === 'nl' ? 'Planning' : language === 'fr' ? 'Planning' : 'Planning', icon: CalendarDays },
-    availability: { label: language === 'nl' ? 'Beschikbaarheid' : language === 'fr' ? 'Disponibilité' : 'Availability', icon: CalendarCheck },
-    briefings: { label: language === 'nl' ? 'Mijn Briefings' : language === 'fr' ? 'Mes Briefings' : 'My Briefings', icon: FileText },
+  const regularSignupStatusBadge = (status: string) => {
+    if (status === 'assigned') return <Badge className="bg-green-600 text-[10px]">{l.assigned}</Badge>;
+    if (status === 'rejected') return <Badge variant="destructive" className="text-[10px]">{l.rejected}</Badge>;
+    return <Badge variant="secondary" className="text-[10px]">{l.waitingAssignment}</Badge>;
   };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    });
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Page header */}
       <div>
         <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
           <CalendarDays className="w-6 h-6 text-primary" />
@@ -388,352 +560,527 @@ const VolunteerMonthlyTab = ({ language, userId, clubId }: VolunteerMonthlyTabPr
         <p className="text-sm text-muted-foreground mt-1">{l.subtitle}</p>
       </div>
 
-      {/* Sub-view switcher */}
+      {/* Top-level sub-view tabs: Planning | Briefings */}
       <div className="flex gap-2 border-b border-border pb-0">
-        {(['planning', 'availability', 'briefings'] as SubView[]).map(view => {
-          const { label, icon: Icon } = subViewLabels[view];
-          return (
+        {([
+          { view: 'planning' as SubView, label: l.planning, Icon: CalendarDays },
+          { view: 'briefings' as SubView, label: l.briefings, Icon: FileText },
+        ]).map(({ view, label, Icon }) => (
+          <button
+            key={view}
+            onClick={() => setSubView(view)}
+            className={`px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${
+              subView === view
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Icon className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── PLANNING SUB-VIEW ────────────────────────────────────────────── */}
+      {subView === 'planning' && (
+        <>
+          {/* Compliance banners */}
+          {isWarning && (
+            <Card className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-900/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0" />
+                <span className="text-sm text-yellow-800 dark:text-yellow-200">{l.complianceWarning} ({compliancePercentage.toFixed(0)}% — €{totalEarned.toFixed(2)} / €{YEARLY_CAP})</span>
+              </CardContent>
+            </Card>
+          )}
+          {isBlocked && (
+            <Card className="border-destructive/50 bg-destructive/10">
+              <CardContent className="p-4 flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+                <span className="text-sm text-destructive">{l.complianceBlocked}</span>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── BIG TOGGLE: Mijn Inschrijvingen | Open Taken ──────────────── */}
+          <div className="grid grid-cols-2 gap-2 p-1.5 bg-muted rounded-2xl">
             <button
-              key={view}
-              onClick={() => setSubView(view)}
-              className={`px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${
-                subView === view
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              onClick={() => setPlanView('mine')}
+              className={`flex flex-col items-center justify-center gap-2 py-5 px-3 rounded-xl font-semibold text-base transition-all min-h-[80px] ${
+                planView === 'mine'
+                  ? 'bg-card shadow-md text-foreground border border-border'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Icon className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-              {label}
+              <CalendarCheck className={`w-7 h-7 ${planView === 'mine' ? 'text-primary' : ''}`} />
+              <span className="text-sm font-semibold leading-tight text-center">{l.mySignups}</span>
             </button>
-          );
-        })}
-      </div>
+            <button
+              onClick={() => setPlanView('open')}
+              className={`flex flex-col items-center justify-center gap-2 py-5 px-3 rounded-xl font-semibold text-base transition-all min-h-[80px] ${
+                planView === 'open'
+                  ? 'bg-card shadow-md text-foreground border border-border'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <ClipboardList className={`w-7 h-7 ${planView === 'open' ? 'text-primary' : ''}`} />
+              <span className="text-sm font-semibold leading-tight text-center">{l.openTasks}</span>
+            </button>
+          </div>
 
-      {/* Availability sub-view — always show, works globally across all clubs */}
-      {subView === 'availability' && userId && (
-        <SeasonAvailabilityPicker userId={userId} clubId={clubId} language={language} />
-      )}
+          {/* Month navigator (only relevant for monthly plan section) */}
+          <div className="flex items-center justify-between">
+            <Button variant="outline" size="icon" onClick={prevMonth} className="h-11 w-11"><ChevronLeft className="w-5 h-5" /></Button>
+            <h2 className="text-lg font-bold">{MONTH_NAMES[language][viewMonth - 1]} {viewYear}</h2>
+            <Button variant="outline" size="icon" onClick={nextMonth} className="h-11 w-11"><ChevronRight className="w-5 h-5" /></Button>
+          </div>
 
-      {/* Planning sub-view */}
-      {subView === 'planning' && (
-      <>
+          {/* ── MIJN INSCHRIJVINGEN ──────────────────────────────────────── */}
+          {planView === 'mine' && (
+            <>
+              {loading ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                </div>
+              ) : (
+                <>
+                  {/* Monthly plan day signups */}
+                  {plans.map(plan => {
+                    const enrollment = enrollments.find(e => e.plan_id === plan.id);
+                    const planMyTasks = mySignedUpTasks.filter(t => t.plan_id === plan.id);
+                    if (!enrollment || planMyTasks.length === 0) return null;
 
-      {isWarning && (
-        <Card className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-900/20">
-          <CardContent className="p-3 flex items-center gap-2 text-sm">
-            <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0" />
-            <span className="text-yellow-800 dark:text-yellow-200">{l.complianceWarning} ({compliancePercentage.toFixed(0)}% — €{totalEarned.toFixed(2)} / €{YEARLY_CAP})</span>
-          </CardContent>
-        </Card>
-      )}
-      {isBlocked && (
-        <Card className="border-destructive/50 bg-destructive/10">
-          <CardContent className="p-3 flex items-center gap-2 text-sm">
-            <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-            <span className="text-destructive">{l.complianceBlocked}</span>
-          </CardContent>
-        </Card>
-      )}
+                    return (
+                      <div key={plan.id} className="space-y-3">
+                        {/* Plan header */}
+                        <PlanHeader plan={plan} enrollment={enrollment} l={l} onEnroll={() => {}} isBlocked={isBlocked} hideEnroll />
 
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
-        <h2 className="text-lg font-bold">{MONTH_NAMES[language][viewMonth - 1]} {viewYear}</h2>
-        <Button variant="outline" size="icon" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-16 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />Laden...</div>
-      ) : plans.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>{l.noPlans}</p>
-        </div>
-      ) : (
-        plans.map(plan => {
-          const enrollment = enrollments.find(e => e.plan_id === plan.id);
-          const planTasks = tasks.filter(t => t.plan_id === plan.id);
-          const statusMsg = enrollment ? enrollmentStatusMessage(enrollment) : null;
-
-          return (
-            <div key={plan.id} className="space-y-4">
-              {/* Plan header */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {plan.clubs?.logo_url ? (
-                        <img src={plan.clubs.logo_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
-                          {(plan.clubs?.name || '?')[0]}
-                        </div>
-                      )}
-                      <div>
-                        <h3 className="font-semibold">{plan.clubs?.name}</h3>
-                        <p className="text-xs text-muted-foreground">{plan.title} · {planTasks.length} taken</p>
-                      </div>
-                    </div>
-                    {enrollment ? (
-                      <div className="flex items-center gap-2">
-                        {enrollment.approval_status === 'approved' ? (
-                          <Badge variant="default" className="bg-green-600">{l.approved}</Badge>
-                        ) : enrollment.approval_status === 'rejected' ? (
-                          <Badge variant="destructive">{l.rejected}</Badge>
-                        ) : (
-                          <Badge variant="secondary">{l.waitingApproval}</Badge>
-                        )}
-                      </div>
-                    ) : (
-                      <Button size="sm" onClick={() => enrollInPlan(plan.id)} disabled={isBlocked}>
-                        <FileSignature className="w-4 h-4 mr-1" /> {l.enroll}
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Status message */}
-              {statusMsg && (
-                <Card className={`${statusMsg.color}`}>
-                  <CardContent className="p-3 flex items-center gap-2 text-sm">
-                    <statusMsg.icon className="w-4 h-4 shrink-0" />
-                    <span>{statusMsg.text}</span>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* My schedule (if enrolled and can see signups) */}
-              {enrollment && mySignedUpTasks.filter(t => t.plan_id === plan.id).length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{l.yourSchedule}</CardTitle>
-                      <span className="text-xs text-muted-foreground">{l.monthTotal}: <strong className="text-foreground">€{estimatedMonthTotal.toFixed(2)}</strong></span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {mySignedUpTasks.filter(t => t.plan_id === plan.id).map(t => {
-                      const d = new Date(t.task_date);
-                      const signup = getSignup(t.id);
-                      const isPast = d < new Date(new Date().toISOString().split('T')[0]);
-                      const isHourly = t.compensation_type === 'hourly';
-                      const needsCheckoutConfirm = signup?.hour_status === 'checkout_pending' && !signup.volunteer_approved && isHourly;
-                      const needsHourReport = isPast && signup?.checked_in_at && !signup.volunteer_approved && !needsCheckoutConfirm && t.compensation_type !== 'hourly';
-                      const needsDisputeInput = signup?.dispute_status === 'escalated' && !signup.volunteer_reported_hours;
-                      const notCheckedIn = isPast && !signup?.checked_in_at;
-
-                      return (
-                        <div key={t.id} className={`flex items-center gap-3 p-3 rounded-lg border ${notCheckedIn ? 'bg-destructive/5 border-destructive/20' : 'bg-primary/5'}`}>
-                          <div className="text-center min-w-[40px]">
-                            <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(language === 'nl' ? 'nl-BE' : 'fr-BE', { weekday: 'short' })}</p>
-                            <p className="text-lg font-bold">{d.getDate()}</p>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{t.title}</span>
-                              <Badge variant="outline" className={`text-[10px] ${categoryColor(t.category)}`}>{t.category}</Badge>
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-base">{l.yourSchedule}</CardTitle>
+                              <span className="text-xs text-muted-foreground">{l.monthTotal}: <strong className="text-foreground">€{estimatedMonthTotal.toFixed(2)}</strong></span>
                             </div>
-                            <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
-                              {t.start_time && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t.start_time}–{t.end_time}</span>}
-                              {t.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{t.location}</span>}
-                              <span className="flex items-center gap-1"><Euro className="w-3 h-3" />{t.compensation_type === 'daily' ? `€${t.daily_rate}/${l.day}` : `€${t.hourly_rate}/${l.hour}`}</span>
-                            </div>
-                            {notCheckedIn && (
-                              <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {l.notCheckedIn}</p>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            {/* Signup status badge */}
-                            {signup && signupStatusBadge(signup)}
-                            {signup?.checked_in_at ? (
-                              <Badge variant="default" className="bg-green-600 text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" />{l.checkedIn}</Badge>
-                            ) : !isPast && signup?.status === 'assigned' ? (
-                              <>
-                                {signup?.ticket_barcode && (
-                                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowTicket(signup.ticket_barcode)}>
-                                    <QrCode className="w-3 h-3 mr-1" /> {l.ticket}
-                                  </Button>
-                                )}
-                              </>
-                            ) : null}
-                            {needsCheckoutConfirm && (
-                              <div className="flex flex-col gap-1">
-                                <p className="text-[10px] text-muted-foreground">{language === 'nl' ? `Club zegt: ${signup!.club_reported_hours?.toFixed(1)}u` : `Club says: ${signup!.club_reported_hours?.toFixed(1)}h`}</p>
-                                <div className="flex gap-1">
-                                  <Button size="sm" variant="outline" className="h-6 text-[10px] text-green-700" onClick={() => { setSelectedSignup(signup!); confirmCheckout(true); }}>
-                                    <CheckCircle className="w-3 h-3 mr-0.5" /> {language === 'nl' ? 'Akkoord' : 'Agree'}
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="h-6 text-[10px] text-destructive" onClick={() => { setSelectedSignup(signup!); confirmCheckout(false); }}>
-                                    <XCircle className="w-3 h-3 mr-0.5" /> {language === 'nl' ? 'Betwist' : 'Dispute'}
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                            {needsDisputeInput && (
-                              <Button size="sm" variant="outline" className="h-7 text-xs text-destructive" onClick={() => {
-                                setSelectedSignup(signup!); setSelectedTask(t);
-                                setHoursInput(''); setShowHoursDialog(true);
-                              }}>
-                                <AlertTriangle className="w-3 h-3 mr-1" /> {language === 'nl' ? 'Jouw uren invoeren' : 'Enter your hours'}
-                              </Button>
-                            )}
-                            {needsHourReport && (
-                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
-                                setSelectedSignup(signup!); setSelectedTask(t);
-                                setHoursInput(String(t.estimated_hours || '')); setShowHoursDialog(true);
-                              }}>
-                                <Clock className="w-3 h-3 mr-1" /> {l.confirmHours}
-                              </Button>
-                            )}
-                            {signup?.dispute_status === 'open' && (
-                              <Badge variant="destructive" className="text-[10px]">{language === 'nl' ? 'Geschil open' : 'Dispute open'}</Badge>
-                            )}
-                            {signup?.dispute_status === 'escalated' && (
-                              <Badge variant="destructive" className="text-[10px]">⚠️ {language === 'nl' ? 'Geëscaleerd' : 'Escalated'}</Badge>
-                            )}
-                            {signup?.volunteer_approved && signup?.hour_status === 'confirmed' && (
-                              <Badge variant="outline" className="text-[10px] text-green-600 border-green-200">
-                                <CheckCircle className="w-3 h-3 mr-0.5" /> {signup.final_hours ? `${signup.final_hours.toFixed(1)}u ✓` : l.hoursConfirmed}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-              )}
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            {planMyTasks.map(t => {
+                              const d = new Date(t.task_date);
+                              const signup = getSignup(t.id);
+                              const isPast = d < new Date(new Date().toISOString().split('T')[0]);
+                              const isHourly = t.compensation_type === 'hourly';
+                              const needsCheckoutConfirm = signup?.hour_status === 'checkout_pending' && !signup.volunteer_approved && isHourly;
+                              const needsHourReport = isPast && signup?.checked_in_at && !signup.volunteer_approved && !needsCheckoutConfirm && t.compensation_type !== 'hourly';
+                              const needsDisputeInput = signup?.dispute_status === 'escalated' && !signup.volunteer_reported_hours;
+                              const notCheckedIn = isPast && !signup?.checked_in_at;
 
-              {/* Available tasks by date */}
-              {enrollment && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{l.availableTasks}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {!canSignUpForDays(enrollment) && (
-                      <div className="p-2.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 text-sm flex items-center gap-2">
-                        {enrollment.approval_status !== 'approved' ? (
-                          <>
-                            <Hourglass className="w-4 h-4 text-amber-600 shrink-0" />
-                            <span className="text-amber-800 dark:text-amber-200">{l.approvalRequired}</span>
-                          </>
-                        ) : (
-                          <>
-                            <FileSignature className="w-4 h-4 text-amber-600 shrink-0" />
-                            <span className="text-amber-800 dark:text-amber-200">{l.contractRequired}</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    {Object.entries(tasksByDate)
-                      .filter(([_, ts]) => ts.some(t => t.plan_id === plan.id))
-                      .sort(([a], [b]) => a.localeCompare(b))
-                      .map(([date, dateTasks]) => {
-                        const d = new Date(date);
-                        const isPast = d < new Date(new Date().toISOString().split('T')[0]);
-                        const blocked = !canSignUpForDays(enrollment);
-                        return (
-                          <div key={date} className={isPast ? 'opacity-50' : ''}>
-                            <p className="text-xs font-semibold text-muted-foreground mb-2 capitalize">
-                              {d.toLocaleDateString(language === 'nl' ? 'nl-BE' : 'fr-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
-                            </p>
-                            <div className="space-y-1.5">
-                              {dateTasks.filter(t => t.plan_id === plan.id).map(t => {
-                                const signedUp = isSignedUp(t.id);
-                                const signup = getSignup(t.id);
-                                return (
-                                  <div key={t.id} className="flex items-center gap-3 p-2.5 rounded-lg border hover:bg-muted/30 transition-colors">
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium">{t.title}</span>
-                                        <Badge variant="outline" className={`text-[10px] ${categoryColor(t.category)}`}>{t.category}</Badge>
-                                      </div>
-                                      <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
-                                        {t.start_time && <span><Clock className="w-3 h-3 inline mr-0.5" />{t.start_time}–{t.end_time}</span>}
-                                        {t.location && <span><MapPin className="w-3 h-3 inline mr-0.5" />{t.location}</span>}
-                                        <span><Euro className="w-3 h-3 inline mr-0.5" />{t.compensation_type === 'daily' ? `€${t.daily_rate}` : `€${t.hourly_rate}/u`}</span>
-                                        <span><Users className="w-3 h-3 inline mr-0.5" />{t.spots_available} {l.available}</span>
-                                      </div>
+                              return (
+                                <div key={t.id} className={`flex items-center gap-3 p-4 rounded-xl border ${notCheckedIn ? 'bg-destructive/5 border-destructive/20' : 'bg-primary/5 border-transparent'}`}>
+                                  <div className="text-center min-w-[44px]">
+                                    <p className="text-xs text-muted-foreground capitalize">{d.toLocaleDateString(language === 'nl' ? 'nl-BE' : 'fr-BE', { weekday: 'short' })}</p>
+                                    <p className="text-xl font-bold">{d.getDate()}</p>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-semibold text-base">{t.title}</span>
+                                      <Badge variant="outline" className={`text-[10px] ${categoryColor(t.category)}`}>{t.category}</Badge>
                                     </div>
-                                    {signedUp ? (
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        {signup && signupStatusBadge(signup)}
-                                      </div>
-                                    ) : !isPast && !blocked ? (
-                                      <Button size="sm" variant="outline" className="shrink-0" onClick={() => signUpForDay(enrollment.id, t.id)}>
-                                        {l.signUp}
-                                      </Button>
-                                    ) : !isPast && blocked ? (
-                                      <Button size="sm" variant="outline" className="shrink-0 opacity-50 cursor-not-allowed" disabled>
-                                        {l.signUp}
+                                    <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground flex-wrap">
+                                      {t.start_time && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{t.start_time}–{t.end_time}</span>}
+                                      {t.location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{t.location}</span>}
+                                      <span className="flex items-center gap-1"><Euro className="w-3.5 h-3.5" />{t.compensation_type === 'daily' ? `€${t.daily_rate}/${l.day}` : `€${t.hourly_rate}/${l.hour}`}</span>
+                                    </div>
+                                    {notCheckedIn && (
+                                      <p className="text-sm text-destructive mt-1.5 flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> {l.notCheckedIn}</p>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                    {signup && signupStatusBadge(signup)}
+                                    {signup?.checked_in_at ? (
+                                      <Badge variant="default" className="bg-green-600 text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" />{l.checkedIn}</Badge>
+                                    ) : !isPast && signup?.status === 'assigned' && signup?.ticket_barcode ? (
+                                      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowTicket(signup.ticket_barcode)}>
+                                        <QrCode className="w-3 h-3 mr-1" /> {l.ticket}
                                       </Button>
                                     ) : null}
+                                    {needsCheckoutConfirm && (
+                                      <div className="flex flex-col gap-1">
+                                        <p className="text-[10px] text-muted-foreground">{language === 'nl' ? `Club: ${signup!.club_reported_hours?.toFixed(1)}u` : `Club: ${signup!.club_reported_hours?.toFixed(1)}h`}</p>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="outline" className="h-8 text-xs text-green-700 min-h-[32px]" onClick={() => { setSelectedSignup(signup!); confirmCheckout(true); }}>
+                                            <CheckCircle className="w-3 h-3 mr-0.5" /> {language === 'nl' ? 'Akkoord' : 'OK'}
+                                          </Button>
+                                          <Button size="sm" variant="outline" className="h-8 text-xs text-destructive min-h-[32px]" onClick={() => { setSelectedSignup(signup!); confirmCheckout(false); }}>
+                                            <XCircle className="w-3 h-3 mr-0.5" /> {language === 'nl' ? 'Betwist' : 'No'}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {needsDisputeInput && (
+                                      <Button size="sm" variant="outline" className="h-8 text-xs text-destructive min-h-[32px]" onClick={() => { setSelectedSignup(signup!); setSelectedTask(t); setHoursInput(''); setShowHoursDialog(true); }}>
+                                        <AlertTriangle className="w-3 h-3 mr-1" /> {language === 'nl' ? 'Uren invoeren' : 'Enter hours'}
+                                      </Button>
+                                    )}
+                                    {needsHourReport && (
+                                      <Button size="sm" variant="outline" className="h-8 text-xs min-h-[32px]" onClick={() => { setSelectedSignup(signup!); setSelectedTask(t); setHoursInput(String(t.estimated_hours || '')); setShowHoursDialog(true); }}>
+                                        <Clock className="w-3 h-3 mr-1" /> {l.confirmHours}
+                                      </Button>
+                                    )}
+                                    {signup?.dispute_status === 'open' && (
+                                      <Badge variant="destructive" className="text-[10px]">{language === 'nl' ? 'Geschil open' : 'Dispute'}</Badge>
+                                    )}
+                                    {signup?.volunteer_approved && signup?.hour_status === 'confirmed' && (
+                                      <Badge variant="outline" className="text-[10px] text-green-600 border-green-200">
+                                        <CheckCircle className="w-3 h-3 mr-0.5" /> {signup.final_hours ? `${signup.final_hours.toFixed(1)}u ✓` : l.hoursConfirmed}
+                                      </Badge>
+                                    )}
                                   </div>
-                                );
-                              })}
+                                </div>
+                              );
+                            })}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    );
+                  })}
+
+                  {/* Regular task signups */}
+                  {loadingClubTasks ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : myTaskSignups.length > 0 ? (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <CalendarCheck className="w-4 h-4 text-primary" />
+                          {l.myRegularTasks}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {myTaskSignups.map(signup => {
+                          const task = signup.tasks;
+                          if (!task) return null;
+                          return (
+                            <div key={signup.id} className="flex items-center gap-4 p-4 rounded-xl border bg-card hover:bg-muted/30 transition-colors">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="font-semibold text-base text-foreground">{task.title}</p>
+                                  {regularSignupStatusBadge(signup.status)}
+                                </div>
+                                <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground flex-wrap">
+                                  {task.task_date && (
+                                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDate(task.task_date)}</span>
+                                  )}
+                                  {task.start_time && (
+                                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{task.start_time}</span>
+                                  )}
+                                  {task.location && (
+                                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{task.location}</span>
+                                  )}
+                                </div>
+                                {(task as any).clubs?.name && (
+                                  <p className="text-xs text-muted-foreground mt-1">{(task as any).clubs.name}</p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                  </CardContent>
-                </Card>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  ) : null}
+
+                  {/* Empty state if nothing at all */}
+                  {plans.every(p => !enrollments.find(e => e.plan_id === p.id) || mySignedUpTasks.filter(t => t.plan_id === p.id).length === 0) && myTaskSignups.length === 0 && !loadingClubTasks && (
+                    <div className="text-center py-16 text-muted-foreground">
+                      <CalendarCheck className="w-14 h-14 mx-auto mb-4 opacity-20" />
+                      <p className="text-lg font-medium">{l.noMySignups}</p>
+                      <p className="text-sm mt-1">{language === 'nl' ? 'Ga naar "Open Taken" om je in te schrijven.' : language === 'fr' ? 'Consultez "Tâches Ouvertes" pour vous inscrire.' : 'Go to "Open Tasks" to sign up.'}</p>
+                    </div>
+                  )}
+                </>
               )}
-            </div>
-          );
-        })
-      )}
-
-      {/* Hours confirmation dialog */}
-      <Dialog open={showHoursDialog} onOpenChange={setShowHoursDialog}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> {l.confirmHours}</DialogTitle>
-            <DialogDescription>
-              {selectedTask?.title} — {selectedTask && new Date(selectedTask.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'fr-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm text-muted-foreground">{l.reportHours}</label>
-              <Input type="number" step="0.5" min="0.5" max="24" value={hoursInput} onChange={e => setHoursInput(e.target.value)} className="mt-1" />
-            </div>
-            {selectedSignup?.dispute_status === 'escalated' && selectedSignup?.club_reported_hours && (
-              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
-                {language === 'nl' ? `Club rapporteerde: ${selectedSignup.club_reported_hours.toFixed(1)}u. Voer jouw uren in. Het gemiddelde wordt na 48u automatisch toegepast.` : `Club reported: ${selectedSignup.club_reported_hours.toFixed(1)}h. Enter your hours. Average will be applied after 48h.`}
-              </p>
-            )}
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowHoursDialog(false)}>Annuleren</Button>
-              <Button className="flex-1" onClick={selectedSignup?.dispute_status === 'escalated' ? submitDisputeHours : submitHours} disabled={!hoursInput || Number(hoursInput) <= 0}>{l.submit}</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Ticket QR dialog */}
-      <Dialog open={!!showTicket} onOpenChange={() => setShowTicket(null)}>
-        <DialogContent className="sm:max-w-xs text-center">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-center gap-2"><QrCode className="w-5 h-5 text-primary" /> {l.ticket}</DialogTitle>
-          </DialogHeader>
-          {showTicket && (
-            <div className="flex flex-col items-center gap-4 py-4">
-              <QRCodeSVG value={showTicket} size={200} />
-              <p className="text-xs font-mono text-muted-foreground">{showTicket}</p>
-            </div>
+            </>
           )}
-        </DialogContent>
-      </Dialog>
-      </>
+
+          {/* ── OPEN TAKEN ─────────────────────────────────────────────────── */}
+          {planView === 'open' && (
+            <>
+              {loading ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                </div>
+              ) : (
+                <>
+                  {/* Monthly plan open tasks (within enrolled plans) */}
+                  {plans.map(plan => {
+                    const enrollment = enrollments.find(e => e.plan_id === plan.id);
+                    if (!enrollment) {
+                      return (
+                        <div key={plan.id} className="space-y-3">
+                          <PlanHeader plan={plan} enrollment={undefined} l={l} onEnroll={() => enrollInPlan(plan.id)} isBlocked={isBlocked} />
+                        </div>
+                      );
+                    }
+                    const statusMsg = enrollmentStatusMessage(enrollment);
+                    const planTasks = tasks.filter(t => t.plan_id === plan.id);
+
+                    return (
+                      <div key={plan.id} className="space-y-3">
+                        <PlanHeader plan={plan} enrollment={enrollment} l={l} onEnroll={() => enrollInPlan(plan.id)} isBlocked={isBlocked} />
+
+                        {statusMsg && (
+                          <Card className={statusMsg.color}>
+                            <CardContent className="p-4 flex items-center gap-3 text-sm">
+                              <statusMsg.icon className="w-4 h-4 shrink-0" />
+                              <span>{statusMsg.text}</span>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {planTasks.length > 0 && (
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base">{l.availableTasks}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              {!canSignUpForDays(enrollment) && (
+                                <div className="p-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 text-sm flex items-center gap-2">
+                                  {enrollment.approval_status !== 'approved' ? (
+                                    <><Hourglass className="w-4 h-4 text-amber-600 shrink-0" /><span className="text-amber-800 dark:text-amber-200">{l.approvalRequired}</span></>
+                                  ) : (
+                                    <><FileSignature className="w-4 h-4 text-amber-600 shrink-0" /><span className="text-amber-800 dark:text-amber-200">{l.contractRequired}</span></>
+                                  )}
+                                </div>
+                              )}
+                              {Object.entries(tasksByDate)
+                                .filter(([_, ts]) => ts.some(t => t.plan_id === plan.id))
+                                .sort(([a], [b]) => a.localeCompare(b))
+                                .map(([date, dateTasks]) => {
+                                  const d = new Date(date);
+                                  const isPast = d < new Date(new Date().toISOString().split('T')[0]);
+                                  const blocked = !canSignUpForDays(enrollment);
+                                  return (
+                                    <div key={date} className={isPast ? 'opacity-50' : ''}>
+                                      <p className="text-sm font-semibold text-muted-foreground mb-2 capitalize">
+                                        {d.toLocaleDateString(language === 'nl' ? 'nl-BE' : 'fr-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                      </p>
+                                      <div className="space-y-2">
+                                        {dateTasks.filter(t => t.plan_id === plan.id && !isSignedUp(t.id)).map(t => (
+                                          <div key={t.id} className="flex items-center gap-3 p-4 rounded-xl border hover:bg-muted/30 transition-colors">
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-semibold text-base">{t.title}</span>
+                                                <Badge variant="outline" className={`text-[10px] ${categoryColor(t.category)}`}>{t.category}</Badge>
+                                              </div>
+                                              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground flex-wrap">
+                                                {t.start_time && <span><Clock className="w-3.5 h-3.5 inline mr-0.5" />{t.start_time}–{t.end_time}</span>}
+                                                {t.location && <span><MapPin className="w-3.5 h-3.5 inline mr-0.5" />{t.location}</span>}
+                                                <span><Euro className="w-3.5 h-3.5 inline mr-0.5" />{t.compensation_type === 'daily' ? `€${t.daily_rate}` : `€${t.hourly_rate}/u`}</span>
+                                                <span><Users className="w-3.5 h-3.5 inline mr-0.5" />{t.spots_available} {l.available}</span>
+                                              </div>
+                                            </div>
+                                            {!isPast && !blocked && (
+                                              <Button size="sm" className="shrink-0 min-h-[44px] px-4 rounded-xl" onClick={() => signUpForDay(enrollment.id, t.id)}>
+                                                {l.signUp}
+                                              </Button>
+                                            )}
+                                            {!isPast && blocked && (
+                                              <Button size="sm" variant="outline" className="shrink-0 min-h-[44px] px-4 rounded-xl opacity-50" disabled>{l.signUp}</Button>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Open regular club tasks */}
+                  {loadingClubTasks ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : clubTasks.length > 0 ? (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <ClipboardList className="w-4 h-4 text-primary" />
+                          {l.openClubTasks}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {clubTasks.map(task => {
+                          const isSigningUp = signingUpTaskId === task.id;
+                          return (
+                            <div key={task.id} className="flex items-start gap-4 p-4 rounded-xl border bg-card hover:bg-muted/30 transition-colors">
+                              {/* Club logo */}
+                              <div className="shrink-0 mt-0.5">
+                                {task.clubs?.logo_url ? (
+                                  <img src={task.clubs.logo_url} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                    {(task.clubs?.name || '?')[0]}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-base text-foreground">{task.title}</p>
+                                {task.clubs?.name && (
+                                  <p className="text-sm text-primary font-medium mt-0.5">{task.clubs.name}</p>
+                                )}
+                                <div className="flex items-center gap-3 mt-1.5 text-sm text-muted-foreground flex-wrap">
+                                  {task.task_date && (
+                                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDate(task.task_date)}</span>
+                                  )}
+                                  {task.start_time && (
+                                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{task.start_time}{task.end_time ? `–${task.end_time}` : ''}</span>
+                                  )}
+                                  {task.location && (
+                                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{task.location}</span>
+                                  )}
+                                </div>
+                                {task.description && (
+                                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{task.description}</p>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                className="shrink-0 min-h-[48px] px-5 rounded-xl font-semibold self-start"
+                                onClick={() => signUpForClubTask(task.id)}
+                                disabled={isSigningUp || isBlocked}
+                              >
+                                {isSigningUp ? <Loader2 className="w-4 h-4 animate-spin" /> : l.signUpConfirm}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  ) : !loadingClubTasks && plans.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground">
+                      <Calendar className="w-14 h-14 mx-auto mb-4 opacity-20" />
+                      <p className="text-lg font-medium">{l.noOpenTasks}</p>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </>
+          )}
+
+          {/* Hours dialog */}
+          <Dialog open={showHoursDialog} onOpenChange={setShowHoursDialog}>
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> {l.confirmHours}</DialogTitle>
+                <DialogDescription>
+                  {selectedTask?.title} — {selectedTask && new Date(selectedTask.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'fr-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground">{l.reportHours}</label>
+                  <Input type="number" step="0.5" min="0.5" max="24" value={hoursInput} onChange={e => setHoursInput(e.target.value)} className="mt-1 h-12 text-base" />
+                </div>
+                {selectedSignup?.dispute_status === 'escalated' && selectedSignup?.club_reported_hours && (
+                  <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+                    {language === 'nl' ? `Club rapporteerde: ${selectedSignup.club_reported_hours.toFixed(1)}u. Voer jouw uren in. Het gemiddelde wordt na 48u automatisch toegepast.` : `Club reported: ${selectedSignup.club_reported_hours.toFixed(1)}h. Enter your hours. Average will be applied after 48h.`}
+                  </p>
+                )}
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1 h-12" onClick={() => setShowHoursDialog(false)}>Annuleren</Button>
+                  <Button className="flex-1 h-12" onClick={selectedSignup?.dispute_status === 'escalated' ? submitDisputeHours : submitHours} disabled={!hoursInput || Number(hoursInput) <= 0}>{l.submit}</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Ticket QR dialog */}
+          <Dialog open={!!showTicket} onOpenChange={() => setShowTicket(null)}>
+            <DialogContent className="sm:max-w-xs text-center">
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-center gap-2"><QrCode className="w-5 h-5 text-primary" /> {l.ticket}</DialogTitle>
+              </DialogHeader>
+              {showTicket && (
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <QRCodeSVG value={showTicket} size={200} />
+                  <p className="text-xs font-mono text-muted-foreground">{showTicket}</p>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </>
       )}
 
-      {/* Briefings sub-view */}
+      {/* ── BRIEFINGS SUB-VIEW ────────────────────────────────────────────── */}
       {subView === 'briefings' && userId && (
         <VolunteerBriefingsList language={language} userId={userId} />
       )}
     </div>
   );
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-component: Plan header card
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface PlanHeaderProps {
+  plan: MonthlyPlan;
+  enrollment?: Enrollment;
+  l: Record<string, string>;
+  onEnroll: () => void;
+  isBlocked: boolean;
+  hideEnroll?: boolean;
+}
+
+const PlanHeader = ({ plan, enrollment, l, onEnroll, isBlocked, hideEnroll }: PlanHeaderProps) => (
+  <Card>
+    <CardContent className="p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {plan.clubs?.logo_url ? (
+            <img src={plan.clubs.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
+              {(plan.clubs?.name || '?')[0]}
+            </div>
+          )}
+          <div className="min-w-0">
+            <h3 className="font-semibold text-base truncate">{plan.clubs?.name}</h3>
+            <p className="text-sm text-muted-foreground truncate">{plan.title}</p>
+          </div>
+        </div>
+        {!hideEnroll && (
+          enrollment ? (
+            enrollment.approval_status === 'approved' ? (
+              <Badge variant="default" className="bg-green-600 shrink-0">{l.approved}</Badge>
+            ) : enrollment.approval_status === 'rejected' ? (
+              <Badge variant="destructive" className="shrink-0">{l.rejected}</Badge>
+            ) : (
+              <Badge variant="secondary" className="shrink-0">{l.waitingApproval}</Badge>
+            )
+          ) : (
+            <Button size="sm" onClick={onEnroll} disabled={isBlocked} className="shrink-0 min-h-[44px] rounded-xl">
+              <FileSignature className="w-4 h-4 mr-1.5" /> {l.enroll}
+            </Button>
+          )
+        )}
+        {hideEnroll && enrollment && (
+          enrollment.approval_status === 'approved' ? (
+            <Badge variant="default" className="bg-green-600 shrink-0">{l.approved}</Badge>
+          ) : enrollment.approval_status === 'rejected' ? (
+            <Badge variant="destructive" className="shrink-0">{l.rejected}</Badge>
+          ) : (
+            <Badge variant="secondary" className="shrink-0">{l.waitingApproval}</Badge>
+          )
+        )}
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export default VolunteerMonthlyTab;

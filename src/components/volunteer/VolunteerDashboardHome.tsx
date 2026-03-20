@@ -1,26 +1,15 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, ClipboardList, TrendingUp, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet, Search, ArrowRight, Heart, Clock } from 'lucide-react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { MapPin, Calendar, CheckCircle, ClipboardList, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet, Search, ArrowRight, Heart, Clock, LayoutList } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import VolunteerActivitiesSection from '@/components/VolunteerActivitiesSection';
 import ComplianceBadge from '@/components/ComplianceBadge';
-import VolunteerSeasonOverview from '@/components/VolunteerSeasonOverview';
-import VolunteerFinancialDashboard from '@/components/VolunteerFinancialDashboard';
-import VolunteerBadges from '@/components/VolunteerBadges';
-import SkillsPassport from '@/components/SkillsPassport';
-import MicroLearningsSection from '@/components/MicroLearningsSection';
-import CalendarSyncSection from '@/components/CalendarSyncSection';
-import ReferralSection from '@/components/ReferralSection';
-import NearbyClubsWidget from '@/components/community/NearbyClubsWidget';
-import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 
 import TodayPlanningSection from '@/components/volunteer/TodayPlanningSection';
-import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Shield } from 'lucide-react';
 const VolunteerSafetyTab = lazy(() => import('@/components/VolunteerSafetyTab'));
@@ -801,90 +790,24 @@ const VolunteerDashboardHome = ({
         )}
       </div>
 
-      {/* ═══ SECTION 5 — MEER OVER MIJN SEIZOEN (accordion) ═══ */}
-      <div>
-        <h2 className="text-xl font-heading font-bold text-foreground mb-4">
-          {language === 'nl' ? 'Meer details' : language === 'fr' ? 'Plus de détails' : 'More details'}
-        </h2>
-        <Accordion type="multiple" className="space-y-2">
-          <AccordionItem value="season" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
-              {language === 'nl' ? 'Mijn Seizoen' : language === 'fr' ? 'Ma Saison' : 'My Season'}
-            </AccordionTrigger>
-            <AccordionContent className="pb-4">
-              {currentUserId && <VolunteerSeasonOverview userId={currentUserId} language={language} />}
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="financials" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
-              {language === 'nl' ? 'Vergoedingen' : language === 'fr' ? 'Remboursements' : 'Payments'}
-            </AccordionTrigger>
-            <AccordionContent className="pb-4">
-              {currentUserId && <VolunteerFinancialDashboard userId={currentUserId} language={language} />}
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="badges" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
-              {language === 'nl' ? 'Badges & Loyaliteit' : language === 'fr' ? 'Badges & Fidélité' : 'Badges & Loyalty'}
-            </AccordionTrigger>
-            <AccordionContent className="pb-4 space-y-4">
-              {currentUserId && <VolunteerLoyaltyProgress userId={currentUserId} language={language} totalPoints={loyaltyPoints} />}
-              {currentUserId && <VolunteerBadges userId={currentUserId} language={language} />}
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="skills" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
-              {language === 'nl' ? 'Skills & Academy' : language === 'fr' ? 'Compétences & Académie' : 'Skills & Academy'}
-            </AccordionTrigger>
-            <AccordionContent className="pb-4 space-y-4">
-              {currentUserId && <SkillsPassport userId={currentUserId} language={language} />}
-              {currentUserId && <MicroLearningsSection userId={currentUserId} language={language} />}
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="clubs" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
-              {language === 'nl' ? 'Clubs in de buurt' : language === 'fr' ? 'Clubs à proximité' : 'Nearby clubs'}
-            </AccordionTrigger>
-            <AccordionContent className="pb-4">
-              <NearbyClubsWidget userId={currentUserId} language={language} />
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="calendar" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
-              {language === 'nl' ? 'Kalender sync' : language === 'fr' ? 'Sync calendrier' : 'Calendar sync'}
-            </AccordionTrigger>
-            <AccordionContent className="pb-4">
-              {currentUserId && <CalendarSyncSection userId={currentUserId} language={language} />}
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="referral" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
-              {language === 'nl' ? 'Vrienden werven' : language === 'fr' ? 'Parrainer des amis' : 'Refer friends'}
-            </AccordionTrigger>
-            <AccordionContent className="pb-4">
-              {currentUserId && <ReferralSection userId={currentUserId} language={language} />}
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="preferences" className="bg-card rounded-2xl border border-border shadow-sm px-5 data-[state=open]:shadow-md transition-shadow">
-            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-5">
-              {language === 'nl' ? 'Taakaanbevelingen' : language === 'fr' ? 'Recommandations' : 'Task recommendations'}
-            </AccordionTrigger>
-            <AccordionContent className="pb-4">
-              {currentUserId && (
-                <VolunteerTaskPreferences userId={currentUserId} language={language} tasks={tasks}
-                  signedUpTaskIds={new Set(signups.map(s => s.task_id))} onNavigateToTask={(taskId) => navigate(`/task/${taskId}`)} />
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
+      {/* ═══ SECTION 5 — MEER DETAILS NAVIGATIEKAART ═══ */}
+      <button
+        onClick={() => navigate('/volunteer-details')}
+        className="w-full bg-card rounded-2xl border border-border shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:border-primary/40 transition-all group text-left min-h-[72px]"
+      >
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+          <LayoutList className="w-6 h-6 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-semibold text-foreground">
+            {language === 'nl' ? 'Mijn Details & Voorkeuren' : language === 'fr' ? 'Mes Détails & Préférences' : 'My Details & Preferences'}
+          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {language === 'nl' ? 'Seizoen, vergoedingen, badges, skills en meer' : language === 'fr' ? 'Saison, paiements, badges, compétences et plus' : 'Season, payments, badges, skills and more'}
+          </p>
+        </div>
+        <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+      </button>
 
       {/* ═══ SECTION 6 — ACTIVITEITEN & COMPLIANCE ═══ */}
       <VolunteerActivitiesSection items={activityItemsTyped} language={language} />
