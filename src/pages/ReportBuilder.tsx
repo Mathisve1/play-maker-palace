@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { useClubContext } from '@/contexts/ClubContext';
 import {
   ArrowLeft, Plus, GripVertical, Trash2, Type, Image, PenLine, BarChart3,
   PieChart, TrendingUp, Download, Bot, Sparkles, Loader2, MoveUp, MoveDown,
@@ -65,6 +67,7 @@ const ReportBuilder = () => {
   const [clubName, setClubName] = useState('');
   const [clubLogo, setClubLogo] = useState<string | null>(null);
   const { language } = useLanguage();
+  const { userId, clubId: ctxClubId, clubInfo, loading: contextLoading } = useClubContext();
   const t3 = (nlS: string, fr: string, en: string) => language === 'nl' ? nlS : language === 'fr' ? fr : en;
   const [widgets, setWidgets] = useState<ReportWidget[]>([
     { id: genId(), type: 'title', data: { text: 'Bestuursrapport', subtitle: format(new Date(), 'MMMM yyyy', { locale: nl }) } },
@@ -113,26 +116,16 @@ const ReportBuilder = () => {
   const [partnerMembers, setPartnerMembers] = useState<any[]>([]);
   const [partnerTaskAssignments, setPartnerTaskAssignments] = useState<any[]>([]);
 
-  // ── Init & data loading ───────────────────────────────────
+  // ── Init (uses ClubContext — no manual auth calls) ────────────
   useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/club-login'); return; }
-      const { data: clubs } = await supabase.from('clubs').select('id, name, logo_url').eq('owner_id', session.user.id).limit(1);
-      let club = clubs?.[0];
-      if (!club) {
-        const { data: members } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1);
-        if (members?.[0]) {
-          const { data: c } = await supabase.from('clubs').select('id, name, logo_url').eq('id', members[0].club_id).single();
-          club = c;
-        }
-      }
-      if (!club) { navigate('/club-dashboard'); return; }
-      setClubId(club.id);
-      setClubName(club.name);
-      setClubLogo(club.logo_url);
-    })();
-  }, [navigate]);
+    if (contextLoading) return;
+    if (!userId) { navigate('/club-login'); return; }
+    if (ctxClubId && clubInfo) {
+      setClubId(ctxClubId);
+      setClubName((clubInfo as any).name || '');
+      setClubLogo((clubInfo as any).logo_url || null);
+    }
+  }, [contextLoading, userId, ctxClubId, clubInfo]);
 
   useEffect(() => {
     if (!clubId) return;
@@ -140,17 +133,17 @@ const ReportBuilder = () => {
       setLoading(true);
       const [tasksRes, eventsRes, signupsRes, paymentsRes, ticketsRes, hourConfsRes, sepaRes,
         sigReqRes, partnersRes, partnerMembersRes, partnerAssignRes] = await Promise.all([
-        supabase.from('tasks').select('*').eq('club_id', clubId),
-        supabase.from('events').select('*').eq('club_id', clubId),
-        supabase.from('task_signups').select('*'),
-        supabase.from('volunteer_payments').select('*').eq('club_id', clubId),
-        supabase.from('volunteer_tickets').select('*').eq('club_id', clubId),
-        supabase.from('hour_confirmations').select('*'),
-        supabase.from('sepa_batch_items').select('*'),
-        supabase.from('signature_requests').select('*'),
-        supabase.from('external_partners').select('*').eq('club_id', clubId),
-        supabase.from('partner_members').select('*'),
-        supabase.from('partner_task_assignments').select('*'),
+        supabase.from('tasks').select('id,title,club_id,event_id,task_date,spots_available,compensation_type,hourly_rate,expense_amount,location,status').eq('club_id', clubId).limit(500),
+        supabase.from('events').select('id,title,event_date,club_id').eq('club_id', clubId).order('event_date', { ascending: false }).limit(200),
+        supabase.from('task_signups').select('id,task_id,volunteer_id,status,signed_up_at').limit(3000),
+        supabase.from('volunteer_payments').select('id,task_id,volunteer_id,amount,status,paid_at').eq('club_id', clubId).limit(1000),
+        supabase.from('volunteer_tickets').select('id,task_id,volunteer_id,status').eq('club_id', clubId).limit(2000),
+        supabase.from('hour_confirmations').select('id,task_id,volunteer_id,status,final_hours').limit(1000),
+        supabase.from('sepa_batch_items').select('id,task_id,amount').limit(500),
+        supabase.from('signature_requests').select('id,task_id,status').limit(500),
+        supabase.from('external_partners').select('id,name,category').eq('club_id', clubId).limit(100),
+        supabase.from('partner_members').select('id,partner_id,user_id').limit(500),
+        supabase.from('partner_task_assignments').select('id,task_id,partner_member_id').limit(1000),
       ]);
 
       const taskData = tasksRes.data || [];
@@ -285,56 +278,32 @@ const ReportBuilder = () => {
     };
   }, [tasks, events, signups, payments, tickets, sepaItems, signatureRequests, partnerTaskAssignments, profileMap, taskMap]);
 
-  // ── Build AI data summary ──────────────────────────────────
+  // ── Build AI data summary (condensed — token-safe) ────────────
   const buildDataSummary = useCallback(() => {
     const k = chartDataSets.kpis;
     const cd = chartDataSets;
+    const top5Events = cd.signupsPerEvent.slice(0, 5).map(e =>
+      `${e.name}: ${e.Toegewezen}t ${e.Ingecheckt}in`
+    ).join('; ');
+    const top5Vols = cd.topVolunteers.slice(0, 5).map(v =>
+      `${v.name}: ${v.Taken}t €${v.Verdiend.toFixed(0)}`
+    ).join('; ');
+    const monthlySpend = cd.monthlySpending.slice(-6).map(m =>
+      `${m.month}:€${m.Bedrag}`
+    ).join(' ');
     return [
       `Club: ${clubName}`,
-      `Totaal taken: ${k.totalTasks}`, `Totaal vrijwilligers: ${k.totalVolunteers}`,
-      `Totaal uitbetaald: €${k.totalPaid.toFixed(2)}`, `Openstaand: €${k.totalPending.toFixed(2)}`,
-      `Opkomst: ${k.attendanceRate}%`, `Bezetting: ${k.fillRate}%`,
-      `Contracten ondertekend: ${k.contractsSigned}/${k.contractsTotal}`,
-      `Partner medewerkers ingezet: ${k.partnerMembers}`,
-      '',
-      'EVENEMENTEN MET AANMELDINGEN:',
-      ...cd.signupsPerEvent.map(e => `- ${e.name}: ${e.Toegewezen} toegewezen, ${e.Ingecheckt} ingecheckt`),
-      '',
-      'MAANDELIJKSE UITGAVEN:',
-      ...cd.monthlySpending.map(m => `- ${m.month}: €${m.Bedrag}`),
-      '',
-      'TOP VRIJWILLIGERS:',
-      ...cd.topVolunteers.map(v => `- ${v.name}: ${v.Taken} taken, €${v.Verdiend.toFixed(0)} verdiend`),
-      '',
-      'OPKOMST:',
-      ...cd.noShowRate.map(n => `- ${n.name}: ${n.value}`),
-      '',
-      'VERGOEDINGSTYPE:',
-      ...cd.compensationType.map(c => `- ${c.name}: ${c.value} taken`),
-      '',
-      'TAKEN PER DAG VAN DE WEEK:',
-      ...cd.dayOfWeek.map(d => `- ${d.name}: ${d.Taken} taken`),
-      '',
-      'MAANDTREND:',
-      ...cd.monthlyTrend.map(m => `- ${m.month}: ${m.Aanmeldingen} aanmeldingen, ${m.Ingecheckt} ingecheckt`),
-      '',
-      'VRIJWILLIGERS PER EVENEMENT:',
-      ...cd.volunteersPerEvent.map(e => `- ${e.name}: ${e.Vrijwilligers} vrijwilligers, ${e.Bezetting}% bezetting`),
-      '',
-      'TAKEN DETAILS (eerste 30):',
-      ...tasks.slice(0, 30).map((t: any) => `- "${t.title}" | ${t.task_date ? format(parseISO(t.task_date), 'dd/MM/yyyy') : 'geen datum'} | ${t.compensation_type} | ${t.hourly_rate ? '€' + t.hourly_rate + '/u' : t.expense_amount ? '€' + t.expense_amount + ' vast' : 'gratis'} | ${t.spots_available || 0} spots | locatie: ${t.location || '?'}`),
-      '',
-      'BETALINGEN DETAILS (eerste 30):',
-      ...payments.slice(0, 30).map((p: any) => {
-        const vol = profileMap[p.volunteer_id];
-        const task = taskMap[p.task_id];
-        return `- €${Number(p.amount).toFixed(2)} aan ${vol?.full_name || '?'} voor "${task?.title || '?'}" | status: ${p.status} | ${p.paid_at ? format(parseISO(p.paid_at), 'dd/MM/yyyy') : 'niet betaald'}`;
-      }),
-      '',
-      'PARTNERS:',
-      ...partners.map((p: any) => `- ${p.name} (${p.category})`),
+      `KPIs: ${k.totalVolunteers} vrijwilligers | ${k.totalTasks} taken | ${k.totalAssigned} toewijzingen | opkomst ${k.attendanceRate}% | bezetting ${k.fillRate}%`,
+      `Financieel: uitbetaald €${k.totalPaid.toFixed(0)} | openstaand €${k.totalPending.toFixed(0)}`,
+      `Contracten: ${k.contractsSigned}/${k.contractsTotal} ondertekend | partner medewerkers: ${k.partnerMembers}`,
+      `Top-5 evenementen: ${top5Events || 'geen data'}`,
+      `Top-5 vrijwilligers: ${top5Vols || 'geen data'}`,
+      `Maandelijkse uitgaven (laatste 6m): ${monthlySpend || 'geen data'}`,
+      `Vergoedingstypes: ${cd.compensationType.map(c => `${c.name}:${c.value}`).join(', ')}`,
+      `No-show: ${cd.noShowRate.map(n => `${n.name}:${n.value}`).join(' / ')}`,
+      `Partners: ${partners.slice(0, 5).map((p: any) => p.name).join(', ') || 'geen'}`,
     ].join('\n');
-  }, [chartDataSets, clubName, tasks, payments, partners, profileMap, taskMap]);
+  }, [chartDataSets, clubName, partners]);
 
   // ── Widget management ─────────────────────────────────────
   const addWidget = (type: WidgetType, data: Record<string, any> = {}) => {
@@ -566,9 +535,22 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
   };
 
   // ── Render chart ──────────────────────────────────────────
+  const chartTooltip = {
+    contentStyle: { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '10px', fontSize: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' },
+    labelStyle: { color: 'hsl(var(--foreground))', fontWeight: 600 },
+    itemStyle: { color: 'hsl(var(--muted-foreground))' },
+  };
+  const chartGrid = { strokeDasharray: '4 4', stroke: 'hsl(var(--border))', strokeOpacity: 0.4 };
+  const axisProps = { axisLine: false as const, tickLine: false as const };
+
   const renderChart = (chartKey: string, chartType: string, customData?: any[], customKeys?: string[]) => {
     const data = customData || (chartDataSets as any)[chartKey] || [];
-    if (!data.length) return <p className="text-sm text-muted-foreground text-center py-8">Geen data beschikbaar</p>;
+    if (!data.length) return (
+      <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
+        <BarChart3 className="w-6 h-6 mr-2 opacity-30" />
+        Geen data beschikbaar
+      </div>
+    );
 
     const keys = customKeys || Object.keys(data[0]).filter(k => k !== 'name' && k !== 'month');
     const xKey = data[0].month !== undefined ? 'month' : 'name';
@@ -577,10 +559,10 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
       return (
         <ResponsiveContainer width="100%" height={250}>
           <RechartsPie>
-            <Pie data={data} cx="50%" cy="50%" outerRadius={90} dataKey={keys[0] || 'value'} nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+            <Pie data={data} cx="50%" cy="50%" outerRadius={90} innerRadius={36} dataKey={keys[0] || 'value'} nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
               {data.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
             </Pie>
-            <Tooltip />
+            <Tooltip {...chartTooltip} />
           </RechartsPie>
         </ResponsiveContainer>
       );
@@ -590,13 +572,13 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
       return (
         <ResponsiveContainer width="100%" height={250}>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
-            {keys.length > 1 && <Legend />}
+            <CartesianGrid {...chartGrid} />
+            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} {...axisProps} />
+            <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} {...axisProps} />
+            <Tooltip {...chartTooltip} />
+            {keys.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
             {keys.map((key, i) => (
-              <Line key={key} type="monotone" dataKey={key} stroke={COLORS[i % COLORS.length]} />
+              <Line key={key} type="monotone" dataKey={key} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={false} />
             ))}
           </LineChart>
         </ResponsiveContainer>
@@ -607,13 +589,21 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
       return (
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
-            {keys.length > 1 && <Legend />}
+            <defs>
+              {keys.map((key, i) => (
+                <linearGradient key={key} id={`rb-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.2} />
+                  <stop offset="95%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid {...chartGrid} />
+            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} {...axisProps} />
+            <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} {...axisProps} />
+            <Tooltip {...chartTooltip} />
+            {keys.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
             {keys.map((key, i) => (
-              <Area key={key} type="monotone" dataKey={key} fill={COLORS[i % COLORS.length]} stroke={COLORS[i % COLORS.length]} fillOpacity={0.3} />
+              <Area key={key} type="monotone" dataKey={key} fill={`url(#rb-grad-${i})`} stroke={COLORS[i % COLORS.length]} strokeWidth={2} />
             ))}
           </AreaChart>
         </ResponsiveContainer>
@@ -623,47 +613,51 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
     return (
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} />
-          <Tooltip />
-          {keys.length > 1 && <Legend />}
+          <CartesianGrid {...chartGrid} />
+          <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} {...axisProps} />
+          <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} {...axisProps} />
+          <Tooltip {...chartTooltip} />
+          {keys.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
           {keys.map((key, i) => (
-            <Bar key={key} dataKey={key} fill={COLORS[i % COLORS.length]} />
+            <Bar key={key} dataKey={key} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
           ))}
         </BarChart>
       </ResponsiveContainer>
     );
   };
 
-  // ── Render single widget ──────────────────────────────────
+  // ── Render single widget (Notion-style block editor) ─────────
   const renderWidget = (w: ReportWidget, isExporting = false) => {
-    const controls = !isExporting && (
-      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveWidget(w.id, 'up')}><MoveUp className="h-3.5 w-3.5" /></Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveWidget(w.id, 'down')}><MoveDown className="h-3.5 w-3.5" /></Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeWidget(w.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+    // Invisible toolbar — slides in on block hover
+    const toolbar = !isExporting && (
+      <div className="absolute -top-3 right-2 flex items-center gap-0.5 bg-card border border-border rounded-lg shadow-md px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-all duration-150 z-20">
+        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => moveWidget(w.id, 'up')}><MoveUp className="h-3 w-3" /></Button>
+        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => moveWidget(w.id, 'down')}><MoveDown className="h-3 w-3" /></Button>
+        <div className="w-px h-3 bg-border mx-0.5" />
+        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => removeWidget(w.id)}><Trash2 className="h-3 w-3" /></Button>
       </div>
     );
 
     switch (w.type) {
       case 'title':
         return (
-          <div className="group relative py-6 text-center">
-            {controls}
+          <div className="group relative py-5">
+            {toolbar}
             {!isExporting ? (
-              <div className="space-y-2">
-                <Input className="text-2xl font-bold text-center border-none shadow-none bg-transparent"
+              <div className="space-y-1.5">
+                <Input
+                  className="text-2xl font-bold text-center border-none shadow-none bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/30"
                   value={w.data.text || ''} onChange={e => updateWidget(w.id, { text: e.target.value })}
                   placeholder="Rapport titel..." />
-                <Input className="text-center text-muted-foreground border-none shadow-none bg-transparent"
+                <Input
+                  className="text-center text-muted-foreground border-none shadow-none bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/30 text-sm"
                   value={w.data.subtitle || ''} onChange={e => updateWidget(w.id, { subtitle: e.target.value })}
-                  placeholder="Ondertitel..." />
+                  placeholder="Ondertitel of periode..." />
               </div>
             ) : (
-              <div>
-                <h1 className="text-2xl font-bold">{w.data.text}</h1>
-                {w.data.subtitle && <p className="text-muted-foreground mt-1">{w.data.subtitle}</p>}
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-foreground">{w.data.text}</h1>
+                {w.data.subtitle && <p className="text-sm text-muted-foreground mt-1">{w.data.subtitle}</p>}
               </div>
             )}
           </div>
@@ -671,30 +665,32 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
 
       case 'text':
         return (
-          <div className="group relative py-3">
-            {controls}
+          <div className="group relative py-2">
+            {toolbar}
             {!isExporting ? (
-              <Textarea className="min-h-[80px] border-dashed" value={w.data.text || ''}
+              <Textarea
+                className="min-h-[72px] border border-dashed border-border/60 bg-transparent focus:border-primary/40 rounded-lg resize-none text-sm placeholder:text-muted-foreground/40 focus-visible:ring-0"
+                value={w.data.text || ''}
                 onChange={e => updateWidget(w.id, { text: e.target.value })}
-                placeholder="Typ hier je tekst... (Markdown wordt ondersteund)" />
+                placeholder="Typ hier je tekst of analyse..." />
             ) : (
-              <div className="prose prose-sm max-w-none whitespace-pre-wrap">{w.data.text}</div>
+              <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{w.data.text}</div>
             )}
           </div>
         );
 
       case 'logo':
         return (
-          <div className="group relative py-4 flex justify-center">
-            {controls}
+          <div className="group relative py-5 flex justify-center">
+            {toolbar}
             {clubLogo ? (
-              <img src={clubLogo} alt={clubName} className="h-20 object-contain" crossOrigin="anonymous" />
+              <img src={clubLogo} alt={clubName} className="h-16 object-contain" crossOrigin="anonymous" />
             ) : (
-              <div className="flex items-center gap-2">
-                <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
                   {clubName.charAt(0)}
                 </div>
-                <span className="font-bold text-lg">{clubName}</span>
+                <span className="font-bold text-base text-foreground">{clubName}</span>
               </div>
             )}
           </div>
@@ -702,64 +698,67 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
 
       case 'signature':
         return (
-          <div className="group relative py-6">
-            {controls}
-            <div className="flex justify-between items-end gap-8 px-4">
+          <div className="group relative py-5">
+            {toolbar}
+            <div className="flex justify-between items-end gap-6 px-2">
               <div className="flex-1 space-y-1">
                 {!isExporting ? (
-                  <Input className="border-none border-b shadow-none bg-transparent" value={w.data.name || ''}
-                    onChange={e => updateWidget(w.id, { name: e.target.value })} placeholder={t3('Naam ondertekenaar', 'Nom du signataire', 'Signer name')} />
-                ) : <p className="font-medium">{w.data.name || '_______________'}</p>}
-                {!isExporting ? (
-                  <Input className="border-none border-b shadow-none bg-transparent text-sm" value={w.data.role || ''}
-                    onChange={e => updateWidget(w.id, { role: e.target.value })} placeholder={t3('Functie', 'Fonction', 'Role')} />
-                ) : <p className="text-sm text-muted-foreground">{w.data.role}</p>}
+                  <>
+                    <Input className="border-x-0 border-t-0 border-b border-border/60 rounded-none shadow-none bg-transparent px-0 focus-visible:ring-0 text-sm" value={w.data.name || ''}
+                      onChange={e => updateWidget(w.id, { name: e.target.value })} placeholder={t3('Naam ondertekenaar', 'Nom du signataire', 'Signer name')} />
+                    <Input className="border-x-0 border-t-0 border-b border-border/60 rounded-none shadow-none bg-transparent px-0 focus-visible:ring-0 text-xs text-muted-foreground" value={w.data.role || ''}
+                      onChange={e => updateWidget(w.id, { role: e.target.value })} placeholder={t3('Functie', 'Fonction', 'Role')} />
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium text-sm">{w.data.name || '_______________'}</p>
+                    {w.data.role && <p className="text-xs text-muted-foreground">{w.data.role}</p>}
+                  </>
+                )}
               </div>
               <div className="flex-1 text-center">
-                <div className="border-b border-foreground/30 pb-1 mb-1 h-12" />
-                <p className="text-xs text-muted-foreground">{t3('Handtekening', 'Signature', 'Signature')}</p>
+                <div className="border-b border-foreground/20 mb-1 h-10" />
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t3('Handtekening', 'Signature', 'Signature')}</p>
               </div>
               <div className="flex-1 text-right">
-                <p className="text-sm">{format(new Date(), 'dd MMMM yyyy', { locale: nl })}</p>
-                <p className="text-xs text-muted-foreground">{t3('Datum', 'Date', 'Date')}</p>
+                <p className="text-sm font-medium">{format(new Date(), 'dd MMMM yyyy', { locale: nl })}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t3('Datum', 'Date', 'Date')}</p>
               </div>
             </div>
           </div>
         );
 
-      case 'chart':
+      case 'chart': {
+        const chartLabel = PRESET_CHARTS.find(c => c.key === w.data.chartKey)?.label || w.data.chartKey;
         return (
-          <div className="group relative py-3">
-            {controls}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">
-                  {PRESET_CHARTS.find(c => c.key === w.data.chartKey)?.label || w.data.chartKey}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+          <div className="group relative py-2">
+            {toolbar}
+            <div className="border border-border rounded-xl overflow-hidden bg-card">
+              <div className="px-5 pt-4 pb-1 border-b border-border/50">
+                <p className="text-sm font-semibold text-foreground">{chartLabel}</p>
+              </div>
+              <div className="p-4">
                 {renderChart(w.data.chartKey, w.data.chartType)}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         );
+      }
 
       case 'ai-chart':
         return (
-          <div className="group relative py-3">
-            {controls}
-            <Card className="border-primary/20">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <CardTitle className="text-base">{w.data.title || 'AI Grafiek'}</CardTitle>
-                </div>
-                {w.data.prompt && <p className="text-xs text-muted-foreground">Vraag: {w.data.prompt}</p>}
-              </CardHeader>
-              <CardContent>
+          <div className="group relative py-2">
+            {toolbar}
+            <div className="border border-primary/20 rounded-xl overflow-hidden bg-gradient-to-br from-card to-primary/[0.02]">
+              <div className="px-5 pt-4 pb-1 border-b border-primary/10 flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <p className="text-sm font-semibold text-foreground">{w.data.title || 'AI Grafiek'}</p>
+                {w.data.prompt && <span className="text-[10px] text-muted-foreground ml-auto truncate max-w-[200px]">{w.data.prompt}</span>}
+              </div>
+              <div className="p-4">
                 {renderChart('', w.data.chartType, w.data.data, w.data.dataKeys)}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         );
 
@@ -775,30 +774,28 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
           { key: 'contracts', label: 'Contracten', value: `${k.contractsSigned}/${k.contractsTotal}` },
           { key: 'partnerMembers', label: 'Partners', value: k.partnerMembers },
         ];
-        const visibleKeys: string[] = w.data.visibleKpis || ALL_KPIS.map(k => k.key);
+        const visibleKeys: string[] = w.data.visibleKpis || ALL_KPIS.map(kpi => kpi.key);
         const visibleKpis = ALL_KPIS.filter(kpi => visibleKeys.includes(kpi.key));
         const removeKpi = (key: string) => {
-          const next = visibleKeys.filter(k => k !== key);
-          updateWidget(w.id, { visibleKpis: next });
+          updateWidget(w.id, { visibleKpis: visibleKeys.filter(k => k !== key) });
         };
+        const colClass = visibleKpis.length <= 4 ? `grid-cols-${Math.min(visibleKpis.length, 4)}` : 'grid-cols-4';
         return (
-          <div className="group relative py-3">
-            {controls}
-            <div className={`grid grid-cols-2 ${visibleKpis.length <= 4 ? 'md:grid-cols-' + Math.min(visibleKpis.length, 4) : 'md:grid-cols-4'} gap-3`}>
+          <div className="group relative py-2">
+            {toolbar}
+            <div className={`grid grid-cols-2 md:${colClass} gap-3`}>
               {visibleKpis.map(item => (
-                <Card key={item.key} className="relative">
+                <div key={item.key} className="relative border border-border rounded-xl p-4 text-center bg-card hover:border-primary/30 transition-colors">
                   {!isExporting && (
-                    <Button variant="ghost" size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                    <button
+                      className="absolute top-1.5 right-1.5 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                       onClick={() => removeKpi(item.key)}>
                       <Trash2 className="h-3 w-3" />
-                    </Button>
+                    </button>
                   )}
-                  <CardContent className="p-3 text-center">
-                    <p className="text-2xl font-bold">{item.value}</p>
-                    <p className="text-xs text-muted-foreground">{item.label}</p>
-                  </CardContent>
-                </Card>
+                  <p className="text-2xl font-bold tabular-nums text-foreground">{item.value}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{item.label}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -807,9 +804,9 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
 
       case 'spacer':
         return (
-          <div className="group relative py-2">
-            {controls}
-            <Separator />
+          <div className="group relative py-3">
+            {toolbar}
+            <Separator className="opacity-40" />
           </div>
         );
 
@@ -940,17 +937,29 @@ BELANGRIJK: Gebruik ALLEEN echte data uit de samenvatting. Antwoord ALLEEN met g
       {/* Canvas */}
       <main className="max-w-4xl mx-auto px-4 py-6">
         {widgets.length === 0 ? (
-          <div className="text-center py-20">
-            <LayoutDashboard className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground">{t3('Voeg widgets toe om je rapport samen te stellen', 'Ajoutez des widgets pour composer votre rapport', 'Add widgets to build your report')}</p>
-            <Button variant="outline" className="mt-4" onClick={() => setAddDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> {t3('Eerste widget toevoegen', 'Ajouter le premier widget', 'Add first widget')}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
+            <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-border/60 flex items-center justify-center mx-auto mb-4">
+              <LayoutDashboard className="h-7 w-7 text-muted-foreground/40" />
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              {t3('Nog geen blokken. Voeg je eerste widget toe.', 'Aucun bloc. Ajoutez votre premier widget.', 'No blocks yet. Add your first widget.')}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" /> {t3('Widget toevoegen', 'Ajouter un widget', 'Add widget')}
             </Button>
-          </div>
+          </motion.div>
         ) : (
-          <div ref={canvasRef} className="bg-background rounded-lg border p-6 space-y-1 min-h-[400px]">
-            {widgets.map(w => (
-              <div key={w.id}>{renderWidget(w)}</div>
+          <div ref={canvasRef} className="bg-background rounded-xl border border-border p-8 space-y-0.5 min-h-[400px]">
+            {widgets.map((w, i) => (
+              <motion.div
+                key={w.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.02 }}
+                className="group relative rounded-lg hover:bg-muted/20 px-2 transition-colors"
+              >
+                {renderWidget(w)}
+              </motion.div>
             ))}
           </div>
         )}

@@ -65,9 +65,9 @@ const AnalyticsDashboard = () => {
     setLoading(true);
 
     const [membersRes, tasksRes, signupsRes, eventsRes] = await Promise.all([
-      supabase.from('club_memberships').select('volunteer_id, joined_at, status').eq('club_id', clubId).eq('status', 'actief'),
-      supabase.from('tasks').select('id, title, spots_available, task_date, event_id').eq('club_id', clubId),
-      supabase.from('task_signups').select('task_id, volunteer_id, status, signed_up_at'),
+      supabase.from('club_memberships').select('volunteer_id, joined_at, status').eq('club_id', clubId).eq('status', 'actief').limit(2000),
+      supabase.from('tasks').select('id, title, spots_available, task_date, event_id').eq('club_id', clubId).limit(500),
+      supabase.from('task_signups').select('task_id, volunteer_id, status, signed_up_at').limit(3000),
       supabase.from('events').select('id, title, event_date').eq('club_id', clubId).order('event_date', { ascending: false }).limit(50),
     ]);
 
@@ -305,7 +305,7 @@ const AnalyticsDashboard = () => {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="bg-card rounded-2xl p-5 shadow-sm border border-border"
+              className="bg-card rounded-2xl p-5 border border-border hover:border-primary/30 transition-colors"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className={`w-8 h-8 rounded-xl ${kpi.bgColor} flex items-center justify-center`}>
@@ -347,7 +347,7 @@ const AnalyticsDashboard = () => {
             {tab === 'volunteers' && (
               <>
                 {/* Growth Chart */}
-                <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
+                <div className="bg-card rounded-2xl p-6 border border-border">
                   <h3 className="font-heading font-semibold text-foreground mb-4">
                     {t3('Vrijwilligersgroei (12 maanden)', 'Croissance des bénévoles (12 mois)', 'Volunteer growth (12 months)')}
                   </h3>
@@ -360,12 +360,13 @@ const AnalyticsDashboard = () => {
                             <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                        <CartesianGrid strokeDasharray="4 4" stroke="hsl(var(--border))" strokeOpacity={0.4} />
                         <XAxis dataKey="month" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                         <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                         <Tooltip
-                          contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px' }}
-                          labelStyle={{ color: 'hsl(var(--foreground))' }}
+                          contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '10px', fontSize: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                          itemStyle={{ color: 'hsl(var(--muted-foreground))' }}
                         />
                         <Area type="monotone" dataKey="cumulative" stroke="hsl(var(--primary))" fill="url(#growthGrad)" strokeWidth={2} name={t3('Totaal', 'Total', 'Total')} />
                         <Bar dataKey="count" fill="hsl(var(--primary))" opacity={0.4} radius={[4, 4, 0, 0]} name={t3('Nieuw', 'Nouveaux', 'New')} />
@@ -375,7 +376,7 @@ const AnalyticsDashboard = () => {
                 </div>
 
                 {/* Top Volunteers */}
-                <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
+                <div className="bg-card rounded-2xl p-6 border border-border">
                   <h3 className="font-heading font-semibold text-foreground mb-4">
                     {t3('Top vrijwilligers', 'Top bénévoles', 'Top volunteers')}
                   </h3>
@@ -385,7 +386,7 @@ const AnalyticsDashboard = () => {
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={topVolunteers} layout="vertical">
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                          <CartesianGrid strokeDasharray="4 4" stroke="hsl(var(--border))" strokeOpacity={0.4} />
                           <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                           <YAxis type="category" dataKey="name" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }} />
                           <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px' }} />
@@ -399,7 +400,7 @@ const AnalyticsDashboard = () => {
             )}
 
             {tab === 'events' && (
-              <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
+              <div className="bg-card rounded-2xl p-6 border border-border">
                 <h3 className="font-heading font-semibold text-foreground mb-4">
                   {t3('Opkomst per event', 'Présence par événement', 'Attendance per event')}
                 </h3>
@@ -409,7 +410,7 @@ const AnalyticsDashboard = () => {
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={eventAttendance}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                        <CartesianGrid strokeDasharray="4 4" stroke="hsl(var(--border))" strokeOpacity={0.4} />
                         <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} angle={-25} textAnchor="end" height={60} />
                         <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                         <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px' }} />
@@ -425,7 +426,7 @@ const AnalyticsDashboard = () => {
 
             {tab === 'retention' && (
               <>
-                <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
+                <div className="bg-card rounded-2xl p-6 border border-border">
                   <h3 className="font-heading font-semibold text-foreground mb-4">
                     {t3('Retentie & nieuwe vrijwilligers', 'Rétention & nouveaux bénévoles', 'Retention & new volunteers')}
                   </h3>
@@ -435,15 +436,17 @@ const AnalyticsDashboard = () => {
                     <div className="h-72">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={retentionData}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                          <CartesianGrid strokeDasharray="4 4" stroke="hsl(var(--border))" strokeOpacity={0.4} />
                           <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                           <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                           <Tooltip
-                            contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px' }}
+                            contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '10px', fontSize: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                          itemStyle={{ color: 'hsl(var(--muted-foreground))' }}
                             content={({ active, payload, label }) => {
                               if (!active || !payload?.length) return null;
                               return (
-                                <div className="bg-card border border-border rounded-xl p-3 text-xs shadow-lg">
+                                <div className="bg-popover border border-border rounded-xl p-3 text-xs shadow-lg">
                                   <p className="font-semibold text-foreground mb-1">{label}</p>
                                   {payload.map((p: any) => (
                                     <p key={p.dataKey} style={{ color: p.color }}>{p.name}: {p.value}</p>
@@ -469,7 +472,7 @@ const AnalyticsDashboard = () => {
                 </div>
 
                 {/* Retention rate line */}
-                <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
+                <div className="bg-card rounded-2xl p-6 border border-border">
                   <h3 className="font-heading font-semibold text-foreground mb-4">
                     {t3('Retentiepercentage', 'Taux de rétention', 'Retention rate')}
                   </h3>
@@ -482,7 +485,7 @@ const AnalyticsDashboard = () => {
                             <stop offset="95%" stopColor="hsl(var(--secondary))" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                        <CartesianGrid strokeDasharray="4 4" stroke="hsl(var(--border))" strokeOpacity={0.4} />
                         <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                         <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} unit="%" />
                         <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px' }} formatter={(v: number) => `${v}%`} />

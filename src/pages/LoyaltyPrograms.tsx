@@ -5,9 +5,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Gift, Users, Pencil, ArrowLeft, ToggleLeft, ToggleRight, Star, X, Check } from 'lucide-react';
+import {
+  Plus, Trash2, Gift, Users, Pencil, Star, X, Check,
+  Trophy, Clock, ToggleLeft, ToggleRight,
+} from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
-import { Language } from '@/i18n/translations';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 interface LoyaltyProgram {
   id: string;
@@ -32,6 +39,8 @@ interface Enrollment {
   volunteer_name?: string;
   volunteer_email?: string;
 }
+
+type QueueItem = Enrollment & { program: LoyaltyProgram };
 
 interface ClubTask {
   id: string;
@@ -79,6 +88,20 @@ const loyaltyT = {
     includedTasks: 'Beschikbare taken',
     points: 'punten',
     tasks: 'taken',
+    tab_programs: 'Programma\'s',
+    tab_queue: 'Beloningen',
+    tab_settings: 'Taakinstellingen',
+    kpi_active: 'Actieve programma\'s',
+    kpi_participants: 'Deelnemers',
+    kpi_pending: 'Wachten op beloning',
+    kpi_granted: 'Beloningen toegekend',
+    queue_empty: 'Geen openstaande beloningen — geweldig!',
+    col_volunteer: 'Vrijwilliger',
+    col_program: 'Programma',
+    col_progress: 'Voortgang',
+    task_settings_desc: 'Sluit specifieke taken uit van loyaliteitsprogramma\'s.',
+    excluded_count: 'uitgesloten',
+    editProgram: 'Programma bewerken',
   },
   fr: {
     title: 'Programmes de fidélité',
@@ -118,6 +141,20 @@ const loyaltyT = {
     includedTasks: 'Tâches disponibles',
     points: 'points',
     tasks: 'tâches',
+    tab_programs: 'Programmes',
+    tab_queue: 'Récompenses',
+    tab_settings: 'Paramètres des tâches',
+    kpi_active: 'Programmes actifs',
+    kpi_participants: 'Participants',
+    kpi_pending: 'En attente de récompense',
+    kpi_granted: 'Récompenses accordées',
+    queue_empty: 'Aucune récompense en attente — excellent !',
+    col_volunteer: 'Bénévole',
+    col_program: 'Programme',
+    col_progress: 'Progrès',
+    task_settings_desc: 'Exclure des tâches spécifiques des programmes de fidélité.',
+    excluded_count: 'exclues',
+    editProgram: 'Modifier le programme',
   },
   en: {
     title: 'Loyalty Programs',
@@ -157,6 +194,20 @@ const loyaltyT = {
     includedTasks: 'Available tasks',
     points: 'points',
     tasks: 'tasks',
+    tab_programs: 'Programs',
+    tab_queue: 'Rewards',
+    tab_settings: 'Task Settings',
+    kpi_active: 'Active programs',
+    kpi_participants: 'Participants',
+    kpi_pending: 'Pending rewards',
+    kpi_granted: 'Rewards granted',
+    queue_empty: 'No pending rewards — great work!',
+    col_volunteer: 'Volunteer',
+    col_program: 'Program',
+    col_progress: 'Progress',
+    task_settings_desc: 'Exclude specific tasks from loyalty programs.',
+    excluded_count: 'excluded',
+    editProgram: 'Edit program',
   },
 };
 
@@ -169,16 +220,15 @@ const LoyaltyPrograms = () => {
   const [clubId, setClubId] = useState<string | null>(null);
   const [programs, setPrograms] = useState<LoyaltyProgram[]>([]);
   const [enrollments, setEnrollments] = useState<Record<string, Enrollment[]>>({});
-  const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
   const [clubTasks, setClubTasks] = useState<ClubTask[]>([]);
   const [excludedTasks, setExcludedTasks] = useState<Record<string, Set<string>>>({});
 
-  // Create form
+  // Create sheet
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newProgram, setNewProgram] = useState({ name: '', description: '', reward_description: '', required_tasks: 10, points_based: true, required_points: 100 });
 
-  // Edit
+  // Edit sheet
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
   const [editForm, setEditForm] = useState({ name: '', description: '', reward_description: '', required_tasks: 10, points_based: true, required_points: 100 });
   const [savingEdit, setSavingEdit] = useState(false);
@@ -187,9 +237,6 @@ const LoyaltyPrograms = () => {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Task exclusion management
-  const [managingExclusions, setManagingExclusions] = useState<string | null>(null);
-
   const { clubId: contextClubId } = useClubContext();
 
   useEffect(() => {
@@ -197,15 +244,12 @@ const LoyaltyPrograms = () => {
       if (!contextClubId) { navigate('/club-dashboard'); return; }
       setClubId(contextClubId);
 
-      // Load programs
       const { data: programsData } = await supabase.from('loyalty_programs').select('*').eq('club_id', contextClubId).order('created_at', { ascending: false });
       setPrograms(programsData || []);
 
-      // Load club tasks
       const { data: tasksData } = await supabase.from('tasks').select('id, title, loyalty_eligible, loyalty_points').eq('club_id', contextClubId);
       setClubTasks(tasksData || []);
 
-      // Load excluded tasks per program
       if (programsData && programsData.length > 0) {
         const programIds = programsData.map((p: any) => p.id);
         const { data: exclusions } = await supabase.from('loyalty_program_excluded_tasks').select('*').in('program_id', programIds);
@@ -218,7 +262,6 @@ const LoyaltyPrograms = () => {
           setExcludedTasks(exMap);
         }
 
-        // Load enrollments
         const { data: enrollData } = await supabase.from('loyalty_enrollments').select('*').in('program_id', programIds);
         if (enrollData && enrollData.length > 0) {
           const volunteerIds = [...new Set(enrollData.map((e: any) => e.volunteer_id))] as string[];
@@ -393,8 +436,21 @@ const LoyaltyPrograms = () => {
     return enrollment.tasks_completed >= program.required_tasks;
   };
 
-  const inputClass = "w-full px-3 py-2 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring";
-  const labelClass = "block text-xs font-medium text-muted-foreground mb-1";
+  // Computed
+  const allEnrollments = Object.values(enrollments).flat();
+  const rewardQueue: QueueItem[] = allEnrollments
+    .filter(e => { const p = programs.find(x => x.id === e.program_id); return p && isGoalReached(p, e) && !e.reward_claimed; })
+    .map(e => ({ ...e, program: programs.find(x => x.id === e.program_id)! }));
+
+  const kpis = [
+    { label: dt.kpi_active, value: programs.filter(p => p.is_active).length, icon: Gift, bg: 'bg-primary/10', ic: 'text-primary' },
+    { label: dt.kpi_participants, value: allEnrollments.length, icon: Users, bg: 'bg-blue-500/10', ic: 'text-blue-500' },
+    { label: dt.kpi_pending, value: rewardQueue.length, icon: Clock, bg: 'bg-amber-500/10', ic: 'text-amber-500' },
+    { label: dt.kpi_granted, value: allEnrollments.filter(e => e.reward_claimed).length, icon: Trophy, bg: 'bg-emerald-500/10', ic: 'text-emerald-500' },
+  ];
+
+  const inputClass = 'w-full px-3 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring';
+  const labelClass = 'block text-xs font-medium text-muted-foreground mb-1.5';
 
   if (loading) {
     return (
@@ -404,10 +460,80 @@ const LoyaltyPrograms = () => {
     );
   }
 
+  const ProgramForm = ({
+    form,
+    setForm,
+    onSubmit,
+    saving,
+    onCancel,
+    submitLabel,
+  }: {
+    form: typeof newProgram;
+    setForm: React.Dispatch<React.SetStateAction<typeof newProgram>>;
+    onSubmit: (e: React.FormEvent) => void;
+    saving: boolean;
+    onCancel: () => void;
+    submitLabel: string;
+  }) => (
+    <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <div>
+        <label className={labelClass}>{dt.name} *</label>
+        <input type="text" required maxLength={200} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>{dt.description}</label>
+        <textarea rows={2} maxLength={1000} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} />
+      </div>
+      <div>
+        <label className={labelClass}>{dt.reward} *</label>
+        <input type="text" required maxLength={300} placeholder={dt.rewardPlaceholder} value={form.reward_description} onChange={e => setForm(p => ({ ...p, reward_description: e.target.value }))} className={inputClass} />
+      </div>
+
+      {/* Points vs Tasks toggle */}
+      <div className="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+        <div>
+          <p className="text-sm font-medium text-foreground">{form.points_based ? dt.pointsBased : dt.tasksBased}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{form.points_based ? dt.requiredPoints : dt.requiredTasks}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setForm(p => ({ ...p, points_based: !p.points_based }))}
+          className="text-muted-foreground hover:text-primary transition-colors"
+        >
+          {form.points_based
+            ? <ToggleRight className="w-7 h-7 text-primary" />
+            : <ToggleLeft className="w-7 h-7" />}
+        </button>
+      </div>
+
+      {form.points_based ? (
+        <div>
+          <label className={labelClass}>{dt.requiredPoints} *</label>
+          <input type="number" min={1} max={99999} value={form.required_points} onChange={e => setForm(p => ({ ...p, required_points: parseInt(e.target.value) || 1 }))} className={inputClass} />
+        </div>
+      ) : (
+        <div>
+          <label className={labelClass}>{dt.requiredTasks} *</label>
+          <input type="number" min={1} max={9999} value={form.required_tasks} onChange={e => setForm(p => ({ ...p, required_tasks: parseInt(e.target.value) || 1 }))} className={inputClass} />
+        </div>
+      )}
+
+      <div className="flex justify-end gap-3 pt-2">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
+          {dt.cancel}
+        </button>
+        <button type="submit" disabled={saving} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+          {saving ? '...' : submitLabel}
+        </button>
+      </div>
+    </form>
+  );
 
   return (
     <ClubPageLayout>
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-6">
+
+        {/* Header */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
@@ -415,112 +541,299 @@ const LoyaltyPrograms = () => {
             </h1>
             <p className="text-muted-foreground text-sm mt-1">{dt.subtitle}</p>
           </div>
-          <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+          >
             <Plus className="w-4 h-4" /> {dt.newProgram}
           </button>
         </motion.div>
 
-        {/* Create form */}
-        <AnimatePresence>
-          {showCreateForm && (
-            <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} onSubmit={handleCreate} className="mt-6 bg-card rounded-2xl shadow-card border border-border p-6 overflow-hidden">
-              <h2 className="text-lg font-heading font-semibold text-foreground mb-4">{dt.newProgram}</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>{dt.name} *</label>
-                  <input type="text" required maxLength={200} value={newProgram.name} onChange={e => setNewProgram(p => ({ ...p, name: e.target.value }))} className={inputClass} />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>{dt.description}</label>
-                  <textarea rows={2} maxLength={1000} value={newProgram.description} onChange={e => setNewProgram(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} />
-                </div>
-                <div>
-                  <label className={labelClass}>{dt.reward} *</label>
-                  <input type="text" required maxLength={300} placeholder={dt.rewardPlaceholder} value={newProgram.reward_description} onChange={e => setNewProgram(p => ({ ...p, reward_description: e.target.value }))} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>{dt.requiredPoints} *</label>
-                  <input type="number" min={1} max={99999} value={newProgram.required_points} onChange={e => setNewProgram(p => ({ ...p, required_points: parseInt(e.target.value) || 1 }))} className={inputClass} />
-                </div>
+        {/* KPI Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {kpis.map((kpi, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/30 transition-colors"
+            >
+              <div className={cn('w-8 h-8 rounded-lg mx-auto mb-2.5 flex items-center justify-center', kpi.bg)}>
+                <kpi.icon className={cn('w-4 h-4', kpi.ic)} />
               </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">{dt.cancel}</button>
-                <button type="submit" disabled={creating} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {creating ? '...' : dt.create}
-                </button>
-              </div>
-            </motion.form>
-          )}
-        </AnimatePresence>
+              <p className="text-xl font-bold tabular-nums text-foreground">{kpi.value}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{kpi.label}</p>
+            </motion.div>
+          ))}
+        </div>
 
-        {/* Programs list */}
-        <div className="mt-6 space-y-4">
-          {programs.length === 0 && !showCreateForm && (
-            <div className="bg-card rounded-2xl shadow-card border border-transparent p-8 text-center text-muted-foreground">{dt.noPrograms}</div>
-          )}
-          {programs.map((program, i) => {
-            const programEnrollments = enrollments[program.id] || [];
-            const isExpanded = expandedProgram === program.id;
-            const excluded = excludedTasks[program.id] || new Set();
-            const eligibleTasks = clubTasks.filter(t => t.loyalty_eligible);
-            const includedTasks = eligibleTasks.filter(t => !excluded.has(t.id));
-            const excludedTasksList = clubTasks.filter(t => excluded.has(t.id));
+        {/* Tabs */}
+        <Tabs defaultValue="programs">
+          <TabsList className="w-full grid grid-cols-3 h-10">
+            <TabsTrigger value="programs" className="text-xs sm:text-sm">{dt.tab_programs}</TabsTrigger>
+            <TabsTrigger value="queue" className="text-xs sm:text-sm gap-1.5">
+              {dt.tab_queue}
+              {rewardQueue.length > 0 && (
+                <Badge className="h-4 px-1.5 text-[10px] rounded-full bg-amber-500 text-white border-0">
+                  {rewardQueue.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">{dt.tab_settings}</TabsTrigger>
+          </TabsList>
 
-            return (
-              <motion.div key={program.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="bg-card rounded-2xl shadow-card border border-transparent overflow-hidden">
-                <button onClick={() => setExpandedProgram(isExpanded ? null : program.id)} className="w-full p-5 text-left flex items-start justify-between gap-3 hover:bg-muted/30 transition-colors">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Gift className="w-4 h-4 text-primary" />
-                      <h3 className="font-heading font-semibold text-foreground">{program.name}</h3>
-                      <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${program.is_active ? 'bg-accent/20 text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
-                        {program.is_active ? dt.active : dt.inactive}
-                      </span>
-                      {program.points_based && (
-                        <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/10 text-primary flex items-center gap-1">
-                          <Star className="w-3 h-3" /> {dt.pointsBased}
+          {/* ── Programs Tab ── */}
+          <TabsContent value="programs" className="mt-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+              {programs.length === 0 ? (
+                <div className="bg-card border border-border rounded-xl p-12 text-center">
+                  <Gift className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">{dt.noPrograms}</p>
+                  <button
+                    onClick={() => setShowCreateForm(true)}
+                    className="mt-4 px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+                  >
+                    <Plus className="w-3.5 h-3.5 inline mr-1.5" />{dt.newProgram}
+                  </button>
+                </div>
+              ) : (
+                programs.map((program, i) => {
+                  const programEnrollments = enrollments[program.id] || [];
+                  const excluded = excludedTasks[program.id] || new Set();
+                  const pendingCount = programEnrollments.filter(e => isGoalReached(program, e) && !e.reward_claimed).length;
+
+                  return (
+                    <motion.div
+                      key={program.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className="bg-card border border-border rounded-xl p-5 hover:border-primary/20 transition-colors"
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={cn(
+                              'w-2 h-2 rounded-full shrink-0 mt-0.5',
+                              program.is_active
+                                ? 'bg-emerald-500 shadow-[0_0_6px_2px_rgba(16,185,129,0.35)]'
+                                : 'bg-muted-foreground/30'
+                            )} />
+                            <h3 className="font-semibold text-foreground">{program.name}</h3>
+                            <Badge variant={program.is_active ? 'default' : 'secondary'} className="text-[10px] h-[18px] px-1.5">
+                              {program.is_active ? dt.active : dt.inactive}
+                            </Badge>
+                            {program.points_based ? (
+                              <Badge variant="outline" className="text-[10px] h-[18px] px-1.5 gap-0.5">
+                                <Star className="w-2.5 h-2.5" /> {dt.pointsBased}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] h-[18px] px-1.5 gap-0.5">
+                                <Check className="w-2.5 h-2.5" /> {dt.tasksBased}
+                              </Badge>
+                            )}
+                          </div>
+                          {program.description && (
+                            <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">{program.description}</p>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button
+                            onClick={() => handleToggleActive(program)}
+                            title={program.is_active ? dt.inactive : dt.active}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          >
+                            {program.is_active
+                              ? <ToggleRight className="w-4 h-4 text-emerald-500" />
+                              : <ToggleLeft className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => handleStartEdit(program)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setConfirmDelete(confirmDelete === program.id ? null : program.id)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Stats row */}
+                      <div className="mt-4 flex items-center gap-3 flex-wrap text-sm">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <Gift className="w-3.5 h-3.5 shrink-0" />
+                          <span className="text-foreground font-medium line-clamp-1">{program.reward_description}</span>
                         </span>
-                      )}
-                    </div>
-                    {program.description && <p className="text-xs text-muted-foreground mt-1">{program.description}</p>}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>🎁 {program.reward_description}</span>
-                      <span>{getRequirementLabel(program)}</span>
-                      <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {programEnrollments.length}</span>
-                      {excluded.size > 0 && <span className="text-destructive">{excluded.size} {language === 'nl' ? 'uitgesloten' : language === 'fr' ? 'exclues' : 'excluded'}</span>}
-                    </div>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span className="text-muted-foreground text-xs">{getRequirementLabel(program)}</span>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                          <Users className="w-3 h-3" /> {programEnrollments.length}
+                        </span>
+                        {pendingCount > 0 && (
+                          <>
+                            <span className="text-muted-foreground/50">·</span>
+                            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs font-medium">
+                              <Clock className="w-3 h-3" /> {pendingCount} {dt.rewardPending.toLowerCase()}
+                            </span>
+                          </>
+                        )}
+                        {excluded.size > 0 && (
+                          <>
+                            <span className="text-muted-foreground/50">·</span>
+                            <span className="text-xs text-muted-foreground">{excluded.size} {dt.excluded_count}</span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Delete confirm */}
+                      <AnimatePresence>
+                        {confirmDelete === program.id && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-3 bg-destructive/5 border border-destructive/20 rounded-xl p-3 flex items-center justify-between">
+                              <span className="text-xs text-destructive">{dt.deleteConfirm}</span>
+                              <div className="flex gap-2">
+                                <button onClick={() => setConfirmDelete(null)} className="px-3 py-1 text-xs rounded-lg bg-muted text-muted-foreground">{dt.cancel}</button>
+                                <button onClick={() => handleDelete(program.id)} disabled={deleting} className="px-3 py-1 text-xs rounded-lg bg-destructive text-destructive-foreground disabled:opacity-50">{dt.delete}</button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })
+              )}
+            </motion.div>
+          </TabsContent>
+
+          {/* ── Queue Tab ── */}
+          <TabsContent value="queue" className="mt-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              {rewardQueue.length === 0 ? (
+                <div className="bg-card border border-border rounded-xl p-12 text-center">
+                  <Trophy className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                  <p className="text-foreground font-medium">{dt.queue_empty}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{dt.noEnrollments}</p>
+                </div>
+              ) : (
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/40">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">{dt.col_volunteer}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">{dt.col_program}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden sm:table-cell">{dt.col_progress}</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {rewardQueue.map((item, i) => (
+                          <motion.tr
+                            key={item.id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: i * 0.04 }}
+                            className="hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="px-4 py-3 font-medium text-foreground">
+                              {item.volunteer_name || item.volunteer_email || 'Vrijwilliger'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <Gift className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <span className="truncate max-w-[140px]">{item.program.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 hidden sm:table-cell">
+                              <div className="flex items-center gap-2">
+                                <Progress value={getProgress(item.program, item)} className="h-1.5 w-20" />
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">{getProgressLabel(item.program, item)}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => handleGrantReward(item)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium ml-auto whitespace-nowrap"
+                              >
+                                <Trophy className="w-3 h-3" />
+                                {dt.grantReward}
+                              </button>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                </button>
+                </div>
+              )}
+            </motion.div>
+          </TabsContent>
 
-                {isExpanded && (
-                  <div className="px-5 pb-5 space-y-3">
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button onClick={() => handleToggleActive(program)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                        {program.is_active ? <ToggleRight className="w-3.5 h-3.5 text-accent" /> : <ToggleLeft className="w-3.5 h-3.5" />}
-                        {program.is_active ? dt.inactive : dt.active}
-                      </button>
-                      <button onClick={() => handleStartEdit(program)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                        <Pencil className="w-3.5 h-3.5" /> {dt.save}
-                      </button>
-                      <button onClick={() => setManagingExclusions(managingExclusions === program.id ? null : program.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                        <X className="w-3.5 h-3.5" /> {dt.excludedTasks} ({excluded.size})
-                      </button>
-                      <button onClick={() => setConfirmDelete(program.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-muted text-destructive hover:bg-destructive/10 transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" /> {dt.delete}
-                      </button>
-                    </div>
+          {/* ── Settings Tab ── */}
+          <TabsContent value="settings" className="mt-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <p className="text-sm text-muted-foreground">{dt.task_settings_desc}</p>
+              {programs.length === 0 ? (
+                <div className="bg-card border border-border rounded-xl p-8 text-center text-sm text-muted-foreground">
+                  {dt.noPrograms}
+                </div>
+              ) : (
+                programs.map((program, i) => {
+                  const excluded = excludedTasks[program.id] || new Set();
+                  const eligibleTasks = clubTasks.filter(t => t.loyalty_eligible);
+                  const includedTasks = eligibleTasks.filter(t => !excluded.has(t.id));
+                  const excludedTasksList = clubTasks.filter(t => excluded.has(t.id));
 
-                    {/* Task exclusion management */}
-                    {managingExclusions === program.id && (
-                      <div className="bg-muted/30 rounded-xl p-4 space-y-3">
-                        {/* Excluded tasks */}
+                  return (
+                    <motion.div
+                      key={program.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className="bg-card border border-border rounded-xl p-5"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className={cn(
+                          'w-2 h-2 rounded-full shrink-0',
+                          program.is_active ? 'bg-emerald-500 shadow-[0_0_6px_2px_rgba(16,185,129,0.35)]' : 'bg-muted-foreground/30'
+                        )} />
+                        <h3 className="font-semibold text-foreground">{program.name}</h3>
+                        <Badge variant="outline" className="text-[10px] h-[18px] px-1.5 ml-1">
+                          {program.points_based ? dt.pointsBased : dt.tasksBased}
+                        </Badge>
+                        {excluded.size > 0 && (
+                          <Badge variant="destructive" className="text-[10px] h-[18px] px-1.5 ml-auto">
+                            {excluded.size} {dt.excluded_count}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
                         {excludedTasksList.length > 0 && (
                           <div>
                             <p className="text-xs font-medium text-destructive mb-2">{dt.excludedTasks}</p>
                             <div className="flex flex-wrap gap-2">
                               {excludedTasksList.map(task => (
-                                <button key={task.id} onClick={() => handleIncludeTask(program.id, task.id)} className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">
+                                <button
+                                  key={task.id}
+                                  onClick={() => handleIncludeTask(program.id, task.id)}
+                                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                                >
                                   <X className="w-3 h-3" /> {task.title}
                                   {task.loyalty_points && <span className="text-[10px] opacity-70">({task.loyalty_points}pt)</span>}
                                 </button>
@@ -528,16 +841,19 @@ const LoyaltyPrograms = () => {
                             </div>
                           </div>
                         )}
-                        {/* Includable tasks */}
                         <div>
-                          <p className="text-xs font-medium text-foreground mb-2">{dt.includedTasks}</p>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">{dt.includedTasks}</p>
                           {includedTasks.length === 0 ? (
                             <p className="text-xs text-muted-foreground">{dt.noExcludedTasks}</p>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {includedTasks.map(task => (
-                                <button key={task.id} onClick={() => handleExcludeTask(program.id, task.id)} className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors">
-                                  <Check className="w-3 h-3 text-accent" /> {task.title}
+                                <button
+                                  key={task.id}
+                                  onClick={() => handleExcludeTask(program.id, task.id)}
+                                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+                                >
+                                  <Check className="w-3 h-3 text-emerald-500" /> {task.title}
                                   {task.loyalty_points && <span className="text-[10px] opacity-70">({task.loyalty_points}pt)</span>}
                                 </button>
                               ))}
@@ -545,91 +861,52 @@ const LoyaltyPrograms = () => {
                           )}
                         </div>
                       </div>
-                    )}
-
-                    {/* Delete confirm */}
-                    {confirmDelete === program.id && (
-                      <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-3 flex items-center justify-between">
-                        <span className="text-xs text-destructive">{dt.deleteConfirm}</span>
-                        <div className="flex gap-2">
-                          <button onClick={() => setConfirmDelete(null)} className="px-3 py-1 text-xs rounded-lg bg-muted text-muted-foreground">{dt.cancel}</button>
-                          <button onClick={() => handleDelete(program.id)} disabled={deleting} className="px-3 py-1 text-xs rounded-lg bg-destructive text-destructive-foreground disabled:opacity-50">{dt.delete}</button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Enrollments */}
-                    <div>
-                      <h4 className="text-sm font-medium text-foreground mb-2">{dt.enrollments}</h4>
-                      {programEnrollments.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">{dt.noEnrollments}</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {programEnrollments.map(enrollment => (
-                            <div key={enrollment.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-                              <div>
-                                <p className="text-sm font-medium text-foreground">{enrollment.volunteer_name || enrollment.volunteer_email || 'Vrijwilliger'}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <div className="flex-1 bg-muted rounded-full h-2 w-32">
-                                    <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${getProgress(program, enrollment)}%` }} />
-                                  </div>
-                                  <span className="text-[10px] text-muted-foreground">{getProgressLabel(program, enrollment)}</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {enrollment.reward_claimed ? (
-                                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-accent/20 text-accent-foreground">✅ {dt.rewardClaimed}</span>
-                                ) : isGoalReached(program, enrollment) ? (
-                                  <button onClick={() => handleGrantReward(enrollment)} className="px-2.5 py-1 text-[10px] rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
-                                    🎁 {dt.grantReward}
-                                  </button>
-                                ) : (
-                                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-muted text-muted-foreground">{dt.rewardPending}</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
+                    </motion.div>
+                  );
+                })
+              )}
+            </motion.div>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      {/* Edit dialog */}
-      <AnimatePresence>
-        {editingProgram && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setEditingProgram(null)}>
-            <motion.form initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} onSubmit={handleSaveEdit} className="bg-card rounded-2xl shadow-elevated border border-border p-6 w-full max-w-md space-y-4">
-              <h2 className="text-lg font-heading font-semibold text-foreground">{dt.name}</h2>
-              <div>
-                <label className={labelClass}>{dt.name} *</label>
-                <input type="text" required maxLength={200} value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>{dt.description}</label>
-                <textarea rows={2} maxLength={1000} value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))} className={inputClass + ' resize-none'} />
-              </div>
-              <div>
-                <label className={labelClass}>{dt.reward} *</label>
-                <input type="text" required maxLength={300} value={editForm.reward_description} onChange={e => setEditForm(p => ({ ...p, reward_description: e.target.value }))} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>{dt.requiredPoints} *</label>
-                <input type="number" min={1} max={99999} value={editForm.required_points} onChange={e => setEditForm(p => ({ ...p, required_points: parseInt(e.target.value) || 1 }))} className={inputClass} />
-              </div>
-              <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setEditingProgram(null)} className="px-4 py-2 text-sm rounded-xl bg-muted text-muted-foreground">{dt.cancel}</button>
-                <button type="submit" disabled={savingEdit} className="px-5 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-medium disabled:opacity-50">{savingEdit ? '...' : dt.save}</button>
-              </div>
-            </motion.form>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Create Sheet */}
+      <Sheet open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <SheetContent side="right" className="w-full max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Gift className="w-4 h-4 text-primary" /> {dt.newProgram}
+            </SheetTitle>
+          </SheetHeader>
+          <ProgramForm
+            form={newProgram}
+            setForm={setNewProgram}
+            onSubmit={handleCreate}
+            saving={creating}
+            onCancel={() => setShowCreateForm(false)}
+            submitLabel={dt.create}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Sheet */}
+      <Sheet open={!!editingProgram} onOpenChange={open => { if (!open) setEditingProgram(null); }}>
+        <SheetContent side="right" className="w-full max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-primary" /> {dt.editProgram}
+            </SheetTitle>
+          </SheetHeader>
+          <ProgramForm
+            form={editForm}
+            setForm={setEditForm}
+            onSubmit={handleSaveEdit}
+            saving={savingEdit}
+            onCancel={() => setEditingProgram(null)}
+            submitLabel={dt.save}
+          />
+        </SheetContent>
+      </Sheet>
     </ClubPageLayout>
   );
 };

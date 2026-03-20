@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
@@ -281,20 +282,20 @@ const ReportingDashboard = () => {
       setLoading(true);
       const [tasksRes, eventsRes, signupsRes, paymentsRes, ticketsRes, hourConfsRes, sepaRes,
         sigReqRes, complDeclRes, partnersRes, partnerMembersRes, partnerAssignRes, sepaBatchRes, loyaltyRes] = await Promise.all([
-        supabase.from('tasks').select('*').eq('club_id', clubId),
-        supabase.from('events').select('*').eq('club_id', clubId),
-        supabase.from('task_signups').select('*'),
-        supabase.from('volunteer_payments').select('*').eq('club_id', clubId),
-        supabase.from('volunteer_tickets').select('*').eq('club_id', clubId),
-        supabase.from('hour_confirmations').select('*'),
-        supabase.from('sepa_batch_items').select('*'),
-        supabase.from('signature_requests').select('*'),
-        supabase.from('compliance_declarations').select('*'),
-        supabase.from('external_partners').select('*').eq('club_id', clubId),
-        supabase.from('partner_members').select('*'),
-        supabase.from('partner_task_assignments').select('*'),
-        supabase.from('sepa_batches').select('*').eq('club_id', clubId),
-        supabase.from('loyalty_enrollments').select('*'),
+        supabase.from('tasks').select('id,title,club_id,event_id,task_date,spots_available,compensation_type,hourly_rate,expense_amount,location,status,partner_only,assigned_partner_id').eq('club_id', clubId).limit(500),
+        supabase.from('events').select('id,title,event_date,club_id').eq('club_id', clubId).order('event_date', { ascending: false }).limit(200),
+        supabase.from('task_signups').select('id,task_id,volunteer_id,status,signed_up_at').limit(3000),
+        supabase.from('volunteer_payments').select('id,task_id,volunteer_id,amount,status,paid_at,club_id').eq('club_id', clubId).limit(1000),
+        supabase.from('volunteer_tickets').select('id,task_id,volunteer_id,status,club_id').eq('club_id', clubId).limit(2000),
+        supabase.from('hour_confirmations').select('id,task_id,volunteer_id,status,final_hours,final_amount').limit(1000),
+        supabase.from('sepa_batch_items').select('id,task_id,amount').limit(500),
+        supabase.from('signature_requests').select('id,task_id,status').limit(500),
+        supabase.from('compliance_declarations').select('id,volunteer_id,type,status').limit(500),
+        supabase.from('external_partners').select('id,name,category,club_id,is_active').eq('club_id', clubId).limit(100),
+        supabase.from('partner_members').select('id,partner_id,user_id,email').limit(500),
+        supabase.from('partner_task_assignments').select('id,task_id,partner_member_id').limit(1000),
+        supabase.from('sepa_batches').select('id,reference,status,total_amount,item_count,created_at').eq('club_id', clubId).limit(100),
+        supabase.from('loyalty_enrollments').select('id,volunteer_id').limit(500),
       ]);
 
       const taskData = tasksRes.data || [];
@@ -609,45 +610,32 @@ const ReportingDashboard = () => {
     };
   }, [hourConfs, filteredTaskIds]);
 
-  // ── AI data summary ───────────────────────────────────────────
+  // ── AI data summary (condensed — token-safe) ──────────────────
   const buildDataSummary = () => {
-    const lines = [
+    const top5Events = eventReports.slice(0, 5).map(e =>
+      `${e.title.slice(0, 25)}: ${e.totalVolunteers}vol ${e.fillRate}% fill €${e.totalPaid.toFixed(0)}`
+    ).join('; ');
+    const top5Vols = volunteerReports.slice(0, 5).map(v =>
+      `${v.name.split(' ')[0]}: ${v.totalAssigned}t ${v.reliabilityScore}%rel €${v.totalEarned.toFixed(0)}`
+    ).join('; ');
+    const monthlySpend = monthlySpendingChart.slice(-6).map(m =>
+      `${m.month}:€${Number(m[L.paidOut] || 0).toFixed(0)}`
+    ).join(' ');
+    const partnerSummary = partners.slice(0, 5).map((p: any) => {
+      const mCount = partnerMembers.filter((m: any) => m.partner_id === p.id).length;
+      return `${p.name}(${mCount}mdw)`;
+    }).join(', ') || 'geen';
+    return [
       `Periode: ${format(dateFrom, 'dd/MM/yyyy')} - ${format(dateTo, 'dd/MM/yyyy')}`,
-      `${L.tasks}: ${kpis.totalTasks}`, `${L.volunteers}: ${kpis.totalVolunteers}`,
-      `${L.assignments}: ${kpis.totalAssigned}`, `${L.checkedIn}: ${kpis.totalCheckedIn}`,
-      `${L.noShows}: ${kpis.totalNoShows}`, `${L.attendance}: ${kpis.attendanceRate}%`,
-      `${L.paidOut}: €${kpis.totalPaid.toFixed(2)}`, `${L.outstanding}: €${kpis.totalPending.toFixed(2)}`,
-      `SEPA: €${kpis.totalSepa.toFixed(2)}`, `${L.avgPerTask}: €${kpis.avgCostPerTask.toFixed(2)}`,
-      `${L.occupancy}: ${kpis.fillRate}%`, `€ ${L.paidOut} (month): €${kpis.thisMonthPaid.toFixed(2)}`,
-      `${L.contracts}: ${kpis.contractsPercent}%`, `${L.partnerStaff}: ${kpis.activePartnerMembers}`,
-      '',
-      `TOP 10 ${L.volunteers.toUpperCase()}:`,
-      ...volunteerReports.slice(0, 10).map(v =>
-        `- ${v.name}: ${v.totalAssigned} ${L.tasks.toLowerCase()}, ${v.totalCheckedIn} ${L.checkedIn.toLowerCase()}, ${v.noShows} no-shows, €${v.totalEarned.toFixed(2)} ${L.earned.toLowerCase()}, ${L.reliability.toLowerCase()} ${v.reliabilityScore}%, ${L.events.toLowerCase()}: ${v.eventsWorked.join(', ') || '—'}`
-      ),
-      '', `${L.events.toUpperCase()}:`,
-      ...eventReports.map(e =>
-        `- ${e.title} (${e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '?'}): ${e.totalTasks} ${L.tasks.toLowerCase()}, ${e.totalVolunteers} ${L.volunteers.toLowerCase()}, ${e.checkedIn} ${L.checkedIn.toLowerCase()}, ${L.occupancy.toLowerCase()} ${e.fillRate}%, €${e.totalPaid.toFixed(2)}`
-      ),
-      '', `${L.tasks.toUpperCase()} (recent):`,
-      ...taskReports.slice(0, 20).map(t =>
-        `- ${t.title} (${t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '?'}): ${t.assigned}/${t.totalSlots}, ${t.checkedIn} in, ${t.noShows} ns, ${t.compensation}, €${t.totalPaid.toFixed(2)}, ${L.hoursStatus.toLowerCase()}: ${t.hourConfStatus}`
-      ),
-      '', `${L.partners.toUpperCase()}:`,
-      ...partners.map((p: any) => {
-        const members = partnerMembers.filter((m: any) => m.partner_id === p.id);
-        const assignments = partnerTaskAssignments.filter((a: any) => members.some((m: any) => m.id === a.partner_member_id));
-        return `- ${p.name} (${p.category}): ${members.length} ${L.partnerStaff.toLowerCase()}, ${assignments.length} ${L.assigned.toLowerCase()}, ${members.filter((m: any) => m.user_id).length} with account`;
-      }),
-      '', `${L.compliance.toUpperCase()}:`,
-      `${L.hourConf}: ${hourConfStats.total} total, ${hourConfStats.approved} ${L.approved.toLowerCase()}, ${hourConfStats.pending} ${L.awaitingLabel.toLowerCase()}`,
-      `${L.contracts}: ${signatureRequests.filter(s => s.status === 'completed').length}/${signatureRequests.length}`,
-      '', `${L.monthlySpending.toUpperCase()}:`,
-      ...monthlySpendingChart.map(m => `- ${m.month}: €${Number(m[L.paidOut] || 0).toFixed(2)}`),
-      '', 'DAY DISTRIBUTION:',
-      ...dayOfWeekChart.map(d => `- ${d.name}: ${d[L.tasks]} tasks`),
-    ];
-    return lines.join('\n');
+      `KPIs: ${kpis.totalVolunteers} vrijwilligers | ${kpis.totalTasks} taken | ${kpis.totalAssigned} toewijzingen | opkomst ${kpis.attendanceRate}% | bezetting ${kpis.fillRate}%`,
+      `Financieel: uitbetaald €${kpis.totalPaid.toFixed(0)} | openstaand €${kpis.totalPending.toFixed(0)} | gem €${kpis.avgCostPerTask.toFixed(0)}/taak | deze maand €${kpis.thisMonthPaid.toFixed(0)}`,
+      `Compliance: contracten ${kpis.contractsPercent}% ondertekend | uur-bevestigingen ${hourConfStats.approved} goedgekeurd / ${hourConfStats.pending} afwachtend / ${hourConfStats.disputed} betwist`,
+      `Partner personeel: ${kpis.activePartnerMembers} ingezet | partners: ${partnerSummary}`,
+      `Top-5 evenementen: ${top5Events || 'geen data'}`,
+      `Top-5 vrijwilligers: ${top5Vols || 'geen data'}`,
+      `Maandelijkse uitgaven (laatste 6m): ${monthlySpend || 'geen data'}`,
+      `No-show: ${kpis.totalCheckedIn} aanwezig / ${kpis.totalNoShows} no-show van ${kpis.totalAssigned} totaal`,
+    ].join('\n');
   };
 
   // ── AI summary generation ─────────────────────────────────────
@@ -817,17 +805,83 @@ const ReportingDashboard = () => {
   );
 
   // ── Chart renderer ─────────────────────────────────────────────
+  const tooltipStyle = {
+    contentStyle: {
+      background: 'hsl(var(--popover))',
+      border: '1px solid hsl(var(--border))',
+      borderRadius: '10px',
+      fontSize: '12px',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+      padding: '8px 12px',
+    },
+    labelStyle: { color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: 2 },
+    itemStyle: { color: 'hsl(var(--muted-foreground))' },
+  };
+  const gridProps = { strokeDasharray: '4 4', stroke: 'hsl(var(--border))', strokeOpacity: 0.4 };
+
   const renderChart = (data: any[], dataKeys: string[], xKey: string) => {
     if (!data.length) return <p className="text-sm text-muted-foreground text-center py-8">{L.noData}</p>;
     switch (chartType) {
       case 'line':
-        return (<ResponsiveContainer width="100%" height={300}><LineChart data={data}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey={xKey} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} /><Legend />{dataKeys.map((k, i) => <Line key={k} type="monotone" dataKey={k} stroke={COLORS[i % COLORS.length]} strokeWidth={2} />)}</LineChart></ResponsiveContainer>);
+        return (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={data}>
+              <CartesianGrid {...gridProps} />
+              <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <Tooltip {...tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              {dataKeys.map((k, i) => <Line key={k} type="monotone" dataKey={k} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={false} />)}
+            </LineChart>
+          </ResponsiveContainer>
+        );
       case 'area':
-        return (<ResponsiveContainer width="100%" height={300}><AreaChart data={data}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey={xKey} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} /><Legend />{dataKeys.map((k, i) => <Area key={k} type="monotone" dataKey={k} fill={COLORS[i % COLORS.length]} fillOpacity={0.2} stroke={COLORS[i % COLORS.length]} strokeWidth={2} />)}</AreaChart></ResponsiveContainer>);
+        return (
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={data}>
+              <defs>
+                {dataKeys.map((k, i) => (
+                  <linearGradient key={k} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.2} />
+                    <stop offset="95%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0} />
+                  </linearGradient>
+                ))}
+              </defs>
+              <CartesianGrid {...gridProps} />
+              <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <Tooltip {...tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              {dataKeys.map((k, i) => (
+                <Area key={k} type="monotone" dataKey={k} fill={`url(#grad-${i})`} stroke={COLORS[i % COLORS.length]} strokeWidth={2} />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        );
       case 'pie':
-        return (<ResponsiveContainer width="100%" height={300}><RechartsPie><Pie data={data.map((d) => ({ name: d[xKey], value: d[dataKeys[0]] || 0 }))} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>{data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip /></RechartsPie></ResponsiveContainer>);
+        return (
+          <ResponsiveContainer width="100%" height={300}>
+            <RechartsPie>
+              <Pie data={data.map((d) => ({ name: d[xKey], value: d[dataKeys[0]] || 0 }))} cx="50%" cy="50%" outerRadius={100} innerRadius={40} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
+                {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              </Pie>
+              <Tooltip {...tooltipStyle} />
+            </RechartsPie>
+          </ResponsiveContainer>
+        );
       default:
-        return (<ResponsiveContainer width="100%" height={300}><BarChart data={data}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey={xKey} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" /><Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} /><Legend />{dataKeys.map((k, i) => <Bar key={k} dataKey={k} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />)}</BarChart></ResponsiveContainer>);
+        return (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data}>
+              <CartesianGrid {...gridProps} />
+              <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <Tooltip {...tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              {dataKeys.map((k, i) => <Bar key={k} dataKey={k} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />)}
+            </BarChart>
+          </ResponsiveContainer>
+        );
     }
   };
 
@@ -924,7 +978,7 @@ const ReportingDashboard = () => {
           </div>
         </div>
         {/* ── Filters ─────────────────────────────────────────── */}
-        <Card>
+        <Card className="shadow-none border-border">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-4">
               <Filter className="w-4 h-4 text-muted-foreground" />
@@ -991,29 +1045,37 @@ const ReportingDashboard = () => {
         {/* ── KPI Cards ──────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {[
-            { icon: Users, label: L.volunteers, value: kpis.totalVolunteers, color: 'text-primary' },
-            { icon: Hash, label: L.tasks, value: kpis.totalTasks, color: 'text-primary' },
-            { icon: ClipboardCheck, label: L.assignments, value: kpis.totalAssigned, color: 'text-primary' },
-            { icon: CheckCircle2, label: L.checkedIn, value: kpis.totalCheckedIn, color: 'text-emerald-500' },
-            { icon: XCircle, label: L.noShows, value: kpis.totalNoShows, color: 'text-destructive' },
-            { icon: Percent, label: L.attendance, value: `${kpis.attendanceRate}%`, color: 'text-primary' },
-            { icon: Target, label: L.occupancy, value: `${kpis.fillRate}%`, color: 'text-primary' },
-            { icon: Euro, label: L.paidOut, value: `€${kpis.totalPaid.toFixed(0)}`, color: 'text-primary' },
-            { icon: CreditCard, label: L.outstanding, value: `€${kpis.totalPending.toFixed(0)}`, color: 'text-amber-500' },
-            { icon: Clock, label: L.avgPerTask, value: `€${kpis.avgCostPerTask.toFixed(0)}`, color: 'text-primary' },
-            { icon: FileText, label: L.contracts, value: `${kpis.contractsPercent}%`, color: 'text-primary' },
-            { icon: Handshake, label: L.partnerStaff, value: kpis.activePartnerMembers, color: 'text-primary' },
+            { icon: Users, label: L.volunteers, value: kpis.totalVolunteers, bg: 'bg-primary/10', ic: 'text-primary' },
+            { icon: Hash, label: L.tasks, value: kpis.totalTasks, bg: 'bg-primary/10', ic: 'text-primary' },
+            { icon: ClipboardCheck, label: L.assignments, value: kpis.totalAssigned, bg: 'bg-primary/10', ic: 'text-primary' },
+            { icon: CheckCircle2, label: L.checkedIn, value: kpis.totalCheckedIn, bg: 'bg-emerald-500/10', ic: 'text-emerald-600' },
+            { icon: XCircle, label: L.noShows, value: kpis.totalNoShows, bg: 'bg-destructive/10', ic: 'text-destructive' },
+            { icon: Percent, label: L.attendance, value: `${kpis.attendanceRate}%`, bg: 'bg-primary/10', ic: 'text-primary' },
+            { icon: Target, label: L.occupancy, value: `${kpis.fillRate}%`, bg: 'bg-primary/10', ic: 'text-primary' },
+            { icon: Euro, label: L.paidOut, value: `€${kpis.totalPaid.toFixed(0)}`, bg: 'bg-emerald-500/10', ic: 'text-emerald-600' },
+            { icon: CreditCard, label: L.outstanding, value: `€${kpis.totalPending.toFixed(0)}`, bg: 'bg-amber-500/10', ic: 'text-amber-600' },
+            { icon: Clock, label: L.avgPerTask, value: `€${kpis.avgCostPerTask.toFixed(0)}`, bg: 'bg-primary/10', ic: 'text-primary' },
+            { icon: FileText, label: L.contracts, value: `${kpis.contractsPercent}%`, bg: 'bg-primary/10', ic: 'text-primary' },
+            { icon: Handshake, label: L.partnerStaff, value: kpis.activePartnerMembers, bg: 'bg-violet-500/10', ic: 'text-violet-600' },
           ].map((kpi, i) => (
-            <Card key={i}><CardContent className="pt-4 pb-3 text-center">
-              <kpi.icon className={cn("w-5 h-5 mx-auto mb-1", kpi.color)} />
-              <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-              <p className="text-xs text-muted-foreground">{kpi.label}</p>
-            </CardContent></Card>
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/30 transition-colors"
+            >
+              <div className={cn('w-8 h-8 rounded-lg mx-auto mb-2.5 flex items-center justify-center', kpi.bg)}>
+                <kpi.icon className={cn('w-4 h-4', kpi.ic)} />
+              </div>
+              <p className="text-xl font-bold tabular-nums text-foreground">{kpi.value}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{kpi.label}</p>
+            </motion.div>
           ))}
         </div>
 
         {/* ── AI Summary Card ────────────────────────────────── */}
-        <Card className="border-primary/20">
+        <Card className="shadow-none border-primary/30 bg-gradient-to-br from-card to-primary/[0.02]">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Sparkles className="w-5 h-5 text-primary" />
@@ -1079,47 +1141,74 @@ const ReportingDashboard = () => {
           </div>
 
           {/* OVERVIEW */}
-          <TabsContent value="overview" className="space-y-6 mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card><CardHeader><CardTitle className="text-base">{L.monthlyTrend}</CardTitle></CardHeader>
-                <CardContent>{renderChart(monthlyTrendData, ['signups', 'checkedIn'], 'month')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">{L.monthlySpending}</CardTitle></CardHeader>
-                <CardContent>{renderChart(monthlySpendingChart, [L.paidOut], 'month')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">{L.perEvent}</CardTitle></CardHeader>
-                <CardContent>{renderChart(signupsPerEventChart, [L.assigned, L.checkedIn], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">{L.attendanceOverview}</CardTitle></CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RechartsPie><Pie data={noShowRateChart} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                      {noShowRateChart.map((_, i) => <Cell key={i} fill={[COLORS[1], COLORS[4], COLORS[3]][i]} />)}
-                    </Pie><Tooltip /><Legend /></RechartsPie>
-                  </ResponsiveContainer>
-                </CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">{L.topVolunteers}</CardTitle></CardHeader>
-                <CardContent>{renderChart(topVolunteersChart, [L.tasks, L.earned], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">{L.dayOfWeek}</CardTitle></CardHeader>
-                <CardContent>{renderChart(dayOfWeekChart, [L.tasks], 'name')}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">{L.compTypeChart}</CardTitle></CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <RechartsPie><Pie data={compensationPieData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} fontSize={10}>
-                      {compensationPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie><Tooltip /><Legend /></RechartsPie>
-                  </ResponsiveContainer>
-                </CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-base">{L.hourConf}</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div><p className="text-2xl font-bold text-foreground">{hourConfStats.approved}</p><p className="text-xs text-muted-foreground">{L.approved}</p></div>
-                    <div><p className="text-2xl font-bold text-amber-500">{hourConfStats.pending}</p><p className="text-xs text-muted-foreground">{L.awaitingLabel}</p></div>
-                    <div><p className="text-2xl font-bold text-destructive">{hourConfStats.disputed}</p><p className="text-xs text-muted-foreground">{L.disputed}</p></div>
+          <TabsContent value="overview" className="mt-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {[
+                { title: L.monthlyTrend, content: renderChart(monthlyTrendData, ['signups', 'checkedIn'], 'month') },
+                { title: L.monthlySpending, content: renderChart(monthlySpendingChart, [L.paidOut], 'month') },
+                { title: L.perEvent, content: renderChart(signupsPerEventChart, [L.assigned, L.checkedIn], 'name') },
+                {
+                  title: L.attendanceOverview,
+                  content: (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RechartsPie>
+                        <Pie data={noShowRateChart} cx="50%" cy="50%" outerRadius={100} innerRadius={40} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
+                          {noShowRateChart.map((_, i) => <Cell key={i} fill={[COLORS[1], COLORS[4], COLORS[3]][i]} />)}
+                        </Pie>
+                        <Tooltip {...tooltipStyle} /><Legend wrapperStyle={{ fontSize: 12 }} />
+                      </RechartsPie>
+                    </ResponsiveContainer>
+                  )
+                },
+                { title: L.topVolunteers, content: renderChart(topVolunteersChart, [L.tasks, L.earned], 'name') },
+                { title: L.dayOfWeek, content: renderChart(dayOfWeekChart, [L.tasks], 'name') },
+                {
+                  title: L.compTypeChart,
+                  content: (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <RechartsPie>
+                        <Pie data={compensationPieData} cx="50%" cy="50%" outerRadius={80} innerRadius={32} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
+                          {compensationPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip {...tooltipStyle} /><Legend wrapperStyle={{ fontSize: 12 }} />
+                      </RechartsPie>
+                    </ResponsiveContainer>
+                  )
+                },
+                {
+                  title: L.hourConf,
+                  content: (
+                    <div className="grid grid-cols-3 gap-4 text-center py-4">
+                      <div>
+                        <p className="text-3xl font-bold text-emerald-600 tabular-nums">{hourConfStats.approved}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{L.approved}</p>
+                      </div>
+                      <div>
+                        <p className="text-3xl font-bold text-amber-500 tabular-nums">{hourConfStats.pending}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{L.awaitingLabel}</p>
+                      </div>
+                      <div>
+                        <p className="text-3xl font-bold text-destructive tabular-nums">{hourConfStats.disputed}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{L.disputed}</p>
+                      </div>
+                    </div>
+                  )
+                },
+              ].map((item, i) => (
+                <motion.div key={item.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                  className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="px-5 pt-4 pb-1">
+                    <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
                   </div>
-                </CardContent></Card>
-            </div>
+                  <div className="px-5 pb-5 pt-2">{item.content}</div>
+                </motion.div>
+              ))}
+            </motion.div>
           </TabsContent>
 
           {/* VOLUNTEERS */}
-          <TabsContent value="volunteers" className="space-y-4 mt-4">
+          <TabsContent value="volunteers" className="mt-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="flex justify-end">
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(volunteerReports.map(v => ({
                 [L.name]: v.name, [L.email]: v.email || '', [L.assignments]: v.totalSignups, [L.assigned]: v.totalAssigned,
@@ -1130,7 +1219,7 @@ const ReportingDashboard = () => {
                 <Download className="w-4 h-4" /> {L.exportCsv}
               </Button>
             </div>
-            <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
+            <Card className="shadow-none border-border"><CardContent className="p-0"><div className="overflow-x-auto"><Table>
               <TableHeader><TableRow>
                 <TableHead>{L.name}</TableHead><TableHead>{L.email}</TableHead>
                 <TableHead className="text-center">{L.assigned}</TableHead>
@@ -1159,10 +1248,12 @@ const ReportingDashboard = () => {
                 ))}
               </TableBody>
             </Table></div></CardContent></Card>
+            </motion.div>
           </TabsContent>
 
           {/* TASKS */}
-          <TabsContent value="tasks" className="space-y-4 mt-4">
+          <TabsContent value="tasks" className="mt-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="flex justify-end">
                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(taskReports.map(t => ({
                  [L.task]: t.title, [L.event]: t.eventTitle || '', [L.date]: t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '',
@@ -1173,7 +1264,7 @@ const ReportingDashboard = () => {
                  <Download className="w-4 h-4" /> {L.exportCsv}
               </Button>
             </div>
-            <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
+            <Card className="shadow-none border-border"><CardContent className="p-0"><div className="overflow-x-auto"><Table>
                <TableHeader><TableRow>
                  <TableHead>{L.task}</TableHead><TableHead>{L.event}</TableHead><TableHead>{L.date}</TableHead>
                  <TableHead className="text-center">{L.spots}</TableHead><TableHead className="text-center">{L.assigned}</TableHead>
@@ -1205,10 +1296,12 @@ const ReportingDashboard = () => {
                 ))}
               </TableBody>
             </Table></div></CardContent></Card>
+            </motion.div>
           </TabsContent>
 
           {/* EVENTS */}
-          <TabsContent value="events" className="space-y-4 mt-4">
+          <TabsContent value="events" className="mt-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="flex justify-end">
                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCSV(eventReports.map(e => ({
                  [L.event]: e.title, [L.date]: e.date ? format(parseISO(e.date), 'dd/MM/yyyy') : '',
@@ -1219,7 +1312,7 @@ const ReportingDashboard = () => {
                  <Download className="w-4 h-4" /> {L.exportCsv}
               </Button>
             </div>
-            <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table>
+            <Card className="shadow-none border-border"><CardContent className="p-0"><div className="overflow-x-auto"><Table>
                <TableHeader><TableRow>
                  <TableHead>{L.event}</TableHead><TableHead>{L.date}</TableHead>
                  <TableHead className="text-center">{L.tasks}</TableHead><TableHead className="text-center">{L.volunteers}</TableHead>
@@ -1243,6 +1336,7 @@ const ReportingDashboard = () => {
                 ))}
               </TableBody>
             </Table></div></CardContent></Card>
+            </motion.div>
           </TabsContent>
 
           {/* FINANCIAL */}
