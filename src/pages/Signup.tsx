@@ -1,17 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trackEvent } from '@/lib/posthog';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, ArrowRightIcon } from 'lucide-react';
+import { Eye, EyeOff, ArrowRightIcon, Handshake } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { OnboardingForm } from '@/components/OnboardingForm';
 
 const Signup = () => {
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Partner invite link: /signup?partner_id=<uuid>
+  const partnerId = searchParams.get('partner_id');
+  const [partnerName, setPartnerName] = useState<string | null>(null);
 
   // Step 0 = account creation, Step 1 = onboarding
   const [phase, setPhase] = useState<'account' | 'onboarding'>('account');
@@ -21,6 +26,18 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Resolve partner name for branding banner
+  useEffect(() => {
+    if (!partnerId) return;
+    supabase
+      .from('external_partners')
+      .select('name')
+      .eq('id', partnerId)
+      .eq('is_active', true)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setPartnerName(data.name); });
+  }, [partnerId]);
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +108,22 @@ const Signup = () => {
 
       if (error) throw error;
 
-      toast.success(language === 'nl' ? 'Profiel compleet! Welkom!' : language === 'fr' ? 'Profil complet ! Bienvenue !' : 'Profile complete! Welcome!');
+      // If user registered via a partner invite link, link them to the partner pool
+      if (partnerId) {
+        const { error: partnerErr } = await (supabase as any).rpc('complete_partner_registration', {
+          p_user_id:    userId,
+          p_partner_id: partnerId,
+        });
+        if (partnerErr) {
+          // Non-fatal: profile is saved, partner linking can be retried
+          console.error('Partner registration link error:', partnerErr.message);
+        }
+      }
+
+      const welcomeMsg = partnerId && partnerName
+        ? (language === 'nl' ? `Welkom bij ${partnerName}! Je profiel is klaar.` : language === 'fr' ? `Bienvenue chez ${partnerName}! Profil complété.` : `Welcome to ${partnerName}! Profile complete.`)
+        : (language === 'nl' ? 'Profiel compleet! Welkom!' : language === 'fr' ? 'Profil complet ! Bienvenue !' : 'Profile complete! Welcome!');
+      toast.success(welcomeMsg);
       navigate('/dashboard');
     } catch (err: any) {
       toast.error(err.message || 'Error saving profile');
@@ -113,6 +145,20 @@ const Signup = () => {
         <div className="bg-card rounded-2xl shadow-elevated p-8">
           {phase === 'account' ? (
             <>
+              {/* Partner branding banner — shown when arriving via invite link */}
+              {partnerName && (
+                <div className="flex items-center gap-3 mb-5 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                  <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                    <Handshake className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                      {language === 'nl' ? 'Uitnodiging via partner' : language === 'fr' ? 'Invitation partenaire' : 'Partner invitation'}
+                    </p>
+                    <p className="text-sm font-bold text-blue-900 dark:text-blue-100">{partnerName}</p>
+                  </div>
+                </div>
+              )}
               <h1 className="text-2xl font-heading font-bold text-foreground text-center">{t.auth.signupTitle}</h1>
               <p className="text-sm text-muted-foreground text-center mt-1">{t.auth.signupSubtitle}</p>
 

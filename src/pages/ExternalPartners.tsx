@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Plus, Users, Mail, Eye, Calendar, Download, Trash2, Loader2, Upload, X, Handshake, Check, Clock, UserCheck, UserX, Ticket, ClipboardList, Send } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Mail, Eye, Calendar, Download, Trash2, Loader2, Upload, X, Handshake, Check, Clock, UserCheck, UserX, Ticket, ClipboardList, Send, Link2, ToggleLeft, ToggleRight } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 
 interface Partner {
@@ -496,6 +496,45 @@ const ExternalPartners = () => {
                 {categoryLabels[language]?.[selectedPartner.category] || selectedPartner.category}
               </Badge>
               {selectedPartner.external_payroll && <Badge variant="outline" className="text-xs">{t3('Externe Payroll', 'Paie externe', 'External Payroll')}</Badge>}
+            </div>
+
+            {/* Partner invite link + payroll toggle ─────────────────────────── */}
+            <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+              <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                  {t3('Partner uitnodigingslink', 'Lien d\'invitation partenaire', 'Partner invite link')}
+                </p>
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/70 font-mono truncate">
+                  {`${window.location.origin}/signup?partner_id=${selectedPartner.id}`}
+                </p>
+              </div>
+              <Button size="sm" variant="outline" className="shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/signup?partner_id=${selectedPartner.id}`);
+                  toast.success(t3('Link gekopieerd!', 'Lien copié!', 'Link copied!'));
+                }}>
+                {t3('Kopieer', 'Copier', 'Copy')}
+              </Button>
+              <Button size="sm" variant={selectedPartner.external_payroll ? 'default' : 'outline'}
+                className="shrink-0"
+                title={t3('Togglet of vergoedingen naar de partner gaan i.p.v. individueel', 'Basculer la paie vers le partenaire', 'Toggle partner payroll routing')}
+                onClick={async () => {
+                  const newVal = !selectedPartner.external_payroll;
+                  const { error } = await supabase.from('external_partners').update({ external_payroll: newVal }).eq('id', selectedPartner.id);
+                  if (error) toast.error(error.message);
+                  else {
+                    setSelectedPartner({ ...selectedPartner, external_payroll: newVal });
+                    setPartners(prev => prev.map(p => p.id === selectedPartner.id ? { ...p, external_payroll: newVal } : p));
+                    toast.success(newVal
+                      ? t3('Payroll → Partner (groepsfactuur)', 'Paie → Partenaire', 'Payroll → Partner invoice')
+                      : t3('Payroll → Individueel', 'Paie → Individuel', 'Payroll → Individual'));
+                  }
+                }}>
+                {selectedPartner.external_payroll
+                  ? <><ToggleRight className="w-4 h-4 mr-1" />{t3('Groepsfactuur', 'Facture groupe', 'Group invoice')}</>
+                  : <><ToggleLeft className="w-4 h-4 mr-1" />{t3('Individueel', 'Individuel', 'Individual')}</>}
+              </Button>
             </div>
 
             {loadingDetail ? (
