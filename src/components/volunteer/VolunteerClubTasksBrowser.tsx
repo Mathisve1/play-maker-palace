@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { sendPushToClub } from '@/lib/sendPush';
 import { Language } from '@/i18n/translations';
 import { MapPin, Calendar, Clock, Search, Users, ArrowLeft, Loader2, Heart, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
