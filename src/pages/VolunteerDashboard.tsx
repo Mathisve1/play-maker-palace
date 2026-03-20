@@ -644,6 +644,12 @@ const VolunteerDashboard = () => {
       setSignups(prev => [...prev, { task_id: taskId, status: 'pending' }]);
       setSignupCounts(prev => ({ ...prev, [taskId]: (prev[taskId] || 0) + 1 }));
       setBadgeRefreshKey(k => k + 1);
+      // Push to club admins
+      const { data: task } = await supabase.from('tasks').select('club_id, title').eq('id', taskId).maybeSingle();
+      if (task?.club_id) {
+        const volName = profile?.full_name || 'Vrijwilliger';
+        sendPushToClub({ clubId: task.club_id, title: '📋 Nieuwe inschrijving', message: `${volName} heeft zich ingeschreven voor "${task.title}"`, url: '/club-dashboard', type: 'new_signup' });
+      }
     }
     setSigningUp(null);
   };
