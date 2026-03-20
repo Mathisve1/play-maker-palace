@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { sendPushToFollowers } from '@/lib/sendPush';
+import { sendPushToFollowers, sendPushToClubMembers } from '@/lib/sendPush';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
