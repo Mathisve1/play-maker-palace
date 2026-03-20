@@ -123,6 +123,7 @@ const ShiftSwapDialog = ({ open, onClose, taskId, taskTitle, clubId, currentUser
       toast.success(t3(language, 'Ruilverzoek geaccepteerd! Wacht op goedkeuring club.', 'Accepté! En attente de la validation du club.', 'Accepted! Waiting for club approval.'));
       if (swap) {
         sendPush({ userId: swap.requester_id, type: 'shift_swap_accepted', title: '✅ Ruil geaccepteerd', message: `Je ruilverzoek voor "${taskTitle}" is geaccepteerd. Wacht op goedkeuring club.`, url: `/task/${taskId}` });
+        sendPushToClub({ clubId, title: '🔄 Shift-ruil ter goedkeuring', message: `Er is een shift-ruil verzoek voor "${taskTitle}" dat jouw goedkeuring nodig heeft.`, url: '/club-dashboard', type: 'shift_swap_pending' });
       }
     } else {
       await supabase.from('shift_swaps').update({
