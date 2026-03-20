@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut,
   Search, User, Settings, MessageCircle, Bell, ShieldAlert, Ticket, Handshake,
-  CreditCard, Award, Heart, ChevronDown, HelpCircle, Sparkles,
+  CreditCard, Award, Heart, ChevronDown, HelpCircle, Sparkles, ScanLine,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import {
@@ -102,6 +102,7 @@ const ClubOwnerSidebar = ({
     { label: t3('Facturatie', 'Facturation', 'Billing'), icon: CreditCard, path: '/billing' },
     { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
     { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Heart, path: '/loyalty' },
+    { label: t3('Kassa & Pasjes', 'Caisse & Cartes', 'POS & Cards'), icon: ScanLine, path: '/kassa-pasjes' },
   ];
 
   const beheerIsActive = beheerItems.some(item => isActive(item.path));

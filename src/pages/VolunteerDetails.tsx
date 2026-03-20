@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, CalendarDays, Wallet, Trophy, GraduationCap,
-  MapPin, CalendarSync, Gift, ListChecks, Heart,
+  MapPin, CalendarSync, Gift, ListChecks, Heart, CreditCard,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -20,6 +20,7 @@ import NearbyClubsWidget from '@/components/community/NearbyClubsWidget';
 import VolunteerTaskPreferences from '@/components/VolunteerTaskPreferences';
 import VolunteerLoyaltyProgress from '@/components/volunteer/VolunteerLoyaltyProgress';
 import BuddiesCard from '@/components/volunteer/BuddiesCard';
+import MijnClubkaarten from '@/components/volunteer/MijnClubkaarten';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -66,6 +67,8 @@ const PAGE_LABELS: Record<Language, Record<string, string>> = {
     preferencesDesc: 'Stel in welke taken het beste bij jou passen',
     buddies: '👫 Mijn Vaste Maatjes',
     buddiesDesc: 'Werk samen met een vast maatje — jij kiest wie, de club ziet wie er al meedoet',
+    cards: 'Mijn Clubkaarten',
+    cardsDesc: 'Jouw pas, digitale kaart en beloningen per club',
   },
   fr: {
     title: 'Mes Détails & Préférences',
@@ -88,6 +91,8 @@ const PAGE_LABELS: Record<Language, Record<string, string>> = {
     preferencesDesc: 'Configurez quelles tâches vous conviennent le mieux',
     buddies: '👫 Mes Équipiers Fixes',
     buddiesDesc: 'Travaillez avec un équipier fixe — vous choisissez, le club voit qui participe',
+    cards: 'Mes Cartes de Club',
+    cardsDesc: 'Votre carte, carte numérique et récompenses par club',
   },
   en: {
     title: 'My Details & Preferences',
@@ -110,6 +115,8 @@ const PAGE_LABELS: Record<Language, Record<string, string>> = {
     preferencesDesc: 'Configure which tasks suit you best',
     buddies: '👫 My Regular Buddies',
     buddiesDesc: 'Work with a regular buddy — you choose who, the club sees who\'s joining',
+    cards: 'My Club Cards',
+    cardsDesc: 'Your card, digital card and rewards per club',
   },
 };
 
@@ -259,6 +266,19 @@ const VolunteerDetails = () => {
           desc={l.financialsDesc}
         >
           <VolunteerFinancialDashboard userId={userId} language={language as Language} />
+        </SectionCard>
+
+        {/* 2b — Club Cards & Rewards */}
+        <SectionCard
+          delay={0.13}
+          headerBg="bg-indigo-500/5"
+          iconBg="bg-indigo-500/15"
+          iconClass="text-indigo-600 dark:text-indigo-400"
+          icon={CreditCard}
+          title={l.cards}
+          desc={l.cardsDesc}
+        >
+          <MijnClubkaarten userId={userId} language={language as Language} />
         </SectionCard>
 
         {/* 3 — Badges & Loyalty */}

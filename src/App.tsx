@@ -77,6 +77,7 @@ const ContactPage = lazy(() => import("./pages/ContactPage"));
 const VolunteerDetails = lazy(() => import("./pages/VolunteerDetails"));
 const DonationGoals = lazy(() => import("./pages/DonationGoals"));
 const ShiftSwapDetail = lazy(() => import("./pages/ShiftSwapDetail"));
+const KassaPasjesBeheer = lazy(() => import("./pages/KassaPasjesBeheer"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -189,6 +190,7 @@ const App = () => {
             <Route path="/volunteer-details" element={<RequireAuth><VolunteerDetails /></RequireAuth>} />
             <Route path="/club-dashboard/donations" element={<RequireAuth><DonationGoals /></RequireAuth>} />
             <Route path="/shift-swap/:id" element={<RequireAuth><ShiftSwapDetail /></RequireAuth>} />
+            <Route path="/kassa-pasjes" element={<RequireAuth redirectTo="/club-login"><KassaPasjesBeheer /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

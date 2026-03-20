@@ -57,3 +57,5 @@ project_id = "ebxpdscmebdmyqjwmpun"
     verify_jwt = false
   [functions.accept-shift-swap]
     verify_jwt = false
+  [functions.pos-integration]
+    verify_jwt = false
