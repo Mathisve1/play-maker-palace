@@ -11,6 +11,7 @@ export async function sendPush(opts: {
   message: string;
   url?: string;
   type?: string;
+  clubId?: string;
 }) {
   try {
     await supabase.functions.invoke('send-native-push', {
@@ -20,6 +21,7 @@ export async function sendPush(opts: {
         message: opts.message,
         url: opts.url || '/dashboard',
         type: opts.type || 'general',
+        ...(opts.clubId ? { club_id: opts.clubId } : {}),
       },
     });
   } catch (e) {
