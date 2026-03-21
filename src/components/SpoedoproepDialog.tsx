@@ -458,6 +458,18 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
         }
       }
 
+      // ── Step F: Save spoed bonus to DB so it auto-credits on signup ──
+      if (bonusEnabled && (bonusAmount > 0 || bonusType === 'double_points')) {
+        await (supabase as any).from('spoed_bonuses').upsert({
+          task_id: task.id,
+          club_id: task.club_id,
+          bonus_amount: bonusAmount,
+          bonus_type: bonusType,
+          created_by: clubCtx?.userId || '',
+          is_active: true,
+        }, { onConflict: 'task_id' });
+      }
+
       setResult({ pushCount, emailCount, notifCount });
       setStep(3);
     } catch (e) {
