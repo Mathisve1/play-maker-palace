@@ -397,11 +397,17 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
           .map(id => {
             const p = profileMap.get(id);
             const lang = p?.language || 'nl';
+            const inAppTitle = lang === 'nl' ? `🚨 Spoedoproep — ${clubName}` : lang === 'fr' ? `🚨 Appel d'urgence — ${clubName}` : `🚨 Urgent Call — ${clubName}`;
+            const inAppMsg = lang === 'nl'
+              ? `${task.title} · ${formattedDate}${formattedTime ? ` om ${formattedTime}` : ''} · ${task.location || ''}`
+              : lang === 'fr'
+              ? `${task.title} · ${formattedDate}${formattedTime ? ` à ${formattedTime}` : ''} · ${task.location || ''}`
+              : `${task.title} · ${formattedDate}${formattedTime ? ` at ${formattedTime}` : ''} · ${task.location || ''}`;
             return {
               user_id: id,
               type: 'spoed_oproep',
-              title: lang === 'nl' ? '🚨 Spoedoproep!' : lang === 'fr' ? '🚨 Appel d\'urgence!' : '🚨 Urgent Call!',
-              message: message.slice(0, 500),
+              title: inAppTitle,
+              message: inAppMsg.slice(0, 500),
               metadata: {
                 task_id: task.id,
                 task_title: task.title,
