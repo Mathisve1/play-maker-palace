@@ -470,6 +470,7 @@ const SepaPayouts = () => {
             message: `Goed nieuws! Jouw vergoeding van €${item.amount.toFixed(2)} voor ${taskMap[item.task_id] || 'een taak'} is verwerkt en wordt binnenkort gestort.`,
             url: '/volunteer-dashboard',
             type: 'payout',
+            clubId: clubId || undefined,
           })
         ));
       }
