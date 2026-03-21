@@ -213,7 +213,7 @@ const MonthlyPlanning = () => {
       if (data?.success) {
         setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, ticket_barcode: data.barcode || signup.ticket_barcode } : s));
         toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
-        sendPush({ userId: signup.volunteer_id, title: '🎫 Ticket ontvangen', message: `Je ticket is klaar! Bekijk het in je dashboard.`, url: '/dashboard', type: 'ticket_generated' });
+        sendPush({ userId: signup.volunteer_id, title: '🎫 Ticket ontvangen', message: `Je ticket is klaar! Bekijk het in je dashboard.`, url: '/dashboard', type: 'ticket_generated', clubId: clubId || undefined });
       } else { toast.error(data?.error || t3('Ticket genereren mislukt', 'Échec de la génération du ticket', 'Ticket generation failed')); }
     } catch (e: any) { toast.error(e.message); }
     setGeneratingTicketIds(prev => { const n = new Set(prev); n.delete(signup.id); return n; });
@@ -257,7 +257,7 @@ const MonthlyPlanning = () => {
     await supabase.from('monthly_day_signups').update({ dispute_status: 'escalated', dispute_escalated_at: now }).eq('id', signup.id);
     setDaySignups(prev => prev.map(s => s.id === signup.id ? { ...s, dispute_status: 'escalated', dispute_escalated_at: now } : s));
     toast.success(t3('Geschil geëscaleerd. Auto-resolutie in 48u.', 'Litige escaladé. Résolution auto dans 48h.', 'Dispute escalated. Auto-resolve in 48h.'));
-    sendPush({ userId: signup.volunteer_id, title: '⚠️ Geschil geëscaleerd', message: 'Het geschil over je uren is geëscaleerd. Na 48u wordt het gemiddelde toegepast.', url: '/dashboard', type: 'dispute_escalated' });
+    sendPush({ userId: signup.volunteer_id, title: '⚠️ Geschil geëscaleerd', message: 'Het geschil over je uren is geëscaleerd. Na 48u wordt het gemiddelde toegepast.', url: '/dashboard', type: 'dispute_escalated', clubId: clubId || undefined });
   };
 
   const resolveDispute = async (signup: DaySignupClub, task: PlanTask) => {
