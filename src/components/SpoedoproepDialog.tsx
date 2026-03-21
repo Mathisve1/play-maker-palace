@@ -342,7 +342,7 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
         profileMap.set(p.id, p);
       }
 
-      const clubName = clubCtx?.clubInfo?.name || 'Club';
+      // clubName already defined above hooks
 
       // ── Step C: Push notifications (batches of 10) ──
       // The edge function also creates an in-app notification, so track who got push
@@ -359,13 +359,19 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
             batch.map(userId => {
               const p = profileMap.get(userId);
               const lang = p?.language || 'nl';
+              const pushTitle = lang === 'nl' ? `🚨 Spoedoproep — ${clubName}` : lang === 'fr' ? `🚨 Appel d'urgence — ${clubName}` : `🚨 Urgent Call — ${clubName}`;
+              const pushMsg = lang === 'nl'
+                ? `${task.title} · ${formattedDate}${formattedTime ? ` om ${formattedTime}` : ''} · ${task.location || ''}`
+                : lang === 'fr'
+                ? `${task.title} · ${formattedDate}${formattedTime ? ` à ${formattedTime}` : ''} · ${task.location || ''}`
+                : `${task.title} · ${formattedDate}${formattedTime ? ` at ${formattedTime}` : ''} · ${task.location || ''}`;
               return supabase.functions.invoke('send-native-push', {
                 body: {
                   user_id: userId,
                   type: 'spoed_oproep',
-                  title: lang === 'nl' ? '🚨 Spoedoproep!' : lang === 'fr' ? '🚨 Appel d\'urgence!' : '🚨 Urgent Call!',
-                  message: message.slice(0, 200),
-                  url: `/task/${task.id}`,
+                  title: pushTitle,
+                  message: pushMsg.slice(0, 200),
+                  url: `/tasks/${task.id}`,
                 },
               });
             })
