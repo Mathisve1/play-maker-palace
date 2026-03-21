@@ -1464,6 +1464,8 @@ export type Database = {
       }
       club_reward_settings: {
         Row: {
+          canteen_enabled: boolean
+          canteen_reward_eur: number
           club_id: string
           created_at: string
           fanshop_credit_enabled: boolean
@@ -1475,6 +1477,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          canteen_enabled?: boolean
+          canteen_reward_eur?: number
           club_id: string
           created_at?: string
           fanshop_credit_enabled?: boolean
@@ -1486,6 +1490,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          canteen_enabled?: boolean
+          canteen_reward_eur?: number
           club_id?: string
           created_at?: string
           fanshop_credit_enabled?: boolean
@@ -2179,7 +2185,9 @@ export type Database = {
           external_event_id: string | null
           id: string
           is_live: boolean
+          kickoff_time: string | null
           location: string | null
+          shift_template_id: string | null
           status: string
           title: string
           training_id: string | null
@@ -2196,7 +2204,9 @@ export type Database = {
           external_event_id?: string | null
           id?: string
           is_live?: boolean
+          kickoff_time?: string | null
           location?: string | null
+          shift_template_id?: string | null
           status?: string
           title: string
           training_id?: string | null
@@ -2213,7 +2223,9 @@ export type Database = {
           external_event_id?: string | null
           id?: string
           is_live?: boolean
+          kickoff_time?: string | null
           location?: string | null
+          shift_template_id?: string | null
           status?: string
           title?: string
           training_id?: string | null
@@ -2249,6 +2261,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "events_shift_template_id_fkey"
+            columns: ["shift_template_id"]
+            isOneToOne: false
+            referencedRelation: "shift_templates"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "events_training_id_fkey"
             columns: ["training_id"]
             isOneToOne: false
@@ -2266,6 +2285,7 @@ export type Database = {
           created_at: string
           external_payroll: boolean
           id: string
+          is_active: boolean
           logo_url: string | null
           name: string
           updated_at: string
@@ -2278,6 +2298,7 @@ export type Database = {
           created_at?: string
           external_payroll?: boolean
           id?: string
+          is_active?: boolean
           logo_url?: string | null
           name: string
           updated_at?: string
@@ -2290,6 +2311,7 @@ export type Database = {
           created_at?: string
           external_payroll?: boolean
           id?: string
+          is_active?: boolean
           logo_url?: string | null
           name?: string
           updated_at?: string
@@ -3461,6 +3483,7 @@ export type Database = {
           id: string
           in_app_notifications_enabled: boolean
           language: string
+          linked_partner_id: string | null
           onesignal_player_id: string | null
           phone: string | null
           preferences: Json | null
@@ -3493,6 +3516,7 @@ export type Database = {
           id: string
           in_app_notifications_enabled?: boolean
           language?: string
+          linked_partner_id?: string | null
           onesignal_player_id?: string | null
           phone?: string | null
           preferences?: Json | null
@@ -3525,6 +3549,7 @@ export type Database = {
           id?: string
           in_app_notifications_enabled?: boolean
           language?: string
+          linked_partner_id?: string | null
           onesignal_player_id?: string | null
           phone?: string | null
           preferences?: Json | null
@@ -3538,6 +3563,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_linked_partner_id_fkey"
+            columns: ["linked_partner_id"]
+            isOneToOne: false
+            referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_primary_club_id_fkey"
             columns: ["primary_club_id"]
@@ -4647,6 +4679,68 @@ export type Database = {
           },
         ]
       }
+      shift_feedbacks: {
+        Row: {
+          club_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          is_resolved: boolean
+          rating: Database["public"]["Enums"]["feedback_rating"]
+          task_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          club_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          rating: Database["public"]["Enums"]["feedback_rating"]
+          task_id: string
+          volunteer_id: string
+        }
+        Update: {
+          club_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          rating?: Database["public"]["Enums"]["feedback_rating"]
+          task_id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_feedbacks_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_feedbacks_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_feedbacks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_feedbacks_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shift_swaps: {
         Row: {
           created_at: string
@@ -4701,6 +4795,86 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_template_slots: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          location: string
+          required_volunteers: number
+          role_name: string
+          start_offset_minutes: number
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          location?: string
+          required_volunteers?: number
+          role_name: string
+          start_offset_minutes?: number
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          location?: string
+          required_volunteers?: number
+          role_name?: string
+          start_offset_minutes?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_template_slots_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "shift_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_templates: {
+        Row: {
+          club_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4897,8 +5071,11 @@ export type Database = {
       }
       task_signups: {
         Row: {
+          attendance_status: string
           checked_in_at: string | null
           id: string
+          is_draft: boolean
+          payroll_entity: string
           predicted_sub_location: string | null
           signed_up_at: string
           status: string
@@ -4907,8 +5084,11 @@ export type Database = {
           volunteer_id: string
         }
         Insert: {
+          attendance_status?: string
           checked_in_at?: string | null
           id?: string
+          is_draft?: boolean
+          payroll_entity?: string
           predicted_sub_location?: string | null
           signed_up_at?: string
           status?: string
@@ -4917,8 +5097,11 @@ export type Database = {
           volunteer_id: string
         }
         Update: {
+          attendance_status?: string
           checked_in_at?: string | null
           id?: string
+          is_draft?: boolean
+          payroll_entity?: string
           predicted_sub_location?: string | null
           signed_up_at?: string
           status?: string
@@ -6079,6 +6262,7 @@ export type Database = {
       }
       volunteer_rewards: {
         Row: {
+          canteen_balance_eur: number
           club_id: string
           fanshop_discount_active: boolean
           free_drinks_balance: number
@@ -6087,6 +6271,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          canteen_balance_eur?: number
           club_id: string
           fanshop_discount_active?: boolean
           free_drinks_balance?: number
@@ -6095,6 +6280,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          canteen_balance_eur?: number
           club_id?: string
           fanshop_discount_active?: boolean
           free_drinks_balance?: number
@@ -6408,9 +6594,29 @@ export type Database = {
       }
     }
     Functions: {
+      apply_shift_template_to_event: {
+        Args: { p_event_id: string; p_template_id: string }
+        Returns: number
+      }
+      auto_checkin_on_card_scan: {
+        Args: { p_club_id: string; p_user_id: string }
+        Returns: Json
+      }
+      complete_partner_registration: {
+        Args: { p_partner_id: string; p_user_id: string }
+        Returns: Json
+      }
+      consume_canteen_balance: {
+        Args: { p_amount?: number; p_club_id: string; p_user_id: string }
+        Returns: number
+      }
       consume_drink_balance: {
         Args: { p_club_id: string; p_user_id: string }
         Returns: number
+      }
+      credit_canteen_balance: {
+        Args: { p_amount: number; p_club_id: string; p_user_id: string }
+        Returns: undefined
       }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -6424,8 +6630,15 @@ export type Database = {
         Args: { _block_id: string }
         Returns: string
       }
+      get_event_live_status: { Args: { p_event_id: string }; Returns: Json }
       get_partner_club_id: { Args: { _partner_id: string }; Returns: string }
       get_partner_club_ids: { Args: { _partner_id: string }; Returns: string[] }
+      get_partner_colleagues_on_task: {
+        Args: { p_task_id: string; p_viewer_id: string }
+        Returns: Json
+      }
+      get_partner_group_buddies: { Args: { p_user_id: string }; Returns: Json }
+      get_pending_feedback_tasks: { Args: { p_user_id: string }; Returns: Json }
       get_safe_profile: {
         Args: { _user_id: string }
         Returns: {
@@ -6469,6 +6682,14 @@ export type Database = {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
+      mark_volunteer_checked_in: {
+        Args: { p_signup_id: string }
+        Returns: undefined
+      }
+      mark_volunteer_no_show: {
+        Args: { p_signup_id: string }
+        Returns: undefined
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -6478,10 +6699,12 @@ export type Database = {
         }
         Returns: number
       }
+      predict_and_assign_shifts: { Args: { p_event_id: string }; Returns: Json }
       predict_volunteer_sublocation: {
         Args: { p_task_title: string; p_user_id: string }
         Returns: string
       }
+      publish_event_assignments: { Args: { p_event_id: string }; Returns: Json }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -6490,6 +6713,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      refresh_late_statuses: { Args: { p_event_id: string }; Returns: number }
       regenerate_pos_api_key: { Args: { p_club_id: string }; Returns: string }
       rpc_consume_pos_perk: {
         Args: {
@@ -6503,10 +6727,20 @@ export type Database = {
         Args: { p_card_uid: string; p_pos_api_key: string }
         Returns: Json
       }
+      submit_shift_feedback: {
+        Args: {
+          p_comment?: string
+          p_rating: Database["public"]["Enums"]["feedback_rating"]
+          p_task_id: string
+        }
+        Returns: string
+      }
+      trigger_sos_replacement: { Args: { p_signup_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "club_owner" | "volunteer"
       club_role: "bestuurder" | "beheerder" | "medewerker"
+      feedback_rating: "great" | "neutral" | "bad"
       onboarding_step:
         | "profile_complete"
         | "contract_signed"
@@ -6660,6 +6894,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "club_owner", "volunteer"],
       club_role: ["bestuurder", "beheerder", "medewerker"],
+      feedback_rating: ["great", "neutral", "bad"],
       onboarding_step: [
         "profile_complete",
         "contract_signed",
