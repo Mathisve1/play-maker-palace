@@ -79,8 +79,8 @@ const ShiftSwapApprovals = ({ clubId, language }: ShiftSwapApprovalsProps) => {
     }).eq('id', swap.id);
 
     // Notify both parties
-    sendPush({ userId: swap.requester_id, type: 'shift_swap_approved', title: '✅ Shift-ruil goedgekeurd', message: `Je shift-ruil voor "${swap.task_title}" is goedgekeurd door de club.`, url: `/task/${swap.task_id}` });
-    sendPush({ userId: swap.target_id, type: 'shift_swap_approved', title: '✅ Shift-ruil goedgekeurd', message: `De shift-ruil voor "${swap.task_title}" is goedgekeurd door de club.`, url: `/task/${swap.task_id}` });
+    sendPush({ userId: swap.requester_id, type: 'shift_swap_approved', title: '✅ Shift-ruil goedgekeurd', message: `Je shift-ruil voor "${swap.task_title}" is goedgekeurd door de club.`, url: `/task/${swap.task_id}`, clubId });
+    sendPush({ userId: swap.target_id, type: 'shift_swap_approved', title: '✅ Shift-ruil goedgekeurd', message: `De shift-ruil voor "${swap.task_title}" is goedgekeurd door de club.`, url: `/task/${swap.task_id}`, clubId });
 
     setSwaps(prev => prev.filter(s => s.id !== swap.id));
     toast.success(t3(language, 'Shift-ruil goedgekeurd!', 'Échange approuvé!', 'Shift swap approved!'));
@@ -91,8 +91,8 @@ const ShiftSwapApprovals = ({ clubId, language }: ShiftSwapApprovalsProps) => {
     setProcessing(swap.id);
     await supabase.from('shift_swaps').update({ status: 'rejected_club' }).eq('id', swap.id);
 
-    sendPush({ userId: swap.requester_id, type: 'shift_swap_rejected', title: '❌ Shift-ruil geweigerd', message: `De club heeft je shift-ruil voor "${swap.task_title}" geweigerd.`, url: `/task/${swap.task_id}` });
-    sendPush({ userId: swap.target_id, type: 'shift_swap_rejected', title: '❌ Shift-ruil geweigerd', message: `De club heeft de shift-ruil voor "${swap.task_title}" geweigerd.`, url: `/task/${swap.task_id}` });
+    sendPush({ userId: swap.requester_id, type: 'shift_swap_rejected', title: '❌ Shift-ruil geweigerd', message: `De club heeft je shift-ruil voor "${swap.task_title}" geweigerd.`, url: `/task/${swap.task_id}`, clubId });
+    sendPush({ userId: swap.target_id, type: 'shift_swap_rejected', title: '❌ Shift-ruil geweigerd', message: `De club heeft de shift-ruil voor "${swap.task_title}" geweigerd.`, url: `/task/${swap.task_id}`, clubId });
 
     setSwaps(prev => prev.filter(s => s.id !== swap.id));
     toast.info(t3(language, 'Shift-ruil geweigerd', 'Échange refusé', 'Shift swap rejected'));
