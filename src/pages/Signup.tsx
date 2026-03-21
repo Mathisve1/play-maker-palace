@@ -30,13 +30,13 @@ const Signup = () => {
   // Resolve partner name for branding banner
   useEffect(() => {
     if (!partnerId) return;
-    supabase
+    (supabase as any)
       .from('external_partners')
       .select('name')
       .eq('id', partnerId)
       .eq('is_active', true)
       .maybeSingle()
-      .then(({ data }) => { if (data) setPartnerName(data.name); });
+      .then(({ data }: any) => { if (data) setPartnerName(data.name); });
   }, [partnerId]);
 
   const handleCreateAccount = async (e: React.FormEvent) => {
