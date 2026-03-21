@@ -372,6 +372,7 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
                   title: pushTitle,
                   message: pushMsg.slice(0, 200),
                   url: `/tasks/${task.id}`,
+                  club_id: task.club_id,
                 },
               });
             })

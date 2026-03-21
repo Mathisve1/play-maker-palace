@@ -702,6 +702,7 @@ const BriefingBuilder = () => {
             message: `Er is een briefing voor jouw taak ${taskTitle}${dateStr ? ` op ${dateStr}` : ''}. Bekijk de instructies.`,
             url: '/dashboard',
             type: 'briefing',
+            clubId: clubId || undefined,
           })
         )
       );
