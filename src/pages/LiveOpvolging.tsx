@@ -92,7 +92,7 @@ const LiveOpvolging = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { language } = useLanguage();
-  useClubContext(); // ensures auth context is loaded
+  const { clubId } = useClubContext();
 
   const nl = language === 'nl';
   const fr = language === 'fr';
