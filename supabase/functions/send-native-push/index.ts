@@ -156,7 +156,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { type, user_id, title, message, url, data, broadcast } = body;
+    const { type, user_id, title, message, url, data, broadcast, club_id, icon } = body;
 
     // TEMPORARILY hardcoded until secret rotation propagates
     const vapidPub = 'BL7NNC2ohlSSuBoIooTwOou_M4jm8gX8UHQVF4yHNaKFSc2JB_pxrUL5Z--uGeFinz4wYFKssfPKmkQqAXzi54w';
