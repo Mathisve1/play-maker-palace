@@ -205,17 +205,17 @@ const LiveOpvolging = () => {
 
     for (const uid of (result.buddy_ids || [])) {
       await supabase.functions.invoke('send-native-push', {
-        body: { type: 'sos_replacement', user_id: uid, title: '🤝 SOS Buddy Oproep', message: msg, url: taskUrl }
+        body: { type: 'sos_replacement', user_id: uid, title: '🤝 SOS Buddy Oproep', message: msg, url: taskUrl, club_id: clubId }
       });
     }
     for (const uid of (result.reserve_ids || [])) {
       await supabase.functions.invoke('send-native-push', {
-        body: { type: 'sos_replacement', user_id: uid, title: '📋 Reserve Oproep', message: msg, url: taskUrl }
+        body: { type: 'sos_replacement', user_id: uid, title: '📋 Reserve Oproep', message: msg, url: taskUrl, club_id: clubId }
       });
     }
     for (const uid of (result.member_ids || [])) {
       await supabase.functions.invoke('send-native-push', {
-        body: { type: 'sos_replacement', user_id: uid, title: '🚨 SOS: Vrijwilliger Nodig', message: msg, url: taskUrl }
+        body: { type: 'sos_replacement', user_id: uid, title: '🚨 SOS: Vrijwilliger Nodig', message: msg, url: taskUrl, club_id: clubId }
       });
     }
 
