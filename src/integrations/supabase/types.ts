@@ -4926,6 +4926,61 @@ export type Database = {
           },
         ]
       }
+      spoed_bonuses: {
+        Row: {
+          bonus_amount: number
+          bonus_type: string
+          club_id: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          task_id: string
+        }
+        Insert: {
+          bonus_amount?: number
+          bonus_type?: string
+          club_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          task_id: string
+        }
+        Update: {
+          bonus_amount?: number
+          bonus_type?: string
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spoed_bonuses_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spoed_bonuses_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spoed_bonuses_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: true
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
