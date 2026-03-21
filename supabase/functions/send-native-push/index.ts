@@ -181,6 +181,13 @@ serve(async (req) => {
     const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(sbUrl, sbKey);
 
+    // ── Resolve club icon ──
+    let resolvedIcon: string | undefined = icon;
+    if (!resolvedIcon && club_id) {
+      const { data: clubRow } = await supabase.from('clubs').select('logo_url').eq('id', club_id).single();
+      if (clubRow?.logo_url) resolvedIcon = clubRow.logo_url;
+    }
+
     // ── BROADCAST ──
     if (broadcast) {
       const t = title || '📢 De 12e Man';
@@ -195,7 +202,7 @@ serve(async (req) => {
       for (const sub of (subs || [])) {
         if (pMap.get(sub.user_id)?.push_notifications_enabled === false) continue;
         try {
-          const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard' }, vapidPub, privateJwk, vapidSubject);
+          const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard', ...(resolvedIcon ? { icon: resolvedIcon } : {}) }, vapidPub, privateJwk, vapidSubject);
           details.push({ status: r.status, body: r.body?.slice(0, 100) });
           if (r.ok) sent++; else {
             failed++;
@@ -246,7 +253,7 @@ serve(async (req) => {
         const details: any[] = [];
         for (const sub of subs) {
           try {
-            const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard' }, vapidPub, privateJwk, vapidSubject);
+            const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard', ...(resolvedIcon ? { icon: resolvedIcon } : {}) }, vapidPub, privateJwk, vapidSubject);
             details.push({ status: r.status, body: r.body?.slice(0, 200) });
             if (r.ok) ok = true;
             else if (r.status === 410 || r.status === 404) await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
