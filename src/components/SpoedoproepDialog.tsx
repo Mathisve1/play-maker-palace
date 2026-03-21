@@ -192,28 +192,41 @@ const SpoedoproepDialog = ({ open, onOpenChange, task }: SpoedoproepProps) => {
     ? format(new Date(task.task_date), 'EEEE d MMMM yyyy', { locale: dateLocale })
     : '';
 
+  const formatTimeOnly = (val: string | null) => {
+    if (!val) return '';
+    try {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) return format(d, 'HH:mm');
+    } catch {}
+    // Already HH:mm format
+    if (/^\d{2}:\d{2}/.test(val)) return val.slice(0, 5);
+    return val;
+  };
+
   const formattedTime = task.start_time
-    ? `${task.start_time}${task.end_time ? ` - ${task.end_time}` : ''}`
+    ? `${formatTimeOnly(task.start_time)}${task.end_time ? ` – ${formatTimeOnly(task.end_time)}` : ''}`
     : '';
+
+  const clubName = clubCtx?.clubInfo?.name || 'Club';
 
   // Build default message
   const buildDefaultMessage = useCallback(() => {
     const bonusPart = bonusEnabled
       ? language === 'nl'
-        ? ` + €${bonusAmount} bonus${bonusType === 'double_points' || bonusType === 'both' ? ' / dubbele punten' : ''} voor wie nu inschrijft!`
+        ? `\n\n🎁 Bonus: €${bonusAmount}${bonusType === 'double_points' || bonusType === 'both' ? ' + dubbele loyaliteitspunten' : ''} voor wie nu inschrijft!`
         : language === 'fr'
-          ? ` + ${bonusAmount}€ bonus${bonusType === 'double_points' || bonusType === 'both' ? ' / points doubles' : ''} !`
-          : ` + €${bonusAmount} bonus${bonusType === 'double_points' || bonusType === 'both' ? ' / double points' : ''} for signing up now!`
+          ? `\n\n🎁 Bonus: ${bonusAmount}€${bonusType === 'double_points' || bonusType === 'both' ? ' + points doubles' : ''} pour inscription immédiate !`
+          : `\n\n🎁 Bonus: €${bonusAmount}${bonusType === 'double_points' || bonusType === 'both' ? ' + double loyalty points' : ''} for signing up now!`
       : '';
 
     if (language === 'nl') {
-      return `🚨 SPOEDOPROEP — ${task.title} op ${formattedDate} om ${formattedTime} te ${task.location || '...'}. We zoeken dringend ${task.spots_available} extra vrijwilligers.${bonusPart} Schrijf je snel in via de app!`;
+      return `🚨 SPOEDOPROEP — ${clubName}\n\n📋 Taak: ${task.title}\n📅 Wanneer: ${formattedDate}${formattedTime ? `, ${formattedTime}` : ''}\n📍 Locatie: ${task.location || '...'}\n👥 Nog ${task.spots_available} vrijwilligers nodig${bonusPart}\n\nSchrijf je snel in via de app!`;
     }
     if (language === 'fr') {
-      return `🚨 APPEL D'URGENCE — ${task.title} le ${formattedDate} à ${formattedTime} à ${task.location || '...'}. Nous cherchons d'urgence ${task.spots_available} bénévoles supplémentaires.${bonusPart} Inscrivez-vous vite via l'app !`;
+      return `🚨 APPEL D'URGENCE — ${clubName}\n\n📋 Tâche: ${task.title}\n📅 Quand: ${formattedDate}${formattedTime ? `, ${formattedTime}` : ''}\n📍 Lieu: ${task.location || '...'}\n👥 Encore ${task.spots_available} bénévoles nécessaires${bonusPart}\n\nInscrivez-vous vite via l'app !`;
     }
-    return `🚨 URGENT CALL — ${task.title} on ${formattedDate} at ${formattedTime} at ${task.location || '...'}. We urgently need ${task.spots_available} more volunteers.${bonusPart} Sign up now via the app!`;
-  }, [task, formattedDate, formattedTime, bonusEnabled, bonusAmount, bonusType, language]);
+    return `🚨 URGENT CALL — ${clubName}\n\n📋 Task: ${task.title}\n📅 When: ${formattedDate}${formattedTime ? `, ${formattedTime}` : ''}\n📍 Location: ${task.location || '...'}\n👥 ${task.spots_available} more volunteers needed${bonusPart}\n\nSign up now via the app!`;
+  }, [task, formattedDate, formattedTime, bonusEnabled, bonusAmount, bonusType, language, clubName]);
 
   // Load pool on open — also excludes volunteers already signed up for THIS task
   useEffect(() => {
