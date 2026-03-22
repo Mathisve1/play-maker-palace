@@ -2,10 +2,12 @@
  * SponsorPortalPage — /sponsor/portal/:campaignId/:token
  *
  * Magic-link portal for local businesses. No login required.
- * Light / premium / orange theme — mobile-first.
+ * Premium design — mobile-first.
  *
- * Two views:
+ * Four tabs:
  *   📷  Scanner    – QR camera + backup manual code entry
+ *   🎟️  Coupons    – List of all issued coupons with status
+ *   ✏️  Campagne   – Edit campaign info (title, reward, description, etc.)
  *   📊  Analytics  – ROI dashboard with recharts timeline
  */
 
@@ -21,7 +23,8 @@ import { nl } from 'date-fns/locale';
 import {
   QrCode, Keyboard, CheckCircle2, XCircle, AlertCircle,
   Eye, ShoppingBag, TrendingUp, Euro,
-  Zap, BarChart2, Camera, ScanLine,
+  Zap, BarChart2, Camera, ScanLine, Ticket, Pencil,
+  Save, Loader2, Gift, Clock, Search, Filter,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -44,6 +47,7 @@ interface PortalCampaign {
   brand_color: string;
   logo_url: string | null;
   cover_image_url: string | null;
+  coupon_validity_days?: number;
 }
 
 interface PortalMetrics {
@@ -64,7 +68,7 @@ interface PortalData {
 
 interface ScanResult {
   success:             boolean;
-  error?:              'invalid_portal_token' | 'invalid_qr' | 'already_redeemed' | 'expired' | 'campaign_inactive' | string;
+  error?:              string;
   message:             string;
   redeemed_at?:        string;
   reward_value_cents?: number;
@@ -73,6 +77,19 @@ interface ScanResult {
 }
 
 interface RecentScan { code: string; result: ScanResult; ts: Date; }
+
+interface CouponRow {
+  id: string;
+  qr_token: string;
+  backup_code: string;
+  status: string;
+  created_at: string;
+  redeemed_at: string | null;
+  expires_at: string | null;
+  volunteer_name: string | null;
+}
+
+type PortalTab = 'scanner' | 'coupons' | 'edit' | 'analytics';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -209,7 +226,6 @@ const ScannerView = ({ campaignId, portalToken, brandColor, rewardCents }: Scann
       {/* Camera viewfinder */}
       <div className={cn(mode !== 'camera' && 'hidden')}>
         <div className="relative rounded-3xl overflow-hidden bg-black shadow-2xl shadow-gray-900/20" style={{ minHeight: 320 }}>
-          {/* html5-qrcode renders here */}
           <div id={SCANNER_DIV_ID} className="w-full" />
 
           {cameraError && (
@@ -223,14 +239,14 @@ const ScannerView = ({ campaignId, portalToken, brandColor, rewardCents }: Scann
             </div>
           )}
 
-          {/* Corner bracket overlay */}
+          {/* Corner brackets */}
           {!cameraError && !result && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
               <div className="relative w-52 h-52">
                 {(['tl','tr','bl','br'] as const).map(pos => (
                   <span key={pos} className="absolute w-7 h-7 rounded-sm"
                     style={{
-                      borderColor: '#f97316',
+                      borderColor: brandColor,
                       top:    pos.startsWith('t') ? 0 : undefined,
                       bottom: pos.startsWith('b') ? 0 : undefined,
                       left:   pos.endsWith('l')   ? 0 : undefined,
@@ -242,10 +258,9 @@ const ScannerView = ({ campaignId, portalToken, brandColor, rewardCents }: Scann
                     }}
                   />
                 ))}
-                {/* Scanning line animation */}
                 <motion.div
                   className="absolute left-1 right-1 h-0.5 rounded-full opacity-70"
-                  style={{ background: '#f97316' }}
+                  style={{ background: brandColor }}
                   animate={{ top: ['10%', '90%', '10%'] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                 />
@@ -319,13 +334,14 @@ const ScannerView = ({ campaignId, portalToken, brandColor, rewardCents }: Scann
               onKeyDown={e => e.key === 'Enter' && handleManualSubmit()}
               maxLength={6}
               placeholder="A3F7B2"
-              className="flex-1 h-13 px-4 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 text-xl font-mono tracking-[0.25em] focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 placeholder:text-gray-300 uppercase"
+              className="flex-1 px-4 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 text-xl font-mono tracking-[0.25em] focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100 placeholder:text-gray-300 uppercase"
               style={{ height: 52 }}
             />
             <button
               onClick={handleManualSubmit}
               disabled={manualCode.length < 4 || manualLoading}
-              className="h-[52px] px-6 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm disabled:opacity-40 transition-colors shadow-sm shadow-orange-200"
+              className="h-[52px] px-6 rounded-xl text-white font-bold text-sm disabled:opacity-40 transition-colors shadow-sm"
+              style={{ background: brandColor }}
             >
               {manualLoading ? '…' : 'OK'}
             </button>
@@ -392,6 +408,304 @@ const ScannerView = ({ campaignId, portalToken, brandColor, rewardCents }: Scann
   );
 };
 
+// ── Coupons List component ────────────────────────────────────────────────────
+
+interface CouponsViewProps {
+  campaignId: string;
+  brandColor: string;
+}
+
+const CouponsView = ({ campaignId, brandColor }: CouponsViewProps) => {
+  const [coupons, setCoupons] = useState<CouponRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'active' | 'redeemed' | 'expired'>('all');
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('volunteer_coupons' as any)
+        .select(`
+          id, qr_token, backup_code, status, created_at, redeemed_at, expires_at,
+          profiles!volunteer_id ( full_name )
+        `)
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        setCoupons((data as any[]).map(row => ({
+          id: row.id,
+          qr_token: row.qr_token,
+          backup_code: row.backup_code,
+          status: row.expires_at && new Date(row.expires_at) < new Date() && row.status === 'active' ? 'expired' : row.status,
+          created_at: row.created_at,
+          redeemed_at: row.redeemed_at,
+          expires_at: row.expires_at,
+          volunteer_name: row.profiles?.full_name || null,
+        })));
+      }
+      setLoading(false);
+    })();
+  }, [campaignId]);
+
+  const filtered = coupons.filter(c => {
+    if (filter !== 'all' && c.status !== filter) return false;
+    if (search && !c.backup_code.toLowerCase().includes(search.toLowerCase()) 
+        && !(c.volunteer_name?.toLowerCase().includes(search.toLowerCase()))) return false;
+    return true;
+  });
+
+  const counts = {
+    all: coupons.length,
+    active: coupons.filter(c => c.status === 'active').length,
+    redeemed: coupons.filter(c => c.status === 'redeemed').length,
+    expired: coupons.filter(c => c.status === 'expired').length,
+  };
+
+  if (loading) return (
+    <div className="flex justify-center py-16">
+      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-4 px-4 pb-10">
+      {/* Stats strip */}
+      <div className="grid grid-cols-3 gap-2">
+        {([
+          { key: 'active' as const, label: 'Actief', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+          { key: 'redeemed' as const, label: 'Ingewisseld', color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' },
+          { key: 'expired' as const, label: 'Verlopen', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
+        ]).map(({ key, label, color, bg, border }) => (
+          <button key={key}
+            onClick={() => setFilter(f => f === key ? 'all' : key)}
+            className={cn('rounded-2xl border p-3 text-center transition-all', border,
+              filter === key ? 'ring-2 ring-offset-1' : 'bg-white',
+              filter === key && bg
+            )}
+            style={filter === key ? { outlineColor: brandColor } : {}}
+          >
+            <p className={cn('text-xl font-bold tabular-nums', color)}>{counts[key]}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{label}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Zoek op naam of code..."
+          className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
+        />
+      </div>
+
+      {/* Coupon list */}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center">
+            <Ticket className="w-7 h-7 text-gray-300" />
+          </div>
+          <p className="text-sm font-medium text-gray-500">
+            {coupons.length === 0 ? 'Nog geen coupons uitgegeven' : 'Geen resultaten'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {filtered.map(coupon => {
+            const isActive = coupon.status === 'active';
+            const isRedeemed = coupon.status === 'redeemed';
+            const daysLeft = coupon.expires_at
+              ? Math.max(0, Math.ceil((new Date(coupon.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+              : null;
+
+            return (
+              <div key={coupon.id}
+                className={cn(
+                  'rounded-2xl border bg-white p-4 transition-all',
+                  isActive ? 'border-emerald-100' : isRedeemed ? 'border-gray-200 opacity-70' : 'border-red-100 opacity-60',
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                    isActive ? 'bg-emerald-50' : isRedeemed ? 'bg-gray-50' : 'bg-red-50'
+                  )}>
+                    {isActive ? <Gift className="w-5 h-5 text-emerald-500" /> :
+                     isRedeemed ? <CheckCircle2 className="w-5 h-5 text-gray-400" /> :
+                     <Clock className="w-5 h-5 text-red-400" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {coupon.volunteer_name || 'Onbekende vrijwilliger'}
+                    </p>
+                    <p className="text-xs text-gray-400 font-mono">{coupon.backup_code}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className={cn('inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold',
+                      isActive ? 'bg-emerald-100 text-emerald-700' :
+                      isRedeemed ? 'bg-gray-100 text-gray-500' :
+                      'bg-red-100 text-red-600'
+                    )}>
+                      {isActive ? 'Actief' : isRedeemed ? 'Ingewisseld' : 'Verlopen'}
+                    </span>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {isRedeemed && coupon.redeemed_at
+                        ? format(new Date(coupon.redeemed_at), 'd MMM HH:mm', { locale: nl })
+                        : isActive && daysLeft !== null
+                        ? `${daysLeft}d geldig`
+                        : format(new Date(coupon.created_at), 'd MMM', { locale: nl })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <p className="text-center text-xs text-gray-400 mt-2">
+        {coupons.length} coupon{coupons.length !== 1 ? 's' : ''} totaal
+      </p>
+    </div>
+  );
+};
+
+// ── Campaign Edit component ───────────────────────────────────────────────────
+
+interface EditViewProps {
+  campaign: PortalCampaign;
+  onUpdate: (updated: Partial<PortalCampaign>) => void;
+  brandColor: string;
+}
+
+const EditView = ({ campaign, onUpdate, brandColor }: EditViewProps) => {
+  const [title, setTitle] = useState(campaign.title);
+  const [description, setDescription] = useState(campaign.description || '');
+  const [rewardText, setRewardText] = useState(campaign.reward_text || '');
+  const [rewardCents, setRewardCents] = useState(campaign.reward_value_cents ? (campaign.reward_value_cents / 100).toFixed(2) : '');
+  const [customCta, setCustomCta] = useState(campaign.custom_cta || '');
+  const [validityDays, setValidityDays] = useState(String(campaign.coupon_validity_days || 30));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const updates: any = {
+      title,
+      description: description || null,
+      reward_text: rewardText || null,
+      reward_value_cents: rewardCents ? Math.round(parseFloat(rewardCents) * 100) : null,
+      custom_cta: customCta || null,
+      coupon_validity_days: Math.max(7, parseInt(validityDays) || 30),
+    };
+
+    const { error } = await supabase
+      .from('sponsor_campaigns' as any)
+      .update(updates)
+      .eq('id', campaign.id);
+
+    if (!error) {
+      onUpdate({
+        title,
+        description: description || null,
+        reward_text: rewardText || null,
+        reward_value_cents: updates.reward_value_cents,
+        custom_cta: customCta || null,
+        coupon_validity_days: updates.coupon_validity_days,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    }
+    setSaving(false);
+  };
+
+  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div>
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+
+  const inputClass = 'w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 placeholder:text-gray-400';
+
+  return (
+    <div className="flex flex-col gap-5 px-4 pb-10">
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 space-y-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Pencil className="w-4 h-4 text-gray-500" />
+          <h3 className="text-sm font-semibold text-gray-800">Campagne-instellingen</h3>
+        </div>
+
+        <Field label="Campagnenaam">
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} className={inputClass} placeholder="Bijv. 10% korting bij Bakkerij Jan" />
+        </Field>
+
+        <Field label="Beschrijving">
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            rows={3}
+            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 placeholder:text-gray-400 resize-none"
+            placeholder="Beschrijf je aanbod voor de vrijwilligers..."
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Kortingswaarde (€)">
+            <input type="number" step="0.01" min="0" value={rewardCents} onChange={e => setRewardCents(e.target.value)} className={inputClass} placeholder="5.00" />
+          </Field>
+          <Field label="Kortingstekst">
+            <input type="text" value={rewardText} onChange={e => setRewardText(e.target.value)} className={inputClass} placeholder="korting" />
+          </Field>
+        </div>
+
+        <Field label="Call-to-action tekst">
+          <input type="text" value={customCta} onChange={e => setCustomCta(e.target.value)} className={inputClass} placeholder="Claim je korting!" />
+        </Field>
+
+        <Field label="Coupon geldigheid (dagen na taak)">
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              min="7"
+              value={validityDays}
+              onChange={e => setValidityDays(e.target.value)}
+              className={cn(inputClass, 'w-24 text-center')}
+            />
+            <p className="text-xs text-gray-400">Minimaal 7 dagen</p>
+          </div>
+        </Field>
+      </div>
+
+      {/* Save button */}
+      <button
+        onClick={handleSave}
+        disabled={saving || !title.trim()}
+        className="h-14 rounded-2xl text-white font-bold text-base transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg"
+        style={{ background: brandColor }}
+      >
+        {saving ? (
+          <><Loader2 className="w-5 h-5 animate-spin" /> Opslaan…</>
+        ) : saved ? (
+          <><CheckCircle2 className="w-5 h-5" /> Opgeslagen!</>
+        ) : (
+          <><Save className="w-5 h-5" /> Wijzigingen opslaan</>
+        )}
+      </button>
+
+      {/* Info card */}
+      <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+        <p className="text-xs text-blue-600 leading-relaxed">
+          💡 Wijzigingen aan de campagne zijn direct zichtbaar voor de vrijwilligers. De kortingswaarde en geldigheid gelden voor nieuwe coupons.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // ── Analytics component ───────────────────────────────────────────────────────
 
 interface AnalyticsViewProps { data: PortalData; brandColor: string; }
@@ -399,8 +713,7 @@ interface AnalyticsViewProps { data: PortalData; brandColor: string; }
 const AnalyticsView = ({ data, brandColor }: AnalyticsViewProps) => {
   const { metrics, timeline, tasks, campaign } = data;
   const filledTimeline = fillTimeline(timeline);
-  const ORANGE = '#f97316';
-  const accent = brandColor || ORANGE;
+  const accent = brandColor || '#f97316';
 
   const claimRate  = metrics.total_impressions > 0
     ? ((metrics.total_claims / metrics.total_impressions) * 100).toFixed(1) : '—';
@@ -410,7 +723,7 @@ const AnalyticsView = ({ data, brandColor }: AnalyticsViewProps) => {
 
   const kpis = [
     { icon: Eye,         label: 'Weergaven',   value: metrics.total_impressions.toLocaleString('nl-BE'), color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-100'    },
-    { icon: ShoppingBag, label: 'Verdiend',    value: metrics.total_claims.toLocaleString('nl-BE'),      color: 'text-orange-600', bg: 'bg-orange-50',  border: 'border-orange-100'  },
+    { icon: ShoppingBag, label: 'Verdiend',    value: metrics.total_claims.toLocaleString('nl-BE'),      color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-100'   },
     { icon: CheckCircle2, label: 'Ingewisseld', value: metrics.total_redemptions.toLocaleString('nl-BE'), color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
   ];
 
@@ -428,7 +741,7 @@ const AnalyticsView = ({ data, brandColor }: AnalyticsViewProps) => {
         {kpis.map(({ icon: Icon, label, value, color, bg, border }) => (
           <div key={label} className={cn('rounded-2xl border p-4 text-center bg-white shadow-sm', border)}>
             <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center mx-auto mb-2', bg)}>
-              <Icon className={cn('w-4.5 h-4.5', color)} style={{ width: 18, height: 18 }} />
+              <Icon className={cn('w-[18px] h-[18px]', color)} />
             </div>
             <p className="text-xl font-bold text-gray-900 tabular-nums leading-tight">{value}</p>
             <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{label}</p>
@@ -436,16 +749,14 @@ const AnalyticsView = ({ data, brandColor }: AnalyticsViewProps) => {
         ))}
       </div>
 
-      {/* Financial impact card */}
+      {/* Financial impact */}
       {campaign.reward_value_cents && totalValue > 0 && (
-        <div className="rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 p-5 shadow-md shadow-orange-200/50">
+        <div className="rounded-2xl p-5 shadow-md text-white" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}dd)` }}>
           <div className="flex items-center gap-2 mb-1">
             <Euro className="w-4 h-4 text-white/80" />
             <p className="text-xs font-semibold uppercase tracking-wider text-white/80">Totale waarde uitgedeeld</p>
           </div>
-          <p className="text-4xl font-black text-white tabular-nums">
-            €{totalValue.toFixed(2)}
-          </p>
+          <p className="text-4xl font-black tabular-nums">€{totalValue.toFixed(2)}</p>
           <p className="text-xs text-white/70 mt-1">
             {metrics.total_redemptions} klanten × {euro(campaign.reward_value_cents)} per coupon
           </p>
@@ -455,8 +766,8 @@ const AnalyticsView = ({ data, brandColor }: AnalyticsViewProps) => {
       {/* Timeline chart */}
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-orange-500" />
+          <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-gray-500" />
           </div>
           <p className="text-sm font-semibold text-gray-800">Inwisselingen – laatste 30 dagen</p>
         </div>
@@ -531,8 +842,8 @@ const AnalyticsView = ({ data, brandColor }: AnalyticsViewProps) => {
       {tasks.length > 0 && (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-orange-500" />
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${accent}15` }}>
+              <Zap className="w-4 h-4" style={{ color: accent }} />
             </div>
             <p className="text-sm font-semibold text-gray-800">Welke taken brachten klanten?</p>
           </div>
@@ -550,7 +861,8 @@ const AnalyticsView = ({ data, brandColor }: AnalyticsViewProps) => {
                         </p>
                       )}
                     </div>
-                    <span className="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-orange-50 text-orange-600 border border-orange-100">
+                    <span className="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full border"
+                      style={{ background: `${accent}10`, color: accent, borderColor: `${accent}30` }}>
                       {task.redemptions}×
                     </span>
                   </div>
@@ -559,7 +871,8 @@ const AnalyticsView = ({ data, brandColor }: AnalyticsViewProps) => {
                       initial={{ width: 0 }}
                       animate={{ width: `${maxR > 0 ? (task.redemptions / maxR) * 100 : 0}%` }}
                       transition={{ duration: 0.6, delay: i * 0.05 }}
-                      className="h-full rounded-full bg-orange-400"
+                      className="h-full rounded-full"
+                      style={{ background: accent }}
                     />
                   </div>
                 </div>
@@ -580,7 +893,7 @@ const SponsorPortalPage = () => {
   const [data,    setData]    = useState<PortalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
-  const [tab,     setTab]     = useState<'scanner' | 'analytics'>('scanner');
+  const [tab,     setTab]     = useState<PortalTab>('scanner');
 
   useEffect(() => {
     if (!campaignId || !token) { setError('Ongeldige link.'); setLoading(false); return; }
@@ -598,12 +911,18 @@ const SponsorPortalPage = () => {
     })();
   }, [campaignId, token]);
 
+  const handleCampaignUpdate = (updated: Partial<PortalCampaign>) => {
+    if (data) {
+      setData({ ...data, campaign: { ...data.campaign, ...updated } });
+    }
+  };
+
   // ── Loading ──────────────────────────────────────────────────────────────────
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+        <div className="w-12 h-12 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" />
         <p className="text-gray-400 text-sm">Portaal laden…</p>
       </div>
     </div>
@@ -628,6 +947,13 @@ const SponsorPortalPage = () => {
   const { campaign, metrics } = data;
   const brandColor = campaign.brand_color || '#f97316';
 
+  const tabs: { key: PortalTab; icon: typeof ScanLine; label: string }[] = [
+    { key: 'scanner',   icon: ScanLine,  label: 'Scannen'   },
+    { key: 'coupons',   icon: Ticket,    label: 'Coupons'   },
+    { key: 'edit',      icon: Pencil,    label: 'Campagne'  },
+    { key: 'analytics', icon: BarChart2, label: 'Analytics' },
+  ];
+
   // ── Page ─────────────────────────────────────────────────────────────────────
 
   return (
@@ -639,7 +965,6 @@ const SponsorPortalPage = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-100 shadow-sm px-4 pt-5 pb-4 shrink-0">
         <div className="flex items-start gap-4">
-          {/* Sponsor logo */}
           {campaign.logo_url ? (
             <img
               src={campaign.logo_url}
@@ -655,7 +980,6 @@ const SponsorPortalPage = () => {
             </div>
           )}
 
-          {/* Meta */}
           <div className="flex-1 min-w-0 pt-0.5">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">
               Sponsor Portaal
@@ -666,18 +990,17 @@ const SponsorPortalPage = () => {
             <p className="text-sm text-gray-500 truncate">{campaign.title}</p>
           </div>
 
-          {/* Quick scan-count badge */}
           <div className="shrink-0 text-center px-3 py-2 rounded-2xl bg-gray-50 border border-gray-100">
             <p className="text-lg font-black text-gray-900 tabular-nums leading-none">{metrics.total_redemptions}</p>
             <p className="text-[9px] text-gray-400 mt-0.5">scans</p>
           </div>
         </div>
 
-        {/* Reward pill */}
         {campaign.reward_value_cents && (
-          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-200">
-            <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-            <span className="text-xs font-semibold text-orange-700">
+          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border"
+            style={{ background: `${brandColor}08`, borderColor: `${brandColor}30` }}>
+            <div className="w-1.5 h-1.5 rounded-full" style={{ background: brandColor }} />
+            <span className="text-xs font-semibold" style={{ color: brandColor }}>
               {euro(campaign.reward_value_cents)} korting per coupon
             </span>
           </div>
@@ -687,62 +1010,60 @@ const SponsorPortalPage = () => {
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {tab === 'scanner' ? (
-            <motion.div
-              key="scanner"
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 16 }}
-              transition={{ duration: 0.16 }}
-              className="pt-4"
-            >
-              {campaignId && token && (
-                <ScannerView
-                  campaignId={campaignId}
-                  portalToken={token}
-                  brandColor={brandColor}
-                  rewardCents={campaign.reward_value_cents}
-                />
-              )}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="analytics"
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={{ duration: 0.16 }}
-              className="pt-4"
-            >
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
+            className="pt-4"
+          >
+            {tab === 'scanner' && campaignId && token && (
+              <ScannerView
+                campaignId={campaignId}
+                portalToken={token}
+                brandColor={brandColor}
+                rewardCents={campaign.reward_value_cents}
+              />
+            )}
+            {tab === 'coupons' && campaignId && (
+              <CouponsView campaignId={campaignId} brandColor={brandColor} />
+            )}
+            {tab === 'edit' && (
+              <EditView campaign={campaign} onUpdate={handleCampaignUpdate} brandColor={brandColor} />
+            )}
+            {tab === 'analytics' && (
               <AnalyticsView data={data} brandColor={brandColor} />
-            </motion.div>
-          )}
+            )}
+          </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Bottom tab bar */}
-      <div className="shrink-0 border-t border-gray-100 bg-white px-4 pb-safe-bottom shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-        <div className="flex gap-2 py-2">
-          {([
-            { key: 'scanner'   as const, icon: ScanLine, label: 'Scannen'   },
-            { key: 'analytics' as const, icon: BarChart2, label: 'Analytics' },
-          ] as const).map(({ key, icon: Icon, label }) => (
+      {/* Bottom tab bar — 4 tabs */}
+      <div className="shrink-0 border-t border-gray-100 bg-white px-2 pb-safe-bottom shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+        <div className="flex py-1.5">
+          {tabs.map(({ key, icon: Icon, label }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
               className={cn(
-                'flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all',
+                'flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all relative',
                 tab === key
-                  ? 'bg-orange-50 text-orange-600'
+                  ? 'text-gray-900'
                   : 'text-gray-400 hover:text-gray-600',
               )}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-[11px] font-semibold">{label}</span>
+              <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center transition-all',
+                tab === key ? 'shadow-sm' : ''
+              )} style={tab === key ? { background: `${brandColor}15` } : {}}>
+                <Icon className="w-[18px] h-[18px]" style={tab === key ? { color: brandColor } : {}} />
+              </div>
+              <span className="text-[10px] font-semibold">{label}</span>
               {tab === key && (
                 <motion.div
-                  layoutId="tab-indicator"
-                  className="absolute bottom-0 w-1 h-1 rounded-full bg-orange-500"
+                  layoutId="portal-tab-indicator"
+                  className="absolute -bottom-1.5 w-5 h-0.5 rounded-full"
+                  style={{ background: brandColor }}
                 />
               )}
             </button>
