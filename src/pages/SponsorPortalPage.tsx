@@ -483,7 +483,7 @@ const CouponsView = ({ campaignId, brandColor }: CouponsViewProps) => {
               filter === key ? 'ring-2 ring-offset-1' : 'bg-white',
               filter === key && bg
             )}
-            style={filter === key ? { ringColor: brandColor } : {}}
+            style={filter === key ? { outlineColor: brandColor } : {}}
           >
             <p className={cn('text-xl font-bold tabular-nums', color)}>{counts[key]}</p>
             <p className="text-[10px] text-gray-400 mt-0.5">{label}</p>
