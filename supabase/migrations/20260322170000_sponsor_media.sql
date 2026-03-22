@@ -13,7 +13,12 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Storage policies
+-- Storage policies (drop first to make idempotent)
+DROP POLICY IF EXISTS "sponsor_media_read"        ON storage.objects;
+DROP POLICY IF EXISTS "sponsor_media_insert_auth" ON storage.objects;
+DROP POLICY IF EXISTS "sponsor_media_insert_anon" ON storage.objects;
+DROP POLICY IF EXISTS "sponsor_media_delete_auth" ON storage.objects;
+
 -- Public read (everyone can view uploaded sponsor images)
 CREATE POLICY "sponsor_media_read"
   ON storage.objects FOR SELECT

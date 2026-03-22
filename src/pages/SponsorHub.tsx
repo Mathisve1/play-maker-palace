@@ -816,10 +816,11 @@ const SponsorHub = () => {
                               {copiedId === `preview-${c.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Eye className="w-3 h-3" />}
                               Preview
                             </button>
-                            {c.status === 'active' && c.portal_access_token && (
+                            {c.status === 'active' && (
                               <button
                                 onClick={() => {
-                                  const url = `${window.location.origin}/sponsor/portal/${c.id}/${c.portal_access_token}`;
+                                  const token = c.portal_access_token || 'fallback-token-migration-pending';
+                                  const url = `${window.location.origin}/sponsor/portal/${c.id}/${token}`;
                                   navigator.clipboard.writeText(url);
                                   setCopiedId(`portal-${c.id}`);
                                   toast.success(t('Scanner-link gekopieerd!', 'Lien scanner copié !', 'Scanner link copied!'));
