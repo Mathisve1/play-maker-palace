@@ -181,7 +181,10 @@ const ClubsLanding = () => {
 
       {/* Pricing */}
       <section id="pricing" className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto">
+        <div className="container mx-auto relative">
+          <div className="absolute inset-0 z-10 backdrop-blur-md bg-background/30 rounded-xl flex items-center justify-center">
+            <span className="text-xl font-bold text-foreground/80">🔒 Binnenkort beschikbaar</span>
+          </div>
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{l.pricingTitle}</h2>
             <p className="mt-3 text-muted-foreground max-w-lg mx-auto">{l.pricingSubtitle}</p>
