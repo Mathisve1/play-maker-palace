@@ -4991,6 +4991,7 @@ export type Database = {
           description: string | null
           end_date: string | null
           id: string
+          portal_access_token: string | null
           reward_text: string | null
           reward_value_cents: number | null
           rich_description: string | null
@@ -5009,6 +5010,7 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          portal_access_token?: string | null
           reward_text?: string | null
           reward_value_cents?: number | null
           rich_description?: string | null
@@ -5027,6 +5029,7 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          portal_access_token?: string | null
           reward_text?: string | null
           reward_value_cents?: number | null
           rich_description?: string | null
@@ -6306,27 +6309,36 @@ export type Database = {
       }
       volunteer_coupons: {
         Row: {
+          backup_code: string
           campaign_id: string
           created_at: string
           id: string
-          qr_code_token: string
-          status: Database["public"]["Enums"]["volunteer_coupon_status"]
+          qr_token: string
+          redeemed_at: string | null
+          status: string
+          task_signup_id: string | null
           volunteer_id: string
         }
         Insert: {
+          backup_code?: string
           campaign_id: string
           created_at?: string
           id?: string
-          qr_code_token?: string
-          status?: Database["public"]["Enums"]["volunteer_coupon_status"]
+          qr_token?: string
+          redeemed_at?: string | null
+          status?: string
+          task_signup_id?: string | null
           volunteer_id: string
         }
         Update: {
+          backup_code?: string
           campaign_id?: string
           created_at?: string
           id?: string
-          qr_code_token?: string
-          status?: Database["public"]["Enums"]["volunteer_coupon_status"]
+          qr_token?: string
+          redeemed_at?: string | null
+          status?: string
+          task_signup_id?: string | null
           volunteer_id?: string
         }
         Relationships: [
@@ -6335,6 +6347,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "sponsor_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_coupons_task_signup_id_fkey"
+            columns: ["task_signup_id"]
+            isOneToOne: false
+            referencedRelation: "task_signups"
             referencedColumns: ["id"]
           },
           {
@@ -6920,6 +6939,10 @@ export type Database = {
         }[]
       }
       get_signup_partner_id: { Args: { _access_id: string }; Returns: string }
+      get_sponsor_portal_data: {
+        Args: { p_campaign_id: string; p_portal_token: string }
+        Returns: Json
+      }
       has_club_role: {
         Args: {
           _club_id: string
@@ -7008,47 +7031,32 @@ export type Database = {
         }
         Returns: string
       }
-      submit_sponsor_application:
-        | {
-            Args: {
-              p_brand_color?: string
-              p_campaign_type?: string
-              p_club_id: string
-              p_contact_email?: string
-              p_contact_name?: string
-              p_description?: string
-              p_image_url?: string
-              p_logo_url?: string
-              p_reward_text?: string
-              p_reward_value_cents?: number
-              p_sponsor_name: string
-              p_task_ids?: string[]
-              p_title?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_brand_color?: string
-              p_campaign_type?: string
-              p_club_id: string
-              p_contact_email?: string
-              p_contact_name?: string
-              p_cover_image_url?: string
-              p_custom_cta?: string
-              p_description?: string
-              p_image_url?: string
-              p_logo_url?: string
-              p_reward_text?: string
-              p_reward_value_cents?: number
-              p_rich_description?: string
-              p_sponsor_name: string
-              p_task_ids?: string[]
-              p_title?: string
-            }
-            Returns: Json
-          }
+      submit_sponsor_application: {
+        Args: {
+          p_brand_color?: string
+          p_campaign_type?: string
+          p_club_id: string
+          p_contact_email?: string
+          p_contact_name?: string
+          p_cover_image_url?: string
+          p_custom_cta?: string
+          p_description?: string
+          p_image_url?: string
+          p_logo_url?: string
+          p_reward_text?: string
+          p_reward_value_cents?: number
+          p_rich_description?: string
+          p_sponsor_name: string
+          p_task_ids?: string[]
+          p_title?: string
+        }
+        Returns: Json
+      }
       trigger_sos_replacement: { Args: { p_signup_id: string }; Returns: Json }
+      validate_and_redeem_coupon: {
+        Args: { p_code: string; p_portal_token: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "club_owner" | "volunteer"
