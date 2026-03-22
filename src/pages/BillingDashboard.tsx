@@ -115,13 +115,7 @@ const BillingDashboard = () => {
   }
 
 
-  useEffect(() => {
-    if (contextLoading) return;
-    if (!ctxClubId) { setLoading(false); return; }
-    setClubId(ctxClubId);
-    setClubName(clubInfo?.name || '');
-    loadData(ctxClubId).then(() => setLoading(false));
-  }, [contextLoading, ctxClubId]);
+
 
   const loadData = async (cId: string) => {
     const [billingRes, eventsRes, invoicesRes] = await Promise.all([
