@@ -4981,6 +4981,144 @@ export type Database = {
           },
         ]
       }
+      sponsor_campaigns: {
+        Row: {
+          campaign_type: Database["public"]["Enums"]["sponsor_campaign_type"]
+          club_id: string
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          reward_value_cents: number | null
+          sponsor_id: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["sponsor_campaign_status"]
+          title: string
+        }
+        Insert: {
+          campaign_type: Database["public"]["Enums"]["sponsor_campaign_type"]
+          club_id: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          reward_value_cents?: number | null
+          sponsor_id: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["sponsor_campaign_status"]
+          title: string
+        }
+        Update: {
+          campaign_type?: Database["public"]["Enums"]["sponsor_campaign_type"]
+          club_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          reward_value_cents?: number | null
+          sponsor_id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["sponsor_campaign_status"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_campaigns_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsor_campaigns_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsor_campaigns_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsor_metrics: {
+        Row: {
+          campaign_id: string
+          claims_count: number
+          date: string
+          id: string
+          impressions_count: number
+        }
+        Insert: {
+          campaign_id: string
+          claims_count?: number
+          date?: string
+          id?: string
+          impressions_count?: number
+        }
+        Update: {
+          campaign_id?: string
+          claims_count?: number
+          date?: string
+          id?: string
+          impressions_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_metrics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "sponsor_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsors: {
+        Row: {
+          brand_color: string
+          club_id: string
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+        }
+        Insert: {
+          brand_color?: string
+          club_id: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+        }
+        Update: {
+          brand_color?: string
+          club_id?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsors_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsors_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -6142,6 +6280,48 @@ export type Database = {
           },
         ]
       }
+      volunteer_coupons: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          qr_code_token: string
+          status: Database["public"]["Enums"]["volunteer_coupon_status"]
+          volunteer_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          qr_code_token?: string
+          status?: Database["public"]["Enums"]["volunteer_coupon_status"]
+          volunteer_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          qr_code_token?: string
+          status?: Database["public"]["Enums"]["volunteer_coupon_status"]
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_coupons_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "sponsor_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_coupons_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_onboarding_steps: {
         Row: {
           club_id: string
@@ -6721,6 +6901,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_campaign_metric: {
+        Args: { camp_id: string; metric_type: string }
+        Returns: undefined
+      }
       is_club_member: {
         Args: { _club_id: string; _user_id: string }
         Returns: boolean
@@ -6808,6 +6992,8 @@ export type Database = {
         | "admin_ticketing"
         | "event_support"
         | "custom"
+      sponsor_campaign_status: "draft" | "active" | "ended"
+      sponsor_campaign_type: "dashboard_banner" | "task_tag" | "local_coupon"
       ticket_status: "none" | "sent" | "checked_in"
       ticketing_provider:
         | "eventsquare"
@@ -6820,6 +7006,7 @@ export type Database = {
         | "yourticketprovider"
         | "paylogic_seetickets"
         | "ticketmatic"
+      volunteer_coupon_status: "available" | "claimed" | "redeemed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -6964,6 +7151,8 @@ export const Constants = {
         "event_support",
         "custom",
       ],
+      sponsor_campaign_status: ["draft", "active", "ended"],
+      sponsor_campaign_type: ["dashboard_banner", "task_tag", "local_coupon"],
       ticket_status: ["none", "sent", "checked_in"],
       ticketing_provider: [
         "eventsquare",
@@ -6977,6 +7166,7 @@ export const Constants = {
         "paylogic_seetickets",
         "ticketmatic",
       ],
+      volunteer_coupon_status: ["available", "claimed", "redeemed"],
     },
   },
 } as const
