@@ -104,11 +104,11 @@ const ROICalculator = ({ language }: { language: string }) => {
           <Slider
             value={[volunteers]}
             onValueChange={([v]) => setVolunteers(v)}
-            min={10} max={500} step={10}
+            min={10} max={1500} step={10}
             className="[&_[role=slider]]:bg-indigo-500 [&_[role=slider]]:border-indigo-600"
           />
           <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-            <span>10</span><span>500</span>
+            <span>10</span><span>1500</span>
           </div>
         </div>
 
