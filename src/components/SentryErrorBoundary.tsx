@@ -1,14 +1,8 @@
 import * as Sentry from "@sentry/react";
-import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw, Mail } from "lucide-react";
 
-const t3 = (language: string, nl: string, fr: string, en: string) =>
-  language === "nl" ? nl : language === "fr" ? fr : en;
-
 const FallbackUI = () => {
-  const { language } = useLanguage();
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="max-w-md w-full text-center space-y-6">
