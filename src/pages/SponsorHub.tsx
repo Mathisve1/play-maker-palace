@@ -837,7 +837,7 @@ const SponsorHub = () => {
                                   toast.success(t('Portaal-link gekopieerd!', 'Lien portail copié !', 'Portal link copied!'));
                                   setTimeout(() => setCopiedId(null), 2000);
                                 }}
-                                className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md border border-primary/40/50 bg-primary/10/60 hover:bg-primary/15 dark:bg-primary/10 dark:border-primary/30 dark:hover:bg-indigo-950/60 transition-colors text-primary dark:text-primary"
+                                className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md border border-primary/30 bg-primary/10 hover:bg-primary/15 dark:bg-primary/10 dark:border-primary/30 dark:hover:bg-primary/20 transition-colors text-primary"
                                 title={t('Kopieer portaal-link voor sponsor', 'Copier lien portail', 'Copy portal link for sponsor')}
                               >
                                 {copiedId === `portal-${c.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <ExternalLink className="w-3 h-3" />}
