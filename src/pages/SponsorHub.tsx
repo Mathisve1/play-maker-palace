@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import { toast } from 'sonner';
 import {
   Zap, Plus, Copy, BarChart2, Eye, Target, TrendingUp, ExternalLink,
@@ -360,7 +361,8 @@ const SponsorHub = () => {
   const totalClaims      = campaigns.reduce((s, c) => s + (c.total_claims      || 0), 0);
 
   return (
-    <div className="min-h-screen bg-background">
+    <ClubPageLayout>
+    <div className="bg-background">
       {/* Header */}
       <div className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -815,6 +817,7 @@ const SponsorHub = () => {
         </SheetContent>
       </Sheet>
     </div>
+    </ClubPageLayout>
   );
 };
 
