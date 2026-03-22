@@ -14,7 +14,6 @@ import SponsorAdLivePreview, { type PreviewForm } from '@/components/sponsor/Spo
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ClubInfo { id: string; name: string }
-interface ClubTask  { id: string; title: string; task_date: string | null; status: string }
 
 interface WizardForm {
   businessName:       string;
@@ -93,7 +92,6 @@ const PublicSponsorPage = () => {
   const { club_id } = useParams<{ club_id: string }>();
 
   const [clubInfo,    setClubInfo]    = useState<ClubInfo | null>(null);
-  const [clubTasks,   setClubTasks]   = useState<ClubTask[]>([]);
   const [infoLoading, setInfoLoading] = useState(true);
   const [step,        setStep]        = useState(0);
   const [form,        setForm]        = useState(defaultForm());
@@ -101,16 +99,12 @@ const PublicSponsorPage = () => {
   const [submitted,   setSubmitted]   = useState(false);
   const [direction,   setDirection]   = useState(1);
 
-  // ── Load club info & upcoming tasks ────────────────────────────────────────
+  // ── Load club info ─────────────────────────────────────────────────────────
   const loadClub = useCallback(async () => {
     if (!club_id) return;
     setInfoLoading(true);
-    const [infoRes, tasksRes] = await Promise.all([
-      supabase.rpc('get_public_club_info' as any, { p_club_id: club_id }),
-      supabase.rpc('get_public_club_tasks' as any, { p_club_id: club_id }),
-    ]);
+    const infoRes = await supabase.rpc('get_public_club_info' as any, { p_club_id: club_id });
     if (infoRes.data) setClubInfo(infoRes.data as ClubInfo);
-    if (tasksRes.data) setClubTasks((tasksRes.data as ClubTask[]) || []);
     setInfoLoading(false);
   }, [club_id]);
 
@@ -120,11 +114,6 @@ const PublicSponsorPage = () => {
   const set = <K extends keyof WizardForm>(key: K, val: WizardForm[K]) =>
     setForm(f => ({ ...f, [key]: val }));
 
-  const toggleTask = (id: string) =>
-    set('linkedTaskIds', form.linkedTaskIds.includes(id)
-      ? form.linkedTaskIds.filter(t => t !== id)
-      : [...form.linkedTaskIds, id],
-    );
 
   const canAdvance = (): boolean => {
     if (step === 0) return form.businessName.trim().length > 0 && form.contactEmail.trim().length > 0;
@@ -320,42 +309,6 @@ const PublicSponsorPage = () => {
             </div>
           </div>
 
-          {clubTasks.length > 0 && (
-            <div>
-              <label className={labelCls}>
-                Gekoppelde taken
-                <span className="ml-2 text-white/30 font-normal">— kies de shifts</span>
-              </label>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {clubTasks.map(task => {
-                  const selected = form.linkedTaskIds.includes(task.id);
-                  return (
-                    <button key={task.id} type="button" onClick={() => toggleTask(task.id)}
-                      className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all text-sm',
-                        selected ? 'border-indigo-400/60 bg-indigo-500/10 text-white' : 'border-white/10 bg-white/[0.03] text-white/60 hover:border-white/20',
-                      )}>
-                      <div className={cn('w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all',
-                        selected ? 'border-indigo-400 bg-indigo-400' : 'border-white/20')}>
-                        {selected && <Check className="w-2.5 h-2.5 text-white" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{task.title}</p>
-                        {task.task_date && (
-                          <p className="text-xs text-white/40 flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(task.task_date).toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' })}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              {form.linkedTaskIds.length > 0 && (
-                <p className="text-xs text-indigo-400 mt-2">{form.linkedTaskIds.length} {form.linkedTaskIds.length === 1 ? 'taak' : 'taken'} geselecteerd</p>
-              )}
-            </div>
-          )}
         </>
       )}
     </div>,
@@ -376,7 +329,6 @@ const PublicSponsorPage = () => {
           { label: 'Type',    value: form.campaignType === 'local_coupon' ? 'Lokale Beloning' : 'Dashboard Banner' },
           { label: 'Titel',   value: form.title },
           ...(form.rewardText ? [{ label: 'Beloning', value: form.rewardText }] : []),
-          ...(form.linkedTaskIds.length > 0 ? [{ label: 'Taken', value: `${form.linkedTaskIds.length} geselecteerd` }] : []),
           { label: 'Contact', value: form.contactEmail },
         ].map(({ label, value }) => (
           <div key={label} className="flex items-center justify-between gap-4">
@@ -408,13 +360,6 @@ const PublicSponsorPage = () => {
             <span className="text-sm text-white truncate">{value}</span>
           </div>
         ))}
-        {form.linkedTaskIds.length > 0 && (
-          <div className="flex items-center gap-3 px-4 py-3">
-            <Calendar className="w-4 h-4 text-white/30 shrink-0" />
-            <span className="text-xs text-white/40 w-16 shrink-0">Taken</span>
-            <span className="text-sm text-white">{form.linkedTaskIds.length} gekoppeld</span>
-          </div>
-        )}
       </div>
       <p className="text-xs text-white/30 leading-relaxed">
         Door in te dienen gaat u akkoord met de algemene voorwaarden. U ontvangt een bevestiging op{' '}
