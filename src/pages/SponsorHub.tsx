@@ -766,6 +766,15 @@ const SponsorHub = () => {
                                   {c.linked_task_ids!.length} {t('taken', 'tâches', 'tasks')}
                                 </p>
                               )}
+                              {c.campaign_type === 'local_coupon' && c.status === 'active' && (c.linked_task_ids?.length || 0) === 0 && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openEdit(c); }}
+                                  className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-200 transition-colors"
+                                >
+                                  <Tag className="w-2.5 h-2.5" />
+                                  {t('0 taken koppelen', '0 tâches liées', '0 tasks linked')}
+                                </button>
+                              )}
                             </div>
                           </div>
                         </td>

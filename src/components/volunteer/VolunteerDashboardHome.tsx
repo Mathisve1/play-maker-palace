@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, CheckCircle, ClipboardList, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet, Search, ArrowRight, Heart, Clock, LayoutList, Gift, Tag } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -31,6 +32,26 @@ interface ScoredTask {
   task: VolunteerTask;
   score: number;
   reasons: string[];
+}
+
+interface VolunteerCoupon {
+  id: string;
+  qr_token: string;
+  backup_code: string;
+  status: 'active' | 'redeemed' | 'expired';
+  redeemed_at: string | null;
+  created_at: string;
+  campaign: {
+    id: string;
+    title: string;
+    reward_text: string | null;
+    reward_value_cents: number | null;
+  };
+  sponsor: {
+    name: string;
+    logo_url: string | null;
+    brand_color: string | null;
+  } | null;
 }
 
 interface Props {
@@ -73,6 +94,40 @@ const VolunteerDashboardHome = ({
   const [followedClubTasksRaw, setFollowedClubTasksRaw] = useState<FollowedClubTask[]>([]);
   const [prefs, setPrefs] = useState<{ categories?: string[]; time_prefs?: string[] } | null>(null);
   const [recommendedTasks, setRecommendedTasks] = useState<ScoredTask[]>([]);
+  const [myCoupons, setMyCoupons] = useState<VolunteerCoupon[]>([]);
+  const [walletOpen, setWalletOpen] = useState(false);
+
+  // Fetch volunteer coupons
+  useEffect(() => {
+    if (!currentUserId) return;
+    const fetchCoupons = async () => {
+      const { data } = await supabase
+        .from('volunteer_coupons')
+        .select(`
+          id, qr_token, backup_code, status, redeemed_at, created_at,
+          sponsor_campaigns!campaign_id (
+            id, title, reward_text, reward_value_cents,
+            sponsors!sponsor_id ( name, logo_url, brand_color )
+          )
+        `)
+        .eq('volunteer_id', currentUserId)
+        .order('created_at', { ascending: false });
+      if (data) {
+        setMyCoupons(data.map((row: any) => ({
+          id: row.id,
+          qr_token: row.qr_token,
+          backup_code: row.backup_code,
+          status: row.status,
+          redeemed_at: row.redeemed_at,
+          created_at: row.created_at,
+          campaign: row.sponsor_campaigns,
+          sponsor: row.sponsor_campaigns?.sponsors ?? null,
+        })));
+      }
+    };
+    fetchCoupons();
+  }, [currentUserId]);
+
   // Check for unread briefings within 48h
   useEffect(() => {
     if (!currentUserId || signups.length === 0) return;
@@ -490,12 +545,13 @@ const VolunteerDashboardHome = ({
           <p className="text-xs text-muted-foreground leading-tight">{dt.totalEarned}</p>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="bg-card rounded-2xl p-4 shadow-sm border border-border text-center flex flex-col items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-secondary-foreground" />
+          onClick={() => setWalletOpen(true)}
+          className="bg-card rounded-2xl p-4 shadow-sm border border-orange-200/60 dark:border-orange-800/40 text-center flex flex-col items-center gap-2 cursor-pointer hover:border-orange-300 hover:shadow-orange-100/60 transition-all">
+          <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+            <Gift className="w-5 h-5 text-orange-500" />
           </div>
-          <p className="text-2xl font-heading font-bold text-foreground leading-none">{loyaltyPoints}</p>
-          <p className="text-xs text-muted-foreground leading-tight">{language === 'nl' ? 'Punten' : 'Points'}</p>
+          <p className="text-2xl font-heading font-bold text-foreground leading-none">{myCoupons.filter(c => c.status === 'active').length}</p>
+          <p className="text-xs text-muted-foreground leading-tight">{language === 'nl' ? 'Coupons' : language === 'fr' ? 'Coupons' : 'Coupons'}</p>
         </motion.div>
       </div>
 
@@ -889,6 +945,107 @@ const VolunteerDashboardHome = ({
       {/* ═══ SECTION 6 — ACTIVITEITEN & COMPLIANCE ═══ */}
       <VolunteerActivitiesSection items={activityItemsTyped} language={language} />
       {complianceData && <ComplianceBadge compliance={complianceData} language={language} />}
+
+      {/* ═══ QR COUPON WALLET SHEET ═══ */}
+      <Sheet open={walletOpen} onOpenChange={setWalletOpen}>
+        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-2xl">
+          <SheetHeader className="pb-2">
+            <SheetTitle className="flex items-center gap-2 text-lg">
+              <Gift className="w-5 h-5 text-orange-500" />
+              {language === 'nl' ? 'Mijn Coupons & Beloningen' : language === 'fr' ? 'Mes Coupons & Récompenses' : 'My Coupons & Rewards'}
+            </SheetTitle>
+          </SheetHeader>
+
+          {myCoupons.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center">
+                <Gift className="w-8 h-8 text-orange-400" />
+              </div>
+              <p className="text-base font-semibold text-foreground">
+                {language === 'nl' ? 'Nog geen coupons' : language === 'fr' ? 'Pas encore de coupons' : 'No coupons yet'}
+              </p>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                {language === 'nl' ? 'Schrijf je in voor taken bij gesponsorde evenementen om beloningen te verdienen.' : language === 'fr' ? 'Inscris-toi à des tâches lors d\'événements sponsorisés pour gagner des récompenses.' : 'Sign up for tasks at sponsored events to earn rewards.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 mt-2 pb-6">
+              {myCoupons.map((coupon) => {
+                const isActive = coupon.status === 'active';
+                const isRedeemed = coupon.status === 'redeemed';
+                const brandColor = coupon.sponsor?.brand_color || '#f97316';
+                return (
+                  <div key={coupon.id}
+                    className={`rounded-2xl border p-4 transition-all ${
+                      isActive
+                        ? 'border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50/30'
+                        : 'border-border bg-muted/30 opacity-70'
+                    }`}>
+                    {/* Header */}
+                    <div className="flex items-start gap-3 mb-4">
+                      {coupon.sponsor?.logo_url ? (
+                        <img src={coupon.sponsor.logo_url} alt={coupon.sponsor.name} className="w-10 h-10 rounded-xl object-contain border border-border bg-white shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${brandColor}20` }}>
+                          <Gift className="w-5 h-5" style={{ color: brandColor }} />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-semibold text-foreground truncate">{coupon.campaign.title}</p>
+                        {coupon.sponsor && <p className="text-sm text-muted-foreground">{coupon.sponsor.name}</p>}
+                        {coupon.campaign.reward_text && (
+                          <p className="text-sm font-medium mt-0.5" style={{ color: brandColor }}>{coupon.campaign.reward_text}</p>
+                        )}
+                      </div>
+                      <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                        isRedeemed ? 'bg-muted text-muted-foreground' : 'bg-red-100 text-red-600'
+                      }`}>
+                        {isActive
+                          ? (language === 'nl' ? 'Actief' : language === 'fr' ? 'Actif' : 'Active')
+                          : isRedeemed
+                          ? (language === 'nl' ? 'Ingewisseld' : language === 'fr' ? 'Utilisé' : 'Redeemed')
+                          : (language === 'nl' ? 'Verlopen' : language === 'fr' ? 'Expiré' : 'Expired')}
+                      </span>
+                    </div>
+
+                    {/* QR Code */}
+                    {isActive && (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="p-3 bg-white rounded-2xl shadow-sm border border-orange-100">
+                          <QRCodeSVG
+                            value={coupon.qr_token}
+                            size={180}
+                            level="M"
+                            includeMargin={false}
+                          />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            {language === 'nl' ? 'Of gebruik code:' : language === 'fr' ? 'Ou utilise le code :' : 'Or use code:'}
+                          </p>
+                          <p className="text-2xl font-mono font-bold tracking-widest text-foreground">{coupon.backup_code}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Redeemed info */}
+                    {isRedeemed && coupon.redeemed_at && (
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        {language === 'nl' ? 'Ingewisseld op' : language === 'fr' ? 'Utilisé le' : 'Redeemed on'}{' '}
+                        {new Date(coupon.redeemed_at).toLocaleDateString(
+                          language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB',
+                          { day: 'numeric', month: 'long', year: 'numeric' }
+                        )}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Safety Sheet */}
       <Sheet open={safetySheetOpen} onOpenChange={setSafetySheetOpen}>

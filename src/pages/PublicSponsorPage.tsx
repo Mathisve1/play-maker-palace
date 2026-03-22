@@ -1,3 +1,11 @@
+/**
+ * PublicSponsorPage — /sponsor/:club_id
+ *
+ * Light, airy 4-step wizard for local businesses to submit a campaign.
+ * Orange accent colour, no login required.
+ * Task linking is done by club admins in SponsorHub after approval.
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,28 +24,27 @@ import SponsorAdLivePreview, { type PreviewForm } from '@/components/sponsor/Spo
 interface ClubInfo { id: string; name: string }
 
 interface WizardForm {
-  businessName:       string;
-  contactName:        string;
-  contactEmail:       string;
-  brandColor:         string;
-  logoUrl:            string;
-  campaignType:       'dashboard_banner' | 'local_coupon';
-  title:              string;
-  description:        string;
-  richDescription:    string;
-  rewardText:         string;
-  rewardValueEuros:   string;
-  imageUrl:           string;
-  coverImageUrl:      string;
-  customCta:          string;
-  linkedTaskIds:      string[];
+  businessName:     string;
+  contactName:      string;
+  contactEmail:     string;
+  brandColor:       string;
+  logoUrl:          string;
+  campaignType:     'dashboard_banner' | 'local_coupon';
+  title:            string;
+  description:      string;
+  richDescription:  string;
+  rewardText:       string;
+  rewardValueEuros: string;
+  imageUrl:         string;
+  coverImageUrl:    string;
+  customCta:        string;
 }
 
 const defaultForm = (): WizardForm => ({
   businessName:     '',
   contactName:      '',
   contactEmail:     '',
-  brandColor:       '#6366f1',
+  brandColor:       '#f97316',
   logoUrl:          '',
   campaignType:     'dashboard_banner',
   title:            '',
@@ -48,10 +55,8 @@ const defaultForm = (): WizardForm => ({
   imageUrl:         '',
   coverImageUrl:    '',
   customCta:        '',
-  linkedTaskIds:    [],
 });
 
-// Map WizardForm → PreviewForm (the subset SponsorAdLivePreview needs)
 const toPreview = (f: WizardForm): PreviewForm => ({
   businessName:     f.businessName,
   brandColor:       f.brandColor,
@@ -65,27 +70,29 @@ const toPreview = (f: WizardForm): PreviewForm => ({
   coverImageUrl:    f.coverImageUrl,
   customCta:        f.customCta,
   richDescription:  f.richDescription,
-  linkedTaskIds:    f.linkedTaskIds,
+  linkedTaskIds:    [],
 });
 
-// ── Shared input / label styles (dark glassmorphism) ─────────────────────────
+// ── Shared input / label styles (light) ──────────────────────────────────────
 const inputCls = [
-  'w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30',
-  'bg-white/[0.06] border border-white/[0.10]',
-  'focus:outline-none focus:border-indigo-400/60 focus:ring-1 focus:ring-indigo-400/40',
+  'w-full px-4 py-3 rounded-xl text-sm text-gray-900 placeholder-gray-400',
+  'bg-white border border-gray-200',
+  'focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100',
   'transition-all',
 ].join(' ');
 
-const labelCls = 'block text-sm font-medium text-white/70 mb-1.5';
+const labelCls = 'block text-sm font-medium text-gray-700 mb-1.5';
 
-// ── Step config ───────────────────────────────────────────────────────────────
+// ── Step config (4 steps) ─────────────────────────────────────────────────────
 const STEPS = [
-  { label: 'Uw Bedrijf',   icon: Building2   },
-  { label: 'Campagnetype', icon: Megaphone   },
-  { label: 'Details',      icon: Tag         },
-  { label: 'Voorbeeld',    icon: CheckCircle2 },
-  { label: 'Indienen',     icon: Check       },
+  { label: 'Uw Bedrijf',        icon: Building2    },
+  { label: 'Campagnetype',      icon: Megaphone    },
+  { label: 'Details',           icon: Tag          },
+  { label: 'Bekijk & Verstuur', icon: CheckCircle2 },
 ];
+
+// ── Colour swatches ───────────────────────────────────────────────────────────
+const SWATCHES = ['#f97316', '#6366f1', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899'];
 
 // ── Main component ────────────────────────────────────────────────────────────
 const PublicSponsorPage = () => {
@@ -99,21 +106,18 @@ const PublicSponsorPage = () => {
   const [submitted,   setSubmitted]   = useState(false);
   const [direction,   setDirection]   = useState(1);
 
-  // ── Load club info ─────────────────────────────────────────────────────────
   const loadClub = useCallback(async () => {
     if (!club_id) return;
     setInfoLoading(true);
-    const infoRes = await supabase.rpc('get_public_club_info' as any, { p_club_id: club_id });
-    if (infoRes.data) setClubInfo(infoRes.data as ClubInfo);
+    const { data } = await supabase.rpc('get_public_club_info' as any, { p_club_id: club_id });
+    if (data) setClubInfo(data as ClubInfo);
     setInfoLoading(false);
   }, [club_id]);
 
   useEffect(() => { loadClub(); }, [loadClub]);
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
   const set = <K extends keyof WizardForm>(key: K, val: WizardForm[K]) =>
     setForm(f => ({ ...f, [key]: val }));
-
 
   const canAdvance = (): boolean => {
     if (step === 0) return form.businessName.trim().length > 0 && form.contactEmail.trim().length > 0;
@@ -126,7 +130,6 @@ const PublicSponsorPage = () => {
     setStep(s => Math.max(0, Math.min(STEPS.length - 1, s + delta)));
   };
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!club_id) return;
     setSubmitting(true);
@@ -146,7 +149,7 @@ const PublicSponsorPage = () => {
         ? Math.round(parseFloat(form.rewardValueEuros) * 100)
         : null,
       p_image_url:          form.imageUrl.trim(),
-      p_task_ids:           form.linkedTaskIds,
+      p_task_ids:           [],
       p_cover_image_url:    form.coverImageUrl.trim(),
       p_custom_cta:         form.customCta.trim(),
       p_rich_description:   form.richDescription.trim(),
@@ -162,40 +165,75 @@ const PublicSponsorPage = () => {
   };
 
   // ── Step content ───────────────────────────────────────────────────────────
+
   const stepContent = [
 
-    // ── Step 0: Uw Bedrijf ──────────────────────────────────────────────────
+    // ── Step 0: Uw Bedrijf ─────────────────────────────────────────────────
     <div className="space-y-5" key="s0">
       <div>
         <label className={labelCls}>Bedrijfsnaam *</label>
-        <input className={inputCls} value={form.businessName} onChange={e => set('businessName', e.target.value)} placeholder="bv. Slagerij Dirk" autoFocus />
+        <input
+          className={inputCls}
+          value={form.businessName}
+          onChange={e => set('businessName', e.target.value)}
+          placeholder="bv. Slagerij Dirk"
+          autoFocus
+        />
       </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Contactpersoon</label>
-          <input className={inputCls} value={form.contactName} onChange={e => set('contactName', e.target.value)} placeholder="Voornaam Naam" />
+          <input
+            className={inputCls}
+            value={form.contactName}
+            onChange={e => set('contactName', e.target.value)}
+            placeholder="Voornaam Naam"
+          />
         </div>
         <div>
           <label className={labelCls}>E-mailadres *</label>
-          <input className={inputCls} type="email" value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} placeholder="u@uw-zaak.be" />
+          <input
+            className={inputCls}
+            type="email"
+            value={form.contactEmail}
+            onChange={e => set('contactEmail', e.target.value)}
+            placeholder="u@uw-zaak.be"
+          />
         </div>
       </div>
 
-      {/* Brand color */}
+      {/* Brand colour */}
       <div>
         <label className={labelCls}>Merkkleur</label>
-        <div className="flex items-center gap-3">
-          <input type="color" value={form.brandColor} onChange={e => set('brandColor', e.target.value)}
-            className="w-12 h-12 rounded-xl border border-white/10 cursor-pointer bg-transparent p-1" />
-          <div className="flex-1">
-            <input className={inputCls} value={form.brandColor} onChange={e => set('brandColor', e.target.value)} placeholder="#6366f1" />
-          </div>
+        <div className="flex items-center gap-3 mb-2">
+          <input
+            type="color"
+            value={form.brandColor}
+            onChange={e => set('brandColor', e.target.value)}
+            className="w-12 h-11 rounded-xl border border-gray-200 cursor-pointer bg-white p-1"
+          />
+          <input
+            className={inputCls}
+            value={form.brandColor}
+            onChange={e => set('brandColor', e.target.value)}
+            placeholder="#f97316"
+          />
         </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899'].map(c => (
-            <button key={c} type="button" onClick={() => set('brandColor', c)}
-              className={cn('w-7 h-7 rounded-lg border-2 transition-all', form.brandColor === c ? 'border-white scale-110' : 'border-transparent hover:scale-105')}
-              style={{ background: c }} />
+        <div className="flex flex-wrap gap-2">
+          {SWATCHES.map(c => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => set('brandColor', c)}
+              className={cn(
+                'w-8 h-8 rounded-lg border-2 transition-all',
+                form.brandColor === c
+                  ? 'border-gray-900 scale-110 shadow-sm'
+                  : 'border-transparent hover:scale-105',
+              )}
+              style={{ background: c }}
+            />
           ))}
         </div>
       </div>
@@ -205,37 +243,62 @@ const PublicSponsorPage = () => {
         value={form.logoUrl}
         onChange={url => set('logoUrl', url)}
         folder="pending"
-        label="Logo"
+        label="Logo van uw zaak"
         compact
-        variant="dark"
+        variant="light"
       />
     </div>,
 
-    // ── Step 1: Campagnetype ────────────────────────────────────────────────
+    // ── Step 1: Campagnetype ───────────────────────────────────────────────
     <div className="space-y-4" key="s1">
-      <p className="text-sm text-white/50">Kies het type advertentie dat u wilt plaatsen.</p>
+      <p className="text-sm text-gray-500">Kies het type advertentie dat het beste bij uw zaak past.</p>
       <div className="grid gap-4">
         {([
-          { type: 'dashboard_banner' as const, icon: Megaphone, title: 'Dashboard Banner', desc: 'Uw logo en boodschap verschijnt bovenaan het dashboard van elke vrijwilliger. Maximale zichtbaarheid.' },
-          { type: 'local_coupon'    as const, icon: Gift,      title: 'Lokale Beloning',   desc: 'Vrijwilligers verdienen een digitale kortingsbon bij uw zaak na een shift.' },
+          {
+            type:  'dashboard_banner' as const,
+            icon:  Megaphone,
+            title: 'Dashboard Banner',
+            desc:  'Uw logo en boodschap verschijnt bovenaan het dashboard van elke vrijwilliger. Maximale zichtbaarheid.',
+          },
+          {
+            type:  'local_coupon' as const,
+            icon:  Gift,
+            title: 'Lokale Beloning',
+            desc:  'Vrijwilligers verdienen een digitale kortingsbon bij uw zaak na een shift. Ideaal om klanten te trekken.',
+          },
         ]).map(({ type, icon: Icon, title, desc }) => (
-          <button key={type} type="button" onClick={() => set('campaignType', type)}
-            className={cn('w-full text-left p-5 rounded-2xl border transition-all',
+          <button
+            key={type}
+            type="button"
+            onClick={() => set('campaignType', type)}
+            className={cn(
+              'w-full text-left p-5 rounded-2xl border-2 transition-all',
               form.campaignType === type
-                ? 'border-indigo-400/70 bg-indigo-500/10 shadow-lg shadow-indigo-500/10'
-                : 'border-white/10 bg-white/[0.03] hover:border-white/20',
-            )}>
+                ? 'border-orange-400 bg-orange-50 shadow-md shadow-orange-100/60'
+                : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/30',
+            )}
+          >
             <div className="flex items-start gap-4">
-              <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                form.campaignType === type ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/5 text-white/40')}>
+              <div
+                className={cn(
+                  'w-11 h-11 rounded-xl flex items-center justify-center shrink-0',
+                  form.campaignType === type
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-100 text-gray-400',
+                )}
+              >
                 <Icon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-semibold text-white">{title}</p>
-                  {form.campaignType === type && <Check className="w-4 h-4 text-indigo-400" />}
+                  <p className="text-sm font-semibold text-gray-900">{title}</p>
+                  {form.campaignType === type && (
+                    <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-white/50 leading-relaxed">{desc}</p>
+                <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
               </div>
             </div>
           </button>
@@ -243,36 +306,61 @@ const PublicSponsorPage = () => {
       </div>
     </div>,
 
-    // ── Step 2: Details ─────────────────────────────────────────────────────
-    <div className="space-y-4" key="s2">
+    // ── Step 2: Details ────────────────────────────────────────────────────
+    <div className="space-y-5" key="s2">
 
       <div>
         <label className={labelCls}>Advertentietitel *</label>
-        <input className={inputCls} value={form.title} onChange={e => set('title', e.target.value)}
-          placeholder={form.campaignType === 'local_coupon' ? 'bv. Gratis broodje bij elke shift' : 'bv. 10% korting bij Slagerij Dirk'} />
+        <input
+          className={inputCls}
+          value={form.title}
+          onChange={e => set('title', e.target.value)}
+          placeholder={
+            form.campaignType === 'local_coupon'
+              ? 'bv. Gratis broodje bij elke shift'
+              : 'bv. 10% korting bij Slagerij Dirk'
+          }
+        />
       </div>
 
       {form.campaignType === 'dashboard_banner' && (
         <div>
           <label className={labelCls}>
             CTA knoptekst
-            <span className="ml-1.5 text-white/30 font-normal">— tekst op de actieknop</span>
+            <span className="ml-1.5 text-gray-400 font-normal text-xs">— tekst op de actieknop</span>
           </label>
-          <input className={inputCls} value={form.customCta} onChange={e => set('customCta', e.target.value)}
-            placeholder='bv. "Bekijk Menu", "Kom Langs", "Scan Nu"' />
+          <input
+            className={inputCls}
+            value={form.customCta}
+            onChange={e => set('customCta', e.target.value)}
+            placeholder='bv. "Bekijk Menu", "Kom Langs"'
+          />
         </div>
       )}
 
       <div>
         <label className={labelCls}>Korte beschrijving</label>
-        <textarea className={cn(inputCls, 'resize-none')} rows={2} value={form.description}
-          onChange={e => set('description', e.target.value)} placeholder="Eén zin die uw aanbieding samenvat..." />
+        <textarea
+          className={cn(inputCls, 'resize-none')}
+          rows={2}
+          value={form.description}
+          onChange={e => set('description', e.target.value)}
+          placeholder="Eén zin die uw aanbieding samenvat..."
+        />
       </div>
 
       <div>
-        <label className={labelCls}>Uitgebreide beschrijving <span className="text-white/30 font-normal">(optioneel)</span></label>
-        <textarea className={cn(inputCls, 'resize-none')} rows={3} value={form.richDescription}
-          onChange={e => set('richDescription', e.target.value)} placeholder="Extra info, voorwaarden, openingsuren..." />
+        <label className={labelCls}>
+          Uitgebreide beschrijving{' '}
+          <span className="text-gray-400 font-normal text-xs">(optioneel)</span>
+        </label>
+        <textarea
+          className={cn(inputCls, 'resize-none')}
+          rows={3}
+          value={form.richDescription}
+          onChange={e => set('richDescription', e.target.value)}
+          placeholder="Extra info, voorwaarden, openingsuren..."
+        />
       </div>
 
       {/* Media uploads */}
@@ -281,113 +369,121 @@ const PublicSponsorPage = () => {
           value={form.imageUrl}
           onChange={url => set('imageUrl', url)}
           folder="pending"
-          label="Logo / product foto"
+          label="Logo / productfoto"
           compact
-          variant="dark"
+          variant="light"
         />
         <ImageUploader
           value={form.coverImageUrl}
           onChange={url => set('coverImageUrl', url)}
           folder="pending"
           label="Omslagfoto"
-          variant="dark"
+          variant="light"
         />
       </div>
 
-      {/* Coupon-specific fields */}
+      {/* Coupon-specific */}
       {form.campaignType === 'local_coupon' && (
-        <>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Beloningsbeschrijving</label>
-              <input className={inputCls} value={form.rewardText} onChange={e => set('rewardText', e.target.value)} placeholder="bv. Gratis €5 broodje" />
-            </div>
-            <div>
-              <label className={labelCls}>Kortingsbedrag (€)</label>
-              <input className={inputCls} type="number" min="0" step="0.01" value={form.rewardValueEuros}
-                onChange={e => set('rewardValueEuros', e.target.value)} placeholder="5.00" />
-            </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Beloningsbeschrijving</label>
+            <input
+              className={inputCls}
+              value={form.rewardText}
+              onChange={e => set('rewardText', e.target.value)}
+              placeholder="bv. Gratis €5 broodje"
+            />
           </div>
-
-        </>
+          <div>
+            <label className={labelCls}>Kortingsbedrag (€)</label>
+            <input
+              className={inputCls}
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.rewardValueEuros}
+              onChange={e => set('rewardValueEuros', e.target.value)}
+              placeholder="5.00"
+            />
+          </div>
+        </div>
       )}
     </div>,
 
-    // ── Step 3: Voorbeeld (preview) ─────────────────────────────────────────
-    <div className="flex flex-col items-center gap-5" key="s3">
-      <p className="text-sm text-white/50 text-center">
-        Zo ziet uw advertentie er precies uit in de app van de vrijwilligers.
-      </p>
+    // ── Step 3: Preview + Submit ────────────────────────────────────────────
+    <div className="space-y-6" key="s3">
 
-      <SponsorAdLivePreview form={toPreview(form)} />
+      {/* Live preview */}
+      <div>
+        <p className="text-sm text-gray-500 text-center mb-4">
+          Zo ziet uw advertentie eruit in de app van de vrijwilligers.
+        </p>
+        <div className="flex justify-center">
+          <SponsorAdLivePreview form={toPreview(form)} />
+        </div>
+      </div>
 
-      {/* Quick summary strip */}
-      <div className="w-full rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2 text-sm">
-        <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Samenvatting</p>
+      {/* Summary strip */}
+      <div className="rounded-2xl border border-gray-100 bg-gray-50 divide-y divide-gray-100">
         {[
-          { label: 'Bedrijf', value: form.businessName },
-          { label: 'Type',    value: form.campaignType === 'local_coupon' ? 'Lokale Beloning' : 'Dashboard Banner' },
-          { label: 'Titel',   value: form.title },
+          { label: 'Bedrijf',  value: form.businessName },
+          { label: 'Contact',  value: form.contactEmail },
+          { label: 'Type',     value: form.campaignType === 'local_coupon' ? 'Lokale Beloning' : 'Dashboard Banner' },
+          { label: 'Titel',    value: form.title },
           ...(form.rewardText ? [{ label: 'Beloning', value: form.rewardText }] : []),
-          { label: 'Contact', value: form.contactEmail },
         ].map(({ label, value }) => (
-          <div key={label} className="flex items-center justify-between gap-4">
-            <span className="text-white/40 text-xs shrink-0">{label}</span>
-            <span className="text-sm text-white text-right truncate">{value || '—'}</span>
+          <div key={label} className="flex items-center gap-3 px-4 py-2.5">
+            <span className="text-xs text-gray-400 w-16 shrink-0">{label}</span>
+            <span className="text-sm text-gray-900 truncate">{value || <span className="text-gray-300">—</span>}</span>
           </div>
         ))}
       </div>
-    </div>,
 
-    // ── Step 4: Indienen ─────────────────────────────────────────────────────
-    <div className="space-y-5" key="s4">
-      <p className="text-sm text-white/60 leading-relaxed">
-        Uw aanvraag wordt doorgestuurd naar het team van{' '}
-        <span className="text-white font-medium">{clubInfo?.name || 'de club'}</span>.
-        Na goedkeuring verschijnt uw advertentie onmiddellijk in de app.
-      </p>
-
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] divide-y divide-white/[0.06]">
-        {[
-          { label: 'Bedrijf',  value: form.businessName,  icon: Building2 },
-          { label: 'Contact',  value: form.contactEmail,  icon: Mail      },
-          { label: 'Type',     value: form.campaignType === 'local_coupon' ? 'Lokale Beloning' : 'Dashboard Banner', icon: Megaphone },
-          { label: 'Titel',    value: form.title,         icon: Tag       },
-        ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="flex items-center gap-3 px-4 py-3">
-            <Icon className="w-4 h-4 text-white/30 shrink-0" />
-            <span className="text-xs text-white/40 w-16 shrink-0">{label}</span>
-            <span className="text-sm text-white truncate">{value}</span>
-          </div>
-        ))}
-      </div>
-      <p className="text-xs text-white/30 leading-relaxed">
+      <p className="text-xs text-gray-400 text-center leading-relaxed">
         Door in te dienen gaat u akkoord met de algemene voorwaarden. U ontvangt een bevestiging op{' '}
-        <span className="text-white/50">{form.contactEmail}</span>.
+        <span className="text-gray-600">{form.contactEmail || '…'}</span>.
       </p>
+
+      {/* Submit button (inside the card for step 3) */}
+      <button
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="w-full h-12 flex items-center justify-center gap-2 rounded-xl text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200 disabled:opacity-60"
+      >
+        {submitting
+          ? <><Loader2 className="w-4 h-4 animate-spin" /> Bezig…</>
+          : <><Check className="w-4 h-4" /> Aanvraag indienen</>
+        }
+      </button>
     </div>,
   ];
 
   // ── Success ────────────────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#060610] text-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50/30 flex items-center justify-center px-4">
         <Bg />
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 max-w-md w-full text-center space-y-6">
-          <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative z-10 max-w-md w-full text-center space-y-6"
+        >
+          <div className="w-20 h-20 mx-auto rounded-full bg-orange-100 border-2 border-orange-200 flex items-center justify-center">
+            <CheckCircle2 className="w-10 h-10 text-orange-500" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold mb-2">Aanvraag ontvangen!</h1>
-            <p className="text-white/50 text-sm leading-relaxed">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Aanvraag ontvangen!</h1>
+            <p className="text-gray-500 text-sm leading-relaxed">
               Uw advertentieaanvraag is ingediend bij{' '}
-              <span className="text-white">{clubInfo?.name}</span>.
+              <span className="text-gray-900 font-medium">{clubInfo?.name}</span>.
               U ontvangt een bevestiging op{' '}
-              <span className="text-indigo-300">{form.contactEmail}</span>.
+              <span className="text-orange-600">{form.contactEmail}</span>.
             </p>
           </div>
-          <Link to="/" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/15 transition-colors text-sm font-medium">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-colors text-sm font-semibold shadow-md shadow-orange-200"
+          >
             Terug naar de homepage <ArrowRight className="w-4 h-4" />
           </Link>
         </motion.div>
@@ -395,100 +491,111 @@ const PublicSponsorPage = () => {
     );
   }
 
-  // ── Loading / not found ───────────────────────────────────────────────────
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (infoLoading) return (
-    <div className="min-h-screen bg-[#060610] flex items-center justify-center">
-      <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
     </div>
   );
 
   if (!clubInfo) return (
-    <div className="min-h-screen bg-[#060610] text-white flex items-center justify-center px-4">
-      <p className="text-white/50">Club niet gevonden.</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <p className="text-gray-400">Club niet gevonden.</p>
     </div>
   );
 
-  // ── Main wizard ───────────────────────────────────────────────────────────
+  // ── Wizard ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#060610] text-white">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50/20">
       <Bg />
       <div className="relative z-10 max-w-xl mx-auto px-4 py-10">
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-4">
-            <Zap className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs font-semibold text-white/70 uppercase tracking-widest">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 border border-orange-200 mb-4">
+            <Zap className="w-4 h-4 text-orange-500" />
+            <span className="text-xs font-semibold text-orange-800 uppercase tracking-widest">
               Adverteer bij {clubInfo.name}
             </span>
           </div>
-          <h1 className="text-2xl font-bold mb-1">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
             Bereik lokale{' '}
-            <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">vrijwilligers</span>
+            <span className="text-orange-500">vrijwilligers</span>
           </h1>
-          <p className="text-sm text-white/40">Maak uw advertentie in 5 minuten. Geen account vereist.</p>
+          <p className="text-sm text-gray-400">Maak uw advertentie in 5 minuten. Geen account vereist.</p>
         </div>
 
         {/* Stepper */}
         <div className="flex items-center justify-center gap-2 mb-6">
           {STEPS.map((_, i) => (
             <div key={i} className="flex items-center gap-2">
-              <div className={cn(
-                'flex items-center justify-center rounded-full transition-all duration-300',
-                i < step  ? 'w-6 h-6 bg-indigo-500 text-white'
-                : i === step ? 'w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30'
-                : 'w-6 h-6 bg-white/[0.06] text-white/20',
-              )}>
-                {i < step ? <Check className="w-3.5 h-3.5" /> : <span className="text-[11px] font-bold">{i + 1}</span>}
+              <div
+                className={cn(
+                  'flex items-center justify-center rounded-full font-bold transition-all duration-300',
+                  i < step
+                    ? 'w-7 h-7 bg-orange-500 text-white'
+                    : i === step
+                    ? 'w-9 h-9 bg-orange-500 text-white ring-4 ring-orange-200 shadow-md'
+                    : 'w-7 h-7 bg-gray-100 text-gray-400',
+                )}
+              >
+                {i < step
+                  ? <Check className="w-3.5 h-3.5" />
+                  : <span className="text-[11px]">{i + 1}</span>}
               </div>
               {i < STEPS.length - 1 && (
-                <div className={cn('h-px w-5 transition-all duration-500', i < step ? 'bg-indigo-500' : 'bg-white/[0.08]')} />
+                <div
+                  className={cn(
+                    'h-0.5 w-6 rounded transition-all duration-500',
+                    i < step ? 'bg-orange-400' : 'bg-gray-200',
+                  )}
+                />
               )}
             </div>
           ))}
         </div>
 
-        <p className="text-center text-xs font-semibold text-white/50 uppercase tracking-widest mb-6">
+        <p className="text-center text-xs font-semibold text-gray-400 uppercase tracking-widest mb-6">
           Stap {step + 1} van {STEPS.length} — {STEPS[step].label}
         </p>
 
         {/* Content card */}
-        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-6 mb-6 overflow-hidden">
+        <div className="bg-white rounded-3xl border border-gray-200 shadow-md p-6 mb-6 overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={step}
+            <motion.div
+              key={step}
               initial={{ opacity: 0, x: direction > 0 ? 28 : -28 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: direction > 0 ? -28 : 28 }}
-              transition={{ duration: 0.22, ease: 'easeInOut' }}>
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+            >
               {stepContent[step]}
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation — hide bottom nav button on last step (submit is inside the card) */}
         <div className="flex items-center justify-between gap-4">
-          <button onClick={() => go(-1)} disabled={step === 0}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-all disabled:opacity-0 disabled:pointer-events-none">
-            <ChevronLeft className="w-4 h-4" />
-            Terug
+          <button
+            onClick={() => go(-1)}
+            disabled={step === 0}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all disabled:opacity-0 disabled:pointer-events-none"
+          >
+            <ChevronLeft className="w-4 h-4" /> Terug
           </button>
 
-          {step < STEPS.length - 1 ? (
-            <button onClick={() => go(1)} disabled={!canAdvance()}
-              className={cn('flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all',
+          {step < STEPS.length - 1 && (
+            <button
+              onClick={() => go(1)}
+              disabled={!canAdvance()}
+              className={cn(
+                'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all',
                 canAdvance()
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 shadow-lg shadow-indigo-500/20'
-                  : 'bg-white/[0.06] text-white/30 cursor-not-allowed',
-              )}>
+                  ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-md shadow-orange-200'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+              )}
+            >
               Volgende <ChevronRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button onClick={handleSubmit} disabled={submitting}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-60">
-              {submitting
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Bezig...</>
-                : <><Check className="w-4 h-4" /> Aanvraag indienen</>
-              }
             </button>
           )}
         </div>
@@ -498,11 +605,11 @@ const PublicSponsorPage = () => {
   );
 };
 
-// ── Background gradient orbs ──────────────────────────────────────────────────
+// ── Subtle background orbs ────────────────────────────────────────────────────
 const Bg = () => (
   <div className="fixed inset-0 pointer-events-none overflow-hidden">
-    <div className="absolute -top-60 -right-60 w-[480px] h-[480px] rounded-full bg-indigo-600/15 blur-3xl" />
-    <div className="absolute -bottom-60 -left-60 w-[480px] h-[480px] rounded-full bg-purple-600/15 blur-3xl" />
+    <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-orange-200/40 blur-3xl" />
+    <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-amber-200/40 blur-3xl" />
   </div>
 );
 
