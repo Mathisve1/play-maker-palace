@@ -223,7 +223,7 @@ const VolunteerSidebar = ({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem data-tour="vol-sidebar-clubs">
-                <SidebarMenuButton onClick={() => handleExternalNav('/community')} className="min-h-[48px]">
+                <SidebarMenuButton onClick={() => handleExternalNav('/my-clubs')} className="min-h-[48px]">
                   <Users className="w-5 h-5" />
                   <span>{l.clubs}</span>
                 </SidebarMenuButton>

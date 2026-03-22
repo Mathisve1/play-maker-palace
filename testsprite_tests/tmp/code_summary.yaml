@@ -1,0 +1,737 @@
+version: "2"
+type: frontend
+tech_stack:
+  - language: TypeScript
+  - framework: React 18 + Vite
+  - ui_library: shadcn/ui + Radix UI + Tailwind CSS
+  - other: Supabase Auth, React Router DOM, TanStack React Query, Framer Motion, Recharts, React Hook Form + Zod
+
+routes:
+  - path: /
+    file: src/pages/Index.tsx
+    auth_required: false
+    description: Landing homepage
+  - path: /voor-vrijwilligers
+    file: src/pages/VolunteerLanding.tsx
+    auth_required: false
+    description: Volunteer landing page
+  - path: /voor-clubs
+    file: src/pages/ClubsLanding.tsx
+    auth_required: false
+    description: Club landing page
+  - path: /login
+    file: src/pages/Login.tsx
+    auth_required: false
+    description: Volunteer login page
+  - path: /signup
+    file: src/pages/Signup.tsx
+    auth_required: false
+    description: Volunteer signup / registration
+  - path: /club-login
+    file: src/pages/ClubLogin.tsx
+    auth_required: false
+    description: Club owner login page
+  - path: /club-signup
+    file: src/pages/ClubSignup.tsx
+    auth_required: false
+    description: Club registration page
+  - path: /partner-login
+    file: src/pages/PartnerLogin.tsx
+    auth_required: false
+    description: Partner login page
+  - path: /reset-password
+    file: src/pages/ResetPassword.tsx
+    auth_required: false
+    description: Password reset page
+  - path: /community
+    file: src/pages/Community.tsx
+    auth_required: false
+    description: Public community page showing clubs
+  - path: /community/club/:id
+    file: src/pages/CommunityClubDetail.tsx
+    auth_required: false
+    description: Public club detail page
+  - path: /community/partner/:id
+    file: src/pages/CommunityPartnerDetail.tsx
+    auth_required: false
+    description: Public partner detail page
+  - path: /privacy
+    file: src/pages/PrivacyPolicy.tsx
+    auth_required: false
+    description: Privacy policy page
+  - path: /terms
+    file: src/pages/TermsOfUse.tsx
+    auth_required: false
+    description: Terms of use page
+  - path: /contact
+    file: src/pages/ContactPage.tsx
+    auth_required: false
+    description: Contact page
+  - path: /dashboard
+    file: src/pages/VolunteerDashboard.tsx
+    auth_required: true
+    description: Volunteer main dashboard with tabs
+  - path: /my-clubs
+    file: src/pages/MyClubs.tsx
+    auth_required: true
+    description: Volunteer's clubs list
+  - path: /profile
+    file: src/pages/VolunteerProfile.tsx
+    auth_required: true
+    description: Volunteer profile page
+  - path: /tasks/:id
+    file: src/pages/TaskDetail.tsx
+    auth_required: true
+    description: Task detail for volunteer
+  - path: /chat
+    file: src/pages/Chat.tsx
+    auth_required: true
+    description: Volunteer chat
+  - path: /notifications
+    file: src/pages/NotificationCenter.tsx
+    auth_required: true
+    description: Volunteer notifications
+  - path: /training
+    file: src/pages/VolunteerTraining.tsx
+    auth_required: true
+    description: Volunteer training / academy
+  - path: /help
+    file: src/pages/VolunteerHelp.tsx
+    auth_required: true
+    description: Volunteer help page
+  - path: /club-dashboard
+    file: src/pages/ClubOwnerDashboard.tsx
+    auth_required: true
+    description: Club owner main dashboard
+  - path: /club-dashboard/events
+    file: src/pages/EventsManager.tsx
+    auth_required: true
+    description: Club events management
+  - path: /club-dashboard/planning
+    file: src/pages/MonthlyPlanning.tsx
+    auth_required: true
+    description: Monthly planning for club
+  - path: /club-dashboard/volunteers
+    file: src/pages/VolunteerManagement.tsx
+    auth_required: true
+    description: Club volunteer management
+  - path: /club-dashboard/contract-builder
+    file: src/pages/ContractBuilder.tsx
+    auth_required: true
+    description: Contract builder for club
+  - path: /club-dashboard/season-contracts
+    file: src/pages/SeasonContractManager.tsx
+    auth_required: true
+    description: Season contracts manager
+  - path: /club-dashboard/briefing-builder
+    file: src/pages/BriefingBuilder.tsx
+    auth_required: true
+    description: Briefing builder for tasks
+  - path: /club-dashboard/compliance
+    file: src/pages/ComplianceDashboard.tsx
+    auth_required: true
+    description: Compliance dashboard
+  - path: /club-dashboard/loyalty
+    file: src/pages/LoyaltyPrograms.tsx
+    auth_required: true
+    description: Loyalty programs management
+  - path: /club-dashboard/ticketing
+    file: src/pages/TicketingDashboard.tsx
+    auth_required: true
+    description: Ticketing dashboard
+  - path: /club-dashboard/analytics
+    file: src/pages/AnalyticsDashboard.tsx
+    auth_required: true
+    description: Analytics dashboard with charts
+  - path: /club-dashboard/billing
+    file: src/pages/BillingDashboard.tsx
+    auth_required: true
+    description: Billing and invoicing dashboard
+  - path: /club-dashboard/reporting
+    file: src/pages/ReportingDashboard.tsx
+    auth_required: true
+    description: Reporting dashboard
+  - path: /club-dashboard/safety
+    file: src/pages/SafetyDashboard.tsx
+    auth_required: true
+    description: Safety dashboard
+  - path: /club-dashboard/partners
+    file: src/pages/ExternalPartners.tsx
+    auth_required: true
+    description: External partners management
+  - path: /club-dashboard/command-center
+    file: src/pages/CommandCenter.tsx
+    auth_required: true
+    description: Live command center for match day
+  - path: /club-dashboard/help
+    file: src/pages/ClubHelp.tsx
+    auth_required: true
+    description: Club help page
+  - path: /club-dashboard/audit
+    file: src/pages/AuditLog.tsx
+    auth_required: true
+    description: Audit log for club actions
+  - path: /partner
+    file: src/pages/PartnerDashboard.tsx
+    auth_required: true
+    description: Partner dashboard
+  - path: /admin
+    file: src/pages/AdminDashboard.tsx
+    auth_required: true
+    description: Admin dashboard
+
+features:
+  # === PUBLIC / ONBOARDING ===
+  - name: Homepage Navigation
+    description: Public landing page with navigation to volunteer and club landing pages
+    files:
+      - src/pages/Index.tsx
+    entry_route: /
+    user_interactions:
+      - View hero section with CTA buttons
+      - Click "Voor Vrijwilligers" to navigate to volunteer landing
+      - Click "Voor Clubs" to navigate to club landing
+      - View features/benefits sections
+    api_calls: []
+    auth_required: false
+
+  - name: Volunteer Landing Page
+    description: Marketing page for volunteers with signup CTA
+    files:
+      - src/pages/VolunteerLanding.tsx
+    entry_route: /voor-vrijwilligers
+    user_interactions:
+      - View volunteer benefits
+      - Click signup button to go to /signup
+      - Click login button to go to /login
+    api_calls: []
+    auth_required: false
+
+  - name: Club Landing Page
+    description: Marketing page for sports clubs with signup CTA
+    files:
+      - src/pages/ClubsLanding.tsx
+    entry_route: /voor-clubs
+    user_interactions:
+      - View club benefits and pricing
+      - Click signup button to go to /club-signup
+      - Click login button to go to /club-login
+    api_calls: []
+    auth_required: false
+
+  - name: Volunteer Login
+    description: Volunteer authentication with email and password via Supabase Auth
+    files:
+      - src/pages/Login.tsx
+    entry_route: /login
+    user_interactions:
+      - Fill email input field
+      - Fill password input field
+      - Click login button
+      - See error message on invalid credentials
+      - Navigate to forgot password
+      - Navigate to signup
+    api_calls:
+      - method: POST
+        endpoint: supabase auth signInWithPassword
+    auth_required: false
+
+  - name: Volunteer Signup / Registration
+    description: New volunteer registration form with email, password, name
+    files:
+      - src/pages/Signup.tsx
+    entry_route: /signup
+    user_interactions:
+      - Fill first name and last name
+      - Fill email address
+      - Fill password and confirm password
+      - Accept terms of service
+      - Click register button
+      - See validation errors for invalid input
+    api_calls:
+      - method: POST
+        endpoint: supabase auth signUp
+    auth_required: false
+
+  - name: Club Login
+    description: Club owner login page
+    files:
+      - src/pages/ClubLogin.tsx
+    entry_route: /club-login
+    user_interactions:
+      - Fill email input
+      - Fill password input
+      - Click login button
+      - See error on invalid credentials
+      - Navigate to club signup
+    api_calls:
+      - method: POST
+        endpoint: supabase auth signInWithPassword
+    auth_required: false
+
+  - name: Club Registration
+    description: Club signup form to register a new sports club
+    files:
+      - src/pages/ClubSignup.tsx
+    entry_route: /club-signup
+    user_interactions:
+      - Fill club name
+      - Fill contact email and password
+      - Fill city/location
+      - Select sport type
+      - Click register button
+      - See validation errors
+    api_calls:
+      - method: POST
+        endpoint: supabase functions/club-signup
+    auth_required: false
+
+  - name: Password Reset
+    description: Forgot password flow with email reset link
+    files:
+      - src/pages/ResetPassword.tsx
+    entry_route: /reset-password
+    user_interactions:
+      - Fill email address
+      - Click send reset link button
+      - See confirmation message
+    api_calls:
+      - method: POST
+        endpoint: supabase auth resetPasswordForEmail
+    auth_required: false
+
+  - name: Community Page
+    description: Public list of clubs and partners browsable by everyone
+    files:
+      - src/pages/Community.tsx
+      - src/components/community/ClubCard.tsx
+      - src/components/community/NearbyClubsWidget.tsx
+    entry_route: /community
+    user_interactions:
+      - Browse list of clubs
+      - Filter clubs by sport or city
+      - Click on club card to see details
+      - View map with nearby clubs
+    api_calls:
+      - method: GET
+        endpoint: supabase/clubs select
+    auth_required: false
+
+  # === VOLUNTEER SIDE ===
+  - name: Volunteer Dashboard - Overview Tab
+    description: Main dashboard for volunteer showing upcoming tasks, stats, notifications
+    files:
+      - src/pages/VolunteerDashboard.tsx
+      - src/components/dashboard/KpiWidget.tsx
+    entry_route: /dashboard
+    user_interactions:
+      - View upcoming tasks summary
+      - View total completed tasks count
+      - View earned points / loyalty stats
+      - Click on a task to see details
+      - Switch between dashboard tabs (Dashboard, Mijn Taken, Kalender, Contracten, Vergoedingen, Groeien)
+    api_calls:
+      - method: GET
+        endpoint: supabase/task_signups select with volunteer filter
+      - method: GET
+        endpoint: supabase/notifications select
+    auth_required: true
+
+  - name: Volunteer Dashboard - My Tasks Tab
+    description: List of tasks the volunteer is signed up for
+    files:
+      - src/pages/VolunteerDashboard.tsx
+    entry_route: /dashboard
+    user_interactions:
+      - View list of signed-up tasks
+      - See task date, time, location, type
+      - Unsubscribe from a task
+      - See empty state when no tasks
+    api_calls:
+      - method: GET
+        endpoint: supabase/task_signups select
+    auth_required: true
+
+  - name: Volunteer Dashboard - Calendar Tab
+    description: Monthly calendar view of volunteer tasks
+    files:
+      - src/pages/VolunteerDashboard.tsx
+    entry_route: /dashboard
+    user_interactions:
+      - View monthly calendar
+      - Click on a day to see tasks
+      - Navigate between months
+    api_calls:
+      - method: GET
+        endpoint: supabase/task_signups select with date range
+    auth_required: true
+
+  - name: Volunteer Dashboard - Contracts Tab
+    description: Volunteer's season contracts overview
+    files:
+      - src/pages/VolunteerDashboard.tsx
+    entry_route: /dashboard
+    user_interactions:
+      - View list of season contracts
+      - View contract status (signed/pending)
+      - Open contract to sign via DocuSeal
+    api_calls:
+      - method: GET
+        endpoint: supabase/contracts select
+      - method: GET
+        endpoint: supabase/season_contracts select
+    auth_required: true
+
+  - name: Volunteer Profile
+    description: Volunteer profile management page
+    files:
+      - src/pages/VolunteerProfile.tsx
+    entry_route: /profile
+    user_interactions:
+      - View personal info (name, email, phone)
+      - Edit first name and last name
+      - Edit phone number
+      - Upload profile picture
+      - Save changes
+      - See success toast on save
+    api_calls:
+      - method: GET
+        endpoint: supabase/profiles select
+      - method: PATCH
+        endpoint: supabase/profiles update
+    auth_required: true
+
+  - name: My Clubs
+    description: List of clubs the volunteer is a member of
+    files:
+      - src/pages/MyClubs.tsx
+    entry_route: /my-clubs
+    user_interactions:
+      - View list of clubs volunteer belongs to
+      - See membership status
+      - Browse available tasks per club
+      - Sign up for an available task
+    api_calls:
+      - method: GET
+        endpoint: supabase/club_memberships select
+    auth_required: true
+
+  - name: Volunteer Notifications
+    description: Notification center for volunteer alerts and updates
+    files:
+      - src/pages/NotificationCenter.tsx
+    entry_route: /notifications
+    user_interactions:
+      - View all notifications
+      - Mark notification as read
+      - Mark all as read
+      - Click notification to navigate to related page
+    api_calls:
+      - method: GET
+        endpoint: supabase/notifications select
+      - method: PATCH
+        endpoint: supabase/notifications update read status
+    auth_required: true
+
+  - name: Volunteer Training / Academy
+    description: Training modules and quizzes for volunteers
+    files:
+      - src/pages/VolunteerTraining.tsx
+    entry_route: /training
+    user_interactions:
+      - View list of training modules
+      - Open a training module
+      - Complete a quiz
+      - View quiz results and score
+    api_calls:
+      - method: GET
+        endpoint: supabase/training_modules select
+      - method: POST
+        endpoint: supabase/quiz_results insert
+    auth_required: true
+
+  - name: Volunteer Help Page
+    description: Help and FAQ page for volunteers
+    files:
+      - src/pages/VolunteerHelp.tsx
+    entry_route: /help
+    user_interactions:
+      - View FAQ sections
+      - Search for help topics
+      - Open live chat (Crisp)
+    api_calls: []
+    auth_required: true
+
+  # === CLUB SIDE ===
+  - name: Club Dashboard - Home Overview
+    description: Club owner main dashboard with KPIs, urgent tasks banner, and quick actions
+    files:
+      - src/pages/ClubOwnerDashboard.tsx
+      - src/components/partner/PartnerDashboardHome.tsx
+    entry_route: /club-dashboard
+    user_interactions:
+      - View KPI cards (volunteers, tasks, events)
+      - View urgency banner for understaffed tasks within 48h
+      - Click spoedoproep button to send emergency call
+      - Navigate to sub-sections via sidebar
+    api_calls:
+      - method: GET
+        endpoint: supabase/tasks select
+      - method: GET
+        endpoint: supabase/club_memberships select
+    auth_required: true
+
+  - name: Events Manager
+    description: Create, edit and manage club events
+    files:
+      - src/pages/EventsManager.tsx
+    entry_route: /club-dashboard/events
+    user_interactions:
+      - View list of events
+      - Create a new event with name, date, venue
+      - Edit an existing event
+      - Delete an event
+      - View task slots per event
+    api_calls:
+      - method: GET
+        endpoint: supabase/events select
+      - method: POST
+        endpoint: supabase/events insert
+      - method: PATCH
+        endpoint: supabase/events update
+      - method: DELETE
+        endpoint: supabase/events delete
+    auth_required: true
+
+  - name: Volunteer Management
+    description: Club manages its volunteer roster
+    files:
+      - src/pages/VolunteerManagement.tsx
+    entry_route: /club-dashboard/volunteers
+    user_interactions:
+      - View list of club volunteers
+      - Filter volunteers by status or role
+      - Invite a new volunteer via email
+      - View volunteer task history
+      - Remove a volunteer from club
+    api_calls:
+      - method: GET
+        endpoint: supabase/club_memberships select
+      - method: POST
+        endpoint: supabase functions/club-invite
+    auth_required: true
+
+  - name: Monthly Planning
+    description: Club monthly planning calendar with task assignment
+    files:
+      - src/pages/MonthlyPlanning.tsx
+      - src/components/monthly-planning/MonthlyCalendarGrid.tsx
+    entry_route: /club-dashboard/planning
+    user_interactions:
+      - View monthly calendar grid
+      - Click on a day to add/edit tasks
+      - View task fill rates per day
+      - Navigate between months
+    api_calls:
+      - method: GET
+        endpoint: supabase/monthly_plans select
+      - method: GET
+        endpoint: supabase/tasks select
+    auth_required: true
+
+  - name: Analytics Dashboard
+    description: Club analytics with charts for volunteer activity, task completion rates
+    files:
+      - src/pages/AnalyticsDashboard.tsx
+    entry_route: /club-dashboard/analytics
+    user_interactions:
+      - View volunteer activity chart
+      - View task completion rate chart
+      - Filter by time period
+      - View top volunteers leaderboard
+    api_calls:
+      - method: GET
+        endpoint: supabase/task_signups select aggregate
+      - method: GET
+        endpoint: supabase/club_memberships select
+    auth_required: true
+
+  - name: Billing Dashboard
+    description: Club billing overview with volunteer billing events and invoice history
+    files:
+      - src/pages/BillingDashboard.tsx
+    entry_route: /club-dashboard/billing
+    user_interactions:
+      - View current season billed volunteer count
+      - View billing events list
+      - View billing explanation (2 tasks free, 3rd = €15)
+      - Download invoice PDF
+    api_calls:
+      - method: GET
+        endpoint: supabase/club_billing select
+      - method: GET
+        endpoint: supabase/billing_events select
+    auth_required: true
+
+  - name: Compliance Dashboard
+    description: Club compliance checks and regulatory overview
+    files:
+      - src/pages/ComplianceDashboard.tsx
+      - src/components/reporting/ReportingComplianceTab.tsx
+    entry_route: /club-dashboard/compliance
+    user_interactions:
+      - View compliance status items
+      - Mark compliance item as resolved
+      - View compliance score
+    api_calls:
+      - method: GET
+        endpoint: supabase compliance data
+    auth_required: true
+
+  - name: Loyalty Programs
+    description: Club loyalty program management and volunteer points
+    files:
+      - src/pages/LoyaltyPrograms.tsx
+    entry_route: /club-dashboard/loyalty
+    user_interactions:
+      - View active loyalty programs
+      - Create a new loyalty program
+      - Set points per task type
+      - View top volunteers by points
+    api_calls:
+      - method: GET
+        endpoint: supabase/loyalty_programs select
+      - method: GET
+        endpoint: supabase/loyalty_points select
+    auth_required: true
+
+  - name: Safety Dashboard
+    description: Club safety management with incident tracking and closing procedures
+    files:
+      - src/pages/SafetyDashboard.tsx
+      - src/components/safety/IncidentMap.tsx
+    entry_route: /club-dashboard/safety
+    user_interactions:
+      - View safety incidents map
+      - Report a new safety incident
+      - View incident details
+      - View safety team assignments
+    api_calls:
+      - method: GET
+        endpoint: supabase/safety_incidents select
+      - method: POST
+        endpoint: supabase/safety_incidents insert
+    auth_required: true
+
+  - name: Reporting Dashboard
+    description: Club report generation and viewing
+    files:
+      - src/pages/ReportingDashboard.tsx
+      - src/components/reporting/ReportingApiTab.tsx
+    entry_route: /club-dashboard/reporting
+    user_interactions:
+      - View generated reports list
+      - Generate a new report
+      - Download report as PDF
+      - View AI-generated insights
+    api_calls:
+      - method: GET
+        endpoint: supabase/generated_reports select
+      - method: POST
+        endpoint: supabase functions/reporting-ai
+    auth_required: true
+
+  - name: Audit Log
+    description: Club audit trail of all admin actions
+    files:
+      - src/pages/AuditLog.tsx
+    entry_route: /club-dashboard/audit
+    user_interactions:
+      - View list of audit log entries
+      - Filter by action type or user
+      - View timestamp and actor for each entry
+    api_calls:
+      - method: GET
+        endpoint: supabase/audit_logs select
+    auth_required: true
+
+  - name: Command Center
+    description: Live match day command center with real-time task oversight
+    files:
+      - src/pages/CommandCenter.tsx
+    entry_route: /club-dashboard/command-center
+    user_interactions:
+      - View live task status board
+      - See which volunteers are checked in
+      - Send emergency alert / panic button
+      - View real-time updates
+    api_calls:
+      - method: GET
+        endpoint: supabase/task_signups select realtime
+      - method: POST
+        endpoint: supabase functions/send-native-push
+    auth_required: true
+
+  - name: External Partners
+    description: Manage external partners and B2B connections
+    files:
+      - src/pages/ExternalPartners.tsx
+      - src/components/partner/PartnerAttendanceTab.tsx
+    entry_route: /club-dashboard/partners
+    user_interactions:
+      - View list of external partners
+      - Add a new partner
+      - View partner attendance data
+      - Manage partner accounts
+    api_calls:
+      - method: GET
+        endpoint: supabase/external_partners select
+    auth_required: true
+
+  - name: Club Help Page
+    description: Help and FAQ for club owners
+    files:
+      - src/pages/ClubHelp.tsx
+    entry_route: /club-dashboard/help
+    user_interactions:
+      - View FAQ sections for clubs
+      - Search help topics
+      - Open Crisp live chat
+    api_calls: []
+    auth_required: true
+
+  - name: Contact Page
+    description: Public contact form
+    files:
+      - src/pages/ContactPage.tsx
+    entry_route: /contact
+    user_interactions:
+      - Fill name field
+      - Fill email field
+      - Fill message field
+      - Submit contact form
+      - See success confirmation
+    api_calls:
+      - method: POST
+        endpoint: supabase functions/send-contact-email
+    auth_required: false
+
+known_limitations:
+  - issue: AnalyticsDashboard uses legacy club_members table instead of club_memberships
+    location: src/pages/AnalyticsDashboard.tsx
+    impact: Analytics data may be incomplete or empty
+  - issue: Stripe payments not implemented (deferred 2 months)
+    location: src/pages/BillingDashboard.tsx
+    impact: No real payment processing available
+  - issue: ClubOwnerDashboard has duplicate init() call at lines 538-540
+    location: src/pages/ClubOwnerDashboard.tsx
+    impact: Minor performance issue on dashboard load
+  - issue: MonthlyPlanning uses supabase.auth.getUser() instead of useClubContext()
+    location: src/pages/MonthlyPlanning.tsx
+    impact: Auth pattern inconsistency, may cause issues
+  - issue: BillingDashboard and SeasonContractManager use manual auth calls
+    location: src/pages/BillingDashboard.tsx, src/pages/SeasonContractManager.tsx
+    impact: Auth pattern inconsistency
+  - issue: Self check-in feature intentionally not implemented
+    location: global
+    impact: Volunteers cannot check themselves in, only club staff can

@@ -1,0 +1,20 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:4173",
+  "loginUser": "mathis@gmail.clm",
+  "loginPassword": "mathis123",
+  "executionArgs": {
+    "projectName": "play-maker-palace",
+    "projectPath": "c:\\Users\\mathi\\Desktop\\De12eMan\\play-maker-palace",
+    "testIds": [],
+    "additionalInstruction": "Test both volunteer side (login, dashboard, tasks, contracts, profile, notifications, training) and club side (club login, club dashboard, events manager, volunteer management, analytics, billing, loyalty programs, safety, reporting, command center, compliance). The app is a Belgian sports volunteer marketplace (De12eMan). Volunteer login page is at /login, club login is at /club-login. The app is in Dutch (NL). For authentication tests, use placeholder credentials since this is a live Supabase backend — focus on UI flow validation, form validation, and page rendering tests where possible.",
+    "serverMode": "production",
+    "envs": {
+      "API_KEY": "sk-user-Dy0Vd-iXg9eHPbEFkC-TufXIvxMqhg6MDYAwBW1jFmdYIvsu4533QjLEQ-E35FrDLgH_NqgOWryf4A6DR1WXTOXAoTIjuNmF-AdRi7x5yVWszR_aWpU5uZJx60cj7Rm_c9A"
+    }
+  },
+  "serverPort": 60589,
+  "proxy": "http://58eab087-df7a-49f5-80be-bda4342da340:Xa3y6yVyy0KTh1rrP2rkwvKbc180aiSp@tun.testsprite.com:8080"
+}

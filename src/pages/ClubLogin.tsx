@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, HelpCircle } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 const ClubLogin = () => {
@@ -14,17 +14,33 @@ const ClubLogin = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error(t3('Vul eerst je e-mailadres in', "Entrez d'abord votre e-mail", 'Enter your email first'));
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/update-password`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success(t3('Reset-link verstuurd! Check je inbox.', 'Lien envoyé ! Vérifiez votre boîte.', 'Reset link sent! Check your inbox.'));
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError(null);
 
     try {
       const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        toast.error(error.message);
+        const msg = t3('Ongeldig e-mailadres of wachtwoord.', 'E-mail ou mot de passe incorrect.', 'Invalid email or password.');
+        setLoginError(msg);
+        toast.error(msg);
         return;
       }
 
@@ -63,7 +79,13 @@ const ClubLogin = () => {
             {t3('Log in op je club dashboard', 'Connectez-vous à votre tableau de bord', 'Log in to your club dashboard')}
           </p>
 
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
+          {loginError && (
+            <div className="mt-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+              {loginError}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="mt-4 space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">{t.auth.email}</label>
               <input
@@ -88,6 +110,16 @@ const ClubLogin = () => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+            <div className="flex justify-end -mt-1">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <HelpCircle className="w-3 h-3" />
+                {t3('Wachtwoord vergeten?', 'Mot de passe oublié ?', 'Forgot password?')}
+              </button>
             </div>
             <button
               type="submit"

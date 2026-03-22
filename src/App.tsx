@@ -66,6 +66,8 @@ const MyClubs = lazy(() => import("./pages/MyClubs"));
 const VolunteerProfile = lazy(() => import("./pages/VolunteerProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
+const AutoAssignPage = lazy(() => import("./pages/AutoAssignPage"));
 const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
 const AuditLog = lazy(() => import("./pages/AuditLog"));
 const SeasonContractManager = lazy(() => import("./pages/SeasonContractManager"));
@@ -81,6 +83,9 @@ const KassaPasjesBeheer = lazy(() => import("./pages/KassaPasjesBeheer"));
 const ShiftTemplates = lazy(() => import("./pages/ShiftTemplates"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
 const LiveOpvolging = lazy(() => import("./pages/LiveOpvolging"));
+const SponsorHub = lazy(() => import("./pages/SponsorHub"));
+const SponsorPreview = lazy(() => import("./pages/SponsorPreview"));
+const SponsorResults = lazy(() => import("./pages/SponsorResults"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -165,6 +170,7 @@ const App = () => {
             <Route path="/reporting" element={<RequireAuth redirectTo="/club-login"><ReportingDashboard /></RequireAuth>} />
             <Route path="/report-builder" element={<RequireAuth redirectTo="/club-login"><ReportBuilder /></RequireAuth>} />
             <Route path="/events-manager" element={<RequireAuth redirectTo="/club-login"><EventsManager /></RequireAuth>} />
+            <Route path="/auto-assign" element={<RequireAuth redirectTo="/club-login"><AutoAssignPage /></RequireAuth>} />
             <Route path="/events/:eventId/attendance" element={<RequireAuth redirectTo="/club-login"><EventAttendance /></RequireAuth>} />
             <Route path="/planning" element={<RequireAuth redirectTo="/club-login"><PlanningOverview /></RequireAuth>} />
             <Route path="/monthly-planning" element={<RequireAuth redirectTo="/club-login"><MonthlyPlanning /></RequireAuth>} />
@@ -187,6 +193,7 @@ const App = () => {
             <Route path="/notifications" element={<RequireAuth><NotificationCenter /></RequireAuth>} />
             <Route path="/audit-log" element={<RequireAuth redirectTo="/club-login"><AuditLog /></RequireAuth>} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfUse />} />
             <Route path="/contact" element={<ContactPage />} />
@@ -197,6 +204,9 @@ const App = () => {
             <Route path="/shift-templates" element={<RequireAuth redirectTo="/club-login"><ShiftTemplates /></RequireAuth>} />
             <Route path="/events/:eventId" element={<RequireAuth redirectTo="/club-login"><EventDetail /></RequireAuth>} />
             <Route path="/events/:eventId/live" element={<RequireAuth redirectTo="/club-login"><LiveOpvolging /></RequireAuth>} />
+            <Route path="/sponsor-hub" element={<RequireAuth redirectTo="/club-login"><SponsorHub /></RequireAuth>} />
+            <Route path="/sponsor/preview/:campaign_id" element={<SponsorPreview />} />
+            <Route path="/sponsor/results/:campaign_id" element={<SponsorResults />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

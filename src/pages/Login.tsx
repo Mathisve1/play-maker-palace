@@ -103,7 +103,7 @@ const Login = () => {
                 onClick={async () => {
                   if (!email) { toast.error(language === 'nl' ? 'Vul eerst je e-mailadres in' : language === 'fr' ? 'Entrez d\'abord votre e-mail' : 'Enter your email first'); return; }
                   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: `${window.location.origin}/reset-password`,
+                    redirectTo: `${window.location.origin}/update-password`,
                   });
                   if (error) toast.error(error.message);
                   else toast.success(language === 'nl' ? 'Reset-link verstuurd! Check je inbox.' : language === 'fr' ? 'Lien envoyé ! Vérifiez votre boîte.' : 'Reset link sent! Check your inbox.');

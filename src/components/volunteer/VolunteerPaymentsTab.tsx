@@ -4,6 +4,7 @@ import { Banknote, CheckCircle, Clock, AlertTriangle, Wallet, Heart, ChevronDown
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import WalletHeroCard from '@/components/volunteer/WalletHeroCard';
 
 interface SepaPayoutItem {
   id: string;
@@ -54,6 +55,7 @@ interface Props {
   payments: VolunteerPayment[];
   language: string;
   userId?: string;
+  volunteerName?: string;
 }
 
 function addBusinessDays(date: Date, days: number): Date {
@@ -79,7 +81,7 @@ type UnifiedRow = {
   extra?: string;
 };
 
-const VolunteerPaymentsTab = ({ sepaPayouts, payments, language, userId }: Props) => {
+const VolunteerPaymentsTab = ({ sepaPayouts, payments, language, userId, volunteerName }: Props) => {
   const tr = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
   const locale = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
 
@@ -257,9 +259,18 @@ const VolunteerPaymentsTab = ({ sepaPayouts, payments, language, userId }: Props
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
-        <Wallet className="w-6 h-6 text-primary" />
-        {tr('Vergoedingen', 'Remboursements', 'Payments')}
+      {/* Premium wallet hero card */}
+      <WalletHeroCard
+        volunteerName={volunteerName}
+        totalPaid={totalPaid}
+        totalProcessing={totalProcessing}
+        userId={userId}
+        language={language}
+      />
+
+      <h1 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+        <Wallet className="w-5 h-5 text-primary" />
+        {tr('Vergoedingshistoriek', 'Historique des remboursements', 'Payment history')}
       </h1>
 
       {/* Summary cards */}

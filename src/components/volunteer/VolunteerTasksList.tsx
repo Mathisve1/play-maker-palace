@@ -237,24 +237,30 @@ const VolunteerTasksList = ({
                 key={task.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
+                whileTap={hasActiveSwap ? undefined : { scale: 0.985 }}
                 transition={{ delay: i * 0.03 }}
-                className={`bg-card rounded-2xl p-4 sm:p-5 shadow-sm border transition-all ${
+                className={`relative bg-card rounded-3xl p-4 sm:p-5 overflow-hidden transition-all ${
                   hasActiveSwap
-                    ? 'border-orange-400 dark:border-orange-600'
-                    : 'border-border hover:shadow-md hover:border-primary/20 cursor-pointer'
+                    ? 'ring-1 ring-orange-400/60 dark:ring-orange-600/60 shadow-sm'
+                    : 'ring-1 ring-border/60 hover:ring-primary/30 cursor-pointer shadow-[0_2px_12px_-2px_hsl(var(--primary)/0.06)] hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.12)]'
                 }`}
                 onClick={hasActiveSwap ? undefined : () => navigate(`/task/${task.id}`)}
               >
+                {/* Left accent bar for upcoming tasks */}
+                {isUpcoming && !hasActiveSwap && (
+                  <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full bg-primary/50" />
+                )}
+
                 {/* Club row */}
                 <div className="flex items-center gap-2 mb-2">
                   {task.clubs?.logo_url ? (
                     <img
                       src={task.clubs.logo_url}
                       alt={task.clubs.name}
-                      className="w-5 h-5 rounded-full object-cover shrink-0"
+                      className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-border/40"
                     />
                   ) : (
-                    <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-muted ring-1 ring-border/40 flex items-center justify-center shrink-0">
                       <span className="text-[9px] font-bold text-muted-foreground">
                         {(task.clubs?.name || '?')[0].toUpperCase()}
                       </span>
@@ -264,7 +270,7 @@ const VolunteerTasksList = ({
                 </div>
 
                 {/* Title */}
-                <h3 className="font-heading font-semibold text-foreground text-base line-clamp-1">
+                <h3 className="font-heading font-bold text-foreground text-lg line-clamp-1 tracking-tight">
                   {task.title}
                 </h3>
 

@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Inbox, CalendarPlus, BarChart3, LogOut,
   Search, User, Settings, MessageCircle, Bell, ShieldAlert, Ticket, Handshake,
-  CreditCard, Award, Heart, HelpCircle, ScanLine, X, Layers,
+  CreditCard, Award, Heart, HelpCircle, ScanLine, X, Layers, Sparkles, Zap,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -135,6 +135,7 @@ const ClubOwnerSidebar = ({
     { label: 'Dashboard', icon: LayoutDashboard, path: '/club-dashboard' },
     { label: t3('Actielijst', "Liste d'actions", 'Action List'), icon: Inbox, path: '/command-center', badge: actionCount },
     { label: t3('Evenementen', 'Événements', 'Events'), icon: CalendarPlus, path: '/events-manager' },
+    { label: t3('Auto-Vul Magie', 'Remplissage auto', 'Auto-Assign'), icon: Sparkles, path: '/auto-assign' },
     { label: t3('Vrijwilligers', 'Bénévoles', 'Volunteers'), icon: Users, path: '/volunteer-management', badge: pendingReviewCount },
     { label: t3('Rapporten', 'Rapports', 'Reports'), icon: BarChart3, path: '/reporting' },
   ];
@@ -152,6 +153,7 @@ const ClubOwnerSidebar = ({
     { label: t3('Facturatie', 'Facturation', 'Billing'), icon: CreditCard, path: '/billing' },
     { label: t3('Academie', 'Académie', 'Academy'), icon: Award, path: '/academy' },
     { label: t3('Loyaliteit', 'Fidélité', 'Loyalty'), icon: Heart, path: '/loyalty' },
+    { label: t3('Sponsor Hub', 'Hub Sponsor', 'Sponsor Hub'), icon: Zap, path: '/sponsor-hub' },
     { label: t3('Kassa & Pasjes', 'Caisse & Cartes', 'POS & Cards'), icon: ScanLine, path: '/kassa-pasjes' },
   ];
 

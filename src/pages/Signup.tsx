@@ -26,6 +26,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState('');
 
   // Resolve partner name for branding banner
   useEffect(() => {
@@ -41,6 +42,17 @@ const Signup = () => {
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
+    // JS email validation (browser validation disabled via noValidate)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError(
+        language === 'nl' ? 'Dit e-mailadres klopt niet'
+        : language === 'fr' ? 'Cette adresse e-mail n\'est pas valide'
+        : 'This email address is not valid'
+      );
+      return;
+    }
+    setEmailError('');
     if (password !== confirmPassword) {
       toast.error(language === 'nl' ? 'Wachtwoorden komen niet overeen' : language === 'fr' ? 'Les mots de passe ne correspondent pas' : 'Passwords do not match');
       return;
@@ -162,16 +174,19 @@ const Signup = () => {
               <h1 className="text-2xl font-heading font-bold text-foreground text-center">{t.auth.signupTitle}</h1>
               <p className="text-sm text-muted-foreground text-center mt-1">{t.auth.signupSubtitle}</p>
 
-              <form onSubmit={handleCreateAccount} className="mt-6 space-y-4">
+              <form onSubmit={handleCreateAccount} noValidate className="mt-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">{t.auth.email}</label>
                   <input
                     type="email"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => { setEmail(e.target.value); if (emailError) setEmailError(''); }}
                     required
-                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    className={`w-full px-4 py-2.5 rounded-xl border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring ${emailError ? 'border-destructive focus:ring-destructive' : 'border-input'}`}
                   />
+                  {emailError && (
+                    <p className="mt-1.5 text-sm text-destructive">{emailError}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">{t.auth.password}</label>
@@ -197,8 +212,13 @@ const Signup = () => {
                     onChange={e => setConfirmPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    className={`w-full px-4 py-2.5 rounded-xl border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring ${confirmPassword && password !== confirmPassword ? 'border-destructive focus:ring-destructive' : 'border-input'}`}
                   />
+                  {confirmPassword && password !== confirmPassword && (
+                    <p className="mt-1.5 text-sm text-destructive">
+                      {language === 'nl' ? 'Wachtwoorden komen niet overeen' : language === 'fr' ? 'Les mots de passe ne correspondent pas' : 'Passwords do not match'}
+                    </p>
+                  )}
                 </div>
                 <button
                   type="submit"

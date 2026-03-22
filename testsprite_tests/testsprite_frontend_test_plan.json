@@ -1,0 +1,1241 @@
+[
+  {
+    "id": "TC001",
+    "title": "Volunteer signup shows validation errors for invalid email and mismatched passwords",
+    "description": "Verifies signup form blocks submission and shows clear validation messages for invalid email format and password mismatch.",
+    "category": "Authentication & Legal Onboarding",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signup"
+      },
+      {
+        "type": "action",
+        "description": "Type \"invalid-email-format\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass123!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"DifferentPass123!\" into the confirm password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the register button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"email\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"password\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/signup\""
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Volunteer login succeeds and lands on dashboard when legal onboarding already completed",
+    "description": "Verifies a returning volunteer can log in with correct credentials and reach the dashboard without being blocked by the Informatienota modal.",
+    "category": "Authentication & Legal Onboarding",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Dashboard\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Informatienota\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Volunteer login fails with invalid credentials",
+    "description": "Verifies the login form displays an error message and does not navigate to the dashboard when the password is incorrect.",
+    "category": "Authentication & Legal Onboarding",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"fakeuser@example.com\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"WrongPassword!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"invalid\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/login\""
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Password reset request shows confirmation message for an existing email",
+    "description": "Verifies the reset-password page accepts an email and shows a confirmation message after submitting a reset request.",
+    "category": "Authentication & Legal Onboarding",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reset-password"
+      },
+      {
+        "type": "action",
+        "description": "Type \"testsprite+existing@example.com\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Click the send reset link button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"reset\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"email\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/reset-password\""
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Password reset does not reveal whether an account exists (no enumeration)",
+    "description": "Verifies reset-password flow behaves safely by showing a generic success/confirmation message for a non-existent email as well.",
+    "category": "Authentication & Legal Onboarding",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reset-password"
+      },
+      {
+        "type": "action",
+        "description": "Type \"does.not.exist.12345@example.com\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Click the send reset link button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"reset\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"email\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"not found\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Club owner login page renders and rejects incorrect credentials",
+    "description": "Verifies the club owner login form is accessible and shows an error message when provided invalid credentials.",
+    "category": "Authentication & Legal Onboarding",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /club-login"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"login\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"clubowner.fake@example.com\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"WrongPassword!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"invalid\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/club-login\""
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Volunteer signs up for an available task from Dashboard and sees status + spots update",
+    "description": "Verifies a volunteer can open a task from the dashboard, sign up, and see the UI update including status and spots available.",
+    "category": "Task Marketplace (Volunteer Tasks & Sign Up)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Mijn Taken\" tab"
+      },
+      {
+        "type": "action",
+        "description": "Click on an available task card that shows at least 1 spot available"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign Up\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Pending\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Task details page shows required task information (title, date/time, location, spots)",
+    "description": "Verifies task detail view displays the key task fields before sign-up.",
+    "category": "Task Marketplace (Volunteer Tasks & Sign Up)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Mijn Taken\" tab"
+      },
+      {
+        "type": "action",
+        "description": "Click on any task card in the task list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Spots\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Partner-only task is not available for a volunteer not linked to that partner",
+    "description": "Verifies partner-only visibility rules are enforced when a volunteer is not linked to the partner.",
+    "category": "Task Marketplace (Volunteer Tasks & Sign Up)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Mijn Taken\" tab"
+      },
+      {
+        "type": "action",
+        "description": "Click on a task card that is labeled or described as partner-only"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"not available\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Browse tasks from My Clubs and sign up for a task under a specific club",
+    "description": "Verifies a volunteer can start from My Clubs, open a club, and sign up for a club task with UI update.",
+    "category": "Task Marketplace (Volunteer Tasks & Sign Up)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"My Clubs\" navigation item"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/my-clubs\""
+      },
+      {
+        "type": "action",
+        "description": "Click on a club in the clubs list"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Attempt to sign up for a full task shows 'full' state and does not confirm signup",
+    "description": "Verifies the UI prevents sign-up when spots available is zero.",
+    "category": "Task Marketplace (Volunteer Tasks & Sign Up)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Mijn Taken\" tab"
+      },
+      {
+        "type": "action",
+        "description": "Click on a task card that shows 0 spots available or is marked as full"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign Up\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Full\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Unsubscribe from an assigned task with confirmation removes it from signed-up list",
+    "description": "Verifies a volunteer can unsubscribe from an assigned task and it no longer appears as signed up.",
+    "category": "Task Marketplace (Volunteer Tasks & Sign Up)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Mijn Taken\" tab"
+      },
+      {
+        "type": "action",
+        "description": "Click on a task card that is shown as assigned/signed up"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Unsubscribe\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Confirm\" button"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Volunteer completes a task checklist item and sees saved progress state",
+    "description": "Verifies checklist interactions work end-to-end and the UI shows progress and completion saved state.",
+    "category": "Stadium Safety & Incident (SOS / Panic Button)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible task or shift item to open its details"
+      },
+      {
+        "type": "action",
+        "description": "Click the first visible unchecked checklist item (mandatory opening procedure) to mark it complete"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Checklist complete\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Volunteer sees Panic/SOS entry point on a task detail page",
+    "description": "Verifies the task detail page presents a visible Panic/SOS control to start an incident report flow.",
+    "category": "Stadium Safety & Incident (SOS / Panic Button)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible task or shift item to open its details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Panic\" or \"SOS\" button is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Task\" or Verify text \"Task\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Profile shows Digital Club Card QR/Barcode and wallet/loyalty sections for authenticated volunteer",
+    "description": "Verifies an authenticated volunteer can open Profile and see the scannable club card code plus wallet/loyalty information areas.",
+    "category": "Digital Club Card & Wallet (QR Check-in & Loyalty)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the app navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a QR code or barcode element is visible on the Profile page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Wallet\" is visible on the Profile page"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Wallet section shows current monetary balance for authenticated volunteer",
+    "description": "Verifies that the wallet section is accessible and displays a visible balance value for the logged-in volunteer.",
+    "category": "Digital Club Card & Wallet (QR Check-in & Loyalty)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the app navigation"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the \"Wallet\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a wallet balance amount is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Loyalty\" or \"Goals\" is visible in the wallet area"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Loyalty progress is visible on Profile wallet area",
+    "description": "Verifies that the profile wallet area includes a visible loyalty progress indicator or milestone status for the volunteer.",
+    "category": "Digital Club Card & Wallet (QR Check-in & Loyalty)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the app navigation"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the wallet/loyalty area"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a loyalty progress indicator is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Progress\" or \"Milestone\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Complete a training module quiz and view results",
+    "description": "Verifies a logged-in volunteer can open a module, complete the quiz, submit, and see a results score.",
+    "category": "Volunteer Training / Academy",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Training\" in the app navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Training\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first training module in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Start quiz\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Start quiz\" button"
+      },
+      {
+        "type": "action",
+        "description": "Answer the first required question with a valid option"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Score\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Training modules list is visible after login",
+    "description": "Verifies the Training page loads and shows a list of modules for a logged-in volunteer.",
+    "category": "Volunteer Training / Academy",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Training\" in the app navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"training modules list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify at least one training module title is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Open a training module and read content before starting quiz",
+    "description": "Verifies a volunteer can open a module and see module content prior to starting the quiz.",
+    "category": "Volunteer Training / Academy",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Training\" in the app navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first training module in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"module content\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Start quiz\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Quiz submission blocked when required questions are unanswered",
+    "description": "Verifies validation prevents quiz submission and displays errors when required questions are left blank.",
+    "category": "Volunteer Training / Academy",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Training\" in the app navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first training module in the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Start quiz\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Score\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Quiz results view shows a numeric score after submission",
+    "description": "Verifies the results screen displays a score value after a quiz is submitted successfully.",
+    "category": "Volunteer Training / Academy",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Training\" in the app navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first training module in the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Start quiz\" button"
+      },
+      {
+        "type": "action",
+        "description": "Answer the first required question with a valid option"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Score\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a number is visible near the \"Score\" label"
+      }
+    ]
+  },
+  {
+    "id": "TC023",
+    "title": "Training page remains usable after returning from a module to the list",
+    "description": "Verifies the volunteer can return to the training modules list after opening a module and continue browsing modules.",
+    "category": "Volunteer Training / Academy",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Training\" in the app navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first training module in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"module content\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Back\" control on the page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"training modules list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on a different training module in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Start quiz\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC024",
+    "title": "Create a new event and verify it appears in the events list",
+    "description": "Verifies a club owner can create an event with valid details and see it listed afterward.",
+    "category": "Events Manager (Club Owners)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Events\" in the club dashboard navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/club-dashboard/events\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Create New Event\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"E2E Test Event\" into the event name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"2030-06-15\" into the date field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Test Venue\" into the venue field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Create\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"E2E Test Event\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC025",
+    "title": "Attempt to create an event with missing required name and verify validation prevents creation",
+    "description": "Verifies the create event form shows a validation error when the required name is missing and does not create the event.",
+    "category": "Events Manager (Club Owners)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Events\" in the club dashboard navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/club-dashboard/events\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Create New Event\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"2030-08-10\" into the date field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Validation Venue\" into the venue field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Create\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Name\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC026",
+    "title": "Verify events list loads and shows core controls",
+    "description": "Verifies the Events Manager page renders the events list area and primary action to create a new event.",
+    "category": "Events Manager (Club Owners)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Events\" in the club dashboard navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/club-dashboard/events\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Create New Event\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Events\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC027",
+    "title": "Create event then edit it within the same session and verify latest details are shown",
+    "description": "Verifies an event can be created and then immediately edited, with the latest values visible afterward.",
+    "category": "Events Manager (Club Owners)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Events\" in the club dashboard navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/club-dashboard/events\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Create New Event\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"E2E Edit After Create\" into the event name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"2030-09-01\" into the date field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Initial Venue\" into the venue field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Create\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"E2E Edit After Create\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the event named \"E2E Edit After Create\" in the events list"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Edit\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"Final Venue\" into the venue field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Save\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Final Venue\" is visible"
+      }
+    ]
+  }
+]

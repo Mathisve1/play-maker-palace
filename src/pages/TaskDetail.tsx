@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Calendar, Users, Clock, Euro, FileText,
-  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered, ArrowLeftRight
+  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered, ArrowLeftRight, Siren
 } from 'lucide-react';
 import ShiftSwapDialog from '@/components/ShiftSwapDialog';
 import TaskNotesSection from '@/components/TaskNotesSection';
@@ -88,6 +88,9 @@ const labels = {
     waitlistPosition: 'Positie',
     waitlistCount: 'Op wachtlijst',
     taskFull: 'Taak is vol',
+    sos: 'SOS versturen',
+    sosSent: 'SOS verzonden naar club',
+    sosConfirm: 'Weet je zeker dat je een nood-SOS wil sturen naar de club?',
   },
   fr: {
     back: 'Retour à l\'aperçu',
@@ -131,6 +134,9 @@ const labels = {
     waitlistPosition: 'Position',
     waitlistCount: 'En attente',
     taskFull: 'Tâche complète',
+    sos: 'Envoyer SOS',
+    sosSent: 'SOS envoyé au club',
+    sosConfirm: 'Êtes-vous sûr de vouloir envoyer un signal SOS d\'urgence au club ?',
   },
   en: {
     back: 'Back to overview',
@@ -174,6 +180,9 @@ const labels = {
     waitlistPosition: 'Position',
     waitlistCount: 'On waitlist',
     taskFull: 'Task is full',
+    sos: 'Send SOS',
+    sosSent: 'SOS sent to club',
+    sosConfirm: 'Are you sure you want to send an emergency SOS signal to the club?',
   },
 };
 
@@ -231,6 +240,7 @@ const TaskDetail = () => {
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
   const [allowShiftSwaps, setAllowShiftSwaps] = useState(false);
   const [showSwapDialog, setShowSwapDialog] = useState(false);
+  const [sosSending, setSosSending] = useState(false);
   const [hasBriefing, setHasBriefing] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const [contractStatus, setContractStatus] = useState<'signed' | 'pending' | 'none' | 'loading'>('loading');
@@ -485,6 +495,52 @@ const TaskDetail = () => {
       navigator.clipboard.writeText(window.location.href);
       toast.success(language === 'fr' ? 'Lien copié !' : language === 'en' ? 'Link copied!' : 'Link gekopieerd!');
     }
+  };
+
+  const handleSOS = async () => {
+    if (!currentUserId || !task) return;
+    if (!window.confirm(l.sosConfirm)) return;
+    setSosSending(true);
+    let lat: number | null = null;
+    let lng: number | null = null;
+    try {
+      const pos = await new Promise<GeolocationPosition>((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+      );
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+    } catch {
+      // geolocation unavailable — continue without coordinates
+    }
+    await supabase.from('safety_incidents').insert({
+      reported_by: currentUserId,
+      task_id: id,
+      club_id: task.club_id,
+      incident_type: 'sos',
+      description: language === 'fr'
+        ? `Signal SOS envoyé par un bénévole pour la tâche: ${task.title}`
+        : language === 'en'
+        ? `SOS signal sent by volunteer for task: ${task.title}`
+        : `SOS-signaal verzonden door vrijwilliger voor taak: ${task.title}`,
+      location_lat: lat,
+      location_lng: lng,
+      status: 'open',
+    } as any);
+    if (task.clubs?.owner_id) {
+      await sendPush({
+        userId: task.clubs.owner_id,
+        title: `🚨 SOS – ${task.title}`,
+        message: language === 'fr'
+          ? `Un bénévole a envoyé un signal SOS pour la tâche: ${task.title}`
+          : language === 'en'
+          ? `A volunteer sent an SOS signal for task: ${task.title}`
+          : `Een vrijwilliger stuurde een SOS-signaal voor taak: ${task.title}`,
+        url: '/safety',
+        type: 'sos',
+      } as any);
+    }
+    toast.error(l.sosSent, { duration: 5000 });
+    setSosSending(false);
   };
 
   if (loading) {
@@ -1041,6 +1097,26 @@ const TaskDetail = () => {
             )}
           </div>
         </motion.div>
+
+        {/* SOS / Panic button — only for signed-up volunteers */}
+        {isSignedUp && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-2 mb-6 px-4"
+          >
+            <button
+              onClick={handleSOS}
+              disabled={sosSending}
+              aria-label={l.sos}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl text-sm font-semibold bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
+            >
+              <Siren className="w-4 h-4" />
+              {sosSending ? '...' : l.sos}
+            </button>
+          </motion.div>
+        )}
       </main>
       {task && showSwapDialog && (
         <ShiftSwapDialog
