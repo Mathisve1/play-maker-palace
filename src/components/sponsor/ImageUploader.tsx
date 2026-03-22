@@ -20,7 +20,7 @@ interface ImageUploaderProps {
 
 const BUCKET = 'sponsor_media';
 
-const ImageUploader = ({
+const ImageUploader = React.forwardRef<HTMLDivElement, ImageUploaderProps>(({
   value,
   onChange,
   folder = 'pending',
@@ -28,7 +28,7 @@ const ImageUploader = ({
   compact = false,
   variant = 'light',
   accept = 'image/jpeg,image/png,image/webp,image/gif',
-}: ImageUploaderProps) => {
+}, _ref) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading]   = useState(false);
   const [dragOver,  setDragOver]    = useState(false);
