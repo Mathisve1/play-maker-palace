@@ -37,6 +37,15 @@ const BillingDashboard = () => {
   const [accessGranted, setAccessGranted] = useState(false);
   const [accessCode, setAccessCode] = useState('');
   const [codeError, setCodeError] = useState(false);
+  const [clubId, setClubId] = useState<string | null>(null);
+  const [clubName, setClubName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [billing, setBilling] = useState<any>(null);
+  const [events, setEvents] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [seatInput, setSeatInput] = useState('');
+  const [savingSeats, setSavingSeats] = useState(false);
+  const [volunteerUsage, setVolunteerUsage] = useState<VolunteerUsageRow[]>([]);
 
   const handleCodeSubmit = () => {
     if (accessCode === BILLING_ACCESS_CODE) {
@@ -96,15 +105,6 @@ const BillingDashboard = () => {
     );
   }
 
-  const [clubId, setClubId] = useState<string | null>(null);
-  const [clubName, setClubName] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [billing, setBilling] = useState<any>(null);
-  const [events, setEvents] = useState<any[]>([]);
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [seatInput, setSeatInput] = useState('');
-  const [savingSeats, setSavingSeats] = useState(false);
-  const [volunteerUsage, setVolunteerUsage] = useState<VolunteerUsageRow[]>([]);
 
   useEffect(() => {
     if (contextLoading) return;
