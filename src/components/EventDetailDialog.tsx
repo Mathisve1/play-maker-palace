@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Calendar, MapPin, Users, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, Users, ChevronRight, Gift, Tag } from 'lucide-react';
 import { Language } from '@/i18n/translations';
 import { motion } from 'framer-motion';
 
@@ -34,6 +34,16 @@ interface EventData {
   club_name?: string;
 }
 
+interface ActiveCampaign {
+  id: string;
+  campaign_type: 'dashboard_banner' | 'task_tag' | 'local_coupon';
+  title: string;
+  description: string | null;
+  reward_value_cents: number | null;
+  image_url: string | null;
+  sponsors: { name: string; brand_color: string; logo_url: string | null } | null;
+}
+
 interface EventDetailDialogProps {
   event: EventData | null;
   groups: EventGroup[];
@@ -44,6 +54,8 @@ interface EventDetailDialogProps {
   isSignedUp: (taskId: string) => boolean;
   getSignupStatus: (taskId: string) => string | null;
   onTaskClick: (taskId: string) => void;
+  activeCampaigns?: ActiveCampaign[];
+  campaignTaskLinks?: {campaign_id: string, task_id: string}[];
 }
 
 const labels = {
@@ -52,7 +64,7 @@ const labels = {
   en: { groups: 'Groups', tasks: 'tasks', spots: 'spots', noGroups: 'No groups created yet.', signedUp: 'Signed up', assigned: 'Assigned', signUp: 'Sign up' },
 };
 
-const EventDetailDialog = ({ event, groups, open, onOpenChange, language, signupCounts, isSignedUp, getSignupStatus, onTaskClick }: EventDetailDialogProps) => {
+const EventDetailDialog = ({ event, groups, open, onOpenChange, language, signupCounts, isSignedUp, getSignupStatus, onTaskClick, activeCampaigns, campaignTaskLinks }: EventDetailDialogProps) => {
   if (!event) return null;
   const l = labels[language];
 
@@ -108,6 +120,7 @@ const EventDetailDialog = ({ event, groups, open, onOpenChange, language, signup
                     const signed = isSignedUp(task.id);
                     const status = getSignupStatus(task.id);
                     const isAssigned = status === 'assigned';
+                    const taskCampaigns = campaignTaskLinks && activeCampaigns ? campaignTaskLinks.filter(l => l.task_id === task.id).map(l => activeCampaigns.find(c => c.id === l.campaign_id)).filter(Boolean) as any[] : [];
                     return (
                       <button
                         key={task.id}
@@ -124,6 +137,12 @@ const EventDetailDialog = ({ event, groups, open, onOpenChange, language, signup
                             {task.expense_reimbursement && task.expense_amount && (
                               <span>€{task.expense_amount}</span>
                             )}
+                            {taskCampaigns.map((c: any) => (
+                              <span key={c.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium" style={{ background: `${c.sponsors?.brand_color || '#6366f1'}15`, color: c.sponsors?.brand_color || '#6366f1', border: `1px solid ${c.sponsors?.brand_color || '#6366f1'}40` }}>
+                                {c.campaign_type === 'local_coupon' ? <Gift className="w-2.5 h-2.5" /> : <Tag className="w-2.5 h-2.5" />}
+                                {c.campaign_type === 'local_coupon' ? `Reward: €${(c.reward_value_cents / 100).toFixed(0)}` : `Sponsored`}
+                              </span>
+                            ))}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">

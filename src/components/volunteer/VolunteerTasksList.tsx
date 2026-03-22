@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Calendar, Search, CheckCircle, Clock, CircleDot,
-  CreditCard, MapPinned, ClipboardList, Users, AlertTriangle,
+  CreditCard, MapPinned, ClipboardList, Users, AlertTriangle, Gift, Tag
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { VolunteerTask, TaskSignup, SignatureContract } from '@/types/volunteer';
@@ -19,13 +19,15 @@ interface Props {
   signups: TaskSignup[];
   myContracts: SignatureContract[];
   getSignupStatus: (taskId: string) => string | null;
+  activeCampaigns?: any[];
+  campaignTaskLinks?: {campaign_id: string, task_id: string}[];
 }
 
 const t3 = (lang: Language, nl: string, fr: string, en: string) =>
   lang === 'nl' ? nl : lang === 'fr' ? fr : en;
 
 const VolunteerTasksList = ({
-  language, currentUserId, tasks, signups, myContracts, getSignupStatus,
+  language, currentUserId, tasks, signups, myContracts, getSignupStatus, activeCampaigns, campaignTaskLinks
 }: Props) => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterMode>('upcoming');
@@ -232,6 +234,13 @@ const VolunteerTasksList = ({
             );
             const hasActiveSwap = activeSwapTaskIds.has(task.id);
 
+            const taskCampaigns = campaignTaskLinks && activeCampaigns
+              ? campaignTaskLinks
+                  .filter(link => link.task_id === task.id)
+                  .map(link => activeCampaigns.find(c => c.id === link.campaign_id))
+                  .filter(Boolean) as any[]
+              : [];
+
             return (
               <motion.div
                 key={task.id}
@@ -321,6 +330,14 @@ const VolunteerTasksList = ({
                       €{task.expense_amount}
                     </span>
                   )}
+
+                  {/* Active Campaigns badges */}
+                  {taskCampaigns.map(c => (
+                    <span key={c.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium" style={{ background: `${c.sponsors?.brand_color || '#6366f1'}15`, color: c.sponsors?.brand_color || '#6366f1', border: `1px solid ${c.sponsors?.brand_color || '#6366f1'}40` }}>
+                      {c.campaign_type === 'local_coupon' ? <Gift className="w-3 h-3" /> : <Tag className="w-3 h-3" />}
+                      {c.campaign_type === 'local_coupon' ? `Reward: €${(c.reward_value_cents / 100).toFixed(0)}` : `Sponsored by ${c.sponsors?.name || 'Partner'}`}
+                    </span>
+                  ))}
 
                   {/* Active swap badge */}
                   {hasActiveSwap && (

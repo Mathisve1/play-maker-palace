@@ -195,6 +195,7 @@ const VolunteerDashboard = () => {
     qr_code_token: string;
   }
   const [activeCampaigns, setActiveCampaigns] = useState<ActiveCampaign[]>([]);
+  const [campaignTaskLinks, setCampaignTaskLinks] = useState<{campaign_id: string, task_id: string}[]>([]);
   const [myCoupons, setMyCoupons] = useState<MyCoupon[]>([]);
   const [claimingCoupon, setClaimingCoupon] = useState<string | null>(null);
   const [expandedCoupon, setExpandedCoupon] = useState<string | null>(null);
@@ -496,7 +497,7 @@ const VolunteerDashboard = () => {
           .filter((s: any) => s.status === 'completed')
           .map((s: any) => s.task_id as string);
 
-        const [campRes, couponsRes, sctRes] = await Promise.all([
+        const [campRes, couponsRes] = await Promise.all([
           supabase
             .from('sponsor_campaigns' as any)
             .select('id, campaign_type, title, description, reward_value_cents, image_url, sponsors(name, brand_color, logo_url)')
@@ -508,14 +509,16 @@ const VolunteerDashboard = () => {
             .from('volunteer_coupons' as any)
             .select('id, campaign_id, status, qr_code_token')
             .eq('volunteer_id', uid),
-          // Campaigns linked to tasks the volunteer has completed
-          completedTaskIds.length > 0
-            ? supabase
-                .from('sponsor_campaign_tasks' as any)
-                .select('campaign_id')
-                .in('task_id', completedTaskIds)
-            : Promise.resolve({ data: [] as any[] }),
         ]);
+
+        let sctRes: any = null;
+        if (!campRes.error && campRes.data && campRes.data.length > 0) {
+          const activeCampaignIds = campRes.data.map((c: any) => c.id);
+          sctRes = await supabase
+            .from('sponsor_campaign_tasks' as any)
+            .select('campaign_id, task_id')
+            .in('campaign_id', activeCampaignIds);
+        }
 
         if (!campRes.error && campRes.data) {
           setActiveCampaigns(campRes.data as unknown as ActiveCampaign[]);
@@ -524,7 +527,9 @@ const VolunteerDashboard = () => {
           setMyCoupons(couponsRes.data as unknown as MyCoupon[]);
         }
         if (sctRes && sctRes.data) {
-          setEarnedCampaignIds(new Set<string>((sctRes.data as any[]).map((r: any) => r.campaign_id as string)));
+          setCampaignTaskLinks(sctRes.data as any[]);
+          const earned = (sctRes.data as any[]).filter((r: any) => completedTaskIds.includes(r.task_id as string));
+          setEarnedCampaignIds(new Set<string>(earned.map((r: any) => r.campaign_id as string)));
         }
       }
 
@@ -1007,6 +1012,8 @@ const VolunteerDashboard = () => {
             setShowProfileDialog={setShowProfileDialog}
             getSignupStatus={getSignupStatus}
             loyaltyEnrollments={loyaltyEnrollments}
+            activeCampaigns={activeCampaigns}
+            campaignTaskLinks={campaignTaskLinks}
           />
         </>
       )}
@@ -1314,6 +1321,8 @@ const VolunteerDashboard = () => {
           language={language}
           userId={currentUserId}
           onBack={() => setActiveTab('dashboard')}
+          activeCampaigns={activeCampaigns}
+          campaignTaskLinks={campaignTaskLinks}
         />
       )}
 
@@ -1353,6 +1362,8 @@ const VolunteerDashboard = () => {
             signups={signups}
             myContracts={myContracts}
             getSignupStatus={getSignupStatus}
+            activeCampaigns={activeCampaigns}
+            campaignTaskLinks={campaignTaskLinks}
           />
           <div className="mt-8">
             {myTickets.length > 0 ? (
@@ -1389,6 +1400,8 @@ const VolunteerDashboard = () => {
         signupCounts={signupCounts}
         isSignedUp={isSignedUp}
         getSignupStatus={getSignupStatus}
+        activeCampaigns={activeCampaigns}
+        campaignTaskLinks={campaignTaskLinks}
         onTaskClick={(taskId) => { setSelectedEvent(null); navigate(`/task/${taskId}`); }}
       />
 

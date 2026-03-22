@@ -10,11 +10,13 @@ import {
   Zap, Plus, BarChart2, Eye, Target, TrendingUp,
   Building2, Tag, Calendar, Megaphone, Gift,
   ToggleLeft, ToggleRight, Check, Loader2, DollarSign,
-  ImageIcon, QrCode, Smartphone, List, ChevronDown, ChevronUp,
+  QrCode, Smartphone, List, ChevronDown, ChevronUp,
   Link2, Clock, XCircle, CheckCircle2, ExternalLink, Mail,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';
+import ImageUploader from '@/components/sponsor/ImageUploader';
+import SponsorAdLivePreview, { type PreviewForm } from '@/components/sponsor/SponsorAdLivePreview';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Sponsor {
@@ -55,6 +57,9 @@ interface Campaign {
   total_impressions?: number;
   total_claims?: number;
   linked_task_ids?: string[];
+  cover_image_url?: string | null;
+  custom_cta?: string | null;
+  rich_description?: string | null;
 }
 
 const CAMPAIGN_TYPE_LABELS: Record<string, {
@@ -164,177 +169,6 @@ const ROICalculator = ({ language }: { language: string }) => {
   );
 };
 
-// ── Live Preview (phone mockup) ───────────────────────────────────────────────
-interface PreviewProps {
-  campaignType: Campaign['campaign_type'];
-  title: string;
-  description: string;
-  rewardCents: string;
-  imageUrl: string;
-  sponsor: Sponsor | null;
-}
-
-const LivePreview = ({ campaignType, title, description, rewardCents, imageUrl, sponsor }: PreviewProps) => {
-  const color = sponsor?.brand_color || '#6366f1';
-  const accentBg = `${color}22`;
-
-  return (
-    <div className="flex flex-col items-center pt-2">
-      <div className="flex items-center gap-2 mb-4">
-        <Smartphone className="w-4 h-4 text-muted-foreground" />
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Preview</p>
-      </div>
-
-      {/* Phone frame */}
-      <div className="relative w-[210px] h-[390px] rounded-[36px] border-[5px] border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
-        {/* Dynamic island */}
-        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-14 h-4 bg-gray-900 rounded-full z-10" />
-        {/* Screen */}
-        <div className="absolute inset-0 bg-white dark:bg-gray-50 overflow-hidden">
-          {/* Status bar */}
-          <div className="h-7 bg-gray-50 flex items-end justify-between px-4 pb-1">
-            <span className="text-[8px] font-semibold text-gray-600">9:41</span>
-            <div className="flex gap-1 items-center">
-              <div className="w-3 h-1.5 bg-gray-400 rounded-[2px]" />
-              <div className="w-2 h-1.5 bg-gray-400 rounded-[2px]" />
-              <div className="w-4 h-2 rounded-[2px] border border-gray-400 relative">
-                <div className="absolute inset-[2px] left-[2px] right-[3px] bg-green-400 rounded-[1px]" />
-                <div className="absolute right-[-3px] top-1/2 -translate-y-1/2 w-1 h-1.5 bg-gray-400 rounded-r-[1px]" />
-              </div>
-            </div>
-          </div>
-
-          {/* App header */}
-          <div className="bg-white border-b border-gray-100 px-3 py-2 flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-              <span className="text-white text-[7px] font-bold">D</span>
-            </div>
-            <span className="text-[9px] font-bold text-gray-800">Play Maker Palace</span>
-          </div>
-
-          {/* ── Banner preview ── */}
-          {campaignType === 'dashboard_banner' && (
-            <div
-              className="mx-2 mt-2.5 rounded-xl overflow-hidden shadow-sm"
-              style={{ background: `linear-gradient(135deg, ${color}ee, ${color}88)` }}
-            >
-              <div className="px-2.5 py-2 flex items-center gap-2">
-                {imageUrl ? (
-                  <img src={imageUrl} alt="" className="w-7 h-7 rounded-full object-cover bg-white/20 shrink-0" />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                    <span className="text-[10px] font-bold text-white">{(sponsor?.name || 'S')[0]}</span>
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-[7px] font-semibold text-white/70 uppercase tracking-wide truncate">
-                    {sponsor?.name || 'Sponsor naam'}
-                  </p>
-                  <p className="text-[9px] font-bold text-white truncate leading-tight">
-                    {title || 'Campagne titel hier'}
-                  </p>
-                  {description && (
-                    <p className="text-[7px] text-white/80 truncate">{description}</p>
-                  )}
-                </div>
-                <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-white/20 text-[7px] text-white font-semibold whitespace-nowrap">
-                  Meer info →
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* ── Coupon preview ── */}
-          {campaignType === 'local_coupon' && (
-            <div className="mx-2 mt-2">
-              <p className="text-[7px] font-bold text-gray-400 uppercase tracking-wide mb-1.5 px-0.5">
-                Lokale Beloningen
-              </p>
-              <div
-                className="rounded-xl border bg-white overflow-hidden"
-                style={{ borderColor: `${color}44` }}
-              >
-                <div className="px-2.5 py-2 flex items-start gap-2">
-                  <div
-                    className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center"
-                    style={{ background: accentBg }}
-                  >
-                    {imageUrl ? (
-                      <img src={imageUrl} alt="" className="w-6 h-6 object-contain rounded" />
-                    ) : (
-                      <span className="text-[11px] font-bold" style={{ color }}>
-                        {(sponsor?.name || 'S')[0]}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[7px] text-gray-400 uppercase tracking-wide truncate">
-                      {sponsor?.name || 'Sponsor'}
-                    </p>
-                    <p className="text-[9px] font-bold text-gray-800 leading-snug truncate">
-                      {title || 'Kortingsbon titel'}
-                    </p>
-                    {rewardCents && (
-                      <span
-                        className="inline-block mt-0.5 px-1.5 py-0.5 rounded-full text-[7px] font-semibold"
-                        style={{ background: accentBg, color }}
-                      >
-                        €{(parseInt(rewardCents, 10) / 100).toFixed(2)} korting
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {/* QR icon as placeholder */}
-                <div className="bg-gray-50 px-3 py-2.5 flex flex-col items-center gap-1 border-t border-gray-100">
-                  <QrCode className="w-14 h-14 text-gray-700" />
-                  <p className="text-[7px] text-gray-400">Toon QR-code bij de handelaar</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Task tag preview ── */}
-          {campaignType === 'task_tag' && (
-            <div className="mx-2 mt-2">
-              <p className="text-[7px] font-bold text-gray-400 uppercase tracking-wide mb-1.5 px-0.5">
-                Beschikbare taken
-              </p>
-              <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-                <div className="px-2.5 py-2">
-                  <p className="text-[9px] font-bold text-gray-800 leading-snug">
-                    {title || 'Taaknaam hier'}
-                  </p>
-                  <p className="text-[7px] text-gray-400 mt-0.5">Sportkring • Morgen 14:00</p>
-                </div>
-                <div
-                  className="px-2.5 py-1.5 flex items-center gap-1.5 border-t"
-                  style={{ borderColor: `${color}33`, background: accentBg }}
-                >
-                  <Gift className="w-3 h-3 shrink-0" style={{ color }} />
-                  <p className="text-[8px] font-semibold truncate" style={{ color }}>
-                    {description || 'Beloning bij voltooiing!'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Mock skeleton content */}
-          <div className="mx-2 mt-3 space-y-2">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="h-8 rounded-xl bg-gray-100"
-                style={{ opacity: 0.5 - i * 0.12 }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // ── Form default ──────────────────────────────────────────────────────────────
 const emptyForm = () => ({
   sponsor_id: '',
@@ -342,6 +176,9 @@ const emptyForm = () => ({
   title: '',
   description: '',
   image_url: '',
+  cover_image_url: '',
+  custom_cta: '',
+  rich_description: '',
   reward_value_cents: '',
   start_date: '',
   end_date: '',
@@ -485,8 +322,11 @@ const SponsorHub = () => {
       sponsor_id:         form.sponsor_id,
       campaign_type:      form.campaign_type,
       title:              form.title.trim(),
-      description:        form.description || null,
-      image_url:          form.image_url   || null,
+      description:        form.description     || null,
+      image_url:          form.image_url        || null,
+      cover_image_url:    form.cover_image_url  || null,
+      custom_cta:         form.custom_cta       || null,
+      rich_description:   form.rich_description || null,
       reward_value_cents: form.reward_value_cents ? parseInt(String(form.reward_value_cents), 10) : null,
       status:             form.status,
       start_date:         form.start_date  || null,
@@ -614,11 +454,14 @@ const SponsorHub = () => {
       sponsor_id:         c.sponsor_id,
       campaign_type:      c.campaign_type,
       title:              c.title,
-      description:        c.description    || '',
-      image_url:          c.image_url      || '',
+      description:        c.description      || '',
+      image_url:          c.image_url        || '',
+      cover_image_url:    c.cover_image_url  || '',
+      custom_cta:         c.custom_cta       || '',
+      rich_description:   c.rich_description || '',
       reward_value_cents: c.reward_value_cents ? String(c.reward_value_cents) : '',
-      start_date:         c.start_date     || '',
-      end_date:           c.end_date       || '',
+      start_date:         c.start_date       || '',
+      end_date:           c.end_date         || '',
       status:             c.status,
       linked_task_ids:    linkedIds,
     });
@@ -1105,32 +948,55 @@ const SponsorHub = () => {
                   />
                 </div>
 
-                {/* Ad image URL */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                    {t('Advertentie-afbeelding (URL)', 'Image publicitaire (URL)', 'Ad image (URL)')}
-                  </label>
-                  <input
-                    type="url"
-                    value={form.image_url}
-                    onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
-                    placeholder="https://example.com/logo.png"
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                {/* Logo upload */}
+                <ImageUploader
+                  value={form.image_url}
+                  onChange={url => setForm(f => ({ ...f, image_url: url }))}
+                  folder="uploads"
+                  label={t('Logo / Advertentieafbeelding', 'Logo / Image publicitaire', 'Logo / Ad Image')}
+                  variant="light"
+                />
+
+                {/* Cover image upload (banner only) */}
+                {form.campaign_type === 'dashboard_banner' && (
+                  <ImageUploader
+                    value={form.cover_image_url}
+                    onChange={url => setForm(f => ({ ...f, cover_image_url: url }))}
+                    folder="uploads"
+                    label={t('Achtergrondafbeelding banner', 'Image de fond bannière', 'Banner background image')}
+                    variant="light"
                   />
-                  {form.image_url && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <img
-                        src={form.image_url}
-                        alt="preview"
-                        className="w-12 h-12 rounded-lg object-cover border border-border"
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                      <p className="text-[11px] text-muted-foreground">
-                        {t('Voorbeeld van de afbeelding', 'Aperçu de l\'image', 'Image preview')}
-                      </p>
-                    </div>
-                  )}
+                )}
+
+                {/* Custom CTA (banner only) */}
+                {form.campaign_type === 'dashboard_banner' && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">
+                      {t('CTA-knoptekst', 'Texte du bouton CTA', 'CTA button text')}
+                    </label>
+                    <input
+                      type="text"
+                      value={form.custom_cta}
+                      onChange={e => setForm(f => ({ ...f, custom_cta: e.target.value }))}
+                      placeholder={t('bv. Bekijk Ons Menu', 'ex. Voir Notre Menu', 'e.g. Visit Our Website')}
+                      maxLength={30}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                    />
+                  </div>
+                )}
+
+                {/* Rich description */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                    {t('Uitgebreide beschrijving', 'Description détaillée', 'Detailed description')}
+                  </label>
+                  <textarea
+                    value={form.rich_description}
+                    onChange={e => setForm(f => ({ ...f, rich_description: e.target.value }))}
+                    rows={3}
+                    placeholder={t('Extra informatie over de aanbieding...', 'Informations supplémentaires...', 'Additional offer details...')}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
+                  />
                 </div>
 
                 {/* Reward value (coupons only) */}
@@ -1319,13 +1185,22 @@ const SponsorHub = () => {
 
             {/* Right: live preview (sticky) */}
             <div className="hidden sm:flex w-72 flex-col bg-muted/20 px-6 py-6 sticky top-0 h-full overflow-y-auto">
-              <LivePreview
-                campaignType={form.campaign_type}
-                title={form.title}
-                description={form.description}
-                rewardCents={form.reward_value_cents}
-                imageUrl={form.image_url}
-                sponsor={selectedSponsor}
+              <SponsorAdLivePreview
+                form={{
+                  businessName:     selectedSponsor?.name || '',
+                  brandColor:       selectedSponsor?.brand_color || '#6366f1',
+                  logoUrl:          form.image_url || '',
+                  campaignType:     form.campaign_type === 'local_coupon' ? 'local_coupon' : 'dashboard_banner',
+                  title:            form.title,
+                  description:      form.description,
+                  rewardText:       '',
+                  rewardValueEuros: form.reward_value_cents ? (parseInt(String(form.reward_value_cents), 10) / 100).toFixed(2) : '',
+                  imageUrl:         form.image_url || '',
+                  coverImageUrl:    form.cover_image_url || '',
+                  customCta:        form.custom_cta || '',
+                  richDescription:  form.rich_description || '',
+                  linkedTaskIds:    form.linked_task_ids,
+                } satisfies PreviewForm}
               />
 
               {/* Stats summary box */}

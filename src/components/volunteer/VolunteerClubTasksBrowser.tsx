@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { sendPushToClub } from '@/lib/sendPush';
 import { Language } from '@/i18n/translations';
-import { MapPin, Calendar, Clock, Search, Users, ArrowLeft, Loader2, Heart, ChevronRight } from 'lucide-react';
+import { MapPin, Calendar, Clock, Search, Users, ArrowLeft, Loader2, Heart, ChevronRight, Gift, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -75,13 +75,25 @@ const labels = {
   },
 };
 
+interface ActiveCampaign {
+  id: string;
+  campaign_type: 'dashboard_banner' | 'task_tag' | 'local_coupon';
+  title: string;
+  description: string | null;
+  reward_value_cents: number | null;
+  image_url: string | null;
+  sponsors: { name: string; brand_color: string; logo_url: string | null } | null;
+}
+
 interface Props {
   language: Language;
   userId: string;
   onBack: () => void;
+  activeCampaigns?: ActiveCampaign[];
+  campaignTaskLinks?: {campaign_id: string, task_id: string}[];
 }
 
-const VolunteerClubTasksBrowser = ({ language, userId, onBack }: Props) => {
+const VolunteerClubTasksBrowser = ({ language, userId, onBack, activeCampaigns, campaignTaskLinks }: Props) => {
   const navigate = useNavigate();
   const l = labels[language];
   const locale = language === 'nl' ? 'nl-BE' : language === 'fr' ? 'fr-BE' : 'en-GB';
@@ -288,6 +300,7 @@ const VolunteerClubTasksBrowser = ({ language, userId, onBack }: Props) => {
             const freeSpots = task.spots_available - task.signup_count;
             const isSignedUp = signedUpIds.has(task.id);
             const isSigning = signingUp === task.id;
+            const taskCampaigns = campaignTaskLinks && activeCampaigns ? campaignTaskLinks.filter(l => l.task_id === task.id).map(l => activeCampaigns.find(c => c.id === l.campaign_id)).filter(Boolean) as any[] : [];
 
             return (
               <motion.div
@@ -337,6 +350,12 @@ const VolunteerClubTasksBrowser = ({ language, userId, onBack }: Props) => {
                         ? `${freeSpots} ${l.spotsLeft}`
                         : l.full}
                     </span>
+                    {taskCampaigns.map((c: any) => (
+                      <span key={c.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium" style={{ background: `${c.sponsors?.brand_color || '#6366f1'}15`, color: c.sponsors?.brand_color || '#6366f1', border: `1px solid ${c.sponsors?.brand_color || '#6366f1'}40` }}>
+                        {c.campaign_type === 'local_coupon' ? <Gift className="w-2.5 h-2.5" /> : <Tag className="w-2.5 h-2.5" />}
+                        {c.campaign_type === 'local_coupon' ? `Reward: €${(c.reward_value_cents / 100).toFixed(0)}` : `Sponsored`}
+                      </span>
+                    ))}
                   </div>
 
                   {/* Description preview */}

@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, ClipboardList, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet, Search, ArrowRight, Heart, Clock, LayoutList } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, ClipboardList, FileText, AlertTriangle, BookOpen, Layers, ChevronDown, Sparkles, FileSignature, Wallet, Search, ArrowRight, Heart, Clock, LayoutList, Gift, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language } from '@/i18n/translations';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -54,12 +54,14 @@ interface Props {
   setActiveTab: (tab: string) => void;
   setShowProfileDialog: (v: boolean) => void;
   getSignupStatus: (taskId: string) => string | null;
+  activeCampaigns?: any[];
+  campaignTaskLinks?: {campaign_id: string, task_id: string}[];
 }
 
 const VolunteerDashboardHome = ({
   language, currentUserId, profile, followedClubIds, myContracts, myCertifiedTrainingIds,
   signups, tasks, events, myPayments, sepaPayouts, pendingSignups, assignedSignups,
-  complianceData, loyaltyEnrollments, searchQuery, setSearchQuery, setActiveTab, setShowProfileDialog, getSignupStatus,
+  complianceData, loyaltyEnrollments, searchQuery, setSearchQuery, setActiveTab, setShowProfileDialog, getSignupStatus, activeCampaigns, campaignTaskLinks
 }: Props) => {
   const navigate = useNavigate();
   const dt = volunteerDashboardLabels[language as keyof typeof volunteerDashboardLabels] || volunteerDashboardLabels.nl;
@@ -386,6 +388,52 @@ const VolunteerDashboardHome = ({
         </motion.div>
       )}
 
+      {/* ── Sponsor Dashboard Banner ── */}
+      {activeCampaigns && activeCampaigns
+        .filter(c => c.campaign_type === 'dashboard_banner' && c.status === 'active')
+        .slice(0, 1)
+        .map((c: any) => {
+          const color    = c.sponsors?.brand_color || '#6366f1';
+          const cta      = c.custom_cta || (language === 'nl' ? 'Meer info' : language === 'fr' ? 'En savoir +' : 'Learn more');
+          return (
+            <motion.div
+              key={c.id}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="rounded-2xl overflow-hidden shadow-md"
+              style={{ background: `linear-gradient(135deg, ${color}f0, ${color}99)` }}
+            >
+              {c.cover_image_url && (
+                <div className="w-full h-24 overflow-hidden">
+                  <img src={c.cover_image_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div className="px-4 py-3 flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-white/25 border border-white/30 shrink-0 overflow-hidden flex items-center justify-center">
+                  {c.image_url
+                    ? <img src={c.image_url} alt="" className="w-full h-full object-cover" />
+                    : <span className="text-white text-base font-extrabold">{(c.sponsors?.name || 'S')[0]}</span>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-white/70 uppercase tracking-widest truncate leading-tight">
+                    {c.sponsors?.name || ''}
+                  </p>
+                  <p className="text-base font-bold text-white truncate leading-snug">{c.title}</p>
+                  {(c.description || c.rich_description) && (
+                    <p className="text-xs text-white/75 truncate mt-0.5">{c.description || c.rich_description}</p>
+                  )}
+                </div>
+                <span className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-white/90 border border-white/40 bg-white/15 whitespace-nowrap">
+                  {cta} →
+                </span>
+              </div>
+            </motion.div>
+          );
+        })
+      }
+
       {/* Welcome + date */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
         className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/0 border border-primary/10 p-5">
@@ -478,6 +526,7 @@ const VolunteerDashboardHome = ({
             <div className="space-y-3">
               {filtered.map((task, i) => {
                 const freeSpots = task.spots_available - task.signup_count;
+                const taskCampaigns = campaignTaskLinks && activeCampaigns ? campaignTaskLinks.filter(l => l.task_id === task.id).map(l => activeCampaigns.find(c => c.id === l.campaign_id)).filter(Boolean) as any[] : [];
                 return (
                   <motion.div
                     key={task.id}
@@ -521,6 +570,12 @@ const VolunteerDashboardHome = ({
                             ? `${freeSpots} ${language === 'nl' ? 'plaatsen vrij' : language === 'fr' ? 'places libres' : 'spots left'}`
                             : (language === 'nl' ? 'Volzet' : language === 'fr' ? 'Complet' : 'Full')}
                         </span>
+                        {taskCampaigns.map((c: any) => (
+                          <span key={c.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium" style={{ background: `${c.sponsors?.brand_color || '#6366f1'}15`, color: c.sponsors?.brand_color || '#6366f1', border: `1px solid ${c.sponsors?.brand_color || '#6366f1'}40` }}>
+                            {c.campaign_type === 'local_coupon' ? <Gift className="w-2.5 h-2.5" /> : <Tag className="w-2.5 h-2.5" />}
+                            {c.campaign_type === 'local_coupon' ? `Reward: €${(c.reward_value_cents / 100).toFixed(0)}` : `Sponsored`}
+                          </span>
+                        ))}
                       </div>
                     </div>
                     <button
@@ -573,7 +628,9 @@ const VolunteerDashboardHome = ({
                   {language === 'nl' ? 'Aanbevolen voor jou' : language === 'fr' ? 'Recommandé pour vous' : 'Recommended for you'}
                 </p>
                 <div className="space-y-2">
-                  {recommendedTasks.map((scored) => (
+                  {recommendedTasks.map((scored) => {
+                    const taskCampaigns = campaignTaskLinks && activeCampaigns ? campaignTaskLinks.filter(l => l.task_id === scored.task.id).map(l => activeCampaigns.find(c => c.id === l.campaign_id)).filter(Boolean) as any[] : [];
+                    return (
                     <div
                       key={scored.task.id}
                       onClick={() => navigate(`/task/${scored.task.id}`)}
@@ -609,6 +666,12 @@ const VolunteerDashboardHome = ({
                               {language === 'nl' ? 'Binnenkort' : language === 'fr' ? 'Bientôt' : 'Coming up'}
                             </span>
                           )}
+                          {taskCampaigns.map((c: any) => (
+                            <span key={c.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: `${c.sponsors?.brand_color || '#6366f1'}15`, color: c.sponsors?.brand_color || '#6366f1', border: `1px solid ${c.sponsors?.brand_color || '#6366f1'}40` }}>
+                              {c.campaign_type === 'local_coupon' ? <Gift className="w-3 h-3" /> : <Tag className="w-3 h-3" />}
+                              {c.campaign_type === 'local_coupon' ? `Reward` : `Sponsored`}
+                            </span>
+                          ))}
                         </div>
                         {(scored.task as any).task_date && (
                           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
@@ -623,7 +686,7 @@ const VolunteerDashboardHome = ({
                       </div>
                       <ArrowRight className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
             )}
@@ -654,7 +717,9 @@ const VolunteerDashboardHome = ({
             )}
             {isSearching && filtered.length > 0 && (
               <div className="mt-3 space-y-1.5">
-                {filtered.map(task => (
+                {filtered.map(task => {
+                  const taskCampaigns = campaignTaskLinks && activeCampaigns ? campaignTaskLinks.filter(l => l.task_id === task.id).map(l => activeCampaigns.find(c => c.id === l.campaign_id)).filter(Boolean) as any[] : [];
+                  return (
                   <div key={task.id} onClick={() => navigate(`/task/${task.id}`)}
                     className="flex items-center gap-3 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors min-h-[60px]">
                     <div className="min-w-0 flex-1">
@@ -662,11 +727,16 @@ const VolunteerDashboardHome = ({
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
                         {task.clubs?.name && <span>{task.clubs.name}</span>}
                         {task.task_date && <span>· {new Date(task.task_date).toLocaleDateString(language === 'nl' ? 'nl-BE' : 'en-GB', { day: 'numeric', month: 'short' })}</span>}
+                        {taskCampaigns.length > 0 && (
+                          <span className="flex items-center gap-1 text-primary">
+                            <Tag className="w-3 h-3" /> <span className="text-xs">Sponsor</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                     <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
                   </div>
-                ))}
+                )})}
               </div>
             )}
             {isSearching && filtered.length === 0 && (
@@ -746,6 +816,7 @@ const VolunteerDashboardHome = ({
             {myUpcomingTasks.map((task, i) => {
               const signupStatus = getSignupStatus(task.id);
               const isAssigned = signupStatus === 'assigned';
+              const taskCampaigns = campaignTaskLinks && activeCampaigns ? campaignTaskLinks.filter(l => l.task_id === task.id).map(l => activeCampaigns.find(c => c.id === l.campaign_id)).filter(Boolean) as any[] : [];
               return (
                 <motion.div key={task.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                   onClick={() => navigate(`/task/${task.id}`)}
@@ -774,6 +845,12 @@ const VolunteerDashboardHome = ({
                       {(task.location || task.clubs?.location) && (
                         <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{task.location || task.clubs?.location}</span>
                       )}
+                      {taskCampaigns.map((c: any) => (
+                        <span key={c.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium" style={{ background: `${c.sponsors?.brand_color || '#6366f1'}15`, color: c.sponsors?.brand_color || '#6366f1', border: `1px solid ${c.sponsors?.brand_color || '#6366f1'}40` }}>
+                          {c.campaign_type === 'local_coupon' ? <Gift className="w-2.5 h-2.5" /> : <Tag className="w-2.5 h-2.5" />}
+                          {c.campaign_type === 'local_coupon' ? `Reward: €${(c.reward_value_cents / 100).toFixed(0)}` : `Sponsored`}
+                        </span>
+                      ))}
                     </div>
                   </div>
                   <div className="shrink-0">
