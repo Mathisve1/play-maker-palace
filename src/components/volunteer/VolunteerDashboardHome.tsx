@@ -40,6 +40,7 @@ interface VolunteerCoupon {
   backup_code: string;
   status: 'active' | 'redeemed' | 'expired';
   redeemed_at: string | null;
+  expires_at: string | null;
   created_at: string;
   campaign: {
     id: string;
@@ -102,9 +103,9 @@ const VolunteerDashboardHome = ({
     if (!currentUserId) return;
     const fetchCoupons = async () => {
       const { data } = await supabase
-        .from('volunteer_coupons')
+        .from('volunteer_coupons' as any)
         .select(`
-          id, qr_token, backup_code, status, redeemed_at, created_at,
+          id, qr_token, backup_code, status, redeemed_at, expires_at, created_at,
           sponsor_campaigns!campaign_id (
             id, title, reward_text, reward_value_cents,
             sponsors!sponsor_id ( name, logo_url, brand_color )
@@ -113,12 +114,13 @@ const VolunteerDashboardHome = ({
         .eq('volunteer_id', currentUserId)
         .order('created_at', { ascending: false });
       if (data) {
-        setMyCoupons(data.map((row: any) => ({
+        setMyCoupons((data as any[]).map((row: any) => ({
           id: row.id,
           qr_token: row.qr_token,
           backup_code: row.backup_code,
-          status: row.status,
+          status: row.expires_at && new Date(row.expires_at) < new Date() && row.status === 'active' ? 'expired' : row.status,
           redeemed_at: row.redeemed_at,
+          expires_at: row.expires_at,
           created_at: row.created_at,
           campaign: row.sponsor_campaigns,
           sponsor: row.sponsor_campaigns?.sponsors ?? null,
