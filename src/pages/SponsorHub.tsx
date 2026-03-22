@@ -44,7 +44,7 @@ interface Campaign {
   campaign_type: 'dashboard_banner' | 'task_tag' | 'local_coupon';
   title: string;
   description: string | null;
-  image_url: string | null;
+  
   reward_value_cents: number | null;
   status: 'draft' | 'active' | 'ended' | 'pending_payment';
   start_date: string | null;
@@ -176,7 +176,6 @@ const emptyForm = () => ({
   campaign_type: 'dashboard_banner' as Campaign['campaign_type'],
   title: '',
   description: '',
-  image_url: '',
   cover_image_url: '',
   custom_cta: '',
   rich_description: '',
@@ -238,7 +237,7 @@ const SponsorHub = () => {
       ...c,
       sponsor_name:        c.sponsors?.name        || '',
       sponsor_brand_color: c.sponsors?.brand_color || '#6366f1',
-      image_url:           c.image_url             || null,
+      
       reward_text:         c.reward_text           || null,
       submitted_by_email:  c.submitted_by_email    || null,
       total_impressions:   0,
@@ -324,7 +323,7 @@ const SponsorHub = () => {
       campaign_type:      form.campaign_type,
       title:              form.title.trim(),
       description:        form.description     || null,
-      image_url:          form.image_url        || null,
+      
       cover_image_url:    form.cover_image_url  || null,
       custom_cta:         form.custom_cta       || null,
       rich_description:   form.rich_description || null,
@@ -456,7 +455,7 @@ const SponsorHub = () => {
       campaign_type:      c.campaign_type,
       title:              c.title,
       description:        c.description      || '',
-      image_url:          c.image_url        || '',
+      
       cover_image_url:    c.cover_image_url  || '',
       custom_cta:         c.custom_cta       || '',
       rich_description:   c.rich_description || '',
@@ -976,8 +975,8 @@ const SponsorHub = () => {
 
                 {/* Logo upload */}
                 <ImageUploader
-                  value={form.image_url}
-                  onChange={url => setForm(f => ({ ...f, image_url: url }))}
+                  value={form.cover_image_url}
+                  onChange={url => setForm(f => ({ ...f, cover_image_url: url }))}
                   folder="uploads"
                   label={t('Logo / Advertentieafbeelding', 'Logo / Image publicitaire', 'Logo / Ad Image')}
                   variant="light"
@@ -1215,13 +1214,13 @@ const SponsorHub = () => {
                 form={{
                   businessName:     selectedSponsor?.name || '',
                   brandColor:       selectedSponsor?.brand_color || '#6366f1',
-                  logoUrl:          form.image_url || '',
+                  logoUrl:          form.cover_image_url || '',
                   campaignType:     form.campaign_type === 'local_coupon' ? 'local_coupon' : 'dashboard_banner',
                   title:            form.title,
                   description:      form.description,
                   rewardText:       '',
                   rewardValueEuros: form.reward_value_cents ? (parseInt(String(form.reward_value_cents), 10) / 100).toFixed(2) : '',
-                  imageUrl:         form.image_url || '',
+                  imageUrl:         form.cover_image_url || '',
                   coverImageUrl:    form.cover_image_url || '',
                   customCta:        form.custom_cta || '',
                   richDescription:  form.rich_description || '',
