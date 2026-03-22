@@ -816,14 +816,22 @@ const SponsorHub = () => {
                               {copiedId === `preview-${c.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Eye className="w-3 h-3" />}
                               Preview
                             </button>
-                            <button
-                              onClick={() => copyLink('results', c.id)}
-                              className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md border border-border/40 hover:bg-muted/60 transition-colors text-muted-foreground"
-                              title={t('Analytics link', 'Lien analytiques', 'Analytics link')}
-                            >
-                              {copiedId === `results-${c.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <BarChart2 className="w-3 h-3" />}
-                              Analytics
-                            </button>
+                            {c.status === 'active' && c.portal_access_token && (
+                              <button
+                                onClick={() => {
+                                  const url = `${window.location.origin}/sponsor/portal/${c.id}/${c.portal_access_token}`;
+                                  navigator.clipboard.writeText(url);
+                                  setCopiedId(`portal-${c.id}`);
+                                  toast.success(t('Scanner-link gekopieerd!', 'Lien scanner copié !', 'Scanner link copied!'));
+                                  setTimeout(() => setCopiedId(null), 2000);
+                                }}
+                                className="flex items-center gap-1 px-2.5 py-1 text-[10px] rounded-md font-semibold bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-colors text-orange-600"
+                                title={t('Kopieer scanner-link voor sponsor', 'Copier le lien scanner', 'Copy scanner link for sponsor')}
+                              >
+                                {copiedId === `portal-${c.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <QrCode className="w-3 h-3" />}
+                                {t('Scanner', 'Scanner', 'Scanner')}
+                              </button>
+                            )}
                           </div>
                         </td>
 
@@ -836,23 +844,6 @@ const SponsorHub = () => {
                             >
                               {t('Bewerk', 'Modifier', 'Edit')}
                             </button>
-                            {/* Portal link — only for active campaigns with a token */}
-                            {c.status === 'active' && c.portal_access_token && (
-                              <button
-                                onClick={() => {
-                                  const url = `${window.location.origin}/sponsor/portal/${c.id}/${c.portal_access_token}`;
-                                  navigator.clipboard.writeText(url);
-                                  setCopiedId(`portal-${c.id}`);
-                                  toast.success(t('Portaal-link gekopieerd!', 'Lien portail copié !', 'Portal link copied!'));
-                                  setTimeout(() => setCopiedId(null), 2000);
-                                }}
-                                className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md border border-primary/30 bg-primary/10 hover:bg-primary/15 dark:bg-primary/10 dark:border-primary/30 dark:hover:bg-primary/20 transition-colors text-primary"
-                                title={t('Kopieer portaal-link voor sponsor', 'Copier lien portail', 'Copy portal link for sponsor')}
-                              >
-                                {copiedId === `portal-${c.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <ExternalLink className="w-3 h-3" />}
-                                Portal
-                              </button>
-                            )}
                             <button
                               onClick={() => handleToggleStatus(c)}
                               className={cn(
