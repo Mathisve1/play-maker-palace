@@ -185,6 +185,7 @@ const VolunteerDashboard = () => {
     title: string;
     description: string | null;
     reward_value_cents: number | null;
+    image_url: string | null;
     sponsors: { name: string; brand_color: string; logo_url: string | null } | null;
   }
   interface MyCoupon {
@@ -197,6 +198,8 @@ const VolunteerDashboard = () => {
   const [myCoupons, setMyCoupons] = useState<MyCoupon[]>([]);
   const [claimingCoupon, setClaimingCoupon] = useState<string | null>(null);
   const [expandedCoupon, setExpandedCoupon] = useState<string | null>(null);
+  const [earnedCampaignIds, setEarnedCampaignIds] = useState<Set<string>>(new Set());
+  const [redeemingCoupon, setRedeemingCoupon] = useState<string | null>(null);
 
   // Sync tab from URL search params
   useEffect(() => {
@@ -488,10 +491,15 @@ const VolunteerDashboard = () => {
       // ── Sponsor campaigns for volunteer's primary club ──────────────────
       if (contextClubId) {
         const today = new Date().toISOString().slice(0, 10);
-        const [campRes, couponsRes] = await Promise.all([
+        // Completed task IDs → which coupon campaigns has this volunteer earned?
+        const completedTaskIds = (signupsRes.data || [])
+          .filter((s: any) => s.status === 'completed')
+          .map((s: any) => s.task_id as string);
+
+        const [campRes, couponsRes, sctRes] = await Promise.all([
           supabase
             .from('sponsor_campaigns' as any)
-            .select('id, campaign_type, title, description, reward_value_cents, sponsors(name, brand_color, logo_url)')
+            .select('id, campaign_type, title, description, reward_value_cents, image_url, sponsors(name, brand_color, logo_url)')
             .eq('club_id', contextClubId)
             .eq('status', 'active')
             .or(`start_date.is.null,start_date.lte.${today}`)
@@ -500,12 +508,23 @@ const VolunteerDashboard = () => {
             .from('volunteer_coupons' as any)
             .select('id, campaign_id, status, qr_code_token')
             .eq('volunteer_id', uid),
+          // Campaigns linked to tasks the volunteer has completed
+          completedTaskIds.length > 0
+            ? supabase
+                .from('sponsor_campaign_tasks' as any)
+                .select('campaign_id')
+                .in('task_id', completedTaskIds)
+            : Promise.resolve({ data: [] as any[] }),
         ]);
+
         if (!campRes.error && campRes.data) {
           setActiveCampaigns(campRes.data as unknown as ActiveCampaign[]);
         }
         if (!couponsRes.error && couponsRes.data) {
           setMyCoupons(couponsRes.data as unknown as MyCoupon[]);
+        }
+        if (sctRes && sctRes.data) {
+          setEarnedCampaignIds(new Set<string>((sctRes.data as any[]).map((r: any) => r.campaign_id as string)));
         }
       }
 
@@ -800,6 +819,31 @@ const VolunteerDashboard = () => {
     setClaimingCoupon(null);
   };
 
+  // ── Mark coupon as redeemed (used at the shop) ─────────────────────────────
+  const handleMarkRedeemed = async (couponId: string) => {
+    setRedeemingCoupon(couponId);
+    const coupon = myCoupons.find(c => c.id === couponId);
+    const { error } = await supabase
+      .from('volunteer_coupons' as any)
+      .update({ status: 'redeemed' })
+      .eq('id', couponId);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      if (coupon) {
+        await supabase.rpc('increment_campaign_metric' as any, { camp_id: coupon.campaign_id, metric_type: 'claim' });
+      }
+      setMyCoupons(prev => prev.map(c => c.id === couponId ? { ...c, status: 'redeemed' } : c));
+      setExpandedCoupon(null);
+      toast.success(
+        language === 'nl' ? '✓ Coupon gebruikt! Geniet ervan.'
+        : language === 'fr' ? '✓ Coupon utilisé ! Profitez-en.'
+        : '✓ Coupon marked as used! Enjoy.'
+      );
+    }
+    setRedeemingCoupon(null);
+  };
+
   const isSignedUp = (taskId: string) => signups.some(s => s.task_id === taskId);
   const getSignupStatus = (taskId: string) => signups.find(s => s.task_id === taskId)?.status || null;
 
@@ -977,144 +1021,280 @@ const VolunteerDashboard = () => {
       )}
 
       {/* ===== PAYMENTS TAB ===== */}
-      {activeTab === 'payments' && (
-        <>
-          {/* ── Local Rewards / Coupon Wallet ── */}
-          {activeCampaigns.filter(c => c.campaign_type === 'local_coupon').length > 0 && (
-            <div className="max-w-5xl mx-auto mb-6">
-              <h2 className="text-xl font-heading font-bold text-foreground mb-4 flex items-center gap-2">
-                <Gift className="w-5 h-5 text-primary" />
-                {language === 'nl' ? 'Lokale Beloningen' : language === 'fr' ? 'Récompenses locales' : 'Local Rewards'}
-              </h2>
-              <div className="space-y-3">
-                {activeCampaigns
-                  .filter(c => c.campaign_type === 'local_coupon')
-                  .map(campaign => {
-                    const existingCoupon = myCoupons.find(c => c.campaign_id === campaign.id);
-                    const color = campaign.sponsors?.brand_color || '#6366f1';
-                    const isClaiming = claimingCoupon === campaign.id;
-                    const isExpanded = expandedCoupon === campaign.id;
-                    return (
-                      <motion.div
-                        key={campaign.id}
-                        layout
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden"
-                      >
-                        <div className="p-4 flex items-start gap-4">
-                          {/* Sponsor logo / color swatch */}
-                          <div
-                            className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center"
-                            style={{ background: `${color}22`, border: `2px solid ${color}44` }}
+      {activeTab === 'payments' && (() => {
+        // Derive coupon wallet sections
+        const localCouponCampaigns = activeCampaigns.filter(c => c.campaign_type === 'local_coupon');
+        // "Available" = earned (completed a linked task) but not yet claimed
+        const availableCoupons = localCouponCampaigns.filter(c =>
+          earnedCampaignIds.has(c.id) && !myCoupons.find(mc => mc.campaign_id === c.id)
+        );
+        // "Active" = claimed, QR ready to show
+        const activeCoupons = myCoupons.filter(c => c.status === 'claimed');
+        // "Redeemed" = already used
+        const redeemedCoupons = myCoupons.filter(c => c.status === 'redeemed');
+
+        const hasCouponWallet = availableCoupons.length > 0 || activeCoupons.length > 0 || redeemedCoupons.length > 0;
+
+        return (
+          <>
+            {/* ── Local Rewards Wallet ─────────────────────────────────────── */}
+            {hasCouponWallet && (
+              <div className="max-w-5xl mx-auto mb-8">
+                <h2 className="text-xl font-heading font-bold text-foreground mb-1 flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-primary" />
+                  {language === 'nl' ? 'Lokale Beloningen' : language === 'fr' ? 'Récompenses locales' : 'Local Rewards'}
+                </h2>
+                <p className="text-sm text-muted-foreground mb-5">
+                  {language === 'nl'
+                    ? 'Jouw verdiende kortingsbonnen van lokale sponsors — te gebruiken in de winkel.'
+                    : language === 'fr'
+                    ? 'Vos bons de réduction locaux gagnés — à utiliser en magasin.'
+                    : 'Your earned discount coupons from local sponsors — use them in store.'}
+                </p>
+
+                {/* ── SECTION 1: Available to claim ─────────────────────── */}
+                {availableCoupons.length > 0 && (
+                  <div className="mb-5">
+                    <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                      {language === 'nl' ? 'Beschikbaar om te claimen' : language === 'fr' ? 'Disponibles à réclamer' : 'Available to claim'}
+                    </h3>
+                    <div className="space-y-3">
+                      {availableCoupons.map(campaign => {
+                        const color = campaign.sponsors?.brand_color || '#6366f1';
+                        const isClaiming = claimingCoupon === campaign.id;
+                        return (
+                          <motion.div
+                            key={campaign.id}
+                            layout
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden"
+                            style={{ borderLeftWidth: 4, borderLeftColor: color }}
                           >
-                            {campaign.sponsors?.logo_url ? (
-                              <img src={campaign.sponsors.logo_url} alt="" className="w-8 h-8 object-contain rounded-lg" />
-                            ) : (
-                              <span className="text-lg font-bold" style={{ color }}>{(campaign.sponsors?.name || 'S')[0]}</span>
-                            )}
-                          </div>
-
-                          {/* Campaign info */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground leading-tight mb-0.5">
-                              {campaign.sponsors?.name}
-                            </p>
-                            <p className="text-base font-bold text-foreground leading-snug">{campaign.title}</p>
-                            {campaign.description && (
-                              <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{campaign.description}</p>
-                            )}
-                            {campaign.reward_value_cents != null && (
-                              <span
-                                className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                                style={{ background: `${color}22`, color }}
+                            <div className="p-4 flex items-start gap-4">
+                              <div
+                                className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center"
+                                style={{ background: `${color}22`, border: `2px solid ${color}44` }}
                               >
-                                {language === 'nl' ? 'Waarde' : language === 'fr' ? 'Valeur' : 'Value'}: €{(campaign.reward_value_cents / 100).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Action button */}
-                          <div className="shrink-0">
-                            {!existingCoupon ? (
+                                {campaign.image_url ? (
+                                  <img src={campaign.image_url} alt="" className="w-9 h-9 object-contain rounded-lg" />
+                                ) : campaign.sponsors?.logo_url ? (
+                                  <img src={campaign.sponsors.logo_url} alt="" className="w-9 h-9 object-contain rounded-lg" />
+                                ) : (
+                                  <span className="text-lg font-bold" style={{ color }}>{(campaign.sponsors?.name || 'S')[0]}</span>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground leading-tight mb-0.5">
+                                  {campaign.sponsors?.name}
+                                </p>
+                                <p className="text-base font-bold text-foreground leading-snug">{campaign.title}</p>
+                                {campaign.description && (
+                                  <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{campaign.description}</p>
+                                )}
+                                {campaign.reward_value_cents != null && (
+                                  <span
+                                    className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                                    style={{ background: `${color}22`, color }}
+                                  >
+                                    €{(campaign.reward_value_cents / 100).toFixed(2)} {language === 'nl' ? 'korting' : language === 'fr' ? 'de réduction' : 'off'}
+                                  </span>
+                                )}
+                              </div>
                               <button
                                 onClick={() => handleClaimCoupon(campaign.id)}
                                 disabled={isClaiming}
-                                className="h-11 px-4 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                                className="shrink-0 h-12 px-5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 flex items-center gap-2"
                                 style={{ background: color }}
                               >
+                                {isClaiming ? (
+                                  <X className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Gift className="w-4 h-4" />
+                                )}
                                 {isClaiming
                                   ? '...'
                                   : language === 'nl' ? 'Claim'
                                   : language === 'fr' ? 'Obtenir'
                                   : 'Claim'}
                               </button>
-                            ) : (
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── SECTION 2: Active coupons (claimed, show QR) ─────────── */}
+                {activeCoupons.length > 0 && (
+                  <div className="mb-5">
+                    <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                      {language === 'nl' ? 'Actieve coupons — toon bij handelaar' : language === 'fr' ? 'Coupons actifs — montrez au commerçant' : 'Active coupons — show at shop'}
+                    </h3>
+                    <div className="space-y-3">
+                      {activeCoupons.map(coupon => {
+                        const campaign = activeCampaigns.find(c => c.id === coupon.campaign_id);
+                        const color = campaign?.sponsors?.brand_color || '#6366f1';
+                        const isExpanded = expandedCoupon === coupon.id;
+                        const isRedeeming = redeemingCoupon === coupon.id;
+                        return (
+                          <motion.div
+                            key={coupon.id}
+                            layout
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden"
+                          >
+                            <div className="p-4 flex items-start gap-4">
+                              <div
+                                className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center"
+                                style={{ background: `${color}22`, border: `2px solid ${color}44` }}
+                              >
+                                {campaign?.image_url ? (
+                                  <img src={campaign.image_url} alt="" className="w-9 h-9 object-contain rounded-lg" />
+                                ) : campaign?.sponsors?.logo_url ? (
+                                  <img src={campaign.sponsors.logo_url} alt="" className="w-9 h-9 object-contain rounded-lg" />
+                                ) : (
+                                  <span className="text-lg font-bold" style={{ color }}>{(campaign?.sponsors?.name || 'S')[0]}</span>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground leading-tight mb-0.5">
+                                  {campaign?.sponsors?.name}
+                                </p>
+                                <p className="text-base font-bold text-foreground leading-snug">{campaign?.title}</p>
+                                {campaign?.reward_value_cents != null && (
+                                  <span
+                                    className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                                    style={{ background: `${color}22`, color }}
+                                  >
+                                    €{(campaign.reward_value_cents / 100).toFixed(2)} {language === 'nl' ? 'korting' : language === 'fr' ? 'de réduction' : 'off'}
+                                  </span>
+                                )}
+                              </div>
                               <button
-                                onClick={() => setExpandedCoupon(isExpanded ? null : campaign.id)}
-                                className="h-11 px-4 rounded-xl text-sm font-semibold transition-colors border"
+                                onClick={() => setExpandedCoupon(isExpanded ? null : coupon.id)}
+                                className="shrink-0 h-12 px-4 rounded-xl text-sm font-semibold transition-colors border"
                                 style={{ borderColor: `${color}66`, color }}
                               >
                                 {isExpanded
                                   ? (language === 'nl' ? 'Verberg' : language === 'fr' ? 'Masquer' : 'Hide')
                                   : (language === 'nl' ? 'Toon QR' : language === 'fr' ? 'Voir QR' : 'Show QR')}
                               </button>
-                            )}
-                          </div>
-                        </div>
+                            </div>
 
-                        {/* QR code panel — shown when coupon is claimed and expanded */}
-                        <AnimatePresence>
-                          {existingCoupon && isExpanded && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.25 }}
-                              className="overflow-hidden"
+                            {/* QR panel */}
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.25 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div
+                                    className="px-4 pb-5 flex flex-col items-center gap-4 border-t"
+                                    style={{ borderColor: `${color}33` }}
+                                  >
+                                    <p className="text-sm text-muted-foreground pt-4 text-center max-w-xs">
+                                      {language === 'nl'
+                                        ? 'Laat deze QR-code scannen bij de handelaar om je beloning te ontvangen.'
+                                        : language === 'fr'
+                                        ? 'Faites scanner ce QR code chez le commerçant pour recevoir votre récompense.'
+                                        : 'Have the shop scan this QR code to receive your reward.'}
+                                    </p>
+
+                                    {/* QR code */}
+                                    <div className="p-5 bg-white rounded-2xl shadow-md">
+                                      <QRCodeSVG
+                                        value={coupon.qr_code_token}
+                                        size={192}
+                                        fgColor="#111827"
+                                        bgColor="#ffffff"
+                                        level="M"
+                                      />
+                                    </div>
+
+                                    <p className="text-[12px] font-mono text-muted-foreground tracking-[0.2em] uppercase">
+                                      {coupon.qr_code_token.slice(0, 8)} – {coupon.qr_code_token.slice(8, 16)}
+                                    </p>
+
+                                    {/* "Mark as used" button */}
+                                    <button
+                                      onClick={() => handleMarkRedeemed(coupon.id)}
+                                      disabled={isRedeeming}
+                                      className="w-full max-w-xs h-12 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                                      style={{
+                                        background: `${color}15`,
+                                        color,
+                                        border: `1.5px solid ${color}44`,
+                                      }}
+                                    >
+                                      {isRedeeming ? (
+                                        <X className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <Gift className="w-4 h-4" />
+                                      )}
+                                      {isRedeeming
+                                        ? '...'
+                                        : language === 'nl' ? 'Markeer als gebruikt door handelaar'
+                                        : language === 'fr' ? 'Marquer comme utilisé par le commerçant'
+                                        : 'Mark as used by shop owner'}
+                                    </button>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── SECTION 3: Redeemed (archived) ──────────────────────── */}
+                {redeemedCoupons.length > 0 && (
+                  <div className="mb-5">
+                    <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                      {language === 'nl' ? 'Gebruikt' : language === 'fr' ? 'Utilisés' : 'Redeemed'}
+                    </h3>
+                    <div className="space-y-2">
+                      {redeemedCoupons.map(coupon => {
+                        const campaign = activeCampaigns.find(c => c.id === coupon.campaign_id);
+                        const color = campaign?.sponsors?.brand_color || '#6366f1';
+                        return (
+                          <div
+                            key={coupon.id}
+                            className="bg-card/60 rounded-2xl border border-border/40 p-4 flex items-center gap-4 opacity-60"
+                          >
+                            <div
+                              className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center"
+                              style={{ background: `${color}11` }}
                             >
-                              <div
-                                className="px-4 pb-5 flex flex-col items-center gap-3 border-t"
-                                style={{ borderColor: `${color}33` }}
-                              >
-                                <p className="text-sm text-muted-foreground pt-4 text-center">
-                                  {language === 'nl'
-                                    ? 'Laat deze QR-code zien bij de handelaar om je beloning te ontvangen.'
-                                    : language === 'fr'
-                                    ? 'Montrez ce QR code au commerçant pour recevoir votre récompense.'
-                                    : 'Show this QR code at the shop to receive your reward.'}
-                                </p>
-                                <div className="p-4 bg-white rounded-2xl shadow-sm">
-                                  <QRCodeSVG
-                                    value={existingCoupon.qr_code_token}
-                                    size={176}
-                                    fgColor="#111827"
-                                    bgColor="#ffffff"
-                                    level="M"
-                                  />
-                                </div>
-                                <p className="text-[11px] font-mono text-muted-foreground tracking-wider">
-                                  {existingCoupon.qr_code_token.slice(0, 8).toUpperCase()}
-                                </p>
-                                {existingCoupon.status === 'redeemed' && (
-                                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                    {language === 'nl' ? 'Gebruikt' : language === 'fr' ? 'Utilisé' : 'Redeemed'}
-                                  </span>
-                                )}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    );
-                  })}
+                              <span className="text-base font-bold" style={{ color }}>{(campaign?.sponsors?.name || 'S')[0]}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-muted-foreground truncate">{campaign?.title}</p>
+                              <p className="text-[11px] text-muted-foreground/60">{campaign?.sponsors?.name}</p>
+                            </div>
+                            <span className="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                              {language === 'nl' ? '✓ Gebruikt' : language === 'fr' ? '✓ Utilisé' : '✓ Redeemed'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )}
 
-          <VolunteerPaymentsTab sepaPayouts={sepaPayouts} payments={myPayments} language={language} userId={currentUserId || undefined} volunteerName={profile?.full_name || undefined} />
-        </>
-      )}
+            <VolunteerPaymentsTab sepaPayouts={sepaPayouts} payments={myPayments} language={language} userId={currentUserId || undefined} volunteerName={profile?.full_name || undefined} />
+          </>
+        );
+      })()}
 
       {/* ===== GROW TAB ===== */}
       {activeTab === 'grow' && currentUserId && (

@@ -86,6 +86,7 @@ const LiveOpvolging = lazy(() => import("./pages/LiveOpvolging"));
 const SponsorHub = lazy(() => import("./pages/SponsorHub"));
 const SponsorPreview = lazy(() => import("./pages/SponsorPreview"));
 const SponsorResults = lazy(() => import("./pages/SponsorResults"));
+const PublicSponsorPage = lazy(() => import("./pages/PublicSponsorPage"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -207,6 +208,7 @@ const App = () => {
             <Route path="/sponsor-hub" element={<RequireAuth redirectTo="/club-login"><SponsorHub /></RequireAuth>} />
             <Route path="/sponsor/preview/:campaign_id" element={<SponsorPreview />} />
             <Route path="/sponsor/results/:campaign_id" element={<SponsorResults />} />
+            <Route path="/sponsor/:club_id" element={<PublicSponsorPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

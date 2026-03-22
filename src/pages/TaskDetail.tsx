@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Calendar, Users, Clock, Euro, FileText,
-  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered, ArrowLeftRight, Siren
+  AlertCircle, Share2, CheckCircle, Info, Navigation, Heart, MessageCircle, Camera, ListOrdered, ArrowLeftRight, Siren, Gift
 } from 'lucide-react';
 import ShiftSwapDialog from '@/components/ShiftSwapDialog';
 import TaskNotesSection from '@/components/TaskNotesSection';
@@ -245,6 +245,14 @@ const TaskDetail = () => {
   const [showBriefing, setShowBriefing] = useState(false);
   const [contractStatus, setContractStatus] = useState<'signed' | 'pending' | 'none' | 'loading'>('loading');
   const [myZone, setMyZone] = useState<{ name: string; max_capacity: number | null } | null>(null);
+  const [linkedCampaigns, setLinkedCampaigns] = useState<Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    reward_value_cents: number | null;
+    image_url: string | null;
+    sponsors: { name: string; brand_color: string; logo_url: string | null } | null;
+  }>>([]);
 
   const l = labels[language];
 
@@ -271,6 +279,19 @@ const TaskDetail = () => {
       if (!taskData) { setLoading(false); return; }
       setTask(taskData as unknown as Task);
       setWaitlistEnabled((taskData as any).waitlist_enabled || false);
+
+      // Fetch active coupon campaigns linked to this task
+      supabase
+        .from('sponsor_campaign_tasks' as any)
+        .select('sponsor_campaigns!inner(id, title, description, reward_value_cents, image_url, status, sponsors(name, brand_color, logo_url))')
+        .eq('task_id', id!)
+        .then(({ data: sctData }) => {
+          if (!sctData) return;
+          const active = ((sctData as any[]) || [])
+            .map((r: any) => r.sponsor_campaigns)
+            .filter((c: any) => c && c.status === 'active');
+          setLinkedCampaigns(active);
+        });
 
       // Check if club allows shift swaps
       supabase.from('clubs').select('allow_shift_swaps').eq('id', taskData.club_id).maybeSingle().then(({ data: clubData }) => {
@@ -654,6 +675,69 @@ const TaskDetail = () => {
             </div>
           </motion.div>
         )}
+        {/* ── Linked sponsor reward banners ───────────────────────────────── */}
+        {linkedCampaigns.length > 0 && (
+          <div className="mb-6 space-y-2">
+            {linkedCampaigns.map(campaign => {
+              const color = campaign.sponsors?.brand_color || '#6366f1';
+              return (
+                <motion.div
+                  key={campaign.id}
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="rounded-2xl overflow-hidden border shadow-sm"
+                  style={{ borderColor: `${color}44`, background: `linear-gradient(135deg, ${color}14, ${color}06)` }}
+                >
+                  <div className="px-4 py-3.5 flex items-start gap-3">
+                    {/* Icon / logo */}
+                    <div
+                      className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center"
+                      style={{ background: `${color}22`, border: `1.5px solid ${color}44` }}
+                    >
+                      {campaign.image_url ? (
+                        <img src={campaign.image_url} alt="" className="w-8 h-8 object-contain rounded-lg" />
+                      ) : campaign.sponsors?.logo_url ? (
+                        <img src={campaign.sponsors.logo_url} alt="" className="w-8 h-8 object-contain rounded-lg" />
+                      ) : (
+                        <Gift className="w-5 h-5" style={{ color }} />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      {/* Label */}
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                          style={{ background: `${color}22`, color }}
+                        >
+                          🎁 {language === 'nl' ? 'Extra Beloning' : language === 'fr' ? 'Récompense Bonus' : 'Extra Reward'}
+                        </span>
+                      </div>
+                      {/* Title */}
+                      <p className="text-sm font-bold text-foreground leading-snug">
+                        {campaign.title}
+                      </p>
+                      {campaign.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{campaign.description}</p>
+                      )}
+                      {/* Reward badge */}
+                      {campaign.reward_value_cents != null && (
+                        <p className="text-xs font-semibold mt-1" style={{ color }}>
+                          {language === 'nl'
+                            ? `€${(campaign.reward_value_cents / 100).toFixed(2)} korting bij ${campaign.sponsors?.name || 'de sponsor'} — na afloop van deze shift!`
+                            : language === 'fr'
+                            ? `€${(campaign.reward_value_cents / 100).toFixed(2)} de réduction chez ${campaign.sponsors?.name || 'le sponsor'} — après ce shift !`
+                            : `€${(campaign.reward_value_cents / 100).toFixed(2)} off at ${campaign.sponsors?.name || 'the sponsor'} — after completing this shift!`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Hero section */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex flex-wrap items-center gap-2 mb-3">
