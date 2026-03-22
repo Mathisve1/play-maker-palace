@@ -184,23 +184,21 @@ const SponsorHub = () => {
     if (!clubId) return;
     setLoading(true);
 
-    const [sponsorsRes, campaignsRes, metricsRes] = await Promise.all([
-      supabase.from('sponsors' as any).select('*').eq('club_id', clubId).order('name'),
-      supabase.from('sponsor_campaigns' as any)
-        .select('*, sponsors(name, brand_color)')
-        .eq('club_id', clubId)
-        .order('created_at', { ascending: false }),
-      supabase.from('sponsor_metrics' as any)
-        .select('campaign_id, impressions_count, claims_count')
-        .in(
-          'campaign_id',
-          ((campaignsRes as any)?.data || []).map((c: any) => c.id).length
-            ? ((campaignsRes as any)?.data || []).map((c: any) => c.id)
-            : ['00000000-0000-0000-0000-000000000000']
-        ),
-    ]);
+    const sponsorsRes = await supabase.from('sponsors' as any).select('*').eq('club_id', clubId).order('name');
+    const campaignsRes = await supabase.from('sponsor_campaigns' as any)
+      .select('*, sponsors(name, brand_color)')
+      .eq('club_id', clubId)
+      .order('created_at', { ascending: false });
 
-    setSponsors((sponsorsRes.data as Sponsor[]) || []);
+    const campaignIds = ((campaignsRes as any)?.data || []).map((c: any) => c.id);
+    const metricsRes = await supabase.from('sponsor_metrics' as any)
+      .select('campaign_id, impressions_count, claims_count')
+      .in(
+        'campaign_id',
+        campaignIds.length ? campaignIds : ['00000000-0000-0000-0000-000000000000']
+      );
+
+    setSponsors(((sponsorsRes as any).data as unknown as Sponsor[]) || []);
 
     // Aggregate metrics by campaign
     const metricMap: Record<string, { imp: number; claims: number }> = {};
@@ -263,8 +261,8 @@ const SponsorHub = () => {
       .maybeSingle();
     if (error) { toast.error(error.message); }
     else {
-      setSponsors(prev => [...prev, data as Sponsor]);
-      setForm(f => ({ ...f, sponsor_id: (data as Sponsor).id }));
+      setSponsors(prev => [...prev, data as unknown as Sponsor]);
+      setForm(f => ({ ...f, sponsor_id: (data as unknown as Sponsor).id }));
       setSponsorSheet(false);
       setNewSponsor({ name: '', brand_color: '#6366f1' });
       toast.success(t('Sponsor aangemaakt!', 'Sponsor créé !', 'Sponsor created!'));
