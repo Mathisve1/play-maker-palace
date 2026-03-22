@@ -4985,6 +4985,7 @@ export type Database = {
         Row: {
           campaign_type: Database["public"]["Enums"]["sponsor_campaign_type"]
           club_id: string
+          coupon_validity_days: number
           cover_image_url: string | null
           created_at: string
           custom_cta: string | null
@@ -5004,6 +5005,7 @@ export type Database = {
         Insert: {
           campaign_type: Database["public"]["Enums"]["sponsor_campaign_type"]
           club_id: string
+          coupon_validity_days?: number
           cover_image_url?: string | null
           created_at?: string
           custom_cta?: string | null
@@ -5023,6 +5025,7 @@ export type Database = {
         Update: {
           campaign_type?: Database["public"]["Enums"]["sponsor_campaign_type"]
           club_id?: string
+          coupon_validity_days?: number
           cover_image_url?: string | null
           created_at?: string
           custom_cta?: string | null
@@ -6312,6 +6315,7 @@ export type Database = {
           backup_code: string
           campaign_id: string
           created_at: string
+          expires_at: string | null
           id: string
           qr_token: string
           redeemed_at: string | null
@@ -6323,6 +6327,7 @@ export type Database = {
           backup_code?: string
           campaign_id: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           qr_token?: string
           redeemed_at?: string | null
@@ -6334,6 +6339,7 @@ export type Database = {
           backup_code?: string
           campaign_id?: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           qr_token?: string
           redeemed_at?: string | null

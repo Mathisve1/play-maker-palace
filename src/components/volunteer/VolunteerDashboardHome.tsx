@@ -40,6 +40,7 @@ interface VolunteerCoupon {
   backup_code: string;
   status: 'active' | 'redeemed' | 'expired';
   redeemed_at: string | null;
+  expires_at: string | null;
   created_at: string;
   campaign: {
     id: string;
@@ -102,9 +103,9 @@ const VolunteerDashboardHome = ({
     if (!currentUserId) return;
     const fetchCoupons = async () => {
       const { data } = await supabase
-        .from('volunteer_coupons')
+        .from('volunteer_coupons' as any)
         .select(`
-          id, qr_token, backup_code, status, redeemed_at, created_at,
+          id, qr_token, backup_code, status, redeemed_at, expires_at, created_at,
           sponsor_campaigns!campaign_id (
             id, title, reward_text, reward_value_cents,
             sponsors!sponsor_id ( name, logo_url, brand_color )
@@ -113,12 +114,13 @@ const VolunteerDashboardHome = ({
         .eq('volunteer_id', currentUserId)
         .order('created_at', { ascending: false });
       if (data) {
-        setMyCoupons(data.map((row: any) => ({
+        setMyCoupons((data as any[]).map((row: any) => ({
           id: row.id,
           qr_token: row.qr_token,
           backup_code: row.backup_code,
-          status: row.status,
+          status: row.expires_at && new Date(row.expires_at) < new Date() && row.status === 'active' ? 'expired' : row.status,
           redeemed_at: row.redeemed_at,
+          expires_at: row.expires_at,
           created_at: row.created_at,
           campaign: row.sponsor_campaigns,
           sponsor: row.sponsor_campaigns?.sponsors ?? null,
@@ -546,16 +548,82 @@ const VolunteerDashboardHome = ({
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
           onClick={() => setWalletOpen(true)}
-          className="bg-card rounded-2xl p-4 shadow-sm border border-orange-200/60 dark:border-orange-800/40 text-center flex flex-col items-center gap-2 cursor-pointer hover:border-orange-300 hover:shadow-orange-100/60 transition-all">
-          <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-            <Gift className="w-5 h-5 text-orange-500" />
+          className="bg-card rounded-2xl p-4 shadow-sm border border-primary/20 dark:border-primary/30 text-center flex flex-col items-center gap-2 cursor-pointer hover:border-primary/40 transition-all">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Gift className="w-5 h-5 text-primary" />
           </div>
           <p className="text-2xl font-heading font-bold text-foreground leading-none">{myCoupons.filter(c => c.status === 'active').length}</p>
           <p className="text-xs text-muted-foreground leading-tight">{language === 'nl' ? 'Coupons' : language === 'fr' ? 'Coupons' : 'Coupons'}</p>
         </motion.div>
       </div>
 
-      {/* ═══ TAKEN VAN JOUW CLUBS ═══ */}
+      {/* ═══ MIJN COUPONS SECTIE ═══ */}
+      {myCoupons.length > 0 && (() => {
+        const activeCoupons = myCoupons.filter(c => c.status === 'active');
+        const otherCoupons = myCoupons.filter(c => c.status !== 'active');
+        if (activeCoupons.length === 0 && otherCoupons.length === 0) return null;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl border border-primary/20 dark:border-primary/30 p-5 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
+                <Gift className="w-5 h-5 text-primary" />
+                {language === 'nl' ? 'Mijn Coupons' : language === 'fr' ? 'Mes Coupons' : 'My Coupons'}
+              </h3>
+              {myCoupons.length > 2 && (
+                <button onClick={() => setWalletOpen(true)} className="text-sm font-medium text-primary hover:underline">
+                  {language === 'nl' ? 'Bekijk alle' : language === 'fr' ? 'Voir tout' : 'View all'} →
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {activeCoupons.slice(0, 2).map((coupon) => {
+                const brandColor = coupon.sponsor?.brand_color || 'hsl(var(--primary))';
+                const daysLeft = coupon.expires_at
+                  ? Math.max(0, Math.ceil((new Date(coupon.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                  : null;
+                return (
+                  <div key={coupon.id}
+                    onClick={() => setWalletOpen(true)}
+                    className="flex items-center gap-4 p-4 rounded-2xl border border-primary/10 bg-gradient-to-r from-primary/5 to-transparent cursor-pointer hover:border-primary/30 transition-all"
+                  >
+                    {coupon.sponsor?.logo_url ? (
+                      <img src={coupon.sponsor.logo_url} alt={coupon.sponsor.name} className="w-12 h-12 rounded-xl object-contain border border-border bg-white shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Gift className="w-6 h-6 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-semibold text-foreground truncate">{coupon.campaign.title}</p>
+                      {coupon.campaign.reward_value_cents && (
+                        <p className="text-sm font-bold text-primary">
+                          €{(coupon.campaign.reward_value_cents / 100).toFixed(2)} {coupon.campaign.reward_text || (language === 'nl' ? 'korting' : 'discount')}
+                        </p>
+                      )}
+                      {daysLeft !== null && (
+                        <p className={`text-xs mt-0.5 ${daysLeft <= 3 ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
+                          {daysLeft === 0
+                            ? (language === 'nl' ? 'Verloopt vandaag!' : 'Expires today!')
+                            : `${daysLeft} ${language === 'nl' ? 'dagen geldig' : 'days left'}`}
+                        </p>
+                      )}
+                    </div>
+                    <div className="shrink-0 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
+                      {language === 'nl' ? 'Toon QR' : 'Show QR'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        );
+      })()}
+
       {followedClubIds && followedClubIds.size > 0 && (() => {
         const filtered = followedClubTasksRaw
           .filter(t => !signups.some(s => s.task_id === t.id))
@@ -951,15 +1019,15 @@ const VolunteerDashboardHome = ({
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-2xl">
           <SheetHeader className="pb-2">
             <SheetTitle className="flex items-center gap-2 text-lg">
-              <Gift className="w-5 h-5 text-orange-500" />
+              <Gift className="w-5 h-5 text-primary" />
               {language === 'nl' ? 'Mijn Coupons & Beloningen' : language === 'fr' ? 'Mes Coupons & Récompenses' : 'My Coupons & Rewards'}
             </SheetTitle>
           </SheetHeader>
 
           {myCoupons.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center">
-                <Gift className="w-8 h-8 text-orange-400" />
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Gift className="w-8 h-8 text-primary" />
               </div>
               <p className="text-base font-semibold text-foreground">
                 {language === 'nl' ? 'Nog geen coupons' : language === 'fr' ? 'Pas encore de coupons' : 'No coupons yet'}
@@ -973,12 +1041,14 @@ const VolunteerDashboardHome = ({
               {myCoupons.map((coupon) => {
                 const isActive = coupon.status === 'active';
                 const isRedeemed = coupon.status === 'redeemed';
-                const brandColor = coupon.sponsor?.brand_color || '#f97316';
+                const daysLeft = coupon.expires_at
+                  ? Math.max(0, Math.ceil((new Date(coupon.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                  : null;
                 return (
                   <div key={coupon.id}
                     className={`rounded-2xl border p-4 transition-all ${
                       isActive
-                        ? 'border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50/30'
+                        ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent'
                         : 'border-border bg-muted/30 opacity-70'
                     }`}>
                     {/* Header */}
@@ -986,19 +1056,22 @@ const VolunteerDashboardHome = ({
                       {coupon.sponsor?.logo_url ? (
                         <img src={coupon.sponsor.logo_url} alt={coupon.sponsor.name} className="w-10 h-10 rounded-xl object-contain border border-border bg-white shrink-0" />
                       ) : (
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${brandColor}20` }}>
-                          <Gift className="w-5 h-5" style={{ color: brandColor }} />
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                          <Gift className="w-5 h-5 text-primary" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-base font-semibold text-foreground truncate">{coupon.campaign.title}</p>
                         {coupon.sponsor && <p className="text-sm text-muted-foreground">{coupon.sponsor.name}</p>}
                         {coupon.campaign.reward_text && (
-                          <p className="text-sm font-medium mt-0.5" style={{ color: brandColor }}>{coupon.campaign.reward_text}</p>
+                          <p className="text-sm font-medium text-primary mt-0.5">{coupon.campaign.reward_text}</p>
+                        )}
+                        {isActive && coupon.campaign.reward_value_cents && (
+                          <p className="text-lg font-bold text-primary mt-0.5">€{(coupon.campaign.reward_value_cents / 100).toFixed(2)}</p>
                         )}
                       </div>
                       <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                        isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
                         isRedeemed ? 'bg-muted text-muted-foreground' : 'bg-red-100 text-red-600'
                       }`}>
                         {isActive
@@ -1009,10 +1082,21 @@ const VolunteerDashboardHome = ({
                       </span>
                     </div>
 
+                    {/* Expiry warning */}
+                    {isActive && daysLeft !== null && (
+                      <div className={`text-center text-sm mb-3 py-1.5 rounded-xl ${
+                        daysLeft <= 3 ? 'bg-destructive/10 text-destructive font-semibold' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {daysLeft === 0
+                          ? (language === 'nl' ? '⚠️ Verloopt vandaag!' : '⚠️ Expires today!')
+                          : `${language === 'nl' ? 'Nog' : ''} ${daysLeft} ${language === 'nl' ? 'dagen geldig' : 'days left'}`}
+                      </div>
+                    )}
+
                     {/* QR Code */}
                     {isActive && (
                       <div className="flex flex-col items-center gap-3">
-                        <div className="p-3 bg-white rounded-2xl shadow-sm border border-orange-100">
+                        <div className="p-3 bg-white rounded-2xl shadow-sm border border-border">
                           <QRCodeSVG
                             value={coupon.qr_token}
                             size={180}
@@ -1026,6 +1110,9 @@ const VolunteerDashboardHome = ({
                           </p>
                           <p className="text-2xl font-mono font-bold tracking-widest text-foreground">{coupon.backup_code}</p>
                         </div>
+                        <p className="text-sm text-muted-foreground text-center">
+                          {language === 'nl' ? 'Toon deze QR-code bij de sponsor om je korting te verzilveren.' : language === 'fr' ? 'Montrez ce QR code au sponsor pour échanger votre réduction.' : 'Show this QR code at the sponsor to redeem your discount.'}
+                        </p>
                       </div>
                     )}
 
