@@ -60,6 +60,7 @@ interface Campaign {
   cover_image_url?: string | null;
   custom_cta?: string | null;
   rich_description?: string | null;
+  portal_access_token?: string | null;
 }
 
 const CAMPAIGN_TYPE_LABELS: Record<string, {
@@ -650,14 +651,22 @@ const SponsorHub = () => {
                           {rejectingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                         </button>
                         <button
-                          onClick={() => handleApproveCampaign(c.id)}
+                          onClick={async () => {
+                            await handleApproveCampaign(c.id);
+                            // After approval the campaign gets status 'active' — offer portal link
+                            if (c.portal_access_token) {
+                              const url = `${window.location.origin}/sponsor/portal/${c.id}/${c.portal_access_token}`;
+                              navigator.clipboard.writeText(url).catch(() => {});
+                              toast.success(t('Goedgekeurd! Portaal-link gekopieerd.', 'Approuvé ! Lien portail copié.', 'Approved! Portal link copied.'));
+                            }
+                          }}
                           disabled={approvingId === c.id}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
                         >
                           {approvingId === c.id
                             ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             : <CheckCircle2 className="w-3.5 h-3.5" />}
-                          {t('Goedkeuren', 'Approuver', 'Approve')}
+                          {t('Goedkeuren + link', 'Approuver + lien', 'Approve + link')}
                         </button>
                       </div>
                     </div>
@@ -819,6 +828,23 @@ const SponsorHub = () => {
                             >
                               {t('Bewerk', 'Modifier', 'Edit')}
                             </button>
+                            {/* Portal link — only for active campaigns with a token */}
+                            {c.status === 'active' && c.portal_access_token && (
+                              <button
+                                onClick={() => {
+                                  const url = `${window.location.origin}/sponsor/portal/${c.id}/${c.portal_access_token}`;
+                                  navigator.clipboard.writeText(url);
+                                  setCopiedId(`portal-${c.id}`);
+                                  toast.success(t('Portaal-link gekopieerd!', 'Lien portail copié !', 'Portal link copied!'));
+                                  setTimeout(() => setCopiedId(null), 2000);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md border border-indigo-300/50 bg-indigo-50/60 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:border-indigo-700/40 dark:hover:bg-indigo-950/60 transition-colors text-indigo-600 dark:text-indigo-400"
+                                title={t('Kopieer portaal-link voor sponsor', 'Copier lien portail', 'Copy portal link for sponsor')}
+                              >
+                                {copiedId === `portal-${c.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <ExternalLink className="w-3 h-3" />}
+                                Portal
+                              </button>
+                            )}
                             <button
                               onClick={() => handleToggleStatus(c)}
                               className={cn(
