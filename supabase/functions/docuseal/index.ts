@@ -1441,7 +1441,7 @@ Deno.serve(async (req) => {
         const pushUrl = `${supabaseUrl}/functions/v1/send-native-push`;
         await fetch(pushUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${anonKey}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
           body: JSON.stringify({ user_id: volunteer_id, title: '📝 Nieuw contract!', message: `Er staat een nieuw seizoenscontract (${tmpl.name}) klaar om te ondertekenen.`, url: '/dashboard', type: 'contract_sent' }),
         });
       } catch (e) { console.warn('Push for contract_sent failed:', e); }
