@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   Building2, Megaphone, Gift, ChevronRight, ChevronLeft,
   Check, Loader2, Tag, CheckCircle2, ArrowRight,
-  Calendar, Mail, Zap,
+  Mail, Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ImageUploader from '@/components/sponsor/ImageUploader';
