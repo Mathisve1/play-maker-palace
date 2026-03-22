@@ -496,7 +496,7 @@ const SponsorHub = () => {
       <div className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -526,7 +526,7 @@ const SponsorHub = () => {
             </button>
             <button
               onClick={() => { setEditingCampaign(null); setForm(emptyForm()); setTaskSearchQuery(''); setSheetOpen(true); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               {t('Campagne', 'Campagne', 'Campaign')}
@@ -543,7 +543,7 @@ const SponsorHub = () => {
             { icon: Clock,       label: t('Aanvragen', 'Demandes', 'Applications'),      value: pendingCampaigns.length,          color: 'text-amber-500',   highlight: pendingCampaigns.length > 0 },
             { icon: TrendingUp,  label: t('Actieve campagnes', 'Campagnes actives', 'Active Campaigns'), value: activeCampaignCount,    color: 'text-emerald-500', highlight: false },
             { icon: Eye,         label: t('Totale vertoningen', 'Impressions totales', 'Total Impressions'), value: totalImpressions.toLocaleString(), color: 'text-blue-500',    highlight: false },
-            { icon: Target,      label: t('Totale claims', 'Claims totaux', 'Total Claims'), value: totalClaims.toLocaleString(),     color: 'text-purple-500',  highlight: false },
+            { icon: Target,      label: t('Totale claims', 'Claims totaux', 'Total Claims'), value: totalClaims.toLocaleString(),     color: 'text-primary',  highlight: false },
           ].map(({ icon: Icon, label, value, color, highlight }) => (
             <div
               key={label}
@@ -623,7 +623,7 @@ const SponsorHub = () => {
                             </span>
                           )}
                           {(c.linked_task_ids?.length || 0) > 0 && (
-                            <span className="text-xs text-indigo-500">
+                            <span className="text-xs text-primary">
                               {c.linked_task_ids!.length} {t('taken', 'tâches', 'tasks')}
                             </span>
                           )}
@@ -762,7 +762,7 @@ const SponsorHub = () => {
                               <p className="font-medium text-foreground truncate max-w-[160px]">{c.title}</p>
                               <p className="text-[11px] text-muted-foreground truncate max-w-[160px]">{c.sponsor_name}</p>
                               {c.campaign_type === 'local_coupon' && (c.linked_task_ids?.length || 0) > 0 && (
-                                <p className="text-[10px] text-indigo-500 mt-0.5">
+                                <p className="text-[10px] text-primary mt-0.5">
                                   {c.linked_task_ids!.length} {t('taken', 'tâches', 'tasks')}
                                 </p>
                               )}
@@ -837,7 +837,7 @@ const SponsorHub = () => {
                                   toast.success(t('Portaal-link gekopieerd!', 'Lien portail copié !', 'Portal link copied!'));
                                   setTimeout(() => setCopiedId(null), 2000);
                                 }}
-                                className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md border border-indigo-300/50 bg-indigo-50/60 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:border-indigo-700/40 dark:hover:bg-indigo-950/60 transition-colors text-indigo-600 dark:text-indigo-400"
+                                className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md border border-primary/40/50 bg-primary/10/60 hover:bg-primary/15 dark:bg-primary/10 dark:border-primary/30 dark:hover:bg-indigo-950/60 transition-colors text-primary dark:text-primary"
                                 title={t('Kopieer portaal-link voor sponsor', 'Copier lien portail', 'Copy portal link for sponsor')}
                               >
                                 {copiedId === `portal-${c.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <ExternalLink className="w-3 h-3" />}
@@ -876,7 +876,7 @@ const SponsorHub = () => {
             <div className="flex-1 overflow-y-auto px-6 py-6 border-r border-border/40">
               <SheetHeader className="mb-6">
                 <SheetTitle className="flex items-center gap-2">
-                  <Megaphone className="w-4 h-4 text-indigo-500" />
+                  <Megaphone className="w-4 h-4 text-primary" />
                   {editingCampaign
                     ? t('Campagne bewerken', 'Modifier la campagne', 'Edit Campaign')
                     : t('Nieuwe campagne', 'Nouvelle campagne', 'New Campaign')
@@ -901,7 +901,7 @@ const SponsorHub = () => {
                     <select
                       value={form.sponsor_id}
                       onChange={e => setForm(f => ({ ...f, sponsor_id: e.target.value }))}
-                      className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                      className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     >
                       <option value="">{t('Selecteer sponsor...', 'Sélectionner sponsor...', 'Select sponsor...')}</option>
                       {sponsors.map(s => (
@@ -933,8 +933,8 @@ const SponsorHub = () => {
                           className={cn(
                             'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-medium transition-all',
                             form.campaign_type === type
-                              ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
-                              : 'border-border text-muted-foreground hover:border-indigo-300 hover:text-foreground',
+                              ? 'border-primary bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary'
+                              : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground',
                           )}
                         >
                           <Icon className="w-4 h-4" />
@@ -955,7 +955,7 @@ const SponsorHub = () => {
                     value={form.title}
                     onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                     placeholder={t('bv. €5 korting bij Slager Dirk', 'ex. €5 de réduction chez le Boucher', 'e.g. €5 off at Butcher Dirk')}
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
 
@@ -969,7 +969,7 @@ const SponsorHub = () => {
                     onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                     rows={2}
                     placeholder={t('Korte omschrijving van de actie...', 'Courte description de l\'action...', 'Short description of the offer...')}
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
                   />
                 </div>
 
@@ -1005,7 +1005,7 @@ const SponsorHub = () => {
                       onChange={e => setForm(f => ({ ...f, custom_cta: e.target.value }))}
                       placeholder={t('bv. Bekijk Ons Menu', 'ex. Voir Notre Menu', 'e.g. Visit Our Website')}
                       maxLength={30}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                 )}
@@ -1020,7 +1020,7 @@ const SponsorHub = () => {
                     onChange={e => setForm(f => ({ ...f, rich_description: e.target.value }))}
                     rows={3}
                     placeholder={t('Extra informatie over de aanbieding...', 'Informations supplémentaires...', 'Additional offer details...')}
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
                   />
                 </div>
 
@@ -1043,11 +1043,11 @@ const SponsorHub = () => {
                             reward_value_cents: e.target.value ? String(Math.round(parseFloat(e.target.value) * 100)) : '',
                           }))}
                           placeholder="5.00"
-                          className="w-full pl-7 pr-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                          className="w-full pl-7 pr-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                         />
                       </div>
                       {form.reward_value_cents && (
-                        <span className="text-sm font-bold text-indigo-500">
+                        <span className="text-sm font-bold text-primary">
                           = {form.reward_value_cents} centen
                         </span>
                       )}
@@ -1061,7 +1061,7 @@ const SponsorHub = () => {
                     <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
                       <List className="w-3.5 h-3.5 text-muted-foreground" />
                       {t('Gekoppelde taken', 'Tâches liées', 'Linked tasks')}
-                      <span className="ml-auto text-[11px] font-normal text-indigo-500">
+                      <span className="ml-auto text-[11px] font-normal text-primary">
                         {form.linked_task_ids.length} {t('geselecteerd', 'sélectionnées', 'selected')}
                       </span>
                     </label>
@@ -1079,7 +1079,7 @@ const SponsorHub = () => {
                       value={taskSearchQuery}
                       onChange={e => setTaskSearchQuery(e.target.value)}
                       placeholder={t('Zoek taken...', 'Chercher des tâches...', 'Search tasks...')}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 mb-2"
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 mb-2"
                     />
 
                     {tasks.length === 0 ? (
@@ -1097,7 +1097,7 @@ const SponsorHub = () => {
                                   key={task.id}
                                   className={cn(
                                     'flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-muted/40',
-                                    isChecked && 'bg-indigo-50/60 dark:bg-indigo-950/30',
+                                    isChecked && 'bg-primary/10/60 dark:bg-primary/10',
                                   )}
                                 >
                                   <input
@@ -1111,7 +1111,7 @@ const SponsorHub = () => {
                                           : [...f.linked_task_ids, task.id],
                                       }));
                                     }}
-                                    className="w-4 h-4 rounded accent-indigo-500 shrink-0"
+                                    className="w-4 h-4 rounded accent-primary shrink-0"
                                   />
                                   <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
@@ -1125,7 +1125,7 @@ const SponsorHub = () => {
                                     )}
                                   </div>
                                   {isChecked && (
-                                    <Check className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                                   )}
                                 </label>
                               );
@@ -1159,7 +1159,7 @@ const SponsorHub = () => {
                       type="date"
                       value={form.start_date}
                       onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                   <div>
@@ -1170,7 +1170,7 @@ const SponsorHub = () => {
                       type="date"
                       value={form.end_date}
                       onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                 </div>
@@ -1183,7 +1183,7 @@ const SponsorHub = () => {
                   <select
                     value={form.status}
                     onChange={e => setForm(f => ({ ...f, status: e.target.value as Campaign['status'] }))}
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     <option value="draft">{t('Concept', 'Brouillon', 'Draft')}</option>
                     <option value="active">{t('Actief', 'Actif', 'Active')}</option>
@@ -1195,7 +1195,7 @@ const SponsorHub = () => {
                 <button
                   onClick={handleSaveCampaign}
                   disabled={saving || !form.sponsor_id || !form.title.trim()}
-                  className="w-full h-11 rounded-xl font-semibold text-sm bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  className="w-full h-11 rounded-xl font-semibold text-sm bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   {saving ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1280,7 +1280,7 @@ const SponsorHub = () => {
         <SheetContent side="right" className="w-full sm:max-w-md">
           <SheetHeader className="mb-6">
             <SheetTitle className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-indigo-500" />
+              <Building2 className="w-4 h-4 text-primary" />
               {t('Nieuwe sponsor', 'Nouveau sponsor', 'New Sponsor')}
             </SheetTitle>
           </SheetHeader>
@@ -1294,7 +1294,7 @@ const SponsorHub = () => {
                 value={newSponsor.name}
                 onChange={e => setNewSponsor(s => ({ ...s, name: e.target.value }))}
                 placeholder={t('bv. Slager Dirk', 'ex. Boucher Dirk', 'e.g. Butcher Dirk')}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
             <div>
@@ -1318,7 +1318,7 @@ const SponsorHub = () => {
             <button
               onClick={handleCreateSponsor}
               disabled={creatingSponsors || !newSponsor.name.trim()}
-              className="w-full h-11 rounded-xl font-semibold text-sm bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-xl font-semibold text-sm bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
             >
               {creatingSponsors ? <Loader2 className="w-4 h-4 animate-spin" /> : t('Sponsor aanmaken', 'Créer le sponsor', 'Create sponsor')}
             </button>
