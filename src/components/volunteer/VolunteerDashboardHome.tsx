@@ -1026,8 +1026,8 @@ const VolunteerDashboardHome = ({
 
           {myCoupons.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center">
-                <Gift className="w-8 h-8 text-orange-400" />
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Gift className="w-8 h-8 text-primary" />
               </div>
               <p className="text-base font-semibold text-foreground">
                 {language === 'nl' ? 'Nog geen coupons' : language === 'fr' ? 'Pas encore de coupons' : 'No coupons yet'}
@@ -1041,12 +1041,14 @@ const VolunteerDashboardHome = ({
               {myCoupons.map((coupon) => {
                 const isActive = coupon.status === 'active';
                 const isRedeemed = coupon.status === 'redeemed';
-                const brandColor = coupon.sponsor?.brand_color || '#f97316';
+                const daysLeft = coupon.expires_at
+                  ? Math.max(0, Math.ceil((new Date(coupon.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                  : null;
                 return (
                   <div key={coupon.id}
                     className={`rounded-2xl border p-4 transition-all ${
                       isActive
-                        ? 'border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50/30'
+                        ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent'
                         : 'border-border bg-muted/30 opacity-70'
                     }`}>
                     {/* Header */}
@@ -1054,19 +1056,22 @@ const VolunteerDashboardHome = ({
                       {coupon.sponsor?.logo_url ? (
                         <img src={coupon.sponsor.logo_url} alt={coupon.sponsor.name} className="w-10 h-10 rounded-xl object-contain border border-border bg-white shrink-0" />
                       ) : (
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${brandColor}20` }}>
-                          <Gift className="w-5 h-5" style={{ color: brandColor }} />
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                          <Gift className="w-5 h-5 text-primary" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-base font-semibold text-foreground truncate">{coupon.campaign.title}</p>
                         {coupon.sponsor && <p className="text-sm text-muted-foreground">{coupon.sponsor.name}</p>}
                         {coupon.campaign.reward_text && (
-                          <p className="text-sm font-medium mt-0.5" style={{ color: brandColor }}>{coupon.campaign.reward_text}</p>
+                          <p className="text-sm font-medium text-primary mt-0.5">{coupon.campaign.reward_text}</p>
+                        )}
+                        {isActive && coupon.campaign.reward_value_cents && (
+                          <p className="text-lg font-bold text-primary mt-0.5">€{(coupon.campaign.reward_value_cents / 100).toFixed(2)}</p>
                         )}
                       </div>
                       <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                        isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
                         isRedeemed ? 'bg-muted text-muted-foreground' : 'bg-red-100 text-red-600'
                       }`}>
                         {isActive
@@ -1077,10 +1082,21 @@ const VolunteerDashboardHome = ({
                       </span>
                     </div>
 
+                    {/* Expiry warning */}
+                    {isActive && daysLeft !== null && (
+                      <div className={`text-center text-sm mb-3 py-1.5 rounded-xl ${
+                        daysLeft <= 3 ? 'bg-destructive/10 text-destructive font-semibold' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {daysLeft === 0
+                          ? (language === 'nl' ? '⚠️ Verloopt vandaag!' : '⚠️ Expires today!')
+                          : `${language === 'nl' ? 'Nog' : ''} ${daysLeft} ${language === 'nl' ? 'dagen geldig' : 'days left'}`}
+                      </div>
+                    )}
+
                     {/* QR Code */}
                     {isActive && (
                       <div className="flex flex-col items-center gap-3">
-                        <div className="p-3 bg-white rounded-2xl shadow-sm border border-orange-100">
+                        <div className="p-3 bg-white rounded-2xl shadow-sm border border-border">
                           <QRCodeSVG
                             value={coupon.qr_token}
                             size={180}
@@ -1094,6 +1110,9 @@ const VolunteerDashboardHome = ({
                           </p>
                           <p className="text-2xl font-mono font-bold tracking-widest text-foreground">{coupon.backup_code}</p>
                         </div>
+                        <p className="text-sm text-muted-foreground text-center">
+                          {language === 'nl' ? 'Toon deze QR-code bij de sponsor om je korting te verzilveren.' : language === 'fr' ? 'Montrez ce QR code au sponsor pour échanger votre réduction.' : 'Show this QR code at the sponsor to redeem your discount.'}
+                        </p>
                       </div>
                     )}
 
