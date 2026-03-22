@@ -548,9 +548,9 @@ const VolunteerDashboardHome = ({
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
           onClick={() => setWalletOpen(true)}
-          className="bg-card rounded-2xl p-4 shadow-sm border border-orange-200/60 dark:border-orange-800/40 text-center flex flex-col items-center gap-2 cursor-pointer hover:border-orange-300 hover:shadow-orange-100/60 transition-all">
-          <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-            <Gift className="w-5 h-5 text-orange-500" />
+          className="bg-card rounded-2xl p-4 shadow-sm border border-primary/20 dark:border-primary/30 text-center flex flex-col items-center gap-2 cursor-pointer hover:border-primary/40 transition-all">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Gift className="w-5 h-5 text-primary" />
           </div>
           <p className="text-2xl font-heading font-bold text-foreground leading-none">{myCoupons.filter(c => c.status === 'active').length}</p>
           <p className="text-xs text-muted-foreground leading-tight">{language === 'nl' ? 'Coupons' : language === 'fr' ? 'Coupons' : 'Coupons'}</p>
@@ -1018,11 +1018,12 @@ const VolunteerDashboardHome = ({
       <Sheet open={walletOpen} onOpenChange={setWalletOpen}>
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-2xl">
           <SheetHeader className="pb-2">
-            <SheetTitle className="flex items-center gap-2 text-lg">
-              <Gift className="w-5 h-5 text-orange-500" />
+            <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-1">
+              <Gift className="w-5 h-5 text-primary" />
               {language === 'nl' ? 'Mijn Coupons & Beloningen' : language === 'fr' ? 'Mes Coupons & Récompenses' : 'My Coupons & Rewards'}
-            </SheetTitle>
-          </SheetHeader>
+            </div>
+          </SheetTitle>
+        </SheetHeader>
 
           {myCoupons.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
