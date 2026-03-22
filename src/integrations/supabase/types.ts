@@ -7008,27 +7008,46 @@ export type Database = {
         }
         Returns: string
       }
-      submit_sponsor_application: {
-        Args: {
-          p_brand_color?: string
-          p_campaign_type?: string
-          p_club_id: string
-          p_contact_email?: string
-          p_contact_name?: string
-          p_cover_image_url?: string
-          p_custom_cta?: string
-          p_description?: string
-          p_image_url?: string
-          p_logo_url?: string
-          p_reward_text?: string
-          p_reward_value_cents?: number
-          p_rich_description?: string
-          p_sponsor_name: string
-          p_task_ids?: string[]
-          p_title?: string
-        }
-        Returns: Json
-      }
+      submit_sponsor_application:
+        | {
+            Args: {
+              p_brand_color?: string
+              p_campaign_type?: string
+              p_club_id: string
+              p_contact_email?: string
+              p_contact_name?: string
+              p_description?: string
+              p_image_url?: string
+              p_logo_url?: string
+              p_reward_text?: string
+              p_reward_value_cents?: number
+              p_sponsor_name: string
+              p_task_ids?: string[]
+              p_title?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_brand_color?: string
+              p_campaign_type?: string
+              p_club_id: string
+              p_contact_email?: string
+              p_contact_name?: string
+              p_cover_image_url?: string
+              p_custom_cta?: string
+              p_description?: string
+              p_image_url?: string
+              p_logo_url?: string
+              p_reward_text?: string
+              p_reward_value_cents?: number
+              p_rich_description?: string
+              p_sponsor_name: string
+              p_task_ids?: string[]
+              p_title?: string
+            }
+            Returns: Json
+          }
       trigger_sos_replacement: { Args: { p_signup_id: string }; Returns: Json }
     }
     Enums: {

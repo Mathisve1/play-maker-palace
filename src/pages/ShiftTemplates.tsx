@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -1120,6 +1121,7 @@ const ShiftTemplates = () => {
   // ── Main render ─────────────────────────────────────────────────────────────
 
   return (
+    <ClubPageLayout>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
 
       {/* Sticky header */}
@@ -1198,6 +1200,7 @@ const ShiftTemplates = () => {
         />
       )}
     </div>
+    </ClubPageLayout>
   );
 };
 
