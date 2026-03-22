@@ -92,11 +92,11 @@ const ROICalculator = ({ language }: { language: string }) => {
   const suggestedHigh  = Math.round((estImpressions / 1000) * 28 * 100) / 100;
 
   return (
-    <div className="rounded-2xl border border-border/40 bg-gradient-to-br from-indigo-500/5 via-background to-purple-500/5 p-6 mb-6">
+    <div className="rounded-2xl border border-border/40 bg-gradient-to-br from-primary/5 via-background to-primary/5 p-6 mb-6">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-indigo-500" />
+            <DollarSign className="w-4 h-4 text-primary" />
             {t('ROI Calculator', 'Calculateur ROI', 'ROI Calculator')}
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -107,7 +107,7 @@ const ROICalculator = ({ language }: { language: string }) => {
             )}
           </p>
         </div>
-        <div className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-center min-w-[140px]">
+        <div className="shrink-0 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-center min-w-[140px]">
           <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">
             {t('Aanbevolen prijs', 'Prix suggéré', 'Suggested Price')}
           </p>
@@ -123,13 +123,13 @@ const ROICalculator = ({ language }: { language: string }) => {
             <label className="text-sm font-medium text-foreground">
               {t('Actieve vrijwilligers', 'Bénévoles actifs', 'Active Volunteers')}
             </label>
-            <span className="text-sm font-bold text-indigo-500 tabular-nums">{volunteers}</span>
+            <span className="text-sm font-bold text-primary tabular-nums">{volunteers}</span>
           </div>
           <Slider
             value={[volunteers]}
             onValueChange={([v]) => setVolunteers(v)}
             min={10} max={1500} step={10}
-            className="[&_[role=slider]]:bg-indigo-500 [&_[role=slider]]:border-indigo-600"
+            className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
           />
           <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
             <span>10</span><span>1500</span>
@@ -140,13 +140,13 @@ const ROICalculator = ({ language }: { language: string }) => {
             <label className="text-sm font-medium text-foreground">
               {t('Looptijd (weken)', 'Durée (semaines)', 'Duration (weeks)')}
             </label>
-            <span className="text-sm font-bold text-indigo-500 tabular-nums">{durationWeeks}w</span>
+            <span className="text-sm font-bold text-primary tabular-nums">{durationWeeks}w</span>
           </div>
           <Slider
             value={[durationWeeks]}
             onValueChange={([v]) => setDurationWeeks(v)}
             min={1} max={52} step={1}
-            className="[&_[role=slider]]:bg-indigo-500 [&_[role=slider]]:border-indigo-600"
+            className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
           />
           <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
             <span>1w</span><span>52w</span>
