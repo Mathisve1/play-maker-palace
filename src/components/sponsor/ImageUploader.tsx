@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Image, Loader2 } from 'lucide-react';
@@ -20,7 +20,7 @@ interface ImageUploaderProps {
 
 const BUCKET = 'sponsor_media';
 
-const ImageUploader = ({
+const ImageUploader = React.forwardRef<HTMLDivElement, ImageUploaderProps>(({
   value,
   onChange,
   folder = 'pending',
@@ -28,7 +28,7 @@ const ImageUploader = ({
   compact = false,
   variant = 'light',
   accept = 'image/jpeg,image/png,image/webp,image/gif',
-}: ImageUploaderProps) => {
+}, _ref) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading]   = useState(false);
   const [dragOver,  setDragOver]    = useState(false);
@@ -167,6 +167,8 @@ const ImageUploader = ({
       </AnimatePresence>
     </div>
   );
-};
+});
+
+ImageUploader.displayName = 'ImageUploader';
 
 export default ImageUploader;
