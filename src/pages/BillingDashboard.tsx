@@ -47,6 +47,15 @@ const BillingDashboard = () => {
   const [savingSeats, setSavingSeats] = useState(false);
   const [volunteerUsage, setVolunteerUsage] = useState<VolunteerUsageRow[]>([]);
 
+  useEffect(() => {
+    if (!accessGranted) return;
+    if (contextLoading) return;
+    if (!ctxClubId) { setLoading(false); return; }
+    setClubId(ctxClubId);
+    setClubName(clubInfo?.name || '');
+    loadData(ctxClubId).then(() => setLoading(false));
+  }, [contextLoading, ctxClubId, accessGranted]);
+
   const handleCodeSubmit = () => {
     if (accessCode === BILLING_ACCESS_CODE) {
       setAccessGranted(true);
