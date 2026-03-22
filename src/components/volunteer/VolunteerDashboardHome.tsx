@@ -1018,12 +1018,11 @@ const VolunteerDashboardHome = ({
       <Sheet open={walletOpen} onOpenChange={setWalletOpen}>
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-2xl">
           <SheetHeader className="pb-2">
-            <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-1">
+            <SheetTitle className="flex items-center gap-2 text-lg">
               <Gift className="w-5 h-5 text-primary" />
               {language === 'nl' ? 'Mijn Coupons & Beloningen' : language === 'fr' ? 'Mes Coupons & Récompenses' : 'My Coupons & Rewards'}
-            </div>
-          </SheetTitle>
-        </SheetHeader>
+            </SheetTitle>
+          </SheetHeader>
 
           {myCoupons.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
