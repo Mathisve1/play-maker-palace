@@ -557,7 +557,73 @@ const VolunteerDashboardHome = ({
         </motion.div>
       </div>
 
-      {/* ═══ TAKEN VAN JOUW CLUBS ═══ */}
+      {/* ═══ MIJN COUPONS SECTIE ═══ */}
+      {myCoupons.length > 0 && (() => {
+        const activeCoupons = myCoupons.filter(c => c.status === 'active');
+        const otherCoupons = myCoupons.filter(c => c.status !== 'active');
+        if (activeCoupons.length === 0 && otherCoupons.length === 0) return null;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl border border-primary/20 dark:border-primary/30 p-5 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
+                <Gift className="w-5 h-5 text-primary" />
+                {language === 'nl' ? 'Mijn Coupons' : language === 'fr' ? 'Mes Coupons' : 'My Coupons'}
+              </h3>
+              {myCoupons.length > 2 && (
+                <button onClick={() => setWalletOpen(true)} className="text-sm font-medium text-primary hover:underline">
+                  {language === 'nl' ? 'Bekijk alle' : language === 'fr' ? 'Voir tout' : 'View all'} →
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {activeCoupons.slice(0, 2).map((coupon) => {
+                const brandColor = coupon.sponsor?.brand_color || 'hsl(var(--primary))';
+                const daysLeft = coupon.expires_at
+                  ? Math.max(0, Math.ceil((new Date(coupon.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                  : null;
+                return (
+                  <div key={coupon.id}
+                    onClick={() => setWalletOpen(true)}
+                    className="flex items-center gap-4 p-4 rounded-2xl border border-primary/10 bg-gradient-to-r from-primary/5 to-transparent cursor-pointer hover:border-primary/30 transition-all"
+                  >
+                    {coupon.sponsor?.logo_url ? (
+                      <img src={coupon.sponsor.logo_url} alt={coupon.sponsor.name} className="w-12 h-12 rounded-xl object-contain border border-border bg-white shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Gift className="w-6 h-6 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-semibold text-foreground truncate">{coupon.campaign.title}</p>
+                      {coupon.campaign.reward_value_cents && (
+                        <p className="text-sm font-bold text-primary">
+                          €{(coupon.campaign.reward_value_cents / 100).toFixed(2)} {coupon.campaign.reward_text || (language === 'nl' ? 'korting' : 'discount')}
+                        </p>
+                      )}
+                      {daysLeft !== null && (
+                        <p className={`text-xs mt-0.5 ${daysLeft <= 3 ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
+                          {daysLeft === 0
+                            ? (language === 'nl' ? 'Verloopt vandaag!' : 'Expires today!')
+                            : `${daysLeft} ${language === 'nl' ? 'dagen geldig' : 'days left'}`}
+                        </p>
+                      )}
+                    </div>
+                    <div className="shrink-0 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
+                      {language === 'nl' ? 'Toon QR' : 'Show QR'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        );
+      })()}
+
       {followedClubIds && followedClubIds.size > 0 && (() => {
         const filtered = followedClubTasksRaw
           .filter(t => !signups.some(s => s.task_id === t.id))
