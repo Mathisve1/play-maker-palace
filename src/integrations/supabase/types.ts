@@ -4985,40 +4985,55 @@ export type Database = {
         Row: {
           campaign_type: Database["public"]["Enums"]["sponsor_campaign_type"]
           club_id: string
+          cover_image_url: string | null
           created_at: string
+          custom_cta: string | null
           description: string | null
           end_date: string | null
           id: string
+          reward_text: string | null
           reward_value_cents: number | null
+          rich_description: string | null
           sponsor_id: string
           start_date: string | null
           status: Database["public"]["Enums"]["sponsor_campaign_status"]
+          submitted_by_email: string | null
           title: string
         }
         Insert: {
           campaign_type: Database["public"]["Enums"]["sponsor_campaign_type"]
           club_id: string
+          cover_image_url?: string | null
           created_at?: string
+          custom_cta?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
+          reward_text?: string | null
           reward_value_cents?: number | null
+          rich_description?: string | null
           sponsor_id: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["sponsor_campaign_status"]
+          submitted_by_email?: string | null
           title: string
         }
         Update: {
           campaign_type?: Database["public"]["Enums"]["sponsor_campaign_type"]
           club_id?: string
+          cover_image_url?: string | null
           created_at?: string
+          custom_cta?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
+          reward_text?: string | null
           reward_value_cents?: number | null
+          rich_description?: string | null
           sponsor_id?: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["sponsor_campaign_status"]
+          submitted_by_email?: string | null
           title?: string
         }
         Relationships: [
@@ -5081,26 +5096,35 @@ export type Database = {
         Row: {
           brand_color: string
           club_id: string
+          contact_email: string | null
+          contact_name: string | null
           created_at: string
           id: string
           logo_url: string | null
           name: string
+          website: string | null
         }
         Insert: {
           brand_color?: string
           club_id: string
+          contact_email?: string | null
+          contact_name?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
           name: string
+          website?: string | null
         }
         Update: {
           brand_color?: string
           club_id?: string
+          contact_email?: string | null
+          contact_name?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
           name?: string
+          website?: string | null
         }
         Relationships: [
           {
@@ -6874,6 +6898,16 @@ export type Database = {
       }
       get_partner_group_buddies: { Args: { p_user_id: string }; Returns: Json }
       get_pending_feedback_tasks: { Args: { p_user_id: string }; Returns: Json }
+      get_public_club_info: { Args: { p_club_id: string }; Returns: Json }
+      get_public_club_tasks: {
+        Args: { p_club_id: string }
+        Returns: {
+          id: string
+          status: string
+          task_date: string
+          title: string
+        }[]
+      }
       get_safe_profile: {
         Args: { _user_id: string }
         Returns: {
@@ -6974,6 +7008,27 @@ export type Database = {
         }
         Returns: string
       }
+      submit_sponsor_application: {
+        Args: {
+          p_brand_color?: string
+          p_campaign_type?: string
+          p_club_id: string
+          p_contact_email?: string
+          p_contact_name?: string
+          p_cover_image_url?: string
+          p_custom_cta?: string
+          p_description?: string
+          p_image_url?: string
+          p_logo_url?: string
+          p_reward_text?: string
+          p_reward_value_cents?: number
+          p_rich_description?: string
+          p_sponsor_name: string
+          p_task_ids?: string[]
+          p_title?: string
+        }
+        Returns: Json
+      }
       trigger_sos_replacement: { Args: { p_signup_id: string }; Returns: Json }
     }
     Enums: {
@@ -6992,7 +7047,7 @@ export type Database = {
         | "admin_ticketing"
         | "event_support"
         | "custom"
-      sponsor_campaign_status: "draft" | "active" | "ended"
+      sponsor_campaign_status: "pending_payment" | "draft" | "active" | "ended"
       sponsor_campaign_type: "dashboard_banner" | "task_tag" | "local_coupon"
       ticket_status: "none" | "sent" | "checked_in"
       ticketing_provider:
@@ -7151,7 +7206,7 @@ export const Constants = {
         "event_support",
         "custom",
       ],
-      sponsor_campaign_status: ["draft", "active", "ended"],
+      sponsor_campaign_status: ["pending_payment", "draft", "active", "ended"],
       sponsor_campaign_type: ["dashboard_banner", "task_tag", "local_coupon"],
       ticket_status: ["none", "sent", "checked_in"],
       ticketing_provider: [
