@@ -236,7 +236,7 @@ const SponsorPreview = () => {
       .maybeSingle()
       .then(({ data, error: err }) => {
         if (err || !data) setError(true);
-        else setCampaign(data as Campaign);
+        else setCampaign(data as unknown as Campaign);
         setLoading(false);
       });
   }, [campaign_id]);

@@ -76,7 +76,7 @@ const MetricCard = ({
           className="w-8 h-8 rounded-lg flex items-center justify-center"
           style={{ background: `${color}22` }}
         >
-          <Icon className="w-4 h-4" style={{ color }} />
+          <Icon className="w-4 h-4" />
         </div>
         {trend !== undefined && (
           <div className={`flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${trend >= 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
@@ -119,8 +119,8 @@ const SponsorResults = () => {
 
     if (campRes.error || !campRes.data) { setError(true); setLoading(false); return; }
 
-    setCampaign(campRes.data as Campaign);
-    setMetrics((metricsRes.data as MetricRow[]) || []);
+    setCampaign(campRes.data as unknown as Campaign);
+    setMetrics((metricsRes.data as unknown as MetricRow[]) || []);
     setLastUpdated(new Date());
     setLoading(false);
   };

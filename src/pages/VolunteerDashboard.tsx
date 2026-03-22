@@ -502,10 +502,10 @@ const VolunteerDashboard = () => {
             .eq('volunteer_id', uid),
         ]);
         if (!campRes.error && campRes.data) {
-          setActiveCampaigns(campRes.data as ActiveCampaign[]);
+          setActiveCampaigns(campRes.data as unknown as ActiveCampaign[]);
         }
         if (!couponsRes.error && couponsRes.data) {
-          setMyCoupons(couponsRes.data as MyCoupon[]);
+          setMyCoupons(couponsRes.data as unknown as MyCoupon[]);
         }
       }
 
