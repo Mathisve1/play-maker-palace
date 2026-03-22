@@ -428,6 +428,7 @@ const EventDetail = () => {
               title: event?.title ?? 'Nieuw shift',
               message: `Je bent ingeroosterd voor "${v.task_title}"${v.task_start_time ? ` om ${fmtTime(v.task_start_time)}` : ''}.`,
               url: '/dashboard',
+              club_id: clubId,
             },
           })
         )

@@ -16,7 +16,7 @@ self.addEventListener('push', function (event) {
   const title = payload.title || 'De 12e Man';
   const options = {
     body: payload.body || payload.message || '',
-    icon: '/pwa-192.png',
+    icon: payload.icon || '/pwa-192.png',
     badge: '/pwa-192.png',
     data: {
       url: payload.url || '/dashboard',

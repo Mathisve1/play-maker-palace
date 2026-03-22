@@ -556,7 +556,7 @@ const SafetyDashboard = () => {
       // Push to all safety team members
       await Promise.allSettled(
         Array.from(userIds).map(uid =>
-          sendPush({ userId: uid, title, message, url, type: 'safety' })
+          sendPush({ userId: uid, title, message, url, type: 'safety', clubId: cId })
         )
       );
 

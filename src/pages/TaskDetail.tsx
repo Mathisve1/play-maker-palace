@@ -395,6 +395,7 @@ const TaskDetail = () => {
               : `A spot opened up for "${task?.title}". You've been automatically signed up!`,
             url: `/task/${id}`,
             type: 'waitlist_promoted',
+            clubId: task?.club_id || undefined,
           });
         }
       }

@@ -386,6 +386,7 @@ const CommandCenter = () => {
         message: t3(`Vergeet niet: "${taskTitle}" is morgen!`, `N'oubliez pas: "${taskTitle}" est demain !`, `Don't forget: "${taskTitle}" is tomorrow!`),
         url: `/task/${taskId}`,
         type: 'task_reminder',
+        clubId: clubId || undefined,
       });
       await supabase.from('notifications').insert({
         user_id: volId,
@@ -445,11 +446,11 @@ const CommandCenter = () => {
       if (item.type === 'enrollment') {
         await supabase.from('monthly_enrollments').update({ approval_status: 'approved' }).eq('id', item.source_id);
         toast.success(t3('Goedgekeurd!', 'Approuvé !', 'Approved!'));
-        sendPush({ userId: item.volunteer_id, title: '✅ Inschrijving goedgekeurd', message: `Je inschrijving voor "${item.context_label}" is goedgekeurd!`, url: '/dashboard', type: 'enrollment_approved' });
+        sendPush({ userId: item.volunteer_id, title: '✅ Inschrijving goedgekeurd', message: `Je inschrijving voor "${item.context_label}" is goedgekeurd!`, url: '/dashboard', type: 'enrollment_approved', clubId: clubId || undefined });
       } else if (item.type === 'task_signup') {
         await supabase.from('task_signups').update({ status: 'assigned' }).eq('id', item.source_id);
         toast.success(t3('Toegekend!', 'Attribué !', 'Assigned!'));
-        sendPush({ userId: item.volunteer_id, title: '✅ Taak toegekend', message: `Je bent toegekend aan "${item.context_label}".`, url: '/dashboard', type: 'task_assigned' });
+        sendPush({ userId: item.volunteer_id, title: '✅ Taak toegekend', message: `Je bent toegekend aan "${item.context_label}".`, url: '/dashboard', type: 'task_assigned', clubId: clubId || undefined });
         // Trigger contract dialog if template exists
         if (item.contract_template_id && item.task_id) {
           setContractConfirm({
@@ -460,7 +461,7 @@ const CommandCenter = () => {
       } else if (item.type === 'day_signup') {
         await supabase.from('monthly_day_signups').update({ status: 'assigned' }).eq('id', item.source_id);
         toast.success(t3('Toegekend!', 'Attribué !', 'Assigned!'));
-        sendPush({ userId: item.volunteer_id, title: '✅ Dag toegekend', message: `Je dag-aanmelding voor "${item.context_label}" is bevestigd.`, url: '/dashboard', type: 'day_assigned' });
+        sendPush({ userId: item.volunteer_id, title: '✅ Dag toegekend', message: `Je dag-aanmelding voor "${item.context_label}" is bevestigd.`, url: '/dashboard', type: 'day_assigned', clubId: clubId || undefined });
       } else if (item.type === 'ticket') {
         if (item.id.startsWith('tkt-')) {
           // Monthly day signup ticket
@@ -475,7 +476,7 @@ const CommandCenter = () => {
           });
         }
         toast.success(t3('Ticket gegenereerd!', 'Ticket généré !', 'Ticket generated!'));
-        sendPush({ userId: item.volunteer_id, title: '🎫 Ticket ontvangen', message: `Je ticket voor "${item.context_label}" is klaar!`, url: '/dashboard', type: 'ticket_generated' });
+        sendPush({ userId: item.volunteer_id, title: '🎫 Ticket ontvangen', message: `Je ticket voor "${item.context_label}" is klaar!`, url: '/dashboard', type: 'ticket_generated', clubId: clubId || undefined });
       }
       await loadData();
     } catch (err: any) {

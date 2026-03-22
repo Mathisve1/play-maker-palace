@@ -435,7 +435,7 @@ const ExternalPartners = () => {
       // Notify partner admins
       const { data: admins } = await supabase.from('partner_admins').select('user_id').eq('partner_id', selectedPartner.id);
       for (const a of admins || []) {
-        sendPush({ userId: a.user_id, title: '🎉 Event toegang', message: `Jullie organisatie heeft toegang gekregen tot een nieuw evenement.`, url: '/partner-dashboard', type: 'event_access' });
+        sendPush({ userId: a.user_id, title: '🎉 Event toegang', message: `Jullie organisatie heeft toegang gekregen tot een nieuw evenement.`, url: '/partner-dashboard', type: 'event_access', clubId: clubId || undefined });
       }
       setShowAddEvent(false); setSelectedEventId(''); setMaxSpots('');
       handleSelectPartner(selectedPartner);

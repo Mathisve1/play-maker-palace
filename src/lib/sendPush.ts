@@ -11,6 +11,7 @@ export async function sendPush(opts: {
   message: string;
   url?: string;
   type?: string;
+  clubId?: string;
 }) {
   try {
     await supabase.functions.invoke('send-native-push', {
@@ -20,6 +21,7 @@ export async function sendPush(opts: {
         message: opts.message,
         url: opts.url || '/dashboard',
         type: opts.type || 'general',
+        ...(opts.clubId ? { club_id: opts.clubId } : {}),
       },
     });
   } catch (e) {
@@ -38,12 +40,10 @@ export async function sendPushToClub(opts: {
   type?: string;
 }) {
   try {
-    // Get club owner
     const { data: club } = await supabase.from('clubs').select('owner_id').eq('id', opts.clubId).single();
     const userIds = new Set<string>();
     if (club?.owner_id) userIds.add(club.owner_id);
 
-    // Get club members with admin/beheerder roles
     const { data: members } = await supabase
       .from('club_memberships')
       .select('volunteer_id, club_role')
@@ -57,7 +57,7 @@ export async function sendPushToClub(opts: {
 
     await Promise.allSettled(
       Array.from(userIds).map(uid =>
-        sendPush({ userId: uid, title: opts.title, message: opts.message, url: opts.url, type: opts.type })
+        sendPush({ userId: uid, title: opts.title, message: opts.message, url: opts.url, type: opts.type, clubId: opts.clubId })
       )
     );
   } catch (e) {
@@ -70,22 +70,22 @@ export async function sendPushToClub(opts: {
  */
 export async function sendPushToEventVolunteers(opts: {
   eventId: string;
+  clubId?: string;
   title: string;
   message: string;
   url?: string;
   type?: string;
 }) {
   try {
-    // Get all tasks for this event
     const { data: tasks } = await supabase
       .from('tasks')
-      .select('id')
+      .select('id, club_id')
       .eq('event_id', opts.eventId);
 
     if (!tasks || tasks.length === 0) return;
 
+    const resolvedClubId = opts.clubId || tasks[0]?.club_id;
     const taskIds = tasks.map(t => t.id);
-    // Get all assigned/pending volunteers for those tasks
     const { data: signups } = await supabase
       .from('task_signups')
       .select('volunteer_id')
@@ -97,7 +97,7 @@ export async function sendPushToEventVolunteers(opts: {
     const uniqueIds = [...new Set(signups.map(s => s.volunteer_id))];
     await Promise.allSettled(
       uniqueIds.map(uid =>
-        sendPush({ userId: uid, title: opts.title, message: opts.message, url: opts.url, type: opts.type })
+        sendPush({ userId: uid, title: opts.title, message: opts.message, url: opts.url, type: opts.type, clubId: resolvedClubId })
       )
     );
   } catch (e) {
@@ -123,7 +123,7 @@ export async function sendPushToFollowers(opts: {
 
     await Promise.allSettled(
       (follows || []).map(f =>
-        sendPush({ userId: f.user_id, title: opts.title, message: opts.message, url: opts.url, type: opts.type })
+        sendPush({ userId: f.user_id, title: opts.title, message: opts.message, url: opts.url, type: opts.type, clubId: opts.clubId })
       )
     );
   } catch (e) {
@@ -151,7 +151,7 @@ export async function sendPushToClubMembers(opts: {
     const uniqueIds = [...new Set((members || []).map(m => m.volunteer_id))];
     await Promise.allSettled(
       uniqueIds.map(uid =>
-        sendPush({ userId: uid, title: opts.title, message: opts.message, url: opts.url, type: opts.type })
+        sendPush({ userId: uid, title: opts.title, message: opts.message, url: opts.url, type: opts.type, clubId: opts.clubId })
       )
     );
   } catch (e) {

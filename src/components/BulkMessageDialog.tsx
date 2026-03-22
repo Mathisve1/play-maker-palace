@@ -267,6 +267,7 @@ const BulkMessageDialog = ({
             message: personalizedMsg.slice(0, 200),
             url: taskId ? `/task/${taskId}` : '/dashboard',
             type: 'bulk_message',
+            clubId,
           });
         }
 

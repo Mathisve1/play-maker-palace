@@ -127,7 +127,7 @@ const MijnClubkaarten = ({ userId, language }: Props) => {
     ]);
 
     const cardMap = new Map((cardsRes.data || []).map(c => [c.club_id, c]));
-    const rewardsMap = new Map((rewardsRes.data || []).map((r: any) => [r.club_id, r]));
+    const rewardsMap = new Map((rewardsRes.data || []).map((r: any) => [r.club_id, r] as [string, any]));
 
     setClubs(memberships.map(m => ({
       club_id: m.club_id,
@@ -139,8 +139,8 @@ const MijnClubkaarten = ({ userId, language }: Props) => {
         is_digital: cardMap.get(m.club_id)!.is_digital,
       } : null,
       rewards: rewardsMap.get(m.club_id) ? {
-        canteen_balance_eur: rewardsMap.get(m.club_id)!.canteen_balance_eur ?? 0,
-        fanshop_discount_active: rewardsMap.get(m.club_id)!.fanshop_discount_active ?? false,
+        canteen_balance_eur: (rewardsMap.get(m.club_id) as any)?.canteen_balance_eur ?? 0,
+        fanshop_discount_active: (rewardsMap.get(m.club_id) as any)?.fanshop_discount_active ?? false,
       } : null,
     })));
 

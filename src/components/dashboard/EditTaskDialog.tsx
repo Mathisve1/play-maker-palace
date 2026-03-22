@@ -104,6 +104,7 @@ export const EditTaskDialog = ({ task, onClose, onSaved, contractTemplates, lang
               message: `${fullTask.title} is gewijzigd. Bekijk de details.`,
               url: '/partner-dashboard',
               type: 'task_update',
+              clubId: fullTask.club_id,
             });
           }
         }
