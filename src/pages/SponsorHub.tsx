@@ -975,8 +975,8 @@ const SponsorHub = () => {
 
                 {/* Logo upload */}
                 <ImageUploader
-                  value={form.image_url}
-                  onChange={url => setForm(f => ({ ...f, image_url: url }))}
+                  value={form.cover_image_url}
+                  onChange={url => setForm(f => ({ ...f, cover_image_url: url }))}
                   folder="uploads"
                   label={t('Logo / Advertentieafbeelding', 'Logo / Image publicitaire', 'Logo / Ad Image')}
                   variant="light"
@@ -1214,13 +1214,13 @@ const SponsorHub = () => {
                 form={{
                   businessName:     selectedSponsor?.name || '',
                   brandColor:       selectedSponsor?.brand_color || '#6366f1',
-                  logoUrl:          form.image_url || '',
+                  logoUrl:          form.cover_image_url || '',
                   campaignType:     form.campaign_type === 'local_coupon' ? 'local_coupon' : 'dashboard_banner',
                   title:            form.title,
                   description:      form.description,
                   rewardText:       '',
                   rewardValueEuros: form.reward_value_cents ? (parseInt(String(form.reward_value_cents), 10) / 100).toFixed(2) : '',
-                  imageUrl:         form.image_url || '',
+                  imageUrl:         form.cover_image_url || '',
                   coverImageUrl:    form.cover_image_url || '',
                   customCta:        form.custom_cta || '',
                   richDescription:  form.rich_description || '',
