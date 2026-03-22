@@ -167,6 +167,8 @@ const ImageUploader = React.forwardRef<HTMLDivElement, ImageUploaderProps>(({
       </AnimatePresence>
     </div>
   );
-};
+});
+
+ImageUploader.displayName = 'ImageUploader';
 
 export default ImageUploader;
