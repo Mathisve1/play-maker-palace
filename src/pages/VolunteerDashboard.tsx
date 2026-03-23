@@ -650,21 +650,28 @@ const VolunteerDashboard = () => {
 
       await checkForLiveEvent(eventIds);
 
+      // Use a SINGLE channel for all live event updates (scales to 1500+ users)
       if (eventIds.length > 0) {
-        channels = eventIds.map((eventId) =>
-          supabase
-            .channel(`volunteer-live-${currentUserId}-${eventId}`)
-            .on(
-              'postgres_changes',
-              { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
-              (payload: any) => {
-                if (payload.new?.is_live === true) {
-                  navigate(`/safety/${eventId}`);
-                }
+        const singleChannel = supabase
+          .channel(`volunteer-live-${currentUserId}`)
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'events' },
+            (payload: any) => {
+              if (payload.new?.is_live === true && eventIds.includes(payload.new.id)) {
+                navigate(`/safety/${payload.new.id}`);
               }
-            )
-            .subscribe()
-        );
+            }
+          )
+          .subscribe((status) => {
+            if (status === 'CHANNEL_ERROR') {
+              // Auto-reconnect after 5s
+              setTimeout(() => {
+                if (mounted) setupLiveListeners();
+              }, 5000);
+            }
+          });
+        channels = [singleChannel];
       }
 
       intervalId = setInterval(async () => {
