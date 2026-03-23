@@ -106,7 +106,7 @@ const MonthlyPlanning = () => {
     daily_rate: '25', hourly_rate: '5', estimated_hours: '8', spots_available: '3',
   });
 
-  const { clubId: contextClubId } = useClubContext();
+  const { clubId: contextClubId, userId: contextUserId } = useClubContext();
 
   // Sync clubId from context
   useEffect(() => {
@@ -317,13 +317,11 @@ const MonthlyPlanning = () => {
   };
 
   const createPlan = async () => {
-    if (!clubId) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!clubId || !contextUserId) return;
     const { data, error } = await supabase.from('monthly_plans').insert({
       club_id: clubId, year: viewYear, month: viewMonth,
       title: `${MONTH_NAMES[language]?.[viewMonth - 1] || MONTH_NAMES.nl[viewMonth - 1]} ${viewYear}`,
-      created_by: user.id, status: 'draft',
+      created_by: contextUserId, status: 'draft',
     }).select().single();
     if (error) { toast.error(t3('Kon plan niet aanmaken', 'Impossible de créer le plan', 'Could not create plan')); return; }
     setPlan(data as unknown as MonthlyPlan);
@@ -479,12 +477,11 @@ const MonthlyPlanning = () => {
       // Check if next month plan exists, create if not
       let { data: nextPlan } = await supabase.from('monthly_plans').select('id').eq('club_id', clubId).eq('year', nextY).eq('month', nextM).maybeSingle();
       if (!nextPlan) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setCopyingToNext(false); return; }
+        if (!contextUserId) { setCopyingToNext(false); return; }
         const { data: created, error: createErr } = await supabase.from('monthly_plans').insert({
           club_id: clubId, year: nextY, month: nextM,
           title: `${MONTH_NAMES[language]?.[nextM - 1] || MONTH_NAMES.nl[nextM - 1]} ${nextY}`,
-          created_by: user.id, status: 'draft',
+          created_by: contextUserId, status: 'draft',
         }).select().single();
         if (createErr) throw createErr;
         nextPlan = created;
