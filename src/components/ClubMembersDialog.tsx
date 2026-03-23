@@ -87,17 +87,12 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
   }, [clubId]);
 
   const fetchData = async () => {
-    // Fetch members via club_members
-    const { data: membersData } = await supabase
-      .from('club_members')
-      .select('id, user_id, role')
-      .eq('club_id', clubId);
-
-    // Also fetch club_memberships for contract type mapping
+    // Fetch members via club_memberships (primary source of truth)
     const { data: membershipsData } = await supabase
       .from('club_memberships')
-      .select('id, volunteer_id')
-      .eq('club_id', clubId);
+      .select('id, volunteer_id, club_role, status')
+      .eq('club_id', clubId)
+      .eq('status', 'actief');
 
     const membershipMap = new Map((membershipsData || []).map(m => [m.volunteer_id, m.id]));
 

@@ -67,7 +67,7 @@ const AdminDashboard = () => {
     if (clubs.length > 0) {
       const memberCounts = await Promise.all(
         clubs.map(c =>
-          supabase.from('club_members').select('id', { count: 'exact', head: true }).eq('club_id', c.id)
+          supabase.from('club_memberships').select('id', { count: 'exact', head: true }).eq('club_id', c.id).eq('status', 'actief')
         )
       );
       setRecentClubs(clubs.map((c, i) => ({

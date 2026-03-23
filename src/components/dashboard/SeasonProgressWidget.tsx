@@ -44,7 +44,7 @@ export const SeasonProgressWidget = ({ clubId, language }: Props) => {
   const loadStats = async () => {
     if (!clubId) return;
     const [membersRes, contractsRes, signupsRes, checkinsRes] = await Promise.all([
-      supabase.from('club_memberships').select('id', { count: 'exact', head: true }).eq('club_id', clubId).eq('status', 'active'),
+      supabase.from('club_memberships').select('id', { count: 'exact', head: true }).eq('club_id', clubId).eq('status', 'actief'),
       supabase.from('season_contracts' as any).select('id, signature_status').eq('club_id', clubId),
       supabase.from('task_signups').select('volunteer_id, checked_in_at, task_id'),
       supabase.from('season_checkins' as any).select('id', { count: 'exact', head: true }).eq('club_id', clubId),
