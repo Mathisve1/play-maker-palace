@@ -1,4 +1,4 @@
-// Native Web Push v2 - cache bust
+// Native Web Push v3 - parallel batching for 1500+ users
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SignJWT, importJWK } from "https://deno.land/x/jose@v5.2.0/index.ts";
@@ -127,6 +127,59 @@ async function sendPush(
   return { ok: res.status >= 200 && res.status < 300, status: res.status, body: text };
 }
 
+// ── Parallel batch helper (sends N pushes concurrently) ───────────
+
+const BATCH_CONCURRENCY = 50; // 50 parallel pushes at a time
+
+interface SubRecord {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_id: string;
+}
+
+async function sendPushBatch(
+  subs: SubRecord[],
+  payloadObj: Record<string, unknown>,
+  vapidPub: string, privateJwk: any, vapidSubject: string,
+  supabase: any,
+): Promise<{ sent: number; failed: number; staleEndpoints: string[] }> {
+  let sent = 0, failed = 0;
+  const staleEndpoints: string[] = [];
+
+  // Process in parallel batches of BATCH_CONCURRENCY
+  for (let i = 0; i < subs.length; i += BATCH_CONCURRENCY) {
+    const batch = subs.slice(i, i + BATCH_CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map(async (sub) => {
+        const r = await sendPush(
+          sub.endpoint, sub.p256dh, sub.auth,
+          payloadObj, vapidPub, privateJwk, vapidSubject
+        );
+        if (r.ok) {
+          sent++;
+        } else {
+          failed++;
+          if (r.status === 410 || r.status === 404) {
+            staleEndpoints.push(sub.endpoint);
+          }
+        }
+      })
+    );
+    // Count promise rejections as failures
+    results.forEach(r => {
+      if (r.status === 'rejected') failed++;
+    });
+  }
+
+  // Bulk delete stale subscriptions
+  if (staleEndpoints.length > 0) {
+    await supabase.from('push_subscriptions').delete().in('endpoint', staleEndpoints);
+  }
+
+  return { sent, failed, staleEndpoints };
+}
+
 // ── Templates ─────────────────────────────────────────────────────
 
 const TPL: Record<string, Record<string, { title: string; message: string }>> = {
@@ -146,6 +199,34 @@ const TPL: Record<string, Record<string, { title: string; message: string }>> = 
     en: { title: '🎉 Club Invitation', message: 'You have been invited to join a club!' },
   },
 };
+
+// ── Paginated fetch helper (bypasses 1000-row Supabase limit) ─────
+
+async function fetchAllRows<T>(
+  supabase: any,
+  table: string,
+  select: string,
+  filters?: { column: string; value: any }[],
+): Promise<T[]> {
+  const PAGE_SIZE = 1000;
+  const allRows: T[] = [];
+  let offset = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    let query = supabase.from(table).select(select).range(offset, offset + PAGE_SIZE - 1);
+    if (filters) {
+      for (const f of filters) query = query.eq(f.column, f.value);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    allRows.push(...(data || []));
+    hasMore = (data?.length || 0) === PAGE_SIZE;
+    offset += PAGE_SIZE;
+  }
+
+  return allRows;
+}
 
 // ── Main handler ──────────────────────────────────────────────────
 
@@ -193,34 +274,43 @@ serve(async (req) => {
       const t = title || '📢 De 12e Man';
       const m = message || 'Je hebt een nieuwe melding.';
 
-      const { data: subs } = await supabase.from('push_subscriptions').select('endpoint, p256dh, auth, user_id');
-      const { data: profiles } = await supabase.from('profiles').select('id, push_notifications_enabled, in_app_notifications_enabled');
-      const pMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      // Paginated fetch to support 1500+ subscriptions
+      const [subs, profiles] = await Promise.all([
+        fetchAllRows<SubRecord>(supabase, 'push_subscriptions', 'endpoint, p256dh, auth, user_id'),
+        fetchAllRows<any>(supabase, 'profiles', 'id, push_notifications_enabled, in_app_notifications_enabled'),
+      ]);
 
-      let sent = 0, failed = 0;
-      const details: any[] = [];
-      for (const sub of (subs || [])) {
-        if (pMap.get(sub.user_id)?.push_notifications_enabled === false) continue;
-        try {
-          const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, { title: t, body: m, url: url || '/dashboard', ...(resolvedIcon ? { icon: resolvedIcon } : {}) }, vapidPub, privateJwk, vapidSubject);
-          details.push({ status: r.status, body: r.body?.slice(0, 100) });
-          if (r.ok) sent++; else {
-            failed++;
-            if (r.status === 410 || r.status === 404) await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
-          }
-        } catch (e: any) {
-          failed++;
-          details.push({ error: e.message });
+      const pushDisabled = new Set(
+        profiles.filter((p: any) => p.push_notifications_enabled === false).map((p: any) => p.id)
+      );
+
+      const eligibleSubs = subs.filter(sub => !pushDisabled.has(sub.user_id));
+
+      const payloadObj = { title: t, body: m, url: url || '/dashboard', ...(resolvedIcon ? { icon: resolvedIcon } : {}) };
+
+      // Send in parallel batches of 50
+      const { sent, failed } = await sendPushBatch(
+        eligibleSubs, payloadObj, vapidPub, privateJwk, vapidSubject, supabase
+      );
+
+      // Bulk in-app notifications
+      const inAppUsers = profiles.filter((p: any) => p.in_app_notifications_enabled !== false);
+      if (inAppUsers.length > 0) {
+        // Insert in batches of 500 to avoid payload size limits
+        for (let i = 0; i < inAppUsers.length; i += 500) {
+          const batch = inAppUsers.slice(i, i + 500);
+          await supabase.from('notifications').insert(
+            batch.map((p: any) => ({ user_id: p.id, type: type || 'broadcast', title: t, message: m }))
+          );
         }
       }
 
-      const inApp = (profiles || []).filter((p: any) => p.in_app_notifications_enabled !== false);
-      if (inApp.length > 0) {
-        await supabase.from('notifications').insert(inApp.map((p: any) => ({ user_id: p.id, type: type || 'broadcast', title: t, message: m })));
-      }
-
-      return new Response(JSON.stringify({ success: true, mode: 'broadcast', sent, failed, in_app: inApp.length, details }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({
+        success: true, mode: 'broadcast', sent, failed,
+        in_app: inAppUsers.length,
+        total_subscriptions: subs.length,
+        eligible_subscriptions: eligibleSubs.length,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // ── SINGLE USER ──

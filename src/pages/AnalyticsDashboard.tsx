@@ -64,18 +64,32 @@ const AnalyticsDashboard = () => {
     if (!clubId) return;
     setLoading(true);
 
-    const [membersRes, tasksRes, signupsRes, eventsRes] = await Promise.all([
-      supabase.from('club_memberships').select('volunteer_id, joined_at, status').eq('club_id', clubId).eq('status', 'actief').limit(2000),
-      supabase.from('tasks').select('id, title, spots_available, task_date, event_id').eq('club_id', clubId).limit(500),
-      supabase.from('task_signups').select('task_id, volunteer_id, status, signed_up_at').limit(3000),
-      supabase.from('events').select('id, title, event_date').eq('club_id', clubId).order('event_date', { ascending: false }).limit(50),
-    ]);
+    // Paginated fetch for large datasets (1500+ volunteers)
+    const fetchAll = async (table: string, select: string, filters?: Record<string, any>, order?: { col: string; asc: boolean }) => {
+      const PAGE = 1000;
+      const all: any[] = [];
+      let offset = 0;
+      let hasMore = true;
+      while (hasMore) {
+        let q = (supabase as any).from(table).select(select).range(offset, offset + PAGE - 1);
+        if (filters) Object.entries(filters).forEach(([k, v]) => { q = q.eq(k, v); });
+        if (order) q = q.order(order.col, { ascending: order.asc });
+        const { data } = await q;
+        all.push(...(data || []));
+        hasMore = (data?.length || 0) === PAGE;
+        offset += PAGE;
+      }
+      return all;
+    };
 
-    const members = membersRes.data || [];
-    const tasks = tasksRes.data || [];
-    const allSignups = signupsRes.data || [];
-    const events = eventsRes.data || [];
-    const taskIds = new Set(tasks.map(t => t.id));
+    const [members, tasks, allSignups, events] = await Promise.all([
+      fetchAll('club_memberships', 'volunteer_id, joined_at, status', { club_id: clubId, status: 'actief' }),
+      fetchAll('tasks', 'id, title, spots_available, task_date, event_id', { club_id: clubId }),
+      fetchAll('task_signups', 'task_id, volunteer_id, status, signed_up_at'),
+      supabase.from('events').select('id, title, event_date').eq('club_id', clubId).order('event_date', { ascending: false }).limit(50).then(r => r.data || []),
+    ]) as [any[], any[], any[], any[]];
+
+    const taskIds = new Set(tasks.map((t: any) => t.id));
     const signups = allSignups.filter(s => taskIds.has(s.task_id));
 
     // === Volunteer Growth (last 12 months) ===
