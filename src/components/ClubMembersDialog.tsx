@@ -94,8 +94,6 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
       .eq('club_id', clubId)
       .eq('status', 'actief');
 
-    const membershipMap = new Map((membershipsData || []).map(m => [m.volunteer_id, m.id]));
-
     // Fetch contract types
     const membershipIds = (membershipsData || []).map(m => m.id);
     let contractTypeMap = new Map<string, ContractTypeKey[]>();
@@ -112,8 +110,8 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
       });
     }
 
-    if (membersData && membersData.length > 0) {
-      const userIds = membersData.map(m => m.user_id);
+    if (membershipsData && membershipsData.length > 0) {
+      const userIds = membershipsData.map(m => m.volunteer_id);
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, email')
@@ -128,27 +126,26 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
       const profileMap = new Map((profiles || []).map(p => [p.id, p]));
       
       setMembers(
-        membersData.map(m => {
-          const prof = profileMap.get(m.user_id);
-          const msId = membershipMap.get(m.user_id);
+        membershipsData.map(m => {
+          const prof = profileMap.get(m.volunteer_id);
           const hasName = prof?.full_name;
           const hasEmail = prof?.email;
-          // If no profile name or email, try to find from accepted invitations
           const invEmail = !hasEmail
             ? (allInvitations || []).find(i => i.status === 'accepted' && i.email)?.email
             : null;
           const displayEmail = hasEmail || invEmail || null;
           const isPending = !hasName && !hasEmail;
           return {
-            ...m,
-            role: m.role as ClubRole,
-            membership_id: msId,
+            id: m.id,
+            user_id: m.volunteer_id,
+            role: (m.club_role || 'medewerker') as ClubRole,
+            membership_id: m.id,
             profile: {
               full_name: hasName || null,
               email: displayEmail,
             },
             isPending,
-            contractTypes: msId ? contractTypeMap.get(msId) || [] : [],
+            contractTypes: contractTypeMap.get(m.id) || [],
           };
         })
       );
