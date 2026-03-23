@@ -241,7 +241,7 @@ const Signup = () => {
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                     className={`w-full px-4 py-2.5 rounded-xl border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring ${confirmPassword && password !== confirmPassword ? 'border-destructive focus:ring-destructive' : 'border-input'}`}
                   />
                   {confirmPassword && password !== confirmPassword && (
