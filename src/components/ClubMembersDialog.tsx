@@ -286,8 +286,8 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
 
   const handleUpdateRole = async (memberId: string, newRole: ClubRole) => {
     const { error } = await supabase
-      .from('club_members')
-      .update({ role: newRole })
+      .from('club_memberships')
+      .update({ club_role: newRole })
       .eq('id', memberId);
 
     if (error) {
@@ -305,7 +305,7 @@ const ClubMembersDialog = ({ clubId, currentUserId, isOwner, currentUserRole, on
       return;
     }
     const { error } = await supabase
-      .from('club_members')
+      .from('club_memberships')
       .delete()
       .eq('id', memberId);
 
