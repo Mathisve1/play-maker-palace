@@ -4,6 +4,8 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import Logo from '@/components/Logo';
 import BottomTabBar from '@/components/BottomTabBar';
 import NotificationBell from '@/components/NotificationBell';
+import { useRealtimeHealth } from '@/hooks/useRealtimeHealth';
+import { Wifi, WifiOff } from 'lucide-react';
 
 interface DashboardLayoutProps {
   sidebar: React.ReactNode;
@@ -14,6 +16,8 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ sidebar, children, userId, volunteerMode }: DashboardLayoutProps) => {
+  const { isConnected } = useRealtimeHealth();
+
   return (
     <SidebarProvider>
       <div
@@ -31,7 +35,10 @@ const DashboardLayout = ({ sidebar, children, userId, volunteerMode }: Dashboard
             {/* Hide sidebar trigger in volunteer mode — bottom nav handles navigation */}
             {!volunteerMode && <SidebarTrigger />}
             <Logo size="sm" linkTo="/dashboard" />
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              {!isConnected && (
+                <WifiOff className="h-4 w-4 text-destructive animate-pulse" />
+              )}
               {userId && <NotificationBell userId={userId} />}
             </div>
           </header>
