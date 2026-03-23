@@ -1,53 +1,61 @@
 
 
-## Plan: Club-logo tonen in push-notificaties
+## Plan: Fix Test Configuratie (Punt 2 en 7)
 
-### Wat verandert er?
+### Probleem
 
-Momenteel toont elke push-notificatie het standaard app-icoon (`/pwa-192.png`). We gaan dit aanpassen zodat het **logo van de club** die de melding verstuurt zichtbaar is op het lockscreen.
+Uit het test rapport:
+- **Punt 2**: TC024-TC026 (Events Management) falen door verkeerde login credentials — de URL is al gecorrigeerd naar `/events-manager`, maar de test-account `mathis@gmail.clm` / `mathis123` bestaat niet
+- **Punt 7**: TC006, TC027 hebben ook geen werkend club admin test-account — `clubowner.fake@example.com` / `WrongPassword!` is bewust fout (negatieve test), maar TC027 heeft een werkende login nodig
 
 ### Aanpak
 
-**1. Edge function (`send-native-push`) — club_id + icon meesturen**
-- Accepteer een nieuw optioneel veld `icon` in de request body
-- Bij single-user pushes: als er een `club_id` meegegeven wordt maar geen `icon`, haal `logo_url` op uit de `clubs` tabel
-- Stuur het `icon`-veld mee in de push payload naar de service worker
+**1. Standaard test-credentials centraliseren**
 
-**2. Alle bestaande callers — `club_id` meegeven**
-- `src/lib/sendPush.ts`: voeg optioneel `clubId` param toe, stuur mee als `club_id`
-- `SpoedoproepDialog.tsx`: stuurt al `club_id` via task, geen wijziging nodig
-- DB triggers (notify_on_task_signup etc.): deze maken in-app notificaties, geen push — geen wijziging
+Maak een `testsprite_tests/test_config.py` met gestandaardiseerde constanten:
+- `CLUB_EMAIL = "club@test.com"`
+- `CLUB_PASSWORD = "ClubTest2026!"`
+- `VOLUNTEER_EMAIL = "volunteer@test.com"` 
+- `VOLUNTEER_PASSWORD = "VolTest2026!"`
+- `BASE_URL = "http://localhost:4173"`
 
-**3. Service Worker (`push-sw.js`) — icon uit payload gebruiken**
-- Lees `payload.icon` uit en gebruik die als `icon` in de notification options
-- Fallback naar `/pwa-192.png` als er geen icon meegegeven wordt
-- Gebruik `/pwa-192.png` altijd als `badge` (klein monochroom icoon)
+**2. Test-account seeden via database migration**
 
-### Technisch detail
+Maak een migration die:
+- Een profiel + club aanmaakt voor het test-account (in `profiles` en `clubs` tabellen)
+- Een instructie-comment toevoegt dat het auth-account handmatig moet worden aangemaakt via de signup flow (we kunnen niet in `auth.users` schrijven vanuit een migration)
 
-```
-// push-sw.js change
-icon: payload.icon || '/pwa-192.png',
-
-// Edge function: resolve club logo
-if (body.club_id && !body.icon) {
-  const { data: club } = await supabase
-    .from('clubs').select('logo_url').eq('id', body.club_id).single();
-  if (club?.logo_url) payloadObj.icon = club.logo_url;
-}
-
-// sendPush helper: pass club_id through
-export async function sendPush({ clubId, ...opts }) {
-  // adds club_id to body
-}
-```
-
-### Bestanden die aangepast worden
+**3. Test-bestanden updaten**
 
 | Bestand | Wijziging |
 |---|---|
-| `public/push/push-sw.js` | `icon` uit payload lezen |
-| `public/push-sw.js` | Zelfde aanpassing (duplicate SW) |
-| `supabase/functions/send-native-push/index.ts` | Club logo ophalen bij `club_id` |
-| `src/lib/sendPush.ts` | `clubId` param doorgeven |
+| `testsprite_tests/test_config.py` | Nieuw — gedeelde constanten |
+| `testsprite_tests/TC024_...py` | Import test_config, gebruik correcte credentials |
+| `testsprite_tests/TC025_...py` | Idem |
+| `testsprite_tests/TC026_...py` | Idem, login via `/club-login` ipv volunteer login |
+| `testsprite_tests/TC027_...py` | Import test_config, gebruik correcte credentials |
+| `testsprite_tests/TC006_...py` | Geen wijziging nodig (negatieve test met bewust foute credentials) |
+
+**4. Setup-instructies documenteren**
+
+Voeg een `testsprite_tests/README.md` toe met stappen om het test-account aan te maken in de database voordat de tests gedraaid worden.
+
+### Technisch detail
+
+```python
+# testsprite_tests/test_config.py
+BASE_URL = "http://localhost:4173"
+CLUB_LOGIN_URL = f"{BASE_URL}/club-login"
+CLUB_EMAIL = "club@test.com"
+CLUB_PASSWORD = "ClubTest2026!"
+```
+
+```python
+# In TC024, TC025, TC026, TC027:
+from test_config import BASE_URL, CLUB_LOGIN_URL, CLUB_EMAIL, CLUB_PASSWORD
+
+await page.goto(CLUB_LOGIN_URL)
+await page.locator('input[type="email"]').first.fill(CLUB_EMAIL)
+await page.locator('input[type="password"]').first.fill(CLUB_PASSWORD)
+```
 
