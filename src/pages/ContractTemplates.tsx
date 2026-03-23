@@ -60,6 +60,7 @@ interface EventTemplate {
 const ContractTemplates = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { clubId: contextClubId } = useClubContext();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   const [clubId, setClubId] = useState<string | null>(null);
@@ -82,26 +83,11 @@ const ContractTemplates = () => {
     custom: 'Custom',
   };
 
+  // Sync clubId from context
   useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: club } = await supabase.from('clubs').select('id').eq('owner_id', user.id).limit(1).single();
-      if (!club) {
-        const { data: membership } = await supabase.from('club_members').select('club_id').eq('user_id', user.id).limit(1).maybeSingle();
-        if (membership) {
-          setClubId(membership.club_id);
-        } else {
-          setLoading(false);
-          return;
-        }
-      } else {
-        setClubId(club.id);
-      }
-    };
-    init();
-  }, []);
+    if (contextClubId) setClubId(contextClubId);
+    else setLoading(false);
+  }, [contextClubId]);
 
   useEffect(() => {
     if (!clubId) return;
