@@ -1,6 +1,9 @@
 import asyncio
+import sys, os
+sys.path.insert(0, os.path.dirname(__file__))
 from playwright import async_api
 from playwright.async_api import expect
+from test_config import CLUB_LOGIN_URL, CLUB_EMAIL, CLUB_PASSWORD, DEFAULT_TIMEOUT, LOGIN_SLEEP, NAV_SLEEP
 
 async def run_test():
     pw = None
@@ -21,23 +24,23 @@ async def run_test():
         )
 
         context = await browser.new_context()
-        context.set_default_timeout(10000)
+        context.set_default_timeout(DEFAULT_TIMEOUT)
 
         page = await context.new_page()
 
-        # Login as club owner via club login
-        await page.goto("http://localhost:4173/club-login")
+        # Login as club owner
+        await page.goto(CLUB_LOGIN_URL)
         await asyncio.sleep(2)
-        await page.locator('input[type="email"]').first.fill('mathis@gmail.clm')
-        await page.locator('input[type="password"]').first.fill('mathis123')
+        await page.locator('input[type="email"]').first.fill(CLUB_EMAIL)
+        await page.locator('input[type="password"]').first.fill(CLUB_PASSWORD)
         await page.locator('button[type="submit"]').click()
-        await asyncio.sleep(5)
+        await asyncio.sleep(LOGIN_SLEEP)
 
-        # Navigate directly to the events manager (correct route)
-        await page.goto("http://localhost:4173/events-manager")
-        await asyncio.sleep(3)
+        # Navigate to events manager
+        await page.goto(f"{CLUB_LOGIN_URL.replace('/club-login', '')}/events-manager")
+        await asyncio.sleep(NAV_SLEEP)
 
-        # --> Assertions to verify final state
+        # Assertions
         frame = context.pages[-1]
         current_url = await frame.evaluate("() => window.location.href")
         assert '/events-manager' in current_url
