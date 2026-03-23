@@ -64,10 +64,10 @@ const TermsOfUse = () => {
             </h2>
             <p>
               {nl
-                ? 'Clubs kunnen het platform gratis gebruiken voor maximaal 2 vrijwilligerscontracten per seizoen. Daarboven geldt een tarief van €15 per vrijwilliger per seizoen. Facturatie gebeurt maandelijks op de 1e van de maand. Alle prijzen zijn exclusief BTW.'
+                ? 'Elke vrijwilliger mag 2 taken gratis voltooien per seizoen. Vanaf de 3e voltooide taak betaalt de club eenmalig €15 voor die vrijwilliger voor het hele seizoen. Alle volgende taken dat seizoen zijn zonder extra kost. De teller reset elk nieuw seizoen. Alle prijzen zijn exclusief BTW.'
                 : fr
-                ? 'Les clubs peuvent utiliser la plateforme gratuitement pour un maximum de 2 contrats de bénévolat par saison. Au-delà, un tarif de 15 € par bénévole par saison s\'applique. La facturation est mensuelle, le 1er du mois. Tous les prix s\'entendent hors TVA.'
-                : 'Clubs can use the platform for free for up to 2 volunteer contracts per season. Beyond that, a rate of €15 per volunteer per season applies. Billing is monthly on the 1st. All prices are excluding VAT.'}
+                ? 'Chaque bénévole peut effectuer 2 tâches gratuitement par saison. À partir de la 3e tâche complétée, le club paie une fois €15 pour ce bénévole pour toute la saison. Toutes les tâches suivantes cette saison sont sans frais supplémentaires. Le compteur est réinitialisé chaque nouvelle saison. Tous les prix s\'entendent hors TVA.'
+                : 'Each volunteer can complete 2 tasks for free per season. From the 3rd completed task, the club pays a one-time fee of €15 for that volunteer for the entire season. All subsequent tasks that season are at no extra cost. The counter resets each new season. All prices are excluding VAT.'}
             </p>
           </section>
 
