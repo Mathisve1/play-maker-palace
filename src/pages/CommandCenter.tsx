@@ -326,9 +326,10 @@ const CommandCenter = () => {
 
       // Get members
       const { data: members } = await supabase
-        .from('club_members')
-        .select('user_id')
-        .eq('club_id', contextClubId);
+        .from('club_memberships')
+        .select('volunteer_id')
+        .eq('club_id', contextClubId)
+        .eq('status', 'actief');
 
       if (!members || members.length === 0) { setUnsignedContractCount(0); return; }
 

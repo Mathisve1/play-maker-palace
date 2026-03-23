@@ -242,9 +242,10 @@ const Chat = () => {
       
       // 2. Events from clubs user owns/is member of
       const { data: userClubMembers } = await supabase
-        .from('club_members')
+        .from('club_memberships')
         .select('club_id')
-        .eq('user_id', contextUserId);
+        .eq('volunteer_id', contextUserId)
+        .eq('status', 'actief');
       
       const clubIds = (userClubMembers || []).map((m: any) => m.club_id);
       
