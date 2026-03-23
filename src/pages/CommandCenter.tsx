@@ -342,7 +342,7 @@ const CommandCenter = () => {
         .eq('status', 'signed');
 
       const signedSet = new Set((signedContracts || []).map(c => c.volunteer_id));
-      const unsigned = members.filter(m => !signedSet.has(m.user_id)).length;
+      const unsigned = members.filter(m => !signedSet.has(m.volunteer_id)).length;
       setUnsignedContractCount(unsigned);
     };
     loadUnsignedContracts();
