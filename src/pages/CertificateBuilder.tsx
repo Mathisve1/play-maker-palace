@@ -66,6 +66,7 @@ const labels = {
 const CertificateBuilder = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { clubId: contextClubId, clubInfo } = useClubContext();
   const l = labels[language];
 
   const [loading, setLoading] = useState(true);
@@ -86,28 +87,16 @@ const CertificateBuilder = () => {
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  useEffect(() => { init(); }, []);
-
-  const init = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/club-login'); return; }
-
-    let cid: string | null = null;
-    const { data: ownClub } = await supabase.from('clubs').select('id, name, logo_url').eq('owner_id', session.user.id).maybeSingle();
-    if (ownClub) { cid = ownClub.id; setClubName(ownClub.name); setClubLogo(ownClub.logo_url); }
-    else {
-      const { data: membership } = await supabase.from('club_members').select('club_id').eq('user_id', session.user.id).limit(1).maybeSingle();
-      if (membership) {
-        cid = membership.club_id;
-        const { data: club } = await supabase.from('clubs').select('name, logo_url').eq('id', cid).maybeSingle();
-        if (club) { setClubName(club.name); setClubLogo(club.logo_url); }
+  useEffect(() => {
+    if (contextClubId) {
+      setClubId(contextClubId);
+      if (clubInfo) {
+        setClubName(clubInfo.name);
+        setClubLogo(clubInfo.logo_url);
       }
+      loadDesigns(contextClubId).then(() => setLoading(false));
     }
-    if (!cid) { navigate('/club-dashboard'); return; }
-    setClubId(cid);
-    await loadDesigns(cid);
-    setLoading(false);
-  };
+  }, [contextClubId, clubInfo]);
 
   const loadDesigns = async (cid: string) => {
     const { data } = await supabase.from('certificate_designs').select('*').eq('club_id', cid).order('created_at', { ascending: false });
