@@ -104,27 +104,53 @@ async function encryptPayload(p256dhB64: string, authB64: string, payload: Uint8
 async function sendPush(
   endpoint: string, p256dh: string, auth: string,
   payloadObj: Record<string, unknown>,
-  vapidPub: string, privateJwk: any, vapidSubject: string
+  vapidPub: string, privateJwk: any, vapidSubject: string,
+  retries = 2,
 ): Promise<{ ok: boolean; status: number; body: string }> {
   const url = new URL(endpoint);
   const audience = `${url.protocol}//${url.host}`;
 
-  const authorization = await createVapidAuth(audience, vapidSubject, vapidPub, privateJwk);
-  const body = await encryptPayload(p256dh, auth, new TextEncoder().encode(JSON.stringify(payloadObj)));
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const authorization = await createVapidAuth(audience, vapidSubject, vapidPub, privateJwk);
+      const body = await encryptPayload(p256dh, auth, new TextEncoder().encode(JSON.stringify(payloadObj)));
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': authorization,
-      'Content-Encoding': 'aes128gcm',
-      'Content-Type': 'application/octet-stream',
-      'TTL': '86400',
-    },
-    body,
-  });
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': authorization,
+          'Content-Encoding': 'aes128gcm',
+          'Content-Type': 'application/octet-stream',
+          'TTL': '86400',
+        },
+        body,
+      });
 
-  const text = await res.text();
-  return { ok: res.status >= 200 && res.status < 300, status: res.status, body: text };
+      const text = await res.text();
+      const status = res.status;
+
+      // Don't retry on permanent failures (gone, not found, forbidden)
+      if (status === 410 || status === 404 || status === 403 || (status >= 200 && status < 300)) {
+        return { ok: status >= 200 && status < 300, status, body: text };
+      }
+
+      // Retry on 429 (rate limit) or 5xx
+      if (attempt < retries && (status === 429 || status >= 500)) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // backoff
+        continue;
+      }
+
+      return { ok: false, status, body: text };
+    } catch (e: any) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      return { ok: false, status: 0, body: e.message };
+    }
+  }
+
+  return { ok: false, status: 0, body: 'Max retries exceeded' };
 }
 
 // ── Parallel batch helper (sends N pushes concurrently) ───────────
