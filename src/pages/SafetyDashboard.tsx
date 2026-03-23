@@ -201,8 +201,8 @@ const SafetyDashboard = () => {
       }
 
       const { data: owned } = await supabase.from('clubs').select('id').eq('id', ev.club_id).eq('owner_id', session.user.id);
-      const { data: member } = await supabase.from('club_members').select('role').eq('club_id', ev.club_id).eq('user_id', session.user.id).maybeSingle();
-      const staff = !!(owned?.length) || ['bestuurder', 'beheerder'].includes(member?.role || '');
+      const { data: member } = await supabase.from('club_memberships').select('club_role').eq('club_id', ev.club_id).eq('volunteer_id', session.user.id).eq('status', 'actief').maybeSingle();
+      const staff = !!(owned?.length) || ['admin', 'manager', 'bestuurder', 'beheerder'].includes(member?.club_role || '');
       setIsStaff(staff);
 
       // Fetch user's assigned group IDs for this event

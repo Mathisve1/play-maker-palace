@@ -326,9 +326,10 @@ const CommandCenter = () => {
 
       // Get members
       const { data: members } = await supabase
-        .from('club_members')
-        .select('user_id')
-        .eq('club_id', contextClubId);
+        .from('club_memberships')
+        .select('volunteer_id')
+        .eq('club_id', contextClubId)
+        .eq('status', 'actief');
 
       if (!members || members.length === 0) { setUnsignedContractCount(0); return; }
 
@@ -341,7 +342,7 @@ const CommandCenter = () => {
         .eq('status', 'signed');
 
       const signedSet = new Set((signedContracts || []).map(c => c.volunteer_id));
-      const unsigned = members.filter(m => !signedSet.has(m.user_id)).length;
+      const unsigned = members.filter(m => !signedSet.has(m.volunteer_id)).length;
       setUnsignedContractCount(unsigned);
     };
     loadUnsignedContracts();
