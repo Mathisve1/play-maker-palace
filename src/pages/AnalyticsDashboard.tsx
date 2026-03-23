@@ -87,13 +87,9 @@ const AnalyticsDashboard = () => {
       fetchAll('tasks', 'id, title, spots_available, task_date, event_id', { club_id: clubId }),
       fetchAll('task_signups', 'task_id, volunteer_id, status, signed_up_at'),
       supabase.from('events').select('id, title, event_date').eq('club_id', clubId).order('event_date', { ascending: false }).limit(50).then(r => r.data || []),
-    ]);
+    ]) as [any[], any[], any[], any[]];
 
-    const members = membersRes.data || [];
-    const tasks = tasksRes.data || [];
-    const allSignups = signupsRes.data || [];
-    const events = eventsRes.data || [];
-    const taskIds = new Set(tasks.map(t => t.id));
+    const taskIds = new Set(tasks.map((t: any) => t.id));
     const signups = allSignups.filter(s => taskIds.has(s.task_id));
 
     // === Volunteer Growth (last 12 months) ===

@@ -133,17 +133,17 @@ const ReportBuilder = () => {
       setLoading(true);
       const [tasksRes, eventsRes, signupsRes, paymentsRes, ticketsRes, hourConfsRes, sepaRes,
         sigReqRes, partnersRes, partnerMembersRes, partnerAssignRes] = await Promise.all([
-        supabase.from('tasks').select('id,title,club_id,event_id,task_date,spots_available,compensation_type,hourly_rate,expense_amount,location,status').eq('club_id', clubId).limit(500),
-        supabase.from('events').select('id,title,event_date,club_id').eq('club_id', clubId).order('event_date', { ascending: false }).limit(200),
-        supabase.from('task_signups').select('id,task_id,volunteer_id,status,signed_up_at').limit(3000),
-        supabase.from('volunteer_payments').select('id,task_id,volunteer_id,amount,status,paid_at').eq('club_id', clubId).limit(1000),
-        supabase.from('volunteer_tickets').select('id,task_id,volunteer_id,status').eq('club_id', clubId).limit(2000),
-        supabase.from('hour_confirmations').select('id,task_id,volunteer_id,status,final_hours').limit(1000),
-        supabase.from('sepa_batch_items').select('id,task_id,amount').limit(500),
-        supabase.from('signature_requests').select('id,task_id,status').limit(500),
-        supabase.from('external_partners').select('id,name,category').eq('club_id', clubId).limit(100),
-        supabase.from('partner_members').select('id,partner_id,user_id').limit(500),
-        supabase.from('partner_task_assignments').select('id,task_id,partner_member_id').limit(1000),
+        supabase.from('tasks').select('id,title,club_id,event_id,task_date,spots_available,compensation_type,hourly_rate,expense_amount,location,status').eq('club_id', clubId).limit(1000),
+        supabase.from('events').select('id,title,event_date,club_id').eq('club_id', clubId).order('event_date', { ascending: false }).limit(500),
+        supabase.from('task_signups').select('id,task_id,volunteer_id,status,signed_up_at').limit(5000),
+        supabase.from('volunteer_payments').select('id,task_id,volunteer_id,amount,status,paid_at').eq('club_id', clubId).limit(5000),
+        supabase.from('volunteer_tickets').select('id,task_id,volunteer_id,status').eq('club_id', clubId).limit(5000),
+        supabase.from('hour_confirmations').select('id,task_id,volunteer_id,status,final_hours').limit(5000),
+        supabase.from('sepa_batch_items').select('id,task_id,amount').limit(2000),
+        supabase.from('signature_requests').select('id,task_id,status').limit(2000),
+        supabase.from('external_partners').select('id,name,category').eq('club_id', clubId).limit(200),
+        supabase.from('partner_members').select('id,partner_id,user_id').limit(2000),
+        supabase.from('partner_task_assignments').select('id,task_id,partner_member_id').limit(5000),
       ]);
 
       const taskData = tasksRes.data || [];
