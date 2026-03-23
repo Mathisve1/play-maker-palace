@@ -196,13 +196,43 @@ const Signup = () => {
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={8}
                       className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-10"
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {/* Password strength indicator */}
+                  {password.length > 0 && (() => {
+                    const hasLength = password.length >= 8;
+                    const hasUpper = /[A-Z]/.test(password);
+                    const hasLower = /[a-z]/.test(password);
+                    const hasNumber = /[0-9]/.test(password);
+                    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+                    const score = [hasLength, hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+                    const strengthLabel = score <= 2
+                      ? (language === 'nl' ? 'Zwak' : language === 'fr' ? 'Faible' : 'Weak')
+                      : score <= 3
+                      ? (language === 'nl' ? 'Matig' : language === 'fr' ? 'Moyen' : 'Fair')
+                      : score <= 4
+                      ? (language === 'nl' ? 'Goed' : language === 'fr' ? 'Bon' : 'Good')
+                      : (language === 'nl' ? 'Sterk' : language === 'fr' ? 'Fort' : 'Strong');
+                    const strengthColor = score <= 2 ? 'bg-destructive' : score <= 3 ? 'bg-yellow-500' : 'bg-green-500';
+                    return (
+                      <div className="mt-2 space-y-1">
+                        <div className="flex gap-1">
+                          {[1,2,3,4,5].map(i => (
+                            <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= score ? strengthColor : 'bg-muted'}`} />
+                          ))}
+                        </div>
+                        <p className={`text-xs ${score <= 2 ? 'text-destructive' : score <= 3 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`}>
+                          {strengthLabel}
+                          {!hasLength && ` — ${language === 'nl' ? 'min. 8 tekens' : language === 'fr' ? 'min. 8 caractères' : 'min. 8 characters'}`}
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">{t.auth.confirmPassword}</label>
