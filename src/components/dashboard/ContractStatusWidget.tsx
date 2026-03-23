@@ -18,7 +18,7 @@ export const ContractStatusWidget = ({ clubId, language }: Props) => {
     if (!clubId) return;
     const load = async () => {
       const [membersRes, contractsRes] = await Promise.all([
-        supabase.from('club_memberships').select('volunteer_id').eq('club_id', clubId).eq('status', 'active'),
+        supabase.from('club_memberships').select('volunteer_id').eq('club_id', clubId).eq('status', 'actief'),
         supabase.from('season_contracts' as any).select('volunteer_id, status').eq('club_id', clubId),
       ]);
 
