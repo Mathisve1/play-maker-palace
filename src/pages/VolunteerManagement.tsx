@@ -120,7 +120,7 @@ const VolunteerManagement = () => {
       season
         ? supabase.from('season_checkins').select('volunteer_id, season_contract_id').eq('club_id', clubId)
         : Promise.resolve({ data: [] as any[] }),
-      supabase.from('club_members').select('user_id').eq('club_id', clubId),
+      supabase.from('club_memberships').select('volunteer_id').eq('club_id', clubId).eq('status', 'actief'),
       supabase.from('club_memberships').select('id, volunteer_id, joined_at').eq('club_id', clubId),
       supabase.from('task_signups').select('volunteer_id, task_id, status').eq('status', 'completed'),
     ]);
@@ -163,7 +163,7 @@ const VolunteerManagement = () => {
     const volunteerIds = [...new Set([
       ...contracts.map(c => c.volunteer_id),
       ...Object.keys(checkInCounts),
-      ...members.map(m => m.user_id),
+      ...members.map(m => m.volunteer_id),
     ])];
 
     if (volunteerIds.length === 0) {
