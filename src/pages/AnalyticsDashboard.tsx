@@ -71,7 +71,7 @@ const AnalyticsDashboard = () => {
       let offset = 0;
       let hasMore = true;
       while (hasMore) {
-        let q = supabase.from(table).select(select).range(offset, offset + PAGE - 1);
+        let q = (supabase as any).from(table).select(select).range(offset, offset + PAGE - 1);
         if (filters) Object.entries(filters).forEach(([k, v]) => { q = q.eq(k, v); });
         if (order) q = q.order(order.col, { ascending: order.asc });
         const { data } = await q;
