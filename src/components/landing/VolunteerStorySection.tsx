@@ -386,9 +386,10 @@ export const VolunteerStorySection = ({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="relative overflow-hidden rounded-3xl shadow-2xl"
+          className="relative overflow-hidden rounded-3xl shadow-2xl mx-auto"
           style={{
             aspectRatio: '16/9',
+            maxWidth: '960px',
             maxHeight: '80vh',
             background: '#000',
           }}
