@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import {
   CreditCard, Receipt, Users, Loader2, Download, Gift, AlertTriangle,
-  CheckCircle, Handshake, TrendingUp, FileText, Info
+  CheckCircle, Handshake, TrendingUp, FileText, Info, Lock
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { generateInvoicePdf } from '@/lib/generateInvoicePdf';
@@ -31,6 +31,10 @@ const BillingDashboard = () => {
   const { language } = useLanguage();
   const { clubId: ctxClubId, clubInfo, loading: contextLoading } = useClubContext();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
+
+  const [accessGranted, setAccessGranted] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const ACCESS_CODE = '1906';
 
   const [clubId, setClubId] = useState<string | null>(null);
   const [clubName, setClubName] = useState('');
@@ -155,6 +159,52 @@ const BillingDashboard = () => {
       language,
     });
   };
+
+  if (!accessGranted) {
+    return (
+      <ClubPageLayout>
+        <div className="flex flex-col items-center justify-center py-20 max-w-md mx-auto text-center space-y-6">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+            <Lock className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-heading font-bold text-foreground">
+              {t('Binnenkort beschikbaar', 'Bientôt disponible', 'Coming soon')}
+            </h1>
+            <p className="text-muted-foreground text-base">
+              {t(
+                'Deze pagina is tijdelijk afgeschermd. Voer de toegangscode in om verder te gaan.',
+                'Cette page est temporairement protégée. Entrez le code d\'accès pour continuer.',
+                'This page is temporarily restricted. Enter the access code to continue.'
+              )}
+            </p>
+          </div>
+          <div className="flex gap-2 w-full max-w-xs">
+            <Input
+              type="password"
+              placeholder={t('Toegangscode', 'Code d\'accès', 'Access code')}
+              value={codeInput}
+              onChange={e => setCodeInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && codeInput === ACCESS_CODE) setAccessGranted(true);
+                else if (e.key === 'Enter') toast.error(t('Ongeldige code', 'Code invalide', 'Invalid code'));
+              }}
+              className="h-12"
+            />
+            <Button
+              className="h-12 px-6"
+              onClick={() => {
+                if (codeInput === ACCESS_CODE) setAccessGranted(true);
+                else toast.error(t('Ongeldige code', 'Code invalide', 'Invalid code'));
+              }}
+            >
+              {t('Open', 'Ouvrir', 'Open')}
+            </Button>
+          </div>
+        </div>
+      </ClubPageLayout>
+    );
+  }
 
   if (loading) {
     return (
