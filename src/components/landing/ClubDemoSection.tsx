@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, FileSignature, ClipboardList, CreditCard,
-  CheckCircle, Bell, Users, BarChart3, Calendar, Clock,
+  CheckCircle, Bell, Users, BarChart3, Calendar, Clock, MapPin,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
