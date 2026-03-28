@@ -64,10 +64,10 @@ const TermsOfUse = () => {
             </h2>
             <p>
               {nl
-                ? 'Elke vrijwilliger mag 2 taken gratis voltooien per seizoen. Vanaf de 3e voltooide taak betaalt de club eenmalig €15 voor die vrijwilliger voor het hele seizoen. Alle volgende taken dat seizoen zijn zonder extra kost. De teller reset elk nieuw seizoen. Alle prijzen zijn exclusief BTW.'
+                ? 'Elke vrijwilliger mag 2 taken gratis voltooien per seizoen. Vanaf de 3e voltooide taak betaalt de club eenmalig €XX voor die vrijwilliger voor het hele seizoen. Alle volgende taken dat seizoen zijn zonder extra kost. De teller reset elk nieuw seizoen. Alle prijzen zijn exclusief BTW.'
                 : fr
-                ? 'Chaque bénévole peut effectuer 2 tâches gratuitement par saison. À partir de la 3e tâche complétée, le club paie une fois €15 pour ce bénévole pour toute la saison. Toutes les tâches suivantes cette saison sont sans frais supplémentaires. Le compteur est réinitialisé chaque nouvelle saison. Tous les prix s\'entendent hors TVA.'
-                : 'Each volunteer can complete 2 tasks for free per season. From the 3rd completed task, the club pays a one-time fee of €15 for that volunteer for the entire season. All subsequent tasks that season are at no extra cost. The counter resets each new season. All prices are excluding VAT.'}
+                ? 'Chaque bénévole peut effectuer 2 tâches gratuitement par saison. À partir de la 3e tâche complétée, le club paie une fois €XX pour ce bénévole pour toute la saison. Toutes les tâches suivantes cette saison sont sans frais supplémentaires. Le compteur est réinitialisé chaque nouvelle saison. Tous les prix s\'entendent hors TVA.'
+                : 'Each volunteer can complete 2 tasks for free per season. From the 3rd completed task, the club pays a one-time fee of €XX for that volunteer for the entire season. All subsequent tasks that season are at no extra cost. The counter resets each new season. All prices are excluding VAT.'}
             </p>
           </section>
 
