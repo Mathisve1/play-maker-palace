@@ -5,14 +5,13 @@ import { Link } from 'react-router-dom';
 import {
   FileSignature, Users, CreditCard, ClipboardList, Shield, CheckCircle,
   ArrowRight, Sparkles, BarChart3, Globe, AlertTriangle,
-  ChevronDown, Trophy, Lock, LayoutDashboard,
+  ChevronDown, Trophy, Lock,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ClubStorySection, type StoryChapter } from '@/components/landing/ClubStorySection';
-import { ClubDemoSection, type ClubDemoScreen } from '@/components/landing/ClubDemoSection';
 import { LandingFAQ, type FAQItem } from '@/components/landing/LandingFAQ';
 
 // ─────────────────────────────────────────────────────────────────
@@ -66,16 +65,6 @@ const t = {
         desc: 'Na de wedstrijd berekent het platform automatisch alle vergoedingen. De clubmanager keurt één keer goed — en alle betalingen worden in bulk verwerkt via SEPA. Klaar.',
       },
     ] as StoryChapter[],
-
-    demoLabel: 'Het clubbeheerplatform',
-    demoTitle: 'Professioneel. Overzichtelijk. Op elk scherm.',
-    demoSubtitle: 'Ontdek hoe het dashboard eruitziet en hoe je als club alles beheert van contracten tot SEPA-uitbetalingen.',
-    demoScreens: [
-      { id: 'dashboard',  tabLabel: 'Club dashboard',        tabIcon: null },
-      { id: 'contracts',  tabLabel: 'Seizoenscontracten',    tabIcon: null },
-      { id: 'briefing',   tabLabel: 'Briefing builder',      tabIcon: null },
-      { id: 'sepa',       tabLabel: 'SEPA-uitbetalingen',    tabIcon: null },
-    ],
 
     featuresLabel: 'Alles inbegrepen',
     featuresTitle: 'Eén platform. Alles geregeld.',
@@ -181,16 +170,6 @@ const t = {
       { num: '06', title: 'Paiements SEPA automatiques', subtitle: 'Indemnités sans paperasse', desc: 'Après le match, la plateforme calcule automatiquement toutes les indemnités. Le responsable approuve une fois — et tous les paiements sont traités en masse via SEPA. Terminé.' },
     ] as StoryChapter[],
 
-    demoLabel: 'La plateforme de gestion de club',
-    demoTitle: 'Professionnel. Clair. Sur chaque écran.',
-    demoSubtitle: 'Découvrez à quoi ressemble le tableau de bord et comment gérer tout, des contrats aux paiements SEPA.',
-    demoScreens: [
-      { id: 'dashboard',  tabLabel: 'Tableau de bord',       tabIcon: null },
-      { id: 'contracts',  tabLabel: 'Contrats saisonniers',  tabIcon: null },
-      { id: 'briefing',   tabLabel: 'Générateur de briefing', tabIcon: null },
-      { id: 'sepa',       tabLabel: 'Paiements SEPA',        tabIcon: null },
-    ],
-
     featuresLabel: 'Tout inclus',
     featuresTitle: 'Une plateforme. Tout réglé.',
     features: [
@@ -268,16 +247,6 @@ const t = {
       { num: '06', title: 'Automatic SEPA payments', subtitle: 'Compensation without paperwork', desc: 'After the match, the platform automatically calculates all compensation. The club manager approves once — and all payments are processed in bulk via SEPA. Done.' },
     ] as StoryChapter[],
 
-    demoLabel: 'The club management platform',
-    demoTitle: 'Professional. Clear. On every screen.',
-    demoSubtitle: 'See what the dashboard looks like and how you manage everything from contracts to SEPA payments.',
-    demoScreens: [
-      { id: 'dashboard',  tabLabel: 'Club dashboard',       tabIcon: null },
-      { id: 'contracts',  tabLabel: 'Season contracts',     tabIcon: null },
-      { id: 'briefing',   tabLabel: 'Briefing builder',     tabIcon: null },
-      { id: 'sepa',       tabLabel: 'SEPA payments',        tabIcon: null },
-    ],
-
     featuresLabel: 'Everything included',
     featuresTitle: 'One platform. Everything handled.',
     features: [
@@ -341,13 +310,6 @@ const t = {
 // ─────────────────────────────────────────────────────────────────
 type Lang = keyof typeof t;
 
-const DEMO_ICONS = [
-  <LayoutDashboard key="0" className="w-5 h-5 text-secondary" />,
-  <FileSignature   key="1" className="w-5 h-5 text-secondary" />,
-  <ClipboardList   key="2" className="w-5 h-5 text-secondary" />,
-  <CreditCard      key="3" className="w-5 h-5 text-secondary" />,
-];
-
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
   visible: (i: number = 0) => ({
@@ -360,11 +322,6 @@ const fadeUp = {
 const ClubsLanding = () => {
   const { language } = useLanguage();
   const l = t[language as Lang] || t.nl;
-
-  const demoScreens: ClubDemoScreen[] = l.demoScreens.map((s, i) => ({
-    ...s,
-    tabIcon: DEMO_ICONS[i],
-  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -478,14 +435,6 @@ const ClubsLanding = () => {
           chapters={l.storyChapters}
         />
       </div>
-
-      {/* ── INTERACTIVE DEMO ────────────────────────────────────── */}
-      <ClubDemoSection
-        sectionLabel={l.demoLabel}
-        sectionTitle={l.demoTitle}
-        sectionSubtitle={l.demoSubtitle}
-        screens={demoScreens}
-      />
 
       {/* ── FEATURES GRID ───────────────────────────────────────── */}
       <section className="py-28 px-4 bg-muted/25">
