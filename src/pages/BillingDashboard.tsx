@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import {
   CreditCard, Receipt, Users, Loader2, Download, Gift, AlertTriangle,
-  CheckCircle, Handshake, TrendingUp, FileText, Info
+  CheckCircle, Handshake, TrendingUp, FileText, Info, Lock
 } from 'lucide-react';
 import ClubPageLayout from '@/components/ClubPageLayout';
 import { generateInvoicePdf } from '@/lib/generateInvoicePdf';
