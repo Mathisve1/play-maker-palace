@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -63,7 +64,7 @@ const AnalyticsDashboard = () => {
   const loadData = async () => {
     if (!clubId) return;
     setLoading(true);
-
+    try {
     // Paginated fetch for large datasets (1500+ volunteers)
     const fetchAll = async (table: string, select: string, filters?: Record<string, any>, order?: { col: string; asc: boolean }) => {
       const PAGE = 1000;
@@ -212,6 +213,11 @@ const AnalyticsDashboard = () => {
     });
 
     setLoading(false);
+    } catch (err: any) {
+      console.error('Analytics loadData failed:', err);
+      toast.error('Analytics konden niet laden. Ververs de pagina.');
+      setLoading(false);
+    }
   };
 
   const tabs: { key: TabKey; label: string }[] = [

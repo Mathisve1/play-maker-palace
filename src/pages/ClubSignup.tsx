@@ -55,27 +55,18 @@ const ClubSignup = () => {
 
     setLoading(true);
     try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/club-signup`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            full_name: fullName,
-            club_name: clubName.trim(),
-            sport: sport.trim() || null,
-            location: location.trim() || null,
-          }),
-        }
-      );
-      const data = await resp.json();
-      if (!resp.ok || data.error) {
-        toast.error(data.error || t3('Er ging iets mis', 'Une erreur est survenue', 'Something went wrong'));
+      const { data, error: invokeError } = await supabase.functions.invoke('club-signup', {
+        body: {
+          email,
+          password,
+          full_name: fullName,
+          club_name: clubName.trim(),
+          sport: sport.trim() || null,
+          location: location.trim() || null,
+        },
+      });
+      if (invokeError || data?.error) {
+        toast.error(data?.error || invokeError?.message || t3('Er ging iets mis', 'Une erreur est survenue', 'Something went wrong'));
         setLoading(false);
         return;
       }

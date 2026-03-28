@@ -68,9 +68,10 @@ interface VolunteerZoneAssignment {
 }
 
 // ── Alarm sound — fire alarm style (loud repeating hi-lo klaxon) ──
-const playAlarm = () => {
+// audioCtxRef is initialised inside the component after a user gesture to
+// satisfy browser autoplay policy. The module-level helper receives it.
+const playAlarm = (ctx: AudioContext) => {
   try {
-    const ctx = new AudioContext();
     const gain = ctx.createGain();
     gain.connect(ctx.destination);
     gain.gain.setValueAtTime(1.0, ctx.currentTime);
@@ -155,6 +156,14 @@ const SafetyDashboard = () => {
   const [teamIncidents, setTeamIncidents] = useState<SafetyIncident[]>([]);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; avatar_url: string | null; roleName: string }[]>([]);
   const flashTimeout = useRef<NodeJS.Timeout>();
+  // AudioContext must be created after a user gesture to satisfy browser autoplay policy
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const ensureAudioCtx = () => {
+    if (!audioCtxRef.current) {
+      try { audioCtxRef.current = new AudioContext(); } catch { /* unsupported */ }
+    }
+    return audioCtxRef.current;
+  };
   const [showAlarmConfirm, setShowAlarmConfirm] = useState(false);
   const [sendingAlarm, setSendingAlarm] = useState(false);
   const [autoNotifyUrgent, setAutoNotifyUrgent] = useState(true);
@@ -319,11 +328,13 @@ const SafetyDashboard = () => {
 
   // ── Realtime subscriptions ──
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId || !clubId) return;
     const channel = supabase
-      .channel(`safety-${eventId}`)
+      .channel(`safety-${clubId}-${eventId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'safety_incidents', filter: `event_id=eq.${eventId}` },
         (payload: any) => {
+          // Guard: only handle incidents belonging to this club (belt-and-suspenders on top of RLS)
+          if (payload.new && payload.new.club_id && payload.new.club_id !== clubId) return;
           if (payload.eventType === 'INSERT') {
             const inc = payload.new as SafetyIncident;
             setIncidents(prev => [inc, ...prev]);
@@ -338,7 +349,7 @@ const SafetyDashboard = () => {
               });
             }
             // All incidents trigger alarm + flash
-            if (audioEnabled) playAlarm();
+            if (audioEnabled) { const ctx = ensureAudioCtx(); if (ctx) playAlarm(ctx); }
             setFlashRed(true);
             if (flashTimeout.current) clearTimeout(flashTimeout.current);
             // Keep red flash visible for 4 seconds
@@ -380,7 +391,7 @@ const SafetyDashboard = () => {
         })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [eventId, audioEnabled]);
+  }, [eventId, clubId, audioEnabled]);
 
   // ── Steward: toggle checklist ──
   const handleToggleChecklist = async (itemId: string) => {

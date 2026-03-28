@@ -552,7 +552,11 @@ const ClubOwnerDashboard = () => {
 
     // Fire KPIs in parallel with init (non-blocking)
     refreshKPIs(clubId);
-    init();
+    init().catch(err => {
+      console.error('Dashboard init failed:', err);
+      toast.error('Dashboard kon niet laden. Ververs de pagina.');
+      setLoading(false);
+    });
   }, [contextLoading, clubId, currentUserId, refreshKPIs]);
 
   // --- Handlers ---

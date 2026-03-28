@@ -453,23 +453,36 @@ const EventsManager = () => {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    setDeletingEvent(eventId);
-    const groups = eventGroups.filter(g => g.event_id === eventId);
-    for (const g of groups) {
-      await supabase.from('tasks').delete().eq('event_group_id', g.id);
-      await supabase.from('event_groups').delete().eq('id', g.id);
+    // Ownership guard: event must belong to the current club
+    const targetEvent = events.find(e => e.id === eventId);
+    if (!targetEvent || targetEvent.club_id !== clubId) {
+      toast.error(t3('Niet gemachtigd om dit evenement te verwijderen.', 'Non autorisé à supprimer cet événement.', 'Not authorized to delete this event.'));
+      setConfirmDeleteEvent(null);
+      return;
     }
-    await supabase.from('tasks').delete().eq('event_id', eventId).is('event_group_id', null);
-    const { error } = await supabase.from('events').delete().eq('id', eventId);
-    if (error) toast.error(error.message);
-    else {
+    setDeletingEvent(eventId);
+    try {
+      const groups = eventGroups.filter(g => g.event_id === eventId);
+      for (const g of groups) {
+        const { error: taskErr } = await supabase.from('tasks').delete().eq('event_group_id', g.id);
+        if (taskErr) throw taskErr;
+        const { error: groupErr } = await supabase.from('event_groups').delete().eq('id', g.id);
+        if (groupErr) throw groupErr;
+      }
+      const { error: orphanErr } = await supabase.from('tasks').delete().eq('event_id', eventId).is('event_group_id', null);
+      if (orphanErr) throw orphanErr;
+      const { error } = await supabase.from('events').delete().eq('id', eventId).eq('club_id', clubId);
+      if (error) throw error;
       toast.success(t3('Evenement verwijderd!', 'Événement supprimé!', 'Event deleted!'));
       setEvents(prev => prev.filter(e => e.id !== eventId));
       setEventGroups(prev => prev.filter(g => g.event_id !== eventId));
       setTasks(prev => prev.filter(t => t.event_id !== eventId));
+    } catch (err: any) {
+      toast.error(err?.message || t3('Verwijderen mislukt. Probeer opnieuw.', 'Échec de la suppression. Réessayez.', 'Delete failed. Please try again.'));
+    } finally {
+      setDeletingEvent(null);
+      setConfirmDeleteEvent(null);
     }
-    setDeletingEvent(null);
-    setConfirmDeleteEvent(null);
   };
 
   const handleDeleteGroup = async (groupId: string) => {

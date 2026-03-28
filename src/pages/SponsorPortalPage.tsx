@@ -120,6 +120,14 @@ const ScannerView = ({ campaignId, portalToken, brandColor, rewardCents }: Scann
   const qrRef        = useRef<Html5Qrcode | null>(null);
   const isRunning    = useRef(false);
   const isProcessing = useRef(false);
+  const isMounted    = useRef(true);
+  // Dedup: ignore the same QR code scanned twice within 3 seconds
+  const lastScanned  = useRef<{ code: string; ts: number } | null>(null);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
 
   const [cameraError,   setCameraError]   = useState(false);
   const [result,        setResult]        = useState<ScanResult | null>(null);
@@ -151,12 +159,21 @@ const ScannerView = ({ campaignId, portalToken, brandColor, rewardCents }: Scann
         { fps: 12, qrbox: { width: 240, height: 240 } },
         async (decoded) => {
           if (isProcessing.current) return;
+          // Dedup: skip if same code scanned within 3 seconds
+          const now = Date.now();
+          if (lastScanned.current && lastScanned.current.code === decoded && now - lastScanned.current.ts < 3000) {
+            return;
+          }
+          lastScanned.current = { code: decoded, ts: now };
           isProcessing.current = true;
           try { await qr.pause(); } catch {}
           const r = await callRpc(decoded);
-          setResult(r);
-          pushRecent(decoded, r);
+          if (isMounted.current) {
+            setResult(r);
+            pushRecent(decoded, r);
+          }
           setTimeout(async () => {
+            if (!isMounted.current) return; // component unmounted — don't resume
             setResult(null);
             isProcessing.current = false;
             try { await qr.resume(); } catch {}
@@ -166,15 +183,18 @@ const ScannerView = ({ campaignId, portalToken, brandColor, rewardCents }: Scann
       );
       isRunning.current = true;
     } catch {
-      setCameraError(true);
-      setMode('manual');
+      if (isMounted.current) {
+        setCameraError(true);
+        setMode('manual');
+      }
     }
   }, [callRpc, pushRecent]);
 
   const stopScanner = useCallback(async () => {
     if (!isRunning.current || !qrRef.current) return;
+    isRunning.current = false; // mark stopped first to prevent re-entry
     try { await qrRef.current.stop(); qrRef.current.clear(); } catch {}
-    isRunning.current = false;
+    qrRef.current = null;
   }, []);
 
   useEffect(() => {

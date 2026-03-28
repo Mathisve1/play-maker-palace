@@ -83,9 +83,9 @@ const PlanningOverview = () => {
     setClubId(contextClubId);
 
     const [evRes, taskRes, monthlyRes] = await Promise.all([
-      supabase.from('events').select('id, title, event_date, location').eq('club_id', contextClubId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }),
-      supabase.from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', contextClubId).order('task_date', { ascending: true }),
-      supabase.from('monthly_plans').select('id, year, month, title, status').eq('club_id', contextClubId).order('year', { ascending: false }).order('month', { ascending: false }),
+      supabase.from('events').select('id, title, event_date, location').eq('club_id', contextClubId).is('training_id', null).neq('event_type', 'training').order('event_date', { ascending: false }).limit(200),
+      supabase.from('tasks').select('id, title, task_date, location, spots_available, event_id').eq('club_id', contextClubId).order('task_date', { ascending: true }).limit(500),
+      supabase.from('monthly_plans').select('id, year, month, title, status').eq('club_id', contextClubId).order('year', { ascending: false }).order('month', { ascending: false }).limit(24),
     ]);
 
     setEvents(evRes.data || []);

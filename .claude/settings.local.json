@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(python -m pip install moviepy imageio-ffmpeg pillow -q)",
+      "Bash(python -c \"from moviepy.editor import VideoFileClip; from PIL import Image, ImageDraw; print\\(''All imports OK''\\)\")",
+      "Bash(python -c \"import moviepy; print\\(moviepy.__version__\\)\")",
+      "Bash(python -c \"from moviepy import VideoFileClip, VideoClip; print\\(''moviepy 2.x imports OK''\\)\")",
+      "Bash(python -c \":*)",
+      "Bash(grep -v \"^$\")",
+      "Bash(python scripts/add-captions.py)",
+      "Bash(python scripts/remove-progressbar.py)"
     ]
   }
 }

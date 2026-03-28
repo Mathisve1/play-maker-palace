@@ -27,16 +27,11 @@ interface VolunteerUsageRow {
   volunteer_name?: string;
 }
 
-const BILLING_ACCESS_CODE = '1906';
-
 const BillingDashboard = () => {
   const { language } = useLanguage();
   const { clubId: ctxClubId, clubInfo, loading: contextLoading } = useClubContext();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
-  const [accessGranted, setAccessGranted] = useState(false);
-  const [accessCode, setAccessCode] = useState('');
-  const [codeError, setCodeError] = useState(false);
   const [clubId, setClubId] = useState<string | null>(null);
   const [clubName, setClubName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -48,71 +43,12 @@ const BillingDashboard = () => {
   const [volunteerUsage, setVolunteerUsage] = useState<VolunteerUsageRow[]>([]);
 
   useEffect(() => {
-    if (!accessGranted) return;
     if (contextLoading) return;
     if (!ctxClubId) { setLoading(false); return; }
     setClubId(ctxClubId);
     setClubName(clubInfo?.name || '');
     loadData(ctxClubId).then(() => setLoading(false));
-  }, [contextLoading, ctxClubId, accessGranted]);
-
-  const handleCodeSubmit = () => {
-    if (accessCode === BILLING_ACCESS_CODE) {
-      setAccessGranted(true);
-      setCodeError(false);
-    } else {
-      setCodeError(true);
-    }
-  };
-
-  if (!accessGranted) {
-    return (
-      <ClubPageLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="max-w-sm w-full text-center space-y-6 p-6">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-              <CreditCard className="w-8 h-8 text-primary" />
-            </div>
-            <div>
-              <Badge variant="secondary" className="mb-3 text-sm px-3 py-1">
-                {t('Binnenkort beschikbaar!', 'Bientôt disponible !', 'Coming soon!')}
-              </Badge>
-              <h1 className="text-2xl font-heading font-bold text-foreground">
-                {t('Facturatie', 'Facturation', 'Billing')}
-              </h1>
-              <p className="text-muted-foreground mt-2 text-base leading-relaxed">
-                {t(
-                  'Deze module wordt momenteel afgewerkt. Voer de toegangscode in om een preview te bekijken.',
-                  'Ce module est en cours de finalisation. Entrez le code d\'accès pour un aperçu.',
-                  'This module is being finalized. Enter the access code to preview.'
-                )}
-              </p>
-            </div>
-            <div className="space-y-3">
-              <Input
-                type="text"
-                inputMode="numeric"
-                maxLength={4}
-                value={accessCode}
-                onChange={e => { setAccessCode(e.target.value.replace(/\D/g, '')); setCodeError(false); }}
-                onKeyDown={e => e.key === 'Enter' && handleCodeSubmit()}
-                placeholder={t('Toegangscode', 'Code d\'accès', 'Access code')}
-                className={`h-14 text-center text-2xl font-mono tracking-[0.3em] ${codeError ? 'border-destructive' : ''}`}
-              />
-              {codeError && (
-                <p className="text-destructive text-sm font-medium">
-                  {t('Ongeldige code', 'Code invalide', 'Invalid code')}
-                </p>
-              )}
-              <Button onClick={handleCodeSubmit} className="w-full h-12 text-base" disabled={accessCode.length < 4}>
-                {t('Toegang', 'Accéder', 'Access')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </ClubPageLayout>
-    );
-  }
+  }, [contextLoading, ctxClubId]);
 
 
 

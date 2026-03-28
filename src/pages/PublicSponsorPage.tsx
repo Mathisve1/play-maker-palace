@@ -119,8 +119,10 @@ const PublicSponsorPage = () => {
   const set = <K extends keyof WizardForm>(key: K, val: WizardForm[K]) =>
     setForm(f => ({ ...f, [key]: val }));
 
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const canAdvance = (): boolean => {
-    if (step === 0) return form.businessName.trim().length > 0 && form.contactEmail.trim().length > 0;
+    if (step === 0) return form.businessName.trim().length > 0 && isValidEmail(form.contactEmail.trim());
     if (step === 2) return form.title.trim().length > 0;
     return true;
   };
@@ -146,7 +148,7 @@ const PublicSponsorPage = () => {
       p_description:        form.description.trim(),
       p_reward_text:        form.rewardText.trim(),
       p_reward_value_cents: form.rewardValueEuros
-        ? Math.round(parseFloat(form.rewardValueEuros) * 100)
+        ? (Math.max(0, Math.round(parseFloat(form.rewardValueEuros) * 100)) || null)
         : null,
       p_image_url:          form.imageUrl.trim(),
       p_task_ids:           [],
