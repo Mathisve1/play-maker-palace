@@ -32,6 +32,10 @@ const BillingDashboard = () => {
   const { clubId: ctxClubId, clubInfo, loading: contextLoading } = useClubContext();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
+  const [accessGranted, setAccessGranted] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const ACCESS_CODE = '1906';
+
   const [clubId, setClubId] = useState<string | null>(null);
   const [clubName, setClubName] = useState('');
   const [loading, setLoading] = useState(true);
