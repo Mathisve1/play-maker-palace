@@ -467,7 +467,7 @@ const ClubsLanding = () => {
 
       {/* ── PRICING ─────────────────────────────────────────────── */}
       <section className="py-28 px-4 bg-background">
-        <div className="container mx-auto">
+        <div className="container mx-auto relative">
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true }}
             variants={fadeUp} className="text-center mb-16"
@@ -477,82 +477,67 @@ const ClubsLanding = () => {
             <p className="text-xl text-muted-foreground max-w-lg mx-auto">{l.pricingSubtitle}</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className="relative">
+            {/* Blur overlay */}
+            <div className="absolute inset-0 z-10 backdrop-blur-md bg-background/40 rounded-3xl flex flex-col items-center justify-center gap-3">
+              <Lock className="w-10 h-10 text-secondary" />
+              <p className="font-heading font-bold text-foreground text-2xl md:text-3xl">🔒 {language === 'fr' ? 'Bientôt disponible' : language === 'en' ? 'Coming soon' : 'Binnenkort beschikbaar'}</p>
+              <p className="text-base text-muted-foreground max-w-md text-center">{l.pricingComingSoonSub}</p>
+            </div>
 
-            {/* Free tier */}
-            <motion.div
-              initial="hidden" whileInView="visible" viewport={{ once: true }}
-              variants={fadeUp} custom={0}
-              className="bg-card rounded-3xl p-8 border border-border/60 shadow-[0_2px_16px_-2px_hsla(220,25%,12%,0.07)]"
-            >
-              <div className="mb-6">
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">{l.pricingFree}</p>
-                <p className="text-base text-muted-foreground mb-5">{l.pricingFreeDesc}</p>
-                <div className="flex items-end gap-2">
-                  <span className="font-heading font-bold text-foreground text-5xl">{l.pricingFreePrice}</span>
-                  <span className="text-muted-foreground text-base mb-2">{l.pricingFreePeriod}</span>
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto select-none pointer-events-none" aria-hidden="true">
+
+              {/* Free tier */}
+              <div className="bg-card rounded-3xl p-8 border border-border/60 shadow-[0_2px_16px_-2px_hsla(220,25%,12%,0.07)]">
+                <div className="mb-6">
+                  <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">{l.pricingFree}</p>
+                  <p className="text-base text-muted-foreground mb-5">{l.pricingFreeDesc}</p>
+                  <div className="flex items-end gap-2">
+                    <span className="font-heading font-bold text-foreground text-5xl">{l.pricingFreePrice}</span>
+                    <span className="text-muted-foreground text-base mb-2">{l.pricingFreePeriod}</span>
+                  </div>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {l.pricingFreeFeatures.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                      <span className="text-base text-foreground">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-secondary text-secondary font-bold text-base min-h-[52px]">
+                  {language === 'fr' ? 'Commencer gratuitement' : language === 'en' ? 'Get started free' : 'Gratis starten'}
+                  <ArrowRight className="w-4 h-4" />
                 </div>
               </div>
-              <ul className="space-y-3 mb-8">
-                {l.pricingFreeFeatures.map((f, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                    <span className="text-base text-foreground">{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/club-signup"
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-secondary text-secondary font-bold text-base hover:bg-secondary/5 active:scale-[0.98] transition-all cursor-pointer min-h-[52px]"
-              >
-                {language === 'fr' ? 'Commencer gratuitement' : language === 'en' ? 'Get started free' : 'Gratis starten'}
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </motion.div>
 
-            {/* Growth tier — coming soon overlay */}
-            <motion.div
-              initial="hidden" whileInView="visible" viewport={{ once: true }}
-              variants={fadeUp} custom={1}
-              className="relative bg-card rounded-3xl p-8 border-2 border-secondary/40 shadow-[0_8px_40px_-8px_hsla(180,45%,30%,0.2)] overflow-hidden"
-            >
-              {/* Popular badge */}
-              <div className="absolute top-5 right-5 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
-                {l.pricingPopular}
-              </div>
-
-              <div className="mb-6">
-                <p className="text-sm font-bold text-secondary uppercase tracking-widest mb-2">{l.pricingGrowth}</p>
-                <p className="text-base text-muted-foreground mb-5">{l.pricingGrowthDesc}</p>
-                <div className="flex items-end gap-2">
-                  <span className="font-heading font-bold text-foreground text-5xl">{l.pricingGrowthPrice}</span>
-                  <span className="text-muted-foreground text-base mb-2">{l.pricingGrowthPeriod}</span>
+              {/* Growth tier */}
+              <div className="relative bg-card rounded-3xl p-8 border-2 border-secondary/40 shadow-[0_8px_40px_-8px_hsla(180,45%,30%,0.2)] overflow-hidden">
+                <div className="absolute top-5 right-5 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
+                  {l.pricingPopular}
                 </div>
-                <p className="text-sm text-muted-foreground mt-3 leading-relaxed border-l-2 border-secondary/40 pl-3">{l.pricingGrowthNote}</p>
+                <div className="mb-6">
+                  <p className="text-sm font-bold text-secondary uppercase tracking-widest mb-2">{l.pricingGrowth}</p>
+                  <p className="text-base text-muted-foreground mb-5">{l.pricingGrowthDesc}</p>
+                  <div className="flex items-end gap-2">
+                    <span className="font-heading font-bold text-foreground text-5xl">{l.pricingGrowthPrice}</span>
+                    <span className="text-muted-foreground text-base mb-2">{l.pricingGrowthPeriod}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-3 leading-relaxed border-l-2 border-secondary/40 pl-3">{l.pricingGrowthNote}</p>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {l.pricingGrowthFeatures.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
+                      <span className="text-base text-foreground">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-secondary text-secondary-foreground font-bold text-base min-h-[52px]">
+                  {l.pricingGrowth}
+                </div>
               </div>
-
-              <ul className="space-y-3 mb-8">
-                {l.pricingGrowthFeatures.map((f, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
-                    <span className="text-base text-foreground">{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Coming soon button (disabled look) */}
-              <div className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-muted text-muted-foreground font-semibold text-base cursor-not-allowed min-h-[52px]">
-                <Lock className="w-4 h-4" />
-                {language === 'fr' ? 'Bientôt disponible' : language === 'en' ? 'Coming soon' : 'Binnenkort beschikbaar'}
-              </div>
-
-              {/* Frosted coming-soon overlay on the card action area */}
-              <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-card/95 to-transparent pointer-events-none rounded-b-3xl" />
-              <div className="absolute bottom-3 left-0 right-0 flex flex-col items-center gap-1 px-4">
-                <p className="text-sm font-bold text-secondary text-center">{l.pricingComingSoon}</p>
-                <p className="text-xs text-muted-foreground text-center leading-relaxed">{l.pricingComingSoonSub}</p>
-              </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
