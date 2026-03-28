@@ -10,7 +10,8 @@
       "Bash(python -c \":*)",
       "Bash(grep -v \"^$\")",
       "Bash(python scripts/add-captions.py)",
-      "Bash(python scripts/remove-progressbar.py)"
+      "Bash(python scripts/remove-progressbar.py)",
+      "Bash(python scripts/prepare-web-video.py)"
     ]
   }
 }

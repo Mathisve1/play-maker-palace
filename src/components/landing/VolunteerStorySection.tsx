@@ -17,7 +17,7 @@ interface VolunteerStorySectionProps {
   chapters: StoryChapter[];
 }
 
-const VIDEO_SRC = '/story/finalvideo_clean.mp4';
+const VIDEO_SRC = '/story/finalvideo_web.mp4';
 const FADE_SECS = 0.6; // caption fade in/out duration
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ export const VolunteerStorySection = ({
         inset: 0,
         width: '100%',
         height: '100%',
-        objectFit: 'cover',
+        objectFit: 'contain',
         display: 'block',
       }}
     />
@@ -388,8 +388,8 @@ export const VolunteerStorySection = ({
           transition={{ duration: 0.7, delay: 0.1 }}
           className="relative overflow-hidden rounded-3xl shadow-2xl"
           style={{
-            aspectRatio: isMobile ? '9/16' : '16/9',
-            maxHeight: isMobile ? '85vh' : '80vh',
+            aspectRatio: '16/9',
+            maxHeight: '80vh',
             background: '#000',
           }}
           onMouseMove={revealControls}
