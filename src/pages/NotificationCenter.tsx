@@ -1,16 +1,21 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, ArrowLeft, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff, Loader2, ThumbsUp, ThumbsDown, Star, Clock, Zap } from 'lucide-react';
+import { Bell, Check, CheckCheck, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff, Loader2, ThumbsUp, ThumbsDown, Star, Clock, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { Language } from '@/i18n/translations';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useClubContext } from '@/contexts/ClubContext';
+import DashboardLayout from '@/components/DashboardLayout';
+import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
+import VolunteerSidebar from '@/components/VolunteerSidebar';
 
 interface Notification {
   id: string;
@@ -58,6 +63,7 @@ const NotificationCenter = () => {
   const [filter, setFilter] = useState<string>('all');
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { isOwner, profile: ctxProfile, clubId, clubInfo } = useClubContext();
 
   // Inline action state
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -278,29 +284,50 @@ const NotificationCenter = () => {
     }
   };
 
+  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
+  const handleTabChange = (tab: string) => { navigate(`/dashboard?tab=${tab}`); };
+
+  const sidebarEl = isOwner ? (
+    <ClubOwnerSidebar
+      profile={ctxProfile ? { full_name: ctxProfile.full_name, email: ctxProfile.email, avatar_url: ctxProfile.avatar_url } : null}
+      clubId={clubId}
+      clubInfo={clubInfo}
+      onLogout={handleLogout}
+    />
+  ) : (
+    <VolunteerSidebar
+      activeTab="dashboard"
+      setActiveTab={handleTabChange as any}
+      profile={ctxProfile ? { full_name: ctxProfile.full_name, email: ctxProfile.email, avatar_url: ctxProfile.avatar_url } : null}
+      language={language as Language}
+      onLogout={handleLogout}
+      onOpenProfile={() => navigate('/profile')}
+      counts={{}}
+    />
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Bell className="w-8 h-8 animate-pulse text-primary" />
-      </div>
+      <DashboardLayout sidebar={sidebarEl} userId={userId || undefined} volunteerMode={!isOwner}>
+        <div className="flex items-center justify-center py-20">
+          <Bell className="w-8 h-8 animate-pulse text-primary" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-6">
+    <DashboardLayout sidebar={sidebarEl} userId={userId || undefined} volunteerMode={!isOwner}>
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
               <Bell className="w-5 h-5 text-primary" />
               {t3('Notificatiecentrum', 'Centre de notifications', 'Notification Center')}
             </h1>
             {unreadCount > 0 && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {unreadCount} {t3('ongelezen', 'non lu(s)', 'unread')}
               </p>
             )}
@@ -434,7 +461,7 @@ const NotificationCenter = () => {
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
