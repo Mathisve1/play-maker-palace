@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, CalendarDays, Wallet, Trophy, GraduationCap,
-  MapPin, CalendarSync, Gift, ListChecks, Heart, CreditCard,
+  CalendarDays, Wallet, Trophy, GraduationCap,
+  MapPin, CalendarSync, Gift, ListChecks, CreditCard,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Language } from '@/i18n/translations';
 import { cn } from '@/lib/utils';
+import DashboardLayout from '@/components/DashboardLayout';
+import VolunteerSidebar from '@/components/VolunteerSidebar';
 import VolunteerSeasonOverview from '@/components/VolunteerSeasonOverview';
 import VolunteerFinancialDashboard from '@/components/VolunteerFinancialDashboard';
 import VolunteerBadges from '@/components/VolunteerBadges';
@@ -165,6 +167,7 @@ const VolunteerDetails = () => {
   const l = PAGE_LABELS[language as Language] ?? PAGE_LABELS.nl;
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [signups, setSignups] = useState<TaskSignup[]>([]);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
@@ -176,13 +179,18 @@ const VolunteerDetails = () => {
       if (!user) { navigate('/login'); return; }
       setUserId(user.id);
 
-      // Fetch tasks relevant to this volunteer
-      const { data: signupData } = await supabase
-        .from('task_signups')
-        .select('task_id, status')
-        .eq('volunteer_id', user.id);
+      // Fetch profile + tasks + loyalty in parallel
+      const [profileRes, signupData, enrollments] = await Promise.all([
+        supabase.from('profiles').select('full_name, email, avatar_url').eq('id', user.id).single(),
+        supabase.from('task_signups').select('task_id, status').eq('volunteer_id', user.id),
+        supabase.from('loyalty_enrollments').select('points_earned').eq('volunteer_id', user.id),
+      ]);
 
-      const fetchedSignups: TaskSignup[] = (signupData || []).map(s => ({
+      if (profileRes.data) {
+        setProfile({ full_name: profileRes.data.full_name || '', email: profileRes.data.email || '', avatar_url: profileRes.data.avatar_url });
+      }
+
+      const fetchedSignups: TaskSignup[] = (signupData.data || []).map(s => ({
         task_id: s.task_id,
         status: s.status,
       }));
@@ -197,13 +205,7 @@ const VolunteerDetails = () => {
         setTasks((taskData || []) as Task[]);
       }
 
-      // Fetch loyalty points
-      const { data: enrollments } = await supabase
-        .from('loyalty_enrollments')
-        .select('points_earned')
-        .eq('volunteer_id', user.id);
-
-      const totalPoints = (enrollments || []).reduce((sum, e) => sum + (e.points_earned || 0), 0);
+      const totalPoints = (enrollments.data || []).reduce((sum, e) => sum + (e.points_earned || 0), 0);
       setLoyaltyPoints(totalPoints);
 
       setLoading(false);
@@ -211,36 +213,43 @@ const VolunteerDetails = () => {
     init();
   }, [navigate]);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
+  const handleTabChange = (tab: string) => {
+    navigate(`/dashboard?tab=${tab}`);
+  };
+
+  const sidebarEl = (
+    <VolunteerSidebar
+      activeTab="dashboard"
+      setActiveTab={handleTabChange as any}
+      profile={profile}
+      language={language as Language}
+      onLogout={handleLogout}
+      onOpenProfile={() => {}}
+      userId={userId || undefined}
+    />
+  );
+
   if (loading || !userId) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
+      <DashboardLayout sidebar={sidebarEl} userId={userId || undefined} volunteerMode>
+        <div className="flex items-center justify-center h-full">
+          <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   const signedUpTaskIds = new Set(signups.map(s => s.task_id));
 
   return (
-    <div
-      className="min-h-screen bg-background"
-      style={{ paddingBottom: 'calc(84px + env(safe-area-inset-bottom, 0px))' }}
-    >
-      {/* Sticky header */}
-      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b border-border px-4 flex items-center gap-3 min-h-[60px] pt-[env(safe-area-inset-top)]">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 min-h-[44px] min-w-[44px] px-2 rounded-xl hover:bg-muted transition-colors text-foreground font-semibold text-base"
-          aria-label={l.back}
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="hidden sm:inline">{l.back}</span>
-        </button>
-        <h1 className="text-base font-heading font-bold text-foreground truncate">{l.title}</h1>
-      </header>
-
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-5">
+    <DashboardLayout sidebar={sidebarEl} userId={userId} volunteerMode>
+      <div className="max-w-4xl mx-auto space-y-5">
+        <h1 className="text-2xl font-heading font-bold text-foreground">{l.title}</h1>
 
         {/* 1 — Season */}
         <SectionCard
@@ -322,7 +331,7 @@ const VolunteerDetails = () => {
           </div>
         </SectionCard>
 
-        {/* 5 — Nearby Clubs */}
+        {/* 6 — Nearby Clubs */}
         <SectionCard
           delay={0.25}
           headerBg="bg-sky-500/5"
@@ -335,7 +344,7 @@ const VolunteerDetails = () => {
           <NearbyClubsWidget userId={userId} language={language as Language} />
         </SectionCard>
 
-        {/* 6 — Calendar Sync */}
+        {/* 7 — Calendar Sync */}
         <SectionCard
           delay={0.3}
           headerBg="bg-rose-500/5"
@@ -348,7 +357,7 @@ const VolunteerDetails = () => {
           <CalendarSyncSection userId={userId} language={language as Language} />
         </SectionCard>
 
-        {/* 7 — Referral */}
+        {/* 8 — Referral */}
         <SectionCard
           delay={0.35}
           headerBg="bg-orange-500/5"
@@ -361,7 +370,7 @@ const VolunteerDetails = () => {
           <ReferralSection userId={userId} language={language as Language} />
         </SectionCard>
 
-        {/* 8 — Task Preferences */}
+        {/* 9 — Task Preferences */}
         <SectionCard
           delay={0.4}
           headerBg="bg-slate-500/5"
@@ -379,9 +388,8 @@ const VolunteerDetails = () => {
             onNavigateToTask={(taskId) => navigate(`/task/${taskId}`)}
           />
         </SectionCard>
-
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
