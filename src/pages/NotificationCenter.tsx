@@ -1,16 +1,21 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, ArrowLeft, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff, Loader2, ThumbsUp, ThumbsDown, Star, Clock, Zap } from 'lucide-react';
+import { Bell, Check, CheckCheck, MessageCircle, FileSignature, ClipboardList, CreditCard, Ticket, Shield, Award, Info, AlertTriangle, BellOff, Loader2, ThumbsUp, ThumbsDown, Star, Clock, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { Language } from '@/i18n/translations';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useClubContext } from '@/contexts/ClubContext';
+import DashboardLayout from '@/components/DashboardLayout';
+import ClubOwnerSidebar from '@/components/ClubOwnerSidebar';
+import VolunteerSidebar from '@/components/VolunteerSidebar';
 
 interface Notification {
   id: string;
