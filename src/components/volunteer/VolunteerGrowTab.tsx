@@ -30,9 +30,10 @@ interface Props {
   loyaltyEnrollments: Record<string, LoyaltyEnrollment>;
   enrollingProgram: string | null;
   onEnroll: (programId: string) => void;
+  followedClubIds: Set<string> | null;
 }
 
-const VolunteerGrowTab = ({ language, userId, loyaltyPrograms, loyaltyEnrollments, enrollingProgram, onEnroll }: Props) => {
+const VolunteerGrowTab = ({ language, userId, loyaltyPrograms, loyaltyEnrollments, enrollingProgram, onEnroll, followedClubIds }: Props) => {
   const navigate = useNavigate();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
