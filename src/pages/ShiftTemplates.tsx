@@ -1122,7 +1122,7 @@ const ShiftTemplates = () => {
 
   return (
     <ClubPageLayout>
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+    <div className="flex flex-col h-full">
 
       {/* Sticky header */}
       <header className="sticky top-0 z-30 bg-card/90 backdrop-blur-xl border-b border-border px-4 sm:px-6 flex items-center gap-3 h-14 shrink-0">
@@ -1149,16 +1149,16 @@ const ShiftTemplates = () => {
 
         {/* Desktop */}
         <div className="hidden md:grid md:grid-cols-[280px_1fr] w-full overflow-hidden">
-          <div className="border-r border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col bg-white dark:bg-gray-950">
+          <div className="border-r border-border overflow-hidden flex flex-col bg-card">
             {renderTemplateList()}
           </div>
-          <div className="overflow-hidden flex flex-col bg-white dark:bg-gray-950">
+          <div className="overflow-hidden flex flex-col bg-background">
             {renderBuilder()}
           </div>
         </div>
 
         {/* Mobile */}
-        <div className="md:hidden w-full bg-white dark:bg-gray-950 overflow-hidden">
+        <div className="md:hidden w-full bg-background overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>
             {mobileView === 'list' ? (
               <motion.div key="list" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full">
