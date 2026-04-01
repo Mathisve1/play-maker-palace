@@ -96,18 +96,18 @@ const AcademyTab = ({ language, navigate, followedClubIds }: { language: Languag
     const certs = (certRes.data || []) as any[];
     let allTrainings = (trainRes.data || []) as any[];
 
-    // Filter by followed clubs if provided
-    if (followedClubIds && followedClubIds.size > 0) {
+    // Filter by followed clubs — if followedClubIds is provided, ONLY show from followed clubs
+    if (followedClubIds) {
       allTrainings = allTrainings.filter((t: any) => followedClubIds.has(t.club_id));
     }
 
-    // Enrich certs (keep all certs regardless of follow status)
+    // Enrich certs
     const enrichedCerts = certs.map(c => {
       const t = (trainRes.data || []).find((tr: any) => tr.id === c.training_id);
       return { ...c, training_title: t?.title, club_name: t?.clubs?.name };
     });
     // Only show certs from followed clubs
-    const filteredCerts = followedClubIds && followedClubIds.size > 0
+    const filteredCerts = followedClubIds
       ? enrichedCerts.filter(c => {
           const t = (trainRes.data || []).find((tr: any) => tr.id === c.training_id);
           return t ? followedClubIds.has(t.club_id) : false;
@@ -123,7 +123,7 @@ const AcademyTab = ({ language, navigate, followedClubIds }: { language: Languag
 
     // Training events — filter by followed clubs
     let events = (eventsRes.data || []) as any[];
-    if (followedClubIds && followedClubIds.size > 0) {
+    if (followedClubIds) {
       events = events.filter((e: any) => followedClubIds.has(e.club_id));
     }
     if (events.length > 0) {
