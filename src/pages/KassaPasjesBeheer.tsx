@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Terminal, Eye, EyeOff, Copy, Check,
+  Terminal, Eye, EyeOff, Copy, Check,
   RefreshCw, Loader2, Gift, ShoppingBag,
   Wallet, Save,
 } from 'lucide-react';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -188,29 +189,26 @@ const KassaPasjesBeheer = () => {
   // ── Render ───────────────────────────────────────────────────────────────
 
   if (loading) return (
-    <div className="min-h-screen bg-muted/30 flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-    </div>
+    <ClubPageLayout>
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    </ClubPageLayout>
   );
 
   const sectionAnim = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
   return (
-    <div className="min-h-screen bg-muted/30" style={{ paddingBottom: 'calc(84px + env(safe-area-inset-bottom, 0px))' }}>
+    <ClubPageLayout>
+      <div className="max-w-4xl mx-auto space-y-6">
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border px-4 sm:px-6 flex items-center gap-3 min-h-[60px] pt-[env(safe-area-inset-top)]">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 min-h-[44px] min-w-[44px] px-2 rounded-xl hover:bg-muted transition-colors font-semibold text-foreground"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="hidden sm:inline">{l.back}</span>
-        </button>
-        <h1 className="text-lg font-heading font-bold text-foreground truncate">{l.title}</h1>
-      </header>
-
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 space-y-6 pb-8">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Terminal className="w-5 h-5 text-primary" />
+          </div>
+          <h1 className="text-xl font-heading font-bold text-foreground">{l.title}</h1>
+        </div>
 
         {/* ─── SECTION 1: POS API Key ──────────────────────────────────── */}
         <motion.div {...sectionAnim} className="bg-card rounded-xl border border-border shadow-sm">
@@ -393,7 +391,7 @@ const KassaPasjesBeheer = () => {
         </motion.div>
 
       </div>
-    </div>
+    </ClubPageLayout>
   );
 };
 
