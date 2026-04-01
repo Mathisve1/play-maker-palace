@@ -1125,25 +1125,19 @@ const ShiftTemplates = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
 
       {/* Sticky header */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 flex items-center gap-3 h-14 shrink-0">
-        <button
-          onClick={() => { if (mobileView === 'builder') { setMobileView('list'); } else { navigate(-1); } }}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">{l.back}</span>
-        </button>
-        <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-white" />
+      <header className="sticky top-0 z-30 bg-card/90 backdrop-blur-xl border-b border-border px-4 sm:px-6 flex items-center gap-3 h-14 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-primary" />
           </div>
-          <h1 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-            {l.title}
-            {mobileView === 'builder' && selectedTemplate && (
-              <span className="text-gray-400 font-normal ml-2">— {selectedTemplate.name}</span>
-            )}
-          </h1>
+          <div>
+            <h1 className="text-xl font-heading font-bold text-foreground">
+              {l.title}
+              {mobileView === 'builder' && selectedTemplate && (
+                <span className="text-muted-foreground font-normal ml-2 text-sm">— {selectedTemplate.name}</span>
+              )}
+            </h1>
+          </div>
         </div>
       </header>
 
