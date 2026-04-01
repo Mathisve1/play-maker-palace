@@ -1653,6 +1653,7 @@ Deno.serve(async (req) => {
 
         return new Response(JSON.stringify({ success: true, ticket: { barcode } }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       } catch (e: any) {
+        console.error("send_ticket_email_invite error:", e.message);
         await supabase.from("ticketing_logs").insert({
           club_id,
           action: "send_ticket_email_invite",
@@ -1660,7 +1661,7 @@ Deno.serve(async (req) => {
           status: "error",
           error_message: e.message,
         });
-        return new Response(JSON.stringify({ success: false, error: e.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ success: false, error: "Ticket e-mail kon niet worden verstuurd." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 

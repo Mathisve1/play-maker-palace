@@ -129,7 +129,7 @@ serve(async (req) => {
     });
   } catch (err: any) {
     console.error('send-task-invite-email error:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: 'Er is een fout opgetreden bij het versturen van de uitnodiging.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     return await handleGenericWebhook(supabase, club_id, body);
   } catch (e: any) {
     console.error("[ticketing-webhook] Error:", e.message);
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Webhook verwerking mislukt." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
 
