@@ -167,6 +167,7 @@ const VolunteerDetails = () => {
   const l = PAGE_LABELS[language as Language] ?? PAGE_LABELS.nl;
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [signups, setSignups] = useState<TaskSignup[]>([]);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
@@ -178,13 +179,18 @@ const VolunteerDetails = () => {
       if (!user) { navigate('/login'); return; }
       setUserId(user.id);
 
-      // Fetch tasks relevant to this volunteer
-      const { data: signupData } = await supabase
-        .from('task_signups')
-        .select('task_id, status')
-        .eq('volunteer_id', user.id);
+      // Fetch profile + tasks + loyalty in parallel
+      const [profileRes, signupData, enrollments] = await Promise.all([
+        supabase.from('profiles').select('full_name, email, avatar_url').eq('id', user.id).single(),
+        supabase.from('task_signups').select('task_id, status').eq('volunteer_id', user.id),
+        supabase.from('loyalty_enrollments').select('points_earned').eq('volunteer_id', user.id),
+      ]);
 
-      const fetchedSignups: TaskSignup[] = (signupData || []).map(s => ({
+      if (profileRes.data) {
+        setProfile({ full_name: profileRes.data.full_name || '', email: profileRes.data.email || '', avatar_url: profileRes.data.avatar_url });
+      }
+
+      const fetchedSignups: TaskSignup[] = (signupData.data || []).map(s => ({
         task_id: s.task_id,
         status: s.status,
       }));
@@ -199,13 +205,7 @@ const VolunteerDetails = () => {
         setTasks((taskData || []) as Task[]);
       }
 
-      // Fetch loyalty points
-      const { data: enrollments } = await supabase
-        .from('loyalty_enrollments')
-        .select('points_earned')
-        .eq('volunteer_id', user.id);
-
-      const totalPoints = (enrollments || []).reduce((sum, e) => sum + (e.points_earned || 0), 0);
+      const totalPoints = (enrollments.data || []).reduce((sum, e) => sum + (e.points_earned || 0), 0);
       setLoyaltyPoints(totalPoints);
 
       setLoading(false);
@@ -213,9 +213,30 @@ const VolunteerDetails = () => {
     init();
   }, [navigate]);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
+  const handleTabChange = (tab: string) => {
+    navigate(`/dashboard?tab=${tab}`);
+  };
+
+  const sidebarEl = (
+    <VolunteerSidebar
+      activeTab="dashboard"
+      setActiveTab={handleTabChange as any}
+      profile={profile}
+      language={language as Language}
+      onLogout={handleLogout}
+      onOpenProfile={() => {}}
+      userId={userId || undefined}
+    />
+  );
+
   if (loading || !userId) {
     return (
-      <DashboardLayout sidebar={<VolunteerSidebar activeTab="dashboard" setActiveTab={() => {}} />} userId={userId || undefined} volunteerMode>
+      <DashboardLayout sidebar={sidebarEl} userId={userId || undefined} volunteerMode>
         <div className="flex items-center justify-center h-full">
           <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
@@ -226,7 +247,7 @@ const VolunteerDetails = () => {
   const signedUpTaskIds = new Set(signups.map(s => s.task_id));
 
   return (
-    <DashboardLayout sidebar={<VolunteerSidebar activeTab="dashboard" setActiveTab={() => {}} />} userId={userId} volunteerMode>
+    <DashboardLayout sidebar={sidebarEl} userId={userId} volunteerMode>
       <div className="max-w-4xl mx-auto space-y-5">
         <h1 className="text-2xl font-heading font-bold text-foreground">{l.title}</h1>
 
