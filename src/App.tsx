@@ -158,7 +158,7 @@ const App = () => {
             <Route path="/compliance" element={<RequireAuth redirectTo="/club-login"><ComplianceDashboard /></RequireAuth>} />
             <Route path="/loyalty" element={<RequireAuth redirectTo="/club-login"><LoyaltyPrograms /></RequireAuth>} />
             <Route path="/ticketing" element={<RequireAuth redirectTo="/club-login"><TicketingDashboard /></RequireAuth>} />
-            <Route path="/scan" element={<RequireAuth><TicketScanner /></RequireAuth>} />
+            <Route path="/scan" element={<RequireAuth redirectTo="/club-login"><TicketScanner /></RequireAuth>} />
             <Route path="/sepa-payouts" element={<RequireAuth redirectTo="/club-login"><SepaPayouts /></RequireAuth>} />
             <Route path="/academy" element={<RequireAuth redirectTo="/club-login"><AcademyBuilder /></RequireAuth>} />
             <Route path="/academy/physical-trainings" element={<RequireAuth redirectTo="/club-login"><PhysicalTrainings /></RequireAuth>} />
