@@ -391,7 +391,7 @@ const KassaPasjesBeheer = () => {
         </motion.div>
 
       </div>
-    </div>
+    </ClubPageLayout>
   );
 };
 
