@@ -72,7 +72,7 @@ const labels = {
   },
 };
 
-const AcademyTab = ({ language, navigate }: { language: Language; navigate: ReturnType<typeof useNavigate> }) => {
+const AcademyTab = ({ language, navigate, followedClubIds }: { language: Language; navigate: ReturnType<typeof useNavigate>; followedClubIds?: Set<string> | null }) => {
   const l = labels[language];
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
@@ -94,14 +94,26 @@ const AcademyTab = ({ language, navigate }: { language: Language; navigate: Retu
     ]);
 
     const certs = (certRes.data || []) as any[];
-    const allTrainings = (trainRes.data || []) as any[];
+    let allTrainings = (trainRes.data || []) as any[];
 
-    // Enrich certs
+    // Filter by followed clubs if provided
+    if (followedClubIds && followedClubIds.size > 0) {
+      allTrainings = allTrainings.filter((t: any) => followedClubIds.has(t.club_id));
+    }
+
+    // Enrich certs (keep all certs regardless of follow status)
     const enrichedCerts = certs.map(c => {
-      const t = allTrainings.find((tr: any) => tr.id === c.training_id);
+      const t = (trainRes.data || []).find((tr: any) => tr.id === c.training_id);
       return { ...c, training_title: t?.title, club_name: t?.clubs?.name };
     });
-    setCertificates(enrichedCerts);
+    // Only show certs from followed clubs
+    const filteredCerts = followedClubIds && followedClubIds.size > 0
+      ? enrichedCerts.filter(c => {
+          const t = (trainRes.data || []).find((tr: any) => tr.id === c.training_id);
+          return t ? followedClubIds.has(t.club_id) : false;
+        })
+      : enrichedCerts;
+    setCertificates(filteredCerts);
 
     // Available digital trainings
     const certifiedIds = new Set(certs.map(c => c.training_id));
@@ -109,8 +121,11 @@ const AcademyTab = ({ language, navigate }: { language: Language; navigate: Retu
       id: t.id, title: t.title, description: t.description, club_id: t.club_id, club_name: t.clubs?.name,
     })));
 
-    // Training events
-    const events = (eventsRes.data || []) as any[];
+    // Training events — filter by followed clubs
+    let events = (eventsRes.data || []) as any[];
+    if (followedClubIds && followedClubIds.size > 0) {
+      events = events.filter((e: any) => followedClubIds.has(e.club_id));
+    }
     if (events.length > 0) {
       const eventIds = events.map((e: any) => e.id);
       const trainingIds = [...new Set(events.map((e: any) => e.training_id).filter(Boolean))];

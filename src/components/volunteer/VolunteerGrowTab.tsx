@@ -30,9 +30,10 @@ interface Props {
   loyaltyEnrollments: Record<string, LoyaltyEnrollment>;
   enrollingProgram: string | null;
   onEnroll: (programId: string) => void;
+  followedClubIds: Set<string> | null;
 }
 
-const VolunteerGrowTab = ({ language, userId, loyaltyPrograms, loyaltyEnrollments, enrollingProgram, onEnroll }: Props) => {
+const VolunteerGrowTab = ({ language, userId, loyaltyPrograms, loyaltyEnrollments, enrollingProgram, onEnroll, followedClubIds }: Props) => {
   const navigate = useNavigate();
   const t = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
@@ -70,7 +71,7 @@ const VolunteerGrowTab = ({ language, userId, loyaltyPrograms, loyaltyEnrollment
           <BookOpen className="w-5 h-5 text-primary" />
           {t('Trainingen & Academy', 'Formations & Académie', 'Trainings & Academy')}
         </h2>
-        <AcademyTab language={language} navigate={navigate} />
+        <AcademyTab language={language} navigate={navigate} followedClubIds={followedClubIds} />
       </section>
     </div>
   );

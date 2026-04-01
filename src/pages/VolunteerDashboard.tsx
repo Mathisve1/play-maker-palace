@@ -450,9 +450,7 @@ const VolunteerDashboard = () => {
 
       // Set loyalty — only show programs from followed clubs
       if (allPrograms && allPrograms.length > 0) {
-        const filteredPrograms = userFollowedClubIds.size > 0
-          ? allPrograms.filter((p: any) => userFollowedClubIds.has(p.club_id))
-          : allPrograms;
+        const filteredPrograms = allPrograms.filter((p: any) => userFollowedClubIds.has(p.club_id));
         setLoyaltyPrograms(filteredPrograms.map((p: any) => ({ ...p, club_name: clubEnrichMap.get(p.club_id) || '' })));
         if (loyaltyEnrRes.data) {
           const enrollMap: Record<string, { id: string; tasks_completed: number; points_earned: number; reward_claimed: boolean }> = {};
@@ -1319,6 +1317,7 @@ const VolunteerDashboard = () => {
           loyaltyEnrollments={loyaltyEnrollments}
           enrollingProgram={enrollingProgram}
           onEnroll={handleEnrollLoyalty}
+          followedClubIds={followedClubIds}
         />
       )}
 
