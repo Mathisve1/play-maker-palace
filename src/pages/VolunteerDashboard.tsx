@@ -1317,6 +1317,7 @@ const VolunteerDashboard = () => {
           loyaltyEnrollments={loyaltyEnrollments}
           enrollingProgram={enrollingProgram}
           onEnroll={handleEnrollLoyalty}
+          followedClubIds={followedClubIds}
         />
       )}
 
