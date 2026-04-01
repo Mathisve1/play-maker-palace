@@ -94,14 +94,26 @@ const AcademyTab = ({ language, navigate, followedClubIds }: { language: Languag
     ]);
 
     const certs = (certRes.data || []) as any[];
-    const allTrainings = (trainRes.data || []) as any[];
+    let allTrainings = (trainRes.data || []) as any[];
 
-    // Enrich certs
+    // Filter by followed clubs if provided
+    if (followedClubIds && followedClubIds.size > 0) {
+      allTrainings = allTrainings.filter((t: any) => followedClubIds.has(t.club_id));
+    }
+
+    // Enrich certs (keep all certs regardless of follow status)
     const enrichedCerts = certs.map(c => {
-      const t = allTrainings.find((tr: any) => tr.id === c.training_id);
+      const t = (trainRes.data || []).find((tr: any) => tr.id === c.training_id);
       return { ...c, training_title: t?.title, club_name: t?.clubs?.name };
     });
-    setCertificates(enrichedCerts);
+    // Only show certs from followed clubs
+    const filteredCerts = followedClubIds && followedClubIds.size > 0
+      ? enrichedCerts.filter(c => {
+          const t = (trainRes.data || []).find((tr: any) => tr.id === c.training_id);
+          return t ? followedClubIds.has(t.club_id) : false;
+        })
+      : enrichedCerts;
+    setCertificates(filteredCerts);
 
     // Available digital trainings
     const certifiedIds = new Set(certs.map(c => c.training_id));
