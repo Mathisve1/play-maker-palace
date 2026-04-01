@@ -331,16 +331,6 @@ const NotificationCenter = () => {
                 {unreadCount} {t3('ongelezen', 'non lu(s)', 'unread')}
               </p>
             )}
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Bell className="w-5 h-5 text-primary" />
-              {t3('Notificatiecentrum', 'Centre de notifications', 'Notification Center')}
-            </h1>
-            {unreadCount > 0 && (
-              <p className="text-sm text-muted-foreground">
-                {unreadCount} {t3('ongelezen', 'non lu(s)', 'unread')}
-              </p>
-            )}
           </div>
           {unreadCount > 0 && (
             <Button variant="outline" size="sm" onClick={markAllRead} className="gap-1.5">
