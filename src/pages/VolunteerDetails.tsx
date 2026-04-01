@@ -226,7 +226,7 @@ const VolunteerDetails = () => {
   const signedUpTaskIds = new Set(signups.map(s => s.task_id));
 
   return (
-    <DashboardLayout sidebar={<VolunteerSidebar activeTab="dashboard" onTabChange={() => {}} />} userId={userId} volunteerMode>
+    <DashboardLayout sidebar={<VolunteerSidebar activeTab="dashboard" setActiveTab={() => {}} />} userId={userId} volunteerMode>
       <div className="max-w-4xl mx-auto space-y-5">
         <h1 className="text-2xl font-heading font-bold text-foreground">{l.title}</h1>
 
