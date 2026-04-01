@@ -215,34 +215,20 @@ const VolunteerDetails = () => {
 
   if (loading || !userId) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
+      <DashboardLayout sidebar={<VolunteerSidebar activeTab="dashboard" onTabChange={() => {}} />} userId={userId || undefined} volunteerMode>
+        <div className="flex items-center justify-center h-full">
+          <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   const signedUpTaskIds = new Set(signups.map(s => s.task_id));
 
   return (
-    <div
-      className="min-h-screen bg-background"
-      style={{ paddingBottom: 'calc(84px + env(safe-area-inset-bottom, 0px))' }}
-    >
-      {/* Sticky header */}
-      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b border-border px-4 flex items-center gap-3 min-h-[60px] pt-[env(safe-area-inset-top)]">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 min-h-[44px] min-w-[44px] px-2 rounded-xl hover:bg-muted transition-colors text-foreground font-semibold text-base"
-          aria-label={l.back}
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="hidden sm:inline">{l.back}</span>
-        </button>
-        <h1 className="text-base font-heading font-bold text-foreground truncate">{l.title}</h1>
-      </header>
-
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-5">
+    <DashboardLayout sidebar={<VolunteerSidebar activeTab="dashboard" onTabChange={() => {}} />} userId={userId} volunteerMode>
+      <div className="max-w-4xl mx-auto space-y-5">
+        <h1 className="text-2xl font-heading font-bold text-foreground">{l.title}</h1>
 
         {/* 1 — Season */}
         <SectionCard
@@ -324,7 +310,7 @@ const VolunteerDetails = () => {
           </div>
         </SectionCard>
 
-        {/* 5 — Nearby Clubs */}
+        {/* 6 — Nearby Clubs */}
         <SectionCard
           delay={0.25}
           headerBg="bg-sky-500/5"
@@ -337,7 +323,7 @@ const VolunteerDetails = () => {
           <NearbyClubsWidget userId={userId} language={language as Language} />
         </SectionCard>
 
-        {/* 6 — Calendar Sync */}
+        {/* 7 — Calendar Sync */}
         <SectionCard
           delay={0.3}
           headerBg="bg-rose-500/5"
@@ -350,7 +336,7 @@ const VolunteerDetails = () => {
           <CalendarSyncSection userId={userId} language={language as Language} />
         </SectionCard>
 
-        {/* 7 — Referral */}
+        {/* 8 — Referral */}
         <SectionCard
           delay={0.35}
           headerBg="bg-orange-500/5"
@@ -363,7 +349,7 @@ const VolunteerDetails = () => {
           <ReferralSection userId={userId} language={language as Language} />
         </SectionCard>
 
-        {/* 8 — Task Preferences */}
+        {/* 9 — Task Preferences */}
         <SectionCard
           delay={0.4}
           headerBg="bg-slate-500/5"
@@ -381,9 +367,8 @@ const VolunteerDetails = () => {
             onNavigateToTask={(taskId) => navigate(`/task/${taskId}`)}
           />
         </SectionCard>
-
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
