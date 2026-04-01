@@ -130,18 +130,29 @@ const WalletHeroCard = ({
         )}
       </div>
 
-      {/* QR overlay */}
+      {/* QR full-screen overlay */}
       <AnimatePresence>
         {showQr && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute inset-0 z-20 rounded-3xl bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center gap-6 p-6"
+            onClick={() => setShowQr(false)}
           >
+            {/* Close button top-right */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowQr(false)}
+              className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/20 border border-white/25 flex items-center justify-center hover:bg-white/30 transition-colors"
+              aria-label={tr('Sluit QR-code', 'Fermer le QR-code', 'Close QR code')}
+            >
+              <X className="w-6 h-6 text-white" />
+            </motion.button>
+
             <motion.div
-              initial={{ opacity: 0, y: 12, scale: 0.85 }}
+              initial={{ opacity: 0, y: 20, scale: 0.85 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{
                 delay: 0.06,
@@ -149,26 +160,27 @@ const WalletHeroCard = ({
                 stiffness: 400,
                 damping: 28,
               }}
-              className="bg-white rounded-2xl p-4"
-              style={{ boxShadow: '0 0 40px rgba(139,92,246,0.45)' }}
+              className="bg-white rounded-3xl p-6"
+              style={{ boxShadow: '0 0 60px rgba(139,92,246,0.5)' }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <QRCodeSVG value={qrValue} size={160} level="H" />
+              <QRCodeSVG value={qrValue} size={220} level="H" />
             </motion.div>
-            <p className="text-white/60 text-sm text-center">
+
+            <p className="text-white/70 text-base text-center font-medium">
               {tr(
                 'Jouw vrijwilligerspas',
                 'Votre carte bénévole',
                 'Your volunteer pass',
               )}
             </p>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+
+            <button
               onClick={() => setShowQr(false)}
-              className="w-11 h-11 rounded-full bg-white/20 border border-white/25 flex items-center justify-center hover:bg-white/30 transition-colors"
-              aria-label={tr('Sluit QR-code', 'Fermer le QR-code', 'Close QR code')}
+              className="mt-2 px-6 py-3 rounded-xl bg-white/15 border border-white/20 text-white text-base font-medium hover:bg-white/25 transition-colors"
             >
-              <X className="w-5 h-5 text-white" />
-            </motion.button>
+              {tr('Sluiten', 'Fermer', 'Close')}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
