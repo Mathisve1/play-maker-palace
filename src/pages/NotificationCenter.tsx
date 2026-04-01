@@ -471,7 +471,7 @@ const NotificationCenter = () => {
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
