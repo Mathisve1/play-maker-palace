@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Terminal, Eye, EyeOff, Copy, Check,
+  Terminal, Eye, EyeOff, Copy, Check,
   RefreshCw, Loader2, Gift, ShoppingBag,
   Wallet, Save,
 } from 'lucide-react';
+import ClubPageLayout from '@/components/ClubPageLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useClubContext } from '@/contexts/ClubContext';
 import { useLanguage } from '@/i18n/LanguageContext';
