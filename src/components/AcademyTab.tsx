@@ -72,7 +72,7 @@ const labels = {
   },
 };
 
-const AcademyTab = ({ language, navigate }: { language: Language; navigate: ReturnType<typeof useNavigate> }) => {
+const AcademyTab = ({ language, navigate, followedClubIds }: { language: Language; navigate: ReturnType<typeof useNavigate>; followedClubIds?: Set<string> | null }) => {
   const l = labels[language];
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
