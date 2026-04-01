@@ -71,7 +71,7 @@ const VolunteerGrowTab = ({ language, userId, loyaltyPrograms, loyaltyEnrollment
           <BookOpen className="w-5 h-5 text-primary" />
           {t('Trainingen & Academy', 'Formations & Académie', 'Trainings & Academy')}
         </h2>
-        <AcademyTab language={language} navigate={navigate} />
+        <AcademyTab language={language} navigate={navigate} followedClubIds={followedClubIds} />
       </section>
     </div>
   );
