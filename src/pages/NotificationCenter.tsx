@@ -284,22 +284,53 @@ const NotificationCenter = () => {
     }
   };
 
+  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
+  const handleTabChange = (tab: string) => { navigate(`/dashboard?tab=${tab}`); };
+
+  const sidebarEl = isOwner ? (
+    <ClubOwnerSidebar
+      profile={ctxProfile ? { full_name: ctxProfile.full_name, email: ctxProfile.email, avatar_url: ctxProfile.avatar_url } : null}
+      clubId={clubId}
+      clubInfo={clubInfo}
+      onLogout={handleLogout}
+    />
+  ) : (
+    <VolunteerSidebar
+      activeTab="dashboard"
+      setActiveTab={handleTabChange as any}
+      profile={ctxProfile ? { full_name: ctxProfile.full_name, email: ctxProfile.email, avatar_url: ctxProfile.avatar_url } : null}
+      language={language as Language}
+      onLogout={handleLogout}
+      onOpenProfile={() => navigate('/profile')}
+      counts={{}}
+    />
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Bell className="w-8 h-8 animate-pulse text-primary" />
-      </div>
+      <DashboardLayout sidebar={sidebarEl} userId={userId || undefined} volunteerMode={!isOwner}>
+        <div className="flex items-center justify-center py-20">
+          <Bell className="w-8 h-8 animate-pulse text-primary" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-6">
+    <DashboardLayout sidebar={sidebarEl} userId={userId || undefined} volunteerMode={!isOwner}>
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+              <Bell className="w-5 h-5 text-primary" />
+              {t3('Notificatiecentrum', 'Centre de notifications', 'Notification Center')}
+            </h1>
+            {unreadCount > 0 && (
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {unreadCount} {t3('ongelezen', 'non lu(s)', 'unread')}
+              </p>
+            )}
           <div className="flex-1">
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
               <Bell className="w-5 h-5 text-primary" />
