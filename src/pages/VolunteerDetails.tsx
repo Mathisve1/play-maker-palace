@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, CalendarDays, Wallet, Trophy, GraduationCap,
-  MapPin, CalendarSync, Gift, ListChecks, Heart, CreditCard,
+  CalendarDays, Wallet, Trophy, GraduationCap,
+  MapPin, CalendarSync, Gift, ListChecks, CreditCard,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Language } from '@/i18n/translations';
 import { cn } from '@/lib/utils';
+import DashboardLayout from '@/components/DashboardLayout';
+import VolunteerSidebar from '@/components/VolunteerSidebar';
 import VolunteerSeasonOverview from '@/components/VolunteerSeasonOverview';
 import VolunteerFinancialDashboard from '@/components/VolunteerFinancialDashboard';
 import VolunteerBadges from '@/components/VolunteerBadges';
