@@ -202,6 +202,46 @@ const AcademyTab = ({ language, navigate, followedClubIds }: { language: Languag
 
   if (loading) return <div className="mt-6 flex justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
+  // Show empty state when user hasn't followed any clubs yet
+  if (followedClubIds && followedClubIds.size === 0) {
+    const emptyLabels = {
+      nl: {
+        title: 'Volg eerst een club',
+        description: 'Je hebt nog geen clubs gevolgd. Zodra je een club volgt, verschijnen hier de trainingen, certificaten en fysieke trainingen van die club.',
+        cta: 'Ontdek clubs',
+      },
+      fr: {
+        title: 'Suivez d\'abord un club',
+        description: 'Vous ne suivez encore aucun club. Dès que vous suivez un club, ses formations, certificats et entraînements physiques apparaîtront ici.',
+        cta: 'Découvrir des clubs',
+      },
+      en: {
+        title: 'Follow a club first',
+        description: 'You haven\'t followed any clubs yet. Once you follow a club, their trainings, certificates and physical trainings will appear here.',
+        cta: 'Discover clubs',
+      },
+    };
+    const el = emptyLabels[language as keyof typeof emptyLabels] || emptyLabels.nl;
+
+    return (
+      <div className="mt-6">
+        <div className="flex flex-col items-center justify-center py-16 px-6 text-center rounded-2xl border border-dashed border-border bg-muted/30">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <BookOpen className="w-8 h-8 text-primary opacity-60" />
+          </div>
+          <h3 className="text-lg font-heading font-semibold text-foreground mb-2">{el.title}</h3>
+          <p className="text-base text-muted-foreground max-w-md mb-6">{el.description}</p>
+          <button
+            onClick={() => navigate('/community')}
+            className="h-12 px-6 rounded-xl bg-primary text-primary-foreground font-medium text-base hover:opacity-90 transition-opacity"
+          >
+            {el.cta}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 space-y-6">
       {/* Certificates */}
