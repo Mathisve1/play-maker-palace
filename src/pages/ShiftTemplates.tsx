@@ -1149,7 +1149,7 @@ const ShiftTemplates = () => {
 
         {/* Desktop */}
         <div className="hidden md:grid md:grid-cols-[280px_1fr] w-full overflow-hidden">
-          <div className="border-r border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col bg-white dark:bg-gray-950">
+          <div className="border-r border-border overflow-hidden flex flex-col bg-card">
             {renderTemplateList()}
           </div>
           <div className="overflow-hidden flex flex-col bg-white dark:bg-gray-950">
