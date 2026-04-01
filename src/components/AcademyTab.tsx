@@ -121,8 +121,11 @@ const AcademyTab = ({ language, navigate, followedClubIds }: { language: Languag
       id: t.id, title: t.title, description: t.description, club_id: t.club_id, club_name: t.clubs?.name,
     })));
 
-    // Training events
-    const events = (eventsRes.data || []) as any[];
+    // Training events — filter by followed clubs
+    let events = (eventsRes.data || []) as any[];
+    if (followedClubIds && followedClubIds.size > 0) {
+      events = events.filter((e: any) => followedClubIds.has(e.club_id));
+    }
     if (events.length > 0) {
       const eventIds = events.map((e: any) => e.id);
       const trainingIds = [...new Set(events.map((e: any) => e.training_id).filter(Boolean))];
