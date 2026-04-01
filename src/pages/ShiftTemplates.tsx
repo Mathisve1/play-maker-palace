@@ -1158,7 +1158,7 @@ const ShiftTemplates = () => {
         </div>
 
         {/* Mobile */}
-        <div className="md:hidden w-full bg-white dark:bg-gray-950 overflow-hidden">
+        <div className="md:hidden w-full bg-background overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>
             {mobileView === 'list' ? (
               <motion.div key="list" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full">
