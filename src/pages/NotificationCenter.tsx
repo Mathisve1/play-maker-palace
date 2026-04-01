@@ -63,6 +63,7 @@ const NotificationCenter = () => {
   const [filter, setFilter] = useState<string>('all');
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { isOwner, profile: ctxProfile, clubId, clubInfo } = useClubContext();
 
   // Inline action state
   const [actionLoading, setActionLoading] = useState<string | null>(null);
