@@ -139,6 +139,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
   const [fullTask, setFullTask] = useState<any>(null);
   const [clubData, setClubData] = useState<{ name: string; logo_url: string | null; owner_name: string | null } | null>(null);
   const [clubSignatureUrl, setClubSignatureUrl] = useState<string | null>(null);
+  const [bankingInfo, setBankingInfo] = useState<BankingInfo | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const l = labels[language];
 
