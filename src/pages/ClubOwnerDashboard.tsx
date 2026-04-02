@@ -522,7 +522,7 @@ const ClubOwnerDashboard = () => {
             const vol = profileMap.get(s.volunteer_id);
             const signup: Signup = {
               ...s,
-              volunteer: vol ? { id: vol.id, full_name: vol.full_name, email: vol.email, avatar_url: vol.avatar_url, created_at: vol.created_at, phone: vol.phone, bio: vol.bio, bank_iban: vol.bank_iban, bank_holder_name: vol.bank_holder_name, bank_consent_given: vol.bank_consent_given, bank_consent_date: vol.bank_consent_date } : null,
+              volunteer: vol ? { id: vol.id, full_name: vol.full_name, email: vol.email, avatar_url: vol.avatar_url, created_at: vol.created_at, phone: vol.phone, bio: vol.bio } : null,
             };
             if (!grouped[s.task_id]) grouped[s.task_id] = [];
             grouped[s.task_id].push(signup);
