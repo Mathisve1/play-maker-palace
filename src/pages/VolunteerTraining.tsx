@@ -268,10 +268,16 @@ const VolunteerTraining = () => {
   };
 
   const handleSubmitGlobalQuiz = async () => {
+    // Find the global quiz ID
+    const gQuizId = globalQuestions.length > 0 ? (await supabase.from('training_quizzes').select('id').eq('training_id', training?.id).is('module_id', null).maybeSingle())?.data?.id : null;
     let correct = 0;
-    globalQuestions.forEach(q => {
-      if (globalAnswers[q.id] === q.correct_answer_index) correct++;
-    });
+    if (gQuizId) {
+      const { data: gradeResult } = await supabase.rpc('grade_quiz', {
+        p_quiz_id: gQuizId,
+        p_answers: globalAnswers,
+      });
+      correct = gradeResult?.score ?? 0;
+    }
     setScore(correct);
 
     if (correct >= globalPassingScore) {
