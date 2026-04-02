@@ -276,7 +276,7 @@ const VolunteerTraining = () => {
         p_quiz_id: gQuizId,
         p_answers: globalAnswers,
       });
-      correct = gradeResult?.score ?? 0;
+      correct = (gradeResult as any)?.score ?? 0;
     }
     setScore(correct);
 
