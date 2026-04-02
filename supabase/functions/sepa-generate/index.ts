@@ -14,6 +14,17 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;');
 }
 
+function validateIban(iban: string): boolean {
+  const clean = iban.replace(/\s/g, '').toUpperCase();
+  return /^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$/.test(clean) && clean.length >= 15 && clean.length <= 34;
+}
+
+function validateBic(bic: string): boolean {
+  if (!bic) return true; // BIC is optional
+  const clean = bic.replace(/\s/g, '').toUpperCase();
+  return /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(clean);
+}
+
 function generateSepaXml(params: {
   batchRef: string;
   batchMessage: string;
