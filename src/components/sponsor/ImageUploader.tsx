@@ -44,6 +44,33 @@ const ImageUploader = React.forwardRef<HTMLDivElement, ImageUploaderProps>(({
     }
 
     setUploading(true);
+
+    // For 'pending' folder (public wizard), use the secure edge function
+    if (folder === 'pending') {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const resp = await fetch(`${supabaseUrl}/functions/v1/sponsor-upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        const result = await resp.json();
+        if (!resp.ok || !result.publicUrl) {
+          toast.error(result.error || 'Upload mislukt. Probeer opnieuw.');
+          setUploading(false);
+          return;
+        }
+        onChange(result.publicUrl);
+        setUploading(false);
+      } catch {
+        toast.error('Upload mislukt. Probeer opnieuw.');
+        setUploading(false);
+      }
+      return;
+    }
+
+    // For authenticated uploads, use direct Supabase storage
     const ext      = file.name.split('.').pop() || 'jpg';
     const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
@@ -52,7 +79,7 @@ const ImageUploader = React.forwardRef<HTMLDivElement, ImageUploaderProps>(({
       .upload(fileName, file, { cacheControl: '3600', upsert: false });
 
     if (error) {
-      toast.error(`Upload mislukt: ${error.message}`);
+      toast.error('Upload mislukt. Probeer opnieuw.');
       setUploading(false);
       return;
     }
