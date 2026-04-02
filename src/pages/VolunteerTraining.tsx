@@ -189,11 +189,10 @@ const VolunteerTraining = () => {
     const gQuiz = allQuizzes.find((q: any) => !q.module_id);
     if (gQuiz) {
       setGlobalPassingScore(gQuiz.passing_score);
-      const { data: qs } = await supabase.from('quiz_questions').select('*').eq('quiz_id', gQuiz.id).order('sort_order');
+      const { data: qs } = await supabase.from('quiz_questions_safe').select('*').eq('quiz_id', gQuiz.id).order('sort_order');
       setGlobalQuestions((qs || []).map((q: any) => ({
         id: q.id, question_text: q.question_text,
         options: Array.isArray(q.options) ? q.options : [],
-        correct_answer_index: q.correct_answer_index,
       })));
     }
 
