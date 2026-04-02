@@ -289,8 +289,11 @@ Deno.serve(async (req) => {
 
       // We need the club's own IBAN/BIC - use the body params
       const { clubIban, clubBic } = body;
-      if (!clubIban) {
-        return new Response(JSON.stringify({ error: 'Club IBAN required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!clubIban || !validateIban(clubIban)) {
+        return new Response(JSON.stringify({ error: 'Ongeldig of ontbrekend IBAN-nummer voor de club.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (clubBic && !validateBic(clubBic)) {
+        return new Response(JSON.stringify({ error: 'Ongeldig BIC-formaat.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       const xml = generateSepaXml({
