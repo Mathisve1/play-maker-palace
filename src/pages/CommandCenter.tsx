@@ -192,7 +192,7 @@ const CommandCenter = () => {
 
       const { data: enrollments } = await supabase
         .from('monthly_enrollments')
-        .select('id, plan_id, volunteer_id, approval_status, contract_status, profiles:volunteer_id(full_name, email, phone, bank_iban, bank_holder_name)')
+        .select('id, plan_id, volunteer_id, approval_status, contract_status, profiles:volunteer_id(full_name, email, phone)')
         .in('plan_id', planIds);
 
       const enrs = (enrollments || []) as any[];
