@@ -20,6 +20,14 @@ interface VolunteerInfo {
   bank_holder_name?: string | null;
 }
 
+interface BankingInfo {
+  bank_iban: string | null;
+  bank_holder_name: string | null;
+  bank_bic: string | null;
+  bank_consent_given: boolean;
+  bank_consent_date: string | null;
+}
+
 interface TaskInfo {
   id: string;
   title: string;
