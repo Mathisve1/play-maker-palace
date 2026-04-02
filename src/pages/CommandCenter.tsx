@@ -220,7 +220,7 @@ const CommandCenter = () => {
             context_label: planLabel, context_date: null,
             source_id: e.id, plan_id: e.plan_id,
             contract_template_id: plan?.contract_template_id,
-            _volunteer: { id: e.volunteer_id, full_name: vol.full_name, email: vol.email, phone: vol.phone, bank_iban: vol.bank_iban, bank_holder_name: vol.bank_holder_name },
+            _volunteer: { id: e.volunteer_id, full_name: vol.full_name, email: vol.email, phone: vol.phone },
             _task: { id: e.plan_id, title: planLabel, contract_template_id: plan?.contract_template_id, task_date: null, location: null },
           });
         }

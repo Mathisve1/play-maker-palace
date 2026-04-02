@@ -1463,7 +1463,7 @@ const ClubOwnerDashboard = () => {
           <SendContractConfirmDialog
             open={!!contractConfirm}
             onOpenChange={(open) => !open && setContractConfirm(null)}
-            volunteer={{ id: contractConfirm.volunteer.id, full_name: contractConfirm.volunteer.full_name, email: contractConfirm.volunteer.email, phone: contractConfirm.volunteer.phone, bank_iban: contractConfirm.volunteer.bank_iban, bank_holder_name: contractConfirm.volunteer.bank_holder_name }}
+            volunteer={{ id: contractConfirm.volunteer.id, full_name: contractConfirm.volunteer.full_name, email: contractConfirm.volunteer.email, phone: contractConfirm.volunteer.phone }}
             task={{ id: contractConfirm.task.id, title: contractConfirm.task.title, task_date: contractConfirm.task.task_date, location: contractConfirm.task.location, contract_template_id: contractConfirm.task.contract_template_id }}
             clubId={clubId || undefined}
             clubName={clubInfo?.name}
