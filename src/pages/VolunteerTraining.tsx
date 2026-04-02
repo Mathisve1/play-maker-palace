@@ -200,13 +200,12 @@ const VolunteerTraining = () => {
     const mQuizzes: Record<string, ModuleQuizData> = {};
     const moduleQuizList = allQuizzes.filter((q: any) => q.module_id);
     for (const mq of moduleQuizList) {
-      const { data: mqData } = await supabase.from('quiz_questions').select('*').eq('quiz_id', mq.id).order('sort_order');
+      const { data: mqData } = await supabase.from('quiz_questions_safe').select('*').eq('quiz_id', mq.id).order('sort_order');
       mQuizzes[mq.module_id] = {
         quizId: mq.id,
         questions: (mqData || []).map((q: any) => ({
           id: q.id, question_text: q.question_text,
           options: Array.isArray(q.options) ? q.options : [],
-          correct_answer_index: q.correct_answer_index,
         })),
         passingScore: mq.passing_score,
         isPractice: mq.is_practice || false,
