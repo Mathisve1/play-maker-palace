@@ -42,7 +42,6 @@ interface QuizQuestion {
   id: string;
   question_text: string;
   options: string[];
-  correct_answer_index: number;
 }
 
 interface ModuleQuizData {
