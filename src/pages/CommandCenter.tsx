@@ -135,7 +135,7 @@ const CommandCenter = () => {
 
       if (signups && signups.length > 0) {
         const volIds = [...new Set(signups.map(s => s.volunteer_id))];
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email, phone, bank_iban, bank_holder_name').in('id', volIds);
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email, phone').in('id', volIds);
         const pMap = new Map(profiles?.map(p => [p.id, p]) || []);
         const tMap = new Map(tasks.map(t => [t.id, t]));
 
