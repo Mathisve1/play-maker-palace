@@ -512,7 +512,7 @@ const ClubOwnerDashboard = () => {
           const volunteerIds = [...new Set(signupsData.map(s => s.volunteer_id))];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date')
+            .select('id, full_name, email, avatar_url, created_at, phone, bio')
             .in('id', volunteerIds);
 
           const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -522,7 +522,7 @@ const ClubOwnerDashboard = () => {
             const vol = profileMap.get(s.volunteer_id);
             const signup: Signup = {
               ...s,
-              volunteer: vol ? { id: vol.id, full_name: vol.full_name, email: vol.email, avatar_url: vol.avatar_url, created_at: vol.created_at, phone: vol.phone, bio: vol.bio, bank_iban: vol.bank_iban, bank_holder_name: vol.bank_holder_name, bank_consent_given: vol.bank_consent_given, bank_consent_date: vol.bank_consent_date } : null,
+              volunteer: vol ? { id: vol.id, full_name: vol.full_name, email: vol.email, avatar_url: vol.avatar_url, created_at: vol.created_at, phone: vol.phone, bio: vol.bio } : null,
             };
             if (!grouped[s.task_id]) grouped[s.task_id] = [];
             grouped[s.task_id].push(signup);
@@ -1463,7 +1463,7 @@ const ClubOwnerDashboard = () => {
           <SendContractConfirmDialog
             open={!!contractConfirm}
             onOpenChange={(open) => !open && setContractConfirm(null)}
-            volunteer={{ id: contractConfirm.volunteer.id, full_name: contractConfirm.volunteer.full_name, email: contractConfirm.volunteer.email, phone: contractConfirm.volunteer.phone, bank_iban: contractConfirm.volunteer.bank_iban, bank_holder_name: contractConfirm.volunteer.bank_holder_name }}
+            volunteer={{ id: contractConfirm.volunteer.id, full_name: contractConfirm.volunteer.full_name, email: contractConfirm.volunteer.email, phone: contractConfirm.volunteer.phone }}
             task={{ id: contractConfirm.task.id, title: contractConfirm.task.title, task_date: contractConfirm.task.task_date, location: contractConfirm.task.location, contract_template_id: contractConfirm.task.contract_template_id }}
             clubId={clubId || undefined}
             clubName={clubInfo?.name}

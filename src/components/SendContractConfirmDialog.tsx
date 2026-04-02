@@ -20,6 +20,14 @@ interface VolunteerInfo {
   bank_holder_name?: string | null;
 }
 
+interface BankingInfo {
+  bank_iban: string | null;
+  bank_holder_name: string | null;
+  bank_bic: string | null;
+  bank_consent_given: boolean;
+  bank_consent_date: string | null;
+}
+
 interface TaskInfo {
   id: string;
   title: string;
@@ -131,6 +139,7 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
   const [fullTask, setFullTask] = useState<any>(null);
   const [clubData, setClubData] = useState<{ name: string; logo_url: string | null; owner_name: string | null } | null>(null);
   const [clubSignatureUrl, setClubSignatureUrl] = useState<string | null>(null);
+  const [bankingInfo, setBankingInfo] = useState<BankingInfo | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const l = labels[language];
 
@@ -190,13 +199,21 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
         }
       }
 
+      // Load banking info securely via RPC
+      if (volunteer.id) {
+        const { data: bankData } = await supabase.rpc('get_volunteer_banking_info', { p_volunteer_id: volunteer.id });
+        if (bankData && !(bankData as any)?.error) {
+          setBankingInfo(bankData as unknown as BankingInfo);
+        }
+      }
+
       setLoadingTemplate(false);
     };
 
     loadData();
-  }, [open, task.contract_template_id, task.id, clubId]);
+  }, [open, task.contract_template_id, task.id, clubId, volunteer.id]);
 
-  // Build field values for the contract
+  // Build field values for the contract - use banking info from secure RPC
   const buildFieldValues = (): Record<string, string> => {
     const vals: Record<string, string> = {};
     const t = fullTask || task;
@@ -204,8 +221,11 @@ const SendContractConfirmDialog = ({ open, onOpenChange, volunteer, task, clubId
     if (volunteer.full_name) vals['Naam'] = volunteer.full_name;
     if (volunteer.email) vals['E-mail'] = volunteer.email;
     if (volunteer.phone) vals['Telefoon'] = volunteer.phone;
-    if (volunteer.bank_iban) vals['IBAN'] = volunteer.bank_iban;
-    if (volunteer.bank_holder_name) vals['Rekeninghouder'] = volunteer.bank_holder_name;
+    // Use banking info from secure RPC, fall back to volunteer prop for backwards compat
+    const iban = bankingInfo?.bank_iban || volunteer.bank_iban;
+    const holder = bankingInfo?.bank_holder_name || volunteer.bank_holder_name;
+    if (iban) vals['IBAN'] = iban;
+    if (holder) vals['Rekeninghouder'] = holder;
     if (clubData?.name || clubName) vals['Clubnaam'] = clubData?.name || clubName || '';
     if (t.title) vals['Taak'] = t.title;
     if (t.task_date) vals['Datum'] = formatDateLong(t.task_date, language) || '';

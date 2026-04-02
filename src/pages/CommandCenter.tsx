@@ -135,7 +135,7 @@ const CommandCenter = () => {
 
       if (signups && signups.length > 0) {
         const volIds = [...new Set(signups.map(s => s.volunteer_id))];
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email, phone, bank_iban, bank_holder_name').in('id', volIds);
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email, phone').in('id', volIds);
         const pMap = new Map(profiles?.map(p => [p.id, p]) || []);
         const tMap = new Map(tasks.map(t => [t.id, t]));
 
@@ -192,7 +192,7 @@ const CommandCenter = () => {
 
       const { data: enrollments } = await supabase
         .from('monthly_enrollments')
-        .select('id, plan_id, volunteer_id, approval_status, contract_status, profiles:volunteer_id(full_name, email, phone, bank_iban, bank_holder_name)')
+        .select('id, plan_id, volunteer_id, approval_status, contract_status, profiles:volunteer_id(full_name, email, phone)')
         .in('plan_id', planIds);
 
       const enrs = (enrollments || []) as any[];
@@ -220,7 +220,7 @@ const CommandCenter = () => {
             context_label: planLabel, context_date: null,
             source_id: e.id, plan_id: e.plan_id,
             contract_template_id: plan?.contract_template_id,
-            _volunteer: { id: e.volunteer_id, full_name: vol.full_name, email: vol.email, phone: vol.phone, bank_iban: vol.bank_iban, bank_holder_name: vol.bank_holder_name },
+            _volunteer: { id: e.volunteer_id, full_name: vol.full_name, email: vol.email, phone: vol.phone },
             _task: { id: e.plan_id, title: planLabel, contract_template_id: plan?.contract_template_id, task_date: null, location: null },
           });
         }
