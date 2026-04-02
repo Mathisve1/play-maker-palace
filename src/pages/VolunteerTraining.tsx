@@ -42,7 +42,6 @@ interface QuizQuestion {
   id: string;
   question_text: string;
   options: string[];
-  correct_answer_index: number;
 }
 
 interface ModuleQuizData {
@@ -190,11 +189,10 @@ const VolunteerTraining = () => {
     const gQuiz = allQuizzes.find((q: any) => !q.module_id);
     if (gQuiz) {
       setGlobalPassingScore(gQuiz.passing_score);
-      const { data: qs } = await supabase.from('quiz_questions').select('*').eq('quiz_id', gQuiz.id).order('sort_order');
+      const { data: qs } = await supabase.from('quiz_questions_safe').select('*').eq('quiz_id', gQuiz.id).order('sort_order');
       setGlobalQuestions((qs || []).map((q: any) => ({
         id: q.id, question_text: q.question_text,
         options: Array.isArray(q.options) ? q.options : [],
-        correct_answer_index: q.correct_answer_index,
       })));
     }
 
@@ -202,13 +200,12 @@ const VolunteerTraining = () => {
     const mQuizzes: Record<string, ModuleQuizData> = {};
     const moduleQuizList = allQuizzes.filter((q: any) => q.module_id);
     for (const mq of moduleQuizList) {
-      const { data: mqData } = await supabase.from('quiz_questions').select('*').eq('quiz_id', mq.id).order('sort_order');
+      const { data: mqData } = await supabase.from('quiz_questions_safe').select('*').eq('quiz_id', mq.id).order('sort_order');
       mQuizzes[mq.module_id] = {
         quizId: mq.id,
         questions: (mqData || []).map((q: any) => ({
           id: q.id, question_text: q.question_text,
           options: Array.isArray(q.options) ? q.options : [],
-          correct_answer_index: q.correct_answer_index,
         })),
         passingScore: mq.passing_score,
         isPractice: mq.is_practice || false,
@@ -251,12 +248,13 @@ const VolunteerTraining = () => {
     }
   };
 
-  const handleSubmitModuleQuiz = () => {
+  const handleSubmitModuleQuiz = async () => {
     if (!currentModuleQuiz) return;
-    let correct = 0;
-    currentModuleQuiz.questions.forEach(q => {
-      if (moduleQuizAnswers[q.id] === q.correct_answer_index) correct++;
+    const { data: gradeResult } = await supabase.rpc('grade_quiz', {
+      p_quiz_id: currentModuleQuiz.quizId,
+      p_answers: moduleQuizAnswers,
     });
+    const correct = (gradeResult as any)?.score ?? 0;
     if (correct >= currentModuleQuiz.passingScore) {
       setModuleQuizResult('passed');
     } else {
@@ -270,10 +268,16 @@ const VolunteerTraining = () => {
   };
 
   const handleSubmitGlobalQuiz = async () => {
+    // Find the global quiz ID
+    const gQuizId = globalQuestions.length > 0 ? (await supabase.from('training_quizzes').select('id').eq('training_id', training?.id).is('module_id', null).maybeSingle())?.data?.id : null;
     let correct = 0;
-    globalQuestions.forEach(q => {
-      if (globalAnswers[q.id] === q.correct_answer_index) correct++;
-    });
+    if (gQuizId) {
+      const { data: gradeResult } = await supabase.rpc('grade_quiz', {
+        p_quiz_id: gQuizId,
+        p_answers: globalAnswers,
+      });
+      correct = (gradeResult as any)?.score ?? 0;
+    }
     setScore(correct);
 
     if (correct >= globalPassingScore) {
