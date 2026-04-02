@@ -512,7 +512,7 @@ const ClubOwnerDashboard = () => {
           const volunteerIds = [...new Set(signupsData.map(s => s.volunteer_id))];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, email, avatar_url, created_at, phone, bio, bank_iban, bank_holder_name, bank_consent_given, bank_consent_date')
+            .select('id, full_name, email, avatar_url, created_at, phone, bio')
             .in('id', volunteerIds);
 
           const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
