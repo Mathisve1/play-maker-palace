@@ -6949,6 +6949,10 @@ export type Database = {
         Args: { p_campaign_id: string; p_portal_token: string }
         Returns: Json
       }
+      grade_quiz: {
+        Args: { p_answers: Json; p_quiz_id: string }
+        Returns: Json
+      }
       has_club_role: {
         Args: {
           _club_id: string
