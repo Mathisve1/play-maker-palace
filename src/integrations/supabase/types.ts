@@ -6949,6 +6949,10 @@ export type Database = {
         Args: { p_campaign_id: string; p_portal_token: string }
         Returns: Json
       }
+      get_volunteer_banking_info: {
+        Args: { p_volunteer_id: string }
+        Returns: Json
+      }
       grade_quiz: {
         Args: { p_answers: Json; p_quiz_id: string }
         Returns: Json
