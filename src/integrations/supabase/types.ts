@@ -263,6 +263,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       badge_definitions: {
@@ -1008,6 +1015,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "club_api_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       club_billing: {
@@ -1244,6 +1258,13 @@ export type Database = {
             columns: ["volunteer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_memberships_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1866,6 +1887,13 @@ export type Database = {
             columns: ["volunteer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_transactions_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3765,6 +3793,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reserve_lists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       safety_checklist_items: {
@@ -4739,6 +4774,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "shift_feedbacks_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       shift_swaps: {
@@ -4784,10 +4826,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "shift_swaps_original_user_id_fkey"
+            columns: ["original_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "shift_swaps_replacement_user_id_fkey"
             columns: ["replacement_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_swaps_replacement_user_id_fkey"
+            columns: ["replacement_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -5277,10 +5333,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "task_reviews_reviewee_id_fkey"
+            columns: ["reviewee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "task_reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -6011,6 +6081,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "volunteer_availability_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       volunteer_badges: {
@@ -6111,10 +6188,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "volunteer_buddies_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "volunteer_buddies_requester_id_fkey"
             columns: ["requester_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_buddies_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -6308,6 +6399,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "volunteer_club_cards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       volunteer_coupons: {
@@ -6367,6 +6465,13 @@ export type Database = {
             columns: ["volunteer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_coupons_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -6592,6 +6697,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -6841,6 +6953,106 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_safe: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          city: string | null
+          club_onboarding_step: string | null
+          compliance_blocked: boolean | null
+          created_at: string | null
+          date_of_birth: string | null
+          email: string | null
+          first_tour_seen: boolean | null
+          full_name: string | null
+          id: string | null
+          in_app_notifications_enabled: boolean | null
+          language: string | null
+          linked_partner_id: string | null
+          phone: string | null
+          preferences: Json | null
+          primary_club_id: string | null
+          public_profile: boolean | null
+          push_notifications_enabled: boolean | null
+          push_prompt_seen: boolean | null
+          referral_code: string | null
+          referred_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          club_onboarding_step?: string | null
+          compliance_blocked?: boolean | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          first_tour_seen?: boolean | null
+          full_name?: string | null
+          id?: string | null
+          in_app_notifications_enabled?: boolean | null
+          language?: string | null
+          linked_partner_id?: string | null
+          phone?: string | null
+          preferences?: Json | null
+          primary_club_id?: string | null
+          public_profile?: boolean | null
+          push_notifications_enabled?: boolean | null
+          push_prompt_seen?: boolean | null
+          referral_code?: string | null
+          referred_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          club_onboarding_step?: string | null
+          compliance_blocked?: boolean | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          first_tour_seen?: boolean | null
+          full_name?: string | null
+          id?: string | null
+          in_app_notifications_enabled?: boolean | null
+          language?: string | null
+          linked_partner_id?: string | null
+          phone?: string | null
+          preferences?: Json | null
+          primary_club_id?: string | null
+          public_profile?: boolean | null
+          push_notifications_enabled?: boolean | null
+          push_prompt_seen?: boolean | null
+          referral_code?: string | null
+          referred_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_linked_partner_id_fkey"
+            columns: ["linked_partner_id"]
+            isOneToOne: false
+            referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_primary_club_id_fkey"
+            columns: ["primary_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_primary_club_id_fkey"
+            columns: ["primary_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_questions_safe: {
         Row: {
           created_at: string | null
@@ -6913,6 +7125,10 @@ export type Database = {
       get_briefing_club_id_from_block: {
         Args: { _block_id: string }
         Returns: string
+      }
+      get_club_volunteer_profile: {
+        Args: { p_club_id: string; p_volunteer_id: string }
+        Returns: Json
       }
       get_event_live_status: { Args: { p_event_id: string }; Returns: Json }
       get_partner_club_id: { Args: { _partner_id: string }; Returns: string }
