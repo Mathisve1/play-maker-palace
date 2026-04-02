@@ -248,12 +248,13 @@ const VolunteerTraining = () => {
     }
   };
 
-  const handleSubmitModuleQuiz = () => {
+  const handleSubmitModuleQuiz = async () => {
     if (!currentModuleQuiz) return;
-    let correct = 0;
-    currentModuleQuiz.questions.forEach(q => {
-      if (moduleQuizAnswers[q.id] === q.correct_answer_index) correct++;
+    const { data: gradeResult } = await supabase.rpc('grade_quiz', {
+      p_quiz_id: currentModuleQuiz.quizId,
+      p_answers: moduleQuizAnswers,
     });
+    const correct = gradeResult?.score ?? 0;
     if (correct >= currentModuleQuiz.passingScore) {
       setModuleQuizResult('passed');
     } else {
