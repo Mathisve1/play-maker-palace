@@ -254,7 +254,7 @@ const VolunteerTraining = () => {
       p_quiz_id: currentModuleQuiz.quizId,
       p_answers: moduleQuizAnswers,
     });
-    const correct = gradeResult?.score ?? 0;
+    const correct = (gradeResult as any)?.score ?? 0;
     if (correct >= currentModuleQuiz.passingScore) {
       setModuleQuizResult('passed');
     } else {
