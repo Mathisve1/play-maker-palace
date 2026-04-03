@@ -45,6 +45,37 @@ const EMPTY_MEMBER = {
 };
 const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
+const MemberForm = ({ data, onChange, onSubmit, submitLabel, submitting, nl }: {
+  data: typeof EMPTY_MEMBER; onChange: (d: typeof EMPTY_MEMBER) => void;
+  onSubmit: () => void; submitLabel: string; submitting: boolean; nl: boolean;
+}) => (
+  <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+    <div className="grid grid-cols-2 gap-3">
+      <div className="col-span-2"><Label>{nl ? 'Volledige naam' : 'Full name'} *</Label><Input value={data.full_name} onChange={e => onChange({ ...data, full_name: e.target.value })} /></div>
+      <div><Label>E-mail</Label><Input type="email" value={data.email} onChange={e => onChange({ ...data, email: e.target.value })} /></div>
+      <div><Label>{nl ? 'Telefoon' : 'Phone'}</Label><Input value={data.phone} onChange={e => onChange({ ...data, phone: e.target.value })} /></div>
+      <div><Label>{nl ? 'Geboortedatum' : 'DOB'}</Label><Input type="date" value={data.date_of_birth} onChange={e => onChange({ ...data, date_of_birth: e.target.value })} /></div>
+      <div><Label>{nl ? 'Rijksregisternr.' : 'National ID'}</Label><Input value={data.national_id} onChange={e => onChange({ ...data, national_id: e.target.value })} placeholder="XX.XX.XX-XXX.XX" /></div>
+      <div className="col-span-2"><Label>{nl ? 'Adres' : 'Address'}</Label><Input value={data.address} onChange={e => onChange({ ...data, address: e.target.value })} /></div>
+      <div><Label>{nl ? 'Postcode' : 'Zip'}</Label><Input value={data.postal_code} onChange={e => onChange({ ...data, postal_code: e.target.value })} /></div>
+      <div><Label>{nl ? 'Stad' : 'City'}</Label><Input value={data.city} onChange={e => onChange({ ...data, city: e.target.value })} /></div>
+      <div>
+        <Label>{nl ? 'Kledingmaat' : 'Size'}</Label>
+        <Select value={data.shirt_size} onValueChange={v => onChange({ ...data, shirt_size: v })}>
+          <SelectTrigger><SelectValue placeholder={nl ? 'Maat' : 'Size'} /></SelectTrigger>
+          <SelectContent>{SHIRT_SIZES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div><Label>{nl ? 'Noodcontact' : 'Emergency'}</Label><Input value={data.emergency_contact_name} onChange={e => onChange({ ...data, emergency_contact_name: e.target.value })} /></div>
+      <div><Label>{nl ? 'Noodcontact tel.' : 'Emerg. phone'}</Label><Input value={data.emergency_contact_phone} onChange={e => onChange({ ...data, emergency_contact_phone: e.target.value })} /></div>
+      <div className="col-span-2"><Label>{nl ? 'Opmerkingen' : 'Notes'}</Label><Textarea value={data.notes} onChange={e => onChange({ ...data, notes: e.target.value })} rows={2} /></div>
+    </div>
+    <Button onClick={onSubmit} disabled={submitting || !data.full_name.trim()} className="w-full">
+      {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{submitLabel}
+    </Button>
+  </div>
+);
+
 const usePartnerAuthReady = () => {
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -453,36 +484,6 @@ const PartnerDashboard = () => {
   const isRecentlyModified = (task: ClubTask) =>
     task.updated_at != null && task.updated_at > now48hAgo;
 
-  const MemberForm = ({ data, onChange, onSubmit, submitLabel, submitting }: {
-    data: typeof EMPTY_MEMBER; onChange: (d: typeof EMPTY_MEMBER) => void;
-    onSubmit: () => void; submitLabel: string; submitting: boolean;
-  }) => (
-    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2"><Label>{nl ? 'Volledige naam' : 'Full name'} *</Label><Input value={data.full_name} onChange={e => onChange({ ...data, full_name: e.target.value })} /></div>
-        <div><Label>E-mail</Label><Input type="email" value={data.email} onChange={e => onChange({ ...data, email: e.target.value })} /></div>
-        <div><Label>{nl ? 'Telefoon' : 'Phone'}</Label><Input value={data.phone} onChange={e => onChange({ ...data, phone: e.target.value })} /></div>
-        <div><Label>{nl ? 'Geboortedatum' : 'DOB'}</Label><Input type="date" value={data.date_of_birth} onChange={e => onChange({ ...data, date_of_birth: e.target.value })} /></div>
-        <div><Label>{nl ? 'Rijksregisternr.' : 'National ID'}</Label><Input value={data.national_id} onChange={e => onChange({ ...data, national_id: e.target.value })} placeholder="XX.XX.XX-XXX.XX" /></div>
-        <div className="col-span-2"><Label>{nl ? 'Adres' : 'Address'}</Label><Input value={data.address} onChange={e => onChange({ ...data, address: e.target.value })} /></div>
-        <div><Label>{nl ? 'Postcode' : 'Zip'}</Label><Input value={data.postal_code} onChange={e => onChange({ ...data, postal_code: e.target.value })} /></div>
-        <div><Label>{nl ? 'Stad' : 'City'}</Label><Input value={data.city} onChange={e => onChange({ ...data, city: e.target.value })} /></div>
-        <div>
-          <Label>{nl ? 'Kledingmaat' : 'Size'}</Label>
-          <Select value={data.shirt_size} onValueChange={v => onChange({ ...data, shirt_size: v })}>
-            <SelectTrigger><SelectValue placeholder={nl ? 'Maat' : 'Size'} /></SelectTrigger>
-            <SelectContent>{SHIRT_SIZES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div><Label>{nl ? 'Noodcontact' : 'Emergency'}</Label><Input value={data.emergency_contact_name} onChange={e => onChange({ ...data, emergency_contact_name: e.target.value })} /></div>
-        <div><Label>{nl ? 'Noodcontact tel.' : 'Emerg. phone'}</Label><Input value={data.emergency_contact_phone} onChange={e => onChange({ ...data, emergency_contact_phone: e.target.value })} /></div>
-        <div className="col-span-2"><Label>{nl ? 'Opmerkingen' : 'Notes'}</Label><Textarea value={data.notes} onChange={e => onChange({ ...data, notes: e.target.value })} rows={2} /></div>
-      </div>
-      <Button onClick={onSubmit} disabled={submitting || !data.full_name.trim()} className="w-full">
-        {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{submitLabel}
-      </Button>
-    </div>
-  );
 
   const TaskCard = ({ task }: { task: ClubTask }) => (
     <Card>
@@ -664,13 +665,13 @@ const PartnerDashboard = () => {
 
       <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
         <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{nl ? 'Medewerker toevoegen' : 'Add member'}</DialogTitle></DialogHeader>
-          <MemberForm data={newMember} onChange={setNewMember} onSubmit={handleAddMember} submitLabel={nl ? 'Toevoegen' : 'Add'} submitting={addingMember} />
+          <MemberForm data={newMember} onChange={setNewMember} onSubmit={handleAddMember} submitLabel={nl ? 'Toevoegen' : 'Add'} submitting={addingMember} nl={nl} />
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!editMember} onOpenChange={() => setEditMember(null)}>
         <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{nl ? 'Bewerken' : 'Edit'}</DialogTitle></DialogHeader>
-          {editMember && <MemberForm data={{ full_name: editMember.full_name || '', email: editMember.email || '', phone: editMember.phone || '', date_of_birth: editMember.date_of_birth || '', national_id: editMember.national_id || '', address: editMember.address || '', city: editMember.city || '', postal_code: editMember.postal_code || '', shirt_size: editMember.shirt_size || '', emergency_contact_name: editMember.emergency_contact_name || '', emergency_contact_phone: editMember.emergency_contact_phone || '', notes: editMember.notes || '' }} onChange={(d) => setEditMember({ ...editMember!, ...d })} onSubmit={handleUpdateMember} submitLabel={nl ? 'Opslaan' : 'Save'} submitting={false} />}
+          {editMember && <MemberForm data={{ full_name: editMember.full_name || '', email: editMember.email || '', phone: editMember.phone || '', date_of_birth: editMember.date_of_birth || '', national_id: editMember.national_id || '', address: editMember.address || '', city: editMember.city || '', postal_code: editMember.postal_code || '', shirt_size: editMember.shirt_size || '', emergency_contact_name: editMember.emergency_contact_name || '', emergency_contact_phone: editMember.emergency_contact_phone || '', notes: editMember.notes || '' }} onChange={(d) => setEditMember({ ...editMember!, ...d })} onSubmit={handleUpdateMember} submitLabel={nl ? 'Opslaan' : 'Save'} submitting={false} nl={nl} />}
         </DialogContent>
       </Dialog>
 
