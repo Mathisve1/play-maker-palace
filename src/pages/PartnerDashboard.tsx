@@ -21,6 +21,7 @@ import PartnerDashboardHome from '@/components/partner/PartnerDashboardHome';
 import PartnerAttendanceTab from '@/components/partner/PartnerAttendanceTab';
 import EditProfileDialog from '@/components/EditProfileDialog';
 import { Language } from '@/i18n/translations';
+import type { User } from '@supabase/supabase-js';
 
 interface ClubInfo { id: string; name: string; logo_url: string | null; }
 interface PartnerInfo { id: string; name: string; category: string; external_payroll: boolean; club_id: string; }
@@ -44,10 +45,46 @@ const EMPTY_MEMBER = {
 };
 const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
+const usePartnerAuthReady = () => {
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      setAuthUser(session?.user ?? null);
+      setIsAuthReady(true);
+    });
+
+    void supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!active) return;
+        setAuthUser(session?.user ?? null);
+        setIsAuthReady(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setAuthUser(null);
+        setIsAuthReady(true);
+      });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return { authUser, isAuthReady };
+};
+
 const PartnerDashboard = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { authUser, isAuthReady } = usePartnerAuthReady();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [partner, setPartner] = useState<PartnerInfo | null>(null);
   const [clubs, setClubs] = useState<ClubInfo[]>([]);
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
@@ -70,6 +107,7 @@ const PartnerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const now48hAgo = useMemo(() => new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), []);
   const recentlyModifiedCount = useMemo(() =>
@@ -77,48 +115,97 @@ const PartnerDashboard = () => {
   , [clubTasks, now48hAgo]);
 
   useEffect(() => {
+    if (!isAuthReady) return;
+    if (!authUser) {
+      navigate('/partner-login', { replace: true });
+      return;
+    }
+
+    let cancelled = false;
+
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/partner-login'); return; }
-      const uid = user.id;
-      setUserId(uid);
+      setLoading(true);
+      setLoadError(null);
 
-      // Parallel: profile + admin records
-      const [profileRes, adminRes] = await Promise.all([
-        supabase.from('profiles').select('full_name, email, avatar_url').eq('id', uid).maybeSingle(),
-        supabase.from('partner_admins').select('partner_id').eq('user_id', uid),
-      ]);
+      try {
+        const uid = authUser.id;
+        setUserId(uid);
 
-      setProfile(profileRes.data || {
-        full_name: (user.user_metadata?.full_name as string) || '',
-        email: user.email || '',
-        avatar_url: null,
-      });
+        const [profileRes, adminRes] = await Promise.all([
+          supabase.from('profiles').select('full_name, email, avatar_url').eq('id', uid).maybeSingle(),
+          supabase.from('partner_admins').select('partner_id').eq('user_id', uid),
+        ]);
 
-      if (!adminRes.data?.length) { navigate('/partner-login'); return; }
-      const partnerId = adminRes.data[0].partner_id;
+        if (cancelled) return;
+        if (adminRes.error) throw adminRes.error;
 
-      // Parallel: partner info + clubs + members
-      const [partnerRes, partnerClubsRes, membersRes] = await Promise.all([
-        supabase.from('external_partners').select('id, name, category, external_payroll, club_id').eq('id', partnerId).maybeSingle(),
-        supabase.from('partner_clubs').select('club_id').eq('partner_id', partnerId),
-        supabase.from('partner_members').select('*').eq('partner_id', partnerId).order('created_at'),
-      ]);
+        setProfile(profileRes.data || {
+          full_name: (authUser.user_metadata?.full_name as string) || '',
+          email: authUser.email || '',
+          avatar_url: null,
+        });
 
-      if (!partnerRes.data) { navigate('/partner-login'); return; }
-      setPartner(partnerRes.data);
-      setMembers((membersRes.data || []) as Member[]);
+        if (!adminRes.data?.length) {
+          navigate('/partner-login', { replace: true });
+          return;
+        }
 
-      const clubIds = (partnerClubsRes.data || []).map((pc: any) => pc.club_id);
-      if (clubIds.length > 0) {
-        const { data: clubsData } = await supabase.from('clubs').select('id, name, logo_url').in('id', clubIds);
-        setClubs(clubsData || []);
-        setSelectedClubId(clubIds[0]);
+        const partnerId = adminRes.data[0].partner_id;
+        const [partnerRes, partnerClubsRes, membersRes] = await Promise.all([
+          supabase.from('external_partners').select('id, name, category, external_payroll, club_id').eq('id', partnerId).maybeSingle(),
+          supabase.from('partner_clubs').select('club_id').eq('partner_id', partnerId),
+          supabase.from('partner_members').select('*').eq('partner_id', partnerId).order('created_at'),
+        ]);
+
+        if (cancelled) return;
+        if (partnerRes.error) throw partnerRes.error;
+        if (partnerClubsRes.error) throw partnerClubsRes.error;
+        if (membersRes.error) throw membersRes.error;
+
+        if (!partnerRes.data) {
+          navigate('/partner-login', { replace: true });
+          return;
+        }
+
+        setPartner(partnerRes.data);
+        setMembers((membersRes.data || []) as Member[]);
+
+        const clubIds = (partnerClubsRes.data || []).map((pc: any) => pc.club_id);
+        if (clubIds.length > 0) {
+          const { data: clubsData, error: clubsError } = await supabase
+            .from('clubs')
+            .select('id, name, logo_url')
+            .in('id', clubIds);
+
+          if (cancelled) return;
+          if (clubsError) throw clubsError;
+
+          setClubs(clubsData || []);
+          setSelectedClubId(current => current && clubIds.includes(current) ? current : clubIds[0]);
+        } else {
+          setClubs([]);
+          setSelectedClubId(null);
+        }
+      } catch (error) {
+        console.error('PartnerDashboard init failed', error);
+        if (cancelled) return;
+        setLoadError(nl
+          ? 'Het partnerdashboard kon niet geladen worden. Probeer opnieuw.'
+          : 'The partner dashboard could not be loaded. Please try again.');
+        toast.error(nl
+          ? 'Laden van het partnerdashboard mislukt.'
+          : 'Failed to load the partner dashboard.');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     };
-    init();
-  }, []);
+
+    void init();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser, isAuthReady, navigate, nl, reloadKey]);
 
   useEffect(() => {
     if (partner && selectedClubId) fetchClubTasks(partner.id, selectedClubId);
@@ -311,9 +398,31 @@ const PartnerDashboard = () => {
     await refreshAll();
   };
 
-  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
+  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/partner-login'); };
 
-  if (loading) return <DashboardLayout sidebar={<PartnerSidebar partnerName="" activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} onOpenProfile={() => {}} />}><DashboardSkeleton /></DashboardLayout>;
+  if (loading || !isAuthReady) return <DashboardLayout sidebar={<PartnerSidebar partnerName="" activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} onOpenProfile={() => {}} />}><DashboardSkeleton /></DashboardLayout>;
+  if (loadError) {
+    return (
+      <DashboardLayout sidebar={<PartnerSidebar partnerName="" activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} onOpenProfile={() => {}} />}>
+        <Card>
+          <CardContent className="flex flex-col items-start gap-4 p-6 sm:p-8">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">{nl ? 'Partnerdashboard tijdelijk niet beschikbaar' : 'Partner dashboard temporarily unavailable'}</h1>
+                <p className="text-base text-muted-foreground">{loadError}</p>
+              </div>
+            </div>
+            <Button onClick={() => setReloadKey(key => key + 1)} className="min-h-12">
+              {nl ? 'Opnieuw proberen' : 'Try again'}
+            </Button>
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+    );
+  }
   if (!partner) return null;
 
   const selectedClub = clubs.find(c => c.id === selectedClubId);
