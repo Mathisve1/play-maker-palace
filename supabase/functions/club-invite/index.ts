@@ -147,7 +147,10 @@ serve(async (req: Request) => {
 
       if (isPartnerInvite) {
         await supabaseAdmin.from("club_invitations").update({
-          email: email,
+          email,
+          role,
+          partner_id: partner_id || null,
+          partner_member_id: partner_member_id || null,
         }).eq("invite_token", invite_token);
       }
 
@@ -174,7 +177,7 @@ serve(async (req: Request) => {
 
       const { data: invite, error } = await supabaseAdmin
         .from("club_invitations")
-        .select("role, status, expires_at, club_id")
+        .select("role, status, expires_at, club_id, partner_id, partner_member_id")
         .eq("invite_token", token)
         .maybeSingle();
 
@@ -190,12 +193,12 @@ serve(async (req: Request) => {
         .eq("id", invite.club_id)
         .maybeSingle();
 
-      const urlPartnerId = url.searchParams.get("partner_id");
-      const urlPartnerMemberId = url.searchParams.get("partner_member_id");
+      const resolvedPartnerId = invite.partner_id || url.searchParams.get("partner_id");
+      const resolvedPartnerMemberId = invite.partner_member_id || url.searchParams.get("partner_member_id");
       let partnerName: string | null = null;
-      if (urlPartnerId) {
+      if (resolvedPartnerId) {
         const { data: partner } = await supabaseAdmin
-          .from("external_partners").select("name").eq("id", urlPartnerId).maybeSingle();
+          .from("external_partners").select("name").eq("id", resolvedPartnerId).maybeSingle();
         partnerName = partner?.name || null;
       }
 
@@ -206,10 +209,10 @@ serve(async (req: Request) => {
         club_name: club?.name || null,
         club_logo: club?.logo_url || null,
         club_sport: club?.sport || null,
-        partner_id: urlPartnerId || null,
+        partner_id: resolvedPartnerId || null,
         partner_name: partnerName,
-        partner_member_id: urlPartnerMemberId || null,
-        is_partner_invite: !!urlPartnerId,
+        partner_member_id: resolvedPartnerMemberId || null,
+        is_partner_invite: !!resolvedPartnerId,
         is_partner_member_invite: invite.role === 'partner_member',
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -226,7 +229,7 @@ serve(async (req: Request) => {
   if (action === "signup-and-accept" && req.method === "POST") {
     try {
       const body = await req.json();
-      const { token, email, password, full_name, partner_id, partner_member_id } = body;
+      const { token, email, password, full_name } = body;
       if (!token || !email || !password) {
         return new Response(JSON.stringify({ error: "Alle velden zijn verplicht." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -288,12 +291,12 @@ serve(async (req: Request) => {
       } else {
         userId = authData.user.id;
       }
-      const isPartnerAdminInvite = !!partner_id && invite.role === 'partner_admin';
-      const isPartnerMemberInvite = !!partner_id && !!partner_member_id && invite.role === 'partner_member';
+      const isPartnerAdminInvite = !!invite.partner_id && invite.role === 'partner_admin';
+      const isPartnerMemberInvite = !!invite.partner_id && !!invite.partner_member_id && invite.role === 'partner_member';
 
       if (isPartnerAdminInvite) {
         await supabaseAdmin.from("partner_admins").upsert({
-          partner_id: partner_id,
+          partner_id: invite.partner_id,
           user_id: userId,
           invited_by: invite.invited_by,
         }, { onConflict: "partner_id,user_id" });
@@ -307,7 +310,7 @@ serve(async (req: Request) => {
         // Link their new user_id back to the existing partner_members row
         await supabaseAdmin.from("partner_members")
           .update({ user_id: userId })
-          .eq("id", partner_member_id);
+          .eq("id", invite.partner_member_id);
       } else {
         await supabaseAdmin
           .from("user_roles")
@@ -350,7 +353,7 @@ serve(async (req: Request) => {
   if (action === "accept" && req.method === "POST") {
     try {
       const body = await req.json();
-      const { token, user_id, partner_id, partner_member_id } = body;
+      const { token, user_id } = body;
       if (!token || !user_id) {
         return new Response(JSON.stringify({ error: "Token en user_id zijn verplicht." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -371,12 +374,12 @@ serve(async (req: Request) => {
         });
       }
 
-      const isPartnerAdminInvite = !!partner_id && invite.role === 'partner_admin';
-      const isPartnerMemberInvite = !!partner_id && !!partner_member_id && invite.role === 'partner_member';
+      const isPartnerAdminInvite = !!invite.partner_id && invite.role === 'partner_admin';
+      const isPartnerMemberInvite = !!invite.partner_id && !!invite.partner_member_id && invite.role === 'partner_member';
 
       if (isPartnerAdminInvite) {
         await supabaseAdmin.from("partner_admins").upsert({
-          partner_id: partner_id,
+          partner_id: invite.partner_id,
           user_id: user_id,
           invited_by: invite.invited_by,
         }, { onConflict: "partner_id,user_id" });
@@ -390,7 +393,7 @@ serve(async (req: Request) => {
         // Link their user_id back to the existing partner_members row
         await supabaseAdmin.from("partner_members")
           .update({ user_id })
-          .eq("id", partner_member_id);
+          .eq("id", invite.partner_member_id);
       } else {
         await supabaseAdmin
           .from("club_members")
