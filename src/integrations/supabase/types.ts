@@ -7198,7 +7198,6 @@ export type Database = {
         Args: { p_campaign_id: string; p_portal_token: string }
         Returns: Json
       }
-      get_task_club_id: { Args: { _task_id: string }; Returns: string }
       get_volunteer_banking_info: {
         Args: { p_volunteer_id: string }
         Returns: Json
@@ -7317,14 +7316,6 @@ export type Database = {
         Returns: Json
       }
       trigger_sos_replacement: { Args: { p_signup_id: string }; Returns: Json }
-      user_has_task_signup: {
-        Args: { _task_id: string; _user_id: string }
-        Returns: boolean
-      }
-      user_owns_task_club: {
-        Args: { _task_id: string; _user_id: string }
-        Returns: boolean
-      }
       validate_and_redeem_coupon: {
         Args: { p_code: string; p_portal_token: string }
         Returns: Json
