@@ -1129,7 +1129,7 @@ export type Database = {
           id: string
           invite_token: string
           invited_by: string
-          role: Database["public"]["Enums"]["club_role"]
+          role: string
           status: string
         }
         Insert: {
@@ -1140,7 +1140,7 @@ export type Database = {
           id?: string
           invite_token?: string
           invited_by: string
-          role?: Database["public"]["Enums"]["club_role"]
+          role?: string
           status?: string
         }
         Update: {
@@ -1151,7 +1151,7 @@ export type Database = {
           id?: string
           invite_token?: string
           invited_by?: string
-          role?: Database["public"]["Enums"]["club_role"]
+          role?: string
           status?: string
         }
         Relationships: [
@@ -1540,6 +1540,42 @@ export type Database = {
           },
         ]
       }
+      club_stripe_settings: {
+        Row: {
+          club_id: string
+          created_at: string
+          stripe_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          stripe_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          stripe_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_stripe_settings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_stripe_settings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clubs: {
         Row: {
           allow_shift_swaps: boolean
@@ -1552,7 +1588,6 @@ export type Database = {
           owner_id: string
           referral_bonus_points: number
           sport: string | null
-          stripe_account_id: string | null
           why_volunteer: string | null
         }
         Insert: {
@@ -1566,7 +1601,6 @@ export type Database = {
           owner_id: string
           referral_bonus_points?: number
           sport?: string | null
-          stripe_account_id?: string | null
           why_volunteer?: string | null
         }
         Update: {
@@ -1580,7 +1614,6 @@ export type Database = {
           owner_id?: string
           referral_bonus_points?: number
           sport?: string | null
-          stripe_account_id?: string | null
           why_volunteer?: string | null
         }
         Relationships: []
