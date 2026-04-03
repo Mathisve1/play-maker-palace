@@ -671,7 +671,7 @@ const PartnerDashboard = () => {
 
       <Dialog open={!!editMember} onOpenChange={() => setEditMember(null)}>
         <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{nl ? 'Bewerken' : 'Edit'}</DialogTitle></DialogHeader>
-          {editMember && <MemberForm data={{ full_name: editMember.full_name || '', email: editMember.email || '', phone: editMember.phone || '', date_of_birth: editMember.date_of_birth || '', national_id: editMember.national_id || '', address: editMember.address || '', city: editMember.city || '', postal_code: editMember.postal_code || '', shirt_size: editMember.shirt_size || '', emergency_contact_name: editMember.emergency_contact_name || '', emergency_contact_phone: editMember.emergency_contact_phone || '', notes: editMember.notes || '' }} onChange={(d) => setEditMember({ ...editMember!, ...d })} onSubmit={handleUpdateMember} submitLabel={nl ? 'Opslaan' : 'Save'} submitting={false} />}
+          {editMember && <MemberForm data={{ full_name: editMember.full_name || '', email: editMember.email || '', phone: editMember.phone || '', date_of_birth: editMember.date_of_birth || '', national_id: editMember.national_id || '', address: editMember.address || '', city: editMember.city || '', postal_code: editMember.postal_code || '', shirt_size: editMember.shirt_size || '', emergency_contact_name: editMember.emergency_contact_name || '', emergency_contact_phone: editMember.emergency_contact_phone || '', notes: editMember.notes || '' }} onChange={(d) => setEditMember({ ...editMember!, ...d })} onSubmit={handleUpdateMember} submitLabel={nl ? 'Opslaan' : 'Save'} submitting={false} nl={nl} />}
         </DialogContent>
       </Dialog>
 
