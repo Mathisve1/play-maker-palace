@@ -372,16 +372,26 @@ const ExternalPartners = () => {
 
   const handleInviteMemberAsVolunteer = async (member: PartnerMember) => {
     if (!clubId || !member.email) { toast.error(t3('Deze medewerker heeft geen e-mailadres.', 'Ce membre n\'a pas d\'adresse e-mail.', 'This member has no email.')); return; }
+    if (!selectedPartner) return;
     setInvitingMemberId(member.id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      // Bug 2 fix: use role 'partner_member' so the edge function links the user back to partner_members
       const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-        club_id: clubId, email: member.email, role: 'medewerker', invited_by: session.user.id,
+        club_id: clubId, email: member.email, role: 'partner_member', invited_by: session.user.id,
       }).select('invite_token').single();
       if (invErr) throw invErr;
       await supabase.functions.invoke('club-invite?action=send-email', {
-        body: { email: member.email, invite_token: inv.invite_token, role: 'medewerker', club_name: clubName },
+        body: {
+          email: member.email,
+          invite_token: inv.invite_token,
+          role: 'partner_member',
+          club_name: clubName,
+          partner_id: selectedPartner.id,
+          partner_name: selectedPartner.name,
+          partner_member_id: member.id,
+        },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       toast.success(t3(`Uitnodiging verstuurd naar ${member.full_name}!`, `Invitation envoyée à ${member.full_name}!`, `Invitation sent to ${member.full_name}!`));

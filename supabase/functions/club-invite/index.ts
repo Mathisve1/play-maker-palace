@@ -73,7 +73,7 @@ serve(async (req: Request) => {
         });
       }
 
-      const { email, invite_token, role, club_name, partner_id, partner_name } = await req.json();
+      const { email, invite_token, role, club_name, partner_id, partner_name, partner_member_id } = await req.json();
       if (!email || !invite_token) {
         return new Response(JSON.stringify({ error: "Email en token zijn verplicht." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -93,12 +93,17 @@ serve(async (req: Request) => {
         });
       }
 
-      const isPartnerInvite = role === 'partner_admin' && partner_id;
+      const isPartnerAdminInvite = role === 'partner_admin' && !!partner_id;
+      const isPartnerMemberInvite = role === 'partner_member' && !!partner_id;
+      const isPartnerInvite = isPartnerAdminInvite || isPartnerMemberInvite;
       const origin = req.headers.get("origin") || "https://play-maker-palace.lovable.app";
-      const inviteLink = isPartnerInvite
-        ? `${origin}/club-invite/${invite_token}?partner_id=${partner_id}`
-        : `${origin}/club-invite/${invite_token}`;
-      const roleLabel = isPartnerInvite ? 'Partner Beheerder' : role === 'bestuurder' ? 'Bestuurder' : role === 'beheerder' ? 'Beheerder' : 'Medewerker';
+      let inviteLink = `${origin}/club-invite/${invite_token}`;
+      if (isPartnerAdminInvite) {
+        inviteLink += `?partner_id=${partner_id}`;
+      } else if (isPartnerMemberInvite) {
+        inviteLink += `?partner_id=${partner_id}&partner_member_id=${partner_member_id}`;
+      }
+      const roleLabel = isPartnerAdminInvite ? 'Partner Beheerder' : isPartnerMemberInvite ? 'Vrijwilliger' : role === 'bestuurder' ? 'Bestuurder' : role === 'beheerder' ? 'Beheerder' : 'Medewerker';
       const contextName = isPartnerInvite ? (partner_name || club_name || 'een partner') : (club_name || 'een club');
 
       const emailResp = await fetch("https://api.resend.com/emails", {
@@ -114,7 +119,13 @@ serve(async (req: Request) => {
           html: `
             <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
               <h2>Je bent uitgenodigd!</h2>
-              <p>Je bent uitgenodigd om ${isPartnerInvite ? `beheerder te worden van <strong>${partner_name || 'een partner'}</strong> bij <strong>${club_name || 'een club'}</strong>` : `lid te worden van <strong>${club_name || 'een club'}</strong>`} als <strong>${roleLabel}</strong>.</p>
+              <p>Je bent uitgenodigd om ${
+                isPartnerMemberInvite
+                  ? `een vrijwilligersaccount aan te maken voor <strong>${partner_name || 'een partner'}</strong> bij <strong>${club_name || 'een club'}</strong>`
+                  : isPartnerAdminInvite
+                    ? `beheerder te worden van <strong>${partner_name || 'een partner'}</strong> bij <strong>${club_name || 'een club'}</strong>`
+                    : `lid te worden van <strong>${club_name || 'een club'}</strong>`
+              } als <strong>${roleLabel}</strong>.</p>
               <p>Klik op de onderstaande knop om de uitnodiging te accepteren:</p>
               <a href="${inviteLink}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">
                 Uitnodiging accepteren
@@ -180,6 +191,7 @@ serve(async (req: Request) => {
         .maybeSingle();
 
       const urlPartnerId = url.searchParams.get("partner_id");
+      const urlPartnerMemberId = url.searchParams.get("partner_member_id");
       let partnerName: string | null = null;
       if (urlPartnerId) {
         const { data: partner } = await supabaseAdmin
@@ -196,7 +208,9 @@ serve(async (req: Request) => {
         club_sport: club?.sport || null,
         partner_id: urlPartnerId || null,
         partner_name: partnerName,
+        partner_member_id: urlPartnerMemberId || null,
         is_partner_invite: !!urlPartnerId,
+        is_partner_member_invite: invite.role === 'partner_member',
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -212,7 +226,7 @@ serve(async (req: Request) => {
   if (action === "signup-and-accept" && req.method === "POST") {
     try {
       const body = await req.json();
-      const { token, email, password, full_name, partner_id } = body;
+      const { token, email, password, full_name, partner_id, partner_member_id } = body;
       if (!token || !email || !password) {
         return new Response(JSON.stringify({ error: "Alle velden zijn verplicht." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -274,14 +288,26 @@ serve(async (req: Request) => {
       } else {
         userId = authData.user.id;
       }
-      const isPartnerInvite = !!partner_id;
+      const isPartnerAdminInvite = !!partner_id && invite.role === 'partner_admin';
+      const isPartnerMemberInvite = !!partner_id && !!partner_member_id && invite.role === 'partner_member';
 
-      if (isPartnerInvite) {
+      if (isPartnerAdminInvite) {
         await supabaseAdmin.from("partner_admins").upsert({
           partner_id: partner_id,
           user_id: userId,
           invited_by: invite.invited_by,
         }, { onConflict: "partner_id,user_id" });
+      } else if (isPartnerMemberInvite) {
+        // Add as a regular club volunteer
+        await supabaseAdmin.from("club_members").upsert({
+          club_id: invite.club_id,
+          user_id: userId,
+          role: 'medewerker',
+        }, { onConflict: "club_id,user_id" });
+        // Link their new user_id back to the existing partner_members row
+        await supabaseAdmin.from("partner_members")
+          .update({ user_id: userId })
+          .eq("id", partner_member_id);
       } else {
         await supabaseAdmin
           .from("user_roles")
@@ -304,7 +330,12 @@ serve(async (req: Request) => {
 
       await sendAcceptNotification(supabaseAdmin, invite, safeName || email);
 
-      return new Response(JSON.stringify({ success: true, club_id: invite.club_id, is_partner: isPartnerInvite }), {
+      return new Response(JSON.stringify({
+        success: true,
+        club_id: invite.club_id,
+        is_partner: isPartnerAdminInvite,
+        is_partner_member: isPartnerMemberInvite,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (err) {
@@ -319,7 +350,7 @@ serve(async (req: Request) => {
   if (action === "accept" && req.method === "POST") {
     try {
       const body = await req.json();
-      const { token, user_id, partner_id } = body;
+      const { token, user_id, partner_id, partner_member_id } = body;
       if (!token || !user_id) {
         return new Response(JSON.stringify({ error: "Token en user_id zijn verplicht." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -340,14 +371,26 @@ serve(async (req: Request) => {
         });
       }
 
-      const isPartnerInvite = !!partner_id;
+      const isPartnerAdminInvite = !!partner_id && invite.role === 'partner_admin';
+      const isPartnerMemberInvite = !!partner_id && !!partner_member_id && invite.role === 'partner_member';
 
-      if (isPartnerInvite) {
+      if (isPartnerAdminInvite) {
         await supabaseAdmin.from("partner_admins").upsert({
           partner_id: partner_id,
           user_id: user_id,
           invited_by: invite.invited_by,
         }, { onConflict: "partner_id,user_id" });
+      } else if (isPartnerMemberInvite) {
+        // Add as a regular club volunteer
+        await supabaseAdmin.from("club_members").upsert({
+          club_id: invite.club_id,
+          user_id,
+          role: 'medewerker',
+        }, { onConflict: "club_id,user_id" });
+        // Link their user_id back to the existing partner_members row
+        await supabaseAdmin.from("partner_members")
+          .update({ user_id })
+          .eq("id", partner_member_id);
       } else {
         await supabaseAdmin
           .from("club_members")
@@ -385,7 +428,12 @@ serve(async (req: Request) => {
       const acceptorName = acceptorProfile?.full_name || acceptorProfile?.email || "Een gebruiker";
       await sendAcceptNotification(supabaseAdmin, invite, acceptorName);
 
-      return new Response(JSON.stringify({ success: true, club_id: invite.club_id, is_partner: isPartnerInvite }), {
+      return new Response(JSON.stringify({
+        success: true,
+        club_id: invite.club_id,
+        is_partner: isPartnerAdminInvite,
+        is_partner_member: isPartnerMemberInvite,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (err) {

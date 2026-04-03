@@ -30,9 +30,9 @@ interface InviteInfo {
 }
 
 const roleLabels: Record<string, Record<string, string>> = {
-  nl: { bestuurder: 'Bestuurder', beheerder: 'Beheerder', medewerker: 'Medewerker', partner_admin: 'Partner Beheerder' },
-  fr: { bestuurder: 'Directeur', beheerder: 'Administrateur', medewerker: 'Collaborateur', partner_admin: 'Admin Partenaire' },
-  en: { bestuurder: 'Director', beheerder: 'Administrator', medewerker: 'Staff', partner_admin: 'Partner Admin' },
+  nl: { bestuurder: 'Bestuurder', beheerder: 'Beheerder', medewerker: 'Medewerker', partner_admin: 'Partner Beheerder', partner_member: 'Vrijwilliger' },
+  fr: { bestuurder: 'Directeur', beheerder: 'Administrateur', medewerker: 'Collaborateur', partner_admin: 'Admin Partenaire', partner_member: 'Bénévole' },
+  en: { bestuurder: 'Director', beheerder: 'Administrator', medewerker: 'Staff', partner_admin: 'Partner Admin', partner_member: 'Volunteer' },
 };
 
 // Sub-component for contract type selection after successful invite acceptance
@@ -131,7 +131,9 @@ const ClubInviteAccept = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const isPartnerInvite = !!inviteInfo?.partner_id || !!searchParams.get('partner_id');
+  const isPartnerMemberInvite = inviteInfo?.role === 'partner_member';
   const partnerId = inviteInfo?.partner_id || searchParams.get('partner_id');
+  const partnerMemberId = searchParams.get('partner_member_id');
 
   useEffect(() => {
     if (!token) return;
@@ -183,16 +185,18 @@ const ClubInviteAccept = () => {
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             'Authorization': `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ token, user_id: session.user.id, partner_id: partnerId }),
+          body: JSON.stringify({ token, user_id: session.user.id, partner_id: partnerId, partner_member_id: partnerMemberId }),
         }
       );
       const data = await resp.json();
       if (resp.ok && data.success) {
         setStatus('success');
-        const dest = data.is_partner ? '/partner-dashboard' : '/club-dashboard';
+        const dest = data.is_partner ? '/partner-dashboard' : data.is_partner_member ? '/dashboard' : '/club-dashboard';
         toast.success(data.is_partner
           ? t3('Je bent toegevoegd als partner beheerder!', 'Vous avez été ajouté en tant qu\'administrateur partenaire !', 'You have been added as partner admin!', lang)
-          : t3('Je bent toegevoegd aan de club!', 'Vous avez été ajouté au club !', 'You have been added to the club!', lang)
+          : data.is_partner_member
+            ? t3('Je bent toegevoegd als vrijwilliger!', 'Vous avez été ajouté comme bénévole !', 'You have been added as volunteer!', lang)
+            : t3('Je bent toegevoegd aan de club!', 'Vous avez été ajouté au club !', 'You have been added to the club!', lang)
         );
         setTimeout(() => navigate(dest), 2000);
       } else {
@@ -243,6 +247,7 @@ const ClubInviteAccept = () => {
             password: signupPassword,
             full_name: signupName,
             partner_id: partnerId,
+          partner_member_id: partnerMemberId,
           }),
         }
       );
@@ -258,10 +263,12 @@ const ClubInviteAccept = () => {
           return;
         }
         setStatus('success');
-        const dest = data.is_partner ? '/partner-dashboard' : '/club-dashboard';
+        const dest = data.is_partner ? '/partner-dashboard' : data.is_partner_member ? '/dashboard' : '/club-dashboard';
         toast.success(data.is_partner
           ? t3('Account aangemaakt! Je wordt doorgestuurd naar het partner dashboard.', 'Compte créé ! Redirection vers le tableau de bord partenaire.', 'Account created! Redirecting to partner dashboard.', lang)
-          : t3('Account aangemaakt en toegevoegd aan de club!', 'Compte créé et ajouté au club !', 'Account created and added to the club!', lang)
+          : data.is_partner_member
+            ? t3('Account aangemaakt! Welkom als vrijwilliger.', 'Compte créé ! Bienvenue comme bénévole.', 'Account created! Welcome as volunteer.', lang)
+            : t3('Account aangemaakt en toegevoegd aan de club!', 'Compte créé et ajouté au club !', 'Account created and added to the club!', lang)
         );
         setTimeout(() => navigate(dest), 2000);
       } else {
@@ -419,7 +426,7 @@ const ClubInviteAccept = () => {
             <SuccessContractTypePicker lang={lang} />
           )}
 
-          {status === 'success' && isPartnerInvite && (
+          {status === 'success' && isPartnerInvite && !isPartnerMemberInvite && (
             <div className="text-center">
               <div className="text-4xl mb-3">🎉</div>
               <h2 className="text-xl font-heading font-bold text-foreground mb-2">
@@ -430,6 +437,23 @@ const ClubInviteAccept = () => {
                   'Je wordt doorgestuurd naar het partner dashboard...',
                   'Redirection vers le tableau de bord partenaire...',
                   'Redirecting to partner dashboard...',
+                  lang
+                )}
+              </p>
+            </div>
+          )}
+
+          {status === 'success' && isPartnerMemberInvite && (
+            <div className="text-center">
+              <div className="text-4xl mb-3">🎉</div>
+              <h2 className="text-xl font-heading font-bold text-foreground mb-2">
+                {t3('Welkom als vrijwilliger!', 'Bienvenue comme bénévole !', 'Welcome as volunteer!', lang)}
+              </h2>
+              <p className="text-muted-foreground">
+                {t3(
+                  'Je wordt doorgestuurd naar je vrijwilligersdashboard...',
+                  'Redirection vers votre tableau de bord bénévole...',
+                  'Redirecting to your volunteer dashboard...',
                   lang
                 )}
               </p>

@@ -275,12 +275,24 @@ const VolunteerDashboardHome = ({
       }
       const clubIds = [...followedClubIds];
       const now = new Date().toISOString();
+
+      // Bug 1 fix: only show non-partner tasks OR tasks belonging to a partner the user is a member of
+      const { data: partnerMemberships } = await supabase
+        .from('partner_members')
+        .select('partner_id')
+        .eq('user_id', currentUserId);
+      const partnerIds = (partnerMemberships || []).map((m: any) => m.partner_id).filter(Boolean);
+      const partnerOrFilter = partnerIds.length > 0
+        ? `partner_only.is.false,partner_only.is.null,assigned_partner_id.in.(${partnerIds.join(',')})`
+        : 'partner_only.is.false,partner_only.is.null';
+
       const { data } = await (supabase as any)
         .from('tasks')
         .select('id, title, task_date, location, spots_available, club_id, clubs(name, logo_url)')
         .in('club_id', clubIds)
         .eq('status', 'open')
         .gte('task_date', now)
+        .or(partnerOrFilter)
         .order('task_date', { ascending: true })
         .limit(20);
       if (!data) { setFollowedClubTasksRaw([]); return; }

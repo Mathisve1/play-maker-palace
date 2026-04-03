@@ -266,8 +266,18 @@ const VolunteerDashboard = () => {
       setCurrentUserId(uid);
 
       // ===== CRITICAL PATH: Tasks + signups (show UI fast) =====
+      // Bug 1 fix: exclude partner-only tasks unless the user is a member of that partner
+      const { data: partnerMemberships } = await supabase
+        .from('partner_members')
+        .select('partner_id')
+        .eq('user_id', uid);
+      const partnerIds = (partnerMemberships || []).map((m: any) => m.partner_id).filter(Boolean);
+      const partnerOrFilter = partnerIds.length > 0
+        ? `partner_only.is.false,partner_only.is.null,assigned_partner_id.in.(${partnerIds.join(',')})`
+        : 'partner_only.is.false,partner_only.is.null';
+
       const [tasksRes, signupsRes] = await Promise.all([
-        supabase.from('tasks').select('*, clubs(name, sport, location)').eq('status', 'open').order('task_date', { ascending: true }),
+        supabase.from('tasks').select('*, clubs(name, sport, location)').eq('status', 'open').or(partnerOrFilter).order('task_date', { ascending: true }),
         (supabase as any).from('task_signups').select('task_id, status, checked_in_at').eq('volunteer_id', uid),
       ]);
 
@@ -711,6 +721,35 @@ const VolunteerDashboard = () => {
   const handleSignup = async (taskId: string) => {
     if (!currentUserId) return;
     setSigningUp(taskId);
+
+    // Pre-fetch task info (reused for partner check + push notifications)
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('club_id, title, partner_only, assigned_partner_id')
+      .eq('id', taskId)
+      .maybeSingle();
+
+    // Bug 3: Gate partner-only tasks to verified partner members only
+    if (task?.partner_only && task?.assigned_partner_id) {
+      const { data: membership } = await supabase
+        .from('partner_members')
+        .select('id')
+        .eq('partner_id', task.assigned_partner_id)
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+      if (!membership) {
+        toast.error(
+          language === 'nl'
+            ? 'Je kunt je niet inschrijven voor deze taak omdat deze gereserveerd is voor een externe partner.'
+            : language === 'fr'
+            ? 'Vous ne pouvez pas vous inscrire à cette tâche car elle est réservée à un partenaire externe.'
+            : 'You cannot sign up for this task as it is reserved for an external partner.'
+        );
+        setSigningUp(null);
+        return;
+      }
+    }
+
     const { error } = await supabase.from('task_signups').insert({ task_id: taskId, volunteer_id: currentUserId });
     if (error) { toast.error(error.message); } else {
       toast.success(t.volunteer.step3Title + '!');
@@ -718,8 +757,6 @@ const VolunteerDashboard = () => {
       setSignups(prev => [...prev, { task_id: taskId, status: 'pending' }]);
       setSignupCounts(prev => ({ ...prev, [taskId]: (prev[taskId] || 0) + 1 }));
       setBadgeRefreshKey(k => k + 1);
-      // Push to club admins + run sub-location prediction (fire-and-forget)
-      const { data: task } = await supabase.from('tasks').select('club_id, title').eq('id', taskId).maybeSingle();
       if (task?.club_id) {
         const volName = profile?.full_name || 'Vrijwilliger';
         sendPushToClub({ clubId: task.club_id, title: '📋 Nieuwe inschrijving', message: `${volName} heeft zich ingeschreven voor "${task.title}"`, url: '/club-dashboard', type: 'new_signup' });
