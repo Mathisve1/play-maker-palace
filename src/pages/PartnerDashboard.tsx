@@ -130,20 +130,26 @@ const PartnerDashboard = () => {
       .eq('partner_only', true).eq('assigned_partner_id', partnerId).eq('club_id', clubId);
     const allTasks = tasks || [];
     const taskIds = allTasks.map(t => t.id);
-    let assignmentMap: Record<string, string[]> = {};
-    if (taskIds.length > 0) {
-      const { data: asgn } = await supabase.from('partner_task_assignments').select('task_id, partner_member_id').in('task_id', taskIds);
-      (asgn || []).forEach((a: any) => {
-        if (!assignmentMap[a.task_id]) assignmentMap[a.task_id] = [];
-        assignmentMap[a.task_id].push(a.partner_member_id);
-      });
-    }
     const eventIds = [...new Set(allTasks.filter(t => t.event_id).map(t => t.event_id!))];
-    let eventMap: Record<string, string> = {};
-    if (eventIds.length > 0) {
-      const { data: evts } = await supabase.from('events').select('id, title').in('id', eventIds);
-      (evts || []).forEach((e: any) => { eventMap[e.id] = e.title; });
-    }
+
+    // Parallel: assignments + events
+    const [asgnRes, evtsRes] = await Promise.all([
+      taskIds.length > 0
+        ? supabase.from('partner_task_assignments').select('task_id, partner_member_id').in('task_id', taskIds)
+        : Promise.resolve({ data: [] }),
+      eventIds.length > 0
+        ? supabase.from('events').select('id, title').in('id', eventIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const assignmentMap: Record<string, string[]> = {};
+    ((asgnRes.data as any[]) || []).forEach((a: any) => {
+      if (!assignmentMap[a.task_id]) assignmentMap[a.task_id] = [];
+      assignmentMap[a.task_id].push(a.partner_member_id);
+    });
+    const eventMap: Record<string, string> = {};
+    ((evtsRes.data as any[]) || []).forEach((e: any) => { eventMap[e.id] = e.title; });
+
     setClubTasks(allTasks.map(t => ({
       ...t, event_title: t.event_id ? eventMap[t.event_id] || null : null,
       partner_acceptance_status: t.partner_acceptance_status || 'pending',
