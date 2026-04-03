@@ -354,32 +354,32 @@ const PartnerDashboard = () => {
     await refreshAll();
   };
 
-  const handleAddMember = async () => {
-    if (!partner || !newMember.full_name.trim()) return;
+  const handleAddMember = async (memberData: MemberFormData) => {
+    if (!partner || !memberData.full_name.trim()) return;
     setAddingMember(true);
     const { error } = await supabase.from('partner_members').insert({
-      partner_id: partner.id, full_name: newMember.full_name.trim(),
-      email: newMember.email || null, phone: newMember.phone || null,
-      date_of_birth: newMember.date_of_birth || null, national_id: newMember.national_id || null,
-      address: newMember.address || null, city: newMember.city || null,
-      postal_code: newMember.postal_code || null, shirt_size: newMember.shirt_size || null,
-      emergency_contact_name: newMember.emergency_contact_name || null,
-      emergency_contact_phone: newMember.emergency_contact_phone || null,
-      notes: newMember.notes || null,
+      partner_id: partner.id, full_name: memberData.full_name.trim(),
+      email: memberData.email || null, phone: memberData.phone || null,
+      date_of_birth: memberData.date_of_birth || null, national_id: memberData.national_id || null,
+      address: memberData.address || null, city: memberData.city || null,
+      postal_code: memberData.postal_code || null, shirt_size: memberData.shirt_size || null,
+      emergency_contact_name: memberData.emergency_contact_name || null,
+      emergency_contact_phone: memberData.emergency_contact_phone || null,
+      notes: memberData.notes || null,
     });
     if (error) toast.error(error.message);
     else { toast.success(nl ? 'Toegevoegd!' : 'Added!'); setShowAddMember(false); setNewMember({ ...EMPTY_MEMBER }); await refreshAll(); }
     setAddingMember(false);
   };
 
-  const handleUpdateMember = async () => {
+  const handleUpdateMember = async (memberData: MemberFormData) => {
     if (!partner || !editMember) return;
     const { error } = await supabase.from('partner_members').update({
-      full_name: editMember.full_name, email: editMember.email, phone: editMember.phone,
-      date_of_birth: editMember.date_of_birth, national_id: editMember.national_id,
-      address: editMember.address, city: editMember.city, postal_code: editMember.postal_code,
-      shirt_size: editMember.shirt_size, emergency_contact_name: editMember.emergency_contact_name,
-      emergency_contact_phone: editMember.emergency_contact_phone, notes: editMember.notes,
+      full_name: memberData.full_name, email: memberData.email, phone: memberData.phone,
+      date_of_birth: memberData.date_of_birth, national_id: memberData.national_id,
+      address: memberData.address, city: memberData.city, postal_code: memberData.postal_code,
+      shirt_size: memberData.shirt_size, emergency_contact_name: memberData.emergency_contact_name,
+      emergency_contact_phone: memberData.emergency_contact_phone, notes: memberData.notes,
     }).eq('id', editMember.id);
     if (error) toast.error(error.message);
     else { toast.success(nl ? 'Bijgewerkt!' : 'Updated!'); setEditMember(null); await refreshAll(); }
