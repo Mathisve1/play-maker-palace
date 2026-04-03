@@ -203,7 +203,11 @@ const ExternalPartners = () => {
         for (const email of validEmails) {
           try {
             const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-              club_id: clubId, email: email.trim(), role: 'medewerker', invited_by: session.user.id,
+              club_id: clubId,
+              email: email.trim(),
+              role: 'partner_admin' as any,
+              invited_by: session.user.id,
+              partner_id: partner.id,
             }).select('invite_token').single();
             if (invErr) continue;
             await supabase.functions.invoke('club-invite?action=send-email', {
@@ -356,7 +360,11 @@ const ExternalPartners = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-        club_id: clubId, email: inviteEmail.trim(), role: 'medewerker', invited_by: session.user.id,
+        club_id: clubId,
+        email: inviteEmail.trim(),
+        role: 'partner_admin' as any,
+        invited_by: session.user.id,
+        partner_id: selectedPartner.id,
       }).select('invite_token').single();
       if (invErr) throw invErr;
       const { data: club } = await supabase.from('clubs').select('name').eq('id', clubId).maybeSingle();
@@ -377,9 +385,13 @@ const ExternalPartners = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      // Bug 2 fix: use role 'partner_member' so the edge function links the user back to partner_members
       const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-        club_id: clubId, email: member.email, role: 'medewerker' as any, invited_by: session.user.id,
+        club_id: clubId,
+        email: member.email,
+        role: 'partner_member' as any,
+        invited_by: session.user.id,
+        partner_id: selectedPartner.id,
+        partner_member_id: member.id,
       }).select('invite_token').single();
       if (invErr) throw invErr;
       await supabase.functions.invoke('club-invite?action=send-email', {

@@ -27,6 +27,7 @@ interface InviteInfo {
   club_sport: string | null;
   partner_id: string | null;
   partner_name: string | null;
+  partner_member_id?: string | null;
 }
 
 const roleLabels: Record<string, Record<string, string>> = {
@@ -130,18 +131,17 @@ const ClubInviteAccept = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const isPartnerInvite = !!inviteInfo?.partner_id || !!searchParams.get('partner_id');
+  const isPartnerInvite = !!inviteInfo?.partner_id;
   const isPartnerMemberInvite = inviteInfo?.role === 'partner_member';
-  const partnerId = inviteInfo?.partner_id || searchParams.get('partner_id');
-  const partnerMemberId = searchParams.get('partner_member_id');
+  const partnerId = inviteInfo?.partner_id || null;
+  const partnerMemberId = inviteInfo?.partner_member_id || null;
 
   useEffect(() => {
     if (!token) return;
     const init = async () => {
       try {
-        const partnerParam = searchParams.get('partner_id') ? `&partner_id=${searchParams.get('partner_id')}` : '';
         const resp = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/club-invite?action=info&token=${token}${partnerParam}`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/club-invite?action=info&token=${token}`,
           { headers: { 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
         );
         const data = await resp.json();
@@ -167,11 +167,10 @@ const ClubInviteAccept = () => {
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
       setStatus('show-options');
     };
     init();
-  }, [token]);
+  }, [token, lang]);
 
   const acceptWithSession = async (session: { access_token: string; user: { id: string } }) => {
     setStatus('accepting');

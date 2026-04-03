@@ -1129,6 +1129,8 @@ export type Database = {
           id: string
           invite_token: string
           invited_by: string
+          partner_id: string | null
+          partner_member_id: string | null
           role: string
           status: string
         }
@@ -1140,6 +1142,8 @@ export type Database = {
           id?: string
           invite_token?: string
           invited_by: string
+          partner_id?: string | null
+          partner_member_id?: string | null
           role?: string
           status?: string
         }
@@ -1151,6 +1155,8 @@ export type Database = {
           id?: string
           invite_token?: string
           invited_by?: string
+          partner_id?: string | null
+          partner_member_id?: string | null
           role?: string
           status?: string
         }
@@ -1167,6 +1173,20 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_invitations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "external_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_invitations_partner_member_id_fkey"
+            columns: ["partner_member_id"]
+            isOneToOne: false
+            referencedRelation: "partner_members"
             referencedColumns: ["id"]
           },
         ]
