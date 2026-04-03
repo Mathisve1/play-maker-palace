@@ -665,7 +665,7 @@ const PartnerDashboard = () => {
 
       <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
         <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{nl ? 'Medewerker toevoegen' : 'Add member'}</DialogTitle></DialogHeader>
-          <MemberForm data={newMember} onChange={setNewMember} onSubmit={handleAddMember} submitLabel={nl ? 'Toevoegen' : 'Add'} submitting={addingMember} />
+          <MemberForm data={newMember} onChange={setNewMember} onSubmit={handleAddMember} submitLabel={nl ? 'Toevoegen' : 'Add'} submitting={addingMember} nl={nl} />
         </DialogContent>
       </Dialog>
 
