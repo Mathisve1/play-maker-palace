@@ -926,12 +926,12 @@ const ClubOwnerDashboard = () => {
             <AlertTriangle className="h-7 w-7" />
           </div>
           <h1 className="text-2xl font-semibold text-foreground">
-            {t3('Geen toegang tot het clubdashboard', 'Pas d'accès au tableau de bord club', 'No access to the club dashboard')}
+            {t3('Geen toegang tot het clubdashboard', "Pas d'accès au tableau de bord club", 'No access to the club dashboard')}
           </h1>
           <p className="mt-3 text-base text-muted-foreground">
             {t3(
               'Dit account is niet gekoppeld aan een clubbeheerder of actief clublid.',
-              'Ce compte n'est lié ni à un gestionnaire de club ni à un membre actif du club.',
+              "Ce compte n'est lié ni à un gestionnaire de club ni à un membre actif du club.",
               'This account is not linked to a club admin or an active club member.'
             )}
           </p>
