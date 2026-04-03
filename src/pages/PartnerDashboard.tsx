@@ -80,36 +80,41 @@ const PartnerDashboard = () => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/partner-login'); return; }
-      setUserId(session.user.id);
+      const uid = session.user.id;
+      setUserId(uid);
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name, email, avatar_url')
-        .eq('id', session.user.id)
-        .maybeSingle();
+      // Parallel: profile + admin records
+      const [profileRes, adminRes] = await Promise.all([
+        supabase.from('profiles').select('full_name, email, avatar_url').eq('id', uid).maybeSingle(),
+        supabase.from('partner_admins').select('partner_id').eq('user_id', uid),
+      ]);
 
-      setProfile(profileData || {
+      setProfile(profileRes.data || {
         full_name: (session.user.user_metadata?.full_name as string) || '',
         email: session.user.email || '',
         avatar_url: null,
       });
 
-      const { data: adminRecords } = await supabase.from('partner_admins').select('partner_id').eq('user_id', session.user.id);
-      if (!adminRecords?.length) { navigate('/partner-login'); return; }
-      const partnerId = adminRecords[0].partner_id;
-      const { data: partnerData } = await supabase.from('external_partners').select('id, name, category, external_payroll, club_id').eq('id', partnerId).maybeSingle();
-      if (!partnerData) { navigate('/partner-login'); return; }
-      setPartner(partnerData);
-      // Fetch all clubs linked via partner_clubs junction
-      const { data: partnerClubs } = await supabase.from('partner_clubs').select('club_id').eq('partner_id', partnerId);
-      const clubIds = (partnerClubs || []).map((pc: any) => pc.club_id);
+      if (!adminRes.data?.length) { navigate('/partner-login'); return; }
+      const partnerId = adminRes.data[0].partner_id;
+
+      // Parallel: partner info + clubs + members
+      const [partnerRes, partnerClubsRes, membersRes] = await Promise.all([
+        supabase.from('external_partners').select('id, name, category, external_payroll, club_id').eq('id', partnerId).maybeSingle(),
+        supabase.from('partner_clubs').select('club_id').eq('partner_id', partnerId),
+        supabase.from('partner_members').select('*').eq('partner_id', partnerId).order('created_at'),
+      ]);
+
+      if (!partnerRes.data) { navigate('/partner-login'); return; }
+      setPartner(partnerRes.data);
+      setMembers((membersRes.data || []) as Member[]);
+
+      const clubIds = (partnerClubsRes.data || []).map((pc: any) => pc.club_id);
       if (clubIds.length > 0) {
         const { data: clubsData } = await supabase.from('clubs').select('id, name, logo_url').in('id', clubIds);
         setClubs(clubsData || []);
         setSelectedClubId(clubIds[0]);
       }
-      const { data: membersData } = await supabase.from('partner_members').select('*').eq('partner_id', partnerId).order('created_at');
-      setMembers((membersData || []) as Member[]);
       setLoading(false);
     };
     init();
@@ -125,20 +130,26 @@ const PartnerDashboard = () => {
       .eq('partner_only', true).eq('assigned_partner_id', partnerId).eq('club_id', clubId);
     const allTasks = tasks || [];
     const taskIds = allTasks.map(t => t.id);
-    let assignmentMap: Record<string, string[]> = {};
-    if (taskIds.length > 0) {
-      const { data: asgn } = await supabase.from('partner_task_assignments').select('task_id, partner_member_id').in('task_id', taskIds);
-      (asgn || []).forEach((a: any) => {
-        if (!assignmentMap[a.task_id]) assignmentMap[a.task_id] = [];
-        assignmentMap[a.task_id].push(a.partner_member_id);
-      });
-    }
     const eventIds = [...new Set(allTasks.filter(t => t.event_id).map(t => t.event_id!))];
-    let eventMap: Record<string, string> = {};
-    if (eventIds.length > 0) {
-      const { data: evts } = await supabase.from('events').select('id, title').in('id', eventIds);
-      (evts || []).forEach((e: any) => { eventMap[e.id] = e.title; });
-    }
+
+    // Parallel: assignments + events
+    const [asgnRes, evtsRes] = await Promise.all([
+      taskIds.length > 0
+        ? supabase.from('partner_task_assignments').select('task_id, partner_member_id').in('task_id', taskIds)
+        : Promise.resolve({ data: [] }),
+      eventIds.length > 0
+        ? supabase.from('events').select('id, title').in('id', eventIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const assignmentMap: Record<string, string[]> = {};
+    ((asgnRes.data as any[]) || []).forEach((a: any) => {
+      if (!assignmentMap[a.task_id]) assignmentMap[a.task_id] = [];
+      assignmentMap[a.task_id].push(a.partner_member_id);
+    });
+    const eventMap: Record<string, string> = {};
+    ((evtsRes.data as any[]) || []).forEach((e: any) => { eventMap[e.id] = e.title; });
+
     setClubTasks(allTasks.map(t => ({
       ...t, event_title: t.event_id ? eventMap[t.event_id] || null : null,
       partner_acceptance_status: t.partner_acceptance_status || 'pending',
