@@ -910,6 +910,15 @@ const ClubOwnerDashboard = () => {
   }
 
   if (!contextLoading && !clubId) {
+    // Auto-redirect partner admins to partner dashboard
+    if (currentUserId) {
+      supabase.from('partner_admins').select('id').eq('user_id', currentUserId).limit(1).then(({ data }) => {
+        if (data && data.length > 0) {
+          navigate('/partner-dashboard', { replace: true });
+        }
+      });
+    }
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
@@ -917,13 +926,13 @@ const ClubOwnerDashboard = () => {
             <AlertTriangle className="h-7 w-7" />
           </div>
           <h1 className="text-2xl font-semibold text-foreground">
-            {t3('Geen toegang tot het clubdashboard', 'Pas d’accès au tableau de bord club', 'No access to the club dashboard')}
+            {t3('Geen toegang tot het clubdashboard', "Pas d'accès au tableau de bord club", 'No access to the club dashboard')}
           </h1>
           <p className="mt-3 text-base text-muted-foreground">
             {t3(
-              'Dit account is niet gekoppeld aan een clubbeheerder of actief clublid. Daarom bleef het scherm vroeger hangen.',
-              'Ce compte n’est lié ni à un gestionnaire de club ni à un membre actif du club. C’est pourquoi l’écran restait bloqué auparavant.',
-              'This account is not linked to a club admin or an active club member. That is why the screen used to get stuck.'
+              'Dit account is niet gekoppeld aan een clubbeheerder of actief clublid.',
+              "Ce compte n'est lié ni à un gestionnaire de club ni à un membre actif du club.",
+              'This account is not linked to a club admin or an active club member.'
             )}
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -936,10 +945,10 @@ const ClubOwnerDashboard = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/partner-login', { replace: true })}
+              onClick={() => navigate('/partner-dashboard', { replace: true })}
               className="inline-flex min-h-12 items-center justify-center rounded-xl bg-secondary px-5 py-3 text-base font-medium text-secondary-foreground transition-opacity hover:opacity-90"
             >
-              {t3('Naar partner login', 'Vers la connexion partenaire', 'Go to partner login')}
+              {t3('Naar partner dashboard', 'Vers le tableau de bord partenaire', 'Go to partner dashboard')}
             </button>
           </div>
         </div>
