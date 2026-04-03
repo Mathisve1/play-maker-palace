@@ -23,6 +23,7 @@ interface ClubContextValue {
   isOwner: boolean;
   memberRole: 'bestuurder' | 'beheerder' | 'medewerker';
   loading: boolean;
+  error: string | null;
   refresh: () => Promise<void>;
   updateProfile: (p: Partial<ProfileInfo>) => void;
   updateClubInfo: (c: Partial<ClubInfo>) => void;
@@ -50,48 +51,70 @@ export const ClubProvider = ({ children, authenticatedUserId }: { children: Reac
   const [isOwner, setIsOwner] = useState(false);
   const [memberRole, setMemberRole] = useState<'bestuurder' | 'beheerder' | 'medewerker'>('medewerker');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    // Parallel: profile + owned clubs + club_memberships (new table)
-    const [profileRes, ownedRes, membershipRes] = await Promise.all([
-      supabase.from('profiles').select('full_name, email, avatar_url, primary_club_id').eq('id', userId).maybeSingle(),
-      supabase.from('clubs').select('id, name, logo_url, sport, location').eq('owner_id', userId).limit(1),
-      supabase.from('club_memberships').select('club_id, club_role, status').eq('volunteer_id', userId).eq('status', 'actief'),
-    ]);
+    setLoading(true);
+    setError(null);
+    setClubId(null);
+    setClubInfo(null);
+    setProfile(null);
+    setIsOwner(false);
+    setMemberRole('medewerker');
 
-    const profileData = profileRes.data as any;
-    if (profileData) {
-      setProfile({
-        full_name: profileData.full_name || '',
-        email: profileData.email || '',
-        avatar_url: profileData.avatar_url,
-      });
-    }
+    try {
+      // Parallel: profile + owned clubs + club_memberships (new table)
+      const [profileRes, ownedRes, membershipRes] = await Promise.all([
+        supabase.from('profiles').select('full_name, email, avatar_url, primary_club_id').eq('id', userId).maybeSingle(),
+        supabase.from('clubs').select('id, name, logo_url, sport, location').eq('owner_id', userId).limit(1),
+        supabase.from('club_memberships').select('club_id, club_role, status').eq('volunteer_id', userId).eq('status', 'actief'),
+      ]);
 
-    const ownedClub = ownedRes.data?.[0];
-    const memberships = (membershipRes.data || []) as any[];
-    const primaryClubId = profileData?.primary_club_id;
+      if (profileRes.error) throw profileRes.error;
+      if (ownedRes.error) throw ownedRes.error;
+      if (membershipRes.error) throw membershipRes.error;
 
-    if (ownedClub) {
-      setClubId(ownedClub.id);
-      setClubInfo(ownedClub);
-      setIsOwner(true);
-    } else if (memberships.length > 0) {
-      // Prefer the primary_club_id if it matches an active membership, otherwise first
-      const target = memberships.find((m: any) => m.club_id === primaryClubId) || memberships[0];
-      setMemberRole((target.club_role as any) || 'medewerker');
-      const { data: c } = await supabase
-        .from('clubs')
-        .select('id, name, logo_url, sport, location')
-        .eq('id', target.club_id)
-        .maybeSingle();
-      if (c) {
-        setClubId(c.id);
-        setClubInfo(c);
+      const profileData = profileRes.data as any;
+      if (profileData) {
+        setProfile({
+          full_name: profileData.full_name || '',
+          email: profileData.email || '',
+          avatar_url: profileData.avatar_url,
+        });
       }
-    }
 
-    setLoading(false);
+      const ownedClub = ownedRes.data?.[0];
+      const memberships = (membershipRes.data || []) as any[];
+      const primaryClubId = profileData?.primary_club_id;
+
+      if (ownedClub) {
+        setClubId(ownedClub.id);
+        setClubInfo(ownedClub);
+        setIsOwner(true);
+      } else if (memberships.length > 0) {
+        // Prefer the primary_club_id if it matches an active membership, otherwise first
+        const target = memberships.find((m: any) => m.club_id === primaryClubId) || memberships[0];
+        setMemberRole((target.club_role as any) || 'medewerker');
+
+        const { data: c, error: clubError } = await supabase
+          .from('clubs')
+          .select('id, name, logo_url, sport, location')
+          .eq('id', target.club_id)
+          .maybeSingle();
+
+        if (clubError) throw clubError;
+
+        if (c) {
+          setClubId(c.id);
+          setClubInfo(c);
+        }
+      }
+    } catch (err) {
+      console.error('ClubContext load failed', err);
+      setError('club-context-load-failed');
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   useEffect(() => {
@@ -115,6 +138,7 @@ export const ClubProvider = ({ children, authenticatedUserId }: { children: Reac
       isOwner,
       memberRole,
       loading,
+      error,
       refresh: load,
       updateProfile,
       updateClubInfo,

@@ -311,7 +311,7 @@ const ClubOwnerDashboard = () => {
   const t3 = (nl: string, fr: string, en: string) => language === 'nl' ? nl : language === 'fr' ? fr : en;
 
   // Use ClubContext instead of re-fetching auth/profile/club
-  const { userId: contextUserId, clubId: contextClubId, clubInfo: contextClubInfo, profile: contextProfile, isOwner: contextIsOwner, memberRole: contextMemberRole, loading: contextLoading } = useClubContext();
+  const { userId: contextUserId, clubId: contextClubId, clubInfo: contextClubInfo, profile: contextProfile, isOwner: contextIsOwner, memberRole: contextMemberRole, loading: contextLoading, error: contextError, refresh: refreshClubContext } = useClubContext();
 
   // Aliases from ClubContext — eliminates 3-5 sequential auth/profile/club queries
   const clubId = contextClubId;
@@ -864,6 +864,85 @@ const ClubOwnerDashboard = () => {
     return (
       <div className="min-h-screen bg-background">
         <DashboardSkeleton />
+      </div>
+    );
+  }
+
+  if (contextError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted text-foreground">
+            <AlertTriangle className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold text-foreground">
+            {t3('Clubdashboard kon niet openen', 'Impossible d’ouvrir le tableau de bord club', 'Could not open the club dashboard')}
+          </h1>
+          <p className="mt-3 text-base text-muted-foreground">
+            {t3(
+              'Er ging iets mis bij het laden van je clubtoegang. Probeer opnieuw of log opnieuw in.',
+              'Un problème est survenu lors du chargement de votre accès club. Réessayez ou reconnectez-vous.',
+              'Something went wrong while loading your club access. Try again or sign in again.'
+            )}
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => void refreshClubContext()}
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-5 py-3 text-base font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              {t3('Opnieuw proberen', 'Réessayer', 'Try again')}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate('/club-login', { replace: true });
+              }}
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-secondary px-5 py-3 text-base font-medium text-secondary-foreground transition-opacity hover:opacity-90"
+            >
+              {t3('Opnieuw inloggen', 'Se reconnecter', 'Sign in again')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!contextLoading && !clubId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted text-foreground">
+            <AlertTriangle className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold text-foreground">
+            {t3('Geen toegang tot het clubdashboard', 'Pas d’accès au tableau de bord club', 'No access to the club dashboard')}
+          </h1>
+          <p className="mt-3 text-base text-muted-foreground">
+            {t3(
+              'Dit account is niet gekoppeld aan een clubbeheerder of actief clublid. Daarom bleef het scherm vroeger hangen.',
+              'Ce compte n’est lié ni à un gestionnaire de club ni à un membre actif du club. C’est pourquoi l’écran restait bloqué auparavant.',
+              'This account is not linked to a club admin or an active club member. That is why the screen used to get stuck.'
+            )}
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => navigate('/club-login', { replace: true })}
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-5 py-3 text-base font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              {t3('Naar club login', 'Vers la connexion club', 'Go to club login')}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/partner-login', { replace: true })}
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-secondary px-5 py-3 text-base font-medium text-secondary-foreground transition-opacity hover:opacity-90"
+            >
+              {t3('Naar partner login', 'Vers la connexion partenaire', 'Go to partner login')}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
