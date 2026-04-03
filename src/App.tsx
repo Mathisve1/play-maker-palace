@@ -168,7 +168,7 @@ const App = () => {
             <Route path="/chat/:conversationId" element={<RequireAuth><Chat /></RequireAuth>} />
             <Route path="/partner-login" element={<PartnerLogin />} />
             <Route path="/external-partners" element={<RequireAuth redirectTo="/club-login"><ExternalPartners /></RequireAuth>} />
-            <Route path="/partner-dashboard" element={<RequireAuth redirectTo="/partner-login"><PartnerDashboard /></RequireAuth>} />
+            <Route path="/partner-dashboard" element={<PartnerDashboard />} />
             <Route path="/reporting" element={<RequireAuth redirectTo="/club-login"><ReportingDashboard /></RequireAuth>} />
             <Route path="/report-builder" element={<RequireAuth redirectTo="/club-login"><ReportBuilder /></RequireAuth>} />
             <Route path="/events-manager" element={<RequireAuth redirectTo="/club-login"><EventsManager /></RequireAuth>} />

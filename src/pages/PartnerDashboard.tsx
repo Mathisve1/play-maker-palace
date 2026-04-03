@@ -52,26 +52,45 @@ const usePartnerAuthReady = () => {
   useEffect(() => {
     let active = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const resolveAuth = (user: User | null) => {
       if (!active) return;
-      setAuthUser(session?.user ?? null);
+      setAuthUser(user);
       setIsAuthReady(true);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      resolveAuth(session?.user ?? null);
     });
+
+    const fallbackTimer = window.setTimeout(() => {
+      void supabase.auth.getUser()
+        .then(({ data: { user } }) => {
+          resolveAuth(user ?? null);
+        })
+        .catch(() => {
+          resolveAuth(null);
+        });
+    }, 5000);
 
     void supabase.auth.getSession()
       .then(({ data: { session } }) => {
-        if (!active) return;
-        setAuthUser(session?.user ?? null);
-        setIsAuthReady(true);
+        window.clearTimeout(fallbackTimer);
+        resolveAuth(session?.user ?? null);
       })
       .catch(() => {
-        if (!active) return;
-        setAuthUser(null);
-        setIsAuthReady(true);
+        window.clearTimeout(fallbackTimer);
+        void supabase.auth.getUser()
+          .then(({ data: { user } }) => {
+            resolveAuth(user ?? null);
+          })
+          .catch(() => {
+            resolveAuth(null);
+          });
       });
 
     return () => {
       active = false;
+      window.clearTimeout(fallbackTimer);
       subscription.unsubscribe();
     };
   }, []);
