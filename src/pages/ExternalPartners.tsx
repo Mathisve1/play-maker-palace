@@ -379,7 +379,7 @@ const ExternalPartners = () => {
       if (!session) return;
       // Bug 2 fix: use role 'partner_member' so the edge function links the user back to partner_members
       const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
-        club_id: clubId, email: member.email, role: 'partner_member', invited_by: session.user.id,
+        club_id: clubId, email: member.email, role: 'medewerker' as any, invited_by: session.user.id,
       }).select('invite_token').single();
       if (invErr) throw invErr;
       await supabase.functions.invoke('club-invite?action=send-email', {
