@@ -78,9 +78,9 @@ const PartnerDashboard = () => {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/partner-login'); return; }
-      const uid = session.user.id;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate('/partner-login'); return; }
+      const uid = user.id;
       setUserId(uid);
 
       // Parallel: profile + admin records
