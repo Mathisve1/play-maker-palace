@@ -152,8 +152,4 @@ CREATE TRIGGER trg_secure_task_signups
   EXECUTE FUNCTION public.fn_secure_task_signups();
 
 -- ── Helpful comments ──────────────────────────────────────────────────────────
-COMMENT ON FUNCTION public.fn_secure_task_signups() IS
-  'BEFORE INSERT OR UPDATE trigger on task_signups. '
-  'Enforces: (1) capacity limit via row-level lock, '
-  '(2) required training certificate on INSERT, '
-  '(3) no overlapping shifts for the same volunteer.';
+COMMENT ON FUNCTION public.fn_secure_task_signups() IS 'BEFORE INSERT OR UPDATE trigger on task_signups. Enforces: (1) capacity limit via row-level lock, (2) required training certificate on INSERT, (3) no overlapping shifts for the same volunteer.';
