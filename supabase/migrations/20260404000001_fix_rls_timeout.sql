@@ -32,7 +32,7 @@ USING (
   -- 1. Club membership
   EXISTS (
     SELECT 1 FROM public.club_memberships cm
-    WHERE cm.club_id = tasks.club_id AND cm.user_id = auth.uid()
+    WHERE cm.club_id = tasks.club_id AND cm.volunteer_id = auth.uid()
   )
   -- 2. Partner admin of the assigned partner
   OR (partner_only = true AND assigned_partner_id IS NOT NULL AND EXISTS (

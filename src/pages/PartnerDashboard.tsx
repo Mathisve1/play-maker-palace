@@ -461,7 +461,7 @@ const PartnerDashboard = () => {
     await refreshAll();
   };
 
-  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/partner-login'); };
+  const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/partner-login'; };
 
   if (loading || !isAuthReady) return <DashboardLayout sidebar={<PartnerSidebar partnerName="" activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} onOpenProfile={() => {}} />}><DashboardSkeleton /></DashboardLayout>;
   if (loadError) {
@@ -563,7 +563,7 @@ const PartnerDashboard = () => {
     </Card>
   );
 
-  const handleLogoutWrapped = async () => { await supabase.auth.signOut(); navigate('/partner-login'); };
+  const handleLogoutWrapped = async () => { await supabase.auth.signOut(); window.location.href = '/partner-login'; };
 
   const sidebarEl = (
     <PartnerSidebar

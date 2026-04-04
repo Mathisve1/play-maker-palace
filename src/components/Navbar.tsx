@@ -33,7 +33,7 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/');
+    window.location.href = '/';
   };
 
   const dashboardLabel = language === 'nl' ? 'Terug naar dashboard' : language === 'fr' ? 'Retour au tableau de bord' : 'Back to dashboard';

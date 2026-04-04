@@ -897,7 +897,7 @@ const ClubOwnerDashboard = () => {
               type="button"
               onClick={async () => {
                 await supabase.auth.signOut();
-                navigate('/club-login', { replace: true });
+                window.location.href = '/club-login';
               }}
               className="inline-flex min-h-12 items-center justify-center rounded-xl bg-secondary px-5 py-3 text-base font-medium text-secondary-foreground transition-opacity hover:opacity-90"
             >
@@ -1387,7 +1387,7 @@ const ClubOwnerDashboard = () => {
       profile={profile ? { ...profile, avatar_url: null } : null}
       clubId={clubId}
       clubInfo={clubInfo ? { name: clubInfo.name, logo_url: clubInfo.logo_url } : null}
-      onLogout={async () => { await supabase.auth.signOut(); navigate('/login'); }}
+      onLogout={async () => { await supabase.auth.signOut(); window.location.href = '/club-login'; }}
       onOpenProfile={() => setShowProfileDialog(true)}
       onOpenSettings={isOwner ? () => setShowSettings(true) : undefined}
       onOpenMembers={() => setShowMembers(true)}

@@ -924,7 +924,7 @@ const VolunteerDashboard = () => {
     setCheckingContract(null);
   };
 
-  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
+  const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/login'; };
 
   // ===== DERIVED DATA (used by EventDetailDialog) =====
 

@@ -503,7 +503,7 @@ const Chat = () => {
   };
 
   const { profile: contextProfile } = useClubContext();
-  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
+  const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/login'; };
 
   // Determine sidebar based on role
   const sidebarEl = isOwner ? (

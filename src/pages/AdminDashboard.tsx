@@ -159,7 +159,7 @@ const AdminDashboard = () => {
             {t3('Admin Dashboard', 'Tableau de bord Admin', 'Admin Dashboard')}
           </span>
           <button
-            onClick={async () => { await supabase.auth.signOut(); navigate('/login'); }}
+            onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login'; }}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {t3('Uitloggen', 'Déconnexion', 'Logout')}

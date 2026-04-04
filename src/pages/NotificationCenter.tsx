@@ -284,7 +284,7 @@ const NotificationCenter = () => {
     }
   };
 
-  const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
+  const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/login'; };
   const handleTabChange = (tab: string) => { navigate(`/dashboard?tab=${tab}`); };
 
   const sidebarEl = isOwner ? (

@@ -268,7 +268,7 @@ const MyClubs = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/login');
+    window.location.href = '/login';
   };
 
   const sidebar = (

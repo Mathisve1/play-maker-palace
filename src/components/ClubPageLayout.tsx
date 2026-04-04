@@ -36,7 +36,7 @@ const ClubPageLayout = ({ children }: ClubPageLayoutProps) => {
       profile={profile}
       clubId={clubId}
       clubInfo={clubInfo}
-      onLogout={async () => { await supabase.auth.signOut(); navigate('/club-login'); }}
+      onLogout={async () => { await supabase.auth.signOut(); window.location.href = '/club-login'; }}
       onOpenProfile={() => setShowProfile(true)}
       onOpenSettings={() => setShowSettings(true)}
       onOpenMembers={() => setShowMembers(true)}

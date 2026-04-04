@@ -102,10 +102,12 @@ const RequireAuth = ({ children, redirectTo = '/login' }: RequireAuthProps) => {
         if (cancelled) return;
         Sentry.setUser(null);
         resetUser();
+        localStorage.removeItem('supabase.auth.token');
         initialAuthResolved.current = true;
         setAuthenticatedUserId(null);
         setChecked(true);
-        navigate(redirectTo, { replace: true });
+        // Hard reload to destroy JS heap, React Query cache, and all React state
+        window.location.href = redirectTo;
       }
     });
 
