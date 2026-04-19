@@ -22,7 +22,7 @@ import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
 import SpoedoproepDialog from '@/components/SpoedoproepDialog';
 import CreateMatchFromTemplateDialog from '@/components/CreateMatchFromTemplateDialog';
-import SaveAsMatchTemplateDialog from '@/components/SaveAsMatchTemplateDialog';
+import SaveAsMatchTemplateLoader from '@/components/SaveAsMatchTemplateLoader';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
