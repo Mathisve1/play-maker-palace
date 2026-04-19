@@ -273,44 +273,50 @@ serve(async (req: Request) => {
 
       if (authErr) {
         if (authErr.message?.includes("already been registered")) {
-          const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-          const existingUser = existingUsers?.users?.find((u: any) => u.email === email);
-          if (existingUser) {
-            userId = existingUser.id;
-          } else {
-            return new Response(JSON.stringify({ error: "Account bestaat al. Probeer in te loggen." }), {
-              status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
-        } else {
-          console.error("Auth error during invite signup:", authErr);
-          return new Response(JSON.stringify({ error: "Registratie mislukt. Controleer je gegevens." }), {
-            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          // Account already exists — tell user to log in via the "I already have an account" flow
+          // so the existing session is used (and we can also avoid silently overwriting their account).
+          return new Response(JSON.stringify({
+            error: "account_exists",
+            message: "Dit e-mailadres is al geregistreerd. Klik op 'Terug' en kies 'Ik heb al een account' om in te loggen en de uitnodiging te accepteren."
+          }), {
+            status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-      } else {
-        userId = authData.user.id;
+        console.error("Auth error during invite signup:", authErr);
+        return new Response(JSON.stringify({ error: "Registratie mislukt. Controleer je gegevens." }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
+      userId = authData.user.id;
+
       const isPartnerAdminInvite = !!invite.partner_id && invite.role === 'partner_admin';
       const isPartnerMemberInvite = !!invite.partner_id && !!invite.partner_member_id && invite.role === 'partner_member';
 
       if (isPartnerAdminInvite) {
-        await supabaseAdmin.from("partner_admins").upsert({
+        const { error: paErr } = await supabaseAdmin.from("partner_admins").upsert({
           partner_id: invite.partner_id,
           user_id: userId,
           invited_by: invite.invited_by,
         }, { onConflict: "partner_id,user_id" });
+        if (paErr) {
+          console.error("partner_admins upsert failed (signup-and-accept):", paErr);
+          return new Response(JSON.stringify({ error: "Kon partner-koppeling niet opslaan: " + paErr.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       } else if (isPartnerMemberInvite) {
         // Add as a regular club volunteer
-        await supabaseAdmin.from("club_members").upsert({
+        const { error: cmErr } = await supabaseAdmin.from("club_members").upsert({
           club_id: invite.club_id,
           user_id: userId,
           role: 'medewerker',
         }, { onConflict: "club_id,user_id" });
+        if (cmErr) console.error("club_members upsert failed (partner_member signup):", cmErr);
         // Link their new user_id back to the existing partner_members row
-        await supabaseAdmin.from("partner_members")
+        const { error: pmErr } = await supabaseAdmin.from("partner_members")
           .update({ user_id: userId })
           .eq("id", invite.partner_member_id);
+        if (pmErr) console.error("partner_members update failed:", pmErr);
       } else {
         await supabaseAdmin
           .from("user_roles")
