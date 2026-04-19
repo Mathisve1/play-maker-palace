@@ -270,6 +270,16 @@ const ClubInviteAccept = () => {
             : t3('Account aangemaakt en toegevoegd aan de club!', 'Compte créé et ajouté au club !', 'Account created and added to the club!', lang)
         );
         setTimeout(() => navigate(dest), 2000);
+      } else if (resp.status === 409 && data.error === 'account_exists') {
+        // Account already exists — switch to login mode with email pre-filled
+        toast.info(t3(
+          'Dit e-mailadres is al geregistreerd. Log in om de uitnodiging te accepteren.',
+          'Cet e-mail est déjà enregistré. Connectez-vous pour accepter l\'invitation.',
+          'This email is already registered. Log in to accept the invitation.',
+          lang
+        ));
+        setLoginEmail(signupEmail);
+        setStatus('login');
       } else {
         toast.error(data.error || t3('Er ging iets mis', 'Quelque chose s\'est mal passé', 'Something went wrong', lang));
       }
