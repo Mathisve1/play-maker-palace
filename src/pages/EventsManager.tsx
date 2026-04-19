@@ -1067,40 +1067,14 @@ const EventsManager = () => {
     <CreateMatchFromTemplateDialog
       open={showMatchTemplateDialog}
       onClose={() => setShowMatchTemplateDialog(false)}
-      onCreated={() => { setShowMatchTemplateDialog(false); loadData(); }}
+      onCreated={() => { setShowMatchTemplateDialog(false); window.location.reload(); }}
     />
-    {saveAsMatchTemplateEventId && (() => {
-      const ev = events.find(e => e.id === saveAsMatchTemplateEventId);
-      if (!ev) return null;
-      const evGroups = (groups || []).filter((g: any) => g.event_id === saveAsMatchTemplateEventId).map((g: any) => ({
-        id: g.id, name: g.name, color: g.color, sort_order: g.sort_order ?? 0,
-        wristband_color: g.wristband_color || null, wristband_label: g.wristband_label || null, materials_note: g.materials_note || null,
-      }));
-      const evTasks = (tasks || []).filter((t: any) => t.event_id === saveAsMatchTemplateEventId).map((t: any) => ({
-        id: t.id, title: t.title, spots_available: t.spots_available || 1,
-        event_group_id: t.event_group_id || null,
-        start_time: t.start_time || null, end_time: t.end_time || null,
-        briefing_time: t.briefing_time || null, briefing_location: t.briefing_location || null,
-        description: t.description || null, notes: t.notes || null,
-        compensation_type: t.compensation_type || 'none',
-        expense_amount: t.expense_amount, hourly_rate: t.hourly_rate,
-        estimated_hours: t.estimated_hours, daily_rate: t.daily_rate,
-        loyalty_points: t.loyalty_points, loyalty_eligible: t.loyalty_eligible,
-      }));
-      return (
-        <SaveAsMatchTemplateDialog
-          open={true}
-          onClose={() => setSaveAsMatchTemplateEventId(null)}
-          eventId={ev.id}
-          eventTitle={ev.title}
-          eventDate={ev.event_date}
-          eventLocation={ev.location || null}
-          eventKickoffTime={(ev as any).kickoff_time || null}
-          groups={evGroups}
-          tasks={evTasks}
-        />
-      );
-    })()}
+    {saveAsMatchTemplateEventId && (
+      <SaveAsMatchTemplateLoader
+        eventId={saveAsMatchTemplateEventId}
+        onClose={() => setSaveAsMatchTemplateEventId(null)}
+      />
+    )}
     {spoedTask && clubId && (
       <SpoedoproepDialog
         open={!!spoedTask}
