@@ -2616,6 +2616,219 @@ export type Database = {
           },
         ]
       }
+      match_template_groups: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          match_template_id: string
+          materials_note: string | null
+          name: string
+          sort_order: number
+          wristband_color: string | null
+          wristband_label: string | null
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          match_template_id: string
+          materials_note?: string | null
+          name: string
+          sort_order?: number
+          wristband_color?: string | null
+          wristband_label?: string | null
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          match_template_id?: string
+          materials_note?: string | null
+          name?: string
+          sort_order?: number
+          wristband_color?: string | null
+          wristband_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_template_groups_match_template_id_fkey"
+            columns: ["match_template_id"]
+            isOneToOne: false
+            referencedRelation: "match_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_template_tasks: {
+        Row: {
+          briefing_location: string | null
+          briefing_offset_minutes: number | null
+          compensation_type: string
+          contract_template_id: string | null
+          created_at: string
+          daily_rate: number | null
+          description: string | null
+          end_offset_minutes: number
+          estimated_hours: number | null
+          expense_amount: number | null
+          group_id: string | null
+          hourly_rate: number | null
+          id: string
+          loyalty_eligible: boolean
+          loyalty_points: number | null
+          match_template_id: string
+          notes: string | null
+          required_training_id: string | null
+          sort_order: number
+          spots_available: number
+          start_offset_minutes: number
+          title: string
+        }
+        Insert: {
+          briefing_location?: string | null
+          briefing_offset_minutes?: number | null
+          compensation_type?: string
+          contract_template_id?: string | null
+          created_at?: string
+          daily_rate?: number | null
+          description?: string | null
+          end_offset_minutes?: number
+          estimated_hours?: number | null
+          expense_amount?: number | null
+          group_id?: string | null
+          hourly_rate?: number | null
+          id?: string
+          loyalty_eligible?: boolean
+          loyalty_points?: number | null
+          match_template_id: string
+          notes?: string | null
+          required_training_id?: string | null
+          sort_order?: number
+          spots_available?: number
+          start_offset_minutes?: number
+          title: string
+        }
+        Update: {
+          briefing_location?: string | null
+          briefing_offset_minutes?: number | null
+          compensation_type?: string
+          contract_template_id?: string | null
+          created_at?: string
+          daily_rate?: number | null
+          description?: string | null
+          end_offset_minutes?: number
+          estimated_hours?: number | null
+          expense_amount?: number | null
+          group_id?: string | null
+          hourly_rate?: number | null
+          id?: string
+          loyalty_eligible?: boolean
+          loyalty_points?: number | null
+          match_template_id?: string
+          notes?: string | null
+          required_training_id?: string | null
+          sort_order?: number
+          spots_available?: number
+          start_offset_minutes?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_template_tasks_contract_template_id_fkey"
+            columns: ["contract_template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_template_tasks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "match_template_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_template_tasks_match_template_id_fkey"
+            columns: ["match_template_id"]
+            isOneToOne: false
+            referencedRelation: "match_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_template_tasks_required_training_id_fkey"
+            columns: ["required_training_id"]
+            isOneToOne: false
+            referencedRelation: "academy_trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_templates: {
+        Row: {
+          certificate_design_id: string | null
+          closing_template_id: string | null
+          club_id: string
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          certificate_design_id?: string | null
+          closing_template_id?: string | null
+          club_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          certificate_design_id?: string | null
+          closing_template_id?: string | null
+          club_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_templates_certificate_design_id_fkey"
+            columns: ["certificate_design_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_designs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_templates_closing_template_id_fkey"
+            columns: ["closing_template_id"]
+            isOneToOne: false
+            referencedRelation: "closing_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_templates_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_contract_types: {
         Row: {
           contract_type: string
