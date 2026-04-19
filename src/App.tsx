@@ -81,6 +81,7 @@ const DonationGoals = lazy(() => import("./pages/DonationGoals"));
 const ShiftSwapDetail = lazy(() => import("./pages/ShiftSwapDetail"));
 const KassaPasjesBeheer = lazy(() => import("./pages/KassaPasjesBeheer"));
 const ShiftTemplates = lazy(() => import("./pages/ShiftTemplates"));
+const MatchTemplates = lazy(() => import("./pages/MatchTemplates"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
 const LiveOpvolging = lazy(() => import("./pages/LiveOpvolging"));
 const SponsorHub = lazy(() => import("./pages/SponsorHub"));
@@ -204,6 +205,7 @@ const App = () => {
             <Route path="/shift-swap/:id" element={<RequireAuth><ShiftSwapDetail /></RequireAuth>} />
             <Route path="/kassa-pasjes" element={<RequireAuth redirectTo="/club-login"><KassaPasjesBeheer /></RequireAuth>} />
             <Route path="/shift-templates" element={<RequireAuth redirectTo="/club-login"><ShiftTemplates /></RequireAuth>} />
+            <Route path="/match-templates" element={<RequireAuth redirectTo="/club-login"><MatchTemplates /></RequireAuth>} />
             <Route path="/events/:eventId" element={<RequireAuth redirectTo="/club-login"><EventDetail /></RequireAuth>} />
             <Route path="/events/:eventId/live" element={<RequireAuth redirectTo="/club-login"><LiveOpvolging /></RequireAuth>} />
             <Route path="/sponsor-hub" element={<RequireAuth redirectTo="/club-login"><SponsorHub /></RequireAuth>} />

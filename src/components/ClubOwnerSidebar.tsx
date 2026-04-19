@@ -147,6 +147,7 @@ const ClubOwnerSidebar = ({
 
   const beheerItems = [
     { label: t3('Rooster Automatisering', 'Automatisation Roster', 'Roster Automation'), icon: Layers, path: '/shift-templates' },
+    { label: t3('Wedstrijdsjablonen', 'Modèles de match', 'Match Templates'), icon: Layers, path: '/match-templates' },
     { label: t3('Safety & Security', 'Sécurité', 'Safety & Security'), icon: ShieldAlert, path: '/safety' },
     { label: 'Ticketing', icon: Ticket, path: '/ticketing' },
     { label: t3('Partners', 'Partenaires', 'Partners'), icon: Handshake, path: '/external-partners' },
