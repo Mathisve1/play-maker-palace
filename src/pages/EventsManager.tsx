@@ -10,7 +10,7 @@ import {
   Plus, Trash2, Calendar, MapPin, Users, Layers, ChevronDown, ChevronUp,
   Pencil, Copy, Loader2, X, AlertTriangle, CalendarDays, Handshake, LayoutGrid,
   PauseCircle, PlayCircle, Shield, Radio, Play, BookOpen, MoreHorizontal,
-  FileText, Save, ClipboardCheck, Send, UserCheck, Zap, Wand2, Clock, Activity,
+  FileText, Save, ClipboardCheck, Send, UserCheck, Zap, Wand2, Clock, Activity, Trophy,
 } from 'lucide-react';
 import BulkMessageDialog from '@/components/BulkMessageDialog';
 import EventTemplateDialog from '@/components/EventTemplateDialog';
@@ -21,6 +21,8 @@ import TaskZoneDialog from '@/components/TaskZoneDialog';
 import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
 import SpoedoproepDialog from '@/components/SpoedoproepDialog';
+import CreateMatchFromTemplateDialog from '@/components/CreateMatchFromTemplateDialog';
+import SaveAsMatchTemplateDialog from '@/components/SaveAsMatchTemplateDialog';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -105,6 +107,8 @@ const EventsManager = () => {
   const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
   const [bulkMessageEventId, setBulkMessageEventId] = useState<string | null>(null);
   const [bulkMessageTask, setBulkMessageTask] = useState<{ id: string; title: string } | null>(null);
+  const [showMatchTemplateDialog, setShowMatchTemplateDialog] = useState(false);
+  const [saveAsMatchTemplateEventId, setSaveAsMatchTemplateEventId] = useState<string | null>(null);
 
   // Adding task to group
   const [addingTaskToGroup, setAddingTaskToGroup] = useState<{ eventId: string; groupId: string } | null>(null);
@@ -719,6 +723,9 @@ const EventsManager = () => {
             <button onClick={() => setShowTemplateDialog(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
               <FileText className="w-4 h-4" /> {t3('Sjablonen', 'Modèles', 'Templates')}
             </button>
+            <button onClick={() => setShowMatchTemplateDialog(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+              <Wand2 className="w-4 h-4" /> {t3('Wedstrijd uit sjabloon', 'Match depuis modèle', 'Match from template')}
+            </button>
             <button data-tour="btn-new-event" onClick={() => { setShowCreateEvent(true); setShowCreateTask(false); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
                <CalendarDays className="w-4 h-4" /> {t3('Nieuw evenement', 'Nouvel événement', 'New event')}
              </button>
@@ -1253,7 +1260,10 @@ const EventsManager = () => {
                     {duplicatingEvent === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />} {nl ? 'Dupliceren' : 'Duplicate'}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleSaveAsTemplate(event.id)} disabled={savingTemplate === event.id}>
-                    {savingTemplate === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} {nl ? 'Opslaan als sjabloon' : 'Save as template'}
+                    {savingTemplate === event.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} {nl ? 'Opslaan als event-sjabloon' : 'Save as event template'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSaveAsMatchTemplateEventId(event.id)}>
+                    <Trophy className="w-4 h-4 mr-2" /> {t3('Opslaan als wedstrijdsjabloon', 'Comme modèle de match', 'Save as match template')}
                   </DropdownMenuItem>
                   {event.event_date && new Date(event.event_date).setHours(0,0,0,0) <= new Date().setHours(23,59,59,999) && (
                     <DropdownMenuItem onClick={() => navigate(`/events/${event.id}/attendance`)}>
