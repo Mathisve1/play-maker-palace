@@ -50,10 +50,24 @@ const ClubLogin = () => {
         return;
       }
 
-      // Toegangscontrole gebeurt in de beveiligde pagina's/context.
-      // Hier blokkeren we geen login meer op queryresultaten om false negatives te vermijden.
-
       toast.success(t3('Ingelogd!', 'Connecté !', 'Logged in!'));
+
+      // Check if this user is a partner admin → redirect to partner dashboard
+      // to prevent the redirect loop on /club-dashboard
+      try {
+        const { data: partnerAdmins } = await supabase
+          .from('partner_admins')
+          .select('id')
+          .eq('user_id', userId)
+          .limit(1);
+        if (partnerAdmins && partnerAdmins.length > 0) {
+          navigate('/partner-dashboard', { replace: true });
+          return;
+        }
+      } catch (err) {
+        console.warn('ClubLogin: partner_admins check failed', err);
+      }
+
       navigate('/club-dashboard', { replace: true });
     } finally {
       setLoading(false);
