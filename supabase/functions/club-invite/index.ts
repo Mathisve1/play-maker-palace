@@ -384,22 +384,30 @@ serve(async (req: Request) => {
       const isPartnerMemberInvite = !!invite.partner_id && !!invite.partner_member_id && invite.role === 'partner_member';
 
       if (isPartnerAdminInvite) {
-        await supabaseAdmin.from("partner_admins").upsert({
+        const { error: paErr } = await supabaseAdmin.from("partner_admins").upsert({
           partner_id: invite.partner_id,
           user_id: user_id,
           invited_by: invite.invited_by,
         }, { onConflict: "partner_id,user_id" });
+        if (paErr) {
+          console.error("partner_admins upsert failed (accept):", paErr);
+          return new Response(JSON.stringify({ error: "Kon partner-koppeling niet opslaan: " + paErr.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       } else if (isPartnerMemberInvite) {
         // Add as a regular club volunteer
-        await supabaseAdmin.from("club_members").upsert({
+        const { error: cmErr } = await supabaseAdmin.from("club_members").upsert({
           club_id: invite.club_id,
           user_id,
           role: 'medewerker',
         }, { onConflict: "club_id,user_id" });
+        if (cmErr) console.error("club_members upsert failed (partner_member accept):", cmErr);
         // Link their user_id back to the existing partner_members row
-        await supabaseAdmin.from("partner_members")
+        const { error: pmErr } = await supabaseAdmin.from("partner_members")
           .update({ user_id })
           .eq("id", invite.partner_member_id);
+        if (pmErr) console.error("partner_members update failed (accept):", pmErr);
       } else {
         await supabaseAdmin
           .from("club_members")
