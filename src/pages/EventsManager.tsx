@@ -22,7 +22,7 @@ import SafetyConfigDialog from '@/components/SafetyConfigDialog';
 import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
 import SpoedoproepDialog from '@/components/SpoedoproepDialog';
 import CreateMatchFromTemplateDialog from '@/components/CreateMatchFromTemplateDialog';
-import SaveAsMatchTemplateDialog from '@/components/SaveAsMatchTemplateDialog';
+import SaveAsMatchTemplateLoader from '@/components/SaveAsMatchTemplateLoader';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -1062,6 +1062,17 @@ const EventsManager = () => {
         clubId={clubId}
         language={language}
         onCreateFromTemplate={handleCreateFromTemplate}
+      />
+    )}
+    <CreateMatchFromTemplateDialog
+      open={showMatchTemplateDialog}
+      onClose={() => setShowMatchTemplateDialog(false)}
+      onCreated={() => { setShowMatchTemplateDialog(false); window.location.reload(); }}
+    />
+    {saveAsMatchTemplateEventId && (
+      <SaveAsMatchTemplateLoader
+        eventId={saveAsMatchTemplateEventId}
+        onClose={() => setSaveAsMatchTemplateEventId(null)}
       />
     )}
     {spoedTask && clubId && (
