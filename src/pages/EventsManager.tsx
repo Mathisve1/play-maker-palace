@@ -1197,7 +1197,7 @@ const EventsManager = () => {
               {event.status === 'on_hold' && <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-yellow-500/15 text-yellow-600 dark:text-yellow-400">On hold</span>}
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
-              {event.event_date && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(event.event_date).toLocaleDateString(nl ? 'nl-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
+              {event.event_date && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(event.event_date).toLocaleDateString(nl ? 'nl-BE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}</span>}
               {event.location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>}
               <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" />{groups.length} {nl ? 'groepen' : 'groups'}</span>
               <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{eventTaskCount} {nl ? 'taken' : 'tasks'}</span>
