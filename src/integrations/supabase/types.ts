@@ -4672,6 +4672,42 @@ export type Database = {
           },
         ]
       }
+      safety_role_club_zones: {
+        Row: {
+          created_at: string
+          id: string
+          role_id: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role_id: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role_id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_role_club_zones_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "safety_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_role_club_zones_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "club_safety_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safety_roles: {
         Row: {
           can_complete_checklist: boolean
