@@ -1358,41 +1358,34 @@ const EventsManager = () => {
                         </div>
                       </div>
 
-                      {/* Inline edit group form */}
+                      {/* Inline edit group form (uitgebreide form) */}
                       {editingGroup === group.id && (
-                        <div className="p-4 border-b border-border bg-muted/30 space-y-3">
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div>
-                              <label className={labelClass}>{nl ? 'Groepsnaam' : 'Group name'} *</label>
-                              <input type="text" value={editGroupForm.name} onChange={e => setEditGroupForm(p => ({ ...p, name: e.target.value }))} className={inputClass} autoFocus />
-                            </div>
-                            <div>
-                              <label className={labelClass}>{nl ? 'Kleur' : 'Color'}</label>
-                              <div className="flex gap-1.5 flex-wrap mt-1">
-                                {GROUP_COLORS.map(c => (
-                                  <button key={c} type="button" onClick={() => setEditGroupForm(p => ({ ...p, color: c }))} className={`w-6 h-6 rounded-full border-2 transition-transform ${editGroupForm.color === c ? 'border-foreground scale-110' : 'border-transparent'}`} style={{ backgroundColor: c }} />
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <label className={labelClass}>{nl ? 'Polsbandkleur' : 'Wristband color'}</label>
-                              <input type="text" value={editGroupForm.wristband_color} onChange={e => setEditGroupForm(p => ({ ...p, wristband_color: e.target.value }))} className={inputClass} placeholder={nl ? 'bv. Blauw' : 'e.g. Blue'} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>{nl ? 'Polsbandlabel' : 'Wristband label'}</label>
-                              <input type="text" value={editGroupForm.wristband_label} onChange={e => setEditGroupForm(p => ({ ...p, wristband_label: e.target.value }))} className={inputClass} placeholder={nl ? 'bv. STEWARD' : 'e.g. STEWARD'} />
-                            </div>
-                            <div className="sm:col-span-2">
-                              <label className={labelClass}>{nl ? 'Materiaal notitie' : 'Materials note'}</label>
-                              <input type="text" value={editGroupForm.materials_note} onChange={e => setEditGroupForm(p => ({ ...p, materials_note: e.target.value }))} className={inputClass} placeholder={nl ? 'bv. Fluohesje, walkietalkie' : 'e.g. Safety vest, walkie-talkie'} />
-                            </div>
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <button type="button" onClick={() => setEditingGroup(null)} className="px-3 py-1.5 text-xs rounded-lg bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
-                            <button type="button" onClick={() => handleSaveEditGroup(group.id)} disabled={savingGroup || !editGroupForm.name.trim()} className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground disabled:opacity-50">
-                              {savingGroup ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (nl ? 'Opslaan' : 'Save')}
-                            </button>
-                          </div>
+                        <div className="p-3 border-b border-border bg-muted/20">
+                          <EventGroupForm
+                            clubId={clubId!}
+                            eventId={event.id}
+                            groupId={group.id}
+                            initialValues={{
+                              name: group.name,
+                              color: group.color,
+                              wristband_color: group.wristband_color || '',
+                              wristband_label: group.wristband_label || '',
+                              materials_note: group.materials_note || '',
+                              leader_id: (group as any).leader_id || '',
+                              closing_template_id: (group as any).closing_template_id || '',
+                              briefing_time: (group as any).briefing_time || '',
+                              briefing_location: (group as any).briefing_location || '',
+                              contact_name: (group as any).contact_name || '',
+                              contact_phone: (group as any).contact_phone || '',
+                              required_training_id: (group as any).required_training_id || '',
+                            }}
+                            onCancel={() => setEditingGroup(null)}
+                            onSaved={async () => {
+                              setEditingGroup(null);
+                              const { data: groups } = await supabase.from('event_groups').select('*').eq('event_id', event.id).order('sort_order');
+                              setEventGroups(prev => [...prev.filter(g => g.event_id !== event.id), ...(groups || [])]);
+                            }}
+                          />
                         </div>
                       )}
 
