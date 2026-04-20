@@ -545,6 +545,78 @@ export type Database = {
           },
         ]
       }
+      briefing_group_club_zones: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_group_club_zones_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefing_group_club_zones_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "club_safety_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefing_group_safety_teams: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_group_safety_teams_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefing_group_safety_teams_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "safety_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       briefing_group_volunteers: {
         Row: {
           created_at: string
@@ -577,26 +649,47 @@ export type Database = {
       briefing_groups: {
         Row: {
           briefing_id: string
+          briefing_location: string | null
+          briefing_time: string | null
+          closing_template_id: string | null
           color: string
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           id: string
+          leader_id: string | null
           name: string
+          required_training_id: string | null
           sort_order: number
         }
         Insert: {
           briefing_id: string
+          briefing_location?: string | null
+          briefing_time?: string | null
+          closing_template_id?: string | null
           color?: string
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
+          leader_id?: string | null
           name?: string
+          required_training_id?: string | null
           sort_order?: number
         }
         Update: {
           briefing_id?: string
+          briefing_location?: string | null
+          briefing_time?: string | null
+          closing_template_id?: string | null
           color?: string
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
+          leader_id?: string | null
           name?: string
+          required_training_id?: string | null
           sort_order?: number
         }
         Relationships: [
@@ -605,6 +698,20 @@ export type Database = {
             columns: ["briefing_id"]
             isOneToOne: false
             referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefing_groups_closing_template_id_fkey"
+            columns: ["closing_template_id"]
+            isOneToOne: false
+            referencedRelation: "closing_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefing_groups_required_training_id_fkey"
+            columns: ["required_training_id"]
+            isOneToOne: false
+            referencedRelation: "academy_trainings"
             referencedColumns: ["id"]
           },
         ]
@@ -1555,6 +1662,54 @@ export type Database = {
             foreignKeyName: "club_reward_settings_club_id_fkey"
             columns: ["club_id"]
             isOneToOne: true
+            referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_safety_zones: {
+        Row: {
+          club_id: string
+          color: string
+          created_at: string
+          id: string
+          location_description: string | null
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          color?: string
+          created_at?: string
+          id?: string
+          location_description?: string | null
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          color?: string
+          created_at?: string
+          id?: string
+          location_description?: string | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_safety_zones_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_safety_zones_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
             referencedRelation: "clubs_safe"
             referencedColumns: ["id"]
           },
@@ -4452,6 +4607,42 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_team_club_zones: {
+        Row: {
+          created_at: string
+          id: string
+          team_id: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          team_id: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          team_id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_team_club_zones_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "safety_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_team_club_zones_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "club_safety_zones"
             referencedColumns: ["id"]
           },
         ]
