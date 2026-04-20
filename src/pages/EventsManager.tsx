@@ -1293,31 +1293,19 @@ const EventsManager = () => {
               </DropdownMenu>
             </div>
 
-            {/* Add group inline */}
+            {/* Add group inline (uitgebreide form met safety teams + zones + leider + ...) */}
             {addingGroupToEvent === event.id && (
-            <div data-tour={addingGroupToEvent === event.id && ei === 0 ? 'form-add-group' : undefined} className="mb-4 p-4 rounded-xl border border-border bg-muted/30 space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <label className={labelClass}>{nl ? 'Groepsnaam' : 'Group name'} *</label>
-                    <input type="text" placeholder={nl ? 'bv. Stewards' : 'e.g. Stewards'} value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className={inputClass} autoFocus />
-                  </div>
-                  <div>
-                    <label className={labelClass}>{nl ? 'Kleur bandje / accessoire' : 'Wristband color'}</label>
-                    <input type="text" placeholder={nl ? 'bv. Rood' : 'e.g. Red'} value={newGroupWristbandColor} onChange={e => setNewGroupWristbandColor(e.target.value)} className={inputClass} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>{nl ? 'Type accessoire' : 'Accessory type'}</label>
-                    <input type="text" placeholder={nl ? 'bv. Polsbandje, Hesje, Badge' : 'e.g. Wristband, Vest, Badge'} value={newGroupWristbandLabel} onChange={e => setNewGroupWristbandLabel(e.target.value)} className={inputClass} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className={labelClass}>{nl ? 'Extra materiaal / instructies' : 'Extra materials / instructions'}</label>
-                    <textarea rows={2} placeholder={nl ? 'bv. Gele T-shirt maat M, walkietalkie kanaal 3' : 'e.g. Yellow T-shirt size M, walkie channel 3'} value={newGroupMaterialsNote} onChange={e => setNewGroupMaterialsNote(e.target.value)} className={inputClass + ' resize-none'} />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => handleAddGroup(event.id)} disabled={!newGroupName.trim()} className="px-3 py-2 text-xs rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">{nl ? 'Aanmaken' : 'Create'}</button>
-                  <button onClick={() => { setAddingGroupToEvent(null); setNewGroupWristbandColor(''); setNewGroupWristbandLabel(''); setNewGroupMaterialsNote(''); }} className="px-3 py-2 text-xs rounded-lg bg-muted text-muted-foreground">{nl ? 'Annuleren' : 'Cancel'}</button>
-                </div>
+              <div data-tour={ei === 0 ? 'form-add-group' : undefined} className="mb-4">
+                <EventGroupForm
+                  clubId={clubId!}
+                  eventId={event.id}
+                  onCancel={() => setAddingGroupToEvent(null)}
+                  onSaved={async () => {
+                    setAddingGroupToEvent(null);
+                    const { data: groups } = await supabase.from('event_groups').select('*').eq('event_id', event.id).order('sort_order');
+                    setEventGroups(prev => [...prev.filter(g => g.event_id !== event.id), ...(groups || [])]);
+                  }}
+                />
               </div>
             )}
 
