@@ -2317,46 +2317,167 @@ export type Database = {
           },
         ]
       }
+      event_group_club_zones: {
+        Row: {
+          created_at: string
+          event_group_id: string
+          id: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_group_id: string
+          id?: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          event_group_id?: string
+          id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_group_club_zones_event_group_id_fkey"
+            columns: ["event_group_id"]
+            isOneToOne: false
+            referencedRelation: "event_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_group_club_zones_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "club_safety_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_group_safety_teams: {
+        Row: {
+          created_at: string
+          event_group_id: string
+          id: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_group_id: string
+          id?: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          event_group_id?: string
+          id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_group_safety_teams_event_group_id_fkey"
+            columns: ["event_group_id"]
+            isOneToOne: false
+            referencedRelation: "event_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_group_safety_teams_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "safety_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_groups: {
         Row: {
+          briefing_location: string | null
+          briefing_time: string | null
+          closing_template_id: string | null
           color: string
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           event_id: string
           id: string
+          leader_id: string | null
           materials_note: string | null
           name: string
+          required_training_id: string | null
           sort_order: number
           wristband_color: string | null
           wristband_label: string | null
         }
         Insert: {
+          briefing_location?: string | null
+          briefing_time?: string | null
+          closing_template_id?: string | null
           color?: string
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           event_id: string
           id?: string
+          leader_id?: string | null
           materials_note?: string | null
           name: string
+          required_training_id?: string | null
           sort_order?: number
           wristband_color?: string | null
           wristband_label?: string | null
         }
         Update: {
+          briefing_location?: string | null
+          briefing_time?: string | null
+          closing_template_id?: string | null
           color?: string
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           event_id?: string
           id?: string
+          leader_id?: string | null
           materials_note?: string | null
           name?: string
+          required_training_id?: string | null
           sort_order?: number
           wristband_color?: string | null
           wristband_label?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "event_groups_closing_template_id_fkey"
+            columns: ["closing_template_id"]
+            isOneToOne: false
+            referencedRelation: "closing_templates"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_groups_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_groups_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_groups_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_groups_required_training_id_fkey"
+            columns: ["required_training_id"]
+            isOneToOne: false
+            referencedRelation: "academy_trainings"
             referencedColumns: ["id"]
           },
         ]
