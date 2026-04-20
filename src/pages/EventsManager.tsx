@@ -23,6 +23,7 @@ import PlanningOnboardingTour from '@/components/PlanningOnboardingTour';
 import SpoedoproepDialog from '@/components/SpoedoproepDialog';
 import CreateMatchFromTemplateDialog from '@/components/CreateMatchFromTemplateDialog';
 import SaveAsMatchTemplateLoader from '@/components/SaveAsMatchTemplateLoader';
+import EventGroupForm from '@/components/events/EventGroupForm';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
