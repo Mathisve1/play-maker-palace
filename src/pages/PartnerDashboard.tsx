@@ -638,6 +638,16 @@ const PartnerDashboard = () => {
 
         {activeTab === 'members' && (
           <div className="space-y-3">
+            <div className="bg-muted/30 border border-border p-4 rounded-2xl flex items-start gap-3">
+              <Info className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {language === 'nl'
+                  ? 'Wil je dat één van je medewerkers een vrijwilligersaccount krijgt? Vraag dit aan je contactpersoon bij de club. Zij kunnen vanuit hun beheerportaal een uitnodiging versturen.'
+                  : language === 'fr'
+                  ? 'Souhaitez-vous qu\'un de vos collaborateurs reçoive un compte bénévole ? Demandez-le à votre personne de contact au club. Elle pourra envoyer une invitation depuis son portail de gestion.'
+                  : 'Would you like one of your members to get a volunteer account? Ask your contact person at the club — they can send an invitation from their management portal.'}
+              </p>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={() => setShowAddMember(true)}><UserPlus className="w-4 h-4 mr-1" />{nl ? 'Toevoegen' : 'Add'}</Button>
               <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}><FileSpreadsheet className="w-4 h-4 mr-1" />Import CSV</Button>
