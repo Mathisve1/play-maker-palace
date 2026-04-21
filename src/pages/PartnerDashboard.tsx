@@ -395,6 +395,57 @@ const PartnerDashboard = () => {
     await refreshAll();
   };
 
+  const handleInviteMemberAsVolunteer = async (member: Member) => {
+    if (!partner || !selectedClubId) return;
+    if (!member.email) {
+      toast.error(t3('Deze medewerker heeft geen e-mailadres.', 'Ce membre n\'a pas d\'adresse e-mail.', 'This member has no email address.'));
+      return;
+    }
+    if (member.user_id) {
+      toast.info(t3('Deze medewerker heeft al een vrijwilligersaccount.', 'Ce membre a déjà un compte bénévole.', 'This member already has a volunteer account.'));
+      return;
+    }
+    setInvitingMemberId(member.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error(t3('Sessie verlopen, log opnieuw in.', 'Session expirée, reconnectez-vous.', 'Session expired, please log in again.'));
+        return;
+      }
+      const club = clubs.find(c => c.id === selectedClubId);
+      const { data: inv, error: invErr } = await supabase.from('club_invitations').insert({
+        club_id: selectedClubId,
+        email: member.email,
+        role: 'partner_member' as any,
+        invited_by: session.user.id,
+        partner_id: partner.id,
+        partner_member_id: member.id,
+      }).select('invite_token').single();
+      if (invErr) throw invErr;
+      const { error: fnErr } = await supabase.functions.invoke('club-invite?action=send-email', {
+        body: {
+          email: member.email,
+          invite_token: inv.invite_token,
+          role: 'partner_member',
+          club_name: club?.name,
+          partner_id: partner.id,
+          partner_name: partner.name,
+          partner_member_id: member.id,
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (fnErr) throw fnErr;
+      toast.success(t3(
+        `Uitnodiging verstuurd naar ${member.full_name}!`,
+        `Invitation envoyée à ${member.full_name}!`,
+        `Invitation sent to ${member.full_name}!`
+      ));
+    } catch (err: any) {
+      toast.error(err.message || t3('Verzenden mislukt.', 'Échec de l\'envoi.', 'Sending failed.'));
+    }
+    setInvitingMemberId(null);
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
