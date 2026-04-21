@@ -86,6 +86,19 @@ serve(async (req: Request) => {
         });
       }
 
+      // If the invited email already has an auth account but the email was never confirmed,
+      // auto-confirm it now. The invitation itself proves they own the inbox, and many of our
+      // (50+) volunteer users get stuck on "Email not confirmed" otherwise.
+      try {
+        const { data: existing } = await supabaseAdmin.auth.admin.listUsers();
+        const match = existing?.users?.find((u: any) => (u.email || '').toLowerCase() === email.toLowerCase());
+        if (match && !match.email_confirmed_at) {
+          await supabaseAdmin.auth.admin.updateUserById(match.id, { email_confirm: true });
+        }
+      } catch (e) {
+        console.warn("club-invite: auto-confirm pre-existing user failed (non-fatal):", e);
+      }
+
       const resendKey = Deno.env.get("RESEND_API_KEY");
       if (!resendKey) {
         return new Response(JSON.stringify({ error: "Email service niet geconfigureerd." }), {
