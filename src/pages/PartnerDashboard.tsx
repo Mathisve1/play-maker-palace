@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2, AlertTriangle } from 'lucide-react';
+import { Users, Calendar, Plus, LogOut, Loader2, Check, X, Trash2, UserPlus, MapPin, Handshake, FileSpreadsheet, ChevronDown, ChevronUp, UserCheck, Building2, AlertTriangle, Info } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PartnerSidebar from '@/components/PartnerSidebar';
 import PartnerDashboardHome from '@/components/partner/PartnerDashboardHome';
