@@ -30,6 +30,7 @@ interface Member {
   date_of_birth: string | null; national_id: string | null; address: string | null;
   city: string | null; postal_code: string | null; shirt_size: string | null;
   emergency_contact_name: string | null; emergency_contact_phone: string | null; notes: string | null;
+  user_id?: string | null;
 }
 interface ClubTask {
   id: string; title: string; description: string | null; task_date: string | null;
@@ -166,7 +167,9 @@ const PartnerDashboard = () => {
   const [showAssignTask, setShowAssignTask] = useState<string | null>(null);
   const [assignMembers, setAssignMembers] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
+  const [invitingMemberId, setInvitingMemberId] = useState<string | null>(null);
   const nl = language === 'nl';
+  const t3 = (n: string, f: string, e: string) => language === 'nl' ? n : language === 'fr' ? f : e;
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string; email: string; avatar_url?: string | null } | null>(null);
