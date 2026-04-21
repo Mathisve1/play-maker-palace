@@ -695,11 +695,11 @@ const PartnerDashboard = () => {
             <div className="bg-muted/30 border border-border p-4 rounded-2xl flex items-start gap-3">
               <Info className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {language === 'nl'
-                  ? 'Wil je dat één van je medewerkers een vrijwilligersaccount krijgt? Vraag dit aan je contactpersoon bij de club. Zij kunnen vanuit hun beheerportaal een uitnodiging versturen.'
-                  : language === 'fr'
-                  ? 'Souhaitez-vous qu\'un de vos collaborateurs reçoive un compte bénévole ? Demandez-le à votre personne de contact au club. Elle pourra envoyer une invitation depuis son portail de gestion.'
-                  : 'Would you like one of your members to get a volunteer account? Ask your contact person at the club — they can send an invitation from their management portal.'}
+                {t3(
+                  'Wil je dat één van je medewerkers een vrijwilligersaccount krijgt? Klik op "Uitnodigen" naast hun naam — ze ontvangen meteen een e-mail om hun account aan te maken. Een e-mailadres is vereist.',
+                  'Souhaitez-vous qu\'un de vos collaborateurs reçoive un compte bénévole ? Cliquez sur « Inviter » à côté de son nom — il recevra immédiatement un e-mail pour créer son compte. Une adresse e-mail est requise.',
+                  'Want one of your members to get a volunteer account? Click "Invite" next to their name — they\'ll receive an email right away to create their account. An email address is required.'
+                )}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -712,17 +712,41 @@ const PartnerDashboard = () => {
             ) : members.map(m => (
               <Card key={m.id}>
                 <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">{m.full_name.charAt(0).toUpperCase()}</div>
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedMember(expandedMember === m.id ? null : m.id)}>
-                      <p className="text-sm font-medium truncate">{m.full_name}</p>
+                      <p className="text-sm font-medium truncate flex items-center gap-2">
+                        {m.full_name}
+                        {m.user_id && (
+                          <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                            <UserCheck className="w-3 h-3" />
+                            {t3('Account', 'Compte', 'Account')}
+                          </Badge>
+                        )}
+                      </p>
                       <p className="text-xs text-muted-foreground">{m.email || ''}{m.phone ? ` • ${m.phone}` : ''}{m.shirt_size ? ` • ${m.shirt_size}` : ''}</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpandedMember(expandedMember === m.id ? null : m.id)}>
+                    {!m.user_id && m.email && selectedClubId && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-9"
+                        disabled={invitingMemberId === m.id}
+                        onClick={() => handleInviteMemberAsVolunteer(m)}
+                      >
+                        {invitingMemberId === m.id ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                        ) : (
+                          <UserPlus className="w-3.5 h-3.5 mr-1" />
+                        )}
+                        {t3('Uitnodigen', 'Inviter', 'Invite')}
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setExpandedMember(expandedMember === m.id ? null : m.id)}>
                       {expandedMember === m.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditMember(m)}><UserPlus className="w-3.5 h-3.5 text-muted-foreground" /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteMember(m.id)}><Trash2 className="w-3.5 h-3.5 text-muted-foreground" /></Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setEditMember(m)} title={t3('Bewerken', 'Modifier', 'Edit')}><UserPlus className="w-3.5 h-3.5 text-muted-foreground" /></Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleDeleteMember(m.id)} title={t3('Verwijderen', 'Supprimer', 'Delete')}><Trash2 className="w-3.5 h-3.5 text-muted-foreground" /></Button>
                   </div>
                   {expandedMember === m.id && (
                     <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 gap-2 text-xs">
