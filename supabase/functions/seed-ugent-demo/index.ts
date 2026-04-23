@@ -348,18 +348,17 @@ Deno.serve(async (req) => {
     const pastEvents = events!.filter(e => new Date(e.event_date) < new Date());
     if (pastEvents.length > 0) {
       const incidents = [
-        { title: 'Lichte valpartij bij ingang', severity: 'low', status: 'resolved' },
-        { title: 'Gast onwel — EHBO ingeschakeld', severity: 'medium', status: 'resolved' },
-        { title: 'Verloren voorwerp ingeleverd', severity: 'low', status: 'resolved' },
-        { title: 'Brandalarm vals (rookmelder)', severity: 'medium', status: 'resolved' },
+        { desc: 'Lichte valpartij bij hoofdingang. Vrijwilliger EHBO ter plaatse, gast verzorgd en doorverwezen.', priority: 'low', status: 'opgelost' },
+        { desc: 'Gast onwel tijdens evenement, EHBO-team ingeschakeld, gast hersteld na 20 min.', priority: 'medium', status: 'opgelost' },
+        { desc: 'Verloren voorwerp (sleutels) ingeleverd bij onthaal en opgehaald door eigenaar.', priority: 'low', status: 'opgelost' },
+        { desc: 'Vals brandalarm (rookmelder defect) — geverifieerd door safety team, geen evacuatie nodig.', priority: 'medium', status: 'opgelost' },
       ];
-      // check kolomnaam in safety_incidents
       const { error: incErr } = await supabase.from('safety_incidents').insert(
         incidents.map((inc, i) => ({
           club_id: clubId, event_id: pastEvents[i % pastEvents.length].id,
-          title: inc.title, severity: inc.severity, status: inc.status,
-          description: `${inc.title} tijdens evenement. Snel en correct opgelost.`,
-          reported_by: ownerId,
+          priority: inc.priority, status: inc.status,
+          description: inc.desc, reporter_id: ownerId,
+          resolved_by: ownerId, resolved_at: new Date().toISOString(),
         }))
       );
       if (incErr) L(`!! incidents: ${incErr.message}`);
