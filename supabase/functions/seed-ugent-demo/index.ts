@@ -83,6 +83,12 @@ Deno.serve(async (req) => {
       language: 'nl',
     }).eq('id', ownerId);
 
+    // Grant club_owner role so login redirects to /club-dashboard
+    await supabase.from('user_roles').upsert(
+      { user_id: ownerId, role: 'club_owner' },
+      { onConflict: 'user_id,role' }
+    );
+
     // ─── 3. CLUB ───────────────────────────────────────────────────────
     L('Creating club...');
     const { data: club, error: clubErr } = await supabase.from('clubs').insert({
